@@ -12,14 +12,14 @@
 |---|---|---|
 | `path` | 最直接的本地接入 | `pnpm add --save-exact <governor-repo>` |
 | `link` | 源码联调 | `pnpm add --save-exact link:<governor-repo>` |
-| `tgz` | 打包安装演练 | `pnpm pack --json` + `pnpm add --save-exact <tarball>` |
-| `dist-binary` | 对 Yarn/npm 或脏工作树做无侵入演练 | `node <governor-repo>/dist/bin/repo-ai-governor.js <command>` |
+| `tgz` | 联网的 packaged CLI 安装演练 | `pnpm pack --json` + `pnpm add --save-exact <tarball>` |
+| `dist-binary` | 对 Yarn/npm 或脏工作树做 CLI/runtime 无侵入演练 | `node <governor-repo>/dist/bin/repo-ai-governor.js <command>` |
 
 选择建议：
 
 1. 默认先选 `path`。
 2. 只有在目标仓库需要跟随本地 governor 源码变化时，才选 `link`。
-3. 只有在安装环境仍能访问 npm registry、且你明确要演练打包安装时，才选 `tgz`。
+3. 只有在安装环境仍能访问 npm registry、且你明确要演练“联网的 packaged CLI 安装”时，才选 `tgz`。
 4. 目标仓库是脏工作树、使用 Yarn/npm，或你只想先验证 CLI/runtime 行为时，选 `dist-binary`。
 
 这些安装模式的正式 acceptance contract 以 `docs/support-matrix.zh-CN.md` 为准。
@@ -225,7 +225,8 @@ pnpm exec repo-ai-governor run --output json
 1. `pnpm add <tarball>` 报 `ENOTFOUND` 时，通常是安装环境无法访问 npm registry；请改用 `path`、`link` 或 `dist-binary`。
 2. `dist-binary` 验证的是 CLI/runtime 行为，不等于验证了 package install surface。
 3. `tgz` 不是离线自包含安装；安装阶段仍会解析外部依赖。
-4. 如果目标仓库本身是 Yarn/npm 或已有脏工作树，建议先用 `dist-binary`；否则默认先用 `path`，只有在工作流需要时再切换到 `link` 或 `tgz`。
+4. `tgz` 路径验证的只是“已发布 CLI tarball + 随包文档/参考资产”这条打包面；它不会扩大 VS Code、VSIX、Marketplace 或其他 secondary surface 的打包支持声明。
+5. 如果目标仓库本身是 Yarn/npm 或已有脏工作树，建议先用 `dist-binary`；否则默认先用 `path`，只有在工作流需要时再切换到 `link` 或 `tgz`。
 5. `baseline_docs missing=5/5`、`script_not_found` 这类 self-host warning，在外部 adopter 仓库里通常是预期现象。
 6. 如果 `upgrade` preview 提示存在 blocking confirmation items，不要直接 `apply`；先查看保存下来的 `report_path` 与 `auto_migrated_config_path`，修完配置漂移后再重新 preview。
 7. 请同时保留 preview 的 `report_path`，以及 `apply_receipt_path` 或 `rollback_snapshot_path` 之一；正式 rollback 依赖这些 hand-off artifact，而不是靠手工猜路径。

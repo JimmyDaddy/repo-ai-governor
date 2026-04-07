@@ -23,11 +23,13 @@ Published tarballs are expected to include:
 1. `README.md` and `README.zh-CN.md`
 2. `docs/local-adoption-playbook.md` and `docs/local-adoption-playbook.zh-CN.md`
 3. `docs/maintainer-validation-playbook.md` and `docs/maintainer-validation-playbook.zh-CN.md`
-4. `examples/`
-5. `integrations/ide/` and `integrations/desktop/`
-6. `.codex/skills/`
+4. `docs/support-matrix.md` and `docs/support-matrix.zh-CN.md`
+5. `examples/`
+6. `integrations/ide/` and `integrations/desktop/`
+7. `.codex/skills/`
 
 Repo-local skills are shipped as reference assets only. They are not automatically copied into target repositories.
+The support matrix ships with the tarball because the packaged surface must carry the same public support boundary it claims.
 The real app workspaces under `apps/vscode-extension` and `apps/desktop` remain source-checkout validation surfaces; the published tarball can still carry internal `dist/**` build payloads, but it does not ship those app workspaces as standalone package-install roots.
 
 ## 3. Real-project Validation Runbook
@@ -143,10 +145,11 @@ pnpm run release:ga-check
 Notes:
 
 1. `release:verify-cleanroom-local-install` validates packaged-install paths and can emit a machine-readable report with `--output <path>`.
-2. `release:verify-local` includes local verification surfaces that are useful before rollout.
-3. `release:ga-check` is for maintainers deciding whether the current state is ready for broader release, not for ordinary adopters.
-4. Current evidence backlinks expected by this playbook are `.tmp/project-052-sprint-001-cleanroom-report.json`, `.tmp/project-052-sprint-001-local-distribution-report.json`, `.tmp/project-052-sprint-002-command-rehearsal-summary.json`, `.tmp/project-055-sprint-001-pilot-1-rehearsal-summary.json`, `.tmp/project-055-sprint-001-pilot-2-rehearsal-summary.json`, and `.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-002-ga-evidence-consolidation-and-closeout/tasks/DA-616-ga-evidence-dossier-and-cross-surface-backlinks.md`.
-5. When those signals change, update `docs/support-matrix.md` first instead of creating a second status table in this playbook.
+2. Use `--modes tgz --iterations 1` when you are refreshing the online tarball-install support boundary instead of the older `path/link` baseline only.
+3. `release:verify-local` includes local verification surfaces that are useful before rollout, including packed-surface truthfulness for shipped docs and reference assets.
+4. `release:ga-check` is for maintainers deciding whether the current state is ready for broader release, not for ordinary adopters.
+5. Current evidence backlinks expected by this playbook are `.tmp/project-052-sprint-001-cleanroom-report.json`, `.tmp/project-052-sprint-001-local-distribution-report.json`, `.tmp/project-063-sprint-001-cleanroom-tgz-report.json`, `.tmp/project-063-sprint-001-local-distribution-report.json`, `.tmp/project-052-sprint-002-command-rehearsal-summary.json`, `.tmp/project-055-sprint-001-pilot-1-rehearsal-summary.json`, `.tmp/project-055-sprint-001-pilot-2-rehearsal-summary.json`, and `.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-002-ga-evidence-consolidation-and-closeout/tasks/DA-616-ga-evidence-dossier-and-cross-surface-backlinks.md`.
+6. When those signals change, update `docs/support-matrix.md` first instead of creating a second status table in this playbook.
 
 ## 6. Interpreting External-adopter Warnings
 

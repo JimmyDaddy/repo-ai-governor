@@ -1,6 +1,6 @@
 # TK-667 freeze packaged install support contract and acceptance matrix
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-04-08
 - Owner: `AI-Agent`
 - Priority: `P1`
@@ -53,8 +53,15 @@
 
 1. 2026-04-08：任务创建，状态初始化为 `planned`。
 2. 2026-04-08：`project-062` final closeout 完成后，当前任务切换为 `in_progress`，开始冻结 `path / link / dist-binary / tgz` 的 packaged install support contract 与 acceptance matrix。
+3. 2026-04-08：已冻结 install-mode contract：`path` 为默认本地接入、`link` 为源码跟随模式、`dist-binary` 仅证明 CLI/runtime rehearsal、`tgz` 仅证明“联网的 packaged CLI install rehearsal”；相关 README、adopter playbook、maintainer playbook 与 support matrix 已在同一窗口内完成对齐，任务切换为 `completed`。
 
 ## 10. 产出
 
-1. 待执行：packaged install contract
-2. 待执行：acceptance matrix
+1. `README.md`
+2. `README.zh-CN.md`
+3. `docs/local-adoption-playbook.md`
+4. `docs/local-adoption-playbook.zh-CN.md`
+5. `docs/support-matrix.md`
+6. `docs/support-matrix.zh-CN.md`
+7. `docs/maintainer-validation-playbook.md`
+8. `docs/maintainer-validation-playbook.zh-CN.md`

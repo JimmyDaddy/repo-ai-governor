@@ -1,6 +1,6 @@
 # TK-669 close packaged adoption boundary with clean-room rehearsal and support-matrix refresh
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-08
 - Owner: `AI-Agent`
 - Priority: `P1`
@@ -52,8 +52,16 @@
 ## 9. 执行记录
 
 1. 2026-04-08：任务创建，状态初始化为 `planned`。
+2. 2026-04-08：已重跑 `.tmp/project-063-sprint-001-cleanroom-tgz-report.json` 与 `.tmp/project-063-sprint-001-local-distribution-report.json`，并将 support matrix / maintainer playbook 的 packaged truth refresh 到当前机器证据窗口。
+3. 2026-04-08：same-window `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`node ./scripts/release/verify-cleanroom-local-install.js --modes tgz --iterations 1 --output .tmp/project-063-sprint-001-cleanroom-tgz-report.json` 与 `node ./scripts/release/verify-local-distribution.js --output .tmp/project-063-sprint-001-local-distribution-report.json` 已通过；`project-067` 的 next-stream input 现已冻结为“在 packaged install truth lane 之上继续 host plugin/skill/agent lifecycle 与 adopter consumption”，任务切换为 `completed`。
 
 ## 10. 产出
 
-1. 待执行：clean-room rehearsal evidence
-2. 待执行：support-matrix refresh and project-067 handoff input
+1. `.tmp/project-063-sprint-001-cleanroom-tgz-report.json`
+2. `.tmp/project-063-sprint-001-local-distribution-report.json`
+3. `docs/support-matrix.md`
+4. `docs/support-matrix.zh-CN.md`
+5. `docs/maintainer-validation-playbook.md`
+6. `docs/maintainer-validation-playbook.zh-CN.md`
+7. same-window verification: `pnpm run build`
+8. same-window verification: `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`

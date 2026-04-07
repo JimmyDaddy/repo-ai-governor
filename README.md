@@ -26,7 +26,7 @@ Recommended start order:
 1. Start with `path` when the target repo already uses `pnpm` and you want the default local adoption route.
 2. Move to `link` only when the target repo should follow local governor source changes closely.
 3. Use `dist-binary` when the target repo is dirty, uses Yarn/npm, or you want a no-install CLI/runtime rehearsal first.
-4. Use `tgz` only for a packaged-install rehearsal in an environment that can still reach the npm registry.
+4. Use `tgz` only for an online packaged CLI-install rehearsal in an environment that can still reach the npm registry.
 
 The formal acceptance contract for these install modes lives in `docs/support-matrix.md`.
 
@@ -58,7 +58,7 @@ cd <target-repo>
 pnpm add --save-exact /absolute/path/to/cjhdev-repo-ai-governor-<version>.tgz
 ```
 
-Use this when you want a packaged-install rehearsal. It still requires registry access for external dependencies.
+Use this when you want an online packaged CLI-install rehearsal. It still requires registry access for external dependencies and does not widen packaged VS Code or other secondary-surface support.
 
 #### Option D: `dist-binary`
 
@@ -70,7 +70,7 @@ cd <target-repo>
 node <governor-repo>/dist/bin/repo-ai-governor.js --help
 ```
 
-Use this when you want to validate CLI behavior before changing the target repo dependency graph.
+Use this when you want to validate CLI/runtime behavior before changing the target repo dependency graph. It does not prove packaged-install behavior.
 
 ### 1.3 First run in a target repository
 
@@ -144,10 +144,11 @@ Use `upgrade` preview first. Keep the emitted `report_path` from preview and the
 
 1. `dist-binary` rehearsal proves CLI/runtime behavior, not packaged-install behavior.
 2. `tgz` is not offline/self-contained; package installation still resolves external dependencies from the npm registry.
-3. If a target repository already uses Yarn/npm or has a dirty worktree, start with `dist-binary`; otherwise start with `path` and move to `link` or `tgz` only when the workflow requires it.
-4. Session shell, React-shell command surfaces, workflow editing, upgrade analysis, HITL notifications, and troubleshooting details are covered in the local adoption playbook.
-5. The optional VS Code companion surface currently runs only from a built governor source checkout via `apps/vscode-extension`; published npm/tgz install may still carry internal `dist/apps/vscode-extension/**` payloads, but it does not provide a supported VSIX, Marketplace, or installable extension bundle.
-6. Repository-local Codex workflow helpers ship under `.codex/skills/`; they are included for self-host and maintainer flows, but external adopters do not need to vendor them unless they want the same local skill ergonomics inside their own repository.
+3. The `tgz` path validates the published CLI tarball surface and shipped docs/reference assets only; it does not widen packaged VS Code, VSIX, Marketplace, or other secondary-surface support.
+4. If a target repository already uses Yarn/npm or has a dirty worktree, start with `dist-binary`; otherwise start with `path` and move to `link` or `tgz` only when the workflow requires it.
+5. Session shell, React-shell command surfaces, workflow editing, upgrade analysis, HITL notifications, and troubleshooting details are covered in the local adoption playbook.
+6. The optional VS Code companion surface currently runs only from a built governor source checkout via `apps/vscode-extension`; published npm/tgz install may still carry internal `dist/apps/vscode-extension/**` payloads, but it does not provide a supported VSIX, Marketplace, or installable extension bundle.
+7. Repository-local Codex workflow helpers ship under `.codex/skills/`; they are included for self-host and maintainer flows, but external adopters do not need to vendor them unless they want the same local skill ergonomics inside their own repository.
 
 ## 4. Read More
 

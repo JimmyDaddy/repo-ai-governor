@@ -23,11 +23,13 @@
 1. `README.md` 与 `README.zh-CN.md`
 2. `docs/local-adoption-playbook.md` 与 `docs/local-adoption-playbook.zh-CN.md`
 3. `docs/maintainer-validation-playbook.md` 与 `docs/maintainer-validation-playbook.zh-CN.md`
-4. `examples/`
-5. `integrations/ide/` 与 `integrations/desktop/`
-6. `.codex/skills/`
+4. `docs/support-matrix.md` 与 `docs/support-matrix.zh-CN.md`
+5. `examples/`
+6. `integrations/ide/` 与 `integrations/desktop/`
+7. `.codex/skills/`
 
 `.codex/skills/` 只是参考资产，不会自动复制到目标仓库。
+support matrix 也必须随 tarball 一起交付，因为已发布打包面的公开支持边界需要随包自带，而不能只留在源码仓。
 `apps/vscode-extension` 与 `apps/desktop` 这两个真实 app workspace 仍属于源码仓验证面；已发布 tarball 仍可能携带内部 `dist/**` 构建产物，但不会把这些 app workspace 作为独立 package-install 根目录交付。
 
 ## 3. 真实项目验收 Runbook
@@ -143,10 +145,11 @@ pnpm run release:ga-check
 说明：
 
 1. `release:verify-cleanroom-local-install` 用于验证 packaged-install 路径，并支持通过 `--output <path>` 输出机器可读报告。
-2. `release:verify-local` 适合 rollout 前的本地维护者验证。
-3. `release:ga-check` 面向维护者的发布准备判断，不适合作为普通 adopter 的日常命令。
-4. 当前本手册预期回链的结构化 evidence 包括 `.tmp/project-052-sprint-001-cleanroom-report.json`、`.tmp/project-052-sprint-001-local-distribution-report.json`、`.tmp/project-052-sprint-002-command-rehearsal-summary.json`、`.tmp/project-055-sprint-001-pilot-1-rehearsal-summary.json`、`.tmp/project-055-sprint-001-pilot-2-rehearsal-summary.json`，以及 `.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-002-ga-evidence-consolidation-and-closeout/tasks/DA-616-ga-evidence-dossier-and-cross-surface-backlinks.md`。
-5. 当这些信号变化时，应先更新 `docs/support-matrix.zh-CN.md`，而不是在本手册里再维护第二张状态表。
+2. 当你刷新“联网 tarball 安装支持边界”时，应显式使用 `--modes tgz --iterations 1`，而不是只沿用旧的 `path/link` 基线。
+3. `release:verify-local` 适合 rollout 前的本地维护者验证，并会覆盖已发布文档与参考资产的 packed-surface truthfulness。
+4. `release:ga-check` 面向维护者的发布准备判断，不适合作为普通 adopter 的日常命令。
+5. 当前本手册预期回链的结构化 evidence 包括 `.tmp/project-052-sprint-001-cleanroom-report.json`、`.tmp/project-052-sprint-001-local-distribution-report.json`、`.tmp/project-063-sprint-001-cleanroom-tgz-report.json`、`.tmp/project-063-sprint-001-local-distribution-report.json`、`.tmp/project-052-sprint-002-command-rehearsal-summary.json`、`.tmp/project-055-sprint-001-pilot-1-rehearsal-summary.json`、`.tmp/project-055-sprint-001-pilot-2-rehearsal-summary.json`，以及 `.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-002-ga-evidence-consolidation-and-closeout/tasks/DA-616-ga-evidence-dossier-and-cross-surface-backlinks.md`。
+6. 当这些信号变化时，应先更新 `docs/support-matrix.zh-CN.md`，而不是在本手册里再维护第二张状态表。
 
 ## 6. 如何理解 external-adopter warning
 

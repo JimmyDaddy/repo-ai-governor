@@ -63,6 +63,8 @@ const REQUIRED_PACKED_PATH_SUFFIXES = [
   'dist/packages/shared/src/index.js',
   'docs/local-adoption-playbook.md',
   'docs/local-adoption-playbook.zh-CN.md',
+  'docs/support-matrix.md',
+  'docs/support-matrix.zh-CN.md',
   'examples/README.md',
   'examples/single-role-minimal-flow/scenario.json',
   'examples/single-role-minimal-flow/expected/runtime-baseline.json',
@@ -131,7 +133,51 @@ const DOCUMENT_TRUTHFULNESS_ASSERTIONS = [
       'ANTHROPIC_API_KEY',
     ],
   },
+  {
+    filePath: 'docs/support-matrix.md',
+    requiredFragments: [
+      'Supported (online)',
+      'packaged-install rehearsal',
+      'CLI/runtime behavior only',
+      'VS Code packaged distribution',
+      'Not supported',
+    ],
+  },
+  {
+    filePath: 'docs/support-matrix.zh-CN.md',
+    requiredFragments: [
+      'Supported（联网）',
+      'packaged-install 演练',
+      'CLI/runtime 行为',
+      'VS Code 打包分发',
+      'Not supported',
+    ],
+  },
+  {
+    filePath: 'docs/maintainer-validation-playbook.md',
+    requiredFragments: [
+      'docs/support-matrix.md',
+      'packaged delivery surfaces',
+      'release:verify-cleanroom-local-install',
+    ],
+  },
+  {
+    filePath: 'docs/maintainer-validation-playbook.zh-CN.md',
+    requiredFragments: [
+      'docs/support-matrix.zh-CN.md',
+      '演练打包发布面',
+      'release:verify-cleanroom-local-install',
+    ],
+  },
 ];
+const PACKAGED_INSTALL_CONTRACT = {
+  path: 'supported-default-local-adoption',
+  link: 'supported-source-linked-follow-mode',
+  tgz: 'supported-online-packaged-install-rehearsal-only',
+  distBinary: 'supported-cli-runtime-rehearsal-only',
+  offlineTarballInstall: 'not-supported',
+  packagedVscodeDistribution: 'not-supported',
+};
 
 /**
  * Parses CLI args for local-distribution verification.
@@ -793,6 +839,7 @@ async function runStandardsRuntimeLoaderDistSmoke() {
     const { StandardsRuntimeLoader, StandardsRenderTarget } =
       await importDistModule(DIST_STANDARDS_INDEX_PATH);
     const loader = new StandardsRuntimeLoader();
+    const expectedProjectionTarget = resolve(fixtureRoot, 'AGENTS.fixture.md');
     const standardsConfig = {
       packSources: {
         official: [
@@ -839,12 +886,17 @@ async function runStandardsRuntimeLoaderDistSmoke() {
         'Standards runtime loader dist smoke did not preserve configured renderTargets.',
       );
     }
+    if (runtime.projectionTargets[0]?.targetFile !== expectedProjectionTarget) {
+      throw new Error(
+        'Standards runtime loader dist smoke did not resolve the configured projection target.',
+      );
+    }
     if (resolvedRules[0]?.sourcePackId !== 'pack.repository.runtime-fixture') {
       throw new Error(
         'Standards runtime loader dist smoke did not preserve repository override precedence.',
       );
     }
-    if (projections[0]?.projectionTarget !== 'AGENTS.fixture.md') {
+    if (projections[0]?.projectionTarget !== expectedProjectionTarget) {
       throw new Error(
         'Standards runtime loader dist smoke did not preserve the configured projection target.',
       );
@@ -965,6 +1017,10 @@ async function main() {
       packFile: rawFilename.trim(),
       packedFileCount: packedFilePaths.length,
       requiredPackedPathCount: REQUIRED_PACKED_PATH_SUFFIXES.length,
+      documentationTruthfulnessValidatedFiles: DOCUMENT_TRUTHFULNESS_ASSERTIONS.map(
+        (assertion) => assertion.filePath,
+      ),
+      packagedInstallContract: PACKAGED_INSTALL_CONTRACT,
       standardsRuntimeLoaderDistSmoke,
       remoteApiDistSmoke,
     });
