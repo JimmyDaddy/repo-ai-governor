@@ -3436,6 +3436,42 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
     );
   });
 
+  it('projects github copilot cli_exec transport truth into verify role details', async () => {
+    const adaptersConfig = createAdaptersConfigFixture();
+    adaptersConfig.roles.push({
+      roleId: 'tester',
+      roleProfileId: DefaultRoleProfileId.TESTER,
+      requiredCapabilities: [AgentCapability.TOOL_CALLING],
+      required: true,
+    });
+    adaptersConfig.routing.roleBindings.tester = {
+      primarySurface: AdapterSurface.GITHUB_COPILOT,
+      fallbackSurfaces: [AdapterSurface.CODEX, AdapterSurface.CLAUDE_CODE],
+    };
+
+    await withRuntimeFixture(
+      async (fixture) => {
+        const verifyResult = await fixture.runtime.execute(CliCommandName.VERIFY);
+        const testerCheck = verifyResult.commandResult.checks?.find(
+          (check) => check.id === 'role_tester',
+        );
+
+        expect(testerCheck?.status).toBe('pass');
+        expect(testerCheck?.detail).toContain('selected=github-copilot');
+        expect(testerCheck?.detail).toContain('transport=cli_exec');
+      },
+      {
+        adaptersConfig,
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          adapters: true,
+        },
+      },
+    );
+  });
+
   it('surfaces claude code credential failures as diagnostics and next actions', async () => {
     await withRuntimeFixture(
       async (fixture) => {

@@ -1,8 +1,31 @@
 # checklist
 
-- [ ] TK-604 freeze GitHub Copilot real invocation boundary and local-model fallback positioning
+- [x] TK-604 freeze GitHub Copilot real invocation boundary and local-model fallback positioning
   - 2026-04-06：任务创建，状态初始化为 `planned`。
-- [ ] TK-605 implement Copilot real path degrade handling and local-model support matrix alignment
+  - 2026-04-07：`sprint-002` 已通过 boundary commit `7b165f2` 收口，任务切换为 `in_progress`，开始冻结 `GitHub Copilot` 真实路径边界与 `local-model` fallback positioning。
+  - 2026-04-07：完成 `GitHub Copilot` / `local-model` truth freeze：`github-copilot` 正式口径切换为 `Real-path available (environment-gated)`，`local-model` 切换为 `Fallback-only real-path (local-runtime constrained)`；同窗口通过 targeted vitest、`pnpm run build` 与真实 `verify --adapters` 证据确认 `role_tester` 已投影 `transport=cli_exec`。
+- [x] TK-605 implement Copilot real path degrade handling and local-model support matrix alignment
   - 2026-04-06：任务创建，状态初始化为 `planned`。
-- [ ] TK-606 close real adapter invocation rollout with support matrix and verify evidence refresh
+  - 2026-04-07：`TK-604` truth freeze 已完成，开始基于新的 `github-copilot` / `local-model` 支持边界补齐 delivery-level dry-run trace、routing acceptance 与文档/证据对齐。
+  - 2026-04-07：完成 `github-copilot` / `local-model` runtime truth alignment：`github-copilot` probe health-check 现显式暴露 `transportKind=cli_exec` 与 `requestCancellationMode=not_supported`，`local-model` probe health-check 现显式暴露 `transportKind=baseline`、`model`、`endpointSource=config_explicit` 与 `requestCancellationMode=local_abort_only`；对应 smoke/runtime/integration coverage 与 README / playbook / support matrix truth 同窗口完成刷新。
+  - 2026-04-07：Delivery verification 已通过 `pnpm vitest run packages/adapters/github-copilot/test/github-copilot-agent-adapter.smoke.test.ts packages/adapters/local-model/test/local-model-agent-adapter.smoke.test.ts apps/cli/test/runtime/adapter-verification-runtime.test.ts test/first-batch-adapters-route.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run build`、`.tmp/project-053-sprint-003-verify-adapters-tk-605-606.json` 与 `.tmp/project-053-sprint-003-run-dry-run-trace-tk-605-606.json`；fresh verify 已确认 `role_tester selected=github-copilot transport=cli_exec`，dry-run trace 已确认 `execution_id=cli-run-1775518628055` 的 `prepare -> execute -> report` 全链路成功。
+- [x] TK-606 close real adapter invocation rollout with support matrix and verify evidence refresh
   - 2026-04-06：任务创建，状态初始化为 `planned`。
+  - 2026-04-07：`TK-605` delivery verification 已完成，开始以 `.tmp/project-053-sprint-003-verify-adapters-tk-605-606.json`、`.tmp/project-053-sprint-003-run-dry-run-trace-tk-605-606.json` 及其 emitted diagnostics/report/replay artifacts 刷新 `docs/support-matrix*.md` 的正式验证快照与 project-final review surface。
+  - 2026-04-07：已完成 `docs/support-matrix*.md` 的验证快照与 formal claim refresh：新增 sprint-003 targeted vitest、fresh `verify --adapters`、fresh `run --dry-run --trace` 行，并把 `project-053 / sprint-003` 的 `github-copilot` real-path + `local-model` fallback-only positioning 收口写入正式支持说明。
+  - 2026-04-07：sprint-003 的 canonical delivery evidence 以 targeted vitest、`pnpm run build`、fresh `verify --adapters`、fresh `run --dry-run --trace`、`check-task-ledger-sync` 与 `check-sprint-plan-status-sync` 为主；同窗口另有一次 workspace-wide `pnpm run check` 通过，但其中包含 shared helper-script lint hygiene 修复，因此仅作为附加 release-gate 背景证据，不把它表述成 sprint-003 单独 closeout proof。
+  - 2026-04-07：当前 project-final review 输入面保持不变：`.tmp/project-053-sprint-003-verify-adapters-tk-605-606.json`、`.tmp/project-053-sprint-003-run-dry-run-trace-tk-605-606.json`、`/Users/jimmydaddy/.repo-ai-governor/workspaces/2cf23e5951f0/.repo-ai-governor/context/diagnostics/verify/verify-1775518628055.json`、`/Users/jimmydaddy/.repo-ai-governor/workspaces/2cf23e5951f0/.repo-ai-governor/context/reports/cli-run-1775518628055.report.json`、`/Users/jimmydaddy/.repo-ai-governor/workspaces/2cf23e5951f0/.repo-ai-governor/context/replay/cli-run-1775518628055.replay.json` 与 `.../diagnostics/trace/cli-run-1775518628055.trace.json`。
+- [x] CR-001 sprint-003-github-copilot-boundary-and-local-model-positioning delegated review loop round 1
+  - 2026-04-07：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-07：fresh reviewer Hooke 在 round 1 提出 2 条 actionable finding：`github-copilot` baseline probe cancellation truth 与 `TK-606` closeout evidence layering 均存在需要修复的契约漂移。
+  - 2026-04-07：主 agent 已接受并修复全部 finding，补跑 targeted vitest、`pnpm run build`、fresh `verify --adapters`、fresh `run --dry-run --trace`、governance sync checks 与 workspace-wide `pnpm run check`；当前 round 1 已 `resolved`，下一步进入 fresh `CR-002` recheck。
+- [x] CR-002 sprint-003-github-copilot-boundary-and-local-model-positioning delegated recheck loop round 2
+  - 2026-04-07：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-07：fresh reviewer Avicenna round 2 clean；当前 review surface 未发现新的 actionable finding，`verify --adapters` 的剩余 `warn` 继续只来自 tool-managed workspace bootstrap truth。
+  - 2026-04-07：主 agent 追加复核全量 in-scope diff 后未发现新的 blocker，本轮以 `resolved` 收口并进入 sprint closeout。
+- [x] TK-609 sprint-003 exit acceptance and project-final review handoff
+- [x] CR-003 project-053-real-adapter-invocation-productization final delegated review loop round 3
+  - 2026-04-07：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-07：fresh reviewer Hume round 3 clean；当前 project-final review surface 未发现新的 actionable finding，`verify --adapters` 的剩余 `warn` 继续只来自 tool-managed workspace bootstrap truth。
+  - 2026-04-07：主 agent 追加复核全量 in-scope diff 后未发现新的 blocker，本轮以 `resolved` 收口并进入 project final closeout。
+- [x] TK-610 finalize project-053 closeout and activate project-054 primary stream

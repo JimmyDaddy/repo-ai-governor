@@ -1,6 +1,6 @@
 # sprint-001-vscode-support-boundary-and-packaging-narrative 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-06
 - Project: `project-054-vscode-secondary-surface-rollout`
 - Sprint Goal: 明确 VS Code extension 的正式支持边界、安装说明与 support matrix 口径。
@@ -20,3 +20,4 @@
 ## 3. Milestones
 
 1. 2026-04-06：作为 `DA-588` follow-up decomposition 产物创建，当前保持 `planned`。
+2. 2026-04-07：在 `project-053` final closeout 后被激活为当前 primary sprint，`TK-607` 已切换为 `in_progress`。

@@ -90,6 +90,7 @@ What to pay attention to:
 5. `tool_transport_matrix` now projects effective transport truth; CLI-backed adapters such as `codex`, `claude-code`, and `github-copilot` show `cli_exec` even when config omits an explicit `transport`.
 6. A `warn` or failed dry-run still counts as useful evidence when `report`, `replay`, and `diagnostics_trace` artifacts are emitted, because those artifacts preserve the failing stage and adapter attribution for follow-up routing fixes.
 7. In the current validated `codex` baseline, `run --dry-run --trace` can complete the baseline `prepare -> execute -> report` chain through real `cli_exec` routing without performing governed file edits or dependency mutations; it still persists audit artifacts under the active governor workspace, so treat that as the preferred success signal before enabling a non-dry-run run.
+8. `github-copilot` now follows the same CLI-backed truth model for tester-route verification, while `local-model` should still be read as a constrained fallback surface rather than a full substitute for required `tool_calling` or `structured_output` roles.
 
 Helpful artifact paths:
 
@@ -221,7 +222,7 @@ Then layer the language pack you need, plus any team or repository overrides, on
 
 ## 11. Remote-api Rehearsal
 
-Use this remote-api rehearsal only when you want to validate provider-backed behavior instead of fixture-backed local smoke:
+Use this remote-api rehearsal only when you want to validate provider-backed behavior instead of the default local CLI-backed or fallback rehearsal:
 
 ```bash
 export OPENAI_API_KEY="sk-..."
@@ -231,7 +232,7 @@ pnpm run release:verify-local
 
 Notes:
 
-1. `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` are only needed for remote-api rehearsal windows; normal local adoption can stay on fixture-backed and dist-binary flows.
+1. `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` are only needed for remote-api rehearsal windows; normal local adoption can stay on default CLI-backed, fallback-only local-model, or dist-binary flows.
 2. This rehearsal still assumes network access to the npm registry when your chosen install mode needs dependency resolution.
 
 ## 12. Next Steps

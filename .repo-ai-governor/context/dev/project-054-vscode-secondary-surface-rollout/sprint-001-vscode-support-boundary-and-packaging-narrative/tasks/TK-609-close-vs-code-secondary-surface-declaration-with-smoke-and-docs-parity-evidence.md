@@ -8,7 +8,7 @@
 - Sprint: `sprint-001-vscode-support-boundary-and-packaging-narrative`
 - Project: `project-054-vscode-secondary-surface-rollout`
 
-## 1. 目标
+## 1. 任务目标
 
 以 smoke 与 docs parity evidence 收口 VS Code secondary surface declaration。
 

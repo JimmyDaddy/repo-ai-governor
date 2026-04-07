@@ -8,7 +8,7 @@
 - Sprint: `sprint-001-vscode-support-boundary-and-packaging-narrative`
 - Project: `project-054-vscode-secondary-surface-rollout`
 
-## 1. 目标
+## 1. 任务目标
 
 对齐 support matrix、maintainer evidence 与 VS Code extension installer narrative。
 

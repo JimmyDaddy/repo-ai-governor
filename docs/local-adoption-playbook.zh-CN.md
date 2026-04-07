@@ -90,6 +90,7 @@ pnpm exec repo-ai-governor run --output json --dry-run --trace
 5. `tool_transport_matrix` 现在会投影 effective transport truth；像 `codex`、`claude-code`、`github-copilot` 这样的 CLI-backed adapter，即使配置里没显式写 `transport`，也会显示 `cli_exec`。
 6. 只要 `report`、`replay`、`diagnostics_trace` 都已落盘，`warn` 或失败的 dry-run 仍然是有价值的正式证据，因为它保留了失败 stage 与 adapter attribution，便于后续修正 routing。
 7. 在当前已验证的 `codex` 基线中，`run --dry-run --trace` 已可通过真实 `cli_exec` 路由完成基线 `prepare -> execute -> report` 链路，且不会执行受治理文件改动或依赖变更；但它仍会在活动 governor workspace 下持久化审计产物，因此在放开非 dry-run 之前，应优先把它视为成功信号。
+8. `github-copilot` 现在在 tester-route verify 上也遵循同样的 CLI-backed truth；而 `local-model` 仍应被理解为受能力约束的 fallback surface，而不是 `tool_calling` / `structured_output` 必需角色的完整替代品。
 
 常用产物路径：
 
@@ -221,7 +222,7 @@ pnpm exec repo-ai-governor run --output json
 
 ## 11. Remote-api rehearsal
 
-只有当你想验证真实 provider 调用，而不是 fixture/local smoke 时，才需要执行这条 remote-api rehearsal：
+只有当你想验证真实 provider 调用，而不是默认的本地 CLI-backed / fallback 演练时，才需要执行这条 remote-api rehearsal：
 
 ```bash
 export OPENAI_API_KEY="sk-..."
@@ -231,7 +232,7 @@ pnpm run release:verify-local
 
 说明：
 
-1. `OPENAI_API_KEY` 和 `ANTHROPIC_API_KEY` 只在 remote-api rehearsal 窗口需要；普通本地接入仍可停留在 fixture-backed 或 dist-binary 路径。
+1. `OPENAI_API_KEY` 和 `ANTHROPIC_API_KEY` 只在 remote-api rehearsal 窗口需要；普通本地接入仍可停留在默认 CLI-backed、fallback-only local-model 或 dist-binary 路径。
 2. 如果你选择的安装方式仍需解析依赖，这条演练同样要求环境能访问 npm registry。
 
 ## 12. 下一步

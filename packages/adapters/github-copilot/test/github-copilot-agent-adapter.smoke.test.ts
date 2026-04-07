@@ -10,7 +10,12 @@ import {
   AgentStreamEventType,
   type AgentStreamEventsRequest,
 } from '@repo-ai-governor/adapter-sdk';
-import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
+import {
+  AdapterRequestCancellationMode,
+  AdapterTransportKind,
+  GovernorErrorCode,
+  RuntimeError,
+} from '@repo-ai-governor/shared';
 import {
   GithubCopilotAgentAdapter,
   GithubCopilotAgentAdapterExecutionMode,
@@ -64,6 +69,11 @@ describe('github-copilot-agent-adapter smoke', () => {
       Object.values(AgentCapability).length,
     );
     expect(structuredOutput?.supportLevel).toBe(AgentCapabilitySupportLevel.DEGRADED);
+    expect(probeResult.capabilityMatrix.cancellation.supportsCancel).toBe(true);
+    expect(probeResult.healthCheck?.transportKind).toBe(AdapterTransportKind.BASELINE);
+    expect(probeResult.healthCheck?.requestCancellationMode).toBe(
+      AdapterRequestCancellationMode.LOCAL_ABORT_ONLY,
+    );
   });
 
   it('returns truthful capability matrix in cli_exec mode', async () => {
@@ -85,6 +95,10 @@ describe('github-copilot-agent-adapter smoke', () => {
     expect(confirmationGate?.supportLevel).toBe(AgentCapabilitySupportLevel.UNSUPPORTED);
     expect(cancellation?.supportLevel).toBe(AgentCapabilitySupportLevel.UNSUPPORTED);
     expect(probeResult.capabilityMatrix.cancellation.supportsCancel).toBe(false);
+    expect(probeResult.healthCheck?.transportKind).toBe(AdapterTransportKind.CLI_EXEC);
+    expect(probeResult.healthCheck?.requestCancellationMode).toBe(
+      AdapterRequestCancellationMode.NOT_SUPPORTED,
+    );
   });
 
   it('accepts trivial punctuation variants in probe health-check responses', async () => {

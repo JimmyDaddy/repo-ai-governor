@@ -1,8 +1,8 @@
 # Repo AI Governor 正式支持矩阵
 
 - 状态：active
-- 最后更新：2026-04-06
-- 适用范围：由 `project-026 / sprint-004`（`TK-301`）、`project-044 / sprint-003`（`TK-547`）、`project-046 / sprint-001`（`TK-551`、`TK-552`、`TK-554`）、`project-052 / sprint-001`（`TK-589`、`TK-590`、`TK-591`）、`project-052 / sprint-002`（`TK-592`、`TK-593`、`TK-594`）、`project-052 / sprint-003`（`TK-595`、`TK-596`）、`project-053 / sprint-001`（`TK-598`、`TK-599`、`TK-600`）与 `project-053 / sprint-002`（`TK-601`、`TK-602`、`TK-603`）共同刷新后的正式支持声明
+- 最后更新：2026-04-07
+- 适用范围：由 `project-026 / sprint-004`（`TK-301`）、`project-044 / sprint-003`（`TK-547`）、`project-046 / sprint-001`（`TK-551`、`TK-552`、`TK-554`）、`project-052 / sprint-001`（`TK-589`、`TK-590`、`TK-591`）、`project-052 / sprint-002`（`TK-592`、`TK-593`、`TK-594`）、`project-052 / sprint-003`（`TK-595`、`TK-596`）、`project-053 / sprint-001`（`TK-598`、`TK-599`、`TK-600`）、`project-053 / sprint-002`（`TK-601`、`TK-602`、`TK-603`）与 `project-053 / sprint-003`（`TK-604`、`TK-605`、`TK-606`）共同刷新后的正式支持声明
 
 ## 1. 安装模式
 
@@ -26,14 +26,15 @@
 | 适配器 surface | 支持状态 | 说明 |
 |---|---|---|
 | `codex` | Real-path available（environment-gated） | `cli_exec` 现已成为基线 `prepare -> execute -> report` dry-run 的已验证真实 transport；当本地 Codex CLI 可用时，`verify --adapters` 会把 `planner` / `architect` / `coder` / `reviewer` / `verifier` 的 primary route 如实投影为 `codex + cli_exec`。 |
-| `github-copilot` | Fixture-backed | 当 quota 或 probe 前置条件失败时，仍通过 fallback / degraded 路由保持正式支持。 |
+| `github-copilot` | Real-path available（environment-gated） | 被选中时默认真实 transport 为 `cli_exec`，`verify --adapters` 现在会把 `github-copilot` 的 tester route 如实投影为 `transport=cli_exec`；本地 probe 会优先检查 `copilot` CLI，再按需回退到 `gh copilot -- --version`，而 quota/auth/probe 失败仍只表现为降级或 reroute，而不是治理链路失效。 |
 | `claude-code` | Real-path available（environment-gated） | 被选中时默认真实 transport 为 `cli_exec`，`remote_api` 仍是可选路径；`verify --adapters` 现在会在未显式声明 `transport` 时投影 effective default transport truth，但当前 workspace 若本地 Claude health-check 失败仍会如实给出 warning。 |
-| `local-model`（`ollama`） | Fixture-backed（本地运行时受限） | 作为正式本地 fallback surface 支持；`tool_calling`、`structured_output`、`confirmation_gate` 继续保持保守/降级口径。 |
+| `local-model`（`ollama`） | Fallback-only real-path（本地运行时受限） | 当 endpoint/model 配置齐全时，`ollama` 已具备 endpoint-backed 的 probe/invoke 真值，可用于 restricted-network 或显式本地 fallback；但 `tool_calling`、`structured_output`、`confirmation_gate` 仍保持保守或不支持口径，不能把它包装成主远端 adapter 的等价替代。 |
 
 ### 2.1 Adapter Truth Labels
 
 1. `Real-path available` 表示该 adapter 在被选中时已经可以暴露非 fixture 的真实执行真值（`cli_exec` 或可选 `remote_api`），即使当前 workspace 仍可能因为环境前置条件出现 warning。
-2. `Fixture-backed` 表示产品 surface 已正式支持，但公开证据仍以 routing/fixture truth 为主，尚未提升为正式真实调用路径。
+2. `Fallback-only real-path` 表示该 adapter 已具备真实 probe/invoke 真值，但正式支持边界仍限制在 fallback、restricted-network 或 capability-constrained 流程，不是 promoted primary lane。
+3. `Fixture-backed` 表示产品 surface 已正式支持，但公开证据仍以 routing/fixture truth 为主，尚未提升为正式真实调用路径。
 
 ## 3. 已发布治理模板
 
@@ -59,10 +60,13 @@
 | CLI | Supported | 当前生产主入口。 |
 | Desktop sidecar entry | MVP foundation 正式支持 | `apps/desktop` 已提供正式 desktop shell package，并通过 service-owned session/execution/HITL/artifact-pane seam 暴露桌面 MVP foundation；更丰富的 desktop 面板仍按后续阶段演进。 |
 
-## 6. 验证快照（TK-301 + TK-547 + TK-551/TK-552/TK-554 + TK-589/TK-590/TK-591 + TK-592/TK-593/TK-594 + TK-598/TK-599/TK-600 + TK-601/TK-602/TK-603）
+## 6. 验证快照（TK-301 + TK-547 + TK-551/TK-552/TK-554 + TK-589/TK-590/TK-591 + TK-592/TK-593/TK-594 + TK-598/TK-599/TK-600 + TK-601/TK-602/TK-603 + TK-604/TK-605/TK-606）
 
 | 时间（UTC） | 命令 | 结果 | 证据摘要 |
 |---|---|---|---|
+| 2026-04-06T23:37:45Z | `node ./dist/bin/repo-ai-governor.js --output json --adapters --dry-run --trace run` | Pass | `.tmp/project-053-sprint-003-run-dry-run-trace-tk-605-606.json` 以及生成的 report/replay/diagnostics 产物保留了 `dry_run=true`、`policy_outcome=allow`，并在 project-final review 前留下完整可回放的 `prepare -> execute -> report` 成功链路。 |
+| 2026-04-06T23:37:26Z | `node ./dist/bin/repo-ai-governor.js --output json --adapters verify` | Warn（非阻断） | `.tmp/project-053-sprint-003-verify-adapters-tk-605-606.json` 与 `/Users/jimmydaddy/.repo-ai-governor/workspaces/2cf23e5951f0/.repo-ai-governor/context/diagnostics/verify/verify-1775518628055.json` 现已把 `role_tester` 投影为 `selected=github-copilot transport=cli_exec`；剩余 warning 仍只限于 tool-managed workspace 的 bootstrap 真值，而不是 required-role failure。 |
+| 2026-04-06T23:36:54Z | `pnpm vitest run packages/adapters/github-copilot/test/github-copilot-agent-adapter.smoke.test.ts packages/adapters/local-model/test/local-model-agent-adapter.smoke.test.ts apps/cli/test/runtime/adapter-verification-runtime.test.ts test/first-batch-adapters-route.integration.test.ts --maxWorkers=1 --maxConcurrency=1` | Pass | sprint-003 的定向验证切片一次性覆盖了 `github-copilot`、`local-model`、adapter-verification runtime projection 与 first-batch routing acceptance（`4` 个文件、`42` 个测试全部通过）。 |
 | 2026-04-06T17:45:29Z | `node ./dist/bin/repo-ai-governor.js --output json --adapters --dry-run --trace run` | Pass | `.tmp/project-053-sprint-002-run-dry-run-trace.json` 以及生成的 report/replay/diagnostics 产物现已保留 `dry_run=true`、`policy_outcome=allow`，并在默认 `codex` primary route 下完成了完整的基线 `prepare -> execute -> report` 成功链路。 |
 | 2026-04-06T17:44:58Z | `node ./dist/bin/repo-ai-governor.js --output json --adapters verify` | Warn（非阻断） | `.tmp/project-053-sprint-002-verify-adapters.json` 与 verify diagnostics artifact 已把 `planner` / `architect` / `coder` / `reviewer` / `verifier` 投影为 `codex + cli_exec`；剩余 warning 仅限于 tool-managed workspace 的 durable-storage、artifact-registry 与 task-ledger 初始化真值。 |
 | 2026-04-06T16:26:31Z | `node ./dist/bin/repo-ai-governor.js --output json --adapters --dry-run --trace run` | Warn | `.tmp/project-053-sprint-001-run-dry-run-trace.json` 以及生成的 report/replay/diagnostics 产物完整保留了 `dry_run=true`、`policy_outcome=allow` 和 `stage-task-prepare` 的 stage-level failure attribution；当前默认 route 仍失败在 `codex`，但证据链已可回放。 |
@@ -108,6 +112,7 @@
 | clean-room install baseline | adopter + maintainer | `path` / `link` 安装模式 | Pass | 2026-04-06T12:09:11Z | `.tmp/project-052-sprint-001-cleanroom-report.json` | `path` 与 `link` 都通过了 clean-room 链路，并覆盖 workspace-switch rollback 相关预检。 | `docs/maintainer-validation-playbook.zh-CN.md`、`.tmp/project-052-sprint-001-cleanroom-report.json` | install-mode contract 或 packaged runtime 变化 | 更宽的 `tgz` / registry-backed packaged install 仍依赖单独的 packaged distribution rehearsal。 |
 | packaged distribution rehearsal | maintainer | local distribution / packaged surface | Pass | 2026-04-06T12:08:49Z | `.tmp/project-052-sprint-001-local-distribution-report.json` | 本地分发验证通过，且 adapter `doctor/verify` 继续以非阻断 warn 处理，而不是被误判成支持失败。 | `docs/maintainer-validation-playbook.zh-CN.md`、`.tmp/project-052-sprint-001-local-distribution-report.json` | packaging layout、release asset 或 dist runtime 变化 | adapter warn 语义仍与环境前置条件有关。 |
 | repo-external upgrade/workspace closeout | adopter + maintainer | `upgrade` 与 `workspace` 用户路径 | Pass | 2026-04-06T21:29:47Z | `.tmp/project-052-sprint-002-command-rehearsal-summary.json` | 外部 rehearsal 已通过 `preview -> apply -> rollback` 与 `dry-run -> execute -> rollback`，并验证 rollback 与 scratch cleanup 都成立。 | `docs/local-adoption-playbook.zh-CN.md`、`.tmp/project-052-sprint-002-command-rehearsal-summary.json` | command contract、rollback artifact 语义或 troubleshooting 流程变化 | 最终 project completion promotion 现在只取决于 project-final review clean 与最终 closeout write-back。 |
+| real adapter invocation rollout | adopter + maintainer | 多 adapter 支持真值（`claude-code`、`codex`、`github-copilot`、`local-model`） | Pass | 2026-04-06T23:37:45Z | `.tmp/project-053-sprint-003-verify-adapters-tk-605-606.json`、`.tmp/project-053-sprint-003-run-dry-run-trace-tk-605-606.json` | support matrix 现在已明确区分 `claude-code` / `codex` / `github-copilot` 的 real-path available 与 `local-model` 的 fallback-only real-path，且新的 dry-run trace 也保留了默认 CLI-backed 基线的 replay/report/diagnostics 证据链。 | `docs/local-adoption-playbook.zh-CN.md`、`.tmp/project-053-sprint-003-run-dry-run-trace-tk-605-606.json` | adapter routing contract、support-label 语义或 verify projection 变化 | `verify --adapters` 仍会报告与 required-role failure 无关的 tool-managed workspace bootstrap 非阻断 warning。 |
 | maintainer release runbook | maintainer | 本地 release-gate rehearsal | Pass | 2026-04-04T12:12:23Z | `pnpm run release:verify-local` | maintainer gate 继续在一条 runbook 步骤里验证 CLI help smoke、desktop entry smoke、examples runtime smoke、dist-binary remote-api smoke 与 packed-surface truthfulness。 | `docs/maintainer-validation-playbook.zh-CN.md` | release gate 组成或 packaged surface 变化 | 这一行是 runbook-backed rehearsal，不是新的公开 support contract。 |
 | program-level GA signals | maintainer + project-closeout | 跨阶段 GA readiness | Pass | 2026-04-05 | `docs/ga-readiness-evidence.zh-CN.md` | 更广义的 GA signal matrix 仍然全绿，并改为回链本 section，而不是再充当一份平行的公开 support claim。 | `docs/ga-readiness-evidence.zh-CN.md` | GA signal threshold 或上游 evidence refresh 变化 | completion recommendation 已准备完成；最终 project completion promotion 仍取决于 project-final review clean 与最终 closeout write-back。 |
 
@@ -118,4 +123,4 @@
 1. adapter 的 degrade / warning 仍属于环境前置条件（如 `github-copilot` quota/probe、`claude-code` CLI health-check / auth 前置条件、`local-model` endpoint/model capability 限制），而不是治理链路失败。
 2. `project-046` 已把 desktop artifact pane 从 deferred gate 推进为 service-owned typed query contract；renderer 仍不允许直接旁路 workspace 文件系统。
 3. 官方 `GitLab CI` 与 `Jenkins` 模板现已发布到 `integrations/ci/`，并复用与 GitHub Actions 相同的 install、quality-gate 与 release-governance 命令契约。
-4. 本文档定义 `TK-301`、desktop baseline refresh `TK-547`、`project-046` P1 收口工作、`project-052 / sprint-001` install-mode truth refresh、`project-052 / sprint-002` upgrade/workspace contract 与 acceptance closeout、`project-052 / sprint-003` 的 GA support truthfulness consolidation，以及 `project-053 / sprint-001` 的 `claude-code` real-path baseline truth refresh 和 `project-053 / sprint-002` 的 `codex` real-path plus routed dry-run acceptance refresh 这些正式支持边界；更广义的 GA Readiness 与其余 adapter rollout 仍在后续 `project-053` sprint 中继续收口。
+4. 本文档定义 `TK-301`、desktop baseline refresh `TK-547`、`project-046` P1 收口工作、`project-052 / sprint-001` install-mode truth refresh、`project-052 / sprint-002` upgrade/workspace contract 与 acceptance closeout、`project-052 / sprint-003` 的 GA support truthfulness consolidation、`project-053 / sprint-001` 的 `claude-code` real-path baseline truth refresh、`project-053 / sprint-002` 的 `codex` real-path plus routed dry-run acceptance refresh，以及 `project-053 / sprint-003` 的 `github-copilot` real-path 与 `local-model` fallback-only positioning closeout 这些正式支持边界；更广义的 GA Readiness 收口现在转入后续项目而不是后续 `project-053` sprint。

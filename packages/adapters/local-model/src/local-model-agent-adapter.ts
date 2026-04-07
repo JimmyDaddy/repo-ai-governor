@@ -18,6 +18,8 @@ import {
   createLayeredHealthCheckFromLegacyReasons,
 } from '@repo-ai-governor/adapter-sdk';
 import {
+  AdapterEndpointSource,
+  AdapterRequestCancellationMode,
   AdapterTransportKind,
   GovernorErrorCode,
   LocalModelProvider,
@@ -230,6 +232,12 @@ export class LocalModelAgentAdapter extends AgentProtocol {
         unavailableReasons,
         unsupportedCapabilities: unsupportedCapabilities.map(String),
         degradedCapabilities: degradedCapabilities.map(String),
+        transportKind: AdapterTransportKind.BASELINE,
+        model: this.options.localModel?.model ?? null,
+        endpointSource: this.options.localModel ? AdapterEndpointSource.CONFIG_EXPLICIT : null,
+        requestCancellationMode: this.options.localModel
+          ? AdapterRequestCancellationMode.LOCAL_ABORT_ONLY
+          : AdapterRequestCancellationMode.NOT_SUPPORTED,
       }),
     };
   }
