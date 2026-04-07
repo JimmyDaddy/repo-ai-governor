@@ -1,6 +1,6 @@
 # TK-627 实现 provenance-aware finding contract 与 durable projection baseline
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-04-06
 - Owner: `AI-Agent`
 - Priority: `P1`
@@ -54,6 +54,7 @@
 ## 9. 执行记录
 
 1. 2026-04-06：任务创建，状态初始化为 `planned`。
+2. 2026-04-07：`sprint-001` closeout 完成后被激活为 `in_progress`，作为 `project-057 / sprint-002` 的首个执行边界。
 
 ## 10. 产出
 

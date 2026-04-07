@@ -1,6 +1,6 @@
 # TK-623 收口 Phase A integration seam inventory 与 acceptance baseline
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-06
 - Owner: `AI-Agent`
 - Priority: `P1`
@@ -44,18 +44,26 @@
 
 1. 检查 integration seam inventory 是否覆盖 review generation、review-verify、delegated handoff、reporting 四条主链。
 2. 检查 phase sequencing 是否与 ADR 和 follow-up draft 保持一致。
+3. `pnpm run build`
+4. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
 
 ## 8. Delivery Verification
 
-1. `node ./scripts/governance/check-task-ledger-sync.js`
-2. `node ./scripts/governance/check-sprint-plan-status-sync.js`
+1. `pnpm run build`
+2. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
+3. `pnpm run check`
+4. `node ./scripts/governance/check-task-ledger-sync.js`
+5. `node ./scripts/governance/check-sprint-plan-status-sync.js`
 
 ## 9. 执行记录
 
 1. 2026-04-06：任务创建，状态初始化为 `planned`。
 2. 2026-04-06：在 project-057 多 sprint 拆解中被明确为 Phase A acceptance baseline 收口任务。
+3. 2026-04-07：已梳理 `packages/standards`、`apps/cli/src/runtime/review`、`runtime.agent-projection`、`runtime.durable-storage` 与 `runtime.cli-interactive-shell` 在 Sprint 002-004 的承接边界，并输出 Phase A integration seam inventory。
+4. 2026-04-07：已明确 Sprint 002-004 的 sequencing、acceptance signals 与 rollout guardrails，避免后续再次回到“先写代码再补 contract”的推进方式。
+5. 2026-04-07：已完成 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run check`，当前任务已满足进入 sprint-scoped CR loop 的前置验证。
 
 ## 10. 产出
 
-1. 待执行：Phase A integration seam inventory
-2. 待执行：Sprint 002-004 acceptance baseline
+1. `.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-001-review-rule-registry-and-provenance-baseline/tasks/task-output-tk-623-phase-a-integration-seam-inventory.md`
+2. `project-057 sprint-001` 对 Sprint 002-004 的 sequencing / acceptance baseline 收口说明

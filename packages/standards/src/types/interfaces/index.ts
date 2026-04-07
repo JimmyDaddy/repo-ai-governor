@@ -1,4 +1,13 @@
 export type {
+  ProjectedReviewRuleBundle,
+  ReviewRuleBundleProjectionOptions,
+  ReviewRuleDefinition,
+  ReviewRuleListOptions,
+  ReviewRuleProjectionResult,
+  ReviewRuleRegistryOptions,
+  ReviewRuleRegistryReader,
+} from './review-rule.interface.js';
+export type {
   AgentsProjectionNowProviderContract,
   AgentsProjectionSourcePackRef,
   AgentsProjectorOptions,

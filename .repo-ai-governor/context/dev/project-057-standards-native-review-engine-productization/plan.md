@@ -20,13 +20,13 @@
 
 ## 2.1 sprint-001-review-rule-registry-and-provenance-baseline
 
-- Status: active
+- Status: completed
 - Sprint Goal: 冻结 review rule registry、有限值枚举管理、first-phase projected rule subset 与 Phase A 集成验收边界。
-- Task Package: `TK-621`、`TK-622`、`TK-623`。
+- Task Package: `TK-621`、`TK-622`、`TK-623`、`TK-624`。
 
 ## 2.2 sprint-002-provenance-aware-findings-and-hybrid-review-baseline
 
-- Status: planned
+- Status: active
 - Sprint Goal: 把 provenance-aware governed findings、artifact rendering 分层与 hybrid review generation baseline 落到正式实现路径。
 - Task Package: `TK-627`、`TK-628`、`TK-629`。
 
@@ -46,10 +46,11 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 |---|---|---|---|---|---|
-| TK-621 | sprint-001 | 冻结 standards-native review rule registry 与 finite-set finding taxonomy contract | contract/registry | technical solution promotion accepted | planned |
-| TK-622 | sprint-001 | 冻结 first-phase projected rule subset 与 standards source mapping | contract/projection | TK-621 | planned |
-| TK-623 | sprint-001 | 收口 Phase A integration seam inventory 与 acceptance baseline | planning/acceptance | TK-621、TK-622 | planned |
-| TK-627 | sprint-002 | 实现 provenance-aware finding contract 与 durable projection baseline | runtime/model | TK-621、TK-622 | planned |
+| TK-621 | sprint-001 | 冻结 standards-native review rule registry 与 finite-set finding taxonomy contract | contract/registry | technical solution promotion accepted | completed |
+| TK-622 | sprint-001 | 冻结 first-phase projected rule subset 与 standards source mapping | contract/projection | TK-621 | completed |
+| TK-623 | sprint-001 | 收口 Phase A integration seam inventory 与 acceptance baseline | planning/acceptance | TK-621、TK-622 | completed |
+| TK-624 | sprint-001 | sprint-001 exit acceptance and sprint-002 activation handoff | closeout/handoff | TK-621、TK-622、TK-623、CR-001 | completed |
+| TK-627 | sprint-002 | 实现 provenance-aware finding contract 与 durable projection baseline | runtime/model | TK-621、TK-622 | in_progress |
 | TK-628 | sprint-002 | 更新 deterministic finding rule projection 与 review artifact rendering sections | runtime/rendering | TK-627 | planned |
 | TK-629 | sprint-002 | 接入 hybrid deterministic-plus-delegated review generation 与 dedupe merge baseline | runtime/orchestration | TK-627、TK-628 | planned |
 | TK-630 | sprint-003 | 定义 standards-guided reviewer handoff contract 与 adapter-neutral projection seam | contract/agent-projection | TK-621、TK-629 | planned |
@@ -79,3 +80,4 @@
 2. 2026-04-06：已创建 `project-057` planned stream，承接 review-rule registry、provenance-aware finding 与 reviewer handoff follow-up。
 3. 2026-04-06：本次拆解将 `project-057` 从单 sprint 粗骨架扩展为 Phase A-D 对齐的 4 个顺序 sprint 与 12 个可执行任务。
 4. 2026-04-07：`project-055` final closeout 完成后，`project-057 / sprint-001` 被激活为当前 primary stream，`TK-621` 已切换为 `in_progress`。
+5. 2026-04-07：`sprint-001` 已在 `CR-001` clean `resolved` 后完成 closeout，并将 primary stream 推进到 `sprint-002 / TK-627`。
