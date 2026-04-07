@@ -1,9 +1,23 @@
 # checklist
 
-- [ ] TK-633 增加 review rule coverage metrics 与 provenance-aware reporting surface
+- [x] TK-633 增加 review rule coverage metrics 与 provenance-aware reporting surface
   - 2026-04-06：任务创建，状态初始化为 `planned`。
   - 2026-04-07：`TK-648` 完成 sprint-003 closeout 后被激活为 `in_progress`，作为 `project-057 / sprint-004` 的首个执行边界。
-- [ ] TK-634 定义 deterministic coverage incomplete 的 delegated review activation policy
+  - 2026-04-07：已在 `CliHybridReviewContext` 中新增 coverage summary，把 deterministic / standards-guided / residual / manual-only 口径写回 canonical review markdown、queued review payload 与 command result details。
+  - 2026-04-07：已通过 `pnpm exec vitest run --config vitest.packages.config.ts apps/cli/test/runtime/cli-hybrid-review-runtime.test.ts apps/cli/test/commands/review-command.test.ts apps/cli/test/commands/review-verify-command.test.ts` 与 `pnpm run build`。
+- [x] TK-634 定义 deterministic coverage incomplete 的 delegated review activation policy
   - 2026-04-06：任务创建，状态初始化为 `planned`。
-- [ ] TK-635 完成 project-057 rollout handoff、adoption evidence 与 closeout baseline
+  - 2026-04-07：已将 delegated review activation policy 固定为 `optional / recommended / required` 三档，并基于 delegatable coverage gap、`requiredAction` 与 manual-only gap 生成结构化 reason codes。
+  - 2026-04-07：activation policy 现已进入 `CliHybridReviewContext` 与 delegated reviewer handoff contract，并通过 sprint-004 定向 vitest 与 `pnpm run build`。
+- [x] TK-635 完成 project-057 rollout handoff、adoption evidence 与 closeout baseline
   - 2026-04-06：任务创建，状态初始化为 `planned`。
+  - 2026-04-07：已汇总 sprint-001 ~ sprint-004 的 rollout inputs，形成 coverage reporting、activation policy 与 project-final closeout 输入的 adoption evidence baseline。
+  - 2026-04-07：已产出 `DA-635` 并把 delivery registry rollout artifacts 指向当前 sprint-004 handoff 证据。
+- [x] CR-001 sprint-004-coverage-reporting-and-rollout-adoption delegated review loop round 1
+  - 2026-04-07：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-07：fresh reviewer round 1 返回 2 条 `P2` actionable findings，主 agent 已复核并全部判定为 `accepted`，当前进入修复与回归验证阶段。
+  - 2026-04-07：已完成 manual-only gap bucket / command messaging 修复，并通过 `pnpm run build`、targeted vitest、`pnpm run test:packages`、`pnpm run test:integration` 与 `pnpm run check`，当前 round clean `resolved`。
+- [x] TK-649 sprint-004 exit acceptance and project-final review activation handoff
+  - 2026-04-07：在 `TK-633`、`TK-634`、`TK-635` 与 `CR-001` 全部进入终态后创建本任务。
+  - 2026-04-07：已完成 `DA-649`、project/sprint/context 写回，并将 sprint-004 恢复为 completed truth；当前 surface 保留给后续 project-final CR loop。
+  - 2026-04-07: Completed sprint-004 closeout via TK-649/DA-649 and retained the sprint surface as the active project-final CR surface.

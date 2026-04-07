@@ -1,6 +1,6 @@
 # TK-634 定义 deterministic coverage incomplete 的 delegated review activation policy
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-06
 - Owner: `AI-Agent`
 - Priority: `P1`
@@ -52,8 +52,14 @@
 ## 9. 执行记录
 
 1. 2026-04-06：任务创建，状态初始化为 `planned`。
+2. 2026-04-07：已将 delegated review activation policy 固定为 `optional / recommended / required` 三档，并基于 delegatable coverage gap、`requiredAction` 与 manual-only gap 生成结构化 reason codes。
+3. 2026-04-07：activation policy 现已进入 `CliHybridReviewContext` 与 delegated reviewer handoff contract，并通过 sprint-004 定向 vitest 与 `pnpm run build`。
 
 ## 10. 产出
 
-1. 待执行：delegated review activation policy
-2. 待执行：coverage incomplete 决策说明
+1. `apps/cli/src/constants/cli-review.constant.ts`
+2. `apps/cli/src/types/interfaces/cli-review-command.interface.ts`
+3. `apps/cli/src/runtime/review/cli-hybrid-review-runtime.ts`
+4. `apps/cli/src/commands/review-command.ts`
+5. `apps/cli/test/runtime/cli-hybrid-review-runtime.test.ts`
+6. `apps/cli/test/commands/review-command.test.ts`

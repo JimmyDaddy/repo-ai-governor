@@ -1,5 +1,13 @@
-import { ReviewFindingSourceType, ReviewRuleExecutionMode } from '@repo-ai-governor/standards';
 import {
+  ReviewFindingSourceType,
+  ReviewRuleApplicability,
+  ReviewRuleExecutionMode,
+  ReviewRuleSeverity,
+  phaseAProjectedReviewRuleBundle,
+} from '@repo-ai-governor/standards';
+import {
+  CliDelegatedReviewActivationLevel,
+  CliReviewCoverageState,
   CliReviewFindingSeverity,
   CliReviewScopeMode,
 } from '../../src/constants/cli-review.constant.js';
@@ -45,6 +53,15 @@ describe('CliHybridReviewRuntime', () => {
     ]);
     expect(hybridReviewContext.delegatedReviewRequest.requiredNormativeInputs).toEqual(
       expect.arrayContaining(['AGENTS.md']),
+    );
+    expect(hybridReviewContext.coverageSummary.deterministicCoveredRuleIds).toEqual(
+      expect.arrayContaining(['review-rule.cs-003-unresolved-markers']),
+    );
+    expect(hybridReviewContext.coverageSummary.residualGapRuleIds).toEqual(
+      expect.arrayContaining(['review-rule.cs-034-build-evidence']),
+    );
+    expect(hybridReviewContext.delegatedReviewActivationPolicy.level).toBe(
+      CliDelegatedReviewActivationLevel.REQUIRED,
     );
   });
 
@@ -134,5 +151,72 @@ describe('CliHybridReviewRuntime', () => {
         reviewerRationale: 'The delegated reviewer observed direct user-facing copy.',
       }),
     );
+  });
+
+  it('keeps manual-only gaps separate from residual gap buckets', () => {
+    const runtime = new CliHybridReviewRuntime(process.cwd(), {
+      ...phaseAProjectedReviewRuleBundle,
+      rules: [
+        ...phaseAProjectedReviewRuleBundle.rules,
+        {
+          ruleId: 'review-rule.fixture-manual-follow-up',
+          semanticKey: 'fixture.manual-follow-up',
+          title: 'Fixture manual-only follow-up rule',
+          description: 'fixture description',
+          severity: ReviewRuleSeverity.P2,
+          executionMode: ReviewRuleExecutionMode.MANUAL_ONLY,
+          applicability: [ReviewRuleApplicability.CODE_AFFECTING_CHANGE],
+          standardsSourceRefs: ['fixture.manual-only'],
+          projectedPackRefs: ['bundle.review.phase-a'],
+          enabled: true,
+        },
+      ],
+    });
+    const hybridReviewContext = runtime.buildHybridReviewContext({
+      requestId: 'review-003',
+      scope: {
+        reviewMode: CliReviewScopeMode.WORKING_TREE,
+        scopeSummary: 'working tree fixture scope',
+        reviewedPaths: ['apps/cli/src/commands/review-command.ts'],
+        excludedPaths: [],
+        riskLevel: 'medium',
+        requiredAction: 'allow',
+      },
+      changedPaths: ['apps/cli/src/commands/review-command.ts'],
+      findings: [
+        {
+          findingId: 'deterministic-fixture',
+          fingerprint:
+            'review-rule.cs-003-unresolved-markers:apps/cli/src/commands/review-command.ts:1',
+          ruleId: 'review-rule.cs-003-unresolved-markers',
+          severity: CliReviewFindingSeverity.P2,
+          sourceType: ReviewFindingSourceType.DETERMINISTIC_RULE,
+          executionMode: ReviewRuleExecutionMode.DETERMINISTIC,
+          title: 'fixture finding',
+          file: 'apps/cli/src/commands/review-command.ts',
+          line: 1,
+          summary: 'fixture summary',
+          impact: 'fixture impact',
+          suggestedAction: 'fixture action',
+          evidence: ['apps/cli/src/commands/review-command.ts:1'],
+        },
+      ],
+    });
+
+    expect(hybridReviewContext.coverageSummary.residualGapRuleIds).toEqual(
+      expect.arrayContaining(['review-rule.cs-034-build-evidence']),
+    );
+    expect(hybridReviewContext.coverageSummary.residualGapRuleIds).not.toContain(
+      'review-rule.fixture-manual-follow-up',
+    );
+    expect(hybridReviewContext.coverageSummary.manualOnlyGapRuleIds).toEqual([
+      'review-rule.fixture-manual-follow-up',
+    ]);
+    expect(
+      hybridReviewContext.coverageSummary.coverageBuckets.find(
+        (bucket) => bucket.state === CliReviewCoverageState.MANUAL_ONLY_GAP,
+      )?.ruleIds,
+    ).toEqual(['review-rule.fixture-manual-follow-up']);
+    expect(hybridReviewContext.delegatedReviewActivationPolicy.manualFollowUpRequired).toBe(true);
   });
 });

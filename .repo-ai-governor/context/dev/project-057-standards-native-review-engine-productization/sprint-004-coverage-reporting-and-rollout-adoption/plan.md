@@ -1,6 +1,6 @@
 # sprint-004-coverage-reporting-and-rollout-adoption 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-06
 - Project: `project-057-standards-native-review-engine-productization`
 - Sprint Goal: 建立 review coverage metrics、delegated review activation policy 与 project-057 closeout/handoff 基线。
@@ -10,6 +10,7 @@
 1. `TK-633` 增加 review rule coverage metrics 与 provenance-aware reporting surface
 2. `TK-634` 定义 deterministic coverage incomplete 的 delegated review activation policy
 3. `TK-635` 完成 project-057 rollout handoff、adoption evidence 与 closeout baseline
+4. `TK-649` sprint-004 exit acceptance and project-final review activation handoff
 
 ## 2. Exit Criteria
 
@@ -21,3 +22,5 @@
 
 1. 2026-04-06：作为 project-057 Phase D sprint 被创建，当前保持 `planned`。
 2. 2026-04-07：`TK-648 / DA-648` 完成 sprint-003 closeout 后被激活为当前 primary sprint，`TK-633` 已切换为 `in_progress`。
+3. 2026-04-07：`TK-633`、`TK-634`、`TK-635` 的实现边界、rollout evidence 与本地验证已完成，下一步进入 sprint scoped CR loop。
+4. 2026-04-07：`CR-001` clean `resolved` 后，`TK-649 / DA-649` 已完成 sprint-004 closeout，并将当前 surface 保留给 `project-057` 的 project-final CR loop。

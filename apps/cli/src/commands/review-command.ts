@@ -23,6 +23,7 @@ import {
   CliGovernanceCheckStatus,
 } from '../constants/cli-governance-runtime.constant.js';
 import {
+  CliDelegatedReviewActivationLevel,
   CliReviewArtifactId,
   CliReviewLifecycleStatus,
   CliReviewScopeMode,
@@ -141,7 +142,7 @@ export class CliReviewCommand implements CliCommandExecutor {
       riskFindings: hybridReviewContext.riskFindings,
     });
     const hasOpenReviewLifecycle = findings.length > 0;
-    const hasCoverageGap = hybridReviewContext.uncoveredRuleIds.length > 0;
+    const hasCoverageGap = this.hasCoverageGap(hybridReviewContext);
     const reviewSlug = reviewRuntime.createReviewSlug({
       taskId,
       createdAt: generatedAt,
@@ -408,12 +409,16 @@ export class CliReviewCommand implements CliCommandExecutor {
           `review_status=${reviewStatus}`,
           `finding_count=${findings.length}`,
           `uncovered_rule_count=${hybridReviewContext.uncoveredRuleIds.length}`,
+          `coverage_residual_gap_count=${hybridReviewContext.coverageSummary.residualGapRuleCount}`,
+          `delegated_activation_policy=${hybridReviewContext.delegatedReviewActivationPolicy.level}`,
         ],
         detailed: [
           `request_path=${requestPath}`,
           `review_artifact_path=${reviewArtifactPath}`,
           `scope_mode=${reviewMode}`,
           `projected_rule_bundle=${hybridReviewContext.projectedRuleBundle.bundleId}@${hybridReviewContext.projectedRuleBundle.bundleVersion}`,
+          `coverage_total_rule_count=${hybridReviewContext.coverageSummary.totalApplicableRuleCount}`,
+          `manual_only_gap_count=${hybridReviewContext.coverageSummary.manualOnlyGapRuleCount}`,
           ...(taskId ? [`task_id=${taskId}`] : []),
         ],
       },
@@ -459,6 +464,16 @@ export class CliReviewCommand implements CliCommandExecutor {
           projected_rule_bundle_id: hybridReviewContext.projectedRuleBundle.bundleId,
           projected_rule_bundle_version: hybridReviewContext.projectedRuleBundle.bundleVersion,
           uncovered_rule_count: hybridReviewContext.uncoveredRuleIds.length,
+          coverage_total_rule_count: hybridReviewContext.coverageSummary.totalApplicableRuleCount,
+          coverage_deterministic_rule_count:
+            hybridReviewContext.coverageSummary.deterministicCoveredRuleCount,
+          coverage_standards_guided_rule_count:
+            hybridReviewContext.coverageSummary.standardsGuidedCoveredRuleCount,
+          coverage_residual_gap_rule_count:
+            hybridReviewContext.coverageSummary.residualGapRuleCount,
+          coverage_manual_only_gap_rule_count:
+            hybridReviewContext.coverageSummary.manualOnlyGapRuleCount,
+          delegated_activation_policy: hybridReviewContext.delegatedReviewActivationPolicy.level,
           reviewed_path_count: changedPaths.length,
           orchestration_execution_id: orchestrationExecution.executionId,
           orchestration_event_stream_token: orchestrationExecution.eventStreamToken,
@@ -499,10 +514,10 @@ export class CliReviewCommand implements CliCommandExecutor {
       {
         id: 'review_findings',
         status:
-          findings.length > 0 || hybridReviewContext.uncoveredRuleIds.length > 0
+          findings.length > 0 || this.hasCoverageGap(hybridReviewContext)
             ? CliGovernanceCheckStatus.WARN
             : CliGovernanceCheckStatus.PASS,
-        detail: `count=${findings.length} deterministic=${hybridReviewContext.deterministicFindings.length} standards_guided=${hybridReviewContext.standardsGuidedFindings.length} risk=${hybridReviewContext.riskFindings.length}`,
+        detail: `count=${findings.length} deterministic=${hybridReviewContext.deterministicFindings.length} standards_guided=${hybridReviewContext.standardsGuidedFindings.length} risk=${hybridReviewContext.riskFindings.length} residual_gap=${hybridReviewContext.coverageSummary.residualGapRuleCount} delegated_policy=${hybridReviewContext.delegatedReviewActivationPolicy.level}`,
       },
     ];
   }
@@ -580,7 +595,8 @@ export class CliReviewCommand implements CliCommandExecutor {
     hybridReviewContext: CliHybridReviewContext,
   ): string[] {
     const applicableRuleIds = hybridReviewContext.projectedRules.map((rule) => rule.ruleId);
-    const uncoveredRuleIds = hybridReviewContext.uncoveredRuleIds;
+    const coverageGapRuleIds = this.collectCoverageGapRuleIds(hybridReviewContext);
+    const hasCoverageGap = coverageGapRuleIds.length > 0;
 
     return [
       context.localizeText(
@@ -596,17 +612,19 @@ export class CliReviewCommand implements CliCommandExecutor {
           : '当前 scope 没有命中的 projected review rules。',
       ),
       context.localizeText(
-        uncoveredRuleIds.length > 0
-          ? `Uncovered rule ids reserved for future delegated review: ${uncoveredRuleIds.join(', ')}.`
+        hasCoverageGap
+          ? `Coverage gap rule ids reserved for future delegated and/or manual follow-up: ${coverageGapRuleIds.join(', ')}.`
           : 'No projected rule coverage gaps remain for the current scope.',
-        uncoveredRuleIds.length > 0
-          ? `已为后续 delegated review 预留 uncovered rule ids：${uncoveredRuleIds.join('、')}。`
+        hasCoverageGap
+          ? `已为后续 delegated 和/或人工补充复核保留 coverage gap rule ids：${coverageGapRuleIds.join('、')}。`
           : '当前 scope 没有剩余的 projected rule coverage gap。',
       ),
       context.localizeText(
         `Hybrid dedupe strategy: ${hybridReviewContext.dedupeStrategy}.`,
         `hybrid 去重策略：${hybridReviewContext.dedupeStrategy}。`,
       ),
+      this.buildDelegatedActivationNote(context, hybridReviewContext),
+      ...this.buildManualGapNotes(context, hybridReviewContext),
       context.localizeText(
         'Queued review request artifacts remain transport-only; the lifecycle markdown artifact is the canonical review truth.',
         'queued review request 产物只保留为 transport-only；canonical review truth 固定落在 lifecycle markdown artifact。',
@@ -616,10 +634,10 @@ export class CliReviewCommand implements CliCommandExecutor {
             'No git working-tree paths were detected for the current scope, so this review resolved without actionable findings.',
             '当前 scope 没有检测到 git working-tree 路径，因此这次 review 以“无可执行 finding”收口。',
           )
-        : reviewStatus === CliReviewLifecycleStatus.RESOLVED && uncoveredRuleIds.length > 0
+        : reviewStatus === CliReviewLifecycleStatus.RESOLVED && hasCoverageGap
           ? context.localizeText(
-              'This lifecycle artifact resolved without emitted findings; uncovered projected rules were recorded for future delegated or manual follow-up outside review-verify.',
-              '这份 lifecycle artifact 已在“无 emitted finding”状态下 resolved；uncovered projected rules 已记录为后续 delegated 或人工补充复核输入，不再通过 review-verify 持续保持 pending。',
+              'This lifecycle artifact resolved without emitted findings; remaining projected rule coverage gaps were recorded for future delegated or manual follow-up outside review-verify.',
+              '这份 lifecycle artifact 已在“无 emitted finding”状态下 resolved；剩余 projected rule coverage gaps 已记录为后续 delegated 或人工补充复核输入，不再通过 review-verify 持续保持 pending。',
             )
           : reviewStatus === CliReviewLifecycleStatus.REVIEW_PENDING
             ? context.localizeText(
@@ -670,10 +688,11 @@ export class CliReviewCommand implements CliCommandExecutor {
       '## 4. Residual Risk Observations',
       '## 4. 剩余风险观察',
     );
-    const notesHeading = context.localizeText('## 5. Notes', '## 5. 说明');
+    const coverageHeading = context.localizeText('## 5. Coverage Summary', '## 5. 覆盖率摘要');
+    const notesHeading = context.localizeText('## 6. Notes', '## 6. 说明');
     const handoffHeading = context.localizeText(
-      '## 6. Delegated Reviewer Handoff',
-      '## 6. 委托 reviewer 交接契约',
+      '## 7. Delegated Reviewer Handoff',
+      '## 7. 委托 reviewer 交接契约',
     );
     const deterministicFindings = options.findings.filter(
       (finding) => finding.sourceType === ReviewFindingSourceType.DETERMINISTIC_RULE,
@@ -742,6 +761,10 @@ export class CliReviewCommand implements CliCommandExecutor {
       riskHeading,
       '',
       this.renderFindingSection(context, riskFindings, 4),
+      '',
+      coverageHeading,
+      '',
+      ...this.renderCoverageSummary(context, options.hybridReviewContext),
       '',
       notesHeading,
       '',
@@ -827,11 +850,17 @@ export class CliReviewCommand implements CliCommandExecutor {
       `2. ${context.localizeText('Review surface count', 'review surface 数量')}: ${delegatedReviewRequest.reviewSurface.length}`,
       `3. ${context.localizeText('Projected rules handed off', '交接的 projected rules 数量')}: ${delegatedReviewRequest.projectedRules.length}`,
       `4. ${context.localizeText('Uncovered delegated rule ids', '待 delegated 处理规则数')}: ${delegatedReviewRequest.uncoveredRuleIds.length}`,
-      `5. ${context.localizeText('Deterministic findings already covered', '已覆盖的 deterministic finding 数量')}: ${delegatedReviewRequest.deterministicFindings.length}`,
-      `6. ${context.localizeText('Adapter-neutral transport note', 'adapter-neutral 传输说明')}: ${context.localizeText(
+      `5. ${context.localizeText('Delegated activation policy', 'delegated 激活策略')}: \`${delegatedReviewRequest.delegatedReviewActivationPolicy.level}\``,
+      `6. ${context.localizeText('Manual follow-up required', '是否需要人工补充跟进')}: \`${delegatedReviewRequest.delegatedReviewActivationPolicy.manualFollowUpRequired}\``,
+      `7. ${context.localizeText('Deterministic findings already covered', '已覆盖的 deterministic finding 数量')}: ${delegatedReviewRequest.deterministicFindings.length}`,
+      `8. ${context.localizeText('Adapter-neutral transport note', 'adapter-neutral 传输说明')}: ${context.localizeText(
         'The markdown reviewer prompt is only a rendered transport view of this structured handoff contract.',
         'markdown reviewer prompt 只是这份结构化 handoff contract 的 transport view。',
       )}`,
+      ...delegatedReviewRequest.delegatedReviewActivationPolicy.reasonCodes.map(
+        (reasonCode, index) =>
+          `- ${context.localizeText('Activation Reason', '激活原因')} ${index + 1}: \`${reasonCode}\``,
+      ),
       ...delegatedReviewRequest.reviewSurface.map(
         (reviewSurface, index) =>
           `- ${context.localizeText('Review Surface', 'Review Surface')} ${index + 1}: \`${reviewSurface}\``,
@@ -841,6 +870,93 @@ export class CliReviewCommand implements CliCommandExecutor {
           `- ${context.localizeText('Required Normative Input', '必需规范输入')} ${index + 1}: \`${requiredInput}\``,
       ),
     ];
+  }
+
+  private renderCoverageSummary(
+    context: CliCommandExecutorContext,
+    hybridReviewContext: CliHybridReviewContext,
+  ): string[] {
+    const coverageSummary = hybridReviewContext.coverageSummary;
+    const activationPolicy = hybridReviewContext.delegatedReviewActivationPolicy;
+
+    return [
+      `1. ${context.localizeText('Total applicable projected rules', '适用 projected rules 总数')}: ${coverageSummary.totalApplicableRuleCount}`,
+      `2. ${context.localizeText('Deterministically covered rules', '确定性覆盖规则数')}: ${coverageSummary.deterministicCoveredRuleCount}`,
+      `3. ${context.localizeText('Standards-guided covered rules', '标准引导已覆盖规则数')}: ${coverageSummary.standardsGuidedCoveredRuleCount}`,
+      `4. ${context.localizeText('Residual gap rules', '剩余覆盖缺口规则数')}: ${coverageSummary.residualGapRuleCount}`,
+      `5. ${context.localizeText('Manual-only gaps', '仅人工缺口规则数')}: ${coverageSummary.manualOnlyGapRuleCount}`,
+      `6. ${context.localizeText('Delegated activation policy', 'delegated 激活策略')}: \`${activationPolicy.level}\``,
+      ...this.renderListField(
+        context.localizeText('Deterministic Coverage Rule', '确定性覆盖规则'),
+        coverageSummary.deterministicCoveredRuleIds,
+      ),
+      ...this.renderListField(
+        context.localizeText('Standards-Guided Coverage Rule', '标准引导已覆盖规则'),
+        coverageSummary.standardsGuidedCoveredRuleIds,
+      ),
+      ...this.renderListField(
+        context.localizeText('Residual Gap Rule', '剩余缺口规则'),
+        coverageSummary.residualGapRuleIds,
+      ),
+      ...this.renderListField(
+        context.localizeText('Manual-Only Gap Rule', '仅人工缺口规则'),
+        coverageSummary.manualOnlyGapRuleIds,
+      ),
+    ];
+  }
+
+  private buildDelegatedActivationNote(
+    context: CliCommandExecutorContext,
+    hybridReviewContext: CliHybridReviewContext,
+  ): string {
+    const activationPolicy = hybridReviewContext.delegatedReviewActivationPolicy;
+    if (activationPolicy.level === CliDelegatedReviewActivationLevel.REQUIRED) {
+      return context.localizeText(
+        'Delegated review should be treated as required for this scope because standards-guided coverage gaps remain and the current risk decision is not allow.',
+        '当前 scope 仍存在 standards-guided coverage gaps，且风险决策不是 allow，因此 delegated review 应视为 required。',
+      );
+    }
+
+    if (activationPolicy.level === CliDelegatedReviewActivationLevel.RECOMMENDED) {
+      return context.localizeText(
+        'Delegated review is recommended for this scope because standards-guided coverage gaps remain after the deterministic pass.',
+        'deterministic pass 之后仍存在 standards-guided coverage gaps，因此当前 scope 推荐开启 delegated review。',
+      );
+    }
+
+    return context.localizeText(
+      'Delegated review remains optional because no delegatable coverage gaps remain for the current scope.',
+      '当前 scope 没有剩余可交给 delegated review 的 coverage gap，因此 delegated review 保持 optional。',
+    );
+  }
+
+  private buildManualGapNotes(
+    context: CliCommandExecutorContext,
+    hybridReviewContext: CliHybridReviewContext,
+  ): string[] {
+    if (!hybridReviewContext.delegatedReviewActivationPolicy.manualFollowUpRequired) {
+      return [];
+    }
+
+    return [
+      context.localizeText(
+        'Manual-only coverage gaps remain; delegated review alone is not sufficient and an explicit human/manual follow-up is still required.',
+        '当前仍有 manual-only coverage gaps；仅靠 delegated review 不足以收口，仍需要显式人工补充跟进。',
+      ),
+    ];
+  }
+
+  private hasCoverageGap(hybridReviewContext: CliHybridReviewContext): boolean {
+    return this.collectCoverageGapRuleIds(hybridReviewContext).length > 0;
+  }
+
+  private collectCoverageGapRuleIds(hybridReviewContext: CliHybridReviewContext): string[] {
+    return Array.from(
+      new Set([
+        ...hybridReviewContext.coverageSummary.residualGapRuleIds,
+        ...hybridReviewContext.coverageSummary.manualOnlyGapRuleIds,
+      ]),
+    );
   }
 
   private formatDateOnly(value: Date): string {

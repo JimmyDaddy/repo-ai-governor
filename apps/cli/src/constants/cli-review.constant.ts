@@ -48,6 +48,35 @@ export enum CliReviewFindingVerificationMatchStrategy {
 }
 
 /**
+ * Defines the governed coverage buckets used by standards-native review reporting.
+ */
+export enum CliReviewCoverageState {
+  DETERMINISTIC_COVERED = 'deterministic_covered',
+  STANDARDS_GUIDED_COVERED = 'standards_guided_covered',
+  RESIDUAL_GAP = 'residual_gap',
+  MANUAL_ONLY_GAP = 'manual_only_gap',
+}
+
+/**
+ * Defines when delegated review should activate for the current coverage shape.
+ */
+export enum CliDelegatedReviewActivationLevel {
+  OPTIONAL = 'optional',
+  RECOMMENDED = 'recommended',
+  REQUIRED = 'required',
+}
+
+/**
+ * Defines stable rationale ids for delegated-review activation guidance.
+ */
+export enum CliDelegatedReviewActivationReason {
+  NO_DELEGATABLE_GAP = 'no_delegatable_gap',
+  DELEGATABLE_GAP_PRESENT = 'delegatable_gap_present',
+  NON_ALLOW_REQUIRED_ACTION = 'non_allow_required_action',
+  MANUAL_ONLY_GAP_PRESENT = 'manual_only_gap_present',
+}
+
+/**
  * Re-exports governed source-type values used by structured review findings.
  */
 export {

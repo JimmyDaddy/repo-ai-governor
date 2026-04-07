@@ -38,9 +38,9 @@
 
 ## 2.4 sprint-004-coverage-reporting-and-rollout-adoption
 
-- Status: active
+- Status: completed
 - Sprint Goal: 建立 review coverage metrics、delegated review activation policy 与 project-057 closeout/handoff 基线。
-- Task Package: `TK-633`、`TK-634`、`TK-635`。
+- Task Package: `TK-633`、`TK-634`、`TK-635`、`TK-649`。
 
 ## 3. 任务拆解矩阵（WBS）
 
@@ -59,9 +59,10 @@
 | TK-631 | sprint-003 | 实现 review-verify source-aware closure semantics 与 rationale persistence | runtime/review-verify | TK-627、TK-628、TK-630 | completed |
 | TK-632 | sprint-003 | 集成 delegated CR loop projected rule loading 与 normalized finding ingestion | runtime/integration | TK-629、TK-630、TK-631 | completed |
 | TK-648 | sprint-003 | sprint-003 exit acceptance and sprint-004 activation handoff | closeout/handoff | TK-630、TK-631、TK-632、CR-001 | completed |
-| TK-633 | sprint-004 | 增加 review rule coverage metrics 与 provenance-aware reporting surface | reporting/metrics | TK-629、TK-631 | planned |
-| TK-634 | sprint-004 | 定义 deterministic coverage incomplete 的 delegated review activation policy | policy/rollout | TK-633 | planned |
-| TK-635 | sprint-004 | 完成 project-057 rollout handoff、adoption evidence 与 closeout baseline | closeout/handoff | TK-633、TK-634 | planned |
+| TK-633 | sprint-004 | 增加 review rule coverage metrics 与 provenance-aware reporting surface | reporting/metrics | TK-629、TK-631 | completed |
+| TK-634 | sprint-004 | 定义 deterministic coverage incomplete 的 delegated review activation policy | policy/rollout | TK-633 | completed |
+| TK-635 | sprint-004 | 完成 project-057 rollout handoff、adoption evidence 与 closeout baseline | closeout/handoff | TK-633、TK-634 | completed |
+| TK-649 | sprint-004 | sprint-004 exit acceptance and project-final review activation handoff | closeout/handoff | TK-633、TK-634、TK-635、CR-001 | completed |
 
 ## 4. 依赖产物策略
 
@@ -81,7 +82,7 @@
 
 1. 2026-04-06：`technical-solution.standards-native-code-review-engine-follow-up` 已提升为 active formal direction。
 2. 2026-04-06：已创建 `project-057` planned stream，承接 review-rule registry、provenance-aware finding 与 reviewer handoff follow-up。
-3. 2026-04-06：本次拆解将 `project-057` 从单 sprint 粗骨架扩展为 Phase A-D 对齐的 4 个顺序 sprint 与 12 个可执行任务。
+3. 2026-04-06：本次拆解将 `project-057` 从单 sprint 粗骨架扩展为 Phase A-D 对齐的 4 个顺序 sprint 与 13 个可执行任务。
 4. 2026-04-07：`project-055` final closeout 完成后，`project-057 / sprint-001` 被激活为当前 primary stream，`TK-621` 已切换为 `in_progress`。
 5. 2026-04-07：`sprint-001` 已在 `CR-001` clean `resolved` 后完成 closeout，并将 primary stream 推进到 `sprint-002 / TK-627`。
 6. 2026-04-07：按用户请求补充 `TK-646`，将 technical-solution review workflow skill 化并纳入 `sprint-002` 的治理收口面。
@@ -89,3 +90,5 @@
 8. 2026-04-07：`CR-002` clean `resolved` 后，`TK-647 / DA-647` 已完成 sprint-002 closeout，并将 primary stream 推进到 `sprint-003 / TK-630`。
 9. 2026-04-07：`TK-630`、`TK-631`、`TK-632` 的实现与边界验证已完成，`sprint-003` 准备进入 fresh reviewer CR round。
 10. 2026-04-07：`CR-001` clean `resolved` 后，`TK-648 / DA-648` 已完成 sprint-003 closeout，并将 primary stream 推进到 `sprint-004 / TK-633`。
+11. 2026-04-07：`TK-633`、`TK-634`、`TK-635` 的实现、coverage/activation reporting 与 rollout evidence 已完成，`sprint-004` 准备进入 fresh reviewer CR round。
+12. 2026-04-07：`CR-001` clean `resolved` 后，`TK-649 / DA-649` 已完成 sprint-004 closeout，并将当前 sprint surface 保留为 `project-057` project-final CR loop 的 active closeout surface。

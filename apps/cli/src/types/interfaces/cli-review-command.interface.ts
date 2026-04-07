@@ -10,6 +10,9 @@ import type {
   CliReviewRequestStatus,
 } from '../../constants/cli-governance-runtime.constant.js';
 import type {
+  CliDelegatedReviewActivationLevel,
+  CliDelegatedReviewActivationReason,
+  CliReviewCoverageState,
   CliReviewFindingRuleId,
   CliReviewFindingSeverity,
   CliReviewFindingVerificationDecision,
@@ -69,7 +72,45 @@ export interface CliDelegatedReviewRequest {
   projectedRuleBundle: ProjectedReviewRuleBundle;
   projectedRules: ReviewRuleDefinition[];
   deterministicFindings: CliReviewFinding[];
+  coverageSummary: CliReviewCoverageSummary;
+  delegatedReviewActivationPolicy: CliDelegatedReviewActivationPolicy;
   uncoveredRuleIds: string[];
+}
+
+/**
+ * Describes one projected-rule coverage bucket used by reporting surfaces.
+ */
+export interface CliReviewCoverageBucket {
+  state: CliReviewCoverageState;
+  ruleIds: string[];
+  count: number;
+}
+
+/**
+ * Describes aggregate standards-native review coverage for the current scope.
+ */
+export interface CliReviewCoverageSummary {
+  totalApplicableRuleCount: number;
+  deterministicCoveredRuleCount: number;
+  standardsGuidedCoveredRuleCount: number;
+  residualGapRuleCount: number;
+  manualOnlyGapRuleCount: number;
+  deterministicCoveredRuleIds: string[];
+  standardsGuidedCoveredRuleIds: string[];
+  residualGapRuleIds: string[];
+  manualOnlyGapRuleIds: string[];
+  coverageBuckets: CliReviewCoverageBucket[];
+}
+
+/**
+ * Describes whether delegated review should be treated as optional, recommended, or required.
+ */
+export interface CliDelegatedReviewActivationPolicy {
+  level: CliDelegatedReviewActivationLevel;
+  reasonCodes: CliDelegatedReviewActivationReason[];
+  delegatableGapRuleIds: string[];
+  manualOnlyGapRuleIds: string[];
+  manualFollowUpRequired: boolean;
 }
 
 /**
@@ -95,6 +136,8 @@ export interface CliHybridReviewContext {
   deterministicFindings: CliReviewFinding[];
   standardsGuidedFindings: CliReviewFinding[];
   riskFindings: CliReviewFinding[];
+  coverageSummary: CliReviewCoverageSummary;
+  delegatedReviewActivationPolicy: CliDelegatedReviewActivationPolicy;
   uncoveredRuleIds: string[];
   delegatedReviewEnabled: boolean;
   dedupeStrategy: string;

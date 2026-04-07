@@ -11,15 +11,22 @@ import {
   standardizeError,
 } from '@repo-ai-governor/shared';
 import { CliReviewCommand } from '../../src/commands/review-command.js';
-import { CLI_REVIEW_REQUEST_STATUS } from '../../src/constants/cli-governance-runtime.constant.js';
+import {
+  CLI_REVIEW_REQUEST_STATUS,
+  CliGovernanceCheckStatus,
+} from '../../src/constants/cli-governance-runtime.constant.js';
 import { CliInteractiveUiMode } from '../../src/constants/cli-interactive-shell.constant.js';
 import {
+  CliDelegatedReviewActivationLevel,
+  CliDelegatedReviewActivationReason,
   CliReviewFindingExecutionMode,
   CliReviewFindingSourceType,
+  CliReviewLifecycleStatus,
 } from '../../src/constants/cli-review.constant.js';
 import { CliReviewQueueRuntime } from '../../src/runtime/artifacts/review-queue-runtime.js';
 import type {
   CliCommandExecutorContext,
+  CliHybridReviewContext,
   CliReviewRequestArtifactPayload,
 } from '../../src/types/interfaces/index.js';
 
@@ -243,6 +250,15 @@ describe('CliReviewCommand', () => {
         }>;
         hybridReviewContext?: {
           projectedRuleBundle?: { bundleId?: string };
+          coverageSummary?: {
+            totalApplicableRuleCount?: number;
+            residualGapRuleCount?: number;
+            manualOnlyGapRuleCount?: number;
+          };
+          delegatedReviewActivationPolicy?: {
+            level?: string;
+            manualFollowUpRequired?: boolean;
+          };
           uncoveredRuleIds?: string[];
           delegatedReviewEnabled?: boolean;
           delegatedReviewRequest?: {
@@ -277,6 +293,15 @@ describe('CliReviewCommand', () => {
         'bundle.review.phase-a',
       );
       expect(requestPayload.hybridReviewContext?.delegatedReviewEnabled).toBe(false);
+      expect(requestPayload.hybridReviewContext?.coverageSummary?.totalApplicableRuleCount).toBe(2);
+      expect(requestPayload.hybridReviewContext?.coverageSummary?.residualGapRuleCount).toBe(1);
+      expect(requestPayload.hybridReviewContext?.coverageSummary?.manualOnlyGapRuleCount).toBe(0);
+      expect(requestPayload.hybridReviewContext?.delegatedReviewActivationPolicy?.level).toBe(
+        CliDelegatedReviewActivationLevel.RECOMMENDED,
+      );
+      expect(
+        requestPayload.hybridReviewContext?.delegatedReviewActivationPolicy?.manualFollowUpRequired,
+      ).toBe(false);
       expect(requestPayload.hybridReviewContext?.delegatedReviewRequest?.requestId).toBe(
         requestPayload.requestId,
       );
@@ -294,7 +319,9 @@ describe('CliReviewCommand', () => {
       expect(reviewArtifactContent).toContain('## 2. Deterministic Rule Findings');
       expect(reviewArtifactContent).toContain('## 3. Standards-Guided Findings');
       expect(reviewArtifactContent).toContain('## 4. Residual Risk Observations');
-      expect(reviewArtifactContent).toContain('## 6. Delegated Reviewer Handoff');
+      expect(reviewArtifactContent).toContain('## 5. Coverage Summary');
+      expect(reviewArtifactContent).toContain('## 7. Delegated Reviewer Handoff');
+      expect(reviewArtifactContent).toContain('Delegated activation policy');
       expect(reviewArtifactContent).toContain('transport view');
       expect(reviewArtifactContent).toContain('code_change_without_test_change');
       expect(reviewArtifactContent).toContain('risk_inference');
@@ -413,6 +440,9 @@ describe('CliReviewCommand', () => {
       expect(requestPayload.hybridReviewContext?.uncoveredRuleIds).toEqual(
         expect.arrayContaining(['review-rule.cs-034-build-evidence']),
       );
+      expect(requestPayload.hybridReviewContext?.delegatedReviewActivationPolicy?.level).toBe(
+        CliDelegatedReviewActivationLevel.RECOMMENDED,
+      );
       expect(requestPayload.hybridReviewContext?.uncoveredRuleIds).not.toContain(
         'review-rule.cs-033-user-facing-i18n',
       );
@@ -427,8 +457,9 @@ describe('CliReviewCommand', () => {
       const reviewArtifactContent = await readFile(String(reviewArtifactPath), 'utf8');
       expect(String(reviewArtifactPath)).toContain('/resolved_code_review_');
       expect(reviewArtifactContent).toContain(
-        'uncovered projected rules were recorded for future delegated or manual follow-up',
+        'remaining projected rule coverage gaps were recorded for future delegated or manual follow-up',
       );
+      expect(reviewArtifactContent).toContain('Residual gap rules');
     } finally {
       await rm(fixture.tempRoot, { recursive: true, force: true });
     }
@@ -479,6 +510,121 @@ describe('CliReviewCommand', () => {
         expect.arrayContaining([
           'review-rule.cs-033-user-facing-i18n',
           'review-rule.cs-034-build-evidence',
+        ]),
+      );
+    } finally {
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('treats manual-only gaps as coverage gaps in notes and checks', async () => {
+    const fixture = await createReviewFixture();
+    const internalCommand = fixture.command as unknown as {
+      buildChecks: (
+        requestPath: string,
+        findings: unknown[],
+        reviewStatus: CliReviewLifecycleStatus,
+        reviewArtifactPath: string,
+        hybridReviewContext: CliHybridReviewContext,
+      ) => Array<{ id: string; status: string }>;
+      buildReviewNotes: (
+        context: CliCommandExecutorContext,
+        reviewStatus: CliReviewLifecycleStatus,
+        changedPathCount: number,
+        findingCount: number,
+        hybridReviewContext: CliHybridReviewContext,
+      ) => string[];
+    };
+    const hybridReviewContext = {
+      projectedRuleBundle: {
+        bundleId: 'bundle.review.phase-a',
+        bundleVersion: '1.0.0',
+      },
+      projectedRules: [],
+      deterministicFindings: [],
+      standardsGuidedFindings: [],
+      riskFindings: [],
+      coverageSummary: {
+        totalApplicableRuleCount: 1,
+        deterministicCoveredRuleCount: 0,
+        standardsGuidedCoveredRuleCount: 0,
+        residualGapRuleCount: 0,
+        manualOnlyGapRuleCount: 1,
+        deterministicCoveredRuleIds: [],
+        standardsGuidedCoveredRuleIds: [],
+        residualGapRuleIds: [],
+        manualOnlyGapRuleIds: ['review-rule.fixture-manual-follow-up'],
+        coverageBuckets: [],
+      },
+      delegatedReviewActivationPolicy: {
+        level: CliDelegatedReviewActivationLevel.OPTIONAL,
+        reasonCodes: [CliDelegatedReviewActivationReason.MANUAL_ONLY_GAP_PRESENT],
+        delegatableGapRuleIds: [],
+        manualOnlyGapRuleIds: ['review-rule.fixture-manual-follow-up'],
+        manualFollowUpRequired: true,
+      },
+      uncoveredRuleIds: [],
+      delegatedReviewEnabled: false,
+      dedupeStrategy: 'ruleId+file+line',
+      delegatedReviewRequest: {
+        requestId: 'review-004',
+        scopeSummary: 'fixture scope',
+        reviewMode: 'working_tree',
+        reviewSurface: ['apps/cli/src/commands/review-command.ts'],
+        requiredNormativeInputs: ['AGENTS.md'],
+        projectedRuleBundle: {
+          bundleId: 'bundle.review.phase-a',
+          bundleVersion: '1.0.0',
+        },
+        projectedRules: [],
+        deterministicFindings: [],
+        coverageSummary: {
+          totalApplicableRuleCount: 1,
+          deterministicCoveredRuleCount: 0,
+          standardsGuidedCoveredRuleCount: 0,
+          residualGapRuleCount: 0,
+          manualOnlyGapRuleCount: 1,
+          deterministicCoveredRuleIds: [],
+          standardsGuidedCoveredRuleIds: [],
+          residualGapRuleIds: [],
+          manualOnlyGapRuleIds: ['review-rule.fixture-manual-follow-up'],
+          coverageBuckets: [],
+        },
+        delegatedReviewActivationPolicy: {
+          level: CliDelegatedReviewActivationLevel.OPTIONAL,
+          reasonCodes: [CliDelegatedReviewActivationReason.MANUAL_ONLY_GAP_PRESENT],
+          delegatableGapRuleIds: [],
+          manualOnlyGapRuleIds: ['review-rule.fixture-manual-follow-up'],
+          manualFollowUpRequired: true,
+        },
+        uncoveredRuleIds: [],
+      },
+    } as unknown as CliHybridReviewContext;
+
+    try {
+      const checks = internalCommand.buildChecks(
+        'request.json',
+        [],
+        CliReviewLifecycleStatus.RESOLVED,
+        'review.md',
+        hybridReviewContext,
+      );
+      const notes = internalCommand.buildReviewNotes(
+        fixture.context,
+        CliReviewLifecycleStatus.RESOLVED,
+        1,
+        0,
+        hybridReviewContext,
+      );
+
+      expect(checks.find((check) => check.id === 'review_findings')?.status).toBe(
+        CliGovernanceCheckStatus.WARN,
+      );
+      expect(notes).toEqual(
+        expect.arrayContaining([
+          'Coverage gap rule ids reserved for future delegated and/or manual follow-up: review-rule.fixture-manual-follow-up.',
+          'Manual-only coverage gaps remain; delegated review alone is not sufficient and an explicit human/manual follow-up is still required.',
+          'This lifecycle artifact resolved without emitted findings; remaining projected rule coverage gaps were recorded for future delegated or manual follow-up outside review-verify.',
         ]),
       );
     } finally {
