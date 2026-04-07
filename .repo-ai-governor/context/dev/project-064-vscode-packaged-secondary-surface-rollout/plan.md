@@ -1,6 +1,6 @@
 # project-064-vscode-packaged-secondary-surface-rollout 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-08
 - Stage Mapping: secondary surface productization
 - Phase Mapping: VS Code packaged boundary + smoke gate
@@ -18,7 +18,7 @@
 
 ## 2.1 sprint-001-packaged-distribution-and-extension-host-smoke
 
-- Status: planned
+- Status: active
 - Sprint Goal: 为 VS Code secondary surface 建立 packaged distribution 与 smoke gate。
 - Task Package: `TK-670`、`TK-671`、`TK-672`。
 
@@ -26,7 +26,7 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 | --- | --- | --- | --- | --- | --- |
-| TK-670 | sprint-001 | freeze VS Code packaged distribution contract and smoke gate | surface/contract | project-063 recommended | planned |
+| TK-670 | sprint-001 | freeze VS Code packaged distribution contract and smoke gate | surface/contract | project-063 recommended | in_progress |
 | TK-671 | sprint-001 | implement VSIX build release path and extension-host smoke follow-up | implementation/release | TK-670 | planned |
 | TK-672 | sprint-001 | close VS Code packaged secondary-surface support declaration | docs/evidence/closeout | TK-670、TK-671 | planned |
 
@@ -40,3 +40,8 @@
 1. VS Code extension 是否可 packaged 分发有清晰、可验证的答案。
 2. secondary-surface 支持边界不再只停留在 source-checkout 叙事。
 3. 文档、support matrix 与 smoke evidence 同步。
+
+## 6. 里程碑记录
+
+1. 2026-04-08：作为 `project-072` follow-up decomposition 产物创建，当前保持 `planned`。
+2. 2026-04-08：`project-067` final closeout 完成后被激活为当前 primary project，`sprint-001 / TK-670` 进入执行窗口。

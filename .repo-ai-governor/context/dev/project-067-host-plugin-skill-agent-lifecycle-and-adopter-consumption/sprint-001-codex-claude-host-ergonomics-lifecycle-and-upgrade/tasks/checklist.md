@@ -27,8 +27,12 @@
 - [x] CR-004 sprint-001-codex-claude-host-ergonomics-lifecycle-and-upgrade delegated recheck loop round 4
   - 2026-04-08：任务创建，状态初始化为 `review_pending`。
   - 2026-04-08：fresh reviewer `Ampere` 返回 clean 结论，主 agent 复核当前 host lifecycle / release wiring / docs boundary 并确认无新增 actionable finding，任务切换为 `resolved`。
-- [ ] CR-005 project-067-host-plugin-skill-agent-lifecycle-and-adopter-consumption final delegated review loop round 5
+- [x] CR-005 project-067-host-plugin-skill-agent-lifecycle-and-adopter-consumption final delegated review loop round 5
   - 2026-04-08：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-08：fresh reviewer `Aristotle` 返回 clean 结论；主 agent 复核 project-final boundary、已提交的 sprint closeout handoff 与同窗口绿色验证证据后，确认无新增 actionable finding，任务切换为 `resolved`。
 - [x] TK-702 sprint-001 exit acceptance and project-final review activation handoff
   - 2026-04-08：任务在 `TK-679`、`TK-680`、`TK-681` 与 `CR-001 ~ CR-004` 全部进入终态后创建。
   - 2026-04-08：已写入 `DA-702`、project/sprint closeout handoff 与 `current-context` note；当前 sprint surface 保留给后续 `project-067` project-final CR loop。
+- [x] TK-703 finalize project-067 closeout and activate project-064 primary stream
+  - 2026-04-08：任务在 `CR-005` clean 后创建并于同一窗口完成，完成 `project-067` 的 final closeout write-back。
+  - 2026-04-08：已写入 `DA-703` 与 completion audit summary，project / sprint / context / history / delivery registry 已同步到完成态真值，并激活 `project-064 / sprint-001 / TK-670`。
