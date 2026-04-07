@@ -144,7 +144,8 @@ pnpm exec repo-ai-governor upgrade rollback <apply-receipt-or-rollback-snapshot>
 2. `tgz` 不是离线自包含安装；安装阶段仍会从 npm registry 解析外部依赖。
 3. 如果目标仓库本身是 Yarn/npm，或者已有脏工作树，建议先走 `dist-binary`；否则默认先用 `path`，只有在工作流需要时再切到 `link` 或 `tgz`。
 4. session shell、React shell、workflow/upgrade、HITL 通知、故障排查等更完整说明，请看本地接入手册。
-5. 仓库内的 Codex 本地工作流辅助能力位于 `.codex/skills/`；它们主要服务 self-host 与维护者流程，外部 adopter 只有在希望复用同样的本地 skill 体验时才需要一并 vendoring。
+5. 可选的 VS Code companion surface 目前只支持从已构建的 governor 源码仓通过 `apps/vscode-extension` 启动；已发布的 npm/tgz 安装面即便仍带有内部 `dist/apps/vscode-extension/**` 产物，也不提供正式支持的 VSIX、Marketplace 或可安装扩展 bundle。
+6. 仓库内的 Codex 本地工作流辅助能力位于 `.codex/skills/`；它们主要服务 self-host 与维护者流程，外部 adopter 只有在希望复用同样的本地 skill 体验时才需要一并 vendoring。
 
 ## 4. 继续阅读
 

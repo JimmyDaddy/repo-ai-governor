@@ -28,6 +28,7 @@
 6. `.codex/skills/`
 
 `.codex/skills/` 只是参考资产，不会自动复制到目标仓库。
+`apps/vscode-extension` 与 `apps/desktop` 这两个真实 app workspace 仍属于源码仓验证面；已发布 tarball 仍可能携带内部 `dist/**` 构建产物，但不会把这些 app workspace 作为独立 package-install 根目录交付。
 
 ## 3. 真实项目验收 Runbook
 
@@ -95,6 +96,31 @@ pnpm run check:examples-smoke
 1. 根级 examples 仍然成体系。
 2. 示例文档和可运行资产没有静默漂移。
 3. 示例层的运行预期仍然成立。
+
+### 4.1 VS Code Secondary Surface 验证
+
+当你需要刷新 editor-native companion 的正式支持边界时，使用这条 runbook：
+
+```bash
+pnpm exec vitest run apps/vscode-extension/test/vscode-extension-contract.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-selection-store.test.ts apps/vscode-extension/test/vscode-extension-packaging-boundary.test.ts --maxWorkers=1 --maxConcurrency=1
+pnpm run build
+pnpm pack --json --dry-run
+pnpm run check:ide-entry-smoke
+pnpm run check:ide-docs-parity
+pnpm exec biome check apps/vscode-extension/src apps/vscode-extension/test apps/vscode-extension/package.json apps/vscode-extension/README.md
+```
+
+可选的人工演练：
+
+```bash
+code --extensionDevelopmentPath <governor-repo>/apps/vscode-extension <target-repo>
+```
+
+说明：
+
+1. 当前正式支持只覆盖“已构建源码仓 + extension-development host”这条路径。
+2. 通过 `pnpm pack --json --dry-run` 核对已发布产物仍不包含扩展 workspace 与可安装 bundle；即便保留内部 `dist/apps/vscode-extension/**` 产物，也不能把它误当成正式扩展分发。
+3. 在新增独立 packaging rehearsal 并同步写入 `docs/support-matrix.zh-CN.md` 之前，不要对 npm/tgz、VSIX 或 Marketplace 做正式支持声明。
 
 ## 5. Clean-room 与 Release 验证
 

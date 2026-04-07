@@ -1,6 +1,6 @@
 # sprint-002-vscode-mvp-hardening-and-desktop-foundation-guardrails 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-06
 - Project: `project-054-vscode-secondary-surface-rollout`
 - Sprint Goal: 对 VS Code MVP 做定向 hardening，同时把 desktop 的 non-goal 与 foundation guardrails 说清楚。
@@ -20,3 +20,4 @@
 ## 3. Milestones
 
 1. 2026-04-06：作为 `project-054` 的第二个 planned sprint 创建，等待 `sprint-001` 收口后激活。
+2. 2026-04-07：`TK-640 / DA-640` 完成 `sprint-001` closeout 与 activation handoff，当前已切换为 active sprint，`TK-610` 进入 `in_progress`。

@@ -53,6 +53,23 @@ External-adopter notes:
 2. Treat those warnings as informational unless your target repository is intentionally vendoring this repository's own governance docs and scripts.
 3. `init` defaults to `tool_managed`, so a fresh target repo may not create `.repo-ai-governor/` immediately.
 
+### 3.1 Optional VS Code Secondary Surface
+
+Use this only when you want the editor-native companion on top of the normal CLI bootstrap path:
+
+```bash
+cd <governor-repo>
+pnpm run build
+
+code --extensionDevelopmentPath <governor-repo>/apps/vscode-extension <target-repo>
+```
+
+Boundary notes:
+
+1. Current formal support is source-checkout only; build the governor repository before launching the extension-development host.
+2. The published npm/tgz package surface does not include the `apps/vscode-extension` workspace or an installable extension bundle; internal `dist/apps/vscode-extension/**` payloads may still exist, but they are not a supported npm/VSIX/Marketplace distribution.
+3. Trust-sensitive commands stay gated by `Workspace Trust`, so use a trusted workspace when validating review, HITL, recovery, or termination actions.
+
 ## 4. Session Shell Quick Tour
 
 Use the session shell when you want a conversation-first entrypoint instead of a one-shot subcommand.
@@ -219,6 +236,7 @@ Then layer the language pack you need, plus any team or repository overrides, on
 
 1. Repository-local Codex helpers live under `.codex/skills/`; external adopters can ignore them unless they want the same self-host skill prompts and delivery workflows inside the target repository.
 2. These assets are operational helpers for local AI tooling, not a requirement for the CLI install surfaces documented above.
+3. `apps/vscode-extension` is an optional secondary surface for source-checkout evaluation, not part of the published package-install baseline.
 
 ## 11. Remote-api Rehearsal
 

@@ -53,6 +53,23 @@ node <governor-repo>/dist/bin/repo-ai-governor.js <command>
 2. 除非你的目标仓库本来就要 vendoring 本仓库自己的治理文档和脚本，否则应把这些 warning 当成提示，而不是失败。
 3. `init` 默认是 `tool_managed`，所以全新目标仓库未必会立刻生成 `.repo-ai-governor/`。
 
+### 3.1 可选的 VS Code Secondary Surface
+
+只有当你想在常规 CLI bootstrap 之上再验证 editor-native companion 时，才需要这条路径：
+
+```bash
+cd <governor-repo>
+pnpm run build
+
+code --extensionDevelopmentPath <governor-repo>/apps/vscode-extension <target-repo>
+```
+
+边界说明：
+
+1. 当前正式支持只覆盖源码仓 checkout 路径；启动 extension-development host 之前，请先完成 governor 源仓构建。
+2. 已发布的 npm/tgz 包面不包含 `apps/vscode-extension` workspace 或可安装扩展 bundle；其中即便仍有内部 `dist/apps/vscode-extension/**` 产物，也不构成正式支持的 npm/VSIX/Marketplace 分发。
+3. review、HITL、recover、terminate 等 trust-sensitive 命令仍受 `Workspace Trust` 保护，因此请在 trusted workspace 中验证这些能力。
+
 ## 4. Session Shell 快速上手
 
 如果你更喜欢“对话式入口”而不是一次性子命令，可以直接用 session shell：
@@ -219,6 +236,7 @@ pnpm exec repo-ai-governor run --output json
 
 1. 仓库内的 Codex 辅助能力位于 `.codex/skills/`；外部 adopter 如果不打算复用同样的 self-host skill/workflow，可以直接忽略。
 2. 这些资产属于本地 AI 工具辅助层，不是上文安装路径成立的前置条件。
+3. `apps/vscode-extension` 只是面向源码仓评估的可选 secondary surface，不属于已发布 package-install baseline。
 
 ## 11. Remote-api rehearsal
 

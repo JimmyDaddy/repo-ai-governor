@@ -1,6 +1,6 @@
 # TK-608 align support matrix maintainer evidence and installer narrative for VS Code extension
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-06
 - Task ID: `TK-608`
 - Owner: `AI-Agent`
@@ -25,3 +25,4 @@
 ## 4. Execution Notes
 
 1. 2026-04-06：任务创建，等待 `TK-607` 完成。
+2. 2026-04-07：已完成 support matrix、local adoption playbook、maintainer validation playbook、root README 与 `apps/vscode-extension/README.md` 的叙事对齐；当前 installer/support truth 已统一说明 VS Code secondary surface 只支持源码仓路径，且 desktop 保持 foundation surface。

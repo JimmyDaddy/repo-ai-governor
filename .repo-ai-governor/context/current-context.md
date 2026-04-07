@@ -4,15 +4,15 @@
 
 - Status: active
 - Project: `project-054-vscode-secondary-surface-rollout`
-- Sprint: `sprint-001-vscode-support-boundary-and-packaging-narrative`
+- Sprint: `sprint-002-vscode-mvp-hardening-and-desktop-foundation-guardrails`
 - Docs root: `.repo-ai-governor/context/dev/project-054-vscode-secondary-surface-rollout`
-- Task records: `.repo-ai-governor/context/dev/project-054-vscode-secondary-surface-rollout/sprint-001-vscode-support-boundary-and-packaging-narrative/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-054-vscode-secondary-surface-rollout/sprint-001-vscode-support-boundary-and-packaging-narrative/review/`
-- Note: `2026-04-07` 在 `project-053` final closeout 后切换到 `project-054 / sprint-001`；执行顺序继续固定为 `project-054 -> project-055 -> project-057 -> project-056`。
+- Task records: `.repo-ai-governor/context/dev/project-054-vscode-secondary-surface-rollout/sprint-002-vscode-mvp-hardening-and-desktop-foundation-guardrails/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-054-vscode-secondary-surface-rollout/sprint-002-vscode-mvp-hardening-and-desktop-foundation-guardrails/review/`
+- Note: `2026-04-07` 在 `TK-640` 完成 sprint-001 closeout 后切换到 `project-054 / sprint-002`；执行顺序继续固定为 `project-054 -> project-055 -> project-057 -> project-056`。
 
 ## Active Streams
 
-- `active-1`: role=`primary`, project=`project-054-vscode-secondary-surface-rollout`, sprint=`sprint-001-vscode-support-boundary-and-packaging-narrative`, docs=`.repo-ai-governor/context/dev/project-054-vscode-secondary-surface-rollout`, plan=`.repo-ai-governor/context/dev/project-054-vscode-secondary-surface-rollout/sprint-001-vscode-support-boundary-and-packaging-narrative/plan.md`, tasks=`.repo-ai-governor/context/dev/project-054-vscode-secondary-surface-rollout/sprint-001-vscode-support-boundary-and-packaging-narrative/tasks/`, checklist=`.repo-ai-governor/context/dev/project-054-vscode-secondary-surface-rollout/sprint-001-vscode-support-boundary-and-packaging-narrative/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-054-vscode-secondary-surface-rollout/sprint-001-vscode-support-boundary-and-packaging-narrative/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-054-vscode-secondary-surface-rollout/sprint-001-vscode-support-boundary-and-packaging-narrative/review/`, status=`active`, note=`Activated on 2026-04-07 after project-053 final closeout`
+- `active-1`: role=`primary`, project=`project-054-vscode-secondary-surface-rollout`, sprint=`sprint-002-vscode-mvp-hardening-and-desktop-foundation-guardrails`, docs=`.repo-ai-governor/context/dev/project-054-vscode-secondary-surface-rollout`, plan=`.repo-ai-governor/context/dev/project-054-vscode-secondary-surface-rollout/sprint-002-vscode-mvp-hardening-and-desktop-foundation-guardrails/plan.md`, tasks=`.repo-ai-governor/context/dev/project-054-vscode-secondary-surface-rollout/sprint-002-vscode-mvp-hardening-and-desktop-foundation-guardrails/tasks/`, checklist=`.repo-ai-governor/context/dev/project-054-vscode-secondary-surface-rollout/sprint-002-vscode-mvp-hardening-and-desktop-foundation-guardrails/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-054-vscode-secondary-surface-rollout/sprint-002-vscode-mvp-hardening-and-desktop-foundation-guardrails/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-054-vscode-secondary-surface-rollout/sprint-002-vscode-mvp-hardening-and-desktop-foundation-guardrails/review/`, status=`active`, note=`Activated on 2026-04-07 after TK-640 completed sprint-001 closeout`
 
 ## Planned Follow-Up Streams
 

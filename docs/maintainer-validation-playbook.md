@@ -28,6 +28,7 @@ Published tarballs are expected to include:
 6. `.codex/skills/`
 
 Repo-local skills are shipped as reference assets only. They are not automatically copied into target repositories.
+The real app workspaces under `apps/vscode-extension` and `apps/desktop` remain source-checkout validation surfaces; the published tarball can still carry internal `dist/**` build payloads, but it does not ship those app workspaces as standalone package-install roots.
 
 ## 3. Real-project Validation Runbook
 
@@ -95,6 +96,31 @@ Use them to validate:
 1. Root examples remain coherent.
 2. Example docs still match runnable assets.
 3. Runtime/example expectations do not drift silently.
+
+### 4.1 VS Code Secondary Surface Validation
+
+Use this runbook when refreshing the editor-native companion support boundary:
+
+```bash
+pnpm exec vitest run apps/vscode-extension/test/vscode-extension-contract.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-selection-store.test.ts apps/vscode-extension/test/vscode-extension-packaging-boundary.test.ts --maxWorkers=1 --maxConcurrency=1
+pnpm run build
+pnpm pack --json --dry-run
+pnpm run check:ide-entry-smoke
+pnpm run check:ide-docs-parity
+pnpm exec biome check apps/vscode-extension/src apps/vscode-extension/test apps/vscode-extension/package.json apps/vscode-extension/README.md
+```
+
+Optional manual rehearsal:
+
+```bash
+code --extensionDevelopmentPath <governor-repo>/apps/vscode-extension <target-repo>
+```
+
+Notes:
+
+1. Current formal support is limited to a built source checkout plus one extension-development host.
+2. Use `pnpm pack --json --dry-run` to verify the published artifact still omits the extension workspace and installable bundle even if internal `dist/apps/vscode-extension/**` payloads remain.
+3. Do not claim npm/tgz, VSIX, or Marketplace support until a separate packaging rehearsal is added and reflected in `docs/support-matrix.md`.
 
 ## 5. Clean-room And Release Verification
 

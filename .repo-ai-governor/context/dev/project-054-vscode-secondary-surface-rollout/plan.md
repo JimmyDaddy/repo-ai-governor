@@ -18,13 +18,13 @@
 
 ## 2.1 sprint-001-vscode-support-boundary-and-packaging-narrative
 
-- Status: active
+- Status: completed
 - Sprint Goal: 明确 VS Code extension 的正式支持边界、安装说明与 support matrix 口径。
-- Task Package: `TK-607`、`TK-608`、`TK-609`。
+- Task Package: `TK-607`、`TK-608`、`TK-609`、`TK-640`。
 
 ## 2.2 sprint-002-vscode-mvp-hardening-and-desktop-foundation-guardrails
 
-- Status: planned
+- Status: active
 - Sprint Goal: 对 VS Code MVP 做定向 hardening，同时把 desktop 的 non-goal 说清楚。
 - Task Package: `TK-610`、`TK-611`、`TK-612`。
 
@@ -32,10 +32,11 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 |---|---|---|---|---|---|
-| TK-607 | sprint-001 | freeze VS Code secondary surface support boundary and packaging matrix | surface/contract | project-052 closeout recommended | in_progress |
-| TK-608 | sprint-001 | align support matrix maintainer evidence and installer narrative for VS Code extension | docs/evidence | TK-607 | planned |
-| TK-609 | sprint-001 | close VS Code secondary surface declaration with smoke and docs parity evidence | surface/acceptance | TK-607、TK-608 | planned |
-| TK-610 | sprint-002 | freeze VS Code MVP gap list and desktop foundation non-goal guardrails | surface/boundary | TK-609 | planned |
+| TK-607 | sprint-001 | freeze VS Code secondary surface support boundary and packaging matrix | surface/contract | project-052 closeout recommended | completed |
+| TK-608 | sprint-001 | align support matrix maintainer evidence and installer narrative for VS Code extension | docs/evidence | TK-607 | completed |
+| TK-609 | sprint-001 | close VS Code secondary surface declaration with smoke and docs parity evidence | surface/acceptance | TK-607、TK-608 | completed |
+| TK-640 | sprint-001 | sprint-001 closeout and sprint-002 activation handoff | closeout/handoff | TK-607、TK-608、TK-609、CR-001、CR-002 | completed |
+| TK-610 | sprint-002 | freeze VS Code MVP gap list and desktop foundation non-goal guardrails | surface/boundary | TK-609、TK-640 | in_progress |
 | TK-611 | sprint-002 | implement targeted VS Code MVP hardening and trust-sensitive diagnostics follow-through | implementation | TK-610 | planned |
 | TK-612 | sprint-002 | close project-054 with secondary surface rollout summary and desktop foundation recommendation | project/closeout | TK-610、TK-611 | planned |
 
@@ -56,3 +57,5 @@
 1. 2026-04-06：基于 `DA-588` 创建 `project-054` planned stream，作为 priority roadmap 的 secondary surface follow-up。
 2. 2026-04-06：已写入 `sprint-001 ~ sprint-002` 与 `TK-607 ~ TK-612` skeleton，待后续按顺序激活。
 3. 2026-04-07：`project-053` final closeout 完成后，`project-054 / sprint-001` 被激活为当前 primary stream，`TK-607` 已切换为 `in_progress`。
+4. 2026-04-07：`TK-607 ~ TK-609` 已完成 VS Code secondary surface boundary freeze、installer/support-matrix narrative alignment 与 smoke/docs parity evidence，当前进入 sprint-001 fresh reviewer CR loop。
+5. 2026-04-07：`CR-001` 已完成 accepted packaging-boundary finding 修复并收口；`CR-002` 已完成 accepted docs-parity truthfulness finding 修复并 clean resolved，`TK-640 / DA-640` 已完成 sprint-001 closeout，并把下一边界固定为 `sprint-002 / TK-610`。

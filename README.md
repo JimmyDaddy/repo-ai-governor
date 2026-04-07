@@ -146,7 +146,8 @@ Use `upgrade` preview first. Keep the emitted `report_path` from preview and the
 2. `tgz` is not offline/self-contained; package installation still resolves external dependencies from the npm registry.
 3. If a target repository already uses Yarn/npm or has a dirty worktree, start with `dist-binary`; otherwise start with `path` and move to `link` or `tgz` only when the workflow requires it.
 4. Session shell, React-shell command surfaces, workflow editing, upgrade analysis, HITL notifications, and troubleshooting details are covered in the local adoption playbook.
-5. Repository-local Codex workflow helpers ship under `.codex/skills/`; they are included for self-host and maintainer flows, but external adopters do not need to vendor them unless they want the same local skill ergonomics inside their own repository.
+5. The optional VS Code companion surface currently runs only from a built governor source checkout via `apps/vscode-extension`; published npm/tgz install may still carry internal `dist/apps/vscode-extension/**` payloads, but it does not provide a supported VSIX, Marketplace, or installable extension bundle.
+6. Repository-local Codex workflow helpers ship under `.codex/skills/`; they are included for self-host and maintainer flows, but external adopters do not need to vendor them unless they want the same local skill ergonomics inside their own repository.
 
 ## 4. Read More
 
