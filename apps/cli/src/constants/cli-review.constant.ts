@@ -129,9 +129,14 @@ export const CLI_REVIEW_REQUIRED_NORMATIVE_INPUTS = [
  */
 export const CLI_REVIEW_ARTIFACT_FILE_PREFIX_BY_STATUS: Record<CliReviewLifecycleStatus, string> = {
   [CliReviewLifecycleStatus.REVIEW_PENDING]: 'code_review_',
-  [CliReviewLifecycleStatus.VERIFIED]: 'verified_review_',
+  [CliReviewLifecycleStatus.VERIFIED]: 'verified_code_review_',
   [CliReviewLifecycleStatus.RESOLVED]: 'resolved_code_review_',
 };
+
+/**
+ * Lists legacy lifecycle prefixes that remain readable for backward compatibility.
+ */
+export const CLI_REVIEW_LEGACY_ARTIFACT_FILE_PREFIXES = ['verified_review_'] as const;
 
 /**
  * Lists generated path prefixes that should be excluded from working-tree review scope.

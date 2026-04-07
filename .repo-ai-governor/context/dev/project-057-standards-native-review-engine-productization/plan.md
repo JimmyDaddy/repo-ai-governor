@@ -1,6 +1,6 @@
 # project-057-standards-native-review-engine-productization 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-06
 - Stage Mapping: standards-native review engine productization
 - Phase Mapping: review rule registry / provenance-aware findings / standards-guided reviewer handoff / coverage reporting and rollout adoption
@@ -92,3 +92,6 @@
 10. 2026-04-07：`CR-001` clean `resolved` 后，`TK-648 / DA-648` 已完成 sprint-003 closeout，并将 primary stream 推进到 `sprint-004 / TK-633`。
 11. 2026-04-07：`TK-633`、`TK-634`、`TK-635` 的实现、coverage/activation reporting 与 rollout evidence 已完成，`sprint-004` 准备进入 fresh reviewer CR round。
 12. 2026-04-07：`CR-001` clean `resolved` 后，`TK-649 / DA-649` 已完成 sprint-004 closeout，并将当前 sprint surface 保留为 `project-057` project-final CR loop 的 active closeout surface。
+13. 2026-04-07：`CR-002` 已作为 project-final delegated review round 打开；在该 round 收口前，`sprint-004` 聚合状态回到 `active`，用于承载 project-final CR task 与 review lifecycle。
+14. 2026-04-07：`CR-002` clean `resolved` 后，project-final closeout 已完成；`sprint-004` 恢复为 `completed`，并将 primary stream 切换到 `project-056 / sprint-001`。
+15. 2026-04-07：项目完成态审计摘要已落盘：`project-057-standards-native-review-engine-productization-completion-audit-summary.md`。

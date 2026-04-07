@@ -13,6 +13,7 @@ import { CLI_CHANGE_RISK_FILE_CATEGORY_PATTERNS } from '../../constants/cli-gove
 import {
   CLI_REVIEW_ARTIFACT_FILE_PREFIX_BY_STATUS,
   CLI_REVIEW_GENERATED_PATH_PREFIXES,
+  CLI_REVIEW_LEGACY_ARTIFACT_FILE_PREFIXES,
   type CliReviewLifecycleStatus,
 } from '../../constants/cli-review.constant.js';
 import type { CliReviewStreamContext } from '../../types/interfaces/cli-review-command.interface.js';
@@ -54,6 +55,10 @@ export class CliReviewLifecycleRuntime {
 
     try {
       const currentContextContent = await readFile(currentContextPath, 'utf8');
+      const worktreeReviewTargetSection = this.extractSection(
+        currentContextContent,
+        'Worktree Review Target',
+      );
       const activeStreamsSection = this.extractSection(currentContextContent, 'Active Streams');
       const primaryDescriptor =
         activeStreamsSection
@@ -69,26 +74,31 @@ export class CliReviewLifecycleRuntime {
         currentContextContent.match(/^- Project:\s*`([^`]+)`/mu)?.[1]?.trim() ?? null;
       const primarySprintId =
         currentContextContent.match(/^- Sprint:\s*`([^`]+)`/mu)?.[1]?.trim() ?? null;
+      const worktreeReviewDirPath = this.resolveRepoRelativePath(
+        this.extractSectionMetadataField(worktreeReviewTargetSection, 'Review records'),
+      );
 
       if (!primaryDescriptor) {
         return {
           projectId: primaryProjectId,
           sprintId: primarySprintId,
-          reviewDirPath: fallbackReviewDirPath,
+          reviewDirPath: worktreeReviewDirPath ?? fallbackReviewDirPath,
           tasksDirPath: null,
           checklistPath: null,
           csvPath: null,
           currentContextPath,
-          usesFallbackReviewDir: true,
+          usesFallbackReviewDir: worktreeReviewDirPath === null,
         };
       }
+
+      const activeReviewDirPath = this.resolveRepoRelativePath(
+        this.extractBacktickField(primaryDescriptor, 'review'),
+      );
 
       return {
         projectId: this.extractBacktickField(primaryDescriptor, 'project') ?? primaryProjectId,
         sprintId: this.extractBacktickField(primaryDescriptor, 'sprint') ?? primarySprintId,
-        reviewDirPath:
-          this.resolveRepoRelativePath(this.extractBacktickField(primaryDescriptor, 'review')) ??
-          fallbackReviewDirPath,
+        reviewDirPath: worktreeReviewDirPath ?? activeReviewDirPath ?? fallbackReviewDirPath,
         tasksDirPath: this.resolveRepoRelativePath(
           this.extractBacktickField(primaryDescriptor, 'tasks'),
         ),
@@ -97,7 +107,7 @@ export class CliReviewLifecycleRuntime {
         ),
         csvPath: this.resolveRepoRelativePath(this.extractBacktickField(primaryDescriptor, 'csv')),
         currentContextPath,
-        usesFallbackReviewDir: false,
+        usesFallbackReviewDir: worktreeReviewDirPath === null && activeReviewDirPath === null,
       };
     } catch {
       return {
@@ -219,7 +229,10 @@ export class CliReviewLifecycleRuntime {
    */
   public extractReviewSlugFromArtifactPath(artifactPath: string): string {
     const fileName = artifactPath.replace(/\\/gu, '/').split('/').at(-1) ?? '';
-    for (const prefix of Object.values(CLI_REVIEW_ARTIFACT_FILE_PREFIX_BY_STATUS)) {
+    for (const prefix of [
+      ...Object.values(CLI_REVIEW_ARTIFACT_FILE_PREFIX_BY_STATUS),
+      ...CLI_REVIEW_LEGACY_ARTIFACT_FILE_PREFIXES,
+    ]) {
       if (fileName.startsWith(prefix) && fileName.endsWith('.md')) {
         return fileName.slice(prefix.length, -3);
       }
@@ -307,6 +320,22 @@ export class CliReviewLifecycleRuntime {
 
     const rawValue = descriptor.slice(valueStartIndex, endIndex).trim();
     return rawValue.length > 0 ? rawValue : null;
+  }
+
+  private extractSectionMetadataField(sectionContent: string, fieldName: string): string | null {
+    const fieldMatch = sectionContent.match(new RegExp(`^- ${fieldName}:\\s*(.+)$`, 'mu'));
+    const rawValue = fieldMatch?.[1]?.trim();
+    if (!rawValue) {
+      return null;
+    }
+
+    const backtickMatch = rawValue.match(/^`([^`]+)`$/u);
+    const normalizedValue = (backtickMatch?.[1] ?? rawValue).trim();
+    if (normalizedValue.length === 0 || normalizedValue === 'none') {
+      return null;
+    }
+
+    return normalizedValue;
   }
 
   private resolveRepoRelativePath(relativePath: string | null): string | null {

@@ -3,20 +3,20 @@
 ## Primary Stream
 
 - Status: active
-- Project: `project-057-standards-native-review-engine-productization`
-- Sprint: `sprint-004-coverage-reporting-and-rollout-adoption`
-- Docs root: `.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization`
-- Task records: `.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-004-coverage-reporting-and-rollout-adoption/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-004-coverage-reporting-and-rollout-adoption/review/`
-- Note: `2026-04-07` 在 `TK-648` 完成 `sprint-003` closeout 后切换到 `project-057 / sprint-004`；`TK-649` 完成后当前 surface 继续作为 `project-057` project-final CR 的 active closeout surface，随后再切到 `project-056`。
+- Project: `project-056-standards-runtime-loader-and-pack-productization`
+- Sprint: `sprint-001-standards-runtime-loader-product-path`
+- Docs root: `.repo-ai-governor/context/dev/project-056-standards-runtime-loader-and-pack-productization`
+- Task records: `.repo-ai-governor/context/dev/project-056-standards-runtime-loader-and-pack-productization/sprint-001-standards-runtime-loader-product-path/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-056-standards-runtime-loader-and-pack-productization/sprint-001-standards-runtime-loader-product-path/review/`
+- Note: `2026-04-07` `project-057` project-final `CR-002` clean `resolved` 并完成 completion audit / closeout 后，primary stream 已切换到 `project-056 / sprint-001`。
 
 ## Active Streams
 
-- `active-1`: role=`primary`, project=`project-057-standards-native-review-engine-productization`, sprint=`sprint-004-coverage-reporting-and-rollout-adoption`, docs=`.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization`, plan=`.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-004-coverage-reporting-and-rollout-adoption/plan.md`, tasks=`.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-004-coverage-reporting-and-rollout-adoption/tasks/`, checklist=`.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-004-coverage-reporting-and-rollout-adoption/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-004-coverage-reporting-and-rollout-adoption/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-057-standards-native-review-engine-productization/sprint-004-coverage-reporting-and-rollout-adoption/review/`, status=`active`, note=`Sprint-004 closeout is complete; this completed sprint surface is intentionally retained as the active project-final CR surface before switching to project-056`
+- `active-1`: role=`primary`, project=`project-056-standards-runtime-loader-and-pack-productization`, sprint=`sprint-001-standards-runtime-loader-product-path`, docs=`.repo-ai-governor/context/dev/project-056-standards-runtime-loader-and-pack-productization`, plan=`.repo-ai-governor/context/dev/project-056-standards-runtime-loader-and-pack-productization/sprint-001-standards-runtime-loader-product-path/plan.md`, tasks=`.repo-ai-governor/context/dev/project-056-standards-runtime-loader-and-pack-productization/sprint-001-standards-runtime-loader-product-path/tasks/`, checklist=`.repo-ai-governor/context/dev/project-056-standards-runtime-loader-and-pack-productization/sprint-001-standards-runtime-loader-product-path/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-056-standards-runtime-loader-and-pack-productization/sprint-001-standards-runtime-loader-product-path/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-056-standards-runtime-loader-and-pack-productization/sprint-001-standards-runtime-loader-product-path/review/`, status=`active`, note=`Activated immediately after project-057 final closeout on 2026-04-07`
 
 ## Planned Follow-Up Streams
 
-- `planned-1`: role=`follow-up`, project=`project-056-standards-runtime-loader-and-pack-productization`, sprint=`sprint-001-standards-runtime-loader-product-path`, docs=`.repo-ai-governor/context/dev/project-056-standards-runtime-loader-and-pack-productization`, plan=`.repo-ai-governor/context/dev/project-056-standards-runtime-loader-and-pack-productization/sprint-001-standards-runtime-loader-product-path/plan.md`, tasks=`.repo-ai-governor/context/dev/project-056-standards-runtime-loader-and-pack-productization/sprint-001-standards-runtime-loader-product-path/tasks/`, checklist=`.repo-ai-governor/context/dev/project-056-standards-runtime-loader-and-pack-productization/sprint-001-standards-runtime-loader-product-path/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-056-standards-runtime-loader-and-pack-productization/sprint-001-standards-runtime-loader-product-path/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-056-standards-runtime-loader-and-pack-productization/sprint-001-standards-runtime-loader-product-path/review/`, status=`planned`, note=`Deferred behind active project-057 by user-directed execution order on 2026-04-06`
+- none currently registered.
 
 ## Completed Stream History
 

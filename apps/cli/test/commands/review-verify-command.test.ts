@@ -738,7 +738,9 @@ describe('CliReviewVerifyCommand', () => {
         (artifact) => artifact.id === 'review_artifact',
       )?.path;
 
-      expect(String(transitionedReviewArtifactPath)).toContain('verified_review_tk-130-open.md');
+      expect(String(transitionedReviewArtifactPath)).toContain(
+        'verified_code_review_tk-130-open.md',
+      );
 
       const verifyPayload = JSON.parse(await readFile(String(verifyArtifactPath), 'utf8')) as {
         overallDecision?: string;

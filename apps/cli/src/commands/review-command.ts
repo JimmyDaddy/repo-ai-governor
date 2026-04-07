@@ -25,6 +25,9 @@ import {
 import {
   CliDelegatedReviewActivationLevel,
   CliReviewArtifactId,
+  CliReviewFindingExecutionMode,
+  CliReviewFindingSeverity,
+  CliReviewFindingSourceType,
   CliReviewLifecycleStatus,
   CliReviewScopeMode,
 } from '../constants/cli-review.constant.js';
@@ -123,7 +126,7 @@ export class CliReviewCommand implements CliCommandExecutor {
       riskEvaluation,
       streamContext,
     );
-    const hybridReviewContext = hybridReviewRuntime.buildHybridReviewContext({
+    const initialHybridReviewContext = hybridReviewRuntime.buildHybridReviewContext({
       requestId,
       scope: {
         reviewMode,
@@ -136,6 +139,31 @@ export class CliReviewCommand implements CliCommandExecutor {
       changedPaths,
       findings: generatedFindings,
     });
+    const lifecycleGuardFindings = this.buildLifecycleGuardFindings(
+      context,
+      changedPaths,
+      initialHybridReviewContext,
+    );
+    const seededFindings =
+      lifecycleGuardFindings.length > 0
+        ? [...generatedFindings, ...lifecycleGuardFindings]
+        : generatedFindings;
+    const hybridReviewContext =
+      seededFindings === generatedFindings
+        ? initialHybridReviewContext
+        : hybridReviewRuntime.buildHybridReviewContext({
+            requestId,
+            scope: {
+              reviewMode,
+              scopeSummary,
+              reviewedPaths: changedPaths,
+              excludedPaths: reviewRuntime.resolveGeneratedPathPrefixes(),
+              riskLevel: riskEvaluation.riskLevel,
+              requiredAction: riskEvaluation.requiredAction,
+            },
+            changedPaths,
+            findings: seededFindings,
+          });
     const findings = hybridReviewRuntime.mergeFindings({
       deterministicFindings: hybridReviewContext.deterministicFindings,
       delegatedFindings: hybridReviewContext.standardsGuidedFindings,
@@ -649,6 +677,87 @@ export class CliReviewCommand implements CliCommandExecutor {
                 '这次 review 在生成阶段就已 resolved；review-verify 仅在需要显式 closure receipt 时才是可选动作。',
               ),
     ];
+  }
+
+  private buildLifecycleGuardFindings(
+    context: CliCommandExecutorContext,
+    changedPaths: string[],
+    hybridReviewContext: CliHybridReviewContext,
+  ): CliReviewFinding[] {
+    const buildEvidenceFinding = this.buildBuildEvidenceGuardFinding(
+      context,
+      changedPaths,
+      hybridReviewContext,
+    );
+
+    return buildEvidenceFinding ? [buildEvidenceFinding] : [];
+  }
+
+  private buildBuildEvidenceGuardFinding(
+    context: CliCommandExecutorContext,
+    changedPaths: string[],
+    hybridReviewContext: CliHybridReviewContext,
+  ): CliReviewFinding | null {
+    if (!hybridReviewContext.uncoveredRuleIds.includes('review-rule.cs-034-build-evidence')) {
+      return null;
+    }
+
+    const firstCodeAffectingPath =
+      changedPaths.find((changedPath) => /^(apps|packages|bin|test)\//u.test(changedPath)) ?? null;
+    if (!firstCodeAffectingPath) {
+      return null;
+    }
+
+    return {
+      findingId: this.createSyntheticFindingId(
+        'review-rule.cs-034-build-evidence',
+        firstCodeAffectingPath,
+      ),
+      fingerprint: `review-rule.cs-034-build-evidence:${firstCodeAffectingPath}:0`,
+      ruleId: 'review-rule.cs-034-build-evidence',
+      severity: CliReviewFindingSeverity.P1,
+      sourceType: CliReviewFindingSourceType.STANDARDS_GUIDED_INFERENCE,
+      executionMode: CliReviewFindingExecutionMode.STANDARDS_GUIDED,
+      semanticKey: 'code-standards.cs-034',
+      standardsSourceRefs: [
+        '.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md#CS-034',
+        '.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md#completion-claim-and-review-closure-build-protocol',
+      ],
+      title: context.localizeText(
+        'Same-window build evidence is required before this review can resolve',
+        '在这次 review 可以 resolved 之前，必须补齐同窗口 build 证据。',
+      ),
+      file: firstCodeAffectingPath,
+      summary: context.localizeText(
+        'This scope changes code-affecting paths, but the current review window still lacks the required same-window `pnpm run build` evidence.',
+        '当前 scope 修改了 code-affecting 路径，但这次 review 窗口里仍缺少必需的同窗口 `pnpm run build` 证据。',
+      ),
+      impact: context.localizeText(
+        'Emitting a resolved lifecycle artifact without build evidence would create a false-green closeout path for code-affecting work.',
+        '如果在缺少 build 证据时仍输出 resolved lifecycle artifact，会为 code-affecting 变更制造一条 false-green 的收口路径。',
+      ),
+      suggestedAction: context.localizeText(
+        'Run `pnpm run build` in the same change window and keep this review open until that evidence is recorded in the closeout trail.',
+        '在同一变更窗口执行 `pnpm run build`，并在 closeout 证据链记录该结果之前保持这轮 review 处于打开状态。',
+      ),
+      evidence: [
+        firstCodeAffectingPath,
+        '.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md#CS-034',
+        '.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md#completion-claim-and-review-closure-build-protocol',
+      ],
+      reviewerRationale: context.localizeText(
+        'The projected CS-034 rule is applicable to this scope and must stay actionable until build evidence exists.',
+        '投影出的 CS-034 规则已经命中当前 scope；在 build 证据存在之前，它必须保持为可执行 finding。',
+      ),
+    };
+  }
+
+  private createSyntheticFindingId(ruleId: string, filePath: string, line = 0): string {
+    return `${ruleId}-${filePath}-${line}`
+      .replace(/[^A-Za-z0-9]+/gu, '-')
+      .replace(/^-+/u, '')
+      .replace(/-+$/u, '')
+      .toLowerCase();
   }
 
   private renderReviewArtifact(

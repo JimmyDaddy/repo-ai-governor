@@ -20,4 +20,8 @@
 - [x] TK-649 sprint-004 exit acceptance and project-final review activation handoff
   - 2026-04-07：在 `TK-633`、`TK-634`、`TK-635` 与 `CR-001` 全部进入终态后创建本任务。
   - 2026-04-07：已完成 `DA-649`、project/sprint/context 写回，并将 sprint-004 恢复为 completed truth；当前 surface 保留给后续 project-final CR loop。
-  - 2026-04-07: Completed sprint-004 closeout via TK-649/DA-649 and retained the sprint surface as the active project-final CR surface.
+- [x] CR-002 project-057-standards-native-review-engine-productization final delegated review loop round 2
+  - 2026-04-07：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-07：fresh reviewer round 2 返回 4 条 actionable findings，主 agent 已全部复核为 `accepted`，并完成 triage 与修复计划确认，当前推进到 `verified`。
+  - 2026-04-07：已完成 plan/runtime/prefix 三类修复，并通过 `pnpm run build`、targeted vitest、`pnpm run test:packages`、`pnpm run test:integration`、`pnpm run check` 与治理门禁，当前 round clean `resolved`。
+  - 2026-04-07: fixed all four accepted project-final findings and closed CR-002 clean as resolved.

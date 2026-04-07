@@ -24,3 +24,5 @@
 2. 2026-04-07：`TK-648 / DA-648` 完成 sprint-003 closeout 后被激活为当前 primary sprint，`TK-633` 已切换为 `in_progress`。
 3. 2026-04-07：`TK-633`、`TK-634`、`TK-635` 的实现边界、rollout evidence 与本地验证已完成，下一步进入 sprint scoped CR loop。
 4. 2026-04-07：`CR-001` clean `resolved` 后，`TK-649 / DA-649` 已完成 sprint-004 closeout，并将当前 surface 保留给 `project-057` 的 project-final CR loop。
+5. 2026-04-07：`CR-002` 已作为 project-final round reopened；在其仍处于 `review_pending/verified` 期间，本 sprint 重新保持 `active` 真值，直至 project-final CR 收口。
+6. 2026-04-07：`CR-002` clean `resolved` 后，sprint-004 已恢复为最终 `completed` 真值，并把 primary stream 交接到 `project-056 / sprint-001`。

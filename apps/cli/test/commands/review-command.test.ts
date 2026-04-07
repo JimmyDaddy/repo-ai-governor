@@ -294,10 +294,10 @@ describe('CliReviewCommand', () => {
       );
       expect(requestPayload.hybridReviewContext?.delegatedReviewEnabled).toBe(false);
       expect(requestPayload.hybridReviewContext?.coverageSummary?.totalApplicableRuleCount).toBe(2);
-      expect(requestPayload.hybridReviewContext?.coverageSummary?.residualGapRuleCount).toBe(1);
+      expect(requestPayload.hybridReviewContext?.coverageSummary?.residualGapRuleCount).toBe(0);
       expect(requestPayload.hybridReviewContext?.coverageSummary?.manualOnlyGapRuleCount).toBe(0);
       expect(requestPayload.hybridReviewContext?.delegatedReviewActivationPolicy?.level).toBe(
-        CliDelegatedReviewActivationLevel.RECOMMENDED,
+        CliDelegatedReviewActivationLevel.OPTIONAL,
       );
       expect(
         requestPayload.hybridReviewContext?.delegatedReviewActivationPolicy?.manualFollowUpRequired,
@@ -311,8 +311,22 @@ describe('CliReviewCommand', () => {
       expect(
         requestPayload.hybridReviewContext?.delegatedReviewRequest?.requiredNormativeInputs,
       ).toEqual(expect.arrayContaining(['AGENTS.md']));
-      expect(requestPayload.hybridReviewContext?.uncoveredRuleIds).toEqual(
-        expect.arrayContaining(['review-rule.cs-034-build-evidence']),
+      expect(requestPayload.findings).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            ruleId: 'review-rule.cs-034-build-evidence',
+            sourceType: CliReviewFindingSourceType.STANDARDS_GUIDED_INFERENCE,
+            executionMode: CliReviewFindingExecutionMode.STANDARDS_GUIDED,
+            semanticKey: 'code-standards.cs-034',
+          }),
+        ]),
+      );
+      expect(requestPayload.hybridReviewContext?.uncoveredRuleIds).not.toContain(
+        'review-rule.cs-034-build-evidence',
+      );
+      expect(requestPayload.hybridReviewContext?.coverageSummary?.residualGapRuleCount).toBe(0);
+      expect(requestPayload.hybridReviewContext?.delegatedReviewActivationPolicy?.level).toBe(
+        CliDelegatedReviewActivationLevel.OPTIONAL,
       );
 
       const reviewArtifactContent = await readFile(String(reviewArtifactPath), 'utf8');
@@ -325,6 +339,7 @@ describe('CliReviewCommand', () => {
       expect(reviewArtifactContent).toContain('transport view');
       expect(reviewArtifactContent).toContain('code_change_without_test_change');
       expect(reviewArtifactContent).toContain('risk_inference');
+      expect(reviewArtifactContent).toContain('review-rule.cs-034-build-evidence');
     } finally {
       await rm(fixture.tempRoot, { recursive: true, force: true });
     }
@@ -401,7 +416,7 @@ describe('CliReviewCommand', () => {
     }
   });
 
-  it('resolves the review artifact when uncovered projected rules remain without emitted findings', async () => {
+  it('keeps code-affecting reviews pending by emitting a CS-034 finding when build evidence is still missing', async () => {
     const fixture = await createReviewFixture();
 
     try {
@@ -435,13 +450,21 @@ describe('CliReviewCommand', () => {
       const requestPayload = JSON.parse(
         await readFile(String(requestPath), 'utf8'),
       ) as CliReviewRequestArtifactPayload;
-      expect(requestPayload.reviewArtifactStatus).toBe('resolved');
-      expect(requestPayload.findings).toHaveLength(0);
-      expect(requestPayload.hybridReviewContext?.uncoveredRuleIds).toEqual(
-        expect.arrayContaining(['review-rule.cs-034-build-evidence']),
+      expect(requestPayload.reviewArtifactStatus).toBe('review_pending');
+      expect(requestPayload.findings).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            ruleId: 'review-rule.cs-034-build-evidence',
+            sourceType: CliReviewFindingSourceType.STANDARDS_GUIDED_INFERENCE,
+            executionMode: CliReviewFindingExecutionMode.STANDARDS_GUIDED,
+          }),
+        ]),
+      );
+      expect(requestPayload.hybridReviewContext?.uncoveredRuleIds).not.toContain(
+        'review-rule.cs-034-build-evidence',
       );
       expect(requestPayload.hybridReviewContext?.delegatedReviewActivationPolicy?.level).toBe(
-        CliDelegatedReviewActivationLevel.RECOMMENDED,
+        CliDelegatedReviewActivationLevel.OPTIONAL,
       );
       expect(requestPayload.hybridReviewContext?.uncoveredRuleIds).not.toContain(
         'review-rule.cs-033-user-facing-i18n',
@@ -455,11 +478,13 @@ describe('CliReviewCommand', () => {
       );
 
       const reviewArtifactContent = await readFile(String(reviewArtifactPath), 'utf8');
-      expect(String(reviewArtifactPath)).toContain('/resolved_code_review_');
+      expect(String(reviewArtifactPath)).toContain('/code_review_');
       expect(reviewArtifactContent).toContain(
-        'remaining projected rule coverage gaps were recorded for future delegated or manual follow-up',
+        'Same-window build evidence is required before this review can resolve',
       );
-      expect(reviewArtifactContent).toContain('Residual gap rules');
+      expect(reviewArtifactContent).toContain(
+        'Run review-verify after applying fixes or when you want an explicit verification decision.',
+      );
     } finally {
       await rm(fixture.tempRoot, { recursive: true, force: true });
     }
@@ -504,13 +529,20 @@ describe('CliReviewCommand', () => {
         await readFile(String(requestPath), 'utf8'),
       ) as CliReviewRequestArtifactPayload;
 
-      expect(requestPayload.reviewArtifactStatus).toBe('resolved');
-      expect(requestPayload.findings).toHaveLength(0);
-      expect(requestPayload.hybridReviewContext?.uncoveredRuleIds).toEqual(
+      expect(requestPayload.reviewArtifactStatus).toBe('review_pending');
+      expect(requestPayload.findings).toEqual(
         expect.arrayContaining([
-          'review-rule.cs-033-user-facing-i18n',
-          'review-rule.cs-034-build-evidence',
+          expect.objectContaining({
+            ruleId: 'review-rule.cs-034-build-evidence',
+            sourceType: CliReviewFindingSourceType.STANDARDS_GUIDED_INFERENCE,
+          }),
         ]),
+      );
+      expect(requestPayload.hybridReviewContext?.uncoveredRuleIds).toEqual(
+        expect.arrayContaining(['review-rule.cs-033-user-facing-i18n']),
+      );
+      expect(requestPayload.hybridReviewContext?.uncoveredRuleIds).not.toContain(
+        'review-rule.cs-034-build-evidence',
       );
     } finally {
       await rm(fixture.tempRoot, { recursive: true, force: true });
