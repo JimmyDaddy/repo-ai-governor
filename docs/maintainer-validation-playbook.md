@@ -145,7 +145,7 @@ Notes:
 1. `release:verify-cleanroom-local-install` validates packaged-install paths and can emit a machine-readable report with `--output <path>`.
 2. `release:verify-local` includes local verification surfaces that are useful before rollout.
 3. `release:ga-check` is for maintainers deciding whether the current state is ready for broader release, not for ordinary adopters.
-4. Current `project-052` evidence backlinks expected by this playbook are `.tmp/project-052-sprint-001-cleanroom-report.json`, `.tmp/project-052-sprint-001-local-distribution-report.json`, and `.tmp/project-052-sprint-002-command-rehearsal-summary.json`.
+4. Current evidence backlinks expected by this playbook are `.tmp/project-052-sprint-001-cleanroom-report.json`, `.tmp/project-052-sprint-001-local-distribution-report.json`, `.tmp/project-052-sprint-002-command-rehearsal-summary.json`, `.tmp/project-055-sprint-001-pilot-1-rehearsal-summary.json`, `.tmp/project-055-sprint-001-pilot-2-rehearsal-summary.json`, and `.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-002-ga-evidence-consolidation-and-closeout/tasks/DA-616-ga-evidence-dossier-and-cross-surface-backlinks.md`.
 5. When those signals change, update `docs/support-matrix.md` first instead of creating a second status table in this playbook.
 
 ## 6. Interpreting External-adopter Warnings
@@ -171,3 +171,6 @@ Interpretation:
 7. `.tmp/project-052-sprint-001-cleanroom-report.json`
 8. `.tmp/project-052-sprint-001-local-distribution-report.json`
 9. `.tmp/project-052-sprint-002-command-rehearsal-summary.json`
+10. `.tmp/project-055-sprint-001-pilot-1-rehearsal-summary.json`
+11. `.tmp/project-055-sprint-001-pilot-2-rehearsal-summary.json`
+12. `.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-002-ga-evidence-consolidation-and-closeout/tasks/DA-616-ga-evidence-dossier-and-cross-surface-backlinks.md`

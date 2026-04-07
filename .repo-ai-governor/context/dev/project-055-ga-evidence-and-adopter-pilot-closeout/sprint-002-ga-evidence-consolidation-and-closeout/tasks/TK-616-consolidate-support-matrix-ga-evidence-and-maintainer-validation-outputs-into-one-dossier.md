@@ -1,6 +1,6 @@
 # TK-616 consolidate support matrix GA evidence and maintainer validation outputs into one dossier
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-04-06
 - Task ID: `TK-616`
 - Owner: `AI-Agent`
@@ -44,7 +44,11 @@
 
 ## 7. Development Verification
 
-1. 待执行：evidence dossier targeted verification
+1. `pnpm run check`
+2. `node ./scripts/governance/check-task-ledger-sync.js`
+3. `node ./scripts/governance/check-sprint-plan-status-sync.js`
+4. `node ./scripts/governance/check-code-review-status-sync.js`
+5. `node ./scripts/governance/check-worktree-review-target.js`
 
 ## 8. Delivery Verification
 
@@ -55,9 +59,15 @@
 
 1. 2026-04-06：任务创建，等待 `sprint-001` 收口。
 2. 2026-04-07：`TK-643 / DA-643` 完成 `sprint-001` closeout 与 activation handoff 后，当前任务切换为 `in_progress`。
+3. 2026-04-07：已完成 `DA-616`，把 `playground` 与 `react-native-image-marker-1.1.x` 的真实试点证据收敛成统一 dossier，并同步刷新 `docs/support-matrix*.md`、`docs/ga-readiness-evidence*.md` 与 `docs/maintainer-validation-playbook*.md` 的 cross-surface backlink。
+4. 2026-04-07：已完成 `pnpm run check`、`check-task-ledger-sync`、`check-sprint-plan-status-sync`、`check-code-review-status-sync` 与 `check-worktree-review-target`，当前实现边界进入 `CR-001` fresh reviewer loop。
 
 ## 10. 产出
 
-1. 待执行：evidence dossier
-2. 待执行：support matrix alignment
-3. 待执行：GA evidence consolidation
+1. `.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-002-ga-evidence-consolidation-and-closeout/tasks/DA-616-ga-evidence-dossier-and-cross-surface-backlinks.md`
+2. `docs/support-matrix.md`
+3. `docs/support-matrix.zh-CN.md`
+4. `docs/ga-readiness-evidence.md`
+5. `docs/ga-readiness-evidence.zh-CN.md`
+6. `docs/maintainer-validation-playbook.md`
+7. `docs/maintainer-validation-playbook.zh-CN.md`

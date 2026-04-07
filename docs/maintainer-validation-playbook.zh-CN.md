@@ -145,7 +145,7 @@ pnpm run release:ga-check
 1. `release:verify-cleanroom-local-install` 用于验证 packaged-install 路径，并支持通过 `--output <path>` 输出机器可读报告。
 2. `release:verify-local` 适合 rollout 前的本地维护者验证。
 3. `release:ga-check` 面向维护者的发布准备判断，不适合作为普通 adopter 的日常命令。
-4. 当前本手册预期回链的 `project-052` 结构化 evidence 包括 `.tmp/project-052-sprint-001-cleanroom-report.json`、`.tmp/project-052-sprint-001-local-distribution-report.json` 与 `.tmp/project-052-sprint-002-command-rehearsal-summary.json`。
+4. 当前本手册预期回链的结构化 evidence 包括 `.tmp/project-052-sprint-001-cleanroom-report.json`、`.tmp/project-052-sprint-001-local-distribution-report.json`、`.tmp/project-052-sprint-002-command-rehearsal-summary.json`、`.tmp/project-055-sprint-001-pilot-1-rehearsal-summary.json`、`.tmp/project-055-sprint-001-pilot-2-rehearsal-summary.json`，以及 `.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-002-ga-evidence-consolidation-and-closeout/tasks/DA-616-ga-evidence-dossier-and-cross-surface-backlinks.md`。
 5. 当这些信号变化时，应先更新 `docs/support-matrix.zh-CN.md`，而不是在本手册里再维护第二张状态表。
 
 ## 6. 如何理解 external-adopter warning
@@ -171,3 +171,6 @@ pnpm run release:ga-check
 7. `.tmp/project-052-sprint-001-cleanroom-report.json`
 8. `.tmp/project-052-sprint-001-local-distribution-report.json`
 9. `.tmp/project-052-sprint-002-command-rehearsal-summary.json`
+10. `.tmp/project-055-sprint-001-pilot-1-rehearsal-summary.json`
+11. `.tmp/project-055-sprint-001-pilot-2-rehearsal-summary.json`
+12. `.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-002-ga-evidence-consolidation-and-closeout/tasks/DA-616-ga-evidence-dossier-and-cross-surface-backlinks.md`
