@@ -102,7 +102,7 @@ Use them to validate:
 Use this runbook when refreshing the editor-native companion support boundary:
 
 ```bash
-pnpm exec vitest run apps/vscode-extension/test/vscode-extension-contract.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-selection-store.test.ts apps/vscode-extension/test/vscode-extension-packaging-boundary.test.ts --maxWorkers=1 --maxConcurrency=1
+pnpm exec vitest run apps/vscode-extension/test/vscode-extension-service-runtime.test.ts apps/vscode-extension/test/vscode-extension-contract.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-selection-store.test.ts apps/vscode-extension/test/vscode-extension-packaging-boundary.test.ts --maxWorkers=1 --maxConcurrency=1
 pnpm run build
 pnpm pack --json --dry-run
 pnpm run check:ide-entry-smoke
@@ -121,6 +121,8 @@ Notes:
 1. Current formal support is limited to a built source checkout plus one extension-development host.
 2. Use `pnpm pack --json --dry-run` to verify the published artifact still omits the extension workspace and installable bundle even if internal `dist/apps/vscode-extension/**` payloads remain.
 3. Do not claim npm/tgz, VSIX, or Marketplace support until a separate packaging rehearsal is added and reflected in `docs/support-matrix.md`.
+4. There is still no dedicated automated extension-development-host launch smoke; the manual `code --extensionDevelopmentPath ...` rehearsal remains optional supporting evidence only.
+5. `project-054` keeps desktop as a foundation-only surface; use this runbook to validate the VS Code companion path, not to widen desktop support claims.
 
 ## 5. Clean-room And Release Verification
 

@@ -69,6 +69,7 @@ code --extensionDevelopmentPath <governor-repo>/apps/vscode-extension <target-re
 1. 当前正式支持只覆盖源码仓 checkout 路径；启动 extension-development host 之前，请先完成 governor 源仓构建。
 2. 已发布的 npm/tgz 包面不包含 `apps/vscode-extension` workspace 或可安装扩展 bundle；其中即便仍有内部 `dist/apps/vscode-extension/**` 产物，也不构成正式支持的 npm/VSIX/Marketplace 分发。
 3. review、HITL、recover、terminate 等 trust-sensitive 命令仍受 `Workspace Trust` 保护，因此请在 trusted workspace 中验证这些能力。
+4. 当前 VS Code MVP 只是面向 execution/review/HITL/context 的 service-backed companion，不替代常规 CLI bootstrap 路径或 session shell。
 
 ## 4. Session Shell 快速上手
 

@@ -1,6 +1,6 @@
 # TK-611 implement targeted VS Code MVP hardening and trust-sensitive diagnostics follow-through
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-06
 - Task ID: `TK-611`
 - Owner: `AI-Agent`
@@ -60,9 +60,11 @@
 ## 9. 执行记录
 
 1. 2026-04-06：任务创建，等待 `TK-610` 完成。
+2. 2026-04-07：`TK-610 / DA-610` 已完成 contract freeze，任务切换为 `in_progress`，开始推进 trust-sensitive diagnostics 与 targeted VS Code MVP hardening。
+3. 2026-04-07：已完成 runtime hardening，把 workspace context / review detail / `@governor` chat 的 service-health 与 trust-sensitive diagnostics 串到同一条 service-owned truth path，并补齐 presentation tests、build、package tests、integration tests 与 IDE smoke/docs parity 证据。
 
 ## 10. 产出
 
-1. 待执行：targeted MVP hardening changes
-2. 待执行：diagnostics follow-through changes
-3. 待执行：verification evidence for `TK-612`
+1. 已完成：在 `Workspace Context`、`Review Detail` 与 `@governor` chat 中补齐 trust-sensitive action diagnostics 与 local orchestration service lifecycle/topology/checkpoint/memory-provider 事实。
+2. 已完成：把 workspace-context snapshot 从 editor-local facts 扩展为 service-health-aware snapshot，并保持所有 UI 面继续复用 service-owned query/command seam。
+3. 已完成：为 `TK-612` 留下 `DA-611` 实施摘要与完整验证证据窗口。

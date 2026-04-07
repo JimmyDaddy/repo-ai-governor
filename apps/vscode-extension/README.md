@@ -2,7 +2,7 @@
 
 - Status: active
 - Date: 2026-04-07
-- Scope: `project-048 / sprint-002 / TK-562 ~ TK-564` + `project-054 / sprint-001 / TK-607 ~ TK-609`
+- Scope: `project-048 / sprint-002 / TK-562 ~ TK-564` + `project-054 / sprint-001 / TK-607 ~ TK-609` + `project-054 / sprint-002 / TK-610 ~ TK-611`
 
 ## Purpose
 
@@ -58,6 +58,8 @@ It is intentionally separate from `integrations/ide/`, which continues to own wr
 3. `Workspace Context`
    - workspace root
    - workspace trust state
+   - trust-sensitive action diagnostics
+   - local orchestration service lifecycle/topology/checkpoint/memory-provider facts
    - active editor snapshot
    - selected execution / review routing snapshot
 4. `Review Detail`
@@ -68,9 +70,16 @@ It is intentionally separate from `integrations/ide/`, which continues to own wr
    - `/status`
    - `/review`
 
+## Frozen MVP Gaps
+
+1. The extension is still source-checkout only; packaged npm/tgz, VSIX, and Marketplace delivery remain unsupported.
+2. The extension does not replace the CLI bootstrap path or become the primary home for `init / doctor / check / workflow authoring / session shell`.
+3. Automated evidence currently proves contract/controller/presentation/packaging/doc parity, but a real extension-development-host launch remains an optional manual rehearsal rather than a dedicated automated smoke gate.
+4. Richer desktop command-center breadth such as queue overview, automation inbox, and broader artifact workbench remains a desktop-only or later follow-up surface, not a VS Code MVP parity promise.
+
 ## Verification
 
-1. `pnpm exec vitest run apps/vscode-extension/test/vscode-extension-contract.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-selection-store.test.ts apps/vscode-extension/test/vscode-extension-packaging-boundary.test.ts --maxWorkers=1 --maxConcurrency=1`
+1. `pnpm exec vitest run apps/vscode-extension/test/vscode-extension-service-runtime.test.ts apps/vscode-extension/test/vscode-extension-contract.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-selection-store.test.ts apps/vscode-extension/test/vscode-extension-packaging-boundary.test.ts --maxWorkers=1 --maxConcurrency=1`
 2. `pnpm run build`
 3. `pnpm pack --json --dry-run`
 4. `pnpm run check:ide-entry-smoke`

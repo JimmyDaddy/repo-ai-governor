@@ -5,6 +5,7 @@ import {
   OrchestrationGovernanceActionKind,
   OrchestrationHandoffTargetKind,
   OrchestrationServiceHostKind,
+  OrchestrationServiceLifecycleStatus,
   OrchestrationServiceTransportKind,
 } from '@repo-ai-governor/orchestration-service-client';
 import type {
@@ -48,6 +49,14 @@ describe('VsCodeExtensionPresentationBuilder', () => {
         workspaceLabel: 'ai-governor',
         workspaceRoot: '/repo',
         workspaceTrusted: true,
+        serviceHealth: {
+          lifecycleStatus: OrchestrationServiceLifecycleStatus.READY,
+          serviceHostKind: OrchestrationServiceHostKind.SIDECAR,
+          serviceTransportKind: OrchestrationServiceTransportKind.IPC,
+          checkpointCapable: true,
+          memoryStoreProviderId: '@repo-ai-governor/memory-provider-sqlite-fs',
+          pid: 4321,
+        },
       },
       selectedExecution: createExecutionBoardEntry(),
       artifactPane: {
@@ -94,6 +103,9 @@ describe('VsCodeExtensionPresentationBuilder', () => {
     expect(html).toContain('Sprint 002 review');
     expect(html).toContain('/repo/.repo-ai-governor/review/resolved.md');
     expect(html).toContain('review · active');
+    expect(html).toContain('Service lifecycle');
+    expect(html).toContain('sidecar via ipc');
+    expect(html).toContain('@repo-ai-governor/memory-provider-sqlite-fs');
   });
 
   it('renders chat review markdown with review counts', () => {
@@ -103,6 +115,13 @@ describe('VsCodeExtensionPresentationBuilder', () => {
         workspaceLabel: 'ai-governor',
         workspaceRoot: '/repo',
         workspaceTrusted: true,
+        serviceHealth: {
+          lifecycleStatus: OrchestrationServiceLifecycleStatus.READY,
+          serviceHostKind: OrchestrationServiceHostKind.SIDECAR,
+          serviceTransportKind: OrchestrationServiceTransportKind.IPC,
+          checkpointCapable: true,
+          memoryStoreProviderId: '@repo-ai-governor/memory-provider-sqlite-fs',
+        },
       },
       executionBoardEntries: [createExecutionBoardEntry()],
       hitlInboxEntries: [createHitlInboxEntry()],
@@ -111,6 +130,13 @@ describe('VsCodeExtensionPresentationBuilder', () => {
           workspaceLabel: 'ai-governor',
           workspaceRoot: '/repo',
           workspaceTrusted: true,
+          serviceHealth: {
+            lifecycleStatus: OrchestrationServiceLifecycleStatus.READY,
+            serviceHostKind: OrchestrationServiceHostKind.SIDECAR,
+            serviceTransportKind: OrchestrationServiceTransportKind.IPC,
+            checkpointCapable: true,
+            memoryStoreProviderId: '@repo-ai-governor/memory-provider-sqlite-fs',
+          },
         },
         selectedExecution: createExecutionBoardEntry(),
         artifactPane: {
@@ -133,6 +159,51 @@ describe('VsCodeExtensionPresentationBuilder', () => {
     expect(markdown).toContain('## Review focus');
     expect(markdown).toContain('Visible review records: 1');
     expect(markdown).toContain('Sprint 002 review (resolved)');
+    expect(markdown).toContain('Trust-sensitive actions: Available');
+    expect(markdown).toContain('Service lifecycle: Ready');
+    expect(markdown).toContain('Service topology: sidecar via ipc');
+    expect(markdown).toContain('Memory provider: @repo-ai-governor/memory-provider-sqlite-fs');
+  });
+
+  it('renders workspace-context nodes with trust-sensitive and service diagnostics', () => {
+    const nodes = builder.buildWorkspaceContextNodes(
+      {
+        workspaceLabel: 'ai-governor',
+        workspaceRoot: '/repo',
+        workspaceTrusted: false,
+        serviceHealth: {
+          lifecycleStatus: OrchestrationServiceLifecycleStatus.READY,
+          serviceHostKind: OrchestrationServiceHostKind.SIDECAR,
+          serviceTransportKind: OrchestrationServiceTransportKind.IPC,
+          checkpointCapable: true,
+          memoryStoreProviderId: '@repo-ai-governor/memory-provider-sqlite-fs',
+          pid: 4321,
+        },
+      },
+      createExecutionBoardEntry(),
+      '/repo/.repo-ai-governor/review/resolved.md',
+    );
+
+    expect(nodes.map((node) => node.label)).toEqual(
+      expect.arrayContaining([
+        'Workspace root',
+        'Workspace trust',
+        'Trust-sensitive actions',
+        'Service lifecycle',
+        'Service topology',
+        'Checkpoint support',
+        'Memory provider',
+      ]),
+    );
+    expect(nodes.find((node) => node.nodeId === 'trust-sensitive-actions')?.description).toBe(
+      'Blocked',
+    );
+    expect(nodes.find((node) => node.nodeId === 'service-topology')?.description).toBe(
+      'sidecar via ipc',
+    );
+    expect(nodes.find((node) => node.nodeId === 'memory-provider')?.description).toBe(
+      '@repo-ai-governor/memory-provider-sqlite-fs',
+    );
   });
 });
 

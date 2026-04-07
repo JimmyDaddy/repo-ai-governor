@@ -102,7 +102,7 @@ pnpm run check:examples-smoke
 当你需要刷新 editor-native companion 的正式支持边界时，使用这条 runbook：
 
 ```bash
-pnpm exec vitest run apps/vscode-extension/test/vscode-extension-contract.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-selection-store.test.ts apps/vscode-extension/test/vscode-extension-packaging-boundary.test.ts --maxWorkers=1 --maxConcurrency=1
+pnpm exec vitest run apps/vscode-extension/test/vscode-extension-service-runtime.test.ts apps/vscode-extension/test/vscode-extension-contract.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-selection-store.test.ts apps/vscode-extension/test/vscode-extension-packaging-boundary.test.ts --maxWorkers=1 --maxConcurrency=1
 pnpm run build
 pnpm pack --json --dry-run
 pnpm run check:ide-entry-smoke
@@ -121,6 +121,8 @@ code --extensionDevelopmentPath <governor-repo>/apps/vscode-extension <target-re
 1. 当前正式支持只覆盖“已构建源码仓 + extension-development host”这条路径。
 2. 通过 `pnpm pack --json --dry-run` 核对已发布产物仍不包含扩展 workspace 与可安装 bundle；即便保留内部 `dist/apps/vscode-extension/**` 产物，也不能把它误当成正式扩展分发。
 3. 在新增独立 packaging rehearsal 并同步写入 `docs/support-matrix.zh-CN.md` 之前，不要对 npm/tgz、VSIX 或 Marketplace 做正式支持声明。
+4. 当前仍没有专门的自动化 extension-development-host launch smoke；手动 `code --extensionDevelopmentPath ...` 演练只属于补充证据，不单独升级支持声明。
+5. `project-054` 继续把 desktop 保留为 foundation-only surface；本 runbook 用来验证 VS Code companion 路径，而不是扩大 desktop 的公开支持口径。
 
 ## 5. Clean-room 与 Release 验证
 

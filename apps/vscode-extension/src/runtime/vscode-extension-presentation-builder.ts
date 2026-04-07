@@ -3,6 +3,7 @@ import {
   OrchestrationGovernanceActionDisabledReason,
   OrchestrationGovernanceActionKind,
   OrchestrationHandoffTargetKind,
+  OrchestrationServiceLifecycleStatus,
 } from '@repo-ai-governor/orchestration-service-client';
 import type {
   OrchestrationExecutionBoardEntry,
@@ -160,6 +161,17 @@ export class VsCodeExtensionPresentationBuilder {
         contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKSPACE_CONTEXT,
       },
       {
+        nodeId: 'trust-sensitive-actions',
+        label: this.localizer.localizeText('Trust-sensitive actions', '信任敏感动作'),
+        description: context.workspaceTrusted
+          ? this.localizer.localizeText('Available', '可用')
+          : this.localizer.localizeText('Blocked', '已阻断'),
+        tooltip: this.getTrustSensitiveActionTooltip(context.workspaceTrusted),
+        themeIconId: 'shield',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKSPACE_CONTEXT,
+      },
+      ...this.buildServiceDiagnosticsNodes(context),
+      {
         nodeId: 'active-editor',
         label: this.localizer.localizeText('Active editor', '当前编辑器'),
         description:
@@ -234,6 +246,7 @@ export class VsCodeExtensionPresentationBuilder {
     `;
     const selectedExecution = snapshot.selectedExecution?.execution;
     const artifactPane = snapshot.artifactPane;
+    const workspaceFacts = this.buildWorkspaceFactLines(snapshot.workspaceContext);
     const body =
       selectedExecution && artifactPane
         ? `
@@ -241,7 +254,12 @@ export class VsCodeExtensionPresentationBuilder {
           <h2>${this.escapeHtml(this.getExecutionPrimaryLabel(selectedExecution))}</h2>
           <p>${this.escapeHtml(this.getExecutionDescription(selectedExecution))}</p>
           <ul class="facts">
-            <li><strong>${this.escapeHtml(this.localizer.localizeText('Workspace', '工作区'))}:</strong> ${this.escapeHtml(snapshot.workspaceContext.workspaceLabel)}</li>
+            ${workspaceFacts
+              .map(
+                (fact) =>
+                  `<li><strong>${this.escapeHtml(fact.label)}:</strong> ${this.escapeHtml(fact.value)}</li>`,
+              )
+              .join('')}
             <li><strong>${this.escapeHtml(this.localizer.localizeText('Execution', '执行'))}:</strong> ${this.escapeHtml(selectedExecution.executionId)}</li>
             <li><strong>${this.escapeHtml(this.localizer.localizeText('Session', '会话'))}:</strong> ${this.escapeHtml(selectedExecution.executionSessionId)}</li>
             <li><strong>${this.escapeHtml(this.localizer.localizeText('Review source', '评审来源'))}:</strong> ${this.escapeHtml(artifactPane.reviewSourcePath ?? this.localizer.localizeText('Unavailable', '不可用'))}</li>
@@ -318,9 +336,18 @@ export class VsCodeExtensionPresentationBuilder {
       `# ${this.localizer.localizeText('Governor status', 'Governor 状态')}`,
       `- ${this.localizer.localizeText('Workspace', '工作区')}: \`${options.workspaceContext.workspaceLabel}\``,
       `- ${this.localizer.localizeText('Trust', '信任')}: ${options.workspaceContext.workspaceTrusted ? this.localizer.localizeText('Trusted', '已受信任') : this.localizer.localizeText('Limited', '受限')}`,
+      `- ${this.localizer.localizeText('Trust-sensitive actions', '信任敏感动作')}: ${this.getTrustSensitiveActionStatus(options.workspaceContext.workspaceTrusted)}`,
       `- ${this.localizer.localizeText('Execution board count', '执行看板数量')}: ${options.executionBoardEntries.length}`,
       `- ${this.localizer.localizeText('Pending HITL count', '待处理 HITL 数量')}: ${options.hitlInboxEntries.length}`,
     ];
+    if (options.workspaceContext.serviceHealth) {
+      lines.push(
+        `- ${this.localizer.localizeText('Service lifecycle', '服务生命周期')}: ${this.localizeServiceLifecycleStatus(options.workspaceContext.serviceHealth.lifecycleStatus)}`,
+        `- ${this.localizer.localizeText('Service topology', '服务拓扑')}: ${this.getServiceTopologyDescription(options.workspaceContext.serviceHealth)}`,
+        `- ${this.localizer.localizeText('Checkpoint support', '检查点支持')}: ${this.getCheckpointCapabilityDescription(options.workspaceContext.serviceHealth.checkpointCapable)}`,
+        `- ${this.localizer.localizeText('Memory provider', '内存提供方')}: ${this.getMemoryProviderDescription(options.workspaceContext.serviceHealth)}`,
+      );
+    }
 
     if (latestExecution) {
       lines.push(
@@ -340,6 +367,113 @@ export class VsCodeExtensionPresentationBuilder {
     }
 
     return lines.join('\n');
+  }
+
+  private buildServiceDiagnosticsNodes(
+    context: VsCodeExtensionWorkspaceContextSnapshot,
+  ): readonly VsCodeExtensionTreeNodeDescriptor[] {
+    if (!context.serviceHealth) {
+      return [];
+    }
+
+    return [
+      {
+        nodeId: 'service-lifecycle',
+        label: this.localizer.localizeText('Service lifecycle', '服务生命周期'),
+        description: this.localizeServiceLifecycleStatus(context.serviceHealth.lifecycleStatus),
+        tooltip:
+          context.serviceHealth.pid === undefined
+            ? this.localizer.localizeText(
+                'Current local orchestration service health probe.',
+                '当前本地编排服务健康探针结果。',
+              )
+            : this.localizer.localizeText(
+                `Current local orchestration service health probe. PID: ${context.serviceHealth.pid}.`,
+                `当前本地编排服务健康探针结果。PID：${context.serviceHealth.pid}。`,
+              ),
+        themeIconId: 'info',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKSPACE_CONTEXT,
+      },
+      {
+        nodeId: 'service-topology',
+        label: this.localizer.localizeText('Service topology', '服务拓扑'),
+        description: this.getServiceTopologyDescription(context.serviceHealth),
+        tooltip: this.localizer.localizeText(
+          'Shows which host shape and transport currently back this workspace.',
+          '显示当前工作区背后的服务宿主形态与传输方式。',
+        ),
+        themeIconId: 'info',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKSPACE_CONTEXT,
+      },
+      {
+        nodeId: 'checkpoint-support',
+        label: this.localizer.localizeText('Checkpoint support', '检查点支持'),
+        description: this.getCheckpointCapabilityDescription(
+          context.serviceHealth.checkpointCapable,
+        ),
+        tooltip: this.localizer.localizeText(
+          'Indicates whether recoverable checkpoints are available for this workspace service.',
+          '表示当前工作区服务是否提供可恢复检查点。',
+        ),
+        themeIconId: 'history',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKSPACE_CONTEXT,
+      },
+      {
+        nodeId: 'memory-provider',
+        label: this.localizer.localizeText('Memory provider', '内存提供方'),
+        description: this.getMemoryProviderDescription(context.serviceHealth),
+        tooltip: this.localizer.localizeText(
+          'Shows the memory-store provider wired into the local orchestration service.',
+          '显示接入本地编排服务的 memory-store provider。',
+        ),
+        themeIconId: 'database',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKSPACE_CONTEXT,
+      },
+    ];
+  }
+
+  private buildWorkspaceFactLines(
+    context: VsCodeExtensionWorkspaceContextSnapshot,
+  ): ReadonlyArray<{ label: string; value: string }> {
+    const facts = [
+      {
+        label: this.localizer.localizeText('Workspace', '工作区'),
+        value: context.workspaceLabel,
+      },
+      {
+        label: this.localizer.localizeText('Trust', '信任'),
+        value: context.workspaceTrusted
+          ? this.localizer.localizeText('Trusted', '已受信任')
+          : this.localizer.localizeText('Limited', '受限'),
+      },
+      {
+        label: this.localizer.localizeText('Trust-sensitive actions', '信任敏感动作'),
+        value: this.getTrustSensitiveActionStatus(context.workspaceTrusted),
+      },
+    ];
+    if (!context.serviceHealth) {
+      return facts;
+    }
+
+    return [
+      ...facts,
+      {
+        label: this.localizer.localizeText('Service lifecycle', '服务生命周期'),
+        value: this.localizeServiceLifecycleStatus(context.serviceHealth.lifecycleStatus),
+      },
+      {
+        label: this.localizer.localizeText('Service topology', '服务拓扑'),
+        value: this.getServiceTopologyDescription(context.serviceHealth),
+      },
+      {
+        label: this.localizer.localizeText('Checkpoint support', '检查点支持'),
+        value: this.getCheckpointCapabilityDescription(context.serviceHealth.checkpointCapable),
+      },
+      {
+        label: this.localizer.localizeText('Memory provider', '内存提供方'),
+        value: this.getMemoryProviderDescription(context.serviceHealth),
+      },
+    ];
   }
 
   private buildExecutionSummaryNodes(
@@ -618,6 +752,62 @@ export class VsCodeExtensionPresentationBuilder {
       default:
         return status;
     }
+  }
+
+  private localizeServiceLifecycleStatus(status: OrchestrationServiceLifecycleStatus): string {
+    switch (status) {
+      case OrchestrationServiceLifecycleStatus.READY:
+        return this.localizer.localizeText('Ready', '已就绪');
+      case OrchestrationServiceLifecycleStatus.STARTING:
+        return this.localizer.localizeText('Starting', '启动中');
+      case OrchestrationServiceLifecycleStatus.STOPPING:
+        return this.localizer.localizeText('Stopping', '停止中');
+      case OrchestrationServiceLifecycleStatus.STOPPED:
+        return this.localizer.localizeText('Stopped', '已停止');
+      default:
+        return status;
+    }
+  }
+
+  private getTrustSensitiveActionStatus(workspaceTrusted: boolean): string {
+    return workspaceTrusted
+      ? this.localizer.localizeText('Available', '可用')
+      : this.localizer.localizeText('Blocked until trust is granted', '在授予信任前会保持阻断');
+  }
+
+  private getTrustSensitiveActionTooltip(workspaceTrusted: boolean): string {
+    return workspaceTrusted
+      ? this.localizer.localizeText(
+          'Open handoff, submit HITL, recover, and terminate are available for this workspace.',
+          '当前工作区已可执行打开交接、提交 HITL、恢复执行与终止执行。',
+        )
+      : this.localizer.localizeText(
+          'Open handoff, submit HITL, recover, and terminate stay blocked until the workspace is trusted.',
+          '打开交接、提交 HITL、恢复执行与终止执行会在工作区受信任前保持阻断。',
+        );
+  }
+
+  private getServiceTopologyDescription(
+    serviceHealth: NonNullable<VsCodeExtensionWorkspaceContextSnapshot['serviceHealth']>,
+  ): string {
+    return this.localizer.localizeText(
+      `${serviceHealth.serviceHostKind} via ${serviceHealth.serviceTransportKind}`,
+      `${serviceHealth.serviceHostKind} 通过 ${serviceHealth.serviceTransportKind}`,
+    );
+  }
+
+  private getCheckpointCapabilityDescription(checkpointCapable: boolean): string {
+    return checkpointCapable
+      ? this.localizer.localizeText('Available', '可用')
+      : this.localizer.localizeText('Unavailable', '不可用');
+  }
+
+  private getMemoryProviderDescription(
+    serviceHealth: NonNullable<VsCodeExtensionWorkspaceContextSnapshot['serviceHealth']>,
+  ): string {
+    return (
+      serviceHealth.memoryStoreProviderId ?? this.localizer.localizeText('Unavailable', '不可用')
+    );
   }
 
   private getActionCommandLabels(actionKind: OrchestrationGovernanceActionKind): {

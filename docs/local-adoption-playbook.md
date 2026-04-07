@@ -69,6 +69,7 @@ Boundary notes:
 1. Current formal support is source-checkout only; build the governor repository before launching the extension-development host.
 2. The published npm/tgz package surface does not include the `apps/vscode-extension` workspace or an installable extension bundle; internal `dist/apps/vscode-extension/**` payloads may still exist, but they are not a supported npm/VSIX/Marketplace distribution.
 3. Trust-sensitive commands stay gated by `Workspace Trust`, so use a trusted workspace when validating review, HITL, recovery, or termination actions.
+4. The current VS Code MVP is a service-backed companion for execution/review/HITL/context flows; it does not replace the normal CLI bootstrap path or the session shell.
 
 ## 4. Session Shell Quick Tour
 

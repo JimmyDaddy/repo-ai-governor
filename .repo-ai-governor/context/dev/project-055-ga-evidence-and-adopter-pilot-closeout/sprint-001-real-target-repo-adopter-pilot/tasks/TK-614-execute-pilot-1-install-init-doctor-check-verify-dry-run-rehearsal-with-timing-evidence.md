@@ -8,7 +8,7 @@
 - Sprint: `sprint-001-real-target-repo-adopter-pilot`
 - Project: `project-055-ga-evidence-and-adopter-pilot-closeout`
 
-## 1. 目标
+## 1. 任务目标
 
 执行 pilot-1 install/init/doctor/check/verify/dry-run rehearsal，并记录 timing evidence。
 
@@ -16,12 +16,44 @@
 
 1. `TK-613`
 
-## 3. Expected Outputs
+## 3. 预期产物
 
 1. pilot-1 rehearsal
 2. timing evidence
 3. adopter-path findings
 
-## 4. Execution Notes
+## 4. Required Inputs
+
+1. `.repo-ai-governor/context/current-context.md`
+2. `.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-001-real-target-repo-adopter-pilot/plan.md`
+3. `.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-001-real-target-repo-adopter-pilot/tasks/TK-613-freeze-adopter-pilot-repository-selection-and-acceptance-rubric.md`
+
+## 5. Traceback References
+
+1. `.repo-ai-governor/context/dev/project-052-adopter-truthfulness-and-ga-closeout/plan.md`
+2. `.repo-ai-governor/context/dev/project-053-real-adapter-invocation-productization/plan.md`
+
+## 6. 实施计划
+
+1. 在 `TK-613` 冻结的 rubric 下选定 pilot-1 仓库与 rehearsal 输入。
+2. 顺序执行 install / init / doctor / check / verify / dry-run，并记录 timing evidence。
+3. 汇总 adopter-path findings 与交付证据。
+
+## 7. Development Verification
+
+1. 待执行：pilot-1 targeted rehearsal verification
+
+## 8. Delivery Verification
+
+1. `pnpm run check`
+2. `node ./scripts/governance/check-task-ledger-sync.js`
+
+## 9. 执行记录
 
 1. 2026-04-06：任务创建，等待 `TK-613` 完成。
+
+## 10. 产出
+
+1. 待执行：pilot-1 rehearsal
+2. 待执行：timing evidence
+3. 待执行：adopter-path findings

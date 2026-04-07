@@ -1,6 +1,6 @@
 # TK-612 close project-054 with secondary surface rollout summary and desktop foundation recommendation
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-06
 - Task ID: `TK-612`
 - Owner: `AI-Agent`
@@ -61,9 +61,11 @@
 ## 9. 执行记录
 
 1. 2026-04-06：任务创建，等待 `TK-610 / TK-611` 完成。
+2. 2026-04-07：`TK-611 / DA-611` 已完成 targeted VS Code MVP hardening 与 trust-sensitive diagnostics follow-through，任务切换为 `in_progress`，开始汇总 `project-054` secondary surface rollout summary 与 desktop foundation recommendation。
+3. 2026-04-07：已完成 `DA-612`，把 `project-054` 的 secondary surface rollout summary、desktop foundation recommendation 与 project-final-ready handoff baseline 固定到当前 sprint surface，并补齐 `pnpm run check` 交付证据。
 
 ## 10. 产出
 
-1. 待执行：secondary surface rollout summary
-2. 待执行：desktop foundation recommendation
-3. 待执行：project-final-ready truth surface
+1. 已完成：`DA-612-secondary-surface-rollout-summary-and-desktop-foundation-recommendation.md`
+2. 已完成：desktop foundation-only recommendation，明确后续若要重启 desktop productization 需新开独立 project。
+3. 已完成：project-final-ready truth surface，下一边界固定为 `sprint-002` fresh reviewer scoped CR loop。

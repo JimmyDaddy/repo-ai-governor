@@ -1,6 +1,6 @@
 # project-055-ga-evidence-and-adopter-pilot-closeout 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-06
 - Stage Mapping: GA evidence consolidation and pilot rehearsal
 - Phase Mapping: pilot selection / pilot execution / evidence consolidation
@@ -18,7 +18,7 @@
 
 ## 2.1 sprint-001-real-target-repo-adopter-pilot
 
-- Status: planned
+- Status: active
 - Sprint Goal: 选择真实目标仓库并完成 adopter rehearsal。
 - Task Package: `TK-613`、`TK-614`、`TK-615`。
 
@@ -32,7 +32,7 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 |---|---|---|---|---|---|
-| TK-613 | sprint-001 | freeze adopter pilot repository selection and acceptance rubric | pilot/contract | project-052、053 recommended | planned |
+| TK-613 | sprint-001 | freeze adopter pilot repository selection and acceptance rubric | pilot/contract | project-052、053 recommended | in_progress |
 | TK-614 | sprint-001 | execute pilot-1 install init doctor check verify dry-run rehearsal with timing evidence | pilot/execution | TK-613 | planned |
 | TK-615 | sprint-001 | execute pilot-2 upgrade workspace migration rollback rehearsal and capture delta findings | pilot/execution | TK-613 | planned |
 | TK-616 | sprint-002 | consolidate support matrix GA evidence and maintainer validation outputs into one dossier | evidence/docs | TK-614、TK-615 | planned |
@@ -54,3 +54,4 @@
 
 1. 2026-04-06：基于 `DA-588` 创建 `project-055` planned stream，作为 GA evidence consolidation follow-up。
 2. 2026-04-06：已写入 `sprint-001 ~ sprint-002` 与 `TK-613 ~ TK-617` skeleton，待后续按顺序激活。
+3. 2026-04-07：`project-054` final closeout 完成后，`project-055 / sprint-001` 被激活为当前 primary stream，`TK-613` 已切换为 `in_progress`。

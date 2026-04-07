@@ -1,6 +1,6 @@
 # TK-610 freeze VS Code MVP gap list and desktop foundation non-goal guardrails
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-04-06
 - Task ID: `TK-610`
 - Owner: `AI-Agent`
@@ -19,9 +19,9 @@
 
 ## 3. Expected Outputs
 
-1. VS Code MVP gap list
-2. desktop foundation non-goal guardrails
-3. boundary truth handoff for `TK-611`
+1. `DA-610-vs-code-mvp-gap-list-and-desktop-foundation-non-goal-guardrails.md`
+2. frozen VS Code MVP gap list
+3. desktop foundation non-goal guardrails
 
 ## 4. Required Inputs
 
@@ -60,9 +60,17 @@
 
 1. 2026-04-06：任务创建，等待 `sprint-001` 收口。
 2. 2026-04-07：`TK-640` 完成 `sprint-001` closeout 与 activation handoff，任务切换为 `in_progress`，开始冻结 VS Code MVP gap list 与 desktop foundation non-goal guardrails。
+3. 2026-04-07：已完成 `DA-610`，把 VS Code MVP gap list、desktop foundation non-goal guardrails 与 `TK-611` 的 hardening 输入固定到公开/维护者 truth surfaces。
 
 ## 10. 产出
 
-1. 待执行：VS Code MVP gap list
-2. 待执行：desktop foundation non-goal guardrails
-3. 待执行：handoff notes for `TK-611`
+1. `.repo-ai-governor/context/dev/project-054-vscode-secondary-surface-rollout/sprint-002-vscode-mvp-hardening-and-desktop-foundation-guardrails/tasks/DA-610-vs-code-mvp-gap-list-and-desktop-foundation-non-goal-guardrails.md`
+2. `apps/vscode-extension/README.md`
+3. `apps/desktop/README.md`
+4. `integrations/desktop/README.md`
+5. `docs/local-adoption-playbook.md`
+6. `docs/local-adoption-playbook.zh-CN.md`
+7. `docs/maintainer-validation-playbook.md`
+8. `docs/maintainer-validation-playbook.zh-CN.md`
+9. `docs/support-matrix.md`
+10. `docs/support-matrix.zh-CN.md`

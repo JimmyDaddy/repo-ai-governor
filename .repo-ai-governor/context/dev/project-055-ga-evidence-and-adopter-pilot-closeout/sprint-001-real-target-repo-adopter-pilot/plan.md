@@ -1,6 +1,6 @@
 # sprint-001-real-target-repo-adopter-pilot 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-06
 - Project: `project-055-ga-evidence-and-adopter-pilot-closeout`
 - Sprint Goal: 选择真实目标仓库并完成 adopter rehearsal。
@@ -20,3 +20,4 @@
 ## 3. Milestones
 
 1. 2026-04-06：作为 `DA-588` follow-up decomposition 产物创建，当前保持 `planned`。
+2. 2026-04-07：在 `project-054` final closeout write-back 后被激活为当前 primary sprint，`TK-613` 已切换为 `in_progress`。
