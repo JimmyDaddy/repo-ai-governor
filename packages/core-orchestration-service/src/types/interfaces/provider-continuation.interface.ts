@@ -54,6 +54,7 @@ export interface SessionProviderContinuationSummary {
   roleId: string | null;
   policyEnvelope: string;
   invalidationReason?: string;
+  lightweightSessionFallbackApplied?: boolean;
 }
 
 /**

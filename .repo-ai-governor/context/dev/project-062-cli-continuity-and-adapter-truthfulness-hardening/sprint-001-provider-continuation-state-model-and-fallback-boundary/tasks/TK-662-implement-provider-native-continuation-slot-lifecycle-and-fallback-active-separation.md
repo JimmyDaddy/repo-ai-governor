@@ -1,6 +1,6 @@
 # TK-662 implement provider-native continuation slot lifecycle and fallback-active separation
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-08
 - Owner: `AI-Agent`
 - Priority: `P0`
@@ -52,8 +52,12 @@
 ## 9. 执行记录
 
 1. 2026-04-08：任务创建，状态初始化为 `planned`。
+2. 2026-04-08：已把 session continuity note 注入 answer/delegate input，并在 `CliSessionMainSupervisorRuntime` 中按当前 turn context 投影 `providerContinuationSummaries`，避免 lightweight fallback 已生效时仍把结果误报成纯失败。
+3. 2026-04-08：已在 `CliSessionShellTranscriptStore` 中分离 fallback-active unsupported 与真正 unsupported/no-fallback 的 presenter path，并补齐 Claude CLI argv delimiter，避免 `--add-dir` 吞掉 probe prompt。
+4. 2026-04-08：已完成定向回归与 same-window `pnpm run build`，任务切换为 `completed`。
 
 ## 10. 产出
 
-1. 待执行：provider-native continuation implementation
-2. 待执行：fallback-active separation diagnostics
+1. `apps/cli/src/runtime/session-main-supervisor-runtime.ts`
+2. `apps/cli/src/runtime/interactive-shell/session-shell-transcript-store.ts`
+3. `packages/adapters/claude-code/src/claude-code-agent-adapter.ts`

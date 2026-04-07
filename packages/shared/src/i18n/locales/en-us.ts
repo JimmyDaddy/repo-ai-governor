@@ -478,8 +478,10 @@ export const EN_US_TRANSLATIONS = {
           '{{laneLabel}}: refreshed backend conversation on {{surface}}{{modelSummary}}{{reasonSummary}}.',
         providerContinuationCleared:
           '{{laneLabel}}: cleared backend conversation state on {{surface}}{{modelSummary}}{{reasonSummary}}.',
+        providerContinuationFallbackActive:
+          '{{laneLabel}}: continuity stayed available through the lightweight session note; {{surface}}{{modelSummary}} did not provide backend reuse{{reasonSummary}}.',
         providerContinuationUnsupported:
-          '{{laneLabel}}: attempted backend conversation reuse on {{surface}}, but continuation is unsupported{{modelSummary}}{{reasonSummary}}.',
+          '{{laneLabel}}: backend reuse on {{surface}}{{modelSummary}} is unsupported, and no lightweight session note was available to preserve continuity{{reasonSummary}}.',
         mainTurnFollowUpPrompt: 'The main agent needs one clarification before handoff:',
         sessionStarted: 'Started service-backed session {{sessionId}} on {{routeId}}.',
         sessionResumed: 'Resumed session {{sessionId}} via selector={{resumeSelector}}.',

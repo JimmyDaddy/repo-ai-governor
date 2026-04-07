@@ -1,6 +1,6 @@
 # project-062-cli-continuity-and-adapter-truthfulness-hardening 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-08
 - Stage Mapping: CLI hardening follow-up
 - Phase Mapping: provider-native continuity + adapter truth-source alignment
@@ -21,13 +21,13 @@
 
 ## 2.1 sprint-001-provider-continuation-state-model-and-fallback-boundary
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 冻结 provider continuation 生命周期与 fallback-active 的 truthful 表达边界。
-- Task Package: `TK-661`、`TK-662`、`TK-663`。
+- Task Package: `TK-661`、`TK-662`、`TK-663`、`TK-697`。
 
 ## 2.2 sprint-002-adapter-probe-verify-truth-source-alignment
 
-- Status: planned
+- Status: active
 - Sprint Goal: 收敛 `connect / doctor / verify / transcript` 对 adapter readiness 的真值来源与对外表达。
 - Task Package: `TK-664`、`TK-665`、`TK-666`。
 
@@ -35,10 +35,11 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 | --- | --- | --- | --- | --- | --- |
-| TK-661 | sprint-001 | freeze provider continuation lifecycle and presenter truth contract | contract/runtime | project-058 / project-059 traceback | planned |
-| TK-662 | sprint-001 | implement provider-native continuation slot lifecycle and fallback-active separation | runtime/implementation | TK-661 | planned |
-| TK-663 | sprint-001 | close continuity hardening with session-shell regression and build evidence | acceptance/closeout | TK-661、TK-662 | planned |
-| TK-664 | sprint-002 | freeze connect doctor verify transcript truth-source contract | contract/diagnostics | TK-663 | planned |
+| TK-661 | sprint-001 | freeze provider continuation lifecycle and presenter truth contract | contract/runtime | project-058 / project-059 traceback | completed |
+| TK-662 | sprint-001 | implement provider-native continuation slot lifecycle and fallback-active separation | runtime/implementation | TK-661 | completed |
+| TK-663 | sprint-001 | close continuity hardening with session-shell regression and build evidence | acceptance/closeout | TK-661、TK-662 | completed |
+| TK-697 | sprint-001 | sprint-001 closeout and sprint-002 activation handoff | closeout/handoff | TK-661、TK-662、TK-663、CR-001 | completed |
+| TK-664 | sprint-002 | freeze connect doctor verify transcript truth-source contract | contract/diagnostics | TK-697 | in_progress |
 | TK-665 | sprint-002 | implement adapter probe outcome classification and presenter-safe diagnostics alignment | adapter/implementation | TK-664 | planned |
 | TK-666 | sprint-002 | close CLI truthfulness hardening with cross-adapter evidence refresh | project/closeout | TK-664、TK-665 | planned |
 
@@ -53,3 +54,9 @@
 1. CLI 能清楚区分 provider-native continuation、fallback-active continuity、unsupported/no-fallback。
 2. adapter readiness 的 probe/verify/transcript 不再轻易互相打架。
 3. 至少一轮 targeted regression + 同窗口 build evidence 已形成正式 closeout 证据。
+
+## 6. 里程碑记录
+
+1. 2026-04-08：`project-072` handoff 后已按用户指定顺序激活 `project-062 / sprint-001`，作为当前 primary stream。
+2. 2026-04-08：当前 worktree 中已有的 CLI continuity / adapter truthfulness 改动已并入 `TK-661 ~ TK-663` 的实现面，先完成 sprint-001 再切到 `sprint-002`。
+3. 2026-04-08：`CR-001` 已完成 accepted truthfulness finding 修复并 clean resolved；`TK-697 / DA-697` 已完成 sprint-001 closeout，并把下一边界固定为 `sprint-002 / TK-664`。

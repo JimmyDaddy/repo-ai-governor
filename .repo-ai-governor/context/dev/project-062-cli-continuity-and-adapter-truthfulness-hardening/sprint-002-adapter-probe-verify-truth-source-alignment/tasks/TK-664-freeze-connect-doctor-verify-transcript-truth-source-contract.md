@@ -1,6 +1,6 @@
 # TK-664 freeze connect doctor verify transcript truth-source contract
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-04-08
 - Owner: `AI-Agent`
 - Priority: `P0`
@@ -13,7 +13,7 @@
 
 ## 2. Depends On
 
-1. `TK-663`
+1. `TK-697`
 2. 当前 adapter diagnostics surfaces
 
 ## 3. 预期产物
@@ -24,7 +24,7 @@
 
 ## 4. Required Inputs
 
-1. `.repo-ai-governor/context/dev/project-062-cli-continuity-and-adapter-truthfulness-hardening/sprint-001-provider-continuation-state-model-and-fallback-boundary/tasks/TK-663-close-continuity-hardening-with-session-shell-regression-and-build-evidence.md`
+1. `.repo-ai-governor/context/dev/project-062-cli-continuity-and-adapter-truthfulness-hardening/sprint-001-provider-continuation-state-model-and-fallback-boundary/tasks/DA-697-sprint-001-closeout-and-sprint-002-activation-handoff.md`
 2. `.repo-ai-governor/context/dev/project-058-cli-session-continuity-and-claude-recovery/plan.md`
 3. `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/current-surface-baseline-classification-and-followup-decomposition.md`
 
@@ -52,6 +52,7 @@
 ## 9. 执行记录
 
 1. 2026-04-08：任务创建，状态初始化为 `planned`。
+2. 2026-04-08：`TK-697 / DA-697` 完成 sprint-001 closeout 后，当前任务切换为 `in_progress`，开始冻结 cross-surface adapter truth-source contract。
 
 ## 10. 产出
 

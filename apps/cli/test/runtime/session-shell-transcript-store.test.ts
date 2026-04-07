@@ -263,7 +263,7 @@ describe('CliSessionShellTranscriptStore', () => {
     });
   });
 
-  it('renders unsupported provider continuation summaries instead of dropping them silently', () => {
+  it('renders fallback-active unsupported provider continuation summaries as continuity-preserved notices', () => {
     const store = new CliSessionShellTranscriptStore();
     const items = store.applyEvents(
       'session-001',
@@ -281,6 +281,76 @@ describe('CliSessionShellTranscriptStore', () => {
             turnIndex: 5,
             responseMode: 'answer',
             assistantMessage: 'Fresh stateless answer.',
+            providerContinuationSummaries: [
+              {
+                laneKey: 'session.main::stage-answer::session.main::codex::chat_only',
+                laneLabel: 'session.main',
+                status: 'unsupported',
+                surface: 'codex',
+                providerId: 'openai',
+                transportKind: 'remote_api',
+                model: 'gpt-5',
+                stageId: 'stage-answer',
+                roleId: null,
+                policyEnvelope: 'chat_only',
+                invalidationReason: 'provider_session_not_supported',
+                lightweightSessionFallbackApplied: true,
+              },
+            ],
+          },
+        },
+      ],
+      (key, interpolation) => {
+        if (key === 'cli.sessionShell.transcript.assistantLabel') {
+          return 'Governor';
+        }
+        if (key === 'cli.sessionShell.responses.providerContinuationTitle') {
+          return 'Provider continuation';
+        }
+        if (key === 'cli.sessionShell.responses.providerContinuationModelSummary') {
+          return ` model=${interpolation?.model ?? ''}`;
+        }
+        if (key === 'cli.sessionShell.responses.providerContinuationReasonSummary') {
+          return ` reason=${interpolation?.reason ?? ''}`;
+        }
+        if (key === 'cli.sessionShell.responses.providerContinuationFallbackActive') {
+          return `${interpolation?.laneLabel ?? ''} continuity preserved via session-note; ${interpolation?.surface ?? ''}${interpolation?.modelSummary ?? ''} backend reuse unavailable${interpolation?.reasonSummary ?? ''}`;
+        }
+        if (key === 'cli.sessionShell.responses.providerContinuationUnsupported') {
+          return `${interpolation?.laneLabel ?? ''} backend reuse unsupported on ${interpolation?.surface ?? ''}${interpolation?.modelSummary ?? ''}; no-lightweight-fallback${interpolation?.reasonSummary ?? ''}`;
+        }
+        return key;
+      },
+    );
+
+    expect(items).toHaveLength(1);
+    expect(items[0]?.renderKind).toBe('markdown');
+    expect(items[0]?.providerContinuationBlock).toEqual({
+      title: 'Provider continuation',
+      lines: [
+        'session.main continuity preserved via session-note; codex model=gpt-5 backend reuse unavailable reason=provider_session_not_supported',
+      ],
+    });
+  });
+
+  it('keeps unsupported provider continuation warnings when no lightweight fallback is available', () => {
+    const store = new CliSessionShellTranscriptStore();
+    const items = store.applyEvents(
+      'session-001',
+      [
+        {
+          eventId: 'event-unsupported-2',
+          sequence: 6,
+          streamCursor: 'cursor-6',
+          sessionId: 'session-001',
+          type: OrchestrationSessionEventType.TURN_COMPLETED,
+          createdAt: '2026-04-04T12:00:02Z',
+          payload: {
+            role: OrchestrationSessionTranscriptRole.ASSISTANT,
+            routeId: 'session.main',
+            turnIndex: 6,
+            responseMode: 'answer',
+            assistantMessage: 'First stateless answer.',
             providerContinuationSummaries: [
               {
                 laneKey: 'session.main::stage-answer::session.main::codex::chat_only',
@@ -313,18 +383,16 @@ describe('CliSessionShellTranscriptStore', () => {
           return ` reason=${interpolation?.reason ?? ''}`;
         }
         if (key === 'cli.sessionShell.responses.providerContinuationUnsupported') {
-          return `${interpolation?.laneLabel ?? ''} unsupported on ${interpolation?.surface ?? ''}${interpolation?.modelSummary ?? ''}${interpolation?.reasonSummary ?? ''}`;
+          return `${interpolation?.laneLabel ?? ''} backend reuse unsupported on ${interpolation?.surface ?? ''}${interpolation?.modelSummary ?? ''}; no-lightweight-fallback${interpolation?.reasonSummary ?? ''}`;
         }
         return key;
       },
     );
 
-    expect(items).toHaveLength(1);
-    expect(items[0]?.renderKind).toBe('markdown');
     expect(items[0]?.providerContinuationBlock).toEqual({
       title: 'Provider continuation',
       lines: [
-        'session.main unsupported on codex model=gpt-5 reason=provider_session_not_supported',
+        'session.main backend reuse unsupported on codex model=gpt-5; no-lightweight-fallback reason=provider_session_not_supported',
       ],
     });
   });

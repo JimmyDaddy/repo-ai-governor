@@ -601,6 +601,15 @@ describe('Cli session-main supervisor runtime', () => {
   it('projects unsupported continuation attempts into direct-answer outcomes even without an existing slot', async () => {
     const laneKey = 'session.main::stage-session-main-answer::session.main::codex::chat_only';
     const codexInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+      expect(request.input).toEqual(
+        expect.objectContaining({
+          sessionContinuityNote: {
+            latestNoteSummary:
+              'goal=ask for a follow-up | last_reply=Summarized the previous answer | surface=codex',
+            previewSummary: 'Summarized the previous answer',
+          },
+        }),
+      );
       expect(request.continuation).toEqual(
         expect.objectContaining({
           mode: AgentStageContinuationMode.PREFER_REUSE,
@@ -667,6 +676,9 @@ describe('Cli session-main supervisor runtime', () => {
       selectedSurface: AdapterSurface.CODEX,
       selectedBy: 'session.main.default',
       sessionRoutingPreferenceApplied: false,
+      latestNoteSummary:
+        'goal=ask for a follow-up | last_reply=Summarized the previous answer | surface=codex',
+      previewSummary: 'Summarized the previous answer',
     });
 
     expect(codexInvokeStage).toHaveBeenCalledTimes(1);
@@ -680,6 +692,7 @@ describe('Cli session-main supervisor runtime', () => {
         providerId: AdapterProviderKind.OPENAI,
         model: 'gpt-5',
         invalidationReason: 'provider_session_not_supported',
+        lightweightSessionFallbackApplied: true,
       }),
     ]);
     expect(outcome.providerContinuationMutations).toEqual([
@@ -820,6 +833,9 @@ describe('Cli session-main supervisor runtime', () => {
       }),
     );
     expect(outcome.providerContinuationMutations?.[0]?.slot).toBeUndefined();
+    expect(outcome.providerContinuationSummaries?.[0]).not.toHaveProperty(
+      'lightweightSessionFallbackApplied',
+    );
   });
 
   it('publishes mapped direct-answer stream events while preserving empty invoked-role truth', async () => {

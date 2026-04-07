@@ -1,6 +1,6 @@
 # TK-661 freeze provider continuation lifecycle and presenter truth contract
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-08
 - Owner: `AI-Agent`
 - Priority: `P0`
@@ -52,8 +52,14 @@
 ## 9. 执行记录
 
 1. 2026-04-08：任务创建，状态初始化为 `planned`。
+2. 2026-04-08：已把 `previewSummary / latestNoteSummary` 纳入 `SessionMainSupervisorTurnContext` 与 service runtime 投影，明确 lightweight session-note continuity 属于 presenter-safe fallback truth，而不是 provider-native backend reuse。
+3. 2026-04-08：已冻结 `SessionProviderContinuationSummary.lightweightSessionFallbackApplied` contract，并同步 `session-shell` i18n wording，明确 `unsupported + lightweight fallback active` 与 `unsupported + no lightweight fallback` 的对外表达差异。
+4. 2026-04-08：已完成本轮 contract freeze 需要的 targeted regression 与 same-window `pnpm run build`，任务切换为 `completed`。
 
 ## 10. 产出
 
-1. 待执行：provider continuation lifecycle contract
-2. 待执行：presenter truth acceptance checklist
+1. `packages/core-orchestration-service/src/types/interfaces/session-main-supervisor-runtime.interface.ts`
+2. `packages/core-orchestration-service/src/types/interfaces/provider-continuation.interface.ts`
+3. `packages/core-orchestration-service/src/local-orchestration-service-session-runtime.ts`
+4. `packages/shared/src/i18n/locales/en-us.ts`
+5. `packages/shared/src/i18n/locales/zh-cn.ts`

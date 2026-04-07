@@ -2653,6 +2653,7 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
       '--dangerously-skip-permissions',
       '--add-dir',
       request.cwd,
+      '--',
       request.prompt,
     ];
 

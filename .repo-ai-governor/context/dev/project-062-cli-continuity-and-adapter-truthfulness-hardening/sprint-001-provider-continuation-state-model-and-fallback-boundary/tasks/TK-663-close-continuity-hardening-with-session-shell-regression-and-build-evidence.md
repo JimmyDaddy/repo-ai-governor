@@ -1,6 +1,6 @@
 # TK-663 close continuity hardening with session-shell regression and build evidence
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-08
 - Owner: `AI-Agent`
 - Priority: `P0`
@@ -52,8 +52,14 @@
 ## 9. 执行记录
 
 1. 2026-04-08：任务创建，状态初始化为 `planned`。
+2. 2026-04-08：已完成 continuity-focused session-shell regression，确认 `provider-native / fallback-active / unsupported(no lightweight fallback)` 三类对外表达均有回归覆盖。
+3. 2026-04-08：已完成 `packages/adapters/claude-code/test/claude-code-agent-adapter.smoke.test.ts`、`apps/cli/test/runtime/session-main-supervisor-runtime.test.ts`、`apps/cli/test/runtime/session-shell-transcript-store.test.ts` 定向验证，以及 same-window `pnpm run build`。
+4. 2026-04-08：本 sprint 的实现证据已齐备，任务切换为 `completed`，下一边界进入 sprint-level delegated CR loop。
 
 ## 10. 产出
 
-1. 待执行：continuity regression evidence
-2. 待执行：sprint-002 activation input
+1. `apps/cli/test/runtime/session-main-supervisor-runtime.test.ts`
+2. `apps/cli/test/runtime/session-shell-transcript-store.test.ts`
+3. `packages/adapters/claude-code/test/claude-code-agent-adapter.smoke.test.ts`
+4. same-window verification: `pnpm exec vitest run apps/cli/test/runtime/session-main-supervisor-runtime.test.ts apps/cli/test/runtime/session-shell-transcript-store.test.ts packages/adapters/claude-code/test/claude-code-agent-adapter.smoke.test.ts`
+5. same-window verification: `pnpm run build`

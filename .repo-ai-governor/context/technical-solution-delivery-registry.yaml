@@ -513,22 +513,23 @@ deliveries:
       - packaged_distribution
       - docs_playbook
     user_impact_level: high
-    execution_status: planned
+    execution_status: in_progress
     rollout_status: planned
     owner: runtime
     project_ref: project-062-cli-continuity-and-adapter-truthfulness-hardening
-    sprint_ref: sprint-001-provider-continuation-state-model-and-fallback-boundary
+    sprint_ref: sprint-002-adapter-probe-verify-truth-source-alignment
     task_ids:
-      - TK-661
-      - TK-662
-      - TK-663
+      - TK-664
+      - TK-665
+      - TK-666
     project_plan_path: .repo-ai-governor/context/dev/project-062-cli-continuity-and-adapter-truthfulness-hardening/plan.md
-    sprint_plan_path: .repo-ai-governor/context/dev/project-062-cli-continuity-and-adapter-truthfulness-hardening/sprint-001-provider-continuation-state-model-and-fallback-boundary/plan.md
-    task_csv_path: .repo-ai-governor/context/dev/project-062-cli-continuity-and-adapter-truthfulness-hardening/sprint-001-provider-continuation-state-model-and-fallback-boundary/tasks/tasks.csv
+    sprint_plan_path: .repo-ai-governor/context/dev/project-062-cli-continuity-and-adapter-truthfulness-hardening/sprint-002-adapter-probe-verify-truth-source-alignment/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-062-cli-continuity-and-adapter-truthfulness-hardening/sprint-002-adapter-probe-verify-truth-source-alignment/tasks/tasks.csv
     handoff_artifact_path: .repo-ai-governor/context/dev/project-072-current-surface-priority-promotion-and-decomposition/sprint-001-promotion-and-formal-followup-decomposition/tasks/DA-696-current-surface-priority-promotion-and-followup-decomposition-handoff.md
     rollout_artifacts:
       - .repo-ai-governor/context/dev/project-072-current-surface-priority-promotion-and-decomposition/sprint-001-promotion-and-formal-followup-decomposition/tasks/DA-696-current-surface-priority-promotion-and-followup-decomposition-handoff.md
       - .repo-ai-governor/context/dev/project-062-cli-continuity-and-adapter-truthfulness-hardening/plan.md
+      - .repo-ai-governor/context/dev/project-062-cli-continuity-and-adapter-truthfulness-hardening/sprint-001-provider-continuation-state-model-and-fallback-boundary/tasks/DA-697-sprint-001-closeout-and-sprint-002-activation-handoff.md
       - .repo-ai-governor/context/dev/project-063-packaged-distribution-and-install-surface-closeout/plan.md
       - .repo-ai-governor/context/dev/project-064-vscode-packaged-secondary-surface-rollout/plan.md
       - .repo-ai-governor/context/dev/project-065-desktop-secondary-surface-productization-decision/plan.md

@@ -463,8 +463,9 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       subagentCount: 0,
       ...(providerContinuationMutations.length > 0
         ? {
-            providerContinuationSummaries: providerContinuationMutations.map(
-              (mutation) => mutation.summary,
+            providerContinuationSummaries: this.projectProviderContinuationSummaries(
+              context,
+              providerContinuationMutations,
             ),
             providerContinuationMutations,
           }
@@ -967,8 +968,9 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       subagentCount: 1,
       ...(providerContinuationMutations.length > 0
         ? {
-            providerContinuationSummaries: providerContinuationMutations.map(
-              (mutation) => mutation.summary,
+            providerContinuationSummaries: this.projectProviderContinuationSummaries(
+              context,
+              providerContinuationMutations,
             ),
             providerContinuationMutations,
           }
@@ -1045,8 +1047,9 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       subagentCount: executedDispatches.length,
       ...(providerContinuationMutations.length > 0
         ? {
-            providerContinuationSummaries: providerContinuationMutations.map(
-              (mutation) => mutation.summary,
+            providerContinuationSummaries: this.projectProviderContinuationSummaries(
+              context,
+              providerContinuationMutations,
             ),
             providerContinuationMutations,
           }
@@ -1121,8 +1124,9 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       subagentCount: executedDispatches.length,
       ...(providerContinuationMutations.length > 0
         ? {
-            providerContinuationSummaries: providerContinuationMutations.map(
-              (mutation) => mutation.summary,
+            providerContinuationSummaries: this.projectProviderContinuationSummaries(
+              context,
+              providerContinuationMutations,
             ),
             providerContinuationMutations,
           }
@@ -1599,8 +1603,9 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       ...(providerContinuationMutations.length > 0
         ? {
             providerContinuationMutations,
-            providerContinuationSummaries: providerContinuationMutations.map(
-              (mutation) => mutation.summary,
+            providerContinuationSummaries: this.projectProviderContinuationSummaries(
+              context,
+              providerContinuationMutations,
             ),
           }
         : {}),
@@ -1902,6 +1907,7 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
   }
 
   private createAnswerInput(context: SessionMainSupervisorTurnContext): Record<string, unknown> {
+    const sessionContinuityNote = this.createSessionContinuityNote(context);
     return {
       userMessage: context.userMessage,
       locale: this.options.locale,
@@ -1923,6 +1929,7 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
         interactionMode: AgentStageExecutionMode.CHAT_ONLY,
         toolUsePolicy: AgentStageToolUsePolicy.FORBIDDEN,
       },
+      ...(sessionContinuityNote ? { sessionContinuityNote } : {}),
       ...(context.metadata ? { metadata: { ...context.metadata } } : {}),
     };
   }
@@ -1934,6 +1941,7 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     const repositoryReviewScope = this.isRepositoryReviewRoleDispatch(context, descriptor)
       ? SESSION_MAIN_REPOSITORY_REVIEW_SCOPE
       : null;
+    const sessionContinuityNote = this.createSessionContinuityNote(context);
     return {
       userMessage: this.stripRoleMentions(context.userMessage),
       locale: this.options.locale,
@@ -1951,8 +1959,45 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       interactionMode: SESSION_MAIN_INTERACTION_MODE.SINGLE_ROLE_DELEGATE,
       governorInstructions: this.createRoleDelegateGovernorInstructions(context, descriptor),
       ...(repositoryReviewScope ? { reviewScope: repositoryReviewScope } : {}),
+      ...(sessionContinuityNote ? { sessionContinuityNote } : {}),
       ...(context.metadata ? { metadata: { ...context.metadata } } : {}),
     };
+  }
+
+  private createSessionContinuityNote(
+    context: SessionMainSupervisorTurnContext,
+  ): Record<string, string> | undefined {
+    const latestNoteSummary = this.readOptionalString(context.latestNoteSummary);
+    const previewSummary = this.readOptionalString(context.previewSummary);
+    if (!latestNoteSummary && !previewSummary) {
+      return undefined;
+    }
+
+    return {
+      ...(latestNoteSummary ? { latestNoteSummary } : {}),
+      ...(previewSummary ? { previewSummary } : {}),
+    };
+  }
+
+  private projectProviderContinuationSummaries(
+    context: SessionMainSupervisorTurnContext,
+    providerContinuationMutations: NonNullable<
+      SessionMainSupervisorTurnOutcome['providerContinuationMutations']
+    >,
+  ): NonNullable<SessionMainSupervisorTurnOutcome['providerContinuationSummaries']> {
+    const lightweightSessionFallbackApplied = this.hasSessionContinuityNote(context);
+    return providerContinuationMutations.map((mutation) =>
+      mutation.summary.status === 'unsupported' && lightweightSessionFallbackApplied
+        ? {
+            ...mutation.summary,
+            lightweightSessionFallbackApplied: true,
+          }
+        : mutation.summary,
+    );
+  }
+
+  private hasSessionContinuityNote(context: SessionMainSupervisorTurnContext): boolean {
+    return Boolean(this.createSessionContinuityNote(context));
   }
 
   private isRepositoryReviewRequest(userMessage: string): boolean {
