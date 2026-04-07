@@ -18,7 +18,7 @@
 
 ## 2.1 sprint-001-standards-runtime-loader-product-path
 
-- Status: active
+- Status: completed
 - Sprint Goal: 收口 standards runtime loader 的产品消费路径和文档示例。
 - Task Package: `TK-618`、`TK-619`、`TK-620`。
 - Task Package: `TK-618`、`TK-619`、`TK-620`、`TK-650`、`TK-651`。

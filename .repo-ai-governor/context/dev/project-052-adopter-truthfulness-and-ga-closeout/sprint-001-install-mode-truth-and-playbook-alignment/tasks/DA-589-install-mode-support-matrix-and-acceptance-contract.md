@@ -17,12 +17,12 @@
 
 ## 2. Canonical Truth Surfaces
 
-1. [support-matrix.md](/Users/jimmydaddy/study/ai-governor/docs/support-matrix.md)
-2. [support-matrix.zh-CN.md](/Users/jimmydaddy/study/ai-governor/docs/support-matrix.zh-CN.md)
-3. [README.md](/Users/jimmydaddy/study/ai-governor/README.md)
-4. [README.zh-CN.md](/Users/jimmydaddy/study/ai-governor/README.zh-CN.md)
-5. [local-adoption-playbook.md](/Users/jimmydaddy/study/ai-governor/docs/local-adoption-playbook.md)
-6. [local-adoption-playbook.zh-CN.md](/Users/jimmydaddy/study/ai-governor/docs/local-adoption-playbook.zh-CN.md)
+1. `docs/support-matrix.md`
+2. `docs/support-matrix.zh-CN.md`
+3. `README.md`
+4. `README.zh-CN.md`
+5. `docs/local-adoption-playbook.md`
+6. `docs/local-adoption-playbook.zh-CN.md`
 
 ## 3. Acceptance Contract
 

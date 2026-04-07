@@ -62,7 +62,8 @@ function printHelp() {
 
 Notes:
   - --handoff-json should contain the delegatedReviewRequest JSON emitted by bootstrap/render.
-  - --raw-findings-json should contain the reviewer-emitted normalized finding array.`);
+  - --raw-findings-json should contain the reviewer-emitted findings array, which may be unnormalized or loosely shaped.
+  - This script normalizes those findings and outputs the normalized findings array.`);
 }
 
 function ensureRequired(options, key) {

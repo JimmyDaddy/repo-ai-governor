@@ -19,12 +19,12 @@
 
 ## 2. Key Outputs
 
-1. [README.md](/Users/jimmydaddy/study/ai-governor/README.md)
-2. [README.zh-CN.md](/Users/jimmydaddy/study/ai-governor/README.zh-CN.md)
-3. [local-adoption-playbook.md](/Users/jimmydaddy/study/ai-governor/docs/local-adoption-playbook.md)
-4. [local-adoption-playbook.zh-CN.md](/Users/jimmydaddy/study/ai-governor/docs/local-adoption-playbook.zh-CN.md)
-5. [support-matrix.md](/Users/jimmydaddy/study/ai-governor/docs/support-matrix.md)
-6. [support-matrix.zh-CN.md](/Users/jimmydaddy/study/ai-governor/docs/support-matrix.zh-CN.md)
+1. `README.md`
+2. `README.zh-CN.md`
+3. `docs/local-adoption-playbook.md`
+4. `docs/local-adoption-playbook.zh-CN.md`
+5. `docs/support-matrix.md`
+6. `docs/support-matrix.zh-CN.md`
 
 ## 3. Verification
 

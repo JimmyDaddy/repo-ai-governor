@@ -18,8 +18,8 @@
 
 1. Clean-room report: `.tmp/project-052-sprint-001-cleanroom-report.json`
 2. Local distribution report: `.tmp/project-052-sprint-001-local-distribution-report.json`
-3. Refreshed truth surface: [support-matrix.md](/Users/jimmydaddy/study/ai-governor/docs/support-matrix.md)
-4. Refreshed truth surface: [support-matrix.zh-CN.md](/Users/jimmydaddy/study/ai-governor/docs/support-matrix.zh-CN.md)
+3. Refreshed truth surface: `docs/support-matrix.md`
+4. Refreshed truth surface: `docs/support-matrix.zh-CN.md`
 
 ## 3. Acceptance Notes
 
