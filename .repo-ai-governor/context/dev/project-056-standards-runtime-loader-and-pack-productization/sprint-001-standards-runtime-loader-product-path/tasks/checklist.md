@@ -17,3 +17,10 @@
 - [x] TK-650 sprint-001 exit acceptance and project-final review activation handoff
   - 2026-04-07：在 `TK-618`、`TK-619`、`TK-620` 与 `CR-001` 全部进入终态后创建本任务。
   - 2026-04-07：已写入 `DA-650`、project/sprint plan closeout handoff 与 task-ledger 同步；当前 sprint surface 保留给后续 `project-final` CR loop。
+- [x] CR-002 project-056-standards-runtime-loader-and-pack-productization final delegated review loop round 2
+  - 2026-04-07：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-07：project-final fresh reviewer 报告 1 条 README runnable-path finding；主 agent 复核后认可该文档示例在 fresh repo 下会因缺目录而 `ENOENT`，并将本轮推进到 `verified`。
+  - 2026-04-07：accepted finding 已修复；同窗口重跑 targeted vitest、`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、README example dist repro 与 `pnpm run check` 后，本轮收口为 `resolved`。
+- [x] TK-651 finalize project-056 closeout and clear the active primary stream
+  - 2026-04-07：任务在 `CR-002` resolved 后创建并于同一窗口完成，完成 `project-056` final closeout write-back 并清空 active primary stream。
+  - 2026-04-07：已完成 project-final closeout write-back、completion audit summary 与 active primary stream clearance。

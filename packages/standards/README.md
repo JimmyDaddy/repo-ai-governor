@@ -68,7 +68,7 @@ standards:
 Runtime 消费示例：
 
 ```ts
-import { writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { ConfigLoader } from "@repo-ai-governor/config";
 import { StandardsRuntimeLoader } from "@repo-ai-governor/standards";
 import { dirname } from "node:path";
@@ -94,6 +94,7 @@ const agentsProjections = await standardsLoader.projectAgents({
 });
 
 for (const projection of agentsProjections) {
+  await mkdir(dirname(projection.projectionTarget), { recursive: true });
   await writeFile(projection.projectionTarget, projection.projectedContent, "utf8");
 }
 ```
@@ -103,7 +104,7 @@ for (const projection of agentsProjections) {
 1. `baseDirectory` 是 runtime 的相对路径解析根；相对 `packSources.*.module` 与相对 `projectionTargets[].targetFile` 都会解析到这个根下。
 2. `runtime.loadedPacks` 暴露每个 pack 的 `layer/module/exportName` provenance，可直接用于 truth/debug/audit。
 3. `renderConfiguredTargets()` 只返回结构化渲染结果，不负责 docs/CLI 文件写入。
-4. `projectAgents()` 只返回 `projection_target/projected_at/source_pack_refs` 完整 payload，不自动写 root `AGENTS.md`；文件写入由调用方负责。
+4. `projectAgents()` 只返回 `projection_target/projected_at/source_pack_refs` 完整 payload，不自动写 root `AGENTS.md`；目录创建与文件写入都由调用方负责。
 5. 当前仓库根级 `AGENTS.md` 仍是手工维护的治理入口，不是 runtime loader 的自动产物。
 
 ## Manual Composition Example

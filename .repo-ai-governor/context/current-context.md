@@ -2,17 +2,17 @@
 
 ## Primary Stream
 
-- Status: active
+- Status: idle
 - Project: `project-056-standards-runtime-loader-and-pack-productization`
 - Sprint: `sprint-001-standards-runtime-loader-product-path`
 - Docs root: `.repo-ai-governor/context/dev/project-056-standards-runtime-loader-and-pack-productization`
 - Task records: `.repo-ai-governor/context/dev/project-056-standards-runtime-loader-and-pack-productization/sprint-001-standards-runtime-loader-product-path/tasks/`
 - Review records: `.repo-ai-governor/context/dev/project-056-standards-runtime-loader-and-pack-productization/sprint-001-standards-runtime-loader-product-path/review/`
-- Note: `2026-04-07` `project-057` project-final `CR-002` clean `resolved` 并完成 completion audit / closeout 后，primary stream 已切换到 `project-056 / sprint-001`。
+- Note: `2026-04-07` `project-056` project-final `CR-002` clean `resolved` 且 `TK-651 / DA-651` 已完成 final closeout write-back；当前 worktree 仅保留最近完成的 primary stream trace，暂无新的 active primary stream。
 
 ## Active Streams
 
-- `active-1`: role=`primary`, project=`project-056-standards-runtime-loader-and-pack-productization`, sprint=`sprint-001-standards-runtime-loader-product-path`, docs=`.repo-ai-governor/context/dev/project-056-standards-runtime-loader-and-pack-productization`, plan=`.repo-ai-governor/context/dev/project-056-standards-runtime-loader-and-pack-productization/sprint-001-standards-runtime-loader-product-path/plan.md`, tasks=`.repo-ai-governor/context/dev/project-056-standards-runtime-loader-and-pack-productization/sprint-001-standards-runtime-loader-product-path/tasks/`, checklist=`.repo-ai-governor/context/dev/project-056-standards-runtime-loader-and-pack-productization/sprint-001-standards-runtime-loader-product-path/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-056-standards-runtime-loader-and-pack-productization/sprint-001-standards-runtime-loader-product-path/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-056-standards-runtime-loader-and-pack-productization/sprint-001-standards-runtime-loader-product-path/review/`, status=`active`, note=`Activated immediately after project-057 final closeout on 2026-04-07`
+- none currently registered.
 
 ## Planned Follow-Up Streams
 
