@@ -1,6 +1,6 @@
 # project-063-packaged-distribution-and-install-surface-closeout 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-08
 - Stage Mapping: adopter distribution truth refresh
 - Phase Mapping: packaged install contract + clean-room acceptance
@@ -18,7 +18,7 @@
 
 ## 2.1 sprint-001-packaged-install-contract-and-acceptance-refresh
 
-- Status: planned
+- Status: active
 - Sprint Goal: 明确 packaged install contract，并完成文档与 acceptance evidence 刷新。
 - Task Package: `TK-667`、`TK-668`、`TK-669`。
 
@@ -26,7 +26,7 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 | --- | --- | --- | --- | --- | --- |
-| TK-667 | sprint-001 | freeze packaged install support contract and acceptance matrix | contract/docs | project-062 recommended | planned |
+| TK-667 | sprint-001 | freeze packaged install support contract and acceptance matrix | contract/docs | project-062 recommended | in_progress |
 | TK-668 | sprint-001 | implement packaged installer runtime layout follow-up or explicit online-only boundary hardening | implementation/docs | TK-667 | planned |
 | TK-669 | sprint-001 | close packaged adoption boundary with clean-room rehearsal and support-matrix refresh | acceptance/closeout | TK-667、TK-668 | planned |
 
@@ -40,3 +40,8 @@
 1. adopter 能明确知道 packaged install 到底支持什么、不支持什么。
 2. `README`、playbook、support matrix 与 clean-room evidence 一致。
 3. 不再保留“看起来像支持，但实际上只做 rehearsal”的叙事漂移。
+
+## 6. 里程碑记录
+
+1. 2026-04-08：作为 `project-072` follow-up decomposition 产物创建，当前保持 `planned`。
+2. 2026-04-08：`project-062` final closeout 完成后被激活为当前 primary project，`sprint-001 / TK-667` 进入执行窗口。

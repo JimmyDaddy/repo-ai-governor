@@ -1,6 +1,6 @@
 # project-062-cli-continuity-and-adapter-truthfulness-hardening 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-08
 - Stage Mapping: CLI hardening follow-up
 - Phase Mapping: provider-native continuity + adapter truth-source alignment
@@ -27,9 +27,9 @@
 
 ## 2.2 sprint-002-adapter-probe-verify-truth-source-alignment
 
-- Status: active
+- Status: completed
 - Sprint Goal: 收敛 `connect / doctor / verify / transcript` 对 adapter readiness 的真值来源与对外表达。
-- Task Package: `TK-664`、`TK-665`、`TK-666`。
+- Task Package: `TK-664`、`TK-665`、`TK-666`、`TK-698`、`TK-699`。
 
 ## 3. 任务拆解矩阵（WBS）
 
@@ -43,6 +43,7 @@
 | TK-665 | sprint-002 | implement adapter probe outcome classification and presenter-safe diagnostics alignment | adapter/implementation | TK-664 | completed |
 | TK-666 | sprint-002 | close CLI truthfulness hardening with cross-adapter evidence refresh | project/closeout | TK-664、TK-665 | completed |
 | TK-698 | sprint-002 | sprint-002 exit acceptance and project-final review activation handoff | closeout/handoff | TK-664、TK-665、TK-666、CR-001、CR-002 | completed |
+| TK-699 | sprint-002 | finalize project-062 closeout and activate project-063 primary stream | closeout/final-audit | TK-698、CR-003 | completed |
 
 ## 4. 依赖产物策略
 
@@ -64,3 +65,4 @@
 4. 2026-04-08：`TK-664 / TK-665` 已完成 `verify` tool-matrix truth-source freeze 与 diagnostics alignment；当前 project 活跃边界已切到 `TK-666` 的 evidence refresh / closeout 收口。
 5. 2026-04-08：`TK-666` 已完成 same-window cross-adapter regression、build、package/integration verification，`project-062 / sprint-002` 的实现面已完成，当前进入 sprint-level delegated CR loop。
 6. 2026-04-08：`CR-001 / CR-002` 已完成 delegated sprint review clean closure；`TK-698 / DA-698` 已把 `sprint-002` 收口为 project-final-ready surface，当前下一边界固定为 `project-062` project-final CR loop。
+7. 2026-04-08：`CR-003` clean `resolved`；`TK-699 / DA-699` 已完成 final closeout write-back 并激活 `project-063 / sprint-001`，项目完成态审计摘要已落盘：`.repo-ai-governor/context/dev/project-062-cli-continuity-and-adapter-truthfulness-hardening/project-062-cli-continuity-and-adapter-truthfulness-hardening-completion-audit-summary.md`。

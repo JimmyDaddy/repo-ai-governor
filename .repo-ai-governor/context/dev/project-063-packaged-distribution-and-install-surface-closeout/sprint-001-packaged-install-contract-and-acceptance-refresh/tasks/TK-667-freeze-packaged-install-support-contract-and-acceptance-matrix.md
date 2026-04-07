@@ -1,6 +1,6 @@
 # TK-667 freeze packaged install support contract and acceptance matrix
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-04-08
 - Owner: `AI-Agent`
 - Priority: `P1`
@@ -52,6 +52,7 @@
 ## 9. 执行记录
 
 1. 2026-04-08：任务创建，状态初始化为 `planned`。
+2. 2026-04-08：`project-062` final closeout 完成后，当前任务切换为 `in_progress`，开始冻结 `path / link / dist-binary / tgz` 的 packaged install support contract 与 acceptance matrix。
 
 ## 10. 产出
 

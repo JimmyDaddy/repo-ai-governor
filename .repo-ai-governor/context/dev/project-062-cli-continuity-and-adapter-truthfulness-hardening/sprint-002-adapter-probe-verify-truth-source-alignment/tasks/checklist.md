@@ -26,5 +26,10 @@
   - 2026-04-08：在 `TK-664`、`TK-665`、`TK-666`、`CR-001` 与 `CR-002` 全部进入终态后创建本任务。
   - 2026-04-08：已写入 `DA-698`、project/sprint closeout handoff 与 task-ledger 同步；当前 sprint surface 保留给后续 `project-final` CR loop。
   - 2026-04-08：已通过 `pnpm run check`，满足 sprint 边界本地 commit 前的最终门禁。
-- [ ] CR-003 project-062-cli-continuity-and-adapter-truthfulness-hardening project delegated review loop round 3
+- [x] CR-003 project-062-cli-continuity-and-adapter-truthfulness-hardening project delegated review loop round 3
   - 2026-04-08：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-08：fresh reviewer sub-agent `Newton` 返回 “No actionable findings identified...”，并确认 targeted vitest、`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1` 及治理检查全部通过。
+  - 2026-04-08：主 agent 完成当前 project-final boundary 的复核并写入 `resolved_code_review_working-tree-20260408-0352.md`，当前任务切换为 `resolved`。
+- [x] TK-699 finalize project-062 closeout and activate project-063 primary stream
+  - 2026-04-08：任务在 `CR-003` clean 后创建并于同一窗口完成，完成 `project-062` 的 final closeout write-back。
+  - 2026-04-08：已写入 `DA-699` 与 completion audit summary，project / sprint / context / history / delivery registry 已同步到完成态真值，并激活 `project-063 / sprint-001 / TK-667`。

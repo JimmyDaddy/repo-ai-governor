@@ -1,6 +1,6 @@
 # sprint-001-packaged-install-contract-and-acceptance-refresh 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-08
 - Project: `project-063-packaged-distribution-and-install-surface-closeout`
 - Sprint Goal: 明确 packaged install contract，并完成文档与 acceptance evidence 刷新。
@@ -16,3 +16,8 @@
 1. packaged install 支持边界与 acceptance matrix 已冻结。
 2. runtime layout follow-up 或 online-only boundary 已形成单一 truth。
 3. clean-room rehearsal、support matrix 与 adopter docs 已一致。
+
+## 3. Milestones
+
+1. 2026-04-08：作为 `project-063` follow-up sprint 创建，当前保持 `planned`。
+2. 2026-04-08：在 `project-062` final closeout 完成后被激活为当前 primary sprint，`TK-667` 已切换为 `in_progress`。
