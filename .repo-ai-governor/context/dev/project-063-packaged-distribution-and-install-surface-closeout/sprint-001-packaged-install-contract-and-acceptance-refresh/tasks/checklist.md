@@ -18,5 +18,9 @@
 - [x] TK-700 sprint-001 exit acceptance and project-final review activation handoff
   - 2026-04-08：在 `TK-667`、`TK-668`、`TK-669` 与 `CR-001` 全部进入终态后创建本任务。
   - 2026-04-08：已写入 `DA-700`、project/sprint closeout handoff 与 task-ledger 同步；当前 sprint surface 保留给后续 `project-final` CR loop。
-- [ ] CR-002 project-063-packaged-distribution-and-install-surface-closeout final delegated review loop round 2
+- [x] CR-002 project-063-packaged-distribution-and-install-surface-closeout final delegated review loop round 2
   - 2026-04-08：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-08：fresh reviewer round 由 `Ohm` 执行，未返回 actionable findings；主 agent 复核 project-final boundary 与既有验证证据后，直接写入 resolved review artifact 并将本任务收口为 `resolved`。
+- [x] TK-701 finalize project-063 closeout and activate project-067 primary stream
+  - 2026-04-08：任务在 `CR-002` clean 后创建并于同一窗口完成，完成 `project-063` 的 final closeout write-back。
+  - 2026-04-08：已写入 `DA-701` 与 completion audit summary，project / sprint / context / history / delivery registry 已同步到完成态真值，并激活 `project-067 / sprint-001 / TK-679`。

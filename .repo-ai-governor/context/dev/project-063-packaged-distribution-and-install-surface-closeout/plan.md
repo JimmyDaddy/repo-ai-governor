@@ -1,6 +1,6 @@
 # project-063-packaged-distribution-and-install-surface-closeout 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-08
 - Stage Mapping: adopter distribution truth refresh
 - Phase Mapping: packaged install contract + clean-room acceptance
@@ -18,9 +18,9 @@
 
 ## 2.1 sprint-001-packaged-install-contract-and-acceptance-refresh
 
-- Status: active
+- Status: completed
 - Sprint Goal: 明确 packaged install contract，并完成文档与 acceptance evidence 刷新。
-- Task Package: `TK-667`、`TK-668`、`TK-669`、`TK-700`。
+- Task Package: `TK-667`、`TK-668`、`TK-669`、`TK-700`、`TK-701`。
 
 ## 3. 任务拆解矩阵（WBS）
 
@@ -30,6 +30,7 @@
 | TK-668 | sprint-001 | implement packaged installer runtime layout follow-up or explicit online-only boundary hardening | implementation/docs | TK-667 | completed |
 | TK-669 | sprint-001 | close packaged adoption boundary with clean-room rehearsal and support-matrix refresh | acceptance/closeout | TK-667、TK-668 | completed |
 | TK-700 | sprint-001 | sprint-001 exit acceptance and project-final review activation handoff | closeout/handoff | TK-667、TK-668、TK-669、CR-001 | completed |
+| TK-701 | sprint-001 | finalize project-063 closeout and activate project-067 primary stream | closeout/final-audit | TK-700、CR-002 | completed |
 
 ## 4. 依赖产物策略
 
@@ -49,3 +50,4 @@
 2. 2026-04-08：`project-062` final closeout 完成后被激活为当前 primary project，`sprint-001 / TK-667` 进入执行窗口。
 3. 2026-04-08：`TK-667 / TK-668 / TK-669` 已完成 packaged install contract freeze、runtime truth hardening、clean-room `tgz` evidence 与 support-matrix refresh；当前下一边界进入 `project-063` sprint-scoped delegated CR loop。
 4. 2026-04-08：`CR-001` clean `resolved`；`TK-700 / DA-700` 已把 `sprint-001` 收口为 project-final-ready surface，当前下一边界固定为 `project-063` project-final delegated CR loop。
+5. 2026-04-08：`CR-002` clean `resolved`；`TK-701 / DA-701` 已完成 final closeout write-back，并激活 `project-067 / sprint-001 / TK-679`；项目完成态审计摘要已落盘：`.repo-ai-governor/context/dev/project-063-packaged-distribution-and-install-surface-closeout/project-063-packaged-distribution-and-install-surface-closeout-completion-audit-summary.md`。

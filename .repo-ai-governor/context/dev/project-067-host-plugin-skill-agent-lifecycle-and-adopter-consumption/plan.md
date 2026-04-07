@@ -1,6 +1,6 @@
 # project-067-host-plugin-skill-agent-lifecycle-and-adopter-consumption 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-08
 - Stage Mapping: formal host-native lifecycle follow-up
 - Phase Mapping: Codex / Claude Code plugin-skill-agent lifecycle + support-truth + adopter consumption
@@ -19,7 +19,7 @@
 
 ## 2.1 sprint-001-codex-claude-host-ergonomics-lifecycle-and-upgrade
 
-- Status: planned
+- Status: active
 - Sprint Goal: 为 Codex / Claude Code plugin / skill / agent 资产冻结 lifecycle、upgrade、support-truth 与 adopter-consumption contract。
 - Task Package: `TK-679`、`TK-680`、`TK-681`。
 
@@ -27,7 +27,7 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 | --- | --- | --- | --- | --- | --- |
-| TK-679 | sprint-001 | freeze codex claude host asset lifecycle and support-truth contract | host/contract | project-050 closeout + project-070 triad sync + project-063 recommended | planned |
+| TK-679 | sprint-001 | freeze codex claude host asset lifecycle and support-truth contract | host/contract | project-050 closeout + project-070 triad sync + project-063 recommended | in_progress |
 | TK-680 | sprint-001 | implement codex claude host asset apply verify upgrade and adopter-consumption follow-up | host/implementation/docs | TK-679 | planned |
 | TK-681 | sprint-001 | close codex claude host ergonomics follow-up with README support-matrix playbook and packaging evidence refresh | host/closeout | TK-679、TK-680 | planned |
 
@@ -41,3 +41,8 @@
 1. Codex / Claude Code plugin / skill / agent 不再只是“生成过一次”的 baseline 资产，而有明确 lifecycle / upgrade / support-truth 约束。
 2. adopter 若要消费这些 host assets，有清晰的 apply / verify / upgrade narrative。
 3. `README`、support matrix、playbook 与 target-specific export / verify evidence 至少形成一条一致 narrative。
+
+## 6. 里程碑记录
+
+1. 2026-04-08：作为 `project-072` follow-up decomposition 产物创建，当前保持 `planned`。
+2. 2026-04-08：`project-063` final closeout 完成后被激活为当前 primary project，`sprint-001 / TK-679` 进入执行窗口。

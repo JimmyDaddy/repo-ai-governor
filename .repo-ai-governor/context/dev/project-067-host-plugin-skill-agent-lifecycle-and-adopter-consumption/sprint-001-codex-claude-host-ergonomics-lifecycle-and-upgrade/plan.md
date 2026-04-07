@@ -1,6 +1,6 @@
 # sprint-001-codex-claude-host-ergonomics-lifecycle-and-upgrade 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-08
 - Project: `project-067-host-plugin-skill-agent-lifecycle-and-adopter-consumption`
 - Sprint Goal: 为 Codex / Claude Code plugin / skill / agent 资产冻结 lifecycle、upgrade、support-truth 与 adopter-consumption contract。
@@ -16,3 +16,8 @@
 1. host asset lifecycle / support-truth contract 已冻结。
 2. apply / verify / upgrade follow-up 已具备最小闭环。
 3. README / support matrix / playbook / evidence 已形成一致 narrative。
+
+## 3. Milestones
+
+1. 2026-04-08：作为 `project-067` follow-up sprint 创建，当前保持 `planned`。
+2. 2026-04-08：在 `project-063` final closeout 完成后被激活为当前 primary sprint，`TK-679` 已切换为 `in_progress`。

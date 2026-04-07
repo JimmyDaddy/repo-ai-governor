@@ -514,18 +514,18 @@ deliveries:
       - docs_playbook
     user_impact_level: high
     execution_status: in_progress
-    rollout_status: planned
+    rollout_status: in_progress
     owner: runtime
-    project_ref: project-063-packaged-distribution-and-install-surface-closeout
-    sprint_ref: sprint-001-packaged-install-contract-and-acceptance-refresh
+    project_ref: project-067-host-plugin-skill-agent-lifecycle-and-adopter-consumption
+    sprint_ref: sprint-001-codex-claude-host-ergonomics-lifecycle-and-upgrade
     task_ids:
-      - TK-667
-      - TK-668
-      - TK-669
-    project_plan_path: .repo-ai-governor/context/dev/project-063-packaged-distribution-and-install-surface-closeout/plan.md
-    sprint_plan_path: .repo-ai-governor/context/dev/project-063-packaged-distribution-and-install-surface-closeout/sprint-001-packaged-install-contract-and-acceptance-refresh/plan.md
-    task_csv_path: .repo-ai-governor/context/dev/project-063-packaged-distribution-and-install-surface-closeout/sprint-001-packaged-install-contract-and-acceptance-refresh/tasks/tasks.csv
-    handoff_artifact_path: .repo-ai-governor/context/dev/project-062-cli-continuity-and-adapter-truthfulness-hardening/sprint-002-adapter-probe-verify-truth-source-alignment/tasks/DA-699-project-062-final-closeout-and-project-063-primary-stream-activation.md
+      - TK-679
+      - TK-680
+      - TK-681
+    project_plan_path: .repo-ai-governor/context/dev/project-067-host-plugin-skill-agent-lifecycle-and-adopter-consumption/plan.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-067-host-plugin-skill-agent-lifecycle-and-adopter-consumption/sprint-001-codex-claude-host-ergonomics-lifecycle-and-upgrade/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-067-host-plugin-skill-agent-lifecycle-and-adopter-consumption/sprint-001-codex-claude-host-ergonomics-lifecycle-and-upgrade/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-063-packaged-distribution-and-install-surface-closeout/sprint-001-packaged-install-contract-and-acceptance-refresh/tasks/DA-701-project-063-final-closeout-and-project-067-primary-stream-activation.md
     rollout_artifacts:
       - .repo-ai-governor/context/dev/project-072-current-surface-priority-promotion-and-decomposition/sprint-001-promotion-and-formal-followup-decomposition/tasks/DA-696-current-surface-priority-promotion-and-followup-decomposition-handoff.md
       - .repo-ai-governor/context/dev/project-062-cli-continuity-and-adapter-truthfulness-hardening/plan.md
@@ -533,6 +533,9 @@ deliveries:
       - .repo-ai-governor/context/dev/project-062-cli-continuity-and-adapter-truthfulness-hardening/sprint-002-adapter-probe-verify-truth-source-alignment/tasks/DA-699-project-062-final-closeout-and-project-063-primary-stream-activation.md
       - .repo-ai-governor/context/dev/project-062-cli-continuity-and-adapter-truthfulness-hardening/project-062-cli-continuity-and-adapter-truthfulness-hardening-completion-audit-summary.md
       - .repo-ai-governor/context/dev/project-063-packaged-distribution-and-install-surface-closeout/plan.md
+      - .repo-ai-governor/context/dev/project-063-packaged-distribution-and-install-surface-closeout/sprint-001-packaged-install-contract-and-acceptance-refresh/tasks/DA-700-sprint-001-closeout-and-project-final-review-activation-handoff.md
+      - .repo-ai-governor/context/dev/project-063-packaged-distribution-and-install-surface-closeout/sprint-001-packaged-install-contract-and-acceptance-refresh/tasks/DA-701-project-063-final-closeout-and-project-067-primary-stream-activation.md
+      - .repo-ai-governor/context/dev/project-063-packaged-distribution-and-install-surface-closeout/project-063-packaged-distribution-and-install-surface-closeout-completion-audit-summary.md
       - .repo-ai-governor/context/dev/project-064-vscode-packaged-secondary-surface-rollout/plan.md
       - .repo-ai-governor/context/dev/project-065-desktop-secondary-surface-productization-decision/plan.md
       - .repo-ai-governor/context/dev/project-066-standards-and-language-pack-ecosystem-expansion/plan.md
