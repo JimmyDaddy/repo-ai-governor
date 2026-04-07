@@ -139,8 +139,10 @@ const DOCUMENT_TRUTHFULNESS_ASSERTIONS = [
       'Supported (online)',
       'packaged-install rehearsal',
       'CLI/runtime behavior only',
-      'VS Code packaged distribution',
-      'Not supported',
+      'VS Code packaged distribution (local VSIX / packaged extension root)',
+      'Supported for source-built local packaging only',
+      'release:verify-vscode-extension-distribution',
+      'Marketplace distribution',
     ],
   },
   {
@@ -149,8 +151,10 @@ const DOCUMENT_TRUTHFULNESS_ASSERTIONS = [
       'Supported（联网）',
       'packaged-install 演练',
       'CLI/runtime 行为',
-      'VS Code 打包分发',
-      'Not supported',
+      'VS Code 打包分发（本地 VSIX / packaged extension root）',
+      '作为源码仓本地打包路径正式支持',
+      'release:verify-vscode-extension-distribution',
+      'Marketplace 分发',
     ],
   },
   {
@@ -176,7 +180,7 @@ const PACKAGED_INSTALL_CONTRACT = {
   tgz: 'supported-online-packaged-install-rehearsal-only',
   distBinary: 'supported-cli-runtime-rehearsal-only',
   offlineTarballInstall: 'not-supported',
-  packagedVscodeDistribution: 'not-supported',
+  packagedVscodeDistribution: 'supported-source-built-local-vsix-only',
 };
 
 /**

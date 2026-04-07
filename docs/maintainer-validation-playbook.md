@@ -106,6 +106,7 @@ Use this runbook when refreshing the editor-native companion support boundary:
 ```bash
 pnpm exec vitest run apps/vscode-extension/test/vscode-extension-service-runtime.test.ts apps/vscode-extension/test/vscode-extension-contract.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-selection-store.test.ts apps/vscode-extension/test/vscode-extension-packaging-boundary.test.ts --maxWorkers=1 --maxConcurrency=1
 pnpm run build
+pnpm run release:verify-vscode-extension-distribution -- --output .tmp/project-064-vscode-extension-distribution-report.json
 pnpm pack --json --dry-run
 pnpm run check:ide-entry-smoke
 pnpm run check:ide-docs-parity
@@ -120,11 +121,12 @@ code --extensionDevelopmentPath <governor-repo>/apps/vscode-extension <target-re
 
 Notes:
 
-1. Current formal support is limited to a built source checkout plus one extension-development host.
-2. Use `pnpm pack --json --dry-run` to verify the published artifact still omits the extension workspace and installable bundle even if internal `dist/apps/vscode-extension/**` payloads remain.
-3. Do not claim npm/tgz, VSIX, or Marketplace support until a separate packaging rehearsal is added and reflected in `docs/support-matrix.md`.
-4. There is still no dedicated automated extension-development-host launch smoke; the manual `code --extensionDevelopmentPath ...` rehearsal remains optional supporting evidence only.
-5. `project-054` keeps desktop as a foundation-only surface; use this runbook to validate the VS Code companion path, not to widen desktop support claims.
+1. Current formal support is limited to a built source checkout plus one extension-development host or one locally generated packaged extension root / VSIX from that same checkout.
+2. `pnpm run release:verify-vscode-extension-distribution` is the dedicated packaging rehearsal; it validates the local VSIX archive shape plus packaged module-resolution smoke without claiming Marketplace or published installer support.
+3. Use `pnpm pack --json --dry-run` to verify the published artifact still omits the extension workspace and published installable bundle even if internal `dist/apps/vscode-extension/**` payloads remain.
+4. The published npm/tgz install surface and Marketplace remain unsupported for VS Code extension delivery.
+5. There is still no dedicated automated extension-development-host launch smoke; the manual `code --extensionDevelopmentPath ...` rehearsal or `code --install-extension ...` step remains optional supporting evidence only.
+6. `project-054` keeps desktop as a foundation-only surface; use this runbook to validate the VS Code companion path, not to widen desktop support claims.
 
 ### 4.2 Host-native Asset Validation
 

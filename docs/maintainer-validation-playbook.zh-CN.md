@@ -106,6 +106,7 @@ pnpm run check:examples-smoke
 ```bash
 pnpm exec vitest run apps/vscode-extension/test/vscode-extension-service-runtime.test.ts apps/vscode-extension/test/vscode-extension-contract.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-selection-store.test.ts apps/vscode-extension/test/vscode-extension-packaging-boundary.test.ts --maxWorkers=1 --maxConcurrency=1
 pnpm run build
+pnpm run release:verify-vscode-extension-distribution -- --output .tmp/project-064-vscode-extension-distribution-report.json
 pnpm pack --json --dry-run
 pnpm run check:ide-entry-smoke
 pnpm run check:ide-docs-parity
@@ -120,11 +121,12 @@ code --extensionDevelopmentPath <governor-repo>/apps/vscode-extension <target-re
 
 说明：
 
-1. 当前正式支持只覆盖“已构建源码仓 + extension-development host”这条路径。
-2. 通过 `pnpm pack --json --dry-run` 核对已发布产物仍不包含扩展 workspace 与可安装 bundle；即便保留内部 `dist/apps/vscode-extension/**` 产物，也不能把它误当成正式扩展分发。
-3. 在新增独立 packaging rehearsal 并同步写入 `docs/support-matrix.zh-CN.md` 之前，不要对 npm/tgz、VSIX 或 Marketplace 做正式支持声明。
-4. 当前仍没有专门的自动化 extension-development-host launch smoke；手动 `code --extensionDevelopmentPath ...` 演练只属于补充证据，不单独升级支持声明。
-5. `project-054` 继续把 desktop 保留为 foundation-only surface；本 runbook 用来验证 VS Code companion 路径，而不是扩大 desktop 的公开支持口径。
+1. 当前正式支持覆盖“已构建源码仓 + extension-development host”，以及“从同一源码仓本地生成的 packaged extension root / VSIX”。
+2. `pnpm run release:verify-vscode-extension-distribution` 是专门的 packaging rehearsal；它验证本地 VSIX archive 结构与 packaged module-resolution smoke，但不会把支持口径扩大到 Marketplace 或已发布安装器。
+3. 通过 `pnpm pack --json --dry-run` 核对已发布产物仍不包含扩展 workspace 与“已发布可安装 bundle”；即便保留内部 `dist/apps/vscode-extension/**` 产物，也不能把它误当成正式扩展分发。
+4. VS Code 扩展的已发布 npm/tgz 安装面与 Marketplace 仍不在正式支持范围内。
+5. 当前仍没有专门的自动化 extension-development-host launch smoke；手动 `code --extensionDevelopmentPath ...` 演练或 `code --install-extension ...` 步骤只属于补充证据，不单独升级支持声明。
+6. `project-054` 继续把 desktop 保留为 foundation-only surface；本 runbook 用来验证 VS Code companion 路径，而不是扩大 desktop 的公开支持口径。
 
 ### 4.2 宿主原生资产验证
 

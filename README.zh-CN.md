@@ -157,10 +157,10 @@ pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/ho
 
 1. `dist-binary` 演练证明的是 CLI/runtime 行为，不等于已经验证 package install surface。
 2. `tgz` 不是离线自包含安装；安装阶段仍会从 npm registry 解析外部依赖。
-3. `tgz` 路径验证的只是“已发布 CLI tarball + 随包文档/参考资产”这条打包面；它不会扩大 VS Code、VSIX、Marketplace 或其他 secondary surface 的打包支持声明。
+3. `tgz` 路径验证的只是“已发布 CLI tarball + 随包文档/参考资产”这条打包面；它不会把 VS Code 的打包支持扩大到“源码仓本地生成 VSIX / packaged extension root”之外，也不会提供 Marketplace 或已发布可安装扩展的支持声明。
 4. 如果目标仓库本身是 Yarn/npm，或者已有脏工作树，建议先走 `dist-binary`；否则默认先用 `path`，只有在工作流需要时再切到 `link` 或 `tgz`。
 5. session shell、React shell、workflow/upgrade、HITL 通知、故障排查等更完整说明，请看本地接入手册。
-6. 可选的 VS Code companion surface 目前只支持从已构建的 governor 源码仓通过 `apps/vscode-extension` 启动；已发布的 npm/tgz 安装面即便仍带有内部 `dist/apps/vscode-extension/**` 产物，也不提供正式支持的 VSIX、Marketplace 或可安装扩展 bundle。
+6. 可选的 VS Code companion surface 现在支持两条路径：从已构建的 governor 源码仓通过 `apps/vscode-extension` 启动 extension-development host，或从同一源码仓本地生成 VSIX / packaged extension root。已发布的 npm/tgz 安装面即便仍带有内部 `dist/apps/vscode-extension/**` 产物，也不会交付正式支持的可安装扩展 bundle，Marketplace 仍不在支持范围内。
 7. 仓库内的 Codex 本地工作流辅助能力位于 `.codex/skills/`；它们主要服务 self-host 与维护者流程，外部 adopter 只有在希望复用同样的本地 skill 体验时才需要一并 vendoring。
 8. 可选的 Codex / Claude Code 宿主原生资产（`host export` / `host verify` / `host pack`）只在源码仓 follow-up surface 上正式支持。只要 governor 或技能资产有刷新，就要重新执行对应 host 命令并重新 `host verify`；不要把这条路径当成 packaged-install 证明或独立的 host upgrader。
 

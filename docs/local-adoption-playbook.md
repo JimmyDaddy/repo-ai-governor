@@ -66,10 +66,12 @@ code --extensionDevelopmentPath <governor-repo>/apps/vscode-extension <target-re
 
 Boundary notes:
 
-1. Current formal support is source-checkout only; build the governor repository before launching the extension-development host.
-2. The published npm/tgz package surface does not include the `apps/vscode-extension` workspace or an installable extension bundle; internal `dist/apps/vscode-extension/**` payloads may still exist, but they are not a supported npm/VSIX/Marketplace distribution.
-3. Trust-sensitive commands stay gated by `Workspace Trust`, so use a trusted workspace when validating review, HITL, recovery, or termination actions.
-4. The current VS Code MVP is a service-backed companion for execution/review/HITL/context flows; it does not replace the normal CLI bootstrap path or the session shell.
+1. Current formal support starts from a built governor source checkout; build the repository before launching the extension-development host or generating packaged artifacts.
+2. Use `pnpm run release:pack-vscode-extension -- --output <path>.vsix` or `pnpm run release:verify-vscode-extension-distribution -- --output <report>.json` when you want the supported packaged boundary from that same checkout.
+3. The supported packaged boundary is limited to the locally generated VSIX / packaged extension root from the built source checkout. Automated evidence covers archive structure and packaged module-resolution smoke, while `code --install-extension ...` or a real host launch remains optional manual rehearsal when available.
+4. The published npm/tgz package surface still does not include the `apps/vscode-extension` workspace or a published installable extension bundle; Marketplace remains unsupported.
+5. Trust-sensitive commands stay gated by `Workspace Trust`, so use a trusted workspace when validating review, HITL, recovery, or termination actions.
+6. The current VS Code MVP is a service-backed companion for execution/review/HITL/context flows; it does not replace the normal CLI bootstrap path or the session shell.
 
 ## 4. Session Shell Quick Tour
 
@@ -225,7 +227,7 @@ Then layer the language pack you need, plus any team or repository overrides, on
 1. `pnpm add <tarball>` failing with `ENOTFOUND` usually means the install environment cannot reach the npm registry; use `path`, `link`, or `dist-binary` instead.
 2. `dist-binary` validates CLI/runtime behavior, not packaged-install behavior.
 3. `tgz` is not offline/self-contained; installation still resolves external dependencies.
-4. The `tgz` path validates the published CLI tarball surface plus shipped docs/reference assets only; it does not widen packaged VS Code, VSIX, Marketplace, or other secondary-surface support.
+4. The `tgz` path validates the published CLI tarball surface plus shipped docs/reference assets only; it does not widen packaged VS Code support beyond the built-source local VSIX / packaged-extension-root path, and it does not provide Marketplace or published-installable extension support.
 5. If a target repository already uses Yarn/npm or has a dirty worktree, start with `dist-binary`; otherwise start with `path` and move to `link` or `tgz` only when the workflow requires it.
 5. Self-host warnings such as `baseline_docs missing=5/5` or `script_not_found` are expected in fresh external repos unless you intentionally vendor this repository's own governance stack.
 6. If `upgrade` preview reports blocking confirmation items, stop before `apply`, review the saved `report_path` and `auto_migrated_config_path`, then rerun preview after fixing the configuration drift.

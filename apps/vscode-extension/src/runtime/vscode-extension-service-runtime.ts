@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { LocalOrchestrationServiceSidecarClient } from '@repo-ai-governor/core-orchestration-service';
+import { LocalOrchestrationServiceSidecarClient } from '@repo-ai-governor/core-orchestration-service/sidecar-client';
 import type {
   OrchestrationArtifactPaneQueryResponse,
   OrchestrationExecutionBoardEntry,

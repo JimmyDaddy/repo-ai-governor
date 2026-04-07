@@ -66,10 +66,12 @@ code --extensionDevelopmentPath <governor-repo>/apps/vscode-extension <target-re
 
 边界说明：
 
-1. 当前正式支持只覆盖源码仓 checkout 路径；启动 extension-development host 之前，请先完成 governor 源仓构建。
-2. 已发布的 npm/tgz 包面不包含 `apps/vscode-extension` workspace 或可安装扩展 bundle；其中即便仍有内部 `dist/apps/vscode-extension/**` 产物，也不构成正式支持的 npm/VSIX/Marketplace 分发。
-3. review、HITL、recover、terminate 等 trust-sensitive 命令仍受 `Workspace Trust` 保护，因此请在 trusted workspace 中验证这些能力。
-4. 当前 VS Code MVP 只是面向 execution/review/HITL/context 的 service-backed companion，不替代常规 CLI bootstrap 路径或 session shell。
+1. 当前正式支持从“已构建 governor 源码仓”开始；无论是启动 extension-development host，还是生成打包产物，都要先完成构建。
+2. 如果你要验证正式支持的打包边界，请使用 `pnpm run release:pack-vscode-extension -- --output <path>.vsix`，或使用 `pnpm run release:verify-vscode-extension-distribution -- --output <report>.json` 做完整复核。
+3. 当前正式支持的打包边界只覆盖“从已构建源码仓本地生成的 VSIX / packaged extension root”。自动化证据覆盖 archive structure 与 packaged module-resolution smoke；`code --install-extension ...` 或真实宿主启动仍属于可选的人工演练。
+4. 已发布的 npm/tgz 包面仍不包含 `apps/vscode-extension` workspace 或“已发布可安装扩展 bundle”；Marketplace 仍不在正式支持范围内。
+5. review、HITL、recover、terminate 等 trust-sensitive 命令仍受 `Workspace Trust` 保护，因此请在 trusted workspace 中验证这些能力。
+6. 当前 VS Code MVP 只是面向 execution/review/HITL/context 的 service-backed companion，不替代常规 CLI bootstrap 路径或 session shell。
 
 ## 4. Session Shell 快速上手
 
@@ -225,7 +227,7 @@ pnpm exec repo-ai-governor run --output json
 1. `pnpm add <tarball>` 报 `ENOTFOUND` 时，通常是安装环境无法访问 npm registry；请改用 `path`、`link` 或 `dist-binary`。
 2. `dist-binary` 验证的是 CLI/runtime 行为，不等于验证了 package install surface。
 3. `tgz` 不是离线自包含安装；安装阶段仍会解析外部依赖。
-4. `tgz` 路径验证的只是“已发布 CLI tarball + 随包文档/参考资产”这条打包面；它不会扩大 VS Code、VSIX、Marketplace 或其他 secondary surface 的打包支持声明。
+4. `tgz` 路径验证的只是“已发布 CLI tarball + 随包文档/参考资产”这条打包面；它不会把 VS Code 的打包支持扩大到“源码仓本地生成 VSIX / packaged extension root”之外，也不会提供 Marketplace 或已发布可安装扩展的支持声明。
 5. 如果目标仓库本身是 Yarn/npm 或已有脏工作树，建议先用 `dist-binary`；否则默认先用 `path`，只有在工作流需要时再切换到 `link` 或 `tgz`。
 5. `baseline_docs missing=5/5`、`script_not_found` 这类 self-host warning，在外部 adopter 仓库里通常是预期现象。
 6. 如果 `upgrade` preview 提示存在 blocking confirmation items，不要直接 `apply`；先查看保存下来的 `report_path` 与 `auto_migrated_config_path`，修完配置漂移后再重新 preview。

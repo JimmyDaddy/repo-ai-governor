@@ -1,6 +1,6 @@
 # TK-670 freeze VS Code packaged distribution contract and smoke gate
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-04-08
 - Owner: `AI-Agent`
 - Priority: `P1`
@@ -53,8 +53,12 @@
 
 1. 2026-04-08：任务创建，状态初始化为 `planned`。
 2. 2026-04-08：`project-067` final closeout 完成后，本任务作为 `project-064` 起始边界被激活并切换为 `in_progress`。
+3. 2026-04-08：已冻结正式 contract truth：VS Code secondary surface 的正式支持从“已构建 governor 源码仓”开始，可走 `apps/vscode-extension` 的 extension-development host，或从同一源码仓本地生成一份 VSIX / packaged extension root；已发布 npm/tgz 安装面与 Marketplace 分发继续排除在正式支持范围之外，trust-sensitive action 仍受 `Workspace Trust` 保护。
 
 ## 10. 产出
 
-1. 待执行：VS Code packaged contract
-2. 待执行：smoke gate definition
+1. `apps/vscode-extension/README.md`
+2. `README.md`
+3. `README.zh-CN.md`
+4. `docs/support-matrix.md`
+5. `docs/support-matrix.zh-CN.md`

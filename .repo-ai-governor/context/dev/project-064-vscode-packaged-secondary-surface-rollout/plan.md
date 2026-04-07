@@ -18,17 +18,18 @@
 
 ## 2.1 sprint-001-packaged-distribution-and-extension-host-smoke
 
-- Status: active
+- Status: completed
 - Sprint Goal: 为 VS Code secondary surface 建立 packaged distribution 与 smoke gate。
-- Task Package: `TK-670`、`TK-671`、`TK-672`。
+- Task Package: `TK-670`、`TK-671`、`TK-672`、`TK-704`。
 
 ## 3. 任务拆解矩阵（WBS）
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 | --- | --- | --- | --- | --- | --- |
-| TK-670 | sprint-001 | freeze VS Code packaged distribution contract and smoke gate | surface/contract | project-063 recommended | in_progress |
-| TK-671 | sprint-001 | implement VSIX build release path and extension-host smoke follow-up | implementation/release | TK-670 | planned |
-| TK-672 | sprint-001 | close VS Code packaged secondary-surface support declaration | docs/evidence/closeout | TK-670、TK-671 | planned |
+| TK-670 | sprint-001 | freeze VS Code packaged distribution contract and smoke gate | surface/contract | project-063 recommended | completed |
+| TK-671 | sprint-001 | implement VSIX build release path and extension-host smoke follow-up | implementation/release | TK-670 | completed |
+| TK-672 | sprint-001 | close VS Code packaged secondary-surface support declaration | docs/evidence/closeout | TK-670、TK-671 | completed |
+| TK-704 | sprint-001 | sprint-001 exit acceptance and project-final review activation handoff | closeout/handoff | TK-670、TK-671、TK-672、CR-001 | completed |
 
 ## 4. 依赖产物策略
 
@@ -45,3 +46,5 @@
 
 1. 2026-04-08：作为 `project-072` follow-up decomposition 产物创建，当前保持 `planned`。
 2. 2026-04-08：`project-067` final closeout 完成后被激活为当前 primary project，`sprint-001 / TK-670` 进入执行窗口。
+3. 2026-04-08：`TK-670 ~ TK-672` 的实现与验证窗口已完成，当前 project 进入 sprint CR loop 前的台账同步与复核收口阶段。
+4. 2026-04-08：`CR-001` clean `resolved`；`TK-704 / DA-704` 已完成 sprint closeout handoff，当前下一边界固定为 `project-064` project-final delegated CR loop。

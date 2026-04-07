@@ -16,6 +16,8 @@ const REQUIRED_RELEASE_ASSETS = [
   'scripts/release/check-runtime-js-whitelist.js',
   'scripts/ci/run-stage9-blackbox-ga-baseline.js',
   'scripts/ci/stage9-blackbox-ga-lib.js',
+  'scripts/release/pack-vscode-extension.js',
+  'scripts/release/verify-vscode-extension-distribution.js',
   'scripts/release/verify-host-distribution.js',
   'scripts/release/verify-local-distribution.js',
   'scripts/release/verify-cleanroom-local-install.js',
@@ -30,6 +32,8 @@ const REQUIRED_RELEASE_ASSETS = [
 const REQUIRED_PACKAGE_SCRIPTS = [
   'release:check',
   'release:notes',
+  'release:pack-vscode-extension',
+  'release:verify-vscode-extension-distribution',
   'release:verify-host-distribution',
   'release:verify-local',
   'release:verify-local:plugin-enabled',

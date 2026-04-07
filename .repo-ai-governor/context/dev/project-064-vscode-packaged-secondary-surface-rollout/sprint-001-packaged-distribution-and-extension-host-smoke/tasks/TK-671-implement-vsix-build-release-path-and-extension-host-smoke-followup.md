@@ -1,6 +1,6 @@
 # TK-671 implement VSIX build release path and extension-host smoke follow-up
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-08
 - Owner: `AI-Agent`
 - Priority: `P1`
@@ -52,8 +52,21 @@
 ## 9. 执行记录
 
 1. 2026-04-08：任务创建，状态初始化为 `planned`。
+2. 2026-04-08：已补齐 `release:pack-vscode-extension` / `release:verify-vscode-extension-distribution`、VS Code extension package metadata、`@repo-ai-governor/core-orchestration-service/sidecar-client` 子路径导出，以及 packaged root/VSIX 所需的 runtime asset copy 与 packaging boundary 测试面。
+3. 2026-04-08：`pnpm run release:verify-vscode-extension-distribution -- --output .tmp/project-064-vscode-extension-distribution-report.json` 已通过，生成了本地 VSIX、packaged extension root 与机器可读 report，正式把“本地生成 VSIX / packaged extension root”收敛为可复跑的支持边界。
 
 ## 10. 产出
 
-1. 待执行：VSIX build/release path
-2. 待执行：extension-host smoke follow-up
+1. `package.json`
+2. `apps/vscode-extension/package.json`
+3. `apps/vscode-extension/src/runtime/vscode-extension-service-runtime.ts`
+4. `apps/vscode-extension/test/vscode-extension-packaging-boundary.test.ts`
+5. `apps/vscode-extension/test/vscode-extension-service-runtime.test.ts`
+6. `packages/core-orchestration-service/package.json`
+7. `scripts/build/copy-runtime-assets.js`
+8. `scripts/release/check-release-ready.js`
+9. `scripts/release/release-governance-policy.json`
+10. `scripts/release/pack-vscode-extension.js`
+11. `scripts/release/verify-vscode-extension-distribution.js`
+12. `test/release-vscode-extension-distribution-working-root.integration.test.ts`
+13. `.tmp/project-064-vscode-extension-distribution-report.json`

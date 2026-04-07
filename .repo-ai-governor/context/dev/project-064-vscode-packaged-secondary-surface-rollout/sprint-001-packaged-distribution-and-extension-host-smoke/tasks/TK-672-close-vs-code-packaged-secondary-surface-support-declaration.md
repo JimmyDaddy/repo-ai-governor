@@ -1,6 +1,6 @@
 # TK-672 close VS Code packaged secondary-surface support declaration
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-08
 - Owner: `AI-Agent`
 - Priority: `P1`
@@ -52,8 +52,20 @@
 ## 9. 执行记录
 
 1. 2026-04-08：任务创建，状态初始化为 `planned`。
+2. 2026-04-08：已将 app README、根 README、local adoption playbook、maintainer validation playbook 与 support matrix 的中英文版本收敛到同一条 narrative：VS Code secondary surface 正式支持“已构建源码仓 + extension-development host”与“已构建源码仓本地生成 VSIX / packaged extension root”，但不扩大为已发布 npm/tgz 安装器或 Marketplace 声明。
+3. 2026-04-08：`scripts/release/verify-local-distribution.js` 的 truthfulness 断言已同步更新，并完成 `pnpm run check:ide-entry-smoke`、`pnpm run check:ide-docs-parity`、`pnpm exec biome check apps/vscode-extension/src apps/vscode-extension/test apps/vscode-extension/package.json apps/vscode-extension/README.md`、`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1` 与 `node ./scripts/release/verify-local-distribution.js --output .tmp/project-064-local-distribution-report.json` 验证。
 
 ## 10. 产出
 
-1. 待执行：VS Code packaged support declaration
-2. 待执行：desktop decision input
+1. `apps/vscode-extension/README.md`
+2. `README.md`
+3. `README.zh-CN.md`
+4. `docs/local-adoption-playbook.md`
+5. `docs/local-adoption-playbook.zh-CN.md`
+6. `docs/maintainer-validation-playbook.md`
+7. `docs/maintainer-validation-playbook.zh-CN.md`
+8. `docs/support-matrix.md`
+9. `docs/support-matrix.zh-CN.md`
+10. `scripts/release/verify-local-distribution.js`
+11. `.tmp/project-064-local-distribution-report.json`
+12. `.tmp/project-064-vscode-extension-distribution-report.json`
