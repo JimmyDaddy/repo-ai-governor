@@ -39,6 +39,37 @@ function createConfigFixture(): GovernorConfig {
         theme: CliReactThemePreset.GOVERNOR,
       },
     },
+    standards: {
+      packSources: {
+        official: [
+          {
+            module: '@repo-ai-governor/standards/examples',
+            exportName: 'workflowReviewGovernancePack',
+          },
+        ],
+        team: [
+          {
+            module: '@acme/governor-standards-team',
+            exportName: 'teamDeliveryPack',
+          },
+        ],
+        repository: [
+          {
+            module: './.repo-ai-governor/standards/repository-pack.ts',
+            exportName: 'repositoryOverridePack',
+          },
+        ],
+      },
+      renderTargets: ['human', 'ai'],
+      projectionTargets: [
+        {
+          targetFile: '.repo-ai-governor/generated/AGENTS.generated.md',
+          locale: 'en-US',
+        },
+      ],
+      defaultLocale: 'zh-CN',
+      fallbackLocale: 'en-US',
+    },
     roles: [
       {
         roleProfileId: 'reviewer-custom',
@@ -141,6 +172,17 @@ describe('config unit', () => {
     expect(resolvedConfig.config.roles?.[0]?.roleProfileId).toBe('reviewer-custom');
   });
 
+  it('accepts layered standards runtime config including team pack path', () => {
+    const validator = new SchemaValidator();
+    const validatedConfig = validator.validateOrThrow(createConfigFixture());
+
+    expect(validatedConfig.standards?.packSources.team?.[0]?.exportName).toBe('teamDeliveryPack');
+    expect(validatedConfig.standards?.renderTargets).toEqual(['human', 'ai']);
+    expect(validatedConfig.standards?.projectionTargets?.[0]?.targetFile).toBe(
+      '.repo-ai-governor/generated/AGENTS.generated.md',
+    );
+  });
+
   it('merges adapters profile overrides into base adapters config', () => {
     const validator = new SchemaValidator();
     const profileResolver = new ProfileResolver();
@@ -190,6 +232,9 @@ describe('config unit', () => {
     expect(resolvedConfig.config.adapters?.roles).toBeUndefined();
     expect(resolvedConfig.config.adapters?.routing).toBeUndefined();
     expect(resolvedConfig.config.adapters?.tools?.[0]?.toolId).toBe(AdapterSurface.GITHUB_COPILOT);
+    expect(resolvedConfig.config.standards?.packSources.team?.[0]?.exportName).toBe(
+      'teamDeliveryPack',
+    );
   });
 
   it('accepts local-model adapter tool with local runtime config', () => {

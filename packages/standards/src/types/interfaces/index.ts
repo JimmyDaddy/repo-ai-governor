@@ -25,6 +25,7 @@ export type {
   StandardsRuntimeLoadedPack,
   StandardsRuntimeLoadInput,
   StandardsRuntimeLoadResult,
+  StandardsRuntimeRenderInput,
   StandardsRuntimePackSourceConfig,
   StandardsRuntimePackSourcesConfig,
   StandardsRuntimeProjectionTargetConfig,

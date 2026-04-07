@@ -1,6 +1,6 @@
 # project-056-standards-runtime-loader-and-pack-productization 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-06
 - Stage Mapping: standards runtime productization
 - Phase Mapping: runtime loader path / team pack path / AGENTS adoption boundary
@@ -18,17 +18,19 @@
 
 ## 2.1 sprint-001-standards-runtime-loader-product-path
 
-- Status: planned
+- Status: active
 - Sprint Goal: 收口 standards runtime loader 的产品消费路径和文档示例。
 - Task Package: `TK-618`、`TK-619`、`TK-620`。
+- Task Package: `TK-618`、`TK-619`、`TK-620`、`TK-650`。
 
 ## 3. 任务拆解矩阵（WBS）
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 |---|---|---|---|---|---|
-| TK-618 | sprint-001 | freeze standards runtime loader product path and source-layering contract | standards/contract | project-052 closeout recommended | planned |
-| TK-619 | sprint-001 | implement and document standards runtime consumption examples plus team-pack path | standards/implementation/docs | TK-618 | planned |
-| TK-620 | sprint-001 | decide AGENTS projector adoption boundary and close standards runtime productization baseline | standards/closeout | TK-618、TK-619 | planned |
+| TK-618 | sprint-001 | freeze standards runtime loader product path and source-layering contract | standards/contract | project-052 closeout recommended | completed |
+| TK-619 | sprint-001 | implement and document standards runtime consumption examples plus team-pack path | standards/implementation/docs | TK-618 | completed |
+| TK-620 | sprint-001 | decide AGENTS projector adoption boundary and close standards runtime productization baseline | standards/closeout | TK-618、TK-619 | completed |
+| TK-650 | sprint-001 | sprint-001 exit acceptance and project-final review activation handoff | closeout/handoff | TK-618、TK-619、TK-620、CR-001 | completed |
 
 ## 4. 依赖产物策略
 
@@ -46,3 +48,6 @@
 
 1. 2026-04-06：基于 `DA-588` 创建 `project-056` planned stream，作为 standards runtime productization follow-up。
 2. 2026-04-06：已写入 `sprint-001` 与 `TK-618 ~ TK-620` skeleton，待后续按顺序激活。
+3. 2026-04-07：在 `project-057` final closeout 完成后被激活为当前 primary project，`sprint-001 / TK-618` 进入执行窗口。
+4. 2026-04-07：`TK-618 ~ TK-620` 已在同一实现窗口完成，进入 sprint scoped CR 前验证与 closeout 准备阶段。
+5. 2026-04-07：`CR-001` clean `resolved` 后，`TK-650 / DA-650` 已完成 sprint-001 closeout，并将同一 sprint surface 保留给 `project-056` 的 project-final CR loop。

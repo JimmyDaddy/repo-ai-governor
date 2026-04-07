@@ -14,6 +14,7 @@ import { RuleRenderer } from './rule-renderer.js';
 import { StandardsPackRegistry } from './standards-pack-registry.js';
 import type {
   AgentsProjectorProjectResult,
+  RuleRendererRenderResult,
   StandardsPack,
   StandardsRuntimeConfig,
   StandardsRuntimeLoadInput,
@@ -22,6 +23,7 @@ import type {
   StandardsRuntimePackSourceConfig,
   StandardsRuntimePackSourcesConfig,
   StandardsRuntimeProjectionTargetConfig,
+  StandardsRuntimeRenderInput,
 } from './types/index.js';
 
 const DEFAULT_RENDER_TARGETS = [
@@ -60,7 +62,7 @@ export class StandardsRuntimeLoader {
       defaultLocale: standards?.defaultLocale ?? DEFAULT_STANDARDS_RENDER_LOCALE,
       fallbackLocale: standards?.fallbackLocale ?? DEFAULT_STANDARDS_FALLBACK_LOCALE,
     });
-    const projectionTargets = this.resolveProjectionTargets(standards);
+    const projectionTargets = this.resolveProjectionTargets(input.baseDirectory, standards);
     const projector = new AgentsProjector({
       renderer,
       defaultProjectionTarget: projectionTargets[0]?.targetFile ?? DEFAULT_AGENTS_PROJECTION_TARGET,
@@ -77,19 +79,44 @@ export class StandardsRuntimeLoader {
   }
 
   /**
+   * Renders the targets declared by runtime config without persisting any files.
+   * @param input Base directory, runtime config, and optional render overrides.
+   * @returns Structured render results in configured target order.
+   */
+  public async renderConfiguredTargets(
+    input: StandardsRuntimeRenderInput,
+  ): Promise<RuleRendererRenderResult[]> {
+    const runtime = await this.load(input);
+
+    return runtime.renderTargets.map((target) =>
+      runtime.renderer.render({
+        target,
+        locale: input.locale,
+        scope: input.scope,
+        interpolationByRuleId: input.interpolationByRuleId,
+        interpolationBySemanticKey: input.interpolationBySemanticKey,
+      }),
+    );
+  }
+
+  /**
    * Projects configured `AGENTS.md`-style targets from one runtime standards config.
-   * @param input Base directory plus optional standards config.
+   * The returned payload is caller-owned; this helper does not write files automatically.
+   * @param input Base directory plus optional standards config and render overrides.
    * @returns Projected target payloads in declaration order.
    */
   public async projectAgents(
-    input: StandardsRuntimeLoadInput,
+    input: StandardsRuntimeRenderInput,
   ): Promise<AgentsProjectorProjectResult[]> {
     const runtime = await this.load(input);
 
     return runtime.projectionTargets.map((projectionTarget) =>
       runtime.projector.project({
         projectionTarget: projectionTarget.targetFile,
-        locale: projectionTarget.locale ?? input.standards?.defaultLocale,
+        locale: projectionTarget.locale ?? input.locale ?? input.standards?.defaultLocale,
+        scope: input.scope,
+        interpolationByRuleId: input.interpolationByRuleId,
+        interpolationBySemanticKey: input.interpolationBySemanticKey,
       }),
     );
   }
@@ -160,22 +187,27 @@ export class StandardsRuntimeLoader {
   }
 
   private resolveProjectionTargets(
+    baseDirectory: string,
     standards: StandardsRuntimeConfig | undefined,
   ): StandardsRuntimeProjectionTargetConfig[] {
-    if (standards?.projectionTargets && standards.projectionTargets.length > 0) {
-      return standards.projectionTargets;
-    }
+    const configuredTargets =
+      standards?.projectionTargets && standards.projectionTargets.length > 0
+        ? standards.projectionTargets
+        : [
+            {
+              targetFile: DEFAULT_AGENTS_PROJECTION_TARGET,
+              ...(standards?.defaultLocale
+                ? {
+                    locale: standards.defaultLocale,
+                  }
+                : {}),
+            },
+          ];
 
-    return [
-      {
-        targetFile: DEFAULT_AGENTS_PROJECTION_TARGET,
-        ...(standards?.defaultLocale
-          ? {
-              locale: standards.defaultLocale,
-            }
-          : {}),
-      },
-    ];
+    return configuredTargets.map((projectionTarget) => ({
+      ...projectionTarget,
+      targetFile: resolve(baseDirectory, projectionTarget.targetFile),
+    }));
   }
 
   private async loadModule(
