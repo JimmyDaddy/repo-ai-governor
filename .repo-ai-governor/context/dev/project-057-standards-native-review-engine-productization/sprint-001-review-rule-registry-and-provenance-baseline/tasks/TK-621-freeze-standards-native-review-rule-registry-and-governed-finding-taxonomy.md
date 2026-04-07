@@ -1,6 +1,6 @@
 # TK-621 冻结 standards-native review rule registry 与 finite-set finding taxonomy contract
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-04-06
 - Owner: `AI-Agent`
 - Priority: `P1`
@@ -54,6 +54,7 @@
 
 1. 2026-04-06：任务创建，状态初始化为 `planned`。
 2. 2026-04-06：在 project-057 多 sprint 拆解中被明确为 Phase A contract freeze 首任务。
+3. 2026-04-07：`project-055` final closeout 完成后被激活为 `in_progress`，作为 `project-057 / sprint-001` 的首个执行边界。
 
 ## 10. 产出
 

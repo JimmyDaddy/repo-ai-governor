@@ -1,6 +1,6 @@
 # project-055-ga-evidence-and-adopter-pilot-closeout 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-06
 - Stage Mapping: GA evidence consolidation and pilot rehearsal
 - Phase Mapping: pilot selection / pilot execution / evidence consolidation
@@ -24,9 +24,9 @@
 
 ## 2.2 sprint-002-ga-evidence-consolidation-and-closeout
 
-- Status: active
+- Status: completed
 - Sprint Goal: 将 pilot、timing、support matrix 与 maintainer evidence 汇总为统一 closeout 结论。
-- Task Package: `TK-616`、`TK-617`、`TK-644`。
+- Task Package: `TK-616`、`TK-617`、`TK-644`、`TK-645`。
 
 ## 3. 任务拆解矩阵（WBS）
 
@@ -38,6 +38,7 @@
 | TK-616 | sprint-002 | consolidate support matrix GA evidence and maintainer validation outputs into one dossier | evidence/docs | TK-614、TK-615 | completed |
 | TK-617 | sprint-002 | close project-055 with GA readiness recommendation blockers and next-step decision memo | project/closeout | TK-616 | completed |
 | TK-644 | sprint-002 | sprint-002 exit acceptance and project-final review handoff | sprint/closeout | TK-616、TK-617、CR-001 | completed |
+| TK-645 | sprint-002 | finalize project-055 closeout and activate project-057 primary stream | project/closeout | TK-617、TK-644、CR-002 | completed |
 
 ## 4. 依赖产物策略
 
@@ -62,3 +63,5 @@
 7. 2026-04-07：`CR-001` 已 resolved，`TK-643 / DA-643` 已完成 sprint-001 closeout，并激活 `sprint-002 / TK-616`。
 8. 2026-04-07：`TK-616 / DA-616` 已完成 real-target pilot dossier、support-matrix / maintainer-playbook / GA-evidence backlink 对齐；`TK-617 / DA-617` 已生成 prepared completion audit summary 与 `project-057 -> project-056` next-step recommendation，下一步进入 `sprint-002` scoped CR loop。
 9. 2026-04-07：`CR-001` 已 resolved，`TK-644 / DA-644` 已完成 sprint-002 exit acceptance 与 project-final review handoff；当前下一边界固定为 `project-055` project-final scoped CR loop。
+10. 2026-04-07：project-final closeout audit summary backlink 已固定为 `.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/project-055-ga-evidence-and-adopter-pilot-closeout-completion-audit-summary.md`，供最终 promote / closeout 直接回链。
+11. 2026-04-07：`CR-002` 已 resolved，`TK-645 / DA-645` 已完成 project-055 final closeout write-back，并激活 `project-057 / sprint-001 / TK-621` 作为新的 primary stream。

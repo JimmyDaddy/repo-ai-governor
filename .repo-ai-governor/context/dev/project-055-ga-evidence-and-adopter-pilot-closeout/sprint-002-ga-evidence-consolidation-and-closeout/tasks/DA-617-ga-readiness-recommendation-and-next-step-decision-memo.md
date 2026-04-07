@@ -8,13 +8,13 @@
 
 ## 1. Recommendation
 
-1. Recommendation: promote `project-055` to `completed` once the `sprint-002` scoped CR loop and the project-final scoped CR loop both return clean.
+1. Recommendation: promote `project-055` to `completed` once the project-final scoped CR loop returns clean.
 2. There is no remaining implementation gap inside `project-055`; the remaining promote conditions are governance closure steps, not missing product work.
 3. The current public truth can already say that real-target pilots now back the supported `link` onboarding path and the `dist-binary` plus `upgrade/workspace` closeout path, with the complex-pilot caveat kept explicit.
 
 ## 2. Current blockers
 
-1. The current blocker to a final `completed` verdict is procedural: `sprint-002` has not yet passed its fresh scoped reviewer loop, and the project-final reviewer loop has not yet closed clean.
+1. The current blocker to a final `completed` verdict is procedural: `CR-001` has already cleanly resolved the `sprint-002` scoped reviewer loop, so only the project-final reviewer loop remains to be closed clean.
 2. The complex pilot truth is intentionally bounded: we can only claim success for the recovered `1.1.x` baseline rerun, not for uninterrupted continuity of the original frozen working copy.
 3. Broader portfolio-level GA promotion still depends on finishing the remaining follow-up streams `project-057` and `project-056`.
 

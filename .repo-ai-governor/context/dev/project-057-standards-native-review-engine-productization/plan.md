@@ -1,6 +1,6 @@
 # project-057-standards-native-review-engine-productization 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-06
 - Stage Mapping: standards-native review engine productization
 - Phase Mapping: review rule registry / provenance-aware findings / standards-guided reviewer handoff / coverage reporting and rollout adoption
@@ -20,7 +20,7 @@
 
 ## 2.1 sprint-001-review-rule-registry-and-provenance-baseline
 
-- Status: planned
+- Status: active
 - Sprint Goal: 冻结 review rule registry、有限值枚举管理、first-phase projected rule subset 与 Phase A 集成验收边界。
 - Task Package: `TK-621`、`TK-622`、`TK-623`。
 
@@ -78,3 +78,4 @@
 1. 2026-04-06：`technical-solution.standards-native-code-review-engine-follow-up` 已提升为 active formal direction。
 2. 2026-04-06：已创建 `project-057` planned stream，承接 review-rule registry、provenance-aware finding 与 reviewer handoff follow-up。
 3. 2026-04-06：本次拆解将 `project-057` 从单 sprint 粗骨架扩展为 Phase A-D 对齐的 4 个顺序 sprint 与 12 个可执行任务。
+4. 2026-04-07：`project-055` final closeout 完成后，`project-057 / sprint-001` 被激活为当前 primary stream，`TK-621` 已切换为 `in_progress`。

@@ -17,5 +17,8 @@
 - [x] TK-644 sprint-002 exit acceptance and project-final review handoff
   - 2026-04-07：在 `TK-616`、`TK-617` 全部 `completed` 且 `CR-001` clean `resolved` 后创建并完成本 closeout 任务。
   - 2026-04-07：已完成 `DA-644`，把 `sprint-002` / `project-055` 计划面与 prepared audit summary 收敛到 sprint-clean handoff 真值，并将下一边界固定为 `project-055` 的 project-final scoped CR loop。
-- [ ] CR-002 project-055-ga-evidence-and-adopter-pilot-closeout final delegated review loop round 2
+- [x] CR-002 project-055-ga-evidence-and-adopter-pilot-closeout final delegated review loop round 2
   - 2026-04-07：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-07：fresh reviewer 返回 3 条 actionable findings；主 agent 已完成复核并全部认可，project-final review artifact 已补充 `复核结论`。
+  - 2026-04-07：已完成 project milestone audit backlink、`DA-616` signal `#6` provenance truth、以及 `DA-617` blocker truth 修复，并将 review artifact 推进到 `resolved_code_review_working-tree-20260407-1344.md`。
+- [x] TK-645 finalize project-055 closeout and activate project-057 primary stream

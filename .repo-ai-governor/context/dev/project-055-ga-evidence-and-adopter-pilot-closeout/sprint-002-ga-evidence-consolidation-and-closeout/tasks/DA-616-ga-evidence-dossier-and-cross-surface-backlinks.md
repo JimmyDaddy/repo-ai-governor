@@ -10,7 +10,7 @@
 
 1. `project-055` now has one dossier that ties the real-target pilot evidence to the public support matrix, the maintainer validation playbook, and the program-level GA readiness matrix.
 2. `playground` pilot-1 proves the supported `link` onboarding path through `pnpm install -> init -> doctor -> check -> verify --adapters -> run --dry-run --trace`; the full rehearsal finished in `50473ms` and preserved zero required-role failures.
-3. `react-native-image-marker-1.1.x` pilot-2 proves the supported `dist-binary` plus `upgrade/workspace` closeout path on a recovered `1.1.x` baseline rerun; the full rerun finished in `5326ms`, preserved `git status`, switched to `repo_local` during execute, and returned to `tool_managed` on rollback.
+3. `react-native-image-marker-1.1.x` pilot-2 proves the supported `dist-binary` plus `upgrade/workspace` closeout path on a recovered `1.1.x` baseline rerun; the full rerun finished in `5326ms`, preserved `git status`, switched to `repo_local` during execute, and returned to `tool_managed` on rollback. Those rollback facts are complementary real-target evidence for signal `#6`; the formal clean-room proof for that GA signal remains the `project-026` artifact already cited in `docs/ga-readiness-evidence*.md`.
 
 ## 2. Cross-surface alignment
 
@@ -20,7 +20,7 @@
    - replaced the stale `project-052` prepared-closeout note with the current `project-055` prepared closeout packet
 2. `docs/ga-readiness-evidence*.md`
    - refreshed signal `#1` with the real-target pilot timing evidence
-   - refreshed signal `#6` with the real-target `tool_managed -> repo_local -> rollback` proof
+   - kept signal `#6` on the existing clean-room formal proof and added the pilot-2 rollback facts only as complementary real-target evidence
    - updated the evidence date and follow-up guidance to point at the current pilot summaries
 3. `docs/maintainer-validation-playbook*.md`
    - added the `project-055` pilot summaries and this dossier to the expected backlink set
