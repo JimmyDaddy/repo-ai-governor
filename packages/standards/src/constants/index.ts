@@ -1,4 +1,14 @@
 export {
+  REVIEW_FINDING_SOURCE_TYPE_VALUES,
+  REVIEW_RULE_APPLICABILITY_VALUES,
+  REVIEW_RULE_EXECUTION_MODE_VALUES,
+  REVIEW_RULE_SEVERITY_VALUES,
+  ReviewFindingSourceType,
+  ReviewRuleApplicability,
+  ReviewRuleExecutionMode,
+  ReviewRuleSeverity,
+} from './review-rule.constant.js';
+export {
   AgentsProjectionMetadataKey,
   DEFAULT_AGENTS_PROJECTION_TARGET,
   DEFAULT_STANDARDS_ALLOW_MINOR_AUTO_UPGRADE,

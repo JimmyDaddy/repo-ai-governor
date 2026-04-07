@@ -99,6 +99,16 @@ export interface StandardsRuntimeLoadInput {
 }
 
 /**
+ * Defines render/projection request input used by runtime helper entrypoints.
+ */
+export interface StandardsRuntimeRenderInput extends StandardsRuntimeLoadInput {
+  locale?: string;
+  scope?: StandardsPackScope;
+  interpolationByRuleId?: Record<string, StandardsRenderInterpolation>;
+  interpolationBySemanticKey?: Record<string, StandardsRenderInterpolation>;
+}
+
+/**
  * Defines one assembled standards runtime bundle ready for registry/render/projection use.
  */
 export interface StandardsRuntimeLoadResult {

@@ -1,8 +1,26 @@
 # checklist
 
-- [ ] TK-610 freeze VS Code MVP gap list and desktop foundation non-goal guardrails
-  - 2026-04-06：任务创建，状态初始化为 `planned`。
-- [ ] TK-611 implement targeted VS Code MVP hardening and trust-sensitive diagnostics follow-through
-  - 2026-04-06：任务创建，状态初始化为 `planned`。
-- [ ] TK-612 close project-054 with secondary surface rollout summary and desktop foundation recommendation
-  - 2026-04-06：任务创建，状态初始化为 `planned`。
+- [x] TK-610 freeze VS Code MVP gap list and desktop foundation non-goal guardrails
+  - 2026-04-06：任务创建，等待 `sprint-001` 收口。
+  - 2026-04-07：`TK-640` 完成 `sprint-001` closeout 与 activation handoff，任务切换为 `in_progress`，开始冻结 VS Code MVP gap list 与 desktop foundation non-goal guardrails。
+  - 2026-04-07：已完成 `DA-610`，把 VS Code MVP gap list、desktop foundation non-goal guardrails 与 `TK-611` 的 hardening 输入固定到公开/维护者 truth surfaces。
+- [x] TK-611 implement targeted VS Code MVP hardening and trust-sensitive diagnostics follow-through
+  - 2026-04-06：任务创建，等待 `TK-610` 完成。
+  - 2026-04-07：`TK-610 / DA-610` 已完成 contract freeze，任务切换为 `in_progress`，开始推进 trust-sensitive diagnostics 与 targeted VS Code MVP hardening。
+  - 2026-04-07：已完成 runtime hardening，把 workspace context / review detail / `@governor` chat 的 service-health 与 trust-sensitive diagnostics 串到同一条 service-owned truth path，并补齐 presentation tests、build、package tests、integration tests 与 IDE smoke/docs parity 证据。
+- [x] TK-612 close project-054 with secondary surface rollout summary and desktop foundation recommendation
+  - 2026-04-06：任务创建，等待 `TK-610 / TK-611` 完成。
+  - 2026-04-07：`TK-611 / DA-611` 已完成 targeted VS Code MVP hardening 与 trust-sensitive diagnostics follow-through，任务切换为 `in_progress`，开始汇总 `project-054` secondary surface rollout summary 与 desktop foundation recommendation。
+  - 2026-04-07：已完成 `DA-612`，把 `project-054` 的 secondary surface rollout summary、desktop foundation recommendation 与 project-final-ready handoff baseline 固定到当前 sprint surface，并补齐 `pnpm run check` 交付证据。
+- [x] CR-001 sprint-002-vscode-mvp-hardening-and-desktop-foundation-guardrails delegated review loop round 1
+  - 2026-04-07：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-07：fresh reviewer round 识别出 2 个 actionable finding；主 agent 已完成逐条复核并将结论推进到 `verified`，accepted finding 修复已在同窗口落地，等待最终 resolved 写回。
+  - 2026-04-07：accepted finding 已全部修复并完成 full verification window，当前 round clean 收口为 `resolved`。
+- [x] TK-641 sprint-002 exit acceptance and project-final review handoff
+  - 2026-04-07：在 `TK-610 ~ TK-612` 全部 `completed` 且 `CR-001` clean `resolved` 后创建并完成本 closeout 任务。
+  - 2026-04-07：已完成 `DA-641`，把 `sprint-002` / `project-054` 计划面收敛到 sprint-clean handoff 真值，并将下一边界固定为 `project-054` 的 project-final scoped CR loop。
+- [x] CR-002 project-054-vscode-secondary-surface-rollout final delegated review loop round 2
+  - 2026-04-07：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-07：fresh reviewer 指出 project-final support-truth verification slice 漏掉 `apps/vscode-extension/test/vscode-extension-service-runtime.test.ts`，主 agent 复核后予以认可。
+  - 2026-04-07：已补齐 README / maintainer validation / support matrix / delivery artifact 的验证切片，并重跑同窗口 full verification；当前状态推进为 `resolved`。
+- [x] TK-642 finalize project-054 closeout and activate project-055 primary stream

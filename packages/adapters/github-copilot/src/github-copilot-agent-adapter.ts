@@ -28,6 +28,7 @@ import {
   resolveAgentStageExecutionPolicy,
 } from '@repo-ai-governor/adapter-sdk';
 import {
+  AdapterRequestCancellationMode,
   AdapterTransportKind,
   GovernorErrorCode,
   RuntimeError,
@@ -299,6 +300,14 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
         unavailableReasons,
         unsupportedCapabilities: unsupportedCapabilities.map(String),
         degradedCapabilities: degradedCapabilities.map(String),
+        transportKind:
+          this.options.executionMode === GithubCopilotAgentAdapterExecutionMode.CLI_EXEC
+            ? AdapterTransportKind.CLI_EXEC
+            : AdapterTransportKind.BASELINE,
+        requestCancellationMode:
+          this.options.executionMode === GithubCopilotAgentAdapterExecutionMode.CLI_EXEC
+            ? AdapterRequestCancellationMode.NOT_SUPPORTED
+            : AdapterRequestCancellationMode.LOCAL_ABORT_ONLY,
       }),
     };
   }

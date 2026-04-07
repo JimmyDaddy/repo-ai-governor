@@ -16,11 +16,19 @@ export {
   DEFAULT_STANDARDS_FALLBACK_LOCALE,
   DEFAULT_STANDARDS_RENDER_LOCALE,
   DEFAULT_STANDARDS_VERSION_PIN_MODE,
+  REVIEW_FINDING_SOURCE_TYPE_VALUES,
+  REVIEW_RULE_APPLICABILITY_VALUES,
+  REVIEW_RULE_EXECUTION_MODE_VALUES,
+  REVIEW_RULE_SEVERITY_VALUES,
   HostDistributionDiscoveryState,
   HostDistributionHandoffBridge,
   HostDistributionHost,
   HostDistributionMode,
   HostDistributionTarget,
+  ReviewFindingSourceType,
+  ReviewRuleApplicability,
+  ReviewRuleExecutionMode,
+  ReviewRuleSeverity,
   HostVerificationStatus,
   StandardsPackScope,
   StandardsPackSource,
@@ -49,9 +57,13 @@ export {
 } from './providers/index.js';
 export {
   goMinimalGovernancePack,
+  phaseAProjectedReviewRuleBundle,
+  phaseAReviewRuleDefinitions,
+  phaseAReviewRuleRegistry,
   pythonMinimalGovernancePack,
   workflowReviewGovernancePack,
 } from './examples/index.js';
+export { ReviewRuleRegistry } from './review-rule-registry.js';
 export { RuleRenderer } from './rule-renderer.js';
 export { StructuredWorkflowAssetRegistry } from './structured-workflow-asset-registry.js';
 export { StandardsUpgradePlanner } from './standards-upgrade-planner.js';
@@ -67,6 +79,7 @@ export type {
   HostTargetCapabilities,
   HostVerificationCheck,
   HostVerificationSummary,
+  ProjectedReviewRuleBundle,
   StructuredWorkflowAssetRecord,
   StructuredWorkflowAssetRegistryOptions,
   AgentsProjectionNowProviderContract,
@@ -75,6 +88,12 @@ export type {
   AgentsProjectorProjectInput,
   AgentsProjectorProjectResult,
   RenderedStandardsRule,
+  ReviewRuleBundleProjectionOptions,
+  ReviewRuleDefinition,
+  ReviewRuleListOptions,
+  ReviewRuleProjectionResult,
+  ReviewRuleRegistryOptions,
+  ReviewRuleRegistryReader,
   ResolvedStandardsRule,
   RuleRendererOptions,
   RuleRendererRenderInput,
@@ -86,6 +105,7 @@ export type {
   StandardsRuntimeLoadedPack,
   StandardsRuntimeLoadInput,
   StandardsRuntimeLoadResult,
+  StandardsRuntimeRenderInput,
   StandardsRuntimePackSourceConfig,
   StandardsRuntimePackSourcesConfig,
   StandardsRuntimeProjectionTargetConfig,

@@ -38,7 +38,7 @@ export class VsCodeExtensionChatParticipantRuntime {
             '正在从本地编排服务刷新 Governor 状态...',
           ),
         );
-        const workspaceContext = this.serviceRuntime.buildWorkspaceContextSnapshot();
+        const workspaceContext = await this.serviceRuntime.resolveWorkspaceContextSnapshot();
         const [executionBoard, hitlInbox] = await Promise.all([
           this.serviceRuntime.queryExecutionBoard(),
           this.serviceRuntime.queryHitlInbox(),

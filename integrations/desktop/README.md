@@ -28,6 +28,12 @@
 11. `getExecution / submitHitlDecision / recoverExecution / terminateExecution / queryExecutionBoard / queryHitlInbox / queryQueueOverview / queryArtifactPane` 已纳入正式 preload/service seam。
 12. worktree / editor / terminal / review doc handoff 必须走 service-owned handoff target contract，renderer 不得自行重建路径真值。
 
+## Project-054 Guardrails
+
+1. `project-054` 只把 desktop 保留为 foundation surface，不把它提升为当前更优先收口的 secondary surface。
+2. 当前 baseline 不是 packaged desktop distribution 的正式支持声明；它只定义 future desktop shell 必须遵守的 service-owned seam。
+3. richer desktop panels 可以继续演进，但不应在本项目里反向扩张 public support claim 或要求与 VS Code MVP 做功能对等承诺。
+
 ## Assets
 
 1. 示例说明：`integrations/desktop/examples/README.md`

@@ -1,6 +1,24 @@
 # checklist
 
-- [ ] TK-616 consolidate support matrix GA evidence and maintainer validation outputs into one dossier
-  - 2026-04-06：任务创建，状态初始化为 `planned`。
-- [ ] TK-617 close project-055 with GA readiness recommendation blockers and next-step decision memo
-  - 2026-04-06：任务创建，状态初始化为 `planned`。
+- [x] TK-616 consolidate support matrix GA evidence and maintainer validation outputs into one dossier
+  - 2026-04-06：任务创建，等待 `sprint-001` 收口。
+  - 2026-04-07：`TK-643 / DA-643` 完成 `sprint-001` closeout 与 activation handoff 后，当前任务切换为 `in_progress`。
+  - 2026-04-07：已完成 `DA-616`，把 `playground` 与 `react-native-image-marker-1.1.x` 的真实试点证据收敛成统一 dossier，并同步刷新 `docs/support-matrix*.md`、`docs/ga-readiness-evidence*.md` 与 `docs/maintainer-validation-playbook*.md` 的 cross-surface backlink。
+  - 2026-04-07：已完成 `pnpm run check`、`check-task-ledger-sync`、`check-sprint-plan-status-sync`、`check-code-review-status-sync` 与 `check-worktree-review-target`，当前实现边界进入 `CR-001` fresh reviewer loop。
+- [x] TK-617 close project-055 with GA readiness recommendation blockers and next-step decision memo
+  - 2026-04-06：任务创建，等待 `TK-616` 完成。
+  - 2026-04-07：`TK-616 / DA-616` 已完成，当前任务切换为 `in_progress`，开始整理 prepared completion audit summary、GA readiness recommendation 与 next-step memo。
+  - 2026-04-07：已完成 `DA-617` 与 prepared completion audit summary，当前 recommendation 为“在 clean sprint/project review loops 后将 `project-055` promote 为 completed，并按既定顺序继续执行 `project-057 -> project-056`”。
+  - 2026-04-07：已完成 `pnpm run check`、`check-task-ledger-sync`、`check-sprint-plan-status-sync`、`check-code-review-status-sync` 与 `check-worktree-review-target`，prepared closeout packet 现已进入 `CR-001` fresh reviewer loop。
+- [x] CR-001 sprint-002-ga-evidence-consolidation-and-closeout delegated review loop round 1
+  - 2026-04-07：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-07：fresh reviewer 返回 2 条 actionable findings；主 agent 已完成复核并全部认可，review artifact 已补充 `复核结论`。
+  - 2026-04-07：已完成 signal `#6` clean-room evidence truth 修复与 support-matrix provenance header 修复，并将 review artifact 推进到 `resolved_code_review_working-tree-20260407-1314.md`。
+- [x] TK-644 sprint-002 exit acceptance and project-final review handoff
+  - 2026-04-07：在 `TK-616`、`TK-617` 全部 `completed` 且 `CR-001` clean `resolved` 后创建并完成本 closeout 任务。
+  - 2026-04-07：已完成 `DA-644`，把 `sprint-002` / `project-055` 计划面与 prepared audit summary 收敛到 sprint-clean handoff 真值，并将下一边界固定为 `project-055` 的 project-final scoped CR loop。
+- [x] CR-002 project-055-ga-evidence-and-adopter-pilot-closeout final delegated review loop round 2
+  - 2026-04-07：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-07：fresh reviewer 返回 3 条 actionable findings；主 agent 已完成复核并全部认可，project-final review artifact 已补充 `复核结论`。
+  - 2026-04-07：已完成 project milestone audit backlink、`DA-616` signal `#6` provenance truth、以及 `DA-617` blocker truth 修复，并将 review artifact 推进到 `resolved_code_review_working-tree-20260407-1344.md`。
+- [x] TK-645 finalize project-055 closeout and activate project-057 primary stream

@@ -214,8 +214,10 @@ export class CliAgentOnboardingRuntime {
         enabled: configuredTool?.enabled ?? true,
         configured_availability: configuredTool?.availability ?? null,
         availability_status: verificationTool?.availabilityStatus ?? null,
-        transport:
-          configuredTool?.transport ?? verificationTool?.healthCheck?.transportKind ?? null,
+        transport: this.resolveToolTransportKind(
+          configuredTool,
+          verificationTool?.healthCheck?.transportKind,
+        ),
         remote_api_candidate: configuredTool?.remoteApi
           ? {
               provider: configuredTool.remoteApi.provider,
@@ -386,7 +388,9 @@ export class CliAgentOnboardingRuntime {
         toolId,
         enabled: true,
         availability: currentTool?.availability ?? AdapterAvailability.AVAILABLE,
-        ...(currentTool?.localModel ? { localModel: currentTool.localModel } : {}),
+        ...(currentTool?.transport ? { transport: currentTool.transport } : {}),
+        ...(currentTool?.remoteApi ? { remoteApi: { ...currentTool.remoteApi } } : {}),
+        ...(currentTool?.localModel ? { localModel: { ...currentTool.localModel } } : {}),
         ...(currentTool?.unavailableReasons
           ? { unavailableReasons: [...currentTool.unavailableReasons] }
           : {}),

@@ -11,11 +11,22 @@ import {
   standardizeError,
 } from '@repo-ai-governor/shared';
 import { CliReviewCommand } from '../../src/commands/review-command.js';
-import { CLI_REVIEW_REQUEST_STATUS } from '../../src/constants/cli-governance-runtime.constant.js';
+import {
+  CLI_REVIEW_REQUEST_STATUS,
+  CliGovernanceCheckStatus,
+} from '../../src/constants/cli-governance-runtime.constant.js';
 import { CliInteractiveUiMode } from '../../src/constants/cli-interactive-shell.constant.js';
+import {
+  CliDelegatedReviewActivationLevel,
+  CliDelegatedReviewActivationReason,
+  CliReviewFindingExecutionMode,
+  CliReviewFindingSourceType,
+  CliReviewLifecycleStatus,
+} from '../../src/constants/cli-review.constant.js';
 import { CliReviewQueueRuntime } from '../../src/runtime/artifacts/review-queue-runtime.js';
 import type {
   CliCommandExecutorContext,
+  CliHybridReviewContext,
   CliReviewRequestArtifactPayload,
 } from '../../src/types/interfaces/index.js';
 
@@ -226,11 +237,36 @@ describe('CliReviewCommand', () => {
       expect(typeof requestPath).toBe('string');
 
       const requestPayload = JSON.parse(await readFile(String(requestPath), 'utf8')) as {
+        requestId?: string;
         status?: string;
         reviewArtifactStatus?: string;
         reviewTaskId?: string;
         reviewTaskCardPath?: string;
-        findings?: Array<{ ruleId?: string }>;
+        findings?: Array<{
+          ruleId?: string;
+          sourceType?: string;
+          executionMode?: string;
+          standardsSourceRefs?: string[];
+        }>;
+        hybridReviewContext?: {
+          projectedRuleBundle?: { bundleId?: string };
+          coverageSummary?: {
+            totalApplicableRuleCount?: number;
+            residualGapRuleCount?: number;
+            manualOnlyGapRuleCount?: number;
+          };
+          delegatedReviewActivationPolicy?: {
+            level?: string;
+            manualFollowUpRequired?: boolean;
+          };
+          uncoveredRuleIds?: string[];
+          delegatedReviewEnabled?: boolean;
+          delegatedReviewRequest?: {
+            requestId?: string;
+            reviewSurface?: string[];
+            requiredNormativeInputs?: string[];
+          };
+        };
       };
       expect(requestPayload.status).toBe(CLI_REVIEW_REQUEST_STATUS.QUEUED);
       expect(requestPayload.reviewArtifactStatus).toBe('review_pending');
@@ -245,11 +281,65 @@ describe('CliReviewCommand', () => {
       );
       expect(reviewTaskCardContent).toContain('# CR-001 working tree review lifecycle');
       expect(reviewTaskCardContent).toContain('- Status: review_pending');
+      expect(requestPayload.findings).toContainEqual(
+        expect.objectContaining({
+          ruleId: 'code_change_without_test_change',
+          sourceType: CliReviewFindingSourceType.RISK_INFERENCE,
+          executionMode: CliReviewFindingExecutionMode.DETERMINISTIC,
+          standardsSourceRefs: [],
+        }),
+      );
+      expect(requestPayload.hybridReviewContext?.projectedRuleBundle?.bundleId).toBe(
+        'bundle.review.phase-a',
+      );
+      expect(requestPayload.hybridReviewContext?.delegatedReviewEnabled).toBe(false);
+      expect(requestPayload.hybridReviewContext?.coverageSummary?.totalApplicableRuleCount).toBe(2);
+      expect(requestPayload.hybridReviewContext?.coverageSummary?.residualGapRuleCount).toBe(0);
+      expect(requestPayload.hybridReviewContext?.coverageSummary?.manualOnlyGapRuleCount).toBe(0);
+      expect(requestPayload.hybridReviewContext?.delegatedReviewActivationPolicy?.level).toBe(
+        CliDelegatedReviewActivationLevel.OPTIONAL,
+      );
       expect(
-        requestPayload.findings?.some(
-          (finding) => finding.ruleId === 'code_change_without_test_change',
-        ),
-      ).toBe(true);
+        requestPayload.hybridReviewContext?.delegatedReviewActivationPolicy?.manualFollowUpRequired,
+      ).toBe(false);
+      expect(requestPayload.hybridReviewContext?.delegatedReviewRequest?.requestId).toBe(
+        requestPayload.requestId,
+      );
+      expect(requestPayload.hybridReviewContext?.delegatedReviewRequest?.reviewSurface).toEqual(
+        expect.arrayContaining(['apps/cli/src/review-scope.ts']),
+      );
+      expect(
+        requestPayload.hybridReviewContext?.delegatedReviewRequest?.requiredNormativeInputs,
+      ).toEqual(expect.arrayContaining(['AGENTS.md']));
+      expect(requestPayload.findings).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            ruleId: 'review-rule.cs-034-build-evidence',
+            sourceType: CliReviewFindingSourceType.STANDARDS_GUIDED_INFERENCE,
+            executionMode: CliReviewFindingExecutionMode.STANDARDS_GUIDED,
+            semanticKey: 'code-standards.cs-034',
+          }),
+        ]),
+      );
+      expect(requestPayload.hybridReviewContext?.uncoveredRuleIds).not.toContain(
+        'review-rule.cs-034-build-evidence',
+      );
+      expect(requestPayload.hybridReviewContext?.coverageSummary?.residualGapRuleCount).toBe(0);
+      expect(requestPayload.hybridReviewContext?.delegatedReviewActivationPolicy?.level).toBe(
+        CliDelegatedReviewActivationLevel.OPTIONAL,
+      );
+
+      const reviewArtifactContent = await readFile(String(reviewArtifactPath), 'utf8');
+      expect(reviewArtifactContent).toContain('## 2. Deterministic Rule Findings');
+      expect(reviewArtifactContent).toContain('## 3. Standards-Guided Findings');
+      expect(reviewArtifactContent).toContain('## 4. Residual Risk Observations');
+      expect(reviewArtifactContent).toContain('## 5. Coverage Summary');
+      expect(reviewArtifactContent).toContain('## 7. Delegated Reviewer Handoff');
+      expect(reviewArtifactContent).toContain('Delegated activation policy');
+      expect(reviewArtifactContent).toContain('transport view');
+      expect(reviewArtifactContent).toContain('code_change_without_test_change');
+      expect(reviewArtifactContent).toContain('risk_inference');
+      expect(reviewArtifactContent).toContain('review-rule.cs-034-build-evidence');
     } finally {
       await rm(fixture.tempRoot, { recursive: true, force: true });
     }
@@ -276,6 +366,299 @@ describe('CliReviewCommand', () => {
       ) as CliReviewRequestArtifactPayload;
       expect(requestPayload.reviewArtifactStatus).toBe('resolved');
       expect(requestPayload.findings).toHaveLength(0);
+    } finally {
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('projects TODO findings as deterministic rule-backed entries in the canonical artifact', async () => {
+    const fixture = await createReviewFixture();
+
+    try {
+      await writeCurrentContextFixture(fixture.workspaceRoot);
+      await initGitRepository(fixture.tempRoot);
+      const changedFilePath = resolve(fixture.tempRoot, 'apps', 'cli', 'src', 'todo-scope.ts');
+      await mkdir(dirname(changedFilePath), { recursive: true });
+      await writeFile(
+        changedFilePath,
+        'export const todoScope = 1; // TODO: backfill tests\n',
+        'utf8',
+      );
+
+      const commandResult = await fixture.command.execute(fixture.context);
+      const reviewArtifactPath = commandResult.commandResult.artifacts?.find(
+        (artifact) => artifact.id === 'review_artifact',
+      )?.path;
+      const requestPath = commandResult.commandResult.artifacts?.find(
+        (artifact) => artifact.id === 'review_request',
+      )?.path;
+
+      const requestPayload = JSON.parse(
+        await readFile(String(requestPath), 'utf8'),
+      ) as CliReviewRequestArtifactPayload;
+      expect(requestPayload.findings).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            ruleId: 'review-rule.cs-003-unresolved-markers',
+            sourceType: CliReviewFindingSourceType.DETERMINISTIC_RULE,
+            executionMode: CliReviewFindingExecutionMode.DETERMINISTIC,
+            semanticKey: 'code-standards.cs-003',
+          }),
+        ]),
+      );
+
+      const reviewArtifactContent = await readFile(String(reviewArtifactPath), 'utf8');
+      expect(reviewArtifactContent).toContain('## 2. Deterministic Rule Findings');
+      expect(reviewArtifactContent).toContain('review-rule.cs-003-unresolved-markers');
+      expect(reviewArtifactContent).toContain('code-standards.cs-003');
+    } finally {
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps code-affecting reviews pending by emitting a CS-034 finding when build evidence is still missing', async () => {
+    const fixture = await createReviewFixture();
+
+    try {
+      await writeCurrentContextFixture(fixture.workspaceRoot);
+      await initGitRepository(fixture.tempRoot);
+      const changedFilePath = resolve(fixture.tempRoot, 'apps', 'cli', 'src', 'review-scope.ts');
+      const changedTestPath = resolve(
+        fixture.tempRoot,
+        'apps',
+        'cli',
+        'test',
+        'review-scope.test.ts',
+      );
+      await mkdir(dirname(changedFilePath), { recursive: true });
+      await mkdir(dirname(changedTestPath), { recursive: true });
+      await writeFile(changedFilePath, 'export const reviewScope = 1;\n', 'utf8');
+      await writeFile(
+        changedTestPath,
+        'import { reviewScope } from "../src/review-scope.js";\n',
+        'utf8',
+      );
+
+      const commandResult = await fixture.command.execute(fixture.context);
+      const reviewArtifactPath = commandResult.commandResult.artifacts?.find(
+        (artifact) => artifact.id === 'review_artifact',
+      )?.path;
+      const requestPath = commandResult.commandResult.artifacts?.find(
+        (artifact) => artifact.id === 'review_request',
+      )?.path;
+
+      const requestPayload = JSON.parse(
+        await readFile(String(requestPath), 'utf8'),
+      ) as CliReviewRequestArtifactPayload;
+      expect(requestPayload.reviewArtifactStatus).toBe('review_pending');
+      expect(requestPayload.findings).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            ruleId: 'review-rule.cs-034-build-evidence',
+            sourceType: CliReviewFindingSourceType.STANDARDS_GUIDED_INFERENCE,
+            executionMode: CliReviewFindingExecutionMode.STANDARDS_GUIDED,
+          }),
+        ]),
+      );
+      expect(requestPayload.hybridReviewContext?.uncoveredRuleIds).not.toContain(
+        'review-rule.cs-034-build-evidence',
+      );
+      expect(requestPayload.hybridReviewContext?.delegatedReviewActivationPolicy?.level).toBe(
+        CliDelegatedReviewActivationLevel.OPTIONAL,
+      );
+      expect(requestPayload.hybridReviewContext?.uncoveredRuleIds).not.toContain(
+        'review-rule.cs-033-user-facing-i18n',
+      );
+      expect(
+        requestPayload.hybridReviewContext?.projectedRuleBundle.standardsSourceRefs,
+      ).not.toEqual(
+        expect.arrayContaining([
+          '.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md#CS-021',
+        ]),
+      );
+
+      const reviewArtifactContent = await readFile(String(reviewArtifactPath), 'utf8');
+      expect(String(reviewArtifactPath)).toContain('/code_review_');
+      expect(reviewArtifactContent).toContain(
+        'Same-window build evidence is required before this review can resolve',
+      );
+      expect(reviewArtifactContent).toContain(
+        'Run review-verify after applying fixes or when you want an explicit verification decision.',
+      );
+    } finally {
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('marks CS-033 uncovered only when the changed source is likely to own user-facing text', async () => {
+    const fixture = await createReviewFixture();
+
+    try {
+      await writeCurrentContextFixture(fixture.workspaceRoot);
+      await initGitRepository(fixture.tempRoot);
+      const changedFilePath = resolve(
+        fixture.tempRoot,
+        'apps',
+        'cli',
+        'src',
+        'runtime',
+        'review',
+        'cli-user-facing-copy.ts',
+      );
+      const changedTestPath = resolve(
+        fixture.tempRoot,
+        'apps',
+        'cli',
+        'test',
+        'cli-user-facing-copy.test.ts',
+      );
+      await mkdir(dirname(changedFilePath), { recursive: true });
+      await mkdir(dirname(changedTestPath), { recursive: true });
+      await writeFile(
+        changedFilePath,
+        "export const renderCopy = () => localizeText('Hello', '你好');\n",
+        'utf8',
+      );
+      await writeFile(changedTestPath, 'export const renderCopyTest = true;\n', 'utf8');
+
+      const commandResult = await fixture.command.execute(fixture.context);
+      const requestPath = commandResult.commandResult.artifacts?.find(
+        (artifact) => artifact.id === 'review_request',
+      )?.path;
+      const requestPayload = JSON.parse(
+        await readFile(String(requestPath), 'utf8'),
+      ) as CliReviewRequestArtifactPayload;
+
+      expect(requestPayload.reviewArtifactStatus).toBe('review_pending');
+      expect(requestPayload.findings).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            ruleId: 'review-rule.cs-034-build-evidence',
+            sourceType: CliReviewFindingSourceType.STANDARDS_GUIDED_INFERENCE,
+          }),
+        ]),
+      );
+      expect(requestPayload.hybridReviewContext?.uncoveredRuleIds).toEqual(
+        expect.arrayContaining(['review-rule.cs-033-user-facing-i18n']),
+      );
+      expect(requestPayload.hybridReviewContext?.uncoveredRuleIds).not.toContain(
+        'review-rule.cs-034-build-evidence',
+      );
+    } finally {
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('treats manual-only gaps as coverage gaps in notes and checks', async () => {
+    const fixture = await createReviewFixture();
+    const internalCommand = fixture.command as unknown as {
+      buildChecks: (
+        requestPath: string,
+        findings: unknown[],
+        reviewStatus: CliReviewLifecycleStatus,
+        reviewArtifactPath: string,
+        hybridReviewContext: CliHybridReviewContext,
+      ) => Array<{ id: string; status: string }>;
+      buildReviewNotes: (
+        context: CliCommandExecutorContext,
+        reviewStatus: CliReviewLifecycleStatus,
+        changedPathCount: number,
+        findingCount: number,
+        hybridReviewContext: CliHybridReviewContext,
+      ) => string[];
+    };
+    const hybridReviewContext = {
+      projectedRuleBundle: {
+        bundleId: 'bundle.review.phase-a',
+        bundleVersion: '1.0.0',
+      },
+      projectedRules: [],
+      deterministicFindings: [],
+      standardsGuidedFindings: [],
+      riskFindings: [],
+      coverageSummary: {
+        totalApplicableRuleCount: 1,
+        deterministicCoveredRuleCount: 0,
+        standardsGuidedCoveredRuleCount: 0,
+        residualGapRuleCount: 0,
+        manualOnlyGapRuleCount: 1,
+        deterministicCoveredRuleIds: [],
+        standardsGuidedCoveredRuleIds: [],
+        residualGapRuleIds: [],
+        manualOnlyGapRuleIds: ['review-rule.fixture-manual-follow-up'],
+        coverageBuckets: [],
+      },
+      delegatedReviewActivationPolicy: {
+        level: CliDelegatedReviewActivationLevel.OPTIONAL,
+        reasonCodes: [CliDelegatedReviewActivationReason.MANUAL_ONLY_GAP_PRESENT],
+        delegatableGapRuleIds: [],
+        manualOnlyGapRuleIds: ['review-rule.fixture-manual-follow-up'],
+        manualFollowUpRequired: true,
+      },
+      uncoveredRuleIds: [],
+      delegatedReviewEnabled: false,
+      dedupeStrategy: 'ruleId+file+line',
+      delegatedReviewRequest: {
+        requestId: 'review-004',
+        scopeSummary: 'fixture scope',
+        reviewMode: 'working_tree',
+        reviewSurface: ['apps/cli/src/commands/review-command.ts'],
+        requiredNormativeInputs: ['AGENTS.md'],
+        projectedRuleBundle: {
+          bundleId: 'bundle.review.phase-a',
+          bundleVersion: '1.0.0',
+        },
+        projectedRules: [],
+        deterministicFindings: [],
+        coverageSummary: {
+          totalApplicableRuleCount: 1,
+          deterministicCoveredRuleCount: 0,
+          standardsGuidedCoveredRuleCount: 0,
+          residualGapRuleCount: 0,
+          manualOnlyGapRuleCount: 1,
+          deterministicCoveredRuleIds: [],
+          standardsGuidedCoveredRuleIds: [],
+          residualGapRuleIds: [],
+          manualOnlyGapRuleIds: ['review-rule.fixture-manual-follow-up'],
+          coverageBuckets: [],
+        },
+        delegatedReviewActivationPolicy: {
+          level: CliDelegatedReviewActivationLevel.OPTIONAL,
+          reasonCodes: [CliDelegatedReviewActivationReason.MANUAL_ONLY_GAP_PRESENT],
+          delegatableGapRuleIds: [],
+          manualOnlyGapRuleIds: ['review-rule.fixture-manual-follow-up'],
+          manualFollowUpRequired: true,
+        },
+        uncoveredRuleIds: [],
+      },
+    } as unknown as CliHybridReviewContext;
+
+    try {
+      const checks = internalCommand.buildChecks(
+        'request.json',
+        [],
+        CliReviewLifecycleStatus.RESOLVED,
+        'review.md',
+        hybridReviewContext,
+      );
+      const notes = internalCommand.buildReviewNotes(
+        fixture.context,
+        CliReviewLifecycleStatus.RESOLVED,
+        1,
+        0,
+        hybridReviewContext,
+      );
+
+      expect(checks.find((check) => check.id === 'review_findings')?.status).toBe(
+        CliGovernanceCheckStatus.WARN,
+      );
+      expect(notes).toEqual(
+        expect.arrayContaining([
+          'Coverage gap rule ids reserved for future delegated and/or manual follow-up: review-rule.fixture-manual-follow-up.',
+          'Manual-only coverage gaps remain; delegated review alone is not sufficient and an explicit human/manual follow-up is still required.',
+          'This lifecycle artifact resolved without emitted findings; remaining projected rule coverage gaps were recorded for future delegated or manual follow-up outside review-verify.',
+        ]),
+      );
     } finally {
       await rm(fixture.tempRoot, { recursive: true, force: true });
     }

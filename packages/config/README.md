@@ -70,6 +70,14 @@ if (resolved.config.standards) {
     baseDirectory: process.cwd(),
     standards: resolved.config.standards,
   });
+  const renderedTargets = await standardsLoader.renderConfiguredTargets({
+    baseDirectory: process.cwd(),
+    standards: resolved.config.standards,
+  });
+  const agentsProjections = await standardsLoader.projectAgents({
+    baseDirectory: process.cwd(),
+    standards: resolved.config.standards,
+  });
 }
 
 const upgradeService = new UpgradeSchemaDiffService();
@@ -78,6 +86,39 @@ const upgradeReport = upgradeService.analyze({
   targetVersion: GovernorSchemaVersion.V1_1,
 });
 ```
+
+## Standards Runtime Contract
+
+`governor.yaml.standards` 现在承载同一条正式产品路径：
+
+```yaml
+standards:
+  packSources:
+    official:
+      - module: "@repo-ai-governor/standards/examples"
+        exportName: "workflowReviewGovernancePack"
+    team:
+      - module: "@acme/governor-standards-team"
+        exportName: "teamDeliveryPack"
+    repository:
+      - module: "./.repo-ai-governor/standards/repository-pack.ts"
+        exportName: "repositoryOverridePack"
+  renderTargets:
+    - human
+    - ai
+  projectionTargets:
+    - targetFile: ".repo-ai-governor/generated/AGENTS.generated.md"
+      locale: en-US
+  defaultLocale: zh-CN
+  fallbackLocale: en-US
+```
+
+约束说明：
+
+1. `official / team / repository` 三层 pack source 是标准运行时的唯一 layering 入口。
+2. 相对 `packSources.*.module` 与相对 `projectionTargets[].targetFile` 都以 `StandardsRuntimeLoader.load({ baseDirectory })` 的 `baseDirectory` 为解析根。
+3. `renderConfiguredTargets()` 返回配置声明的渲染结果，适合 CLI / docs / runtime presenter 消费。
+4. `projectAgents()` 返回 `AGENTS.md` projection payload，但不会自动写 root `AGENTS.md`；写回权仍归调用方。
 
 ## Notes
 

@@ -8,6 +8,8 @@ import {
   type AgentStreamEventsRequest,
 } from '@repo-ai-governor/adapter-sdk';
 import {
+  AdapterEndpointSource,
+  AdapterRequestCancellationMode,
   AdapterTransportKind,
   GovernorErrorCode,
   LocalModelProvider,
@@ -123,6 +125,12 @@ describe('local-model-agent-adapter smoke', () => {
     expect(probeResult.availabilityStatus).toBe('available');
     expect(probeResult.unavailableReasons).toEqual([]);
     expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(probeResult.healthCheck?.transportKind).toBe(AdapterTransportKind.BASELINE);
+    expect(probeResult.healthCheck?.model).toBe('qwen2.5-coder:7b');
+    expect(probeResult.healthCheck?.endpointSource).toBe(AdapterEndpointSource.CONFIG_EXPLICIT);
+    expect(probeResult.healthCheck?.requestCancellationMode).toBe(
+      AdapterRequestCancellationMode.LOCAL_ABORT_ONLY,
+    );
   });
 
   it('marks probe unavailable when configured model is missing', async () => {

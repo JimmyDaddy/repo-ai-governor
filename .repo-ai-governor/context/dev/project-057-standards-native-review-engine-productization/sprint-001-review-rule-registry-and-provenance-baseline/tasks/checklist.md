@@ -1,9 +1,27 @@
 # checklist
 
-- [ ] TK-621 冻结 standards-native review rule registry 与 finite-set finding taxonomy contract
+- [x] TK-621 冻结 standards-native review rule registry 与 finite-set finding taxonomy contract
   - 2026-04-06：任务创建，状态初始化为 `planned`。
-- [ ] TK-622 冻结 first-phase projected rule subset 与 standards source mapping
+  - 2026-04-06：在 project-057 多 sprint 拆解中被明确为 Phase A contract freeze 首任务。
+  - 2026-04-07：`project-055` final closeout 完成后被激活为 `in_progress`，作为 `project-057 / sprint-001` 的首个执行边界。
+  - 2026-04-07：已在 `packages/standards` 中新增 review-rule finite-set 常量、专属 interface contract 与 `ReviewRuleRegistry`，并把 Phase A 的 finding taxonomy 与 canonical artifact fields 写入独立 task output。
+  - 2026-04-07：已完成 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run check`，当前实现窗口已满足进入 sprint-scoped CR loop 的前置验证。
+- [x] TK-622 冻结 first-phase projected rule subset 与 standards source mapping
   - 2026-04-06：任务创建，状态初始化为 `planned`。
-- [ ] TK-623 收口 Phase A integration seam inventory 与 acceptance baseline
+  - 2026-04-06：在 project-057 多 sprint 拆解中被明确为 first-phase projected rule subset 冻结任务。
+  - 2026-04-07：已基于 `ReviewRuleRegistry` 冻结 `CS-003 / CS-015 / CS-021 / CS-026 / CS-033 / CS-034` 的 first-phase projected review-rule subset，并给出 `deterministic / standards_guided / manual_only` 的 Phase A execution mode 边界。
+  - 2026-04-07：已产出 `phaseAProjectedReviewRuleBundle` 与对应 source mapping 文档，供 Sprint 002-004 复用相同的 projected rule truth。
+  - 2026-04-07：已完成 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run check`，当前任务已满足进入 sprint-scoped CR loop 的前置验证。
+- [x] TK-623 收口 Phase A integration seam inventory 与 acceptance baseline
   - 2026-04-06：任务创建，状态初始化为 `planned`。
-  - 2026-04-06：将 project-057 调整为 4 sprint 顺序拆解后，TK-621~623 被收口为 Phase A 冻结任务包。
+  - 2026-04-06：在 project-057 多 sprint 拆解中被明确为 Phase A acceptance baseline 收口任务。
+  - 2026-04-07：已梳理 `packages/standards`、`apps/cli/src/runtime/review`、`runtime.agent-projection`、`runtime.durable-storage` 与 `runtime.cli-interactive-shell` 在 Sprint 002-004 的承接边界，并输出 Phase A integration seam inventory。
+  - 2026-04-07：已明确 Sprint 002-004 的 sequencing、acceptance signals 与 rollout guardrails，避免后续再次回到“先写代码再补 contract”的推进方式。
+  - 2026-04-07：已完成 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run check`，当前任务已满足进入 sprint-scoped CR loop 的前置验证。
+- [x] CR-001 sprint-001-review-rule-registry-and-provenance-baseline delegated review loop round 1
+  - 2026-04-07：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-07：fresh reviewer 返回 2 条 actionable findings；主 agent 已完成复核并全部认可，review artifact 已推进到 `verified_code_review_working-tree-20260407-1520.md`。
+  - 2026-04-07：已完成 `CS-026` coverage truth 收紧、review-rule registry `i18n-deferred` 标注与回归测试补强，并在重跑 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm run check` 后将 review artifact 推进到 `resolved_code_review_working-tree-20260407-1520.md`。
+- [x] TK-624 sprint-001 exit acceptance and sprint-002 activation handoff
+  - 2026-04-07：在 `TK-621`、`TK-622`、`TK-623` 全部 `completed` 且 `CR-001` clean `resolved` 后创建并完成本 closeout 任务。
+  - 2026-04-07：已完成 `DA-624`、project/sprint/context/history 写回，并激活 `sprint-002` 与 `TK-627`。

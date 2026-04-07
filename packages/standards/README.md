@@ -37,32 +37,79 @@
 1. 按 `official / team / repository` 三层 source group 动态加载 pack module。
 2. 校验每个 pack 的 `packSource` 与声明层级一致，避免把 repository override 误挂到 official layer。
 3. 自动组装 `StandardsPackRegistry -> RuleRenderer -> AgentsProjector`。
-4. 若未显式声明 `projectionTargets`，默认回落到 `AGENTS.md`。
+4. `renderConfiguredTargets()` 按 `renderTargets` 声明顺序返回 `human/ai/agents` 渲染结果，供 CLI / docs / runtime surfaces 直接消费。
+5. `projectAgents()` 按 `projectionTargets` 声明顺序返回投影 payload，但不自动写文件；调用方自行决定是否以及写到哪里。
+6. 若未显式声明 `projectionTargets`，默认回落到 `AGENTS.md`。
 
-最小示例：
+典型 `governor.yaml.standards`：
+
+```yaml
+standards:
+  packSources:
+    official:
+      - module: "@repo-ai-governor/standards/examples"
+        exportName: "workflowReviewGovernancePack"
+    team:
+      - module: "@acme/governor-standards-team"
+        exportName: "teamDeliveryPack"
+    repository:
+      - module: "./.repo-ai-governor/standards/repository-pack.ts"
+        exportName: "repositoryOverridePack"
+  renderTargets:
+    - human
+    - ai
+  projectionTargets:
+    - targetFile: ".repo-ai-governor/generated/AGENTS.generated.md"
+      locale: en-US
+  defaultLocale: zh-CN
+  fallbackLocale: en-US
+```
+
+Runtime 消费示例：
 
 ```ts
+import { mkdir, writeFile } from "node:fs/promises";
 import { ConfigLoader } from "@repo-ai-governor/config";
 import { StandardsRuntimeLoader } from "@repo-ai-governor/standards";
 import { dirname } from "node:path";
 
 const configLoader = new ConfigLoader();
 const configPath = "/workspace/.repo-ai-governor/governor.yaml";
+const repoRoot = process.cwd();
 const config = configLoader.loadFromFile(configPath);
 
 const standardsLoader = new StandardsRuntimeLoader();
 const runtime = await standardsLoader.load({
-  baseDirectory: dirname(configPath),
+  baseDirectory: repoRoot,
   standards: config.standards,
 });
 
-const agentsProjections = await standardsLoader.projectAgents({
-  baseDirectory: dirname(configPath),
+const renderedTargets = await standardsLoader.renderConfiguredTargets({
+  baseDirectory: repoRoot,
   standards: config.standards,
 });
+const agentsProjections = await standardsLoader.projectAgents({
+  baseDirectory: repoRoot,
+  standards: config.standards,
+});
+
+for (const projection of agentsProjections) {
+  await mkdir(dirname(projection.projectionTarget), { recursive: true });
+  await writeFile(projection.projectionTarget, projection.projectedContent, "utf8");
+}
 ```
 
-最小示例：
+消费边界说明：
+
+1. `baseDirectory` 是 runtime 的相对路径解析根；相对 `packSources.*.module` 与相对 `projectionTargets[].targetFile` 都会解析到这个根下。
+2. `runtime.loadedPacks` 暴露每个 pack 的 `layer/module/exportName` provenance，可直接用于 truth/debug/audit。
+3. `renderConfiguredTargets()` 只返回结构化渲染结果，不负责 docs/CLI 文件写入。
+4. `projectAgents()` 只返回 `projection_target/projected_at/source_pack_refs` 完整 payload，不自动写 root `AGENTS.md`；目录创建与文件写入都由调用方负责。
+5. 当前仓库根级 `AGENTS.md` 仍是手工维护的治理入口，不是 runtime loader 的自动产物。
+
+## Manual Composition Example
+
+如果调用方已经在自己的发布链中显式管理 official/team/repository packs，也可以绕过 runtime loader，直接手动组装：
 
 ```ts
 import {

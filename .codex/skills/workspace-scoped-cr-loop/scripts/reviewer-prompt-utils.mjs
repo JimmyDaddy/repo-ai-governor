@@ -24,6 +24,8 @@ const DEFAULT_REQUIRED_INPUTS = [
   '.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md',
   '.repo-ai-governor/normative_knowledge_sources/governance/task-ledger-single-write-source-contract.md',
   '.repo-ai-governor/normative_knowledge_sources/governance/execution-gate-layering-spec.md',
+  '.codex/skills/workspace-code-review-workflow/SKILL.md',
+  '.codex/skills/workspace-delivery-finisher/SKILL.md',
 ];
 
 export function fail(message) {
@@ -543,6 +545,30 @@ export function buildExtraDocs(extraDocs) {
   return extraDocs.join(', ');
 }
 
+function readJsonArrayFile(filePath, label) {
+  if (!filePath) {
+    return [];
+  }
+
+  const absolutePath = resolve(filePath);
+  if (!existsSync(absolutePath)) {
+    fail(`Missing ${label} JSON file: ${absolutePath}`);
+  }
+
+  try {
+    const parsed = JSON.parse(readFileSync(absolutePath, 'utf8'));
+    if (!Array.isArray(parsed)) {
+      fail(`${label} JSON must be an array: ${absolutePath}`);
+    }
+
+    return parsed;
+  } catch (error) {
+    fail(
+      `Unable to parse ${label} JSON ${absolutePath}: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+}
+
 export function renderPrompt(template, values) {
   let prompt = template;
 
@@ -551,6 +577,33 @@ export function renderPrompt(template, values) {
   }
 
   return prompt;
+}
+
+function buildStructuredHandoffContract(options) {
+  const requiredNormativeInputs = uniqueValues([...DEFAULT_REQUIRED_INPUTS, ...options.extraDocs]);
+  const projectedRules = readJsonArrayFile(options.projectedRulesJson, 'projected-rules');
+  const deterministicFindings = readJsonArrayFile(
+    options.deterministicFindingsJson,
+    'deterministic-findings',
+  );
+
+  return {
+    roundId: `${options.crTaskId}:${options.reportSlug}`,
+    roleId: 'reviewer',
+    scopeKind: options.scopeKind,
+    scopeLabel: options.scopeLabel,
+    scopePath: options.scopePath,
+    reviewDirPath: options.reviewDir,
+    crTaskId: options.crTaskId,
+    reportSlug: options.reportSlug,
+    roundType: options.roundType,
+    reviewSurface: options.reviewSurface,
+    verificationBaseline: options.verification,
+    requiredNormativeInputs,
+    projectedRules,
+    deterministicFindings,
+    uncoveredRuleIds: uniqueValues(options.uncoveredRuleIds),
+  };
 }
 
 export function buildPromptResult(rawOptions) {
@@ -602,6 +655,41 @@ export function buildPromptResult(rawOptions) {
     extra_normative_docs: buildExtraDocs(rawOptions.extraDocs),
     review_focus: buildReviewFocus(rawOptions.reviewFocus),
     review_surface: buildReviewSurface(reviewSurface),
+    structured_handoff_contract: JSON.stringify(
+      buildStructuredHandoffContract({
+        crTaskId: crRound.id,
+        reportSlug,
+        scopeKind: rawOptions.scopeKind,
+        scopeLabel: rawOptions.scopeLabel,
+        scopePath,
+        reviewDir,
+        roundType,
+        reviewSurface,
+        verification: rawOptions.verification,
+        extraDocs: rawOptions.extraDocs,
+        projectedRulesJson: rawOptions.projectedRulesJson,
+        deterministicFindingsJson: rawOptions.deterministicFindingsJson,
+        uncoveredRuleIds: rawOptions.uncoveredRuleIds ?? [],
+      }),
+      null,
+      2,
+    ),
+  });
+
+  const delegatedReviewRequest = buildStructuredHandoffContract({
+    crTaskId: crRound.id,
+    reportSlug,
+    scopeKind: rawOptions.scopeKind,
+    scopeLabel: rawOptions.scopeLabel,
+    scopePath,
+    reviewDir,
+    roundType,
+    reviewSurface,
+    verification: rawOptions.verification,
+    extraDocs: rawOptions.extraDocs,
+    projectedRulesJson: rawOptions.projectedRulesJson,
+    deterministicFindingsJson: rawOptions.deterministicFindingsJson,
+    uncoveredRuleIds: rawOptions.uncoveredRuleIds ?? [],
   });
 
   return {
@@ -625,6 +713,7 @@ export function buildPromptResult(rawOptions) {
     verification: rawOptions.verification,
     reviewFocus: rawOptions.reviewFocus,
     reviewSurface,
+    delegatedReviewRequest,
     prompt,
   };
 }
@@ -951,6 +1040,113 @@ ${buildNumberedList(producedArtifacts)}
     markdown,
     suggestedCommitMessage,
   };
+}
+
+function buildDelegatedFindingId(ruleId, file, line) {
+  return `${ruleId}-${file}-${line ?? 0}`
+    .replace(/[^A-Za-z0-9]+/gu, '-')
+    .replace(/^-+/u, '')
+    .replace(/-+$/u, '')
+    .toLowerCase();
+}
+
+/**
+ * Normalizes delegated reviewer findings into the shared governed finding shape expected by follow-up tooling.
+ * The delegated reviewer may only emit standards-guided findings for uncovered rules, plus explicit risk observations.
+ * @param options.rawFindings Reviewer-emitted findings.
+ * @param options.delegatedReviewRequest Structured handoff contract used for the round.
+ * @returns Canonical normalized delegated findings filtered against the deterministic coverage surface.
+ */
+export function normalizeDelegatedReviewerFindings(options) {
+  const uncoveredRuleIds = new Set(options.delegatedReviewRequest.uncoveredRuleIds ?? []);
+  const projectedRulesById = new Map(
+    (options.delegatedReviewRequest.projectedRules ?? []).map((rule) => [rule.ruleId, rule]),
+  );
+  const deterministicFindingKeys = new Set(
+    (options.delegatedReviewRequest.deterministicFindings ?? []).map(
+      (finding) => `${finding.ruleId}:${finding.file}:${finding.line ?? 0}`,
+    ),
+  );
+  const normalizedFindings = [];
+  const emittedKeys = new Set();
+
+  for (const rawFinding of options.rawFindings ?? []) {
+    if (
+      !rawFinding ||
+      typeof rawFinding.title !== 'string' ||
+      typeof rawFinding.file !== 'string' ||
+      typeof rawFinding.summary !== 'string' ||
+      typeof rawFinding.impact !== 'string' ||
+      typeof rawFinding.suggestedAction !== 'string'
+    ) {
+      continue;
+    }
+
+    const projectedRule =
+      typeof rawFinding.ruleId === 'string' ? projectedRulesById.get(rawFinding.ruleId) : null;
+    const isExplicitRiskObservation = rawFinding.sourceType === 'risk_inference';
+    const isAllowedStandardsGuidedFinding =
+      projectedRule && uncoveredRuleIds.has(projectedRule.ruleId);
+
+    if (!isExplicitRiskObservation && !isAllowedStandardsGuidedFinding) {
+      continue;
+    }
+
+    const sourceType = isExplicitRiskObservation ? 'risk_inference' : 'standards_guided_inference';
+    const ruleId =
+      typeof rawFinding.ruleId === 'string' && rawFinding.ruleId.trim().length > 0
+        ? rawFinding.ruleId.trim()
+        : sourceType === 'risk_inference'
+          ? 'delegated-risk-observation'
+          : 'delegated-standards-guided-observation';
+    const line =
+      typeof rawFinding.line === 'number' && Number.isFinite(rawFinding.line)
+        ? rawFinding.line
+        : undefined;
+    const dedupeKey = `${ruleId}:${rawFinding.file}:${line ?? 0}`;
+
+    if (deterministicFindingKeys.has(dedupeKey)) {
+      continue;
+    }
+
+    if (emittedKeys.has(dedupeKey)) {
+      continue;
+    }
+
+    emittedKeys.add(dedupeKey);
+
+    normalizedFindings.push({
+      findingId: buildDelegatedFindingId(ruleId, rawFinding.file, line),
+      fingerprint: dedupeKey,
+      ruleId,
+      severity:
+        typeof rawFinding.severity === 'string'
+          ? rawFinding.severity
+          : (projectedRule?.severity ?? 'P2'),
+      sourceType,
+      executionMode: 'standards_guided',
+      ...(projectedRule?.semanticKey ? { semanticKey: projectedRule.semanticKey } : {}),
+      standardsSourceRefs: projectedRule?.standardsSourceRefs ?? [],
+      projectedPackRefs: projectedRule?.projectedPackRefs ?? [],
+      title: rawFinding.title,
+      file: rawFinding.file,
+      ...(typeof line === 'number' ? { line } : {}),
+      summary: rawFinding.summary,
+      impact: rawFinding.impact,
+      suggestedAction: rawFinding.suggestedAction,
+      evidence: Array.isArray(rawFinding.evidence)
+        ? rawFinding.evidence.filter((evidence) => typeof evidence === 'string')
+        : [rawFinding.file],
+      ...(typeof rawFinding.confidence === 'number' ? { confidence: rawFinding.confidence } : {}),
+      reviewerRationale:
+        typeof rawFinding.reviewerRationale === 'string' &&
+        rawFinding.reviewerRationale.trim().length > 0
+          ? rawFinding.reviewerRationale.trim()
+          : rawFinding.summary,
+    });
+  }
+
+  return normalizedFindings;
 }
 
 export function finalizeCrRoundReservation(result) {

@@ -1,6 +1,6 @@
 # sprint-002-ga-evidence-consolidation-and-closeout 计划
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-06
 - Project: `project-055-ga-evidence-and-adopter-pilot-closeout`
 - Sprint Goal: 将 pilot、timing、support matrix 与 maintainer evidence 汇总为统一 closeout 结论。
@@ -9,6 +9,8 @@
 
 1. `TK-616` consolidate support matrix GA evidence and maintainer validation outputs into one dossier
 2. `TK-617` close project-055 with GA readiness recommendation blockers and next-step decision memo
+3. `TK-644` sprint-002 exit acceptance and project-final review handoff
+4. `TK-645` finalize project-055 closeout and activate project-057 primary stream
 
 ## 2. Exit Criteria
 
@@ -19,3 +21,7 @@
 ## 3. Milestones
 
 1. 2026-04-06：作为 `project-055` 的第二个 planned sprint 创建，等待 `sprint-001` 收口后激活。
+2. 2026-04-07：`TK-643 / DA-643` 完成后被激活为当前 primary sprint，`TK-616` 已切换为 `in_progress`。
+3. 2026-04-07：`TK-616 / DA-616` 已完成 dossier 与 cross-surface backlink 对齐，`TK-617 / DA-617` 已完成 prepared completion audit summary 与 decision memo；当前 sprint 的实现边界已完成，下一步进入 sprint-scoped CR loop。
+4. 2026-04-07：`CR-001` 已 resolved，`TK-644 / DA-644` 已完成 sprint-002 exit acceptance；当前 sprint 保留为 `project-055` project-final scoped CR loop 的 active review surface。
+5. 2026-04-07：`CR-002` 已 resolved，`TK-645 / DA-645` 已完成 final closeout write-back；`project-055 / sprint-002` 已完成并移交给 `project-057 / sprint-001`。

@@ -1,8 +1,22 @@
 # checklist
 
-- [ ] TK-592 freeze upgrade workspace migration rollback user-path contract
-  - 2026-04-06：任务创建，状态初始化为 `planned`。
-- [ ] TK-593 implement and document upgrade preview apply rollback plus workspace migration closeout path
-  - 2026-04-06：任务创建，状态初始化为 `planned`。
-- [ ] TK-594 close adopter-facing upgrade and workspace UX with troubleshooting acceptance
-  - 2026-04-06：任务创建，状态初始化为 `planned`。
+- [x] TK-592 freeze upgrade workspace migration rollback user-path contract
+  - 2026-04-06：任务创建，等待 `sprint-001` 收口。
+  - 2026-04-06：状态切换为 `in_progress`，开始冻结 `upgrade / workspace migration / rollback` adopter 用户路径 contract。
+  - 2026-04-06：已产出 `DA-592`，并将 README / adoption playbook / support matrix 的正式用户路径统一为 `workspace dry-run -> execute -> rollback` 与 `upgrade preview -> apply -> rollback`。
+- [x] TK-593 implement and document upgrade preview apply rollback plus workspace migration closeout path
+  - 2026-04-06：任务创建，等待 `TK-592` 完成。
+  - 2026-04-06：`TK-592` 已完成 contract freeze，任务切换为 `in_progress`，开始推进 preview/apply/rollback 与 workspace migration closeout 的实现面。
+  - 2026-04-06：已产出 `DA-593`，并在 repo 外隔离 fixture 中完成 upgrade 与 workspace 全链路 rehearsal，把现有 CLI/runtime 能力收口为正式 adopter path。
+- [x] TK-594 close adopter-facing upgrade and workspace UX with troubleshooting acceptance
+  - 2026-04-06：任务创建，等待 `TK-592 / TK-593` 完成。
+  - 2026-04-06：`TK-592` / `TK-593` 已完成，任务切换为 `in_progress`，开始汇总 troubleshooting guide、acceptance evidence 与 sprint-002 closeout truth。
+  - 2026-04-06：已产出 `DA-594`，把 repo-external rehearsal evidence、rollback hand-off 约束与 adopter troubleshooting guidance 收口到 playbook / support matrix 双语真值面，供 sprint-002 scoped CR loop 直接消费。
+- [x] CR-001 sprint-002-upgrade-workspace-ux-and-rollback-closeout delegated review loop round 1
+  - 2026-04-06：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-06：两位 fresh reviewer 子 agent 均超时 shutdown 且未返回 usable verdict；按放宽策略执行主 agent fallback recheck，并认可 1 条关于 rollback snapshot 分支缺少显式验证覆盖的 finding，状态推进为 `verified`。
+  - 2026-04-06：已补充 rollback snapshot CLI output-contract 覆盖，并重跑 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run check`，状态推进为 `resolved`。
+- [x] TK-637 sprint-002 exit acceptance and sprint-003 activation handoff
+  - 2026-04-06：任务创建并切换为 `in_progress`，开始执行 sprint-002 closeout 与 sprint-003 activation handoff。
+  - 2026-04-06：已完成 `DA-637`、project/sprint/context/history/delivery-registry 写回，并激活 `sprint-003` 与 `TK-595`。
+  - 2026-04-06：已完成 sprint-002 closeout、history/current-context/delivery-registry 写回，并激活 sprint-003 与 TK-595。

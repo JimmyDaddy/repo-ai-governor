@@ -1,6 +1,6 @@
 # project-053-real-adapter-invocation-productization 计划
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-06
 - Stage Mapping: adapter real-invocation rollout
 - Phase Mapping: Claude Code baseline / Codex rollout / Copilot boundary and local-model positioning
@@ -18,19 +18,19 @@
 
 ## 2.1 sprint-001-claude-code-real-invocation-baseline
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 先收口最容易形成真实调用产品路径的 `Claude Code`。
 - Task Package: `TK-598`、`TK-599`、`TK-600`。
 
 ## 2.2 sprint-002-codex-real-invocation-and-cross-tool-routing
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 推进 `Codex` 真实调用，并验证跨工具 routing handoff。
 - Task Package: `TK-601`、`TK-602`、`TK-603`。
 
 ## 2.3 sprint-003-github-copilot-boundary-and-local-model-positioning
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 收口 `GitHub Copilot` 真实路径边界，并明确 `local-model` 的正式 fallback 口径。
 - Task Package: `TK-604`、`TK-605`、`TK-606`。
 
@@ -38,15 +38,19 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 |---|---|---|---|---|---|
-| TK-598 | sprint-001 | freeze Claude Code real invocation config probe timeout and degrade contract | adapter/contract | project-052 closeout recommended | planned |
-| TK-599 | sprint-001 | implement Claude Code real invocation defaultable path with structured parsing and timeout handling | adapter/implementation | TK-598 | planned |
-| TK-600 | sprint-001 | close Claude Code real invocation baseline with verify run and docs evidence | adapter/acceptance | TK-598、TK-599 | planned |
-| TK-601 | sprint-002 | freeze Codex real invocation and cross-tool routing handoff contract | adapter/contract | TK-600 | planned |
-| TK-602 | sprint-002 | implement Codex real invocation fallback and route handoff hardening | adapter/implementation | TK-601 | planned |
-| TK-603 | sprint-002 | close first-batch multi-tool real invocation routing acceptance | adapter/acceptance | TK-601、TK-602 | planned |
-| TK-604 | sprint-003 | freeze GitHub Copilot real invocation boundary and local-model fallback positioning | adapter/product-boundary | TK-603 | planned |
-| TK-605 | sprint-003 | implement Copilot real path degrade handling and local-model support matrix alignment | adapter/implementation/docs | TK-604 | planned |
-| TK-606 | sprint-003 | close real adapter invocation rollout with support matrix and verify evidence refresh | project/closeout | TK-604、TK-605 | planned |
+| TK-598 | sprint-001 | freeze Claude Code real invocation config probe timeout and degrade contract | adapter/contract | project-052 closeout recommended | completed |
+| TK-599 | sprint-001 | implement Claude Code real invocation defaultable path with structured parsing and timeout handling | adapter/implementation | TK-598 | completed |
+| TK-600 | sprint-001 | close Claude Code real invocation baseline with verify run and docs evidence | adapter/acceptance | TK-598、TK-599 | completed |
+| TK-601 | sprint-002 | freeze Codex real invocation and cross-tool routing handoff contract | adapter/contract | TK-600 | completed |
+| TK-602 | sprint-002 | implement Codex real invocation fallback and route handoff hardening | adapter/implementation | TK-601 | completed |
+| TK-603 | sprint-002 | close first-batch multi-tool real invocation routing acceptance | adapter/acceptance | TK-601、TK-602 | completed |
+| TK-604 | sprint-003 | freeze GitHub Copilot real invocation boundary and local-model fallback positioning | adapter/product-boundary | TK-603 | completed |
+| TK-605 | sprint-003 | implement Copilot real path degrade handling and local-model support matrix alignment | adapter/implementation/docs | TK-604 | completed |
+| TK-606 | sprint-003 | close real adapter invocation rollout with support matrix and verify evidence refresh | project/closeout | TK-604、TK-605 | completed |
+| TK-607 | sprint-001 | sprint-001 exit acceptance and sprint-002 handoff readiness | closeout/handoff | TK-598、TK-599、TK-600、CR-001 | completed |
+| TK-608 | sprint-002 | sprint-002 exit acceptance and sprint-003 handoff readiness | closeout/handoff | TK-601、TK-602、TK-603、CR-001、CR-002 | completed |
+| TK-609 | sprint-003 | sprint-003 exit acceptance and project-final review handoff | closeout/handoff | TK-604、TK-605、TK-606、CR-001、CR-002 | completed |
+| TK-610 | sprint-003 | finalize project-053 closeout and activate project-054 primary stream | closeout/handoff | TK-606、TK-609、CR-003 | completed |
 
 ## 4. 依赖产物策略
 
@@ -65,3 +69,10 @@
 
 1. 2026-04-06：基于 `DA-588` 创建 `project-053` planned stream，作为 priority roadmap 的第二顺位 implementation line。
 2. 2026-04-06：已写入 `sprint-001 ~ sprint-003` 与 `TK-598 ~ TK-606` skeleton，待后续按顺序激活。
+3. 2026-04-06：`project-052` final closeout 完成后，`project-053 / sprint-001` 被激活为当前 primary stream，`TK-598` 进入 `in_progress`。
+4. 2026-04-07：`sprint-001` 已通过 `CR-001` clean closeout，`TK-607 / DA-607` 固定下一边界为 `sprint-002 / TK-601`，等待 sprint-001 boundary commit 后激活。
+5. 2026-04-07：`sprint-001` boundary commit `e75028f` 已完成，primary stream 切换到 `sprint-002`，`TK-601` 进入 `in_progress`。
+6. 2026-04-07：`sprint-002` 已完成 accepted finding 修复与 fresh clean recheck，`TK-608 / DA-608` 已完成 sprint closeout，并将下一边界固定为 `sprint-003 / TK-604`，等待 sprint-002 boundary commit 后激活。
+7. 2026-04-07：`sprint-002` boundary commit `7b165f2` 已完成，primary stream 切换到 `sprint-003`，`TK-604` 进入 `in_progress`。
+8. 2026-04-07：`CR-001` 已完成 accepted finding 修复并收口，`CR-002` clean resolved；`TK-609 / DA-609` 已完成 sprint-003 closeout，并将 project-final scoped CR loop 固定为当前 sprint surface 的下一边界。
+9. 2026-04-07：`CR-003` clean resolved；`TK-610 / DA-610` 已完成最终 closeout write-back，`project-053` 正式进入 `completed`，并在此里程碑回链 completion audit summary：`.repo-ai-governor/context/dev/project-053-real-adapter-invocation-productization/project-053-real-adapter-invocation-productization-completion-audit-summary.md`。

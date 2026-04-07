@@ -7,6 +7,11 @@ import {
   ChangeRiskReasonCode,
 } from '@repo-ai-governor/core-change-risk';
 import {
+  ReviewFindingSourceType,
+  ReviewRuleExecutionMode,
+  phaseAReviewRuleRegistry,
+} from '@repo-ai-governor/standards';
+import {
   CLI_REVIEW_FINDING_SEVERITY_PRIORITY,
   CLI_REVIEW_TODO_MARKERS,
   CliReviewFindingRuleId,
@@ -79,6 +84,8 @@ export class CliReviewFindingGenerator {
       case ChangeRiskReasonCode.LOCKFILE_DELTA:
         return this.createFinding({
           ruleId: CliReviewFindingRuleId.LOCKFILE_DELTA,
+          sourceType: ReviewFindingSourceType.RISK_INFERENCE,
+          executionMode: ReviewRuleExecutionMode.DETERMINISTIC,
           severity: CliReviewFindingSeverity.P2,
           file: this.findFirstMatchingPath(changedPaths, (path) => path.endsWith('pnpm-lock.yaml')),
           title: this.localizeText(
@@ -102,6 +109,8 @@ export class CliReviewFindingGenerator {
       case ChangeRiskReasonCode.MIGRATION_DETECTED:
         return this.createFinding({
           ruleId: CliReviewFindingRuleId.MIGRATION_DETECTED,
+          sourceType: ReviewFindingSourceType.RISK_INFERENCE,
+          executionMode: ReviewRuleExecutionMode.DETERMINISTIC,
           severity: CliReviewFindingSeverity.P1,
           file: this.findFirstMatchingPath(
             changedPaths,
@@ -128,6 +137,8 @@ export class CliReviewFindingGenerator {
       case ChangeRiskReasonCode.CI_WORKFLOW_CHANGED:
         return this.createFinding({
           ruleId: CliReviewFindingRuleId.CI_WORKFLOW_CHANGED,
+          sourceType: ReviewFindingSourceType.RISK_INFERENCE,
+          executionMode: ReviewRuleExecutionMode.DETERMINISTIC,
           severity: CliReviewFindingSeverity.P1,
           file: this.findFirstMatchingPath(changedPaths, (path) =>
             path.includes('.github/workflows/'),
@@ -153,6 +164,8 @@ export class CliReviewFindingGenerator {
       case ChangeRiskReasonCode.RELEASE_SCRIPT_CHANGED:
         return this.createFinding({
           ruleId: CliReviewFindingRuleId.RELEASE_SCRIPT_CHANGED,
+          sourceType: ReviewFindingSourceType.RISK_INFERENCE,
+          executionMode: ReviewRuleExecutionMode.DETERMINISTIC,
           severity: CliReviewFindingSeverity.P1,
           file: this.findFirstMatchingPath(changedPaths, (path) =>
             path.includes('scripts/release'),
@@ -178,6 +191,8 @@ export class CliReviewFindingGenerator {
       case ChangeRiskReasonCode.SENSITIVE_PATH_CHANGED:
         return this.createFinding({
           ruleId: CliReviewFindingRuleId.SENSITIVE_PATH_CHANGED,
+          sourceType: ReviewFindingSourceType.RISK_INFERENCE,
+          executionMode: ReviewRuleExecutionMode.DETERMINISTIC,
           severity: CliReviewFindingSeverity.P1,
           file: this.findFirstMatchingPath(changedPaths, (path) =>
             [
@@ -242,7 +257,9 @@ export class CliReviewFindingGenerator {
 
         findings.push(
           this.createFinding({
-            ruleId: CliReviewFindingRuleId.TODO_MARKER,
+            ruleId: CliReviewFindingRuleId.CS_003_UNRESOLVED_MARKERS,
+            sourceType: ReviewFindingSourceType.DETERMINISTIC_RULE,
+            executionMode: ReviewRuleExecutionMode.DETERMINISTIC,
             severity: CliReviewFindingSeverity.P2,
             file: changedPath,
             line: lineIndex + 1,
@@ -285,6 +302,8 @@ export class CliReviewFindingGenerator {
     const primaryCodePath = codePaths[0] ?? changedPaths[0] ?? 'unknown';
     return this.createFinding({
       ruleId: CliReviewFindingRuleId.CODE_CHANGE_WITHOUT_TEST_CHANGE,
+      sourceType: ReviewFindingSourceType.RISK_INFERENCE,
+      executionMode: ReviewRuleExecutionMode.DETERMINISTIC,
       severity: CliReviewFindingSeverity.P2,
       file: primaryCodePath,
       title: this.localizeText(
@@ -309,6 +328,8 @@ export class CliReviewFindingGenerator {
 
   private createFinding(options: {
     ruleId: CliReviewFindingRuleId;
+    sourceType: ReviewFindingSourceType;
+    executionMode: ReviewRuleExecutionMode;
     severity: CliReviewFindingSeverity;
     file: string;
     title: string;
@@ -324,12 +345,26 @@ export class CliReviewFindingGenerator {
       .replace(/^-+/u, '')
       .replace(/-+$/u, '')
       .toLowerCase();
+    const projectedRule = phaseAReviewRuleRegistry.getRule(options.ruleId);
 
     return {
       findingId,
       fingerprint,
       ruleId: options.ruleId,
+      sourceType: options.sourceType,
+      executionMode: options.executionMode,
       severity: options.severity,
+      ...(projectedRule
+        ? {
+            semanticKey: projectedRule.semanticKey,
+            standardsSourceRefs: projectedRule.standardsSourceRefs,
+            ...(projectedRule.projectedPackRefs
+              ? { projectedPackRefs: projectedRule.projectedPackRefs }
+              : {}),
+          }
+        : {
+            standardsSourceRefs: [],
+          }),
       title: options.title,
       file: options.file,
       ...(typeof options.line === 'number' ? { line: options.line } : {}),

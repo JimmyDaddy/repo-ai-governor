@@ -1,8 +1,28 @@
 # checklist
 
-- [ ] TK-613 freeze adopter pilot repository selection and acceptance rubric
-  - 2026-04-06：任务创建，状态初始化为 `planned`。
-- [ ] TK-614 execute pilot-1 install init doctor check verify dry-run rehearsal with timing evidence
-  - 2026-04-06：任务创建，状态初始化为 `planned`。
-- [ ] TK-615 execute pilot-2 upgrade workspace migration rollback rehearsal and capture delta findings
-  - 2026-04-06：任务创建，状态初始化为 `planned`。
+- [x] TK-613 freeze adopter pilot repository selection and acceptance rubric
+  - 2026-04-06：任务创建，等待 `project-055` 激活。
+  - 2026-04-07：`project-054` final closeout 完成后，当前任务已切换为 `in_progress`，作为新的 primary stream 起点。
+  - 2026-04-07：已基于 `project-020`/`project-046` 的历史 pilot 证据与当前仓库状态，正式冻结 `/Users/jimmydaddy/study/playground` 与 `/Users/jimmydaddy/study/react-native-image-marker-1.1.x` 为本轮 pilot 仓库，并将 success rubric 写入 `DA-613`。
+- [x] TK-614 execute pilot-1 install init doctor check verify dry-run rehearsal with timing evidence
+  - 2026-04-06：任务创建，等待 `TK-613` 完成。
+  - 2026-04-07：`TK-613 / DA-613` 已冻结 pilot-1 仓库与 acceptance rubric，当前任务切换为 `in_progress`。
+  - 2026-04-07：已在 `/Users/jimmydaddy/study/playground` 完成 `install -> init -> doctor -> check -> verify --adapters -> run --dry-run --trace` 全链路 rehearsal，6 条命令全部成功，总耗时 `50473ms`。
+  - 2026-04-07：`verify --adapters` 维持 `adapters_status=warn`，但 `required_role_failures=0`；唯一降级是 `reviewer` 从 `claude-code` 回退到 `codex`，因此仍满足 adopter acceptance rubric。
+  - 2026-04-07：`run --dry-run --trace` 产出 `execution_id=cli-run-1775534994155`，`runtime_status=succeeded`，并保留 trace / replay / diagnostics 证据。
+- [x] TK-615 execute pilot-2 upgrade workspace migration rollback rehearsal and capture delta findings
+  - 2026-04-06：任务创建，等待 `TK-613` 完成。
+  - 2026-04-07：`TK-613 / DA-613` 已冻结 pilot-2 边界，当前任务切换为 `in_progress` 并开始 `react-native-image-marker-1.1.x` complex rehearsal。
+  - 2026-04-07：一次误把 `--workspace-root <repo-root>` 传给 `repo_local` 的操作把目标根错误解析成仓库根目录；随后已用现有本地 `react-native-image-marker` clone 的 `origin/1.1.x` 重建 `react-native-image-marker-1.1.x`，并恢复两条 baseline dirty files 以继续本轮 acceptance run。
+  - 2026-04-07：最终 acceptance run 使用默认 `repo_local` 解析语义重新执行 `upgrade preview/apply/rollback` 与 `workspace dry-run/execute/rollback`，恢复后 baseline 的 rerun 全链路成功，总耗时 `5326ms`。
+  - 2026-04-07：`git status --short --branch` 在 execute/rollback 前后保持一致，dirty worktree 仍为 `example/ios/Podfile.lock` 与 `example/react-native.config.js`；`doctor` 在 execute 后切到 `workspaceMode=repo_local`，rollback 后恢复 `tool_managed`。
+  - 2026-04-07：repo-local `.repo-ai-governor` 在 execute 后存在、rollback 后被移除，`scratch_cleanup_status=removed`，说明历史 `workspace_migration_scratch_cleanup_gap` 已不再复现。
+  - 2026-04-07：本任务的成功结论仅覆盖“恢复后 1.1.x baseline 的 rerun”窗口；原冻结 complex pilot worktree 未能在整个执行窗内保持连续不变，这一点已在 `DA-615` 中单独记录。
+- [x] CR-001 sprint-001-real-target-repo-adopter-pilot delegated review loop round 1
+  - 2026-04-07：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-07：fresh reviewer 返回 2 条 actionable findings；主 agent 已完成复核并全部认可，review artifact 已推进到 `verified_code_review_working-tree-20260407-1228.md`。
+  - 2026-04-07：已完成两条 accepted truth-surface 修复，并将 review artifact 推进到 `resolved_code_review_working-tree-20260407-1228.md`。
+- [x] TK-643 sprint-001 exit acceptance and sprint-002 activation handoff
+  - 2026-04-07：任务创建并直接执行 sprint-001 closeout、context/history 写回与 sprint-002 activation handoff。
+  - 2026-04-07：已完成 `DA-643`、project/sprint/context/history 写回，并激活 `sprint-002` 与 `TK-616`。
+  - 2026-04-07：已完成 sprint-001 closeout，current-context 切到 sprint-002，completed-streams-history 已登记 stream-project-055-sprint-001。

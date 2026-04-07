@@ -2856,6 +2856,91 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
     );
   });
 
+  it('aligns adapter invoke timeout with the run-stage timeout budget for baseline prepare stages', async () => {
+    const invokeRequests: Array<{
+      timeoutMs: number;
+      commandArguments: string[];
+      prompt: string;
+    }> = [];
+    const codexExecRunner = vi.fn<CodexExecRunner>().mockImplementation(async (request) => {
+      if (request.operation === AgentCliExecOperation.PROBE) {
+        return {
+          stdout: [
+            '{"type":"thread.started","thread_id":"thread-1"}',
+            '{"type":"item.completed","item":{"id":"item-1","type":"agent_message","text":"OK"}}',
+            '{"type":"turn.completed","usage":{"input_tokens":13,"output_tokens":8}}',
+          ].join('\n'),
+          stderr: '',
+          exitCode: 0,
+          signal: null,
+          elapsedMs: 8,
+        };
+      }
+
+      invokeRequests.push({
+        timeoutMs: request.timeoutMs,
+        commandArguments: [...request.commandArguments],
+        prompt: request.prompt,
+      });
+
+      return {
+        stdout: [
+          '{"type":"thread.started","thread_id":"thread-prepare"}',
+          `{"type":"item.completed","item":{"id":"item-prepare","type":"agent_message","text":"${request.prompt.includes('Stage ID: stage-task-execute') ? 'execute ready' : request.prompt.includes('Stage ID: stage-task-report') ? 'report ready' : 'prepare ready'}"}}`,
+          '{"type":"turn.completed","usage":{"input_tokens":21,"output_tokens":13}}',
+        ].join('\n'),
+        stderr: '',
+        exitCode: 0,
+        signal: null,
+        elapsedMs: 12,
+      };
+    });
+
+    await withRuntimeFixture(
+      async (fixture) => {
+        const runtimeWithOverrides = fixture.runtime as unknown as {
+          collectGitChangedPaths: () => Promise<string[]>;
+        };
+        runtimeWithOverrides.collectGitChangedPaths = async () => [];
+
+        const runResult = await fixture.runtime.execute(CliCommandName.RUN);
+
+        expect(runResult.commandResult.operation).toBe('governance_run');
+        expect(runResult.commandResult.details?.runtime_status).toBe('succeeded');
+        expect(invokeRequests).toHaveLength(3);
+        expect(invokeRequests.map((request) => request.timeoutMs)).toEqual([
+          300000, 300000, 300000,
+        ]);
+        const executeRequest = invokeRequests.find((request) =>
+          request.prompt.includes('Stage ID: stage-task-execute'),
+        );
+        expect(executeRequest?.prompt).toContain('Dry-run fast path instructions:');
+        expect(executeRequest?.prompt).toContain(
+          'Return immediately with a compact JSON object containing stageId, routeKey, phase, dryRun, status, summary, sideEffects, and nextStepRequirements.',
+        );
+        for (const request of invokeRequests) {
+          expect(request.commandArguments).toEqual(
+            expect.arrayContaining([
+              'exec',
+              '--skip-git-repo-check',
+              '--json',
+              '-',
+              '--sandbox',
+              'read-only',
+            ]),
+          );
+        }
+      },
+      {
+        codexExecRunner,
+        runtimeDebugOptions: {
+          dryRun: true,
+          trace: true,
+        },
+      },
+    );
+  });
+
   it('renders assembly check from contract-safe memory context rather than raw recall summary', async () => {
     await withRuntimeFixture(
       async (fixture) => {
@@ -3347,6 +3432,42 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
           adapters: true,
         },
         githubCopilotExecRunner: createGithubCopilotCredentialFailureRunner(),
+      },
+    );
+  });
+
+  it('projects github copilot cli_exec transport truth into verify role details', async () => {
+    const adaptersConfig = createAdaptersConfigFixture();
+    adaptersConfig.roles.push({
+      roleId: 'tester',
+      roleProfileId: DefaultRoleProfileId.TESTER,
+      requiredCapabilities: [AgentCapability.TOOL_CALLING],
+      required: true,
+    });
+    adaptersConfig.routing.roleBindings.tester = {
+      primarySurface: AdapterSurface.GITHUB_COPILOT,
+      fallbackSurfaces: [AdapterSurface.CODEX, AdapterSurface.CLAUDE_CODE],
+    };
+
+    await withRuntimeFixture(
+      async (fixture) => {
+        const verifyResult = await fixture.runtime.execute(CliCommandName.VERIFY);
+        const testerCheck = verifyResult.commandResult.checks?.find(
+          (check) => check.id === 'role_tester',
+        );
+
+        expect(testerCheck?.status).toBe('pass');
+        expect(testerCheck?.detail).toContain('selected=github-copilot');
+        expect(testerCheck?.detail).toContain('transport=cli_exec');
+      },
+      {
+        adaptersConfig,
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          adapters: true,
+        },
       },
     );
   });

@@ -13,6 +13,7 @@ import {
   AdapterTransportKind,
   AdapterVendorBindingKind,
   GovernorErrorCode,
+  LocalModelProvider,
 } from '@repo-ai-governor/shared';
 import { CliAgentOnboardingPreset } from '../../src/constants/cli-agent-onboarding.constant.js';
 import {
@@ -357,6 +358,96 @@ describe('CliAgentOnboardingRuntime', () => {
     ]);
   });
 
+  it('preserves selected tool transport and remote-api config when building connect candidate config', () => {
+    const runtime = new CliAgentOnboardingRuntime();
+    const sourceConfig = createGovernorConfigFixture();
+    sourceConfig.adapters.tools = [
+      {
+        toolId: AdapterSurface.CODEX,
+        enabled: true,
+        availability: AdapterAvailability.AVAILABLE,
+        transport: AdapterTransportKind.REMOTE_API,
+        remoteApi: {
+          provider: AdapterProviderKind.OPENAI,
+          vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+          model: 'gpt-5',
+          credentialEnvVar: 'OPENAI_API_KEY',
+          allowProviderLocalConfig: true,
+        },
+      },
+      {
+        toolId: AdapterSurface.CLAUDE_CODE,
+        enabled: true,
+        availability: AdapterAvailability.AVAILABLE,
+      },
+    ];
+
+    const resolution = runtime.buildConnectCandidateConfig({
+      sourceConfig,
+      presetId: CliAgentOnboardingPreset.MULTI_TOOL_DEFAULT,
+      requestedTools: [AdapterSurface.CODEX],
+      overwrite: true,
+      singleToolAllRoles: false,
+      roleBindingOverrides: [],
+    });
+
+    expect(resolution.candidateAdaptersConfig.tools).toEqual([
+      expect.objectContaining({
+        toolId: AdapterSurface.CODEX,
+        transport: AdapterTransportKind.REMOTE_API,
+        remoteApi: expect.objectContaining({
+          provider: AdapterProviderKind.OPENAI,
+          vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+          model: 'gpt-5',
+          credentialEnvVar: 'OPENAI_API_KEY',
+          allowProviderLocalConfig: true,
+        }),
+      }),
+    ]);
+  });
+
+  it('preserves selected tool local-model config when building connect candidate config', () => {
+    const runtime = new CliAgentOnboardingRuntime();
+    const sourceConfig = createGovernorConfigFixture();
+    sourceConfig.adapters.tools = [
+      {
+        toolId: AdapterSurface.OLLAMA,
+        enabled: true,
+        availability: AdapterAvailability.AVAILABLE,
+        localModel: {
+          provider: LocalModelProvider.OLLAMA,
+          endpoint: 'http://127.0.0.1:11434',
+          model: 'qwen2.5-coder:7b',
+        },
+      },
+      {
+        toolId: AdapterSurface.CODEX,
+        enabled: true,
+        availability: AdapterAvailability.AVAILABLE,
+      },
+    ];
+
+    const resolution = runtime.buildConnectCandidateConfig({
+      sourceConfig,
+      presetId: CliAgentOnboardingPreset.MULTI_TOOL_DEFAULT,
+      requestedTools: [AdapterSurface.OLLAMA],
+      overwrite: true,
+      singleToolAllRoles: false,
+      roleBindingOverrides: [],
+    });
+
+    expect(resolution.candidateAdaptersConfig.tools).toEqual([
+      expect.objectContaining({
+        toolId: AdapterSurface.OLLAMA,
+        localModel: expect.objectContaining({
+          provider: LocalModelProvider.OLLAMA,
+          endpoint: 'http://127.0.0.1:11434',
+          model: 'qwen2.5-coder:7b',
+        }),
+      }),
+    ]);
+  });
+
   it('projects CLI-backed runtime budget defaults into invoke-liveness diagnostics', () => {
     const runtime = new CliAgentOnboardingRuntime();
     const sourceConfig = createGovernorConfigFixture();
@@ -412,5 +503,36 @@ describe('CliAgentOnboardingRuntime', () => {
         }),
       ]),
     );
+  });
+
+  it('projects default cli_exec transport truth for Claude Code without explicit transport config', () => {
+    const runtime = new CliAgentOnboardingRuntime();
+    const sourceConfig = createGovernorConfigFixture();
+
+    const onboardingPayload = runtime.createOnboardingContractPayload({
+      commandName: 'connect',
+      executionId: 'connect-claude-default-transport',
+      workspaceId: 'workspace-1',
+      verificationStatus: CliGovernanceCheckStatus.PASS,
+      nextActions: [],
+      enabledTools: [AdapterSurface.CLAUDE_CODE],
+      adaptersConfig: sourceConfig.adapters,
+      dryRun: true,
+      overwrite: false,
+      singleToolAllRoles: false,
+      diagnosticSummary: 'status=pass',
+    });
+
+    expect(onboardingPayload.tool_transport_matrix).toEqual([
+      expect.objectContaining({
+        tool_id: AdapterSurface.CLAUDE_CODE,
+        transport: AdapterTransportKind.CLI_EXEC,
+        invoke_liveness_diagnostics: expect.objectContaining({
+          transport_kind: AdapterTransportKind.CLI_EXEC,
+          request_timeout_ms: 30000,
+          max_retries: 2,
+        }),
+      }),
+    ]);
   });
 });

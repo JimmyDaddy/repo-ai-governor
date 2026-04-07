@@ -1914,6 +1914,76 @@ describe('CLI output contract integration', () => {
     }
   });
 
+  it('parses upgrade rollback from a rollback snapshot path and keeps json output machine-readable', async () => {
+    const temporaryRepositoryRoot = await createLegacyUpgradeFixtureRepo();
+    const previewIo = createBufferedIo(false, temporaryRepositoryRoot);
+
+    try {
+      const previewExitCode = await runCli(
+        ['node', 'repo-ai-governor', '--locale', 'en-US', '--output', 'json', 'upgrade'],
+        previewIo.io,
+      );
+      const previewPayload = JSON.parse(previewIo.stdoutBuffer.join('')) as {
+        command_result?: {
+          details?: {
+            report_path?: string;
+            rollback_snapshot_path?: string;
+          };
+        };
+      };
+      const reportPath = previewPayload.command_result?.details?.report_path;
+      const rollbackSnapshotPath = previewPayload.command_result?.details?.rollback_snapshot_path;
+      const applyIo = createBufferedIo(false, temporaryRepositoryRoot);
+      const applyExitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'en-US',
+          '--output',
+          'json',
+          'upgrade',
+          'apply',
+          String(reportPath),
+          '--confirm-upgrade',
+          'approve',
+        ],
+        applyIo.io,
+      );
+      const rollbackIo = createBufferedIo(false, temporaryRepositoryRoot);
+      const rollbackExitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'en-US',
+          '--output',
+          'json',
+          'upgrade',
+          'rollback',
+          String(rollbackSnapshotPath),
+        ],
+        rollbackIo.io,
+      );
+      const rollbackPayload = JSON.parse(rollbackIo.stdoutBuffer.join(''));
+
+      expect(previewExitCode).toBe(0);
+      expect(reportPath).toBeTypeOf('string');
+      expect(rollbackSnapshotPath).toBeTypeOf('string');
+      expect(applyExitCode).toBe(0);
+      expect(rollbackExitCode).toBe(0);
+      expect(rollbackIo.stderrBuffer.join('')).toBe('');
+      expect(rollbackPayload.command_result.operation).toBe('schema_upgrade_rollback');
+      expect(rollbackPayload.command_result.details.rollback_source_type).toBe('rollback_snapshot');
+      expect(rollbackPayload.command_result.details.rollback_snapshot_path).toBe(
+        rollbackSnapshotPath,
+      );
+      expect(rollbackPayload.command_result.details.verify_status).toBe('passed');
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+    }
+  });
+
   it('parses plan commit with explicit confirmation and keeps json output machine-readable', async () => {
     const temporaryRepositoryRoot = await createPlanFixtureRepo();
     const previewIo = createBufferedIo(false, temporaryRepositoryRoot);

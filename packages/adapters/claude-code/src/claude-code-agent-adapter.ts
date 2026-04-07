@@ -58,6 +58,8 @@ const CLAUDE_CODE_SURFACE = 'claude-code';
 const CLAUDE_CODE_DIRECT_COMMAND = 'claude';
 const CLAUDE_CODE_FALLBACK_COMMAND = 'claude-code';
 const CLAUDE_CODE_DEFAULT_TIMEOUT_MS = 30000;
+const CLAUDE_CODE_MIN_TIMEOUT_MS = 500;
+const CLAUDE_CODE_MAX_TIMEOUT_MS = 600000;
 const CLAUDE_CODE_REPOSITORY_REVIEW_TIMEOUT_MS = 600000;
 const CLAUDE_CODE_REPOSITORY_REVIEW_PROGRESS_INTERVAL_MS = 15000;
 const CLAUDE_CODE_DEFAULT_PROBE_CACHE_TTL_MS = 30000;
@@ -75,6 +77,18 @@ const CLAUDE_CODE_REMOTE_API_DEFAULT_CREDENTIAL_ENV_VAR = 'ANTHROPIC_API_KEY';
 const CLAUDE_CODE_REMOTE_API_DEFAULT_MAX_RETRIES = 2;
 const CLAUDE_CODE_REMOTE_API_DEFAULT_MAX_TOKENS = 1024;
 const CLAUDE_CODE_REMOTE_API_SSE_EVENT_DELIMITER = '\n\n';
+
+function normalizeClaudeCodeTimeoutMs(timeoutMs: number): number {
+  if (!Number.isFinite(timeoutMs)) {
+    return CLAUDE_CODE_DEFAULT_TIMEOUT_MS;
+  }
+
+  const normalizedTimeoutMs = Math.floor(timeoutMs);
+  return Math.min(
+    CLAUDE_CODE_MAX_TIMEOUT_MS,
+    Math.max(CLAUDE_CODE_MIN_TIMEOUT_MS, normalizedTimeoutMs),
+  );
+}
 
 const CLAUDE_CODE_BASELINE_CAPABILITY_SUPPORT: Record<
   AgentCapability,
@@ -108,6 +122,7 @@ const CLAUDE_CODE_REAL_CAPABILITY_SUPPORT: Record<AgentCapability, AgentCapabili
 interface ClaudeCodeCliParsedOutput {
   responseText: string;
   warnings: string[];
+  structuredResponse?: unknown;
 }
 
 interface ClaudeCodeCliExecutionRequest {
@@ -252,7 +267,9 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
       command: options.command ?? CLAUDE_CODE_DIRECT_COMMAND,
       currentWorkingDirectory: options.currentWorkingDirectory ?? process.cwd(),
       environment: options.environment,
-      requestTimeoutMs: options.requestTimeoutMs ?? CLAUDE_CODE_DEFAULT_TIMEOUT_MS,
+      requestTimeoutMs: normalizeClaudeCodeTimeoutMs(
+        options.requestTimeoutMs ?? CLAUDE_CODE_DEFAULT_TIMEOUT_MS,
+      ),
       probeCacheTtlMs: options.probeCacheTtlMs ?? CLAUDE_CODE_DEFAULT_PROBE_CACHE_TTL_MS,
       maxRetryAttempts: options.maxRetryAttempts ?? DEFAULT_AGENT_CLI_EXEC_MAX_RETRY_ATTEMPTS,
       retryBackoffMs: options.retryBackoffMs ?? DEFAULT_AGENT_CLI_EXEC_RETRY_BACKOFF_MS,
@@ -411,6 +428,11 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
         stageId: request.stageId,
         responseText: parsedOutput.responseText,
         warnings: parsedOutput.warnings,
+        ...(parsedOutput.structuredResponse !== undefined
+          ? {
+              structuredResponse: parsedOutput.structuredResponse,
+            }
+          : {}),
         echoedInput: request.input,
       },
       ...(unsupportedContinuation
@@ -1102,8 +1124,8 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
         supportsAgentInvocationTimeout: true,
         supportsStageTimeoutSignal: true,
         supportsFlowTimeoutSignal: true,
-        minTimeoutMs: 500,
-        maxTimeoutMs: 120000,
+        minTimeoutMs: CLAUDE_CODE_MIN_TIMEOUT_MS,
+        maxTimeoutMs: CLAUDE_CODE_MAX_TIMEOUT_MS,
       },
       cancellation: {
         supportsCancel: supportsCancellation,
@@ -1371,13 +1393,58 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
       );
     }
 
+    const structuredResponse = this.resolveStructuredResponse(responseText);
     return {
       responseText,
       warnings: executionResult.stderr
         .split(/\r?\n/u)
         .map((line) => line.trim())
         .filter((line) => line.length > 0),
+      ...(structuredResponse !== undefined
+        ? {
+            structuredResponse,
+          }
+        : {}),
     };
+  }
+
+  private resolveStructuredResponse(responseText: string): unknown | undefined {
+    const normalizedResponseText = responseText.trim();
+    if (normalizedResponseText.length === 0) {
+      return undefined;
+    }
+
+    const directJsonPayload = this.tryParseJsonValue(normalizedResponseText);
+    if (directJsonPayload !== undefined) {
+      return directJsonPayload;
+    }
+
+    for (const fencedPayload of this.extractFencedJsonPayloads(normalizedResponseText)) {
+      const structuredResponse = this.tryParseJsonValue(fencedPayload);
+      if (structuredResponse !== undefined) {
+        return structuredResponse;
+      }
+    }
+
+    return undefined;
+  }
+
+  private *extractFencedJsonPayloads(responseText: string): Generator<string> {
+    const jsonFencePattern = /```(?:json)?\s*([\s\S]*?)```/giu;
+    for (const match of responseText.matchAll(jsonFencePattern)) {
+      const payload = match[1]?.trim();
+      if (payload) {
+        yield payload;
+      }
+    }
+  }
+
+  private tryParseJsonValue(payloadText: string): unknown | undefined {
+    try {
+      return JSON.parse(payloadText) as unknown;
+    } catch {
+      return undefined;
+    }
   }
 
   private resolveRemoteApiOptions(): ResolvedClaudeCodeRemoteApiOptions | null {
@@ -1418,7 +1485,9 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
       credentialRef: configuredRemoteApi.credentialRef ?? null,
       providerLocalDiscoveryEnabled,
       providerLocalCredentialValue: providerLocalConfig?.apiKey ?? null,
-      requestTimeoutMs: configuredRemoteApi.requestTimeoutMs ?? this.options.requestTimeoutMs,
+      requestTimeoutMs: normalizeClaudeCodeTimeoutMs(
+        configuredRemoteApi.requestTimeoutMs ?? this.options.requestTimeoutMs,
+      ),
       maxRetries: configuredRemoteApi.maxRetries ?? CLAUDE_CODE_REMOTE_API_DEFAULT_MAX_RETRIES,
     };
   }
@@ -1543,6 +1612,11 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
         responseText: response.responseText,
         remoteMessageId: response.responseId,
         vendorBindingKind: remoteApiOptions.vendorBinding,
+        ...(response.structuredResponse !== undefined
+          ? {
+              structuredResponse: response.structuredResponse,
+            }
+          : {}),
         echoedInput: request.input,
       },
       ...(request.continuation
@@ -1787,6 +1861,7 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
   }): Promise<{
     responseId: string | null;
     responseText: string;
+    structuredResponse?: unknown;
     usage?: AgentInvokeStageResult['usage'];
     elapsedMs: number;
   }> {
@@ -1862,9 +1937,15 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
         };
       };
       const responseText = this.extractRemoteApiResponseText(parsedBody);
+      const structuredResponse = this.resolveStructuredResponse(responseText);
       return {
         responseId: parsedBody.id ?? null,
         responseText,
+        ...(structuredResponse !== undefined
+          ? {
+              structuredResponse,
+            }
+          : {}),
         ...(parsedBody.usage
           ? {
               usage: {
@@ -2724,25 +2805,25 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
 
   private resolveInvokeTimeoutMs(request: AgentInvokeStageRequest): number {
     if (typeof request.agentInvocationTimeoutMs === 'number') {
-      return request.agentInvocationTimeoutMs;
+      return normalizeClaudeCodeTimeoutMs(request.agentInvocationTimeoutMs);
     }
 
     if (this.shouldUseRepositoryReviewMode(request)) {
-      return CLAUDE_CODE_REPOSITORY_REVIEW_TIMEOUT_MS;
+      return normalizeClaudeCodeTimeoutMs(CLAUDE_CODE_REPOSITORY_REVIEW_TIMEOUT_MS);
     }
 
-    return this.options.requestTimeoutMs;
+    return normalizeClaudeCodeTimeoutMs(this.options.requestTimeoutMs);
   }
 
   private resolveStreamTimeoutMs(request: AgentStreamEventsRequest): number {
     if (typeof request.agentInvocationTimeoutMs === 'number') {
-      return request.agentInvocationTimeoutMs;
+      return normalizeClaudeCodeTimeoutMs(request.agentInvocationTimeoutMs);
     }
 
     if (this.shouldUseRepositoryReviewMode(request)) {
-      return CLAUDE_CODE_REPOSITORY_REVIEW_TIMEOUT_MS;
+      return normalizeClaudeCodeTimeoutMs(CLAUDE_CODE_REPOSITORY_REVIEW_TIMEOUT_MS);
     }
 
-    return this.options.requestTimeoutMs;
+    return normalizeClaudeCodeTimeoutMs(this.options.requestTimeoutMs);
   }
 }

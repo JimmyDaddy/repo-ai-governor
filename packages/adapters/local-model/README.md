@@ -9,5 +9,6 @@
 
 当前正式口径：
 
-1. `local-model` / `ollama` 已进入 fixture-backed 正式支持矩阵，定位为本地优先或远端 fallback 的正式 surface。
-2. 能力说明必须继续保守，不得把 `tool_calling`、`structured_output`、`confirmation_gate` 误报为与远端主 surface 等价。
+1. `local-model` / `ollama` 已进入 `Fallback-only real-path (local-runtime constrained)` 正式支持矩阵，定位为本地优先或远端 fallback 的正式 surface。
+2. 该 surface 的 probe/invoke 真值依赖 endpoint-backed local runtime，但它不是 promoted primary lane。
+3. 能力说明必须继续保守，不得把 `tool_calling`、`structured_output`、`confirmation_gate` 误报为与远端主 surface 等价。

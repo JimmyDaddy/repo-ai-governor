@@ -42,6 +42,7 @@ When you are about to spawn the reviewer sub-agent, also load:
 2. `scripts/resume-or-bootstrap-cr-round.mjs`
 3. `scripts/render-reviewer-subagent-prompt.mjs`
 4. `scripts/bootstrap-cr-round.mjs`
+5. `scripts/normalize-reviewer-findings.mjs`（当 reviewer 能提供 machine-readable findings 时）
 
 Generated CR task cards and reviewer prompts should stay aligned with this baseline. If you customize required inputs, prefer adding scope-specific docs on top of the generated defaults instead of replacing them wholesale.
 
@@ -228,6 +229,7 @@ The helper will:
 2. derive the enclosing sprint label and canonical `review/` directory
 3. render the reviewer prompt from the reference template
 4. include the declared review surface so the sub-agent stays inside the intended boundary
+5. emit the structured delegated reviewer handoff contract alongside the rendered prompt so the prompt remains a transport view rather than the only fact source
 
 Use `--json` when you want machine-readable output for the next orchestration step.
 
@@ -237,6 +239,7 @@ Preferred pattern:
 2. keep the returned `CR_TASK_ID` and `REPORT_SLUG`
 3. if you later call `render-reviewer-subagent-prompt.mjs`, pass both back explicitly
 4. fall back to `bootstrap-cr-round.mjs` only for advanced/manual orchestration
+5. when the reviewer can return machine-readable findings, normalize them through `normalize-reviewer-findings.mjs` before merging them back into the main-agent triage flow
 
 For commit automation:
 

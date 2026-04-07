@@ -1,5 +1,10 @@
 import { readFile, readdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import {
+  AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY,
+  AgentStageExecutionMode,
+  AgentStageToolUsePolicy,
+} from '@repo-ai-governor/adapter-sdk';
 import type { AdaptersConfig } from '@repo-ai-governor/config';
 import type { MemoryLayeredSnapshotRequest } from '@repo-ai-governor/core-memory';
 import {
@@ -32,6 +37,10 @@ import type {
 const PROCESS_POLICY_RETRY_REF = 'policy/retry-default';
 const PROCESS_POLICY_TIMEOUT_REF = 'policy/timeout-default';
 const PROCESS_POLICY_BUDGET_REF = 'policy/budget-default';
+const TASK_DRIVEN_READ_ONLY_EXECUTION_POLICY = {
+  interactionMode: AgentStageExecutionMode.CHAT_ONLY,
+  toolUsePolicy: AgentStageToolUsePolicy.FORBIDDEN,
+} as const;
 
 /**
  * Owns task-driven `run` assembly so CLI can translate `--task-id` context into process DSL/stage inputs.
@@ -336,12 +345,14 @@ export class CliTaskDrivenRunRuntime {
             assemblyReason === CliTaskDrivenRunAssemblyReason.NO_TASK_ID
               ? CliTaskDrivenRunAssemblyMode.BASELINE
               : CliTaskDrivenRunAssemblyMode.TASK_ID_FALLBACK,
+          [AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY]: TASK_DRIVEN_READ_ONLY_EXECUTION_POLICY,
         },
         [CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS.EXECUTE.nodeId]: {
           phase: 'execute',
         },
         [CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS.REPORT.nodeId]: {
           phase: 'report',
+          [AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY]: TASK_DRIVEN_READ_ONLY_EXECUTION_POLICY,
         },
       },
       taskContext: null,
@@ -456,6 +467,7 @@ export class CliTaskDrivenRunRuntime {
     stageInputs[prepareNode.nodeId ?? CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS.PREPARE.nodeId] = {
       phase: 'prepare',
       ...commonTaskContextPayload,
+      [AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY]: TASK_DRIVEN_READ_ONLY_EXECUTION_POLICY,
     };
 
     let previousNodeId = prepareNode.nodeId ?? CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS.PREPARE.nodeId;
@@ -476,6 +488,7 @@ export class CliTaskDrivenRunRuntime {
       stageInputs[artifactContextNodeId] = {
         phase: 'artifact_context',
         ...commonTaskContextPayload,
+        [AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY]: TASK_DRIVEN_READ_ONLY_EXECUTION_POLICY,
       };
       previousNodeId = artifactContextNodeId;
     }
@@ -512,6 +525,7 @@ export class CliTaskDrivenRunRuntime {
         phase: 'verify',
         verificationRoleProfileId,
         ...commonTaskContextPayload,
+        [AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY]: TASK_DRIVEN_READ_ONLY_EXECUTION_POLICY,
       };
       previousNodeId = verifyNodeId;
     }
@@ -533,6 +547,7 @@ export class CliTaskDrivenRunRuntime {
         reviewRoleProfileId,
         reviewVerifyRoleProfileId,
         ...commonTaskContextPayload,
+        [AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY]: TASK_DRIVEN_READ_ONLY_EXECUTION_POLICY,
       };
       previousNodeId = reviewNodeId;
 
@@ -553,6 +568,7 @@ export class CliTaskDrivenRunRuntime {
         reviewRoleProfileId,
         reviewVerifyRoleProfileId,
         ...commonTaskContextPayload,
+        [AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY]: TASK_DRIVEN_READ_ONLY_EXECUTION_POLICY,
       };
       previousNodeId = reviewVerifyNodeId;
     }
@@ -594,6 +610,7 @@ export class CliTaskDrivenRunRuntime {
       executionRoleProfileId,
       verificationRoleProfileId,
       ...commonTaskContextPayload,
+      [AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY]: TASK_DRIVEN_READ_ONLY_EXECUTION_POLICY,
     };
 
     return {

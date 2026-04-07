@@ -13,3 +13,9 @@
 7. automation inbox / review queue / parallel lane / workspace summary / notification ownership overview
 
 这个包当前不直接引入 Electron runtime，而是先冻结桌面端需要遵守的 host / preload / renderer / utility-process contract，并让 smoke、tests、release verification 都基于这条正式包级 surface 验证。
+
+## Current Non-goals
+
+1. `project-054` 不把 `apps/desktop` 提升为首选 secondary surface；当前策略仍是 `VS Code first / desktop foundation`。
+2. 当前包级 surface 不是独立 packaged desktop product 的正式承诺，也不在本项目中扩张出新的 installer story。
+3. renderer、preload 与 shell 继续只消费 service-owned DTO / query / command seam，不得回退到 CLI 私有状态或本地 shadow truth。

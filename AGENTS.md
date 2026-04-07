@@ -50,6 +50,7 @@
 2. skill 不是默认启动集合；只有当任务明显命中对应工作流时，才按需读取相应 `SKILL.md`，避免上下文重复膨胀。
 3. 当前项目内可直接引用的 skill：
    - 技术方案提升 / draft 转正式：`.codex/skills/technical-solution-promotion/SKILL.md`
+   - 技术方案评审 / draft 评审 / 审批前复核：`.codex/skills/technical-solution-review/SKILL.md`
    - 当前工作区 code review / CR 复核 / CR 修复：`.codex/skills/workspace-code-review-workflow/SKILL.md`
    - 当前工作区 task/sprint/project 执行 + 子 agent 循环 CR：`.codex/skills/workspace-scoped-cr-loop/SKILL.md`
    - 当前工作区收尾 / 提交 / 推送：`.codex/skills/workspace-delivery-finisher/SKILL.md`

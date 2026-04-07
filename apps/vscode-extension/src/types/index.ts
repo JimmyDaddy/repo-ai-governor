@@ -6,6 +6,7 @@ export type {
   VsCodeExtensionContractSnapshot,
   VsCodeExtensionReviewDetailSnapshot,
   VsCodeExtensionSelectionSnapshot,
+  VsCodeExtensionServiceDiagnosticsSnapshot,
   VsCodeExtensionTreeNodeCommandDescriptor,
   VsCodeExtensionTreeNodeDescriptor,
   VsCodeExtensionViewContribution,

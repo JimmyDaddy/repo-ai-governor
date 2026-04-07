@@ -3,6 +3,9 @@ import type {
   OrchestrationExecutionBoardEntry,
   OrchestrationHandoffTarget,
   OrchestrationHitlDecisionOption,
+  OrchestrationServiceHostKind,
+  OrchestrationServiceLifecycleStatus,
+  OrchestrationServiceTransportKind,
 } from '@repo-ai-governor/orchestration-service-client';
 
 export interface VsCodeExtensionTreeNodeCommandDescriptor {
@@ -24,12 +27,22 @@ export interface VsCodeExtensionTreeNodeDescriptor {
   children?: readonly VsCodeExtensionTreeNodeDescriptor[];
 }
 
+export interface VsCodeExtensionServiceDiagnosticsSnapshot {
+  lifecycleStatus: OrchestrationServiceLifecycleStatus;
+  serviceHostKind: OrchestrationServiceHostKind;
+  serviceTransportKind: OrchestrationServiceTransportKind;
+  checkpointCapable: boolean;
+  memoryStoreProviderId?: string;
+  pid?: number;
+}
+
 export interface VsCodeExtensionWorkspaceContextSnapshot {
   workspaceLabel: string;
   workspaceRoot?: string;
   workspaceTrusted: boolean;
   activeEditorPath?: string;
   activeSelectionLabel?: string;
+  serviceHealth?: VsCodeExtensionServiceDiagnosticsSnapshot;
 }
 
 export interface VsCodeExtensionSelectionSnapshot {

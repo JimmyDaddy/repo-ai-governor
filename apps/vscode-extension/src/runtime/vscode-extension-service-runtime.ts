@@ -20,6 +20,7 @@ import { VSCODE_EXTENSION_DEFAULT_EXECUTION_LIMIT } from '../constants/index.js'
 import type {
   VsCodeExtensionReviewDetailSnapshot,
   VsCodeExtensionSelectionSnapshot,
+  VsCodeExtensionServiceDiagnosticsSnapshot,
   VsCodeExtensionWorkspaceContextSnapshot,
 } from '../types/index.js';
 
@@ -80,6 +81,33 @@ export class VsCodeExtensionServiceRuntime {
           }
         : {}),
     };
+  }
+
+  /**
+   * Resolves one workspace-context snapshot plus current service diagnostics when available.
+   * @returns Current workspace/editor facts enriched with service-health metadata.
+   */
+  public async resolveWorkspaceContextSnapshot(): Promise<VsCodeExtensionWorkspaceContextSnapshot> {
+    const workspaceContext = this.buildWorkspaceContextSnapshot();
+    if (!workspaceContext.workspaceRoot) {
+      return workspaceContext;
+    }
+
+    try {
+      const health = await this.getHealth();
+      if (!health) {
+        return workspaceContext;
+      }
+
+      return {
+        ...workspaceContext,
+        serviceHealth: this.createServiceDiagnosticsSnapshot(health),
+      };
+    } catch {
+      // Service-health diagnostics are additive; a transient probe failure must not blank the
+      // editor-local workspace context that the extension can already render safely.
+      return workspaceContext;
+    }
   }
 
   /**
@@ -177,6 +205,7 @@ export class VsCodeExtensionServiceRuntime {
   public async resolveReviewDetailSnapshot(
     selection: VsCodeExtensionSelectionSnapshot,
   ): Promise<VsCodeExtensionReviewDetailSnapshot> {
+    const workspaceContext = await this.resolveWorkspaceContextSnapshot();
     const selectedExecution = await this.resolveExecutionBoardEntry(selection.executionId);
     const artifactPane = selectedExecution
       ? await this.queryArtifactPaneForExecution(
@@ -186,7 +215,7 @@ export class VsCodeExtensionServiceRuntime {
       : undefined;
 
     return {
-      workspaceContext: this.buildWorkspaceContextSnapshot(),
+      workspaceContext,
       ...(selectedExecution
         ? {
             selectedExecution,
@@ -197,6 +226,19 @@ export class VsCodeExtensionServiceRuntime {
             artifactPane,
           }
         : {}),
+    };
+  }
+
+  private createServiceDiagnosticsSnapshot(
+    health: OrchestrationServiceHealthResponse,
+  ): VsCodeExtensionServiceDiagnosticsSnapshot {
+    return {
+      lifecycleStatus: health.lifecycleStatus,
+      serviceHostKind: health.serviceHostKind,
+      serviceTransportKind: health.serviceTransportKind,
+      checkpointCapable: health.checkpointCapable,
+      memoryStoreProviderId: health.memoryProvider?.memoryStoreProviderId,
+      pid: health.pid,
     };
   }
 

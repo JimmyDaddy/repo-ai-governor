@@ -1,6 +1,6 @@
 # sprint-001-review-rule-registry-and-provenance-baseline 计划
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-06
 - Project: `project-057-standards-native-review-engine-productization`
 - Sprint Goal: 冻结 review rule registry、有限值枚举管理、first-phase projected rule subset 与 Phase A 集成验收边界。
@@ -21,3 +21,5 @@
 
 1. 2026-04-06：作为 `technical-solution.standards-native-code-review-engine-follow-up` promotion 的 follow-up stream 创建，当前保持 `planned`。
 2. 2026-04-06：本次拆解把 sprint-001 收口为 Phase A contract/projection/acceptance 冻结窗口。
+3. 2026-04-07：`project-055` final closeout 完成后被激活为当前 primary sprint，`TK-621` 已切换为 `in_progress`。
+4. 2026-04-07：`CR-001` clean `resolved` 后，`TK-624` 已完成 sprint closeout 并激活 `sprint-002 / TK-627`。

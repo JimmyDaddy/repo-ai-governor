@@ -1,3 +1,9 @@
+import {
+  ReviewFindingSourceType,
+  ReviewRuleExecutionMode,
+  ReviewRuleSeverity,
+} from '@repo-ai-governor/standards';
+
 /**
  * Defines review scope modes supported by the CLI review lifecycle.
  */
@@ -25,25 +31,70 @@ export enum CliReviewVerifyDecision {
 }
 
 /**
- * Defines severity levels used by structured review findings.
+ * Defines per-finding verification decisions retained for source-aware closure audit.
  */
-export enum CliReviewFindingSeverity {
-  P0 = 'P0',
-  P1 = 'P1',
-  P2 = 'P2',
-  P3 = 'P3',
+export enum CliReviewFindingVerificationDecision {
+  ACCEPTED = 'accepted',
+  REJECTED = 'rejected',
 }
 
 /**
- * Defines stable finding-rule identifiers emitted by the heuristic review baseline.
+ * Defines matching strategies used by review-verify for different finding provenance groups.
+ */
+export enum CliReviewFindingVerificationMatchStrategy {
+  FINGERPRINT_EXACT = 'fingerprint_exact',
+  RULE_AND_FILE = 'rule_and_file',
+  FILE_AND_RISK_SIGNAL = 'file_and_risk_signal',
+}
+
+/**
+ * Defines the governed coverage buckets used by standards-native review reporting.
+ */
+export enum CliReviewCoverageState {
+  DETERMINISTIC_COVERED = 'deterministic_covered',
+  STANDARDS_GUIDED_COVERED = 'standards_guided_covered',
+  RESIDUAL_GAP = 'residual_gap',
+  MANUAL_ONLY_GAP = 'manual_only_gap',
+}
+
+/**
+ * Defines when delegated review should activate for the current coverage shape.
+ */
+export enum CliDelegatedReviewActivationLevel {
+  OPTIONAL = 'optional',
+  RECOMMENDED = 'recommended',
+  REQUIRED = 'required',
+}
+
+/**
+ * Defines stable rationale ids for delegated-review activation guidance.
+ */
+export enum CliDelegatedReviewActivationReason {
+  NO_DELEGATABLE_GAP = 'no_delegatable_gap',
+  DELEGATABLE_GAP_PRESENT = 'delegatable_gap_present',
+  NON_ALLOW_REQUIRED_ACTION = 'non_allow_required_action',
+  MANUAL_ONLY_GAP_PRESENT = 'manual_only_gap_present',
+}
+
+/**
+ * Re-exports governed source-type values used by structured review findings.
+ */
+export {
+  ReviewFindingSourceType as CliReviewFindingSourceType,
+  ReviewRuleExecutionMode as CliReviewFindingExecutionMode,
+  ReviewRuleSeverity as CliReviewFindingSeverity,
+};
+
+/**
+ * Defines stable rule or classifier identifiers emitted by the CLI review pipeline.
  */
 export enum CliReviewFindingRuleId {
+  CS_003_UNRESOLVED_MARKERS = 'review-rule.cs-003-unresolved-markers',
   LOCKFILE_DELTA = 'lockfile_delta',
   MIGRATION_DETECTED = 'migration_detected',
   CI_WORKFLOW_CHANGED = 'ci_workflow_changed',
   RELEASE_SCRIPT_CHANGED = 'release_script_changed',
   SENSITIVE_PATH_CHANGED = 'sensitive_path_changed',
-  TODO_MARKER = 'todo_marker',
   CODE_CHANGE_WITHOUT_TEST_CHANGE = 'code_change_without_test_change',
 }
 
@@ -59,13 +110,33 @@ export enum CliReviewArtifactId {
 }
 
 /**
+ * Declares the baseline normative inputs that delegated reviewer handoff must keep explicit.
+ */
+export const CLI_REVIEW_REQUIRED_NORMATIVE_INPUTS = [
+  'AGENTS.md',
+  '.repo-ai-governor/context/current-context.md',
+  '.repo-ai-governor/normative_knowledge_sources/normative-loading-manifest.yaml',
+  '.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md',
+  '.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md',
+  '.repo-ai-governor/normative_knowledge_sources/governance/cr-lifecycle-threshold-spec.md',
+  '.repo-ai-governor/normative_knowledge_sources/governance/task-ledger-single-write-source-contract.md',
+  '.repo-ai-governor/normative_knowledge_sources/governance/execution-gate-layering-spec.md',
+  '.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md',
+] as const;
+
+/**
  * Maps lifecycle status to canonical review filename prefixes accepted by governance gates.
  */
 export const CLI_REVIEW_ARTIFACT_FILE_PREFIX_BY_STATUS: Record<CliReviewLifecycleStatus, string> = {
   [CliReviewLifecycleStatus.REVIEW_PENDING]: 'code_review_',
-  [CliReviewLifecycleStatus.VERIFIED]: 'verified_review_',
+  [CliReviewLifecycleStatus.VERIFIED]: 'verified_code_review_',
   [CliReviewLifecycleStatus.RESOLVED]: 'resolved_code_review_',
 };
+
+/**
+ * Lists legacy lifecycle prefixes that remain readable for backward compatibility.
+ */
+export const CLI_REVIEW_LEGACY_ARTIFACT_FILE_PREFIXES = ['verified_review_'] as const;
 
 /**
  * Lists generated path prefixes that should be excluded from working-tree review scope.
@@ -83,9 +154,45 @@ export const CLI_REVIEW_TODO_MARKERS = ['TODO', 'FIXME', 'HACK'] as const;
 /**
  * Defines severity ordering used for stable finding sorting.
  */
-export const CLI_REVIEW_FINDING_SEVERITY_PRIORITY: Record<CliReviewFindingSeverity, number> = {
-  [CliReviewFindingSeverity.P0]: 0,
-  [CliReviewFindingSeverity.P1]: 1,
-  [CliReviewFindingSeverity.P2]: 2,
-  [CliReviewFindingSeverity.P3]: 3,
+export const CLI_REVIEW_FINDING_SEVERITY_PRIORITY: Record<ReviewRuleSeverity, number> = {
+  [ReviewRuleSeverity.P0]: 0,
+  [ReviewRuleSeverity.P1]: 1,
+  [ReviewRuleSeverity.P2]: 2,
+  [ReviewRuleSeverity.P3]: 3,
 };
+
+/**
+ * Declares the current deterministic check ids already wired into native CLI review.
+ */
+export const CLI_REVIEW_SUPPORTED_DETERMINISTIC_CHECK_IDS = [
+  'cli-review.todo-marker-scan',
+] as const;
+
+/**
+ * Narrows CS-033 follow-up to paths that are likely to own user-facing copy.
+ */
+export const CLI_REVIEW_USER_FACING_TEXT_PATH_PATTERNS = [
+  /^apps\/[^/]+\/src\/commands\//u,
+  /^apps\/[^/]+\/src\/(i18n|locales|prompts|ui)\//u,
+  /^packages\/[^/]+\/src\/(i18n|locales|prompts|ui)\//u,
+] as const;
+
+/**
+ * Provides lightweight content hints for changed files that likely own user-facing copy.
+ */
+export const CLI_REVIEW_USER_FACING_TEXT_CONTENT_MARKERS = [
+  'localizeText(',
+  'I18nRuntime',
+  '.t(',
+] as const;
+
+/**
+ * Identifies test-only files that should not trigger user-facing text follow-up on their own.
+ */
+export const CLI_REVIEW_TEST_FILE_PATH_PATTERN =
+  /(?:^test\/|\/test\/|\.test\.ts$|\.integration\.test\.ts$|\.e2e\.test\.ts$|\.contract\.test\.ts$)/u;
+
+/**
+ * Declares the canonical dedupe key strategy shared by hybrid review passes.
+ */
+export const CLI_REVIEW_HYBRID_DEDUPE_STRATEGY = 'ruleId+file+line';

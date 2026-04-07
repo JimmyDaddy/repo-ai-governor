@@ -138,6 +138,9 @@ importers:
       '@repo-ai-governor/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@repo-ai-governor/standards':
+        specifier: workspace:*
+        version: link:../../packages/standards
       commander:
         specifier: ^13.1.0
         version: 13.1.0

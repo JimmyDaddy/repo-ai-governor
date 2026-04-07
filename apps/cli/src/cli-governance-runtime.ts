@@ -3,7 +3,14 @@ import { constants as FsConstants, existsSync } from 'node:fs';
 import { access, mkdir, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { promisify } from 'node:util';
-import { AgentCapability, AgentNetworkMode, AgentRouteRunner } from '@repo-ai-governor/adapter-sdk';
+import {
+  AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY,
+  AgentCapability,
+  AgentNetworkMode,
+  AgentRouteRunner,
+  AgentStageExecutionMode,
+  AgentStageToolUsePolicy,
+} from '@repo-ai-governor/adapter-sdk';
 import { type AdaptersConfig, SchemaValidator } from '@repo-ai-governor/config';
 import { AgentSessionRegistry } from '@repo-ai-governor/core-agent-projection';
 import {
@@ -616,6 +623,7 @@ export class CliGovernanceRuntime {
                   routeRunner,
                   stageContext,
                   runtimeDebugOptions,
+                  runtimeTimeoutOptions,
                 )),
               },
       {
@@ -1921,20 +1929,45 @@ export class CliGovernanceRuntime {
     routeRunner: AgentRouteRunner,
     stageContext: RuntimeStageContext,
     runtimeDebugOptions: CliNormalizedRuntimeDebugOptions,
+    runtimeTimeoutOptions: Pick<
+      ProcessRuntimeFacadeExecuteOptions,
+      'stageTimeoutMs' | 'flowTimeoutMs'
+    >,
   ): Promise<Record<string, unknown>> {
+    const adapterStageInput = {
+      ...stageContext.input,
+      locale: this.options.locale,
+      dryRun: runtimeDebugOptions.dryRun,
+      traceEnabled: runtimeDebugOptions.trace,
+      roleProfileId: stageContext.roleProfileId,
+      nodeId: stageContext.nodeId,
+      ...(runtimeDebugOptions.dryRun &&
+      stageContext.input[AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY] === undefined
+        ? {
+            [AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY]: {
+              interactionMode: AgentStageExecutionMode.CHAT_ONLY,
+              toolUsePolicy: AgentStageToolUsePolicy.FORBIDDEN,
+            },
+          }
+        : {}),
+    };
     const dispatchResult = await routeRunner.dispatchStage({
       processId: stageContext.processId,
       executionId: stageContext.executionId,
       stageId: stageContext.stageId,
       routeKey: stageContext.routeKey,
-      input: {
-        ...stageContext.input,
-        locale: this.options.locale,
-        dryRun: runtimeDebugOptions.dryRun,
-        traceEnabled: runtimeDebugOptions.trace,
-        roleProfileId: stageContext.roleProfileId,
-        nodeId: stageContext.nodeId,
-      },
+      ...(runtimeTimeoutOptions.stageTimeoutMs !== undefined
+        ? {
+            agentInvocationTimeoutMs: runtimeTimeoutOptions.stageTimeoutMs,
+            stageTimeoutMs: runtimeTimeoutOptions.stageTimeoutMs,
+          }
+        : {}),
+      ...(runtimeTimeoutOptions.flowTimeoutMs !== undefined
+        ? {
+            flowTimeoutMs: runtimeTimeoutOptions.flowTimeoutMs,
+          }
+        : {}),
+      input: adapterStageInput,
       runtimeContext: {
         networkMode: runtimeDebugOptions.restrictedNetwork
           ? AgentNetworkMode.RESTRICTED

@@ -8,6 +8,7 @@ export type {
   VsCodeExtensionCommandRequest,
   VsCodeExtensionReviewDetailSnapshot,
   VsCodeExtensionSelectionSnapshot,
+  VsCodeExtensionServiceDiagnosticsSnapshot,
   VsCodeExtensionTreeNodeCommandDescriptor,
   VsCodeExtensionTreeNodeDescriptor,
   VsCodeExtensionWorkspaceContextSnapshot,

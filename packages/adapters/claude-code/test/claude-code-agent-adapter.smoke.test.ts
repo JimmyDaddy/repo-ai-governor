@@ -151,6 +151,8 @@ describe('claude-code-agent-adapter smoke', () => {
     expect(confirmationGate?.supportLevel).toBe(AgentCapabilitySupportLevel.UNSUPPORTED);
     expect(cancellation?.supportLevel).toBe(AgentCapabilitySupportLevel.UNSUPPORTED);
     expect(probeResult.capabilityMatrix.cancellation.supportsCancel).toBe(false);
+    expect(probeResult.capabilityMatrix.timeout.minTimeoutMs).toBe(500);
+    expect(probeResult.capabilityMatrix.timeout.maxTimeoutMs).toBe(600000);
   });
 
   it('accepts trivial punctuation variants in probe health-check responses', async () => {
@@ -208,6 +210,34 @@ describe('claude-code-agent-adapter smoke', () => {
 
     expect(invokeResult.output.adapterSurface).toBe('claude-code');
     expect(invokeResult.output.responseText).toContain('simulated claude code response');
+  });
+
+  it('projects structuredResponse when cli_exec returns raw JSON text', async () => {
+    const adapter = new ClaudeCodeAgentAdapter({
+      executionMode: ClaudeCodeAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner: createClaudeCodeExecRunner(
+        JSON.stringify({
+          status: 'ok',
+          issues: [],
+        }),
+      ),
+    });
+
+    const invokeResult = await adapter.invokeStage({
+      processId: 'process-1',
+      executionId: 'execution-1',
+      stageId: 'stage-1',
+      routeKey: 'codegen',
+      input: {
+        prompt: 'emit structured response',
+      },
+    });
+
+    expect(invokeResult.output.responseText).toBe('{"status":"ok","issues":[]}');
+    expect(invokeResult.output.structuredResponse).toEqual({
+      status: 'ok',
+      issues: [],
+    });
   });
 
   it('returns explicit unsupported continuation truth in cli_exec mode', async () => {
@@ -309,6 +339,57 @@ describe('claude-code-agent-adapter smoke', () => {
     expect(invokeResult.output.responseText).toBe('remote claude response');
     expect(invokeResult.output.remoteMessageId).toBe('msg-invoke');
     expect(fetchImplementation).toHaveBeenCalledTimes(2);
+  });
+
+  it('projects structuredResponse when remote_api returns fenced JSON text', async () => {
+    const fetchImplementation = vi.fn<typeof fetch>().mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () =>
+        JSON.stringify({
+          id: 'msg-invoke',
+          content: [
+            {
+              type: 'text',
+              text: '```json\n{"status":"ok","issues":["none"]}\n```',
+            },
+          ],
+          usage: {
+            input_tokens: 7,
+            output_tokens: 5,
+          },
+        }),
+    } as Response);
+    const adapter = new ClaudeCodeAgentAdapter({
+      executionMode: ClaudeCodeAgentAdapterExecutionMode.REMOTE_API,
+      fetchImplementation,
+      environment: {
+        ANTHROPIC_API_KEY: 'test-key',
+      },
+      remoteApi: {
+        provider: AdapterProviderKind.ANTHROPIC,
+        vendorBinding: AdapterVendorBindingKind.ANTHROPIC_MESSAGES,
+        model: 'claude-sonnet-4-5',
+      },
+    });
+
+    const invokeResult = await adapter.invokeStage({
+      processId: 'process-1',
+      executionId: 'execution-1',
+      stageId: 'stage-1',
+      routeKey: 'codegen',
+      input: {
+        prompt: 'emit structured response',
+      },
+    });
+
+    expect(invokeResult.output.responseText).toBe(
+      '```json\n{"status":"ok","issues":["none"]}\n```',
+    );
+    expect(invokeResult.output.structuredResponse).toEqual({
+      status: 'ok',
+      issues: ['none'],
+    });
   });
 
   it('returns explicit unsupported continuation truth in remote_api mode', async () => {
@@ -771,6 +852,7 @@ describe('claude-code-agent-adapter smoke', () => {
             'Bash(git:*) Bash(rg:*) Bash(sed:*) Bash(cat:*) Bash(ls:*) Bash(find:*) Read Grep Glob LS',
           ]),
         );
+        expect(request.timeoutMs).toBe(600000);
         expect(request.prompt).toContain('repository review stage');
         expect(request.prompt).toContain('帮我 review 一下代码');
         return createClaudeCodeExecRunner('claude review findings')({
@@ -950,6 +1032,54 @@ describe('claude-code-agent-adapter smoke', () => {
       2,
       expect.objectContaining({
         command: 'claude-code',
+      }),
+    );
+  });
+
+  it('clamps requested invoke timeout overrides into the supported contract window', async () => {
+    const execRunner = vi.fn<ClaudeCodeExecRunner>().mockResolvedValue({
+      stdout: 'timeout contract response\n',
+      stderr: '',
+      exitCode: 0,
+      signal: null,
+      elapsedMs: 5,
+    });
+    const adapter = new ClaudeCodeAgentAdapter({
+      executionMode: ClaudeCodeAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner,
+    });
+
+    await adapter.invokeStage({
+      processId: 'process-1',
+      executionId: 'execution-low-timeout',
+      stageId: 'stage-1',
+      routeKey: 'codegen',
+      agentInvocationTimeoutMs: 100,
+      input: {
+        prompt: 'implement feature',
+      },
+    });
+    await adapter.invokeStage({
+      processId: 'process-1',
+      executionId: 'execution-high-timeout',
+      stageId: 'stage-1',
+      routeKey: 'codegen',
+      agentInvocationTimeoutMs: 999999,
+      input: {
+        prompt: 'implement feature',
+      },
+    });
+
+    expect(execRunner).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        timeoutMs: 500,
+      }),
+    );
+    expect(execRunner).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        timeoutMs: 600000,
       }),
     );
   });

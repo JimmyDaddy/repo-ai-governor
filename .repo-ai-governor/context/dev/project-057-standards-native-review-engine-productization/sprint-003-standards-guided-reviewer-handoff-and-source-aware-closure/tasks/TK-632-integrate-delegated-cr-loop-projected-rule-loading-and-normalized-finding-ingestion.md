@@ -1,6 +1,6 @@
 # TK-632 集成 delegated CR loop projected rule loading 与 normalized finding ingestion
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-06
 - Owner: `AI-Agent`
 - Priority: `P1`
@@ -54,8 +54,9 @@
 ## 9. 执行记录
 
 1. 2026-04-06：任务创建，状态初始化为 `planned`。
+2. 2026-04-07：已让 `workspace-scoped-cr-loop` 支持 projected-rules / deterministic-findings / uncovered-rule-ids 进入结构化 handoff contract，并新增 delegated reviewer findings normalizer 作为 normalized ingestion seam。
 
 ## 10. 产出
 
-1. 待执行：delegated CR loop projected rule loading baseline
-2. 待执行：normalized finding ingestion 规则
+1. 已完成：delegated CR loop projected rule loading baseline
+2. 已完成：normalized finding ingestion 规则

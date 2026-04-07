@@ -2,7 +2,12 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 
-import { AgentCapability } from '@repo-ai-governor/adapter-sdk';
+import {
+  AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY,
+  AgentCapability,
+  AgentStageExecutionMode,
+  AgentStageToolUsePolicy,
+} from '@repo-ai-governor/adapter-sdk';
 import type { AdaptersConfig } from '@repo-ai-governor/config';
 import { MemoryManager, MemoryScope } from '@repo-ai-governor/core-memory';
 import {
@@ -263,11 +268,50 @@ describe('CliTaskDrivenRunRuntime', () => {
       expect(assembly.stageInputs['node-task-execute']?.executionRoleProfileId).toBe(
         DefaultRoleProfileId.CODER,
       );
+      expect(
+        assembly.stageInputs['node-task-prepare']?.[AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY],
+      ).toEqual({
+        interactionMode: AgentStageExecutionMode.CHAT_ONLY,
+        toolUsePolicy: AgentStageToolUsePolicy.FORBIDDEN,
+      });
+      expect(
+        assembly.stageInputs['node-artifact-context']?.[AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY],
+      ).toEqual({
+        interactionMode: AgentStageExecutionMode.CHAT_ONLY,
+        toolUsePolicy: AgentStageToolUsePolicy.FORBIDDEN,
+      });
+      expect(
+        assembly.stageInputs['node-task-execute']?.[AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY],
+      ).toBeUndefined();
       expect(assembly.stageInputs['node-task-verify']?.verificationRoleProfileId).toBe(
         DefaultRoleProfileId.VERIFIER,
       );
+      expect(
+        assembly.stageInputs['node-task-verify']?.[AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY],
+      ).toEqual({
+        interactionMode: AgentStageExecutionMode.CHAT_ONLY,
+        toolUsePolicy: AgentStageToolUsePolicy.FORBIDDEN,
+      });
       expect(assembly.stageInputs['node-task-review']?.managedReviewChain).toBe(true);
+      expect(
+        assembly.stageInputs['node-task-review']?.[AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY],
+      ).toEqual({
+        interactionMode: AgentStageExecutionMode.CHAT_ONLY,
+        toolUsePolicy: AgentStageToolUsePolicy.FORBIDDEN,
+      });
       expect(assembly.stageInputs['node-task-review-verify']?.managedReviewChain).toBe(true);
+      expect(
+        assembly.stageInputs['node-task-review-verify']?.[AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY],
+      ).toEqual({
+        interactionMode: AgentStageExecutionMode.CHAT_ONLY,
+        toolUsePolicy: AgentStageToolUsePolicy.FORBIDDEN,
+      });
+      expect(
+        assembly.stageInputs['node-task-report']?.[AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY],
+      ).toEqual({
+        interactionMode: AgentStageExecutionMode.CHAT_ONLY,
+        toolUsePolicy: AgentStageToolUsePolicy.FORBIDDEN,
+      });
     } finally {
       await rm(workspaceRoot, { recursive: true, force: true });
     }
@@ -287,6 +331,21 @@ describe('CliTaskDrivenRunRuntime', () => {
       expect(assembly.assemblyMode).toBe(CliTaskDrivenRunAssemblyMode.TASK_ID_FALLBACK);
       expect(assembly.processDefinition.nodes).toHaveLength(3);
       expect(assembly.taskContext).toBeNull();
+      expect(
+        assembly.stageInputs['node-task-prepare']?.[AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY],
+      ).toEqual({
+        interactionMode: AgentStageExecutionMode.CHAT_ONLY,
+        toolUsePolicy: AgentStageToolUsePolicy.FORBIDDEN,
+      });
+      expect(
+        assembly.stageInputs['node-task-execute']?.[AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY],
+      ).toBeUndefined();
+      expect(
+        assembly.stageInputs['node-task-report']?.[AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY],
+      ).toEqual({
+        interactionMode: AgentStageExecutionMode.CHAT_ONLY,
+        toolUsePolicy: AgentStageToolUsePolicy.FORBIDDEN,
+      });
     } finally {
       await rm(workspaceRoot, { recursive: true, force: true });
     }

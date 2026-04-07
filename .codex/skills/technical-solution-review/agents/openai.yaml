@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tech Solution Review"
+  short_description: "Review draft technical solutions and approval readiness"
+  default_prompt: "Use $technical-solution-review to review a draft technical solution, record approval or required changes, and advance its lifecycle state in this repository."

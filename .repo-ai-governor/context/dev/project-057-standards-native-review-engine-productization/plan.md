@@ -1,6 +1,6 @@
 # project-057-standards-native-review-engine-productization 计划
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-06
 - Stage Mapping: standards-native review engine productization
 - Phase Mapping: review rule registry / provenance-aware findings / standards-guided reviewer handoff / coverage reporting and rollout adoption
@@ -20,44 +20,49 @@
 
 ## 2.1 sprint-001-review-rule-registry-and-provenance-baseline
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 冻结 review rule registry、有限值枚举管理、first-phase projected rule subset 与 Phase A 集成验收边界。
-- Task Package: `TK-621`、`TK-622`、`TK-623`。
+- Task Package: `TK-621`、`TK-622`、`TK-623`、`TK-624`。
 
 ## 2.2 sprint-002-provenance-aware-findings-and-hybrid-review-baseline
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 把 provenance-aware governed findings、artifact rendering 分层与 hybrid review generation baseline 落到正式实现路径。
-- Task Package: `TK-627`、`TK-628`、`TK-629`。
+- Task Package: `TK-627`、`TK-628`、`TK-629`、`TK-646`、`TK-647`。
 
 ## 2.3 sprint-003-standards-guided-reviewer-handoff-and-source-aware-closure
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 收口 standards-guided reviewer handoff、adapter-neutral projection 与 `review-verify` source-aware closure 语义。
-- Task Package: `TK-630`、`TK-631`、`TK-632`。
+- Task Package: `TK-630`、`TK-631`、`TK-632`、`TK-648`。
 
 ## 2.4 sprint-004-coverage-reporting-and-rollout-adoption
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 建立 review coverage metrics、delegated review activation policy 与 project-057 closeout/handoff 基线。
-- Task Package: `TK-633`、`TK-634`、`TK-635`。
+- Task Package: `TK-633`、`TK-634`、`TK-635`、`TK-649`。
 
 ## 3. 任务拆解矩阵（WBS）
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 |---|---|---|---|---|---|
-| TK-621 | sprint-001 | 冻结 standards-native review rule registry 与 finite-set finding taxonomy contract | contract/registry | technical solution promotion accepted | planned |
-| TK-622 | sprint-001 | 冻结 first-phase projected rule subset 与 standards source mapping | contract/projection | TK-621 | planned |
-| TK-623 | sprint-001 | 收口 Phase A integration seam inventory 与 acceptance baseline | planning/acceptance | TK-621、TK-622 | planned |
-| TK-627 | sprint-002 | 实现 provenance-aware finding contract 与 durable projection baseline | runtime/model | TK-621、TK-622 | planned |
-| TK-628 | sprint-002 | 更新 deterministic finding rule projection 与 review artifact rendering sections | runtime/rendering | TK-627 | planned |
-| TK-629 | sprint-002 | 接入 hybrid deterministic-plus-delegated review generation 与 dedupe merge baseline | runtime/orchestration | TK-627、TK-628 | planned |
-| TK-630 | sprint-003 | 定义 standards-guided reviewer handoff contract 与 adapter-neutral projection seam | contract/agent-projection | TK-621、TK-629 | planned |
-| TK-631 | sprint-003 | 实现 review-verify source-aware closure semantics 与 rationale persistence | runtime/review-verify | TK-627、TK-628、TK-630 | planned |
-| TK-632 | sprint-003 | 集成 delegated CR loop projected rule loading 与 normalized finding ingestion | runtime/integration | TK-629、TK-630、TK-631 | planned |
-| TK-633 | sprint-004 | 增加 review rule coverage metrics 与 provenance-aware reporting surface | reporting/metrics | TK-629、TK-631 | planned |
-| TK-634 | sprint-004 | 定义 deterministic coverage incomplete 的 delegated review activation policy | policy/rollout | TK-633 | planned |
-| TK-635 | sprint-004 | 完成 project-057 rollout handoff、adoption evidence 与 closeout baseline | closeout/handoff | TK-633、TK-634 | planned |
+| TK-621 | sprint-001 | 冻结 standards-native review rule registry 与 finite-set finding taxonomy contract | contract/registry | technical solution promotion accepted | completed |
+| TK-622 | sprint-001 | 冻结 first-phase projected rule subset 与 standards source mapping | contract/projection | TK-621 | completed |
+| TK-623 | sprint-001 | 收口 Phase A integration seam inventory 与 acceptance baseline | planning/acceptance | TK-621、TK-622 | completed |
+| TK-624 | sprint-001 | sprint-001 exit acceptance and sprint-002 activation handoff | closeout/handoff | TK-621、TK-622、TK-623、CR-001 | completed |
+| TK-627 | sprint-002 | 实现 provenance-aware finding contract 与 durable projection baseline | runtime/model | TK-621、TK-622 | completed |
+| TK-628 | sprint-002 | 更新 deterministic finding rule projection 与 review artifact rendering sections | runtime/rendering | TK-627 | completed |
+| TK-629 | sprint-002 | 接入 hybrid deterministic-plus-delegated review generation 与 dedupe merge baseline | runtime/orchestration | TK-627、TK-628 | completed |
+| TK-646 | sprint-002 | 创建 technical-solution-review skill workflow 与 approval guardrails | workflow/skill | technical-solution.lifecycle-and-promotion-governance、TK-629 | completed |
+| TK-647 | sprint-002 | sprint-002 exit acceptance and sprint-003 activation handoff | closeout/handoff | TK-627、TK-628、TK-629、TK-646、CR-001、CR-002 | completed |
+| TK-630 | sprint-003 | 定义 standards-guided reviewer handoff contract 与 adapter-neutral projection seam | contract/agent-projection | TK-621、TK-629 | completed |
+| TK-631 | sprint-003 | 实现 review-verify source-aware closure semantics 与 rationale persistence | runtime/review-verify | TK-627、TK-628、TK-630 | completed |
+| TK-632 | sprint-003 | 集成 delegated CR loop projected rule loading 与 normalized finding ingestion | runtime/integration | TK-629、TK-630、TK-631 | completed |
+| TK-648 | sprint-003 | sprint-003 exit acceptance and sprint-004 activation handoff | closeout/handoff | TK-630、TK-631、TK-632、CR-001 | completed |
+| TK-633 | sprint-004 | 增加 review rule coverage metrics 与 provenance-aware reporting surface | reporting/metrics | TK-629、TK-631 | completed |
+| TK-634 | sprint-004 | 定义 deterministic coverage incomplete 的 delegated review activation policy | policy/rollout | TK-633 | completed |
+| TK-635 | sprint-004 | 完成 project-057 rollout handoff、adoption evidence 与 closeout baseline | closeout/handoff | TK-633、TK-634 | completed |
+| TK-649 | sprint-004 | sprint-004 exit acceptance and project-final review activation handoff | closeout/handoff | TK-633、TK-634、TK-635、CR-001 | completed |
 
 ## 4. 依赖产物策略
 
@@ -77,4 +82,16 @@
 
 1. 2026-04-06：`technical-solution.standards-native-code-review-engine-follow-up` 已提升为 active formal direction。
 2. 2026-04-06：已创建 `project-057` planned stream，承接 review-rule registry、provenance-aware finding 与 reviewer handoff follow-up。
-3. 2026-04-06：本次拆解将 `project-057` 从单 sprint 粗骨架扩展为 Phase A-D 对齐的 4 个顺序 sprint 与 12 个可执行任务。
+3. 2026-04-06：本次拆解将 `project-057` 从单 sprint 粗骨架扩展为 Phase A-D 对齐的 4 个顺序 sprint 与 13 个可执行任务。
+4. 2026-04-07：`project-055` final closeout 完成后，`project-057 / sprint-001` 被激活为当前 primary stream，`TK-621` 已切换为 `in_progress`。
+5. 2026-04-07：`sprint-001` 已在 `CR-001` clean `resolved` 后完成 closeout，并将 primary stream 推进到 `sprint-002 / TK-627`。
+6. 2026-04-07：按用户请求补充 `TK-646`，将 technical-solution review workflow skill 化并纳入 `sprint-002` 的治理收口面。
+7. 2026-04-07：`TK-627`、`TK-628`、`TK-629`、`TK-646` 与 `CR-001` 全部进入终态后，已立即创建 `TK-647` 作为 mandatory sprint closeout/handoff 任务。
+8. 2026-04-07：`CR-002` clean `resolved` 后，`TK-647 / DA-647` 已完成 sprint-002 closeout，并将 primary stream 推进到 `sprint-003 / TK-630`。
+9. 2026-04-07：`TK-630`、`TK-631`、`TK-632` 的实现与边界验证已完成，`sprint-003` 准备进入 fresh reviewer CR round。
+10. 2026-04-07：`CR-001` clean `resolved` 后，`TK-648 / DA-648` 已完成 sprint-003 closeout，并将 primary stream 推进到 `sprint-004 / TK-633`。
+11. 2026-04-07：`TK-633`、`TK-634`、`TK-635` 的实现、coverage/activation reporting 与 rollout evidence 已完成，`sprint-004` 准备进入 fresh reviewer CR round。
+12. 2026-04-07：`CR-001` clean `resolved` 后，`TK-649 / DA-649` 已完成 sprint-004 closeout，并将当前 sprint surface 保留为 `project-057` project-final CR loop 的 active closeout surface。
+13. 2026-04-07：`CR-002` 已作为 project-final delegated review round 打开；在该 round 收口前，`sprint-004` 聚合状态回到 `active`，用于承载 project-final CR task 与 review lifecycle。
+14. 2026-04-07：`CR-002` clean `resolved` 后，project-final closeout 已完成；`sprint-004` 恢复为 `completed`，并将 primary stream 切换到 `project-056 / sprint-001`。
+15. 2026-04-07：项目完成态审计摘要已落盘：`project-057-standards-native-review-engine-productization-completion-audit-summary.md`。

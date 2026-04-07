@@ -638,6 +638,56 @@ describe('codex-agent-adapter smoke', () => {
     expect(execRunner).toHaveBeenCalledTimes(2);
   });
 
+  it('adds dry-run fast-path prompt instructions for chat-only stage execution', async () => {
+    const execRunner = vi
+      .fn<CodexExecRunner>()
+      .mockImplementationOnce(createExecRunner('OK'))
+      .mockImplementationOnce(async (request) => {
+        expect(request.commandArguments).toEqual(
+          expect.arrayContaining([
+            'exec',
+            '--skip-git-repo-check',
+            '--json',
+            '-',
+            '--sandbox',
+            'read-only',
+          ]),
+        );
+        expect(request.prompt).toContain('Dry-run fast path instructions:');
+        expect(request.prompt).toContain(
+          'Return immediately with a compact JSON object containing stageId, routeKey, phase, dryRun, status, summary, sideEffects, and nextStepRequirements.',
+        );
+        expect(request.prompt).toContain('Set status to "simulated" and sideEffects to "none".');
+        return createExecRunner('simulated dry-run response')();
+      });
+    const adapter = new CodexAgentAdapter({
+      executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner,
+      currentWorkingDirectory: process.cwd(),
+    });
+
+    await adapter.probe({
+      routeKey: 'cli.adapter.probe.codex',
+    });
+    const invokeResult = await adapter.invokeStage({
+      processId: 'process-1',
+      executionId: 'execution-1',
+      stageId: 'stage-task-execute',
+      routeKey: 'route.task.execute',
+      input: {
+        phase: 'execute',
+        dryRun: true,
+        [AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY]: {
+          interactionMode: AgentStageExecutionMode.CHAT_ONLY,
+          toolUsePolicy: AgentStageToolUsePolicy.FORBIDDEN,
+        },
+      },
+    });
+
+    expect(invokeResult.output.responseText).toBe('simulated dry-run response');
+    expect(execRunner).toHaveBeenCalledTimes(2);
+  });
+
   it('returns explicit unsupported continuation truth in cli_exec mode when reuse is requested', async () => {
     const adapter = new CodexAgentAdapter({
       executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,

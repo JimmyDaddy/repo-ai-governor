@@ -61,7 +61,10 @@ export type { CliWorkflowCommandOptions } from './cli-workflow-command.interface
 export type { CliPlanCommandOptions } from './cli-plan-command.interface.js';
 export type { CliHostCommandOptions } from './cli-host-command.interface.js';
 export type {
+  CliDelegatedReviewRequest,
+  CliHybridReviewContext,
   CliReviewFinding,
+  CliReviewFindingVerificationRecord,
   CliReviewRequestArtifactPayload,
   CliReviewScopeSnapshot,
   CliReviewStreamContext,

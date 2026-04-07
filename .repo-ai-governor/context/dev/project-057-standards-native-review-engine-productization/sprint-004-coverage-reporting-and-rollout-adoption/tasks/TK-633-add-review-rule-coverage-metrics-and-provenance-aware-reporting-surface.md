@@ -1,6 +1,6 @@
 # TK-633 增加 review rule coverage metrics 与 provenance-aware reporting surface
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-06
 - Owner: `AI-Agent`
 - Priority: `P1`
@@ -53,8 +53,15 @@
 ## 9. 执行记录
 
 1. 2026-04-06：任务创建，状态初始化为 `planned`。
+2. 2026-04-07：`TK-648` 完成 sprint-003 closeout 后被激活为 `in_progress`，作为 `project-057 / sprint-004` 的首个执行边界。
+3. 2026-04-07：已在 `CliHybridReviewContext` 中新增 coverage summary，把 deterministic / standards-guided / residual / manual-only 口径写回 canonical review markdown、queued review payload 与 command result details。
+4. 2026-04-07：已通过 `pnpm exec vitest run --config vitest.packages.config.ts apps/cli/test/runtime/cli-hybrid-review-runtime.test.ts apps/cli/test/commands/review-command.test.ts apps/cli/test/commands/review-verify-command.test.ts` 与 `pnpm run build`。
 
 ## 10. 产出
 
-1. 待执行：coverage metrics baseline
-2. 待执行：provenance-aware reporting surface 说明
+1. `apps/cli/src/runtime/review/cli-hybrid-review-runtime.ts`
+2. `apps/cli/src/types/interfaces/cli-review-command.interface.ts`
+3. `apps/cli/src/constants/cli-review.constant.ts`
+4. `apps/cli/src/commands/review-command.ts`
+5. `apps/cli/test/runtime/cli-hybrid-review-runtime.test.ts`
+6. `apps/cli/test/commands/review-command.test.ts`

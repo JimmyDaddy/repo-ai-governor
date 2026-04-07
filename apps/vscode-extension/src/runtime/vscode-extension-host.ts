@@ -43,12 +43,15 @@ export class VsCodeExtensionHost {
       return [...this.presentationBuilder.buildHitlInboxNodes(hitlInbox.pendingDecisions)];
     });
     const workspaceContextProvider = new VsCodeExtensionTreeDataProvider(async () => {
-      const selectedExecution = await this.serviceRuntime.resolveExecutionBoardEntry(
-        this.selectionStore.getSnapshot().executionId,
-      );
+      const [workspaceContext, selectedExecution] = await Promise.all([
+        this.serviceRuntime.resolveWorkspaceContextSnapshot(),
+        this.serviceRuntime.resolveExecutionBoardEntry(
+          this.selectionStore.getSnapshot().executionId,
+        ),
+      ]);
       return [
         ...this.presentationBuilder.buildWorkspaceContextNodes(
-          this.serviceRuntime.buildWorkspaceContextSnapshot(),
+          workspaceContext,
           selectedExecution,
           this.selectionStore.getSnapshot().reviewSourcePath,
         ),

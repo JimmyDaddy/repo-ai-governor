@@ -31,6 +31,7 @@ function parseArgs(argv) {
     deliveryVerification: [],
     outputs: [],
     commitPaths: [],
+    uncoveredRuleIds: [],
     json: false,
     writeTaskCard: false,
     suggestCommit: false,
@@ -171,6 +172,15 @@ function parseArgs(argv) {
       case 'output':
         options.outputs.push(value);
         break;
+      case 'projected-rules-json':
+        options.projectedRulesJson = value;
+        break;
+      case 'deterministic-findings-json':
+        options.deterministicFindingsJson = value;
+        break;
+      case 'uncovered-rule-id':
+        options.uncoveredRuleIds.push(value);
+        break;
       case 'suggested-commit-message':
       case 'commit-message':
         options.suggestedCommitMessage = value;
@@ -193,7 +203,7 @@ function parseArgs(argv) {
 }
 
 function printHelp() {
-  console.log(`Usage:
+  printLine(`Usage:
   node ./.codex/skills/workspace-scoped-cr-loop/scripts/bootstrap-cr-round.mjs \\
     --tasks-dir <sprint-tasks-dir> \\
     --scope-kind <task|sprint|project> \\
@@ -203,6 +213,9 @@ function printHelp() {
     [--round-type <initial|post-fix recheck|project-final>] \\
     [--verification "<command>"]... \\
     [--review-surface "<path-or-slice>"]... \\
+    [--projected-rules-json <path>] \\
+    [--deterministic-findings-json <path>] \\
+    [--uncovered-rule-id <rule-id>]... \\
     [--write-task-card] [--json] [--suggest-commit] [--auto-commit]
 
 High-value flags:
@@ -218,6 +231,10 @@ Notes:
     non-resolved CR task, then the latest active reservation.
   - If you later call render-reviewer-subagent-prompt.mjs, pass through the
     returned --cr-task-id and --report-slug to avoid double allocation.`);
+}
+
+function printLine(value = '') {
+  process.stdout.write(`${value}\n`);
 }
 
 function resolveTaskLedgerMode(options) {
@@ -531,46 +548,46 @@ function analyzeCommitSuggestion(result, options) {
 }
 
 function printCommitSuggestion(commitSuggestion) {
-  console.log('');
-  console.log('--- BEGIN COMMIT PLAN ---');
-  console.log(
+  printLine();
+  printLine('--- BEGIN COMMIT PLAN ---');
+  printLine(
     `COMMIT_READY=${commitSuggestion.available && commitSuggestion.changedFiles.length > 0}`,
   );
-  console.log(`COMMIT_AUTO_ALLOWED=${commitSuggestion.canAutoCommit}`);
-  console.log(`PRE_COMMIT_GATE=${commitSuggestion.preCommitGate}`);
-  console.log(`COMMIT_REASON=${commitSuggestion.reason}`);
+  printLine(`COMMIT_AUTO_ALLOWED=${commitSuggestion.canAutoCommit}`);
+  printLine(`PRE_COMMIT_GATE=${commitSuggestion.preCommitGate}`);
+  printLine(`COMMIT_REASON=${commitSuggestion.reason}`);
 
   if (commitSuggestion.gitRoot) {
-    console.log(`GIT_ROOT=${commitSuggestion.gitRoot}`);
+    printLine(`GIT_ROOT=${commitSuggestion.gitRoot}`);
   }
 
   if (commitSuggestion.branch) {
-    console.log(`GIT_BRANCH=${commitSuggestion.branch}`);
+    printLine(`GIT_BRANCH=${commitSuggestion.branch}`);
   }
 
   if (commitSuggestion.stageCommand) {
-    console.log(`STAGE_COMMAND=${commitSuggestion.stageCommand}`);
+    printLine(`STAGE_COMMAND=${commitSuggestion.stageCommand}`);
   }
 
   if (commitSuggestion.commitCommand) {
-    console.log(`COMMIT_COMMAND=${commitSuggestion.commitCommand}`);
+    printLine(`COMMIT_COMMAND=${commitSuggestion.commitCommand}`);
   }
 
   if (commitSuggestion.changedFiles.length > 0) {
-    console.log('CHANGED_FILES:');
+    printLine('CHANGED_FILES:');
     for (const filePath of commitSuggestion.changedFiles) {
-      console.log(`- ${filePath}`);
+      printLine(`- ${filePath}`);
     }
   }
 
   if (commitSuggestion.outsideOwnedFiles.length > 0) {
-    console.log('OUTSIDE_OWNED_FILES:');
+    printLine('OUTSIDE_OWNED_FILES:');
     for (const filePath of commitSuggestion.outsideOwnedFiles) {
-      console.log(`- ${filePath}`);
+      printLine(`- ${filePath}`);
     }
   }
 
-  console.log('--- END COMMIT PLAN ---');
+  printLine('--- END COMMIT PLAN ---');
 }
 
 function tryAutoCommit(result, commitSuggestion, options) {
@@ -697,24 +714,24 @@ function buildCommitEvidence(result, commitSuggestion, autoCommit, taskLedgerMod
 }
 
 function printTextResult(result, options, commitSuggestion, autoCommit, commitEvidence) {
-  console.log(`CR_TASK_ID=${result.crTaskId}`);
-  console.log(`CR_TASK_ID_SOURCE=${result.crTaskIdSource}`);
+  printLine(`CR_TASK_ID=${result.crTaskId}`);
+  printLine(`CR_TASK_ID_SOURCE=${result.crTaskIdSource}`);
   if (result.crReservationPath) {
-    console.log(`CR_RESERVATION_PATH=${result.crReservationPath}`);
+    printLine(`CR_RESERVATION_PATH=${result.crReservationPath}`);
   }
-  console.log(`ROUND_NUMBER=${result.roundNumber}`);
-  console.log(`REPORT_SLUG=${result.reportSlug}`);
-  console.log(`TASK_CARD_PATH=${result.taskCardPath}`);
-  console.log(`PENDING_REVIEW_PATH=${result.reportPaths.pending}`);
-  console.log(`VERIFIED_REVIEW_PATH=${result.reportPaths.verified}`);
-  console.log(`RESOLVED_REVIEW_PATH=${result.reportPaths.resolved}`);
-  console.log(`SUGGESTED_COMMIT_MESSAGE=${result.suggestedCommitMessage}`);
-  console.log(`REVIEW_SURFACE_COUNT=${result.reviewSurface.length}`);
+  printLine(`ROUND_NUMBER=${result.roundNumber}`);
+  printLine(`REPORT_SLUG=${result.reportSlug}`);
+  printLine(`TASK_CARD_PATH=${result.taskCardPath}`);
+  printLine(`PENDING_REVIEW_PATH=${result.reportPaths.pending}`);
+  printLine(`VERIFIED_REVIEW_PATH=${result.reportPaths.verified}`);
+  printLine(`RESOLVED_REVIEW_PATH=${result.reportPaths.resolved}`);
+  printLine(`SUGGESTED_COMMIT_MESSAGE=${result.suggestedCommitMessage}`);
+  printLine(`REVIEW_SURFACE_COUNT=${result.reviewSurface.length}`);
 
   if (result.reviewSurface.length > 0) {
-    console.log('REVIEW_SURFACE:');
+    printLine('REVIEW_SURFACE:');
     for (const reviewSurfaceEntry of result.reviewSurface) {
-      console.log(`- ${reviewSurfaceEntry}`);
+      printLine(`- ${reviewSurfaceEntry}`);
     }
   }
 
@@ -723,61 +740,65 @@ function printTextResult(result, options, commitSuggestion, autoCommit, commitEv
   }
 
   if (options.autoCommit) {
-    console.log('');
-    console.log('--- BEGIN AUTO COMMIT RESULT ---');
-    console.log(`AUTO_COMMIT_ATTEMPTED=${autoCommit.attempted}`);
-    console.log(`AUTO_COMMIT_CREATED=${autoCommit.committed}`);
-    console.log(`AUTO_COMMIT_REASON=${autoCommit.reason}`);
+    printLine();
+    printLine('--- BEGIN AUTO COMMIT RESULT ---');
+    printLine(`AUTO_COMMIT_ATTEMPTED=${autoCommit.attempted}`);
+    printLine(`AUTO_COMMIT_CREATED=${autoCommit.committed}`);
+    printLine(`AUTO_COMMIT_REASON=${autoCommit.reason}`);
 
     if (autoCommit.commitHash) {
-      console.log(`AUTO_COMMIT_HASH=${autoCommit.commitHash}`);
+      printLine(`AUTO_COMMIT_HASH=${autoCommit.commitHash}`);
     }
 
     if (autoCommit.commitMessage) {
-      console.log(`AUTO_COMMIT_MESSAGE=${autoCommit.commitMessage}`);
+      printLine(`AUTO_COMMIT_MESSAGE=${autoCommit.commitMessage}`);
     }
 
-    console.log('--- END AUTO COMMIT RESULT ---');
+    printLine('--- END AUTO COMMIT RESULT ---');
   }
 
   if (commitEvidence.available) {
-    console.log('');
-    console.log('--- BEGIN CANONICAL LEDGER WRITE-BACK SUGGESTIONS ---');
-    console.log(`COMMIT_REF=${commitEvidence.commitRef}`);
-    console.log(`TASK_LEDGER_MODE=${commitEvidence.taskLedgerMode.id}`);
-    console.log(`TASK_LEDGER_MODE_SOURCE=${commitEvidence.taskLedgerMode.source}`);
-    console.log(`TASK_CARD_EXECUTION_RECORD=${commitEvidence.taskCardExecutionRecord}`);
-    console.log(`CANONICAL_LEDGER_SUMMARY=${commitEvidence.canonicalLedgerSummary}`);
-    console.log(`CANONICAL_LEDGER_VERIFY=${commitEvidence.canonicalLedgerVerify}`);
-    console.log(`DERIVED_LEDGER_FOLLOW_UP=${commitEvidence.derivedLedgerFollowUp}`);
+    printLine();
+    printLine('--- BEGIN CANONICAL LEDGER WRITE-BACK SUGGESTIONS ---');
+    printLine(`COMMIT_REF=${commitEvidence.commitRef}`);
+    printLine(`TASK_LEDGER_MODE=${commitEvidence.taskLedgerMode.id}`);
+    printLine(`TASK_LEDGER_MODE_SOURCE=${commitEvidence.taskLedgerMode.source}`);
+    printLine(`TASK_CARD_EXECUTION_RECORD=${commitEvidence.taskCardExecutionRecord}`);
+    printLine(`CANONICAL_LEDGER_SUMMARY=${commitEvidence.canonicalLedgerSummary}`);
+    printLine(`CANONICAL_LEDGER_VERIFY=${commitEvidence.canonicalLedgerVerify}`);
+    printLine(`DERIVED_LEDGER_FOLLOW_UP=${commitEvidence.derivedLedgerFollowUp}`);
 
     if (commitEvidence.checklistEntry) {
-      console.log(`CHECKLIST_ENTRY=${commitEvidence.checklistEntry}`);
+      printLine(`CHECKLIST_ENTRY=${commitEvidence.checklistEntry}`);
     }
 
     if (commitEvidence.tasksCsvResult) {
-      console.log(`TASKS_CSV_RESULT=${commitEvidence.tasksCsvResult}`);
+      printLine(`TASKS_CSV_RESULT=${commitEvidence.tasksCsvResult}`);
     }
 
     if (commitEvidence.tasksCsvVerify) {
-      console.log(`TASKS_CSV_VERIFY=${commitEvidence.tasksCsvVerify}`);
+      printLine(`TASKS_CSV_VERIFY=${commitEvidence.tasksCsvVerify}`);
     }
 
     if (commitEvidence.warning) {
-      console.log(`TASK_LEDGER_WARNING=${commitEvidence.warning}`);
+      printLine(`TASK_LEDGER_WARNING=${commitEvidence.warning}`);
     }
 
-    console.log('--- END CANONICAL LEDGER WRITE-BACK SUGGESTIONS ---');
+    printLine('--- END CANONICAL LEDGER WRITE-BACK SUGGESTIONS ---');
   }
 
-  console.log('');
-  console.log('--- BEGIN TASK CARD ---');
-  console.log(result.markdown.trimEnd());
-  console.log('--- END TASK CARD ---');
-  console.log('');
-  console.log('--- BEGIN REVIEWER PROMPT ---');
-  console.log(result.prompt);
-  console.log('--- END REVIEWER PROMPT ---');
+  printLine();
+  printLine('--- BEGIN STRUCTURED HANDOFF CONTRACT ---');
+  printLine(JSON.stringify(result.delegatedReviewRequest, null, 2));
+  printLine('--- END STRUCTURED HANDOFF CONTRACT ---');
+  printLine();
+  printLine('--- BEGIN TASK CARD ---');
+  printLine(result.markdown.trimEnd());
+  printLine('--- END TASK CARD ---');
+  printLine();
+  printLine('--- BEGIN REVIEWER PROMPT ---');
+  printLine(result.prompt);
+  printLine('--- END REVIEWER PROMPT ---');
 }
 
 function maybeWriteTaskCard(result, shouldWrite) {
@@ -828,7 +849,7 @@ function main() {
   };
 
   if (options.json) {
-    console.log(JSON.stringify(finalResult, null, 2));
+    printLine(JSON.stringify(finalResult, null, 2));
     return;
   }
 

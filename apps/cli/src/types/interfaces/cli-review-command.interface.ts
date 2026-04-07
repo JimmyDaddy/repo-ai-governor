@@ -1,11 +1,22 @@
 import type { ErrorOutputEnvironment } from '@repo-ai-governor/shared';
 import type {
+  ProjectedReviewRuleBundle,
+  ReviewFindingSourceType,
+  ReviewRuleDefinition,
+  ReviewRuleExecutionMode,
+} from '@repo-ai-governor/standards';
+import type {
   CliReviewLedgerBackfillStatus,
   CliReviewRequestStatus,
 } from '../../constants/cli-governance-runtime.constant.js';
 import type {
+  CliDelegatedReviewActivationLevel,
+  CliDelegatedReviewActivationReason,
+  CliReviewCoverageState,
   CliReviewFindingRuleId,
   CliReviewFindingSeverity,
+  CliReviewFindingVerificationDecision,
+  CliReviewFindingVerificationMatchStrategy,
   CliReviewLifecycleStatus,
   CliReviewScopeMode,
   CliReviewVerifyDecision,
@@ -31,8 +42,13 @@ export interface CliReviewStreamContext {
 export interface CliReviewFinding {
   findingId: string;
   fingerprint: string;
-  ruleId: CliReviewFindingRuleId;
+  ruleId: CliReviewFindingRuleId | string;
   severity: CliReviewFindingSeverity;
+  sourceType?: ReviewFindingSourceType;
+  executionMode?: ReviewRuleExecutionMode;
+  semanticKey?: string;
+  standardsSourceRefs?: string[];
+  projectedPackRefs?: string[];
   title: string;
   file: string;
   line?: number;
@@ -40,6 +56,92 @@ export interface CliReviewFinding {
   impact: string;
   suggestedAction: string;
   evidence: string[];
+  confidence?: number;
+  reviewerRationale?: string;
+}
+
+/**
+ * Describes the hybrid review pipeline context retained for delegated handoff and audit.
+ */
+export interface CliDelegatedReviewRequest {
+  requestId: string;
+  scopeSummary: string;
+  reviewMode: CliReviewScopeMode;
+  reviewSurface: string[];
+  requiredNormativeInputs: string[];
+  projectedRuleBundle: ProjectedReviewRuleBundle;
+  projectedRules: ReviewRuleDefinition[];
+  deterministicFindings: CliReviewFinding[];
+  coverageSummary: CliReviewCoverageSummary;
+  delegatedReviewActivationPolicy: CliDelegatedReviewActivationPolicy;
+  uncoveredRuleIds: string[];
+}
+
+/**
+ * Describes one projected-rule coverage bucket used by reporting surfaces.
+ */
+export interface CliReviewCoverageBucket {
+  state: CliReviewCoverageState;
+  ruleIds: string[];
+  count: number;
+}
+
+/**
+ * Describes aggregate standards-native review coverage for the current scope.
+ */
+export interface CliReviewCoverageSummary {
+  totalApplicableRuleCount: number;
+  deterministicCoveredRuleCount: number;
+  standardsGuidedCoveredRuleCount: number;
+  residualGapRuleCount: number;
+  manualOnlyGapRuleCount: number;
+  deterministicCoveredRuleIds: string[];
+  standardsGuidedCoveredRuleIds: string[];
+  residualGapRuleIds: string[];
+  manualOnlyGapRuleIds: string[];
+  coverageBuckets: CliReviewCoverageBucket[];
+}
+
+/**
+ * Describes whether delegated review should be treated as optional, recommended, or required.
+ */
+export interface CliDelegatedReviewActivationPolicy {
+  level: CliDelegatedReviewActivationLevel;
+  reasonCodes: CliDelegatedReviewActivationReason[];
+  delegatableGapRuleIds: string[];
+  manualOnlyGapRuleIds: string[];
+  manualFollowUpRequired: boolean;
+}
+
+/**
+ * Describes one source-aware per-finding verification record retained for audit.
+ */
+export interface CliReviewFindingVerificationRecord {
+  findingId: string;
+  ruleId: CliReviewFindingRuleId | string;
+  sourceType?: ReviewFindingSourceType;
+  decision: CliReviewFindingVerificationDecision;
+  matchStrategy: CliReviewFindingVerificationMatchStrategy;
+  matchedCurrentFindingId?: string;
+  reviewerRationale?: string;
+  verificationRationale: string;
+}
+
+/**
+ * Describes the hybrid review pipeline context retained for delegated handoff and audit.
+ */
+export interface CliHybridReviewContext {
+  projectedRuleBundle: ProjectedReviewRuleBundle;
+  projectedRules: ReviewRuleDefinition[];
+  deterministicFindings: CliReviewFinding[];
+  standardsGuidedFindings: CliReviewFinding[];
+  riskFindings: CliReviewFinding[];
+  coverageSummary: CliReviewCoverageSummary;
+  delegatedReviewActivationPolicy: CliDelegatedReviewActivationPolicy;
+  uncoveredRuleIds: string[];
+  delegatedReviewEnabled: boolean;
+  dedupeStrategy: string;
+  delegatedReviewRequest: CliDelegatedReviewRequest;
 }
 
 /**
@@ -76,6 +178,8 @@ export interface CliReviewRequestArtifactPayload {
   reviewTaskCardPath?: string;
   scope: CliReviewScopeSnapshot;
   findings: CliReviewFinding[];
+  hybridReviewContext?: CliHybridReviewContext;
+  findingDecisions?: CliReviewFindingVerificationRecord[];
   notes: string[];
   generatedArtifactPaths: string[];
   diagnosticContext: {
@@ -117,6 +221,7 @@ export interface CliReviewVerifyResultArtifactPayload {
   overallDecision: CliReviewVerifyDecision;
   acceptedFindingIds: string[];
   rejectedFindingIds: string[];
+  findingDecisions: CliReviewFindingVerificationRecord[];
   ledgerBackfillPath: string;
   ledgerBackfillStatus: CliReviewLedgerBackfillStatus;
   taskId?: string;
