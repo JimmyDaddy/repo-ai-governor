@@ -1,6 +1,6 @@
 # TK-664 freeze connect doctor verify transcript truth-source contract
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-04-08
 - Owner: `AI-Agent`
 - Priority: `P0`
@@ -53,8 +53,11 @@
 
 1. 2026-04-08：任务创建，状态初始化为 `planned`。
 2. 2026-04-08：`TK-697 / DA-697` 完成 sprint-001 closeout 后，当前任务切换为 `in_progress`，开始冻结 cross-surface adapter truth-source contract。
+3. 2026-04-08：已确认 `verify` diagnostics 的 `tool_matrix.availability_status` 误用了 role-level `pass/warn/fail`，与 `connect / doctor` 共享的 tool probe truth 不一致；当前 contract 统一为“tool availability 只来自 `verification.tools[]` / probe snapshot，role binding judgment 单独保留在 role evaluation surface”。
+4. 2026-04-08：已在 `CliAgentOnboardingRuntime.createVerifyMatrixPayload()` 中冻结该 contract，并补齐 unit/integration regression，任务切换为 `completed`。
 
 ## 10. 产出
 
-1. 待执行：truth-source contract
-2. 待执行：outcome taxonomy
+1. `apps/cli/src/runtime/agent-onboarding-runtime.ts`
+2. `apps/cli/test/runtime/agent-onboarding-runtime.test.ts`
+3. `apps/cli/test/cli-governance-runtime.integration.test.ts`

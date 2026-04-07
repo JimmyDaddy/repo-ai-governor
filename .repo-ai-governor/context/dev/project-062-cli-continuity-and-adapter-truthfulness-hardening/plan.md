@@ -39,9 +39,10 @@
 | TK-662 | sprint-001 | implement provider-native continuation slot lifecycle and fallback-active separation | runtime/implementation | TK-661 | completed |
 | TK-663 | sprint-001 | close continuity hardening with session-shell regression and build evidence | acceptance/closeout | TK-661、TK-662 | completed |
 | TK-697 | sprint-001 | sprint-001 closeout and sprint-002 activation handoff | closeout/handoff | TK-661、TK-662、TK-663、CR-001 | completed |
-| TK-664 | sprint-002 | freeze connect doctor verify transcript truth-source contract | contract/diagnostics | TK-697 | in_progress |
-| TK-665 | sprint-002 | implement adapter probe outcome classification and presenter-safe diagnostics alignment | adapter/implementation | TK-664 | planned |
-| TK-666 | sprint-002 | close CLI truthfulness hardening with cross-adapter evidence refresh | project/closeout | TK-664、TK-665 | planned |
+| TK-664 | sprint-002 | freeze connect doctor verify transcript truth-source contract | contract/diagnostics | TK-697 | completed |
+| TK-665 | sprint-002 | implement adapter probe outcome classification and presenter-safe diagnostics alignment | adapter/implementation | TK-664 | completed |
+| TK-666 | sprint-002 | close CLI truthfulness hardening with cross-adapter evidence refresh | project/closeout | TK-664、TK-665 | completed |
+| TK-698 | sprint-002 | sprint-002 exit acceptance and project-final review activation handoff | closeout/handoff | TK-664、TK-665、TK-666、CR-001、CR-002 | completed |
 
 ## 4. 依赖产物策略
 
@@ -60,3 +61,6 @@
 1. 2026-04-08：`project-072` handoff 后已按用户指定顺序激活 `project-062 / sprint-001`，作为当前 primary stream。
 2. 2026-04-08：当前 worktree 中已有的 CLI continuity / adapter truthfulness 改动已并入 `TK-661 ~ TK-663` 的实现面，先完成 sprint-001 再切到 `sprint-002`。
 3. 2026-04-08：`CR-001` 已完成 accepted truthfulness finding 修复并 clean resolved；`TK-697 / DA-697` 已完成 sprint-001 closeout，并把下一边界固定为 `sprint-002 / TK-664`。
+4. 2026-04-08：`TK-664 / TK-665` 已完成 `verify` tool-matrix truth-source freeze 与 diagnostics alignment；当前 project 活跃边界已切到 `TK-666` 的 evidence refresh / closeout 收口。
+5. 2026-04-08：`TK-666` 已完成 same-window cross-adapter regression、build、package/integration verification，`project-062 / sprint-002` 的实现面已完成，当前进入 sprint-level delegated CR loop。
+6. 2026-04-08：`CR-001 / CR-002` 已完成 delegated sprint review clean closure；`TK-698 / DA-698` 已把 `sprint-002` 收口为 project-final-ready surface，当前下一边界固定为 `project-062` project-final CR loop。

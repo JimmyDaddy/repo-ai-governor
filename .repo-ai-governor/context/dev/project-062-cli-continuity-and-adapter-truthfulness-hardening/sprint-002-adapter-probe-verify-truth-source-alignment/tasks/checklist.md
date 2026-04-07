@@ -1,9 +1,30 @@
 # checklist
 
-- [ ] TK-664 freeze connect doctor verify transcript truth-source contract
+- [x] TK-664 freeze connect doctor verify transcript truth-source contract
   - 2026-04-08：任务创建，状态初始化为 `planned`。
   - 2026-04-08：`TK-697 / DA-697` 完成 sprint-001 closeout 后，当前任务切换为 `in_progress`，开始冻结 cross-surface adapter truth-source contract。
-- [ ] TK-665 implement adapter probe outcome classification and presenter-safe diagnostics alignment
+  - 2026-04-08：已确认 `verify` diagnostics 的 `tool_matrix.availability_status` 误用了 role-level `pass/warn/fail`，与 `connect / doctor` 共享的 tool probe truth 不一致；当前 contract 统一为“tool availability 只来自 `verification.tools[]` / probe snapshot，role binding judgment 单独保留在 role evaluation surface”。
+  - 2026-04-08：已在 `CliAgentOnboardingRuntime.createVerifyMatrixPayload()` 中冻结该 contract，并补齐 unit/integration regression，任务切换为 `completed`。
+- [x] TK-665 implement adapter probe outcome classification and presenter-safe diagnostics alignment
   - 2026-04-08：任务创建，状态初始化为 `planned`。
-- [ ] TK-666 close CLI truthfulness hardening with cross-adapter evidence refresh
+  - 2026-04-08：已将 `verify` 的 `tool_matrix` 拆分为 tool-level `availability_status` 与 role-level `binding_status`，避免 fallback/degraded route judgment 覆盖 probe snapshot 的真实 availability。
+  - 2026-04-08：已补齐 unit + diagnostics artifact integration regression，确认 `fallback` 路径下仍保留 `available` tool truth，同时对外单独暴露 `warn` binding judgment，任务切换为 `completed`。
+- [x] TK-666 close CLI truthfulness hardening with cross-adapter evidence refresh
   - 2026-04-08：任务创建，状态初始化为 `planned`。
+  - 2026-04-08：`TK-664 / TK-665` 已完成 truth-source freeze 与 diagnostics alignment，当前任务切换为 `in_progress`，开始收集 cross-adapter evidence refresh、same-window build/package verification 与 project closeout input。
+  - 2026-04-08：已完成 `apps/cli/test/runtime/agent-onboarding-runtime.test.ts`、`apps/cli/test/cli-governance-runtime.integration.test.ts`、`apps/cli/test/runtime/session-main-supervisor-runtime.test.ts`、`apps/cli/test/runtime/session-shell-transcript-store.test.ts` 与 `packages/adapters/claude-code/test/claude-code-agent-adapter.smoke.test.ts` 的定向回归，确认 continuity truth 与 adapter truth-source diagnostics 在同一窗口内保持一致。
+  - 2026-04-08：已完成 same-window `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1`，当前 sprint 的实现证据齐备，任务切换为 `completed`，下一边界进入 sprint-level delegated CR loop。
+- [x] CR-001 sprint-002-adapter-probe-verify-truth-source-alignment delegated review loop round 1
+  - 2026-04-08：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-08：fresh reviewer sub-agent 返回 2 条 actionable finding，已写入 `code_review_working-tree-20260408-0331.md`，等待主 agent 复核。
+  - 2026-04-08：主 agent 已完成复核，确认 `tool_matrix` 仍混入 rejected route diagnostics，且 fallback availability helper 复写了状态字面量，任务切换为 `verified`。
+  - 2026-04-08：已完成 tool-level diagnostics truth-source 对齐、binding reason 拆分和常量枚举修正，并重新通过 targeted vitest、`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1`，任务切换为 `resolved`。
+- [x] CR-002 sprint-002-adapter-probe-verify-truth-source-alignment delegated review loop round 2
+  - 2026-04-08：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-08：fresh reviewer sub-agent round `CR-002` 未返回 actionable finding，当前轮次直接收口为 `resolved`。
+- [x] TK-698 sprint-002 exit acceptance and project-final review activation handoff
+  - 2026-04-08：在 `TK-664`、`TK-665`、`TK-666`、`CR-001` 与 `CR-002` 全部进入终态后创建本任务。
+  - 2026-04-08：已写入 `DA-698`、project/sprint closeout handoff 与 task-ledger 同步；当前 sprint surface 保留给后续 `project-final` CR loop。
+  - 2026-04-08：已通过 `pnpm run check`，满足 sprint 边界本地 commit 前的最终门禁。
+- [ ] CR-003 project-062-cli-continuity-and-adapter-truthfulness-hardening project delegated review loop round 3
+  - 2026-04-08：任务创建，状态初始化为 `review_pending`。

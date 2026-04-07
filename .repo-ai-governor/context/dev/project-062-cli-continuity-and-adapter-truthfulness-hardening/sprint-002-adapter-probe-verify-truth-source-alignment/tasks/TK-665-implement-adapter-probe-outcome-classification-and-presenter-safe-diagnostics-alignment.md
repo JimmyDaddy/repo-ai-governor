@@ -1,6 +1,6 @@
 # TK-665 implement adapter probe outcome classification and presenter-safe diagnostics alignment
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-08
 - Owner: `AI-Agent`
 - Priority: `P0`
@@ -52,8 +52,11 @@
 ## 9. 执行记录
 
 1. 2026-04-08：任务创建，状态初始化为 `planned`。
+2. 2026-04-08：已将 `verify` 的 `tool_matrix` 拆分为 tool-level `availability_status` 与 role-level `binding_status`，避免 fallback/degraded route judgment 覆盖 probe snapshot 的真实 availability。
+3. 2026-04-08：已补齐 unit + diagnostics artifact integration regression，确认 `fallback` 路径下仍保留 `available` tool truth，同时对外单独暴露 `warn` binding judgment，任务切换为 `completed`。
 
 ## 10. 产出
 
-1. 待执行：adapter outcome classification implementation
-2. 待执行：presenter-safe diagnostics alignment
+1. `apps/cli/src/runtime/agent-onboarding-runtime.ts`
+2. `apps/cli/test/runtime/agent-onboarding-runtime.test.ts`
+3. `apps/cli/test/cli-governance-runtime.integration.test.ts`

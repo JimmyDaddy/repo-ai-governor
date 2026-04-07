@@ -1,4 +1,7 @@
-import { DEFAULT_AGENT_CLI_EXEC_MAX_RETRY_ATTEMPTS } from '@repo-ai-governor/adapter-sdk';
+import {
+  AgentAvailabilityStatus,
+  DEFAULT_AGENT_CLI_EXEC_MAX_RETRY_ATTEMPTS,
+} from '@repo-ai-governor/adapter-sdk';
 import type { AdaptersConfig, GovernorConfig } from '@repo-ai-governor/config';
 import {
   AdapterAvailability,
@@ -11,7 +14,7 @@ import {
   CLI_AGENT_ONBOARDING_SCHEMA_VERSION,
   CliAgentOnboardingPreset,
 } from '../constants/cli-agent-onboarding.constant.js';
-import type { CliGovernanceCheckStatus } from '../constants/cli-governance-runtime.constant.js';
+import { CliGovernanceCheckStatus } from '../constants/cli-governance-runtime.constant.js';
 import type { CliConnectRoleBindingOverride } from '../types/interfaces/cli-runtime-debug.interface.js';
 import type { CliAdapterVerificationResolution } from '../types/interfaces/index.js';
 
@@ -139,6 +142,9 @@ export class CliAgentOnboardingRuntime {
     const configuredToolById = new Map(
       (options.adaptersConfig.tools ?? []).map((tool) => [tool.toolId, tool]),
     );
+    const verificationToolById = new Map(
+      options.verification.tools.map((tool) => [tool.toolId, tool]),
+    );
     return {
       execution_id: options.executionId,
       summary: options.verification.overallStatus,
@@ -147,33 +153,48 @@ export class CliAgentOnboardingRuntime {
         adaptersConfig: options.adaptersConfig,
         verification: options.verification,
       }),
-      tool_matrix: options.verification.roleEvaluations.map((roleEvaluation) => ({
-        tool: roleEvaluation.selectedSurface ?? roleEvaluation.primarySurface,
-        surface: roleEvaluation.selectedSurface ?? roleEvaluation.primarySurface,
-        role_profile_id: roleEvaluation.roleProfileId,
-        availability_status: roleEvaluation.status,
-        capability_support:
-          roleEvaluation.unsupportedCapabilities.length > 0
-            ? 'unsupported'
-            : roleEvaluation.degradedCapabilities.length > 0
-              ? 'degraded'
-              : 'supported',
-        capability_gap: [...roleEvaluation.unsupportedCapabilities],
-        route_coverage: [
-          roleEvaluation.primarySurface,
-          ...(options.adaptersConfig.routing.roleBindings[roleEvaluation.roleId]
-            ?.fallbackSurfaces ?? []),
-        ],
-        invoke_liveness_diagnostics: this.createInvokeLivenessDiagnosticsPayload({
-          configuredTool: configuredToolById.get(
-            roleEvaluation.selectedSurface ?? roleEvaluation.primarySurface,
-          ),
-          healthCheck: roleEvaluation.healthCheck,
-          unavailableReasons: roleEvaluation.unavailableReasons,
-          failureAttributions: roleEvaluation.failureAttributions,
-        }),
-        next_action: options.verification.nextActions[0] ?? null,
-      })),
+      tool_matrix: options.verification.roleEvaluations.map((roleEvaluation) => {
+        const resolvedSurface = roleEvaluation.selectedSurface ?? roleEvaluation.primarySurface;
+        const verificationTool = verificationToolById.get(resolvedSurface);
+        const toolHealthCheck = verificationTool?.healthCheck ?? roleEvaluation.healthCheck;
+        const toolUnavailableReasons =
+          verificationTool?.unavailableReasons ?? roleEvaluation.unavailableReasons;
+        const toolFailureAttributions =
+          verificationTool?.failureAttributions ?? roleEvaluation.failureAttributions;
+
+        return {
+          tool: resolvedSurface,
+          surface: resolvedSurface,
+          role_profile_id: roleEvaluation.roleProfileId,
+          availability_status:
+            verificationTool?.availabilityStatus ??
+            this.resolveFallbackAvailabilityStatus(roleEvaluation) ??
+            null,
+          binding_status: roleEvaluation.status,
+          capability_support:
+            roleEvaluation.unsupportedCapabilities.length > 0
+              ? 'unsupported'
+              : roleEvaluation.degradedCapabilities.length > 0
+                ? 'degraded'
+                : 'supported',
+          selected_by: roleEvaluation.selectedBy,
+          binding_unavailable_reasons: [...roleEvaluation.unavailableReasons],
+          binding_failure_attributions: [...roleEvaluation.failureAttributions],
+          capability_gap: [...roleEvaluation.unsupportedCapabilities],
+          route_coverage: [
+            roleEvaluation.primarySurface,
+            ...(options.adaptersConfig.routing.roleBindings[roleEvaluation.roleId]
+              ?.fallbackSurfaces ?? []),
+          ],
+          invoke_liveness_diagnostics: this.createInvokeLivenessDiagnosticsPayload({
+            configuredTool: configuredToolById.get(resolvedSurface),
+            healthCheck: toolHealthCheck,
+            unavailableReasons: toolUnavailableReasons,
+            failureAttributions: toolFailureAttributions,
+          }),
+          next_action: options.verification.nextActions[0] ?? null,
+        };
+      }),
       role_binding_matrix: options.verification.roleEvaluations.map((roleEvaluation) => ({
         role_profile_id: roleEvaluation.roleProfileId,
         primary_tool: roleEvaluation.primarySurface,
@@ -303,6 +324,23 @@ export class CliAgentOnboardingRuntime {
       unavailable_reasons: [...(options.unavailableReasons ?? [])],
       failure_attributions: [...(options.failureAttributions ?? [])],
     };
+  }
+
+  private resolveFallbackAvailabilityStatus(
+    roleEvaluation: CliAdapterVerificationResolution['roleEvaluations'][number],
+  ): AgentAvailabilityStatus {
+    if (
+      roleEvaluation.status === CliGovernanceCheckStatus.FAIL ||
+      roleEvaluation.selectedSurface === null
+    ) {
+      return AgentAvailabilityStatus.UNAVAILABLE;
+    }
+
+    if (roleEvaluation.status === CliGovernanceCheckStatus.WARN) {
+      return AgentAvailabilityStatus.DEGRADED;
+    }
+
+    return AgentAvailabilityStatus.AVAILABLE;
   }
 
   private resolveToolTransportKind(

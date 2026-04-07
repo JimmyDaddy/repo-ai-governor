@@ -1,6 +1,6 @@
 # TK-666 close CLI truthfulness hardening with cross-adapter evidence refresh
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-08
 - Owner: `AI-Agent`
 - Priority: `P0`
@@ -52,8 +52,16 @@
 ## 9. 执行记录
 
 1. 2026-04-08：任务创建，状态初始化为 `planned`。
+2. 2026-04-08：`TK-664 / TK-665` 已完成 truth-source freeze 与 diagnostics alignment，当前任务切换为 `in_progress`，开始收集 cross-adapter evidence refresh、same-window build/package verification 与 project closeout input。
+3. 2026-04-08：已完成 `apps/cli/test/runtime/agent-onboarding-runtime.test.ts`、`apps/cli/test/cli-governance-runtime.integration.test.ts`、`apps/cli/test/runtime/session-main-supervisor-runtime.test.ts`、`apps/cli/test/runtime/session-shell-transcript-store.test.ts` 与 `packages/adapters/claude-code/test/claude-code-agent-adapter.smoke.test.ts` 的定向回归，确认 continuity truth 与 adapter truth-source diagnostics 在同一窗口内保持一致。
+4. 2026-04-08：已完成 same-window `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1`，当前 sprint 的实现证据齐备，任务切换为 `completed`，下一边界进入 sprint-level delegated CR loop。
 
 ## 10. 产出
 
-1. 待执行：cross-adapter evidence refresh
-2. 待执行：project closeout recommendation
+1. `apps/cli/src/runtime/agent-onboarding-runtime.ts`
+2. `apps/cli/test/runtime/agent-onboarding-runtime.test.ts`
+3. `apps/cli/test/cli-governance-runtime.integration.test.ts`
+4. same-window verification: `pnpm exec vitest run apps/cli/test/runtime/agent-onboarding-runtime.test.ts apps/cli/test/cli-governance-runtime.integration.test.ts apps/cli/test/runtime/session-main-supervisor-runtime.test.ts apps/cli/test/runtime/session-shell-transcript-store.test.ts packages/adapters/claude-code/test/claude-code-agent-adapter.smoke.test.ts --maxWorkers=1 --maxConcurrency=1`
+5. same-window verification: `pnpm run build`
+6. same-window verification: `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
+7. same-window verification: `pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1`
