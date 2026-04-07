@@ -506,15 +506,19 @@ solutions:
     title: Adopter productization priority roadmap based on current surface status
     status: active
     owner: runtime
-    version: v1
+    version: v2
     scope: cross-cutting
     draft_paths:
       - .repo-ai-governor/draft/repo-ai-governor-next-priority-roadmap-based-on-current-surface-status.md
       - .repo-ai-governor/draft/repo-ai-governor-priority-roadmap-project-sprint-task-package-proposal.md
+      - .repo-ai-governor/draft/repo-ai-governor-current-app-feature-implementation-vs-baseline-priority-assessment.md
+      - .repo-ai-governor/draft/repo-ai-governor-current-surface-gap-guide-project-sprint-task-decomposition.md
     review_paths:
       - .repo-ai-governor/context/dev/project-051-priority-roadmap-promotion-and-decomposition/sprint-001-promotion-and-followup-decomposition/review/resolved_code_review_tk-586-588-priority-roadmap-promotion-and-decomposition.md
+      - .repo-ai-governor/context/dev/project-072-current-surface-priority-promotion-and-decomposition/sprint-001-promotion-and-formal-followup-decomposition/review/resolved_code_review_tk-694-696-current-surface-priority-promotion-and-decomposition.md
     final_paths:
       - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/adopter-productization-priority-and-surface-sequencing.md
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/current-surface-baseline-classification-and-followup-decomposition.md
     target_module_ids:
       - runtime.governance-clients
     north_star_refs:
@@ -522,9 +526,9 @@ solutions:
       - overall.graph-first-runtime
       - architecture.runtime-boundary
       - architecture.governance-boundary
-    approved_at: 2026-04-06
+    approved_at: 2026-04-08
     approved_by: User
-    activated_at: 2026-04-06
+    activated_at: 2026-04-08
     supersedes: []
 
   - solution_id: technical-solution.governance-surface-clients

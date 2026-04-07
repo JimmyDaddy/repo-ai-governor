@@ -2,7 +2,7 @@
 
 - 文档版本：v0.3
 - 状态：执行中（MVP 已完成，P1 深化中）
-- 日期：2026-04-06
+- 日期：2026-04-08
 - 暂定产品名：Repo AI Governor
 
 ## 0. v0.3 更新说明
@@ -21,6 +21,7 @@
 12. 明确当前 Stage 9 follow-up 属于工具级投产与自治收口 overlay：重点收敛真实调用、任务驱动编排、HITL 决策回灌、受控交付演练与黑盒稳定性，不改变产品仍以目标仓库本地治理为主的边界。
 13. 明确编排运行时演进方向：采用 graph-first orchestration backend，CLI 与未来桌面端共用本地 orchestration service，且 `workspace` 下治理产物继续作为 canonical source。
 14. 明确方案层模块化方向：总技术方案保持北极星索引，模块细节以下钻 `module registry + module overview + contract` 结构按需加载，并通过 impact classification 维持同步约束。
+15. 明确 host-native ergonomics carry slot：首批入口除统一规范注入外，还需显式承载 plugin / skill / agent / hooks / MCP 等宿主原生资产的生命周期与 adopter consumption support truth。
 
 ## 1. 产品概述
 
@@ -117,6 +118,8 @@ Repo AI Governor 是一个可通过 npm 安装的 AI 开发治理工具，用于
 ### 场景 5：跨工具一致治理
 
 同一仓库在 Cursor、VS Code、Codex、Claude Code、Cline、Roo Code 等入口中，都能读取统一规范并表现出一致行为。
+
+对已正式支持的入口，用户还应能明确知道对应的 host-native assets 是什么、如何应用/校验/升级，以及哪些只属于 baseline 或 follow-up。
 
 ### 场景 6：评审复核升级闭环
 
@@ -372,11 +375,19 @@ AI 先完成方案与实现，再进入评审 Agent 与复核 Agent 的循环；
    - Codex / Codex CLI
    - GitHub Copilot / GitHub Copilot CLI
    - Claude Code
-7. 适配器需声明能力矩阵（是否支持工具调用、结构化输出、并行任务、流式输出等），供编排层做策略降级。
-8. 当某工具不支持某类能力时，系统应自动降级或切换代理策略，而不是静默失败。
-9. 支持网络受限模式（restricted network mode）：
+7. 对首批正式支持入口，除统一规范注入外，还必须显式支持 target-specific host-native ergonomics 资产治理，至少覆盖以下一类或多类：
+   - project-local assets
+   - installable plugin bundles
+   - skills / agents
+   - hooks / subagents
+   - MCP bridge / manifest
+8. 这些 host-native 资产必须具备可解释的 `export / apply / verify / upgrade` 生命周期与 support-truth contract，避免停留在“生成过一次但没有后续承载”的状态。
+9. host-native 资产属于 adopter-facing distribution artifact，不得反向替代 workspace canonical truth；运行时事实源仍以 workspace 下的 `context / tasks / review / audit` 为准。
+10. 适配器需声明能力矩阵（是否支持工具调用、结构化输出、并行任务、流式输出等），供编排层做策略降级。
+11. 当某工具不支持某类能力时，系统应自动降级或切换代理策略，而不是静默失败。
+12. 支持网络受限模式（restricted network mode）：
    - 在无法访问外部模型服务时，仍可执行本地规则检查、流程编排与产物台账回写。
-10. 支持本地模型适配路径（例如 Ollama 类本地推理入口）作为受限网络场景的可选执行面。
+13. 支持本地模型适配路径（例如 Ollama 类本地推理入口）作为受限网络场景的可选执行面。
 
 ### 8.8 多语言支持
 
@@ -700,7 +711,7 @@ AI 先完成方案与实现，再进入评审 Agent 与复核 Agent 的循环；
 
 ### 里程碑 4：主流工具适配
 
-目标：接入多个主流 AI 开发入口，统一规范注入体验。
+目标：接入多个主流 AI 开发入口，统一规范注入体验，并明确各入口 host-native assets 的支持边界与升级消费路径。
 
 ### 里程碑 5：自动模式上线
 
@@ -738,9 +749,10 @@ AI 先完成方案与实现，再进入评审 Agent 与复核 Agent 的循环；
 支持策略如下：
 
 1. 优先支持“规范注入”和“流程约束”能力。
-2. 通过适配器对不同工具做差异化兼容，不要求底层实现完全一致。
-3. 在执行计划中单列“后续适配路线图”，提前规划更多 IDE、CLI Agent 和 API 驱动入口。
-4. 后续扩展应优先复用统一适配器接口，避免为单个工具做一次性实现。
+2. 首批支持口径必须同时声明 `connect / doctor / verify` onboarding 与 host-native distribution / verify / upgrade / support-truth 边界，不能只写“可注入规范”。
+3. 通过适配器对不同工具做差异化兼容，不要求底层实现完全一致。
+4. 在执行计划中单列“后续适配路线图”，提前规划更多 IDE、CLI Agent 和 API 驱动入口。
+5. 后续扩展应优先复用统一适配器接口，避免为单个工具做一次性实现。
 
 ### 17.3 规范插槽：默认声明式，补充脚本扩展
 
