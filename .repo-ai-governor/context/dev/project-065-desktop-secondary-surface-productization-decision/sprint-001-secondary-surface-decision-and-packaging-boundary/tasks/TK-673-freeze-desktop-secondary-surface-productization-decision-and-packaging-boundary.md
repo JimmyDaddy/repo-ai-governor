@@ -1,6 +1,6 @@
 # TK-673 freeze desktop secondary-surface productization decision and packaging boundary
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-04-08
 - Owner: `AI-Agent`
 - Priority: `P1`
@@ -52,6 +52,7 @@
 ## 9. 执行记录
 
 1. 2026-04-08：任务创建，状态初始化为 `planned`。
+2. 2026-04-08：`project-064` final closeout 已完成，当前任务切换为 `in_progress`，开始冻结 desktop secondary-surface decision、packaging boundary 与 public support-truth contract。
 
 ## 10. 产出
 

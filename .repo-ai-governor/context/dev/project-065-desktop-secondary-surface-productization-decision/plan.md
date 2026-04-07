@@ -1,6 +1,6 @@
 # project-065-desktop-secondary-surface-productization-decision 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-08
 - Stage Mapping: desktop productization decision
 - Phase Mapping: surface decision + packaging/support boundary
@@ -18,7 +18,7 @@
 
 ## 2.1 sprint-001-secondary-surface-decision-and-packaging-boundary
 
-- Status: planned
+- Status: active
 - Sprint Goal: 冻结 desktop 的产品化决策与最小支持边界。
 - Task Package: `TK-673`、`TK-674`、`TK-675`。
 
@@ -26,7 +26,7 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 | --- | --- | --- | --- | --- | --- |
-| TK-673 | sprint-001 | freeze desktop secondary-surface productization decision and packaging boundary | product/contract | project-064 recommended | planned |
+| TK-673 | sprint-001 | freeze desktop secondary-surface productization decision and packaging boundary | product/contract | project-064 recommended | in_progress |
 | TK-674 | sprint-001 | implement minimum desktop productization seam or reaffirm foundation-only guardrails with explicit evidence | implementation/boundary | TK-673 | planned |
 | TK-675 | sprint-001 | close desktop surface recommendation with support-truth refresh | docs/evidence/closeout | TK-673、TK-674 | planned |
 
@@ -40,3 +40,8 @@
 1. desktop 的正式支持口径有明确答案。
 2. 若仍保留 foundation-only，也有更强的 public support boundary 和 evidence。
 3. 若升级 secondary surface，则至少具备最小 packaged/support story。
+
+## 6. 里程碑记录
+
+1. 2026-04-08：作为 `project-072` follow-up decomposition 产物创建，当前保持 `planned`。
+2. 2026-04-08：`project-064` final closeout 完成后被激活为当前 primary project，`sprint-001 / TK-673` 进入执行窗口。

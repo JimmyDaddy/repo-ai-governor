@@ -1,6 +1,6 @@
 # sprint-001-secondary-surface-decision-and-packaging-boundary 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-08
 - Project: `project-065-desktop-secondary-surface-productization-decision`
 - Sprint Goal: 冻结 desktop 的产品化决策与最小支持边界。
@@ -16,3 +16,8 @@
 1. desktop productization decision 已冻结。
 2. minimum seam 或 foundation-only guardrails 已具备 evidence。
 3. support-truth 已可对外表达。
+
+## 3. Milestones
+
+1. 2026-04-08：作为 `project-065` follow-up sprint 创建，当前保持 `planned`。
+2. 2026-04-08：在 `project-064` final closeout 完成后被激活为当前 primary sprint，`TK-673` 已切换为 `in_progress`。

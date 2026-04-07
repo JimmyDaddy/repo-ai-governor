@@ -516,16 +516,16 @@ deliveries:
     execution_status: in_progress
     rollout_status: in_progress
     owner: runtime
-    project_ref: project-064-vscode-packaged-secondary-surface-rollout
-    sprint_ref: sprint-001-packaged-distribution-and-extension-host-smoke
+    project_ref: project-065-desktop-secondary-surface-productization-decision
+    sprint_ref: sprint-001-secondary-surface-decision-and-packaging-boundary
     task_ids:
-      - TK-670
-      - TK-671
-      - TK-672
-    project_plan_path: .repo-ai-governor/context/dev/project-064-vscode-packaged-secondary-surface-rollout/plan.md
-    sprint_plan_path: .repo-ai-governor/context/dev/project-064-vscode-packaged-secondary-surface-rollout/sprint-001-packaged-distribution-and-extension-host-smoke/plan.md
-    task_csv_path: .repo-ai-governor/context/dev/project-064-vscode-packaged-secondary-surface-rollout/sprint-001-packaged-distribution-and-extension-host-smoke/tasks/tasks.csv
-    handoff_artifact_path: .repo-ai-governor/context/dev/project-067-host-plugin-skill-agent-lifecycle-and-adopter-consumption/sprint-001-codex-claude-host-ergonomics-lifecycle-and-upgrade/tasks/DA-703-project-067-final-closeout-and-project-064-primary-stream-activation.md
+      - TK-673
+      - TK-674
+      - TK-675
+    project_plan_path: .repo-ai-governor/context/dev/project-065-desktop-secondary-surface-productization-decision/plan.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-065-desktop-secondary-surface-productization-decision/sprint-001-secondary-surface-decision-and-packaging-boundary/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-065-desktop-secondary-surface-productization-decision/sprint-001-secondary-surface-decision-and-packaging-boundary/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-064-vscode-packaged-secondary-surface-rollout/sprint-001-packaged-distribution-and-extension-host-smoke/tasks/DA-705-project-064-final-closeout-and-project-065-primary-stream-activation.md
     rollout_artifacts:
       - .repo-ai-governor/context/dev/project-072-current-surface-priority-promotion-and-decomposition/sprint-001-promotion-and-formal-followup-decomposition/tasks/DA-696-current-surface-priority-promotion-and-followup-decomposition-handoff.md
       - .repo-ai-governor/context/dev/project-062-cli-continuity-and-adapter-truthfulness-hardening/plan.md
@@ -537,6 +537,9 @@ deliveries:
       - .repo-ai-governor/context/dev/project-063-packaged-distribution-and-install-surface-closeout/sprint-001-packaged-install-contract-and-acceptance-refresh/tasks/DA-701-project-063-final-closeout-and-project-067-primary-stream-activation.md
       - .repo-ai-governor/context/dev/project-063-packaged-distribution-and-install-surface-closeout/project-063-packaged-distribution-and-install-surface-closeout-completion-audit-summary.md
       - .repo-ai-governor/context/dev/project-064-vscode-packaged-secondary-surface-rollout/plan.md
+      - .repo-ai-governor/context/dev/project-064-vscode-packaged-secondary-surface-rollout/sprint-001-packaged-distribution-and-extension-host-smoke/tasks/DA-704-sprint-001-closeout-and-project-final-review-activation-handoff.md
+      - .repo-ai-governor/context/dev/project-064-vscode-packaged-secondary-surface-rollout/sprint-001-packaged-distribution-and-extension-host-smoke/tasks/DA-705-project-064-final-closeout-and-project-065-primary-stream-activation.md
+      - .repo-ai-governor/context/dev/project-064-vscode-packaged-secondary-surface-rollout/project-064-vscode-packaged-secondary-surface-rollout-completion-audit-summary.md
       - .repo-ai-governor/context/dev/project-065-desktop-secondary-surface-productization-decision/plan.md
       - .repo-ai-governor/context/dev/project-066-standards-and-language-pack-ecosystem-expansion/plan.md
       - .repo-ai-governor/context/dev/project-067-host-plugin-skill-agent-lifecycle-and-adopter-consumption/plan.md

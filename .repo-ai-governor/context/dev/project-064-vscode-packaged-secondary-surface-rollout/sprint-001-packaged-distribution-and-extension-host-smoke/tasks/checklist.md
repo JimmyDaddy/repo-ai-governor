@@ -18,3 +18,9 @@
 - [x] TK-704 sprint-001 exit acceptance and project-final review activation handoff
   - 2026-04-08：任务在 `TK-670`、`TK-671`、`TK-672` 与 `CR-001` 全部进入终态后创建。
   - 2026-04-08：已写入 `DA-704`、project/sprint closeout handoff 与 `current-context` note；当前 sprint surface 保留给后续 `project-064` project-final CR loop。
+- [x] CR-002 project-064-vscode-packaged-secondary-surface-rollout final delegated review loop round 2
+  - 2026-04-08：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-08：fresh reviewer `Anscombe` 返回 `No actionable findings.`；主 agent 复核 project-final boundary、sprint closeout handoff、同窗口绿色验证证据与 clean worktree 状态后，确认无新增 blocker，任务切换为 `resolved`。
+- [x] TK-705 finalize project-064 closeout and activate project-065 primary stream
+  - 2026-04-08：任务在 `CR-002` clean 后创建并于同一窗口完成，完成 `project-064` 的 final closeout write-back。
+  - 2026-04-08：已写入 `DA-705` 与 completion audit summary，project / sprint / context / history / delivery registry 已同步到完成态真值，并激活 `project-065 / sprint-001 / TK-673`。
