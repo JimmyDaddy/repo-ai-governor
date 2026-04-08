@@ -2034,7 +2034,7 @@ describe('CliSessionShellRunner', () => {
         (frame) =>
           frame.composerValue === '/' &&
           frame.slashSuggestions.map((suggestion) => suggestion.command).join(',') ===
-            '/workspace,/doctor,/verify,/connect,/review,/plan,/run,/help',
+            '/workspace,/workspace switch-branch,/doctor,/verify,/connect,/review,/plan,/run,/help',
       ),
     ).toBe(true);
     expect(

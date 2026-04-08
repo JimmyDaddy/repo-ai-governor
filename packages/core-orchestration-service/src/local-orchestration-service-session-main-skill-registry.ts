@@ -12,6 +12,41 @@ import type {
 } from './types/index.js';
 
 const SESSION_MAIN_CONNECT_KEYWORDS = ['connect', '连接', '连一下', '接上', '接好'];
+const SESSION_MAIN_BRANCH_SWITCH_KEYWORDS = [
+  'switch branch',
+  'checkout',
+  'switch to',
+  '切换分支',
+  '切到',
+  '切回',
+];
+const SESSION_MAIN_BRANCH_NAME_TOKEN_PATTERN = '[^\\s,，;；。！？!?]+';
+const SESSION_MAIN_BRANCH_SWITCH_PATTERNS = [
+  new RegExp(
+    `(?:switch|move)(?:\\s+(?:me|us))?\\s+(?:the\\s+)?(?:(?:current|code)\\s+)?branch\\s+(?:to\\s+)?(?<branch>${SESSION_MAIN_BRANCH_NAME_TOKEN_PATTERN})(?:\\s+branch)?(?:\\s*$|[.!?])`,
+    'iu',
+  ),
+  new RegExp(
+    `(?:switch|move)(?:\\s+(?:me|us))?\\s+to\\s+(?<branch>${SESSION_MAIN_BRANCH_NAME_TOKEN_PATTERN})(?:\\s+branch)?(?:\\s*$|[.!?])`,
+    'iu',
+  ),
+  new RegExp(
+    `(?:git\\s+)?checkout\\s+(?<branch>${SESSION_MAIN_BRANCH_NAME_TOKEN_PATTERN})(?:\\s+branch)?(?:\\s*$|[.!?])`,
+    'iu',
+  ),
+  new RegExp(
+    `(?:切(?:换)?(?:到)?|切回|换到)\\s*(?:当前|代码)?\\s*(?:分支)?\\s*(?:到)?\\s*(?<branch>${SESSION_MAIN_BRANCH_NAME_TOKEN_PATTERN})(?:\\s*分支)?(?:\\s*$|[，。！？])`,
+    'iu',
+  ),
+  new RegExp(
+    `(?:把|将)\\s*(?:当前|代码)?\\s*(?:分支)?\\s*切(?:换)?到\\s*(?<branch>${SESSION_MAIN_BRANCH_NAME_TOKEN_PATTERN})(?:\\s*分支)?(?:\\s*$|[，。！？])`,
+    'iu',
+  ),
+];
+const SESSION_MAIN_BRANCH_NAME_VALIDATOR = new RegExp(
+  `^${SESSION_MAIN_BRANCH_NAME_TOKEN_PATTERN}$`,
+  'u',
+);
 const SESSION_MAIN_DOCTOR_KEYWORDS = [
   'doctor',
   'diagnose',
@@ -77,7 +112,8 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
       configuredRoleMentionPresent: boolean;
     },
   ): SessionMainForegroundSkillPlan | null {
-    const normalizedMessage = userMessage.trim().toLowerCase();
+    const rawMessage = userMessage.trim();
+    const normalizedMessage = rawMessage.toLowerCase();
 
     if (this.matchesAnyPattern(normalizedMessage, SESSION_MAIN_ONBOARDING_PATTERNS)) {
       return this.createPlanFromInlineBundle({
@@ -137,6 +173,21 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
           this.createCommandBatch(
             '/connect',
             ['connect', '--preset', 'multi-tool-default', '--output', 'pretty'],
+            options.preferredSurface,
+          ),
+        ],
+      });
+    }
+
+    const targetBranch = this.resolveBranchSwitchTarget(rawMessage, normalizedMessage);
+    if (targetBranch !== null) {
+      return this.createPlanFromCapabilityId({
+        capabilityId: SESSION_MAIN_CAPABILITY_ID.BRANCH_SWITCH,
+        routerDecisionReason: 'session.main.router.command_handoff_preview.branch_switch',
+        commandBatches: [
+          this.createCommandBatch(
+            `/workspace switch-branch ${targetBranch}`,
+            ['workspace', 'switch-branch', targetBranch],
             options.preferredSurface,
           ),
         ],
@@ -315,5 +366,48 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
 
   private matchesAnyPattern(message: string, patterns: RegExp[]): boolean {
     return patterns.some((pattern) => pattern.test(message));
+  }
+
+  private resolveBranchSwitchTarget(rawMessage: string, normalizedMessage: string): string | null {
+    const explicitPatternTarget = this.resolveBranchNameFromPatterns(rawMessage);
+    if (explicitPatternTarget !== null) {
+      return explicitPatternTarget;
+    }
+
+    if (!this.includesAnyKeyword(normalizedMessage, SESSION_MAIN_BRANCH_SWITCH_KEYWORDS)) {
+      return null;
+    }
+
+    return this.resolveBranchNameFromPatterns(rawMessage);
+  }
+
+  private resolveBranchNameFromPatterns(message: string): string | null {
+    for (const pattern of SESSION_MAIN_BRANCH_SWITCH_PATTERNS) {
+      const match = pattern.exec(message);
+      const branchCandidate = this.normalizeBranchCandidate(match?.groups?.branch);
+      if (branchCandidate && this.isSafeBranchName(branchCandidate)) {
+        return branchCandidate;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Allows Git-valid dots inside branch names while stripping sentence-ending punctuation
+   * from natural-language requests such as `checkout release/1.2.3.`.
+   */
+  private normalizeBranchCandidate(rawBranchCandidate: string | undefined): string | null {
+    const trimmedBranchCandidate = rawBranchCandidate?.trim();
+    if (!trimmedBranchCandidate) {
+      return null;
+    }
+
+    const normalizedBranchCandidate = trimmedBranchCandidate.replace(/[.!?。！？]+$/u, '').trim();
+    return normalizedBranchCandidate.length > 0 ? normalizedBranchCandidate : null;
+  }
+
+  private isSafeBranchName(branchCandidate: string): boolean {
+    return SESSION_MAIN_BRANCH_NAME_VALIDATOR.test(branchCandidate);
   }
 }

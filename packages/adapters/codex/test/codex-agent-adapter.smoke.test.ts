@@ -1259,7 +1259,7 @@ describe('codex-agent-adapter smoke', () => {
       return statuses;
     })();
 
-    await vi.advanceTimersByTimeAsync(19000);
+    await vi.advanceTimersByTimeAsync(28000);
     if (heartbeatTimer) {
       clearInterval(heartbeatTimer);
     }
@@ -1271,7 +1271,7 @@ describe('codex-agent-adapter smoke', () => {
       stderr: 'stderr heartbeat line\n',
       exitCode: 0,
       signal: null,
-      elapsedMs: 19000,
+      elapsedMs: 28000,
     });
 
     const statuses = await statusesPromise;

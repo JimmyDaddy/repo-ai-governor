@@ -8,7 +8,7 @@
 - Docs root: `none`
 - Task records: `none`
 - Review records: `none`
-- Note: `2026-04-08` 已完成 `project-062 -> project-068` 的本地顺序执行；`project-068 / sprint-002` 已通过 `CR-002` 与 `TK-713 / DA-713` 完成最终 closeout，当前 worktree 不再保留 active primary stream。
+- Note: `2026-04-08` `project-073 / sprint-001` 已通过 `CR-006` 与 `TK-717 / DA-717` 完成最终 closeout；当前 worktree 不再保留 active primary stream。
 
 ## Active Streams
 

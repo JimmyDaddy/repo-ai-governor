@@ -14,7 +14,7 @@ export const SESSION_MAIN_CAPABILITY_CATALOG_OWNER_MODULE_ID = 'runtime.orchestr
  * catalog producers and downstream consumers need one stable version tag while the explainer
  * stack is being rolled out across multiple sprint tasks.
  */
-export const SESSION_MAIN_CAPABILITY_DESCRIPTOR_VERSION = '2026-04-03' as const;
+export const SESSION_MAIN_CAPABILITY_DESCRIPTOR_VERSION = '2026-04-08' as const;
 
 /**
  * Declares the finite governed capability ids owned by the canonical `session.main` catalog.
@@ -26,6 +26,7 @@ export const SESSION_MAIN_CAPABILITY_DESCRIPTOR_VERSION = '2026-04-03' as const;
 export const SESSION_MAIN_CAPABILITY_ID = {
   HELP: 'help',
   CONNECT: 'connect',
+  BRANCH_SWITCH: 'branch_switch',
   DOCTOR: 'doctor',
   VERIFY: 'verify',
   WORKFLOW: 'workflow',

@@ -110,6 +110,7 @@ const SESSION_SLASH_COMMAND_FULL_ORDER = [
   '/doctor',
   '/verify',
   '/workspace',
+  '/workspace switch-branch',
   '/workflow',
   '/plan',
   '/review',
@@ -119,6 +120,7 @@ const SESSION_SLASH_COMMAND_FULL_ORDER = [
 
 const SESSION_SLASH_COMMAND_LAUNCHER_ORDER = [
   '/workspace',
+  '/workspace switch-branch',
   '/doctor',
   '/verify',
   '/connect',
@@ -315,8 +317,8 @@ export class CliSessionSlashCommandRegistry {
       ];
     }
 
-    if (command === '/workspace' && argumentTokens.length > 0) {
-      return [CliCommandName.WORKSPACE, ...argumentTokens];
+    if (command.startsWith('/workspace')) {
+      return [...command.slice(1).split(' '), ...argumentTokens];
     }
 
     return [command.slice(1), ...argumentTokens];

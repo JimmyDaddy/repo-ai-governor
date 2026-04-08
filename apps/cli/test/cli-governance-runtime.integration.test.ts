@@ -1,9 +1,11 @@
+import { execFile } from 'node:child_process';
 import { once } from 'node:events';
 import { mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
+import { promisify } from 'node:util';
 import { stringify } from 'yaml';
 
 import type { ClaudeCodeExecRunner } from '@repo-ai-governor/adapter-claude-code';
@@ -114,6 +116,8 @@ interface PlanCommandFixture {
   createdTaskId: string;
   createdTaskTitle: string;
 }
+
+const execFileAsync = promisify(execFile);
 
 async function writePlanTaskCardFixture(options: {
   tasksDirPath: string;
@@ -635,6 +639,28 @@ async function withRuntimeFixture(
     await fixture.provider.dispose();
     await rm(fixture.tempRoot, { recursive: true, force: true });
   }
+}
+
+async function initializeRuntimeGitRepository(repositoryRoot: string): Promise<void> {
+  await execFileAsync('git', ['init', '-b', 'main'], {
+    cwd: repositoryRoot,
+  });
+  await execFileAsync('git', ['config', 'commit.gpgSign', 'false'], {
+    cwd: repositoryRoot,
+  });
+  await execFileAsync('git', ['config', 'user.email', 'codex@example.com'], {
+    cwd: repositoryRoot,
+  });
+  await execFileAsync('git', ['config', 'user.name', 'Codex Test'], {
+    cwd: repositoryRoot,
+  });
+  await writeFile(resolve(repositoryRoot, 'README.md'), '# runtime fixture\n', 'utf8');
+  await execFileAsync('git', ['add', '.'], {
+    cwd: repositoryRoot,
+  });
+  await execFileAsync('git', ['commit', '--no-verify', '-m', 'chore: seed runtime fixture'], {
+    cwd: repositoryRoot,
+  });
 }
 
 /**
@@ -2474,6 +2500,44 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
       expect(upgradeResult.commandResult.operation).toBe('schema_upgrade_analyze');
       expect(workspaceResult.commandResult.operation).toBe('workspace_migration_plan');
       expect(runResult.commandResult.operation).toBe('governance_run');
+    });
+  });
+
+  it('dispatches workspace switch-branch through the extracted command registry', async () => {
+    await withRuntimeFixture(async (fixture) => {
+      await initializeRuntimeGitRepository(fixture.tempRoot);
+      await execFileAsync('git', ['switch', '-c', 'feature/runtime-switch'], {
+        cwd: fixture.tempRoot,
+      });
+
+      const workspaceRuntime = fixture.runtime as unknown as {
+        options: {
+          workspaceCommandOptions?: CliWorkspaceCommandOptions;
+        };
+        execute: (commandName: CliCommandName) => Promise<{
+          commandResult: {
+            operation: string;
+            details?: Record<string, unknown>;
+          };
+        }>;
+      };
+      workspaceRuntime.options.workspaceCommandOptions = {
+        action: 'switch-branch',
+        actionValue: 'main',
+        targetMode: null,
+        targetRoot: null,
+        planPath: null,
+      };
+
+      const workspaceResult = await workspaceRuntime.execute(CliCommandName.WORKSPACE);
+      const activeBranch = await execFileAsync('git', ['branch', '--show-current'], {
+        cwd: fixture.tempRoot,
+      });
+
+      expect(workspaceResult.commandResult.operation).toBe('workspace_branch_switch');
+      expect(workspaceResult.commandResult.details?.target_branch).toBe('main');
+      expect(workspaceResult.commandResult.details?.current_branch).toBe('main');
+      expect(activeBranch.stdout.trim()).toBe('main');
     });
   });
 

@@ -400,6 +400,415 @@ describe('Cli session-main supervisor runtime', () => {
     expect(outcome.routerDecisionReason).toBe('session.main.router.direct_answer.default');
   });
 
+  it('short-circuits direct-answer preflight after the first safe preferred surface', async () => {
+    const codexProbeSpy = vi.fn(async () => ({
+      identity: {
+        agentId: 'codex-agent',
+        role: 'session-main',
+        surface: AdapterSurface.CODEX,
+        roleProfileId: 'session-main',
+        roleSource: 'test',
+      },
+      availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+      capabilityMatrix: {
+        capabilityStates: Object.values(AgentCapability).map((capability) => ({
+          capability,
+          supportLevel: AgentCapabilitySupportLevel.SUPPORTED,
+        })),
+        timeout: {
+          supportsAgentInvocationTimeout: true,
+          supportsStageTimeoutSignal: true,
+          supportsFlowTimeoutSignal: true,
+        },
+        cancellation: {
+          supportsCancel: true,
+          supportsReasonPropagation: true,
+          supportsAbortSignal: true,
+        },
+        contextWindow: {
+          maxInputTokens: 8000,
+          maxOutputTokens: 4000,
+          supportsAutoTruncation: true,
+        },
+      },
+      unavailableReasons: [],
+    }));
+    const claudeProbeSpy = vi.fn(async () => ({
+      identity: {
+        agentId: 'claude-agent',
+        role: 'session-main',
+        surface: AdapterSurface.CLAUDE_CODE,
+        roleProfileId: 'session-main',
+        roleSource: 'test',
+      },
+      availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+      capabilityMatrix: {
+        capabilityStates: Object.values(AgentCapability).map((capability) => ({
+          capability,
+          supportLevel: AgentCapabilitySupportLevel.SUPPORTED,
+        })),
+        timeout: {
+          supportsAgentInvocationTimeout: true,
+          supportsStageTimeoutSignal: true,
+          supportsFlowTimeoutSignal: true,
+        },
+        cancellation: {
+          supportsCancel: true,
+          supportsReasonPropagation: true,
+          supportsAbortSignal: true,
+        },
+        contextWindow: {
+          maxInputTokens: 8000,
+          maxOutputTokens: 4000,
+          supportsAutoTruncation: true,
+        },
+      },
+      unavailableReasons: [],
+    }));
+    const codexInvokeStage = vi.fn(async () => ({
+      output: {
+        responseText: 'Primary answer from Codex',
+      },
+      elapsedMs: 5,
+    }));
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      adaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createAvailableProtocol(AdapterSurface.CODEX, 'unused', {
+        probeSpy: codexProbeSpy,
+        invokeStageSpy: codexInvokeStage,
+      }),
+      [AdapterSurface.CLAUDE_CODE]: createAvailableProtocol(AdapterSurface.CLAUDE_CODE, 'unused', {
+        probeSpy: claudeProbeSpy,
+      }),
+      [AdapterSurface.OLLAMA]: createAvailableProtocol(AdapterSurface.OLLAMA, 'unused', {
+        probeSpy: vi.fn(async () => {
+          throw new RuntimeError(
+            GovernorErrorCode.PROCESS_RUNTIME_FAILED,
+            'ollama probe should not run after preferred surface succeeds',
+          );
+        }),
+        toolCallingSupportLevel: AgentCapabilitySupportLevel.UNSUPPORTED,
+      }),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'en-US',
+      adaptersConfig,
+      adapterRoutingRuntime,
+    });
+    const outcome = await runtime.resolveTurn({
+      sessionId: 'session-001-short-circuit',
+      routeId: 'session.main',
+      turnId: 'turn-001-short-circuit',
+      turnIndex: 3,
+      userMessage: 'hello',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+    });
+
+    expect(outcome.assistantMessage).toBe('Primary answer from Codex');
+    expect(codexProbeSpy).toHaveBeenCalledTimes(2);
+    expect(claudeProbeSpy).not.toHaveBeenCalled();
+    expect(codexInvokeStage).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries direct-answer invoke on the next eligible surface when the preferred surface fails', async () => {
+    const codexProbeSpy = vi.fn(async () => ({
+      identity: {
+        agentId: 'codex-agent',
+        role: 'session-main',
+        surface: AdapterSurface.CODEX,
+        roleProfileId: 'session-main',
+        roleSource: 'test',
+      },
+      availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+      capabilityMatrix: {
+        capabilityStates: Object.values(AgentCapability).map((capability) => ({
+          capability,
+          supportLevel: AgentCapabilitySupportLevel.SUPPORTED,
+        })),
+        timeout: {
+          supportsAgentInvocationTimeout: true,
+          supportsStageTimeoutSignal: true,
+          supportsFlowTimeoutSignal: true,
+        },
+        cancellation: {
+          supportsCancel: true,
+          supportsReasonPropagation: true,
+          supportsAbortSignal: true,
+        },
+        contextWindow: {
+          maxInputTokens: 8000,
+          maxOutputTokens: 4000,
+          supportsAutoTruncation: true,
+        },
+      },
+      unavailableReasons: [],
+    }));
+    const claudeProbeSpy = vi.fn(async () => ({
+      identity: {
+        agentId: 'claude-agent',
+        role: 'session-main',
+        surface: AdapterSurface.CLAUDE_CODE,
+        roleProfileId: 'session-main',
+        roleSource: 'test',
+      },
+      availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+      capabilityMatrix: {
+        capabilityStates: Object.values(AgentCapability).map((capability) => ({
+          capability,
+          supportLevel: AgentCapabilitySupportLevel.SUPPORTED,
+        })),
+        timeout: {
+          supportsAgentInvocationTimeout: true,
+          supportsStageTimeoutSignal: true,
+          supportsFlowTimeoutSignal: true,
+        },
+        cancellation: {
+          supportsCancel: true,
+          supportsReasonPropagation: true,
+          supportsAbortSignal: true,
+        },
+        contextWindow: {
+          maxInputTokens: 8000,
+          maxOutputTokens: 4000,
+          supportsAutoTruncation: true,
+        },
+      },
+      unavailableReasons: [],
+    }));
+    const codexInvokeStage = vi.fn(async () => {
+      throw new RuntimeError(
+        GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+        'primary codex invoke failed',
+      );
+    });
+    const claudeInvokeStage = vi.fn(async () => ({
+      output: {
+        responseText: 'Recovered answer from Claude Code',
+      },
+      elapsedMs: 9,
+    }));
+    const publishedStreamEvents: Array<Record<string, unknown>> = [];
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      adaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createAvailableProtocol(AdapterSurface.CODEX, 'unused', {
+        probeSpy: codexProbeSpy,
+        invokeStageSpy: codexInvokeStage,
+      }),
+      [AdapterSurface.CLAUDE_CODE]: createAvailableProtocol(AdapterSurface.CLAUDE_CODE, 'unused', {
+        probeSpy: claudeProbeSpy,
+        invokeStageSpy: claudeInvokeStage,
+      }),
+      [AdapterSurface.OLLAMA]: createUnavailableProtocol(AdapterSurface.OLLAMA),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'en-US',
+      adaptersConfig,
+      adapterRoutingRuntime,
+    });
+    const outcome = await runtime.resolveTurn({
+      sessionId: 'session-001-invoke-fallback',
+      routeId: 'session.main',
+      turnId: 'turn-001-invoke-fallback',
+      turnIndex: 4,
+      userMessage: 'hello',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+      publishStreamEvent: async (event) => {
+        publishedStreamEvents.push(event as Record<string, unknown>);
+      },
+    });
+
+    expect(codexProbeSpy).toHaveBeenCalledTimes(2);
+    expect(codexInvokeStage).toHaveBeenCalledTimes(1);
+    expect(claudeProbeSpy).toHaveBeenCalledTimes(2);
+    expect(claudeInvokeStage).toHaveBeenCalledTimes(1);
+    expect(outcome.assistantMessage).toBe('Recovered answer from Claude Code');
+    expect(outcome.selectedSurface).toBe(AdapterSurface.CLAUDE_CODE);
+    expect(outcome.selectedBy).toBe('session.main.answer.fallback');
+    expect(outcome.executionDetailsLines).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('codex · invoke failed · primary codex invoke failed'),
+      ]),
+    );
+    expect(publishedStreamEvents).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'lifecycle',
+          state: 'running',
+          detail:
+            'The primary direct-answer surface failed, so the supervisor is retrying on claude-code.',
+          selectedSurface: 'claude-code',
+        }),
+      ]),
+    );
+  });
+
+  it('publishes the recovered fallback answer when the failed surface already streamed partial tokens', async () => {
+    const codexProbeSpy = vi.fn(async () => ({
+      identity: {
+        agentId: 'codex-agent',
+        role: 'session-main',
+        surface: AdapterSurface.CODEX,
+        roleProfileId: 'session-main',
+        roleSource: 'test',
+      },
+      availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+      capabilityMatrix: {
+        capabilityStates: Object.values(AgentCapability).map((capability) => ({
+          capability,
+          supportLevel: AgentCapabilitySupportLevel.SUPPORTED,
+        })),
+        timeout: {
+          supportsAgentInvocationTimeout: true,
+          supportsStageTimeoutSignal: true,
+          supportsFlowTimeoutSignal: true,
+        },
+        cancellation: {
+          supportsCancel: true,
+          supportsReasonPropagation: true,
+          supportsAbortSignal: true,
+        },
+        contextWindow: {
+          maxInputTokens: 8000,
+          maxOutputTokens: 4000,
+          supportsAutoTruncation: true,
+        },
+      },
+      unavailableReasons: [],
+    }));
+    const claudeProbeSpy = vi.fn(async () => ({
+      identity: {
+        agentId: 'claude-agent',
+        role: 'session-main',
+        surface: AdapterSurface.CLAUDE_CODE,
+        roleProfileId: 'session-main',
+        roleSource: 'test',
+      },
+      availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+      capabilityMatrix: {
+        capabilityStates: Object.values(AgentCapability).map((capability) => ({
+          capability,
+          supportLevel: AgentCapabilitySupportLevel.SUPPORTED,
+        })),
+        timeout: {
+          supportsAgentInvocationTimeout: true,
+          supportsStageTimeoutSignal: true,
+          supportsFlowTimeoutSignal: true,
+        },
+        cancellation: {
+          supportsCancel: true,
+          supportsReasonPropagation: true,
+          supportsAbortSignal: true,
+        },
+        contextWindow: {
+          maxInputTokens: 8000,
+          maxOutputTokens: 4000,
+          supportsAutoTruncation: true,
+        },
+      },
+      unavailableReasons: [],
+    }));
+    const codexInvokeStage = vi.fn(async () => {
+      throw new RuntimeError(
+        GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+        'primary codex invoke failed after partial output',
+      );
+    });
+    const claudeInvokeStage = vi.fn(async () => ({
+      output: {
+        responseText: 'Recovered answer from Claude Code',
+      },
+      elapsedMs: 9,
+    }));
+    const publishedStreamEvents: Array<Record<string, unknown>> = [];
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      adaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createAvailableProtocol(AdapterSurface.CODEX, 'unused', {
+        probeSpy: codexProbeSpy,
+        invokeStageSpy: codexInvokeStage,
+        streamEvents: [
+          {
+            eventType: AgentStreamEventType.TOKEN,
+            payload: {
+              title: 'Codex Draft',
+              chunkText: 'Partial answer from Codex',
+              accumulatedText: 'Partial answer from Codex',
+              surface: AdapterSurface.CODEX,
+            },
+          },
+        ],
+      }),
+      [AdapterSurface.CLAUDE_CODE]: createAvailableProtocol(AdapterSurface.CLAUDE_CODE, 'unused', {
+        probeSpy: claudeProbeSpy,
+        invokeStageSpy: claudeInvokeStage,
+      }),
+      [AdapterSurface.OLLAMA]: createUnavailableProtocol(AdapterSurface.OLLAMA),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'en-US',
+      adaptersConfig,
+      adapterRoutingRuntime,
+    });
+    const outcome = await runtime.resolveTurn({
+      sessionId: 'session-001-fallback-publishes-final-answer',
+      routeId: 'session.main',
+      turnId: 'turn-001-fallback-publishes-final-answer',
+      turnIndex: 5,
+      userMessage: 'hello',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+      publishStreamEvent: async (event) => {
+        publishedStreamEvents.push(event as Record<string, unknown>);
+      },
+    });
+
+    expect(outcome.assistantMessage).toBe('Recovered answer from Claude Code');
+    expect(outcome.selectedSurface).toBe(AdapterSurface.CLAUDE_CODE);
+    expect(publishedStreamEvents).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'token',
+          chunkText: 'Partial answer from Codex',
+          selectedSurface: AdapterSurface.CODEX,
+        }),
+        expect.objectContaining({
+          kind: 'token',
+          chunkText: 'Recovered answer from Claude Code',
+          selectedSurface: AdapterSurface.CLAUDE_CODE,
+          selectedBy: 'session.main.answer.fallback',
+        }),
+      ]),
+    );
+  });
+
   it('keeps free-form direct answers available when surface metadata omits tool-calling capability', async () => {
     const codexInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
       expect(request.input).toEqual(

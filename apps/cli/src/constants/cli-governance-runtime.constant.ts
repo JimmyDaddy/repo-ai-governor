@@ -65,6 +65,7 @@ export enum CliRuntimeOperation {
   WORKSPACE_MIGRATION_EXECUTE = 'workspace_migration_execute',
   WORKSPACE_MIGRATION_ROLLBACK = 'workspace_migration_rollback',
   WORKSPACE_CONFIG_CLEAR = 'workspace_config_clear',
+  WORKSPACE_BRANCH_SWITCH = 'workspace_branch_switch',
   WORKSPACE_UI_THEME_SET = 'workspace_ui_theme_set',
   WORKFLOW_CREATE_ENTRY = 'workflow_create_entry',
   WORKFLOW_EDIT_ENTRY = 'workflow_edit_entry',

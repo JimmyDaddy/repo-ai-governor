@@ -95,6 +95,7 @@ describe('CliSessionShellInkController', () => {
 
     expect(viewModel.slashSuggestions.map((suggestion) => suggestion.command)).toEqual([
       '/workspace',
+      '/workspace switch-branch',
       '/doctor',
       '/verify',
       '/connect',
