@@ -143,6 +143,14 @@ pnpm run release:verify-host-distribution -- --output .tmp/project-067-sprint-00
 1. 这条 runbook 只验证“已构建源码仓上的 Codex / Claude Code 宿主 follow-up surface”，也就是 `project-local` export/apply 与 plugin-bundle pack/verify。
 2. `host verify` 是每次 manifest 刷新后的正式复核步骤；这些资产的“升级”语义固定为源码仓或 vendored skills 变化后重新渲染并重新校验，而不是新增一条独立 installer 路径。
 3. 只要渲染资产形态、支持 target 或刷新契约有变化，就必须同步收口 `README*`、`docs/local-adoption-playbook*` 与 `docs/support-matrix*` 中的公开叙事。
+4. `github-com-agent` 仍保持 reserved 且故意阻断：staged export 形态可以继续 schema-safe，但在 target capabilities 明确声明 supported mode / discovery path、拿到 pass 级 target-specific export/verify 证据，并证明 GitHub.com consumption 仍会回接 canonical governor runtime 之前，`host verify` 都应继续返回阻断结果。
+5. 若变更触及这个 reserved target contract，还要额外执行：
+
+```bash
+pnpm run release:verify-github-com-agent-reserved-target -- --output .tmp/project-068-sprint-002-github-com-agent-reserved-target-report.json
+```
+
+6. 这份专用 reserved-target 报告只有在 blocked 语义仍保持 fail-closed 时才会通过：staged export 继续产出 schema-safe artifact，`--apply-to-repo` 继续被拒绝，`host verify` 继续返回阻断，bundle packaging 也继续不支持。
 
 ### 4.3 Desktop Foundation-only Surface 验证
 

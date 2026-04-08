@@ -301,6 +301,16 @@ Formal contract:
 4. “Upgrade” for these host-native assets means rerender plus verify after the source checkout or vendored skills changed. It is not a separate packaged installer, and it is not the same contract as `repo-ai-governor upgrade`.
 5. These generated host assets are source-checkout follow-up surfaces and adopter-facing distribution artifacts. They do not replace the canonical governor workspace truth under `context/`, `tasks/`, `review/`, or audit ledgers.
 
+### 10.2 GitHub Copilot Reserved Target Notice
+
+`github-com-agent` remains a reserved GitHub Copilot target. The current contract is intentionally blocked:
+
+1. The target id and renderer path exist only so staged exports can remain schema-safe and target-aware; they do not mean GitHub.com coding-agent consumption is formally supported.
+2. Current capability truth stays frozen at `supportedModes=[]`, `discoveryState=staged_export only`, `supportsApplyToRepo=false`, `supportsBundlePackaging=false`, and `isMvpTarget=false`.
+3. `host export --copilot-target github-com-agent --apply-to-repo ...` must still fail, and `host verify` on that reserved manifest must still return a blocking result until the target leaves deferred status.
+4. This blocked mode exits only after the target advertises at least one supported mode plus a discoverable/installed consumer path, pass-level export/verify evidence exists for that target, and the adopter-facing consumption narrative is proven to route back through the canonical governor runtime instead of a host-local fork.
+5. Maintainers should refresh `.tmp/project-068-sprint-002-github-com-agent-reserved-target-report.json` with `pnpm run release:verify-github-com-agent-reserved-target` whenever this reserved-target contract changes, so the blocked proof path remains replayable.
+
 ## 11. Remote-api Rehearsal
 
 Use this remote-api rehearsal only when you want to validate provider-backed behavior instead of the default local CLI-backed or fallback rehearsal:

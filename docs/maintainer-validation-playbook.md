@@ -143,6 +143,14 @@ Notes:
 1. This runbook validates only the built source-checkout host follow-up surface for Codex / Claude Code `project-local` export/apply plus plugin-bundle pack/verify.
 2. Treat `host verify` as the contract recheck after every regenerated manifest. “Upgrade” for these assets means rerender plus verify after source or vendored-skill changes, not a standalone installer path.
 3. Keep the public narrative aligned in `README*`, `docs/local-adoption-playbook*`, and `docs/support-matrix*` whenever the rendered asset shape, supported targets, or refresh contract changes.
+4. `github-com-agent` stays reserved and intentionally blocked: staged export shape may remain schema-safe, but `host verify` should still surface a blocking result until target capabilities advertise a supported mode/discovery path, pass-level target-specific export/verify evidence exists, and the GitHub.com consumption path is proven to hand control back through the canonical governor runtime.
+5. When the change touches that reserved target contract, also rerun:
+
+```bash
+pnpm run release:verify-github-com-agent-reserved-target -- --output .tmp/project-068-sprint-002-github-com-agent-reserved-target-report.json
+```
+
+6. The dedicated reserved-target report passes only when the blocked semantics remain fail-closed: staged export still produces schema-safe artifacts, `--apply-to-repo` stays rejected, `host verify` stays blocking, and bundle packaging remains unsupported.
 
 ### 4.3 Desktop Foundation-only Surface Validation
 

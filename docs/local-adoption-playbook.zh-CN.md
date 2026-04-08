@@ -301,6 +301,16 @@ pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/ho
 4. 这些宿主原生资产的“升级”语义固定为：源码仓或 vendored skills 更新后，重新渲染并重新校验。它不是单独的 packaged installer，也不等于 `repo-ai-governor upgrade` 的契约。
 5. 这些生成后的宿主资产属于源码仓 follow-up surface 和 adopter-facing distribution artifact；它们不能反向替代 `context/`、`tasks/`、`review/` 或审计台账这些 canonical governor workspace 真值。
 
+### 10.2 GitHub Copilot 保留 target 提示
+
+`github-com-agent` 仍然是 GitHub Copilot 的 reserved target。当前 contract 故意保持 blocked 模式：
+
+1. 这个 target id 与 renderer 路径存在的唯一目的，是让 staged export 继续保持 schema-safe 与 target-aware；它不代表 GitHub.com coding-agent consumption 已正式支持。
+2. 当前 capability truth 固定为：`supportedModes=[]`、`discoveryState=staged_export only`、`supportsApplyToRepo=false`、`supportsBundlePackaging=false`、`isMvpTarget=false`。
+3. `host export --copilot-target github-com-agent --apply-to-repo ...` 仍必须失败，而针对该 reserved manifest 的 `host verify` 也必须继续返回阻断结果，直到该 target 离开 deferred 状态。
+4. 只有当该 target 至少声明一个 supported mode 与可 discoverable / installed 的真实消费路径、拿到 pass 级 export/verify 证据，并证明 adopter-facing consumption 仍会回接 canonical governor runtime 而不是宿主侧分叉实现时，blocked mode 才能解除。
+5. 只要这个 reserved-target contract 有变化，maintainer 就应重新执行 `pnpm run release:verify-github-com-agent-reserved-target` 刷新 `.tmp/project-068-sprint-002-github-com-agent-reserved-target-report.json`，确保 blocked proof path 仍可回放。
+
 ## 11. Remote-api rehearsal
 
 只有当你想验证真实 provider 调用，而不是默认的本地 CLI-backed / fallback 演练时，才需要执行这条 remote-api rehearsal：

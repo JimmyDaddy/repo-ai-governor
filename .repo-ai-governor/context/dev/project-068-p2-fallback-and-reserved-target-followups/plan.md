@@ -23,9 +23,9 @@
 
 ## 2.2 sprint-002-github-com-agent-target-followup
 
-- Status: active
+- Status: completed
 - Sprint Goal: 为 `github-com-agent` target 建立 follow-up contract 与 exit criteria。
-- Task Package: `TK-684`、`TK-685`、`TK-686`。
+- Task Package: `TK-684`、`TK-685`、`TK-686`、`TK-712`。
 
 ## 3. 任务拆解矩阵（WBS）
 
@@ -34,9 +34,10 @@
 | TK-682 | sprint-001 | freeze local-model capability ceiling and promoted use-case contract | product/contract | project-066 recommended | completed |
 | TK-683 | sprint-001 | implement constrained local-model capability follow-up or explicit non-goal guardrails | implementation/boundary | TK-682 | completed |
 | TK-710 | sprint-001 | sprint-001 closeout and sprint-002 activation handoff | closeout/handoff | TK-682、TK-683、CR-001 | completed |
-| TK-684 | sprint-002 | freeze github-com-agent target contract and blocked-mode exit criteria | host/contract | TK-710 | in_progress |
-| TK-685 | sprint-002 | implement github-com-agent export verify follow-up or reserved-boundary reinforcement | host/follow-up | TK-684 | planned |
-| TK-686 | sprint-002 | close P2 follow-up recommendation and backlog handoff | closeout/backlog | TK-684、TK-685 | planned |
+| TK-684 | sprint-002 | freeze github-com-agent target contract and blocked-mode exit criteria | host/contract | TK-710 | completed |
+| TK-685 | sprint-002 | implement github-com-agent export verify follow-up or reserved-boundary reinforcement | host/follow-up | TK-684 | completed |
+| TK-686 | sprint-002 | close P2 follow-up recommendation and backlog handoff | closeout/backlog | TK-684、TK-685 | completed |
+| TK-712 | sprint-002 | sprint-002 closeout and project-final review activation handoff | closeout/handoff | TK-684、TK-685、TK-686、CR-001 | completed |
 
 ## 4. 依赖产物策略
 
@@ -54,3 +55,5 @@
 2. 2026-04-08：`project-066` final closeout 完成后被激活为当前 primary project，`sprint-001 / TK-682` 进入执行窗口；当前 project 保持 `P2 deferred` contract，不扩张为新的 secondary-surface 产品化实现。
 3. 2026-04-08：`TK-682` 与 `TK-683` 已用 docs/support-truth guardrail 收口 `local-model` capability ceiling、promoted use case 与 explicit non-goal；当前 sprint 下一边界进入 fresh reviewer CR loop。
 4. 2026-04-08：`CR-001` 已完成 2 个 accepted findings 的最小修复并 clean `resolved`；`TK-710 / DA-710` 已完成 `sprint-001` closeout，并把下一条 primary boundary 固定为 `sprint-002 / TK-684`。
+5. 2026-04-08：`TK-684`、`TK-685` 与 `TK-686` 已完成 `github-com-agent` reserved-target contract freeze、fail-closed evidence refresh 与 `DA-711` backlog handoff；当前 sprint 实现面已清零，下一边界进入 `sprint-002` fresh reviewer CR loop。
+6. 2026-04-08：`CR-001` 已 clean `resolved`，`TK-712 / DA-712` 已完成 `sprint-002` closeout，并把下一边界切换为 `project-068` project-final CR loop。

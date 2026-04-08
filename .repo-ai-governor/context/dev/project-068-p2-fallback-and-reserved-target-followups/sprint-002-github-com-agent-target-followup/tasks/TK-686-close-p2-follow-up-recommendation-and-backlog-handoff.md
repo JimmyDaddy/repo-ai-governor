@@ -1,6 +1,6 @@
 # TK-686 close P2 follow-up recommendation and backlog handoff
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-08
 - Owner: `AI-Agent`
 - Priority: `P2`
@@ -47,13 +47,20 @@
 ## 8. Delivery Verification
 
 1. P2 recommendation review
-2. `pnpm run build`
+2. `pnpm run release:verify-github-com-agent-reserved-target -- --output .tmp/project-068-sprint-002-github-com-agent-reserved-target-report.json`
+3. `node ./scripts/governance/check-task-ledger-sync.js`
+4. `node ./scripts/governance/check-sprint-plan-status-sync.js`
+5. `node ./scripts/governance/check-code-review-status-sync.js`
+6. `node ./scripts/governance/check-worktree-review-target.js`
 
 ## 9. 执行记录
 
 1. 2026-04-08：任务创建，状态初始化为 `planned`。
+2. 2026-04-08：已新增 `DA-711-project-068-p2-follow-up-recommendation-and-backlog-handoff.md`，汇总 `local-model` 与 `github-com-agent` 的 P2 conclusion、future unlock dependency、non-goal guardrails 与 backlog 建议。
+3. 2026-04-08：已明确保持 `project-068` 为 `P2 deferred` 收口，不新增新的 host-native productization、GitHub.com adopter-facing support claim，或 packaged secondary-surface 扩张；本边界只回写 docs/ledger/handoff 真值，因此 build not required。
+4. 2026-04-08：当前任务状态切换为 `completed`，`project-068 / sprint-002` 的实现任务已全部完成，下一边界进入 fresh reviewer CR loop。
 
 ## 10. 产出
 
-1. 待执行：P2 recommendation
-2. 待执行：backlog handoff
+1. `/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-002-github-com-agent-target-followup/tasks/DA-711-project-068-p2-follow-up-recommendation-and-backlog-handoff.md`
+2. `/Users/jimmydaddy/study/ai-governor/.tmp/project-068-sprint-002-github-com-agent-reserved-target-report.json`

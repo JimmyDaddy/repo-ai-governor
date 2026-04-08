@@ -135,6 +135,7 @@
     "release:pack-vscode-extension": "node ./scripts/release/pack-vscode-extension.js",
     "release:verify-vscode-extension-distribution": "node ./scripts/release/verify-vscode-extension-distribution.js",
     "release:verify-host-distribution": "node ./scripts/release/verify-host-distribution.js",
+    "release:verify-github-com-agent-reserved-target": "node ./scripts/release/verify-github-com-agent-reserved-target.mjs",
     "release:verify-cleanroom-local-install": "node ./scripts/release/verify-cleanroom-local-install.js",
     "release:verify-cleanroom-local-install:plugin-enabled": "node ./scripts/release/verify-cleanroom-local-install.js --distribution-mode plugin-enabled",
     "release:verify-cleanroom-local-install:tgz": "node ./scripts/release/verify-cleanroom-local-install.js --modes tgz --iterations 1 --output .tmp/release-cleanroom-tgz-validation-report.json",

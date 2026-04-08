@@ -1,6 +1,6 @@
 # TK-684 freeze github-com-agent target contract and blocked-mode exit criteria
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-04-08
 - Owner: `AI-Agent`
 - Priority: `P2`
@@ -47,14 +47,25 @@
 ## 8. Delivery Verification
 
 1. reserved-target contract review
-2. `pnpm run build`
+2. `node ./scripts/governance/check-task-ledger-sync.js`
+3. `node ./scripts/governance/check-sprint-plan-status-sync.js`
+4. `node ./scripts/governance/check-code-review-status-sync.js`
+5. `node ./scripts/governance/check-worktree-review-target.js`
 
 ## 9. 执行记录
 
 1. 2026-04-08：任务创建，状态初始化为 `planned`。
 2. 2026-04-08：`TK-710 / DA-710` 完成 `sprint-001` closeout 后，本任务已切换为当前 primary boundary 的 `in_progress`；接下来先冻结 `github-com-agent` target contract、blocked-mode exit criteria 与 future unlock evidence contract。
+3. 2026-04-08：已冻结 `github-com-agent` reserved-target contract：target id 与 renderer path 可以继续保持 schema-safe staged export，但 capability profile 仍固定为 `supportedModes=[]`、`staged_export only`、`supportsApplyToRepo=false`、`supportsBundlePackaging=false`、`isMvpTarget=false`，不得被误读成正式 adopter-facing support。
+4. 2026-04-08：已同步收口 blocked-mode exit criteria：只有当 target 至少具备一个 supported mode 与 discoverable/installed consumer path、拿到 pass 级 target-specific export/verify evidence，并证明 GitHub.com consumption 仍通过 canonical governor runtime handoff 时，`github-com-agent` 才能离开 deferred 状态；本轮未修改 executable surface，因此 build not required。
+5. 2026-04-08：已将上述 contract 写回 `packages/adapters/github-copilot/README.md`、`docs/local-adoption-playbook*.md`、`docs/maintainer-validation-playbook*.md` 与 `docs/support-matrix*.md`，当前任务状态切换为 `completed`，下一边界进入 `TK-685`。
 
 ## 10. 产出
 
-1. 待执行：target contract
-2. 待执行：blocked-mode exit criteria
+1. `/Users/jimmydaddy/study/ai-governor/packages/adapters/github-copilot/README.md`
+2. `/Users/jimmydaddy/study/ai-governor/docs/local-adoption-playbook.md`
+3. `/Users/jimmydaddy/study/ai-governor/docs/local-adoption-playbook.zh-CN.md`
+4. `/Users/jimmydaddy/study/ai-governor/docs/maintainer-validation-playbook.md`
+5. `/Users/jimmydaddy/study/ai-governor/docs/maintainer-validation-playbook.zh-CN.md`
+6. `/Users/jimmydaddy/study/ai-governor/docs/support-matrix.md`
+7. `/Users/jimmydaddy/study/ai-governor/docs/support-matrix.zh-CN.md`
