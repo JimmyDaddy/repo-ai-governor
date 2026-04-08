@@ -1,6 +1,6 @@
 # TK-683 implement constrained local-model capability follow-up or explicit non-goal guardrails
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-08
 - Owner: `AI-Agent`
 - Priority: `P2`
@@ -52,8 +52,17 @@
 ## 9. 执行记录
 
 1. 2026-04-08：任务创建，状态初始化为 `planned`。
+2. 2026-04-08：已选择 explicit non-goal guardrail 路径，而不是扩张新的 `local-model` productization seam：当前 docs/support-truth 统一收口为 restricted-network / explicit local fallback only。
+3. 2026-04-08：已在 `packages/adapters/local-model/README.md`、`docs/local-adoption-playbook*.md`、`docs/support-matrix*.md` 与 `docs/maintainer-validation-playbook*.md` 中同步写明非目标边界，不再允许把 `local-model` 误读成 repository-review reviewer delegation 或 `tool_calling` / `structured_output` / `confirmation_gate` required-role 的等价替代品。
+4. 2026-04-08：已完成 guardrail truth review：当前 contract 已同时回链到 local-model adapter README、adopter support-truth、maintainer validation notes 与 support matrix；本轮未修改可执行代码，因此 build not required。
+5. 2026-04-08：guardrail refresh 已完成；当前 sprint 下一边界进入 fresh reviewer CR loop，状态切换为 `completed`。
 
 ## 10. 产出
 
-1. 待执行：constrained follow-up or explicit guardrails
-2. 待执行：reserved-target input
+1. `/Users/jimmydaddy/study/ai-governor/packages/adapters/local-model/README.md`
+2. `/Users/jimmydaddy/study/ai-governor/docs/local-adoption-playbook.md`
+3. `/Users/jimmydaddy/study/ai-governor/docs/local-adoption-playbook.zh-CN.md`
+4. `/Users/jimmydaddy/study/ai-governor/docs/support-matrix.md`
+5. `/Users/jimmydaddy/study/ai-governor/docs/support-matrix.zh-CN.md`
+6. `/Users/jimmydaddy/study/ai-governor/docs/maintainer-validation-playbook.md`
+7. `/Users/jimmydaddy/study/ai-governor/docs/maintainer-validation-playbook.zh-CN.md`

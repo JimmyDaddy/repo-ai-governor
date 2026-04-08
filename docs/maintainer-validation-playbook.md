@@ -201,6 +201,7 @@ Notes:
 4. `release:ga-check` is for maintainers deciding whether the current state is ready for broader release, not for ordinary adopters.
 5. Current evidence backlinks expected by this playbook are `.tmp/project-052-sprint-001-cleanroom-report.json`, `.tmp/project-052-sprint-001-local-distribution-report.json`, `.tmp/project-052-sprint-002-command-rehearsal-summary.json`, `.tmp/project-055-sprint-001-pilot-1-rehearsal-summary.json`, `.tmp/project-055-sprint-001-pilot-2-rehearsal-summary.json`, `.tmp/project-063-sprint-001-cleanroom-tgz-report.json`, `.tmp/project-063-sprint-001-local-distribution-report.json`, `.tmp/project-065-sprint-001-desktop-foundation-report.json`, `.tmp/project-067-sprint-001-host-distribution-report.json`, and `.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-002-ga-evidence-consolidation-and-closeout/tasks/DA-616-ga-evidence-dossier-and-cross-surface-backlinks.md`.
 6. When those signals change, update `docs/support-matrix.md` first instead of creating a second status table in this playbook.
+7. `local-model` remains a restricted-network / explicit-local-fallback truth surface only. Do not treat a passing local fallback rehearsal as proof for `tool_calling`, `structured_output`, `confirmation_gate`, or unattended reviewer delegation support; those ceilings stay documented in `docs/support-matrix*.md`.
 
 ## 6. Interpreting External-adopter Warnings
 

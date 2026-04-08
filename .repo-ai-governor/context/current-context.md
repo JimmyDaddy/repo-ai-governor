@@ -4,15 +4,15 @@
 
 - Status: active
 - Project: `project-068-p2-fallback-and-reserved-target-followups`
-- Sprint: `sprint-001-local-model-capability-ceiling-and-promoted-use-case`
+- Sprint: `sprint-002-github-com-agent-target-followup`
 - Docs root: `.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups`
-- Task records: `.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-001-local-model-capability-ceiling-and-promoted-use-case/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-001-local-model-capability-ceiling-and-promoted-use-case/review/`
-- Note: `2026-04-08` 已通过 `CR-004 / TK-709 / DA-709` 完成 `project-066` final closeout，并将当前主执行流切换到 `project-068 / sprint-001 / TK-682`；当前 `project-068` 保持 `P2 deferred` 语义，仅收口 `local-model` capability ceiling、reserved-target contract 与 backlog handoff。
+- Task records: `.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-002-github-com-agent-target-followup/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-002-github-com-agent-target-followup/review/`
+- Note: `2026-04-08` 已通过 `CR-001 / TK-710 / DA-710` 完成 `project-068 / sprint-001` closeout，并将当前主执行流切换到 `project-068 / sprint-002 / TK-684`；当前 `project-068` 继续保持 `P2 deferred` 语义，仅收口 reserved-target contract、blocked-mode exit criteria 与 backlog handoff。
 
 ## Active Streams
 
-- `active-1`: role=`primary`, project=`project-068-p2-fallback-and-reserved-target-followups`, sprint=`sprint-001-local-model-capability-ceiling-and-promoted-use-case`, docs=`.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups`, plan=`.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-001-local-model-capability-ceiling-and-promoted-use-case/plan.md`, tasks=`.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-001-local-model-capability-ceiling-and-promoted-use-case/tasks/`, checklist=`.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-001-local-model-capability-ceiling-and-promoted-use-case/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-001-local-model-capability-ceiling-and-promoted-use-case/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-001-local-model-capability-ceiling-and-promoted-use-case/review/`, status=`active`, note=`TK-682 is now in progress; keep project-068 inside the P2 deferred local-model/reserved-target closeout boundary`
+- `active-1`: role=`primary`, project=`project-068-p2-fallback-and-reserved-target-followups`, sprint=`sprint-002-github-com-agent-target-followup`, docs=`.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups`, plan=`.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-002-github-com-agent-target-followup/plan.md`, tasks=`.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-002-github-com-agent-target-followup/tasks/`, checklist=`.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-002-github-com-agent-target-followup/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-002-github-com-agent-target-followup/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-002-github-com-agent-target-followup/review/`, status=`active`, note=`TK-684 is now in progress; keep project-068 inside the P2 deferred reserved-target/backlog-handoff boundary`
 
 ## Planned Follow-Up Streams
 

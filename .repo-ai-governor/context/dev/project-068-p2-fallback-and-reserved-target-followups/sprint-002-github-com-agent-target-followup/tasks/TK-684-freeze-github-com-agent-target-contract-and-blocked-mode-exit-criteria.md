@@ -1,6 +1,6 @@
 # TK-684 freeze github-com-agent target contract and blocked-mode exit criteria
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-04-08
 - Owner: `AI-Agent`
 - Priority: `P2`
@@ -13,7 +13,7 @@
 
 ## 2. Depends On
 
-1. `TK-683`
+1. `TK-710`
 2. 当前 reserved target baseline
 
 ## 3. 预期产物
@@ -52,6 +52,7 @@
 ## 9. 执行记录
 
 1. 2026-04-08：任务创建，状态初始化为 `planned`。
+2. 2026-04-08：`TK-710 / DA-710` 完成 `sprint-001` closeout 后，本任务已切换为当前 primary boundary 的 `in_progress`；接下来先冻结 `github-com-agent` target contract、blocked-mode exit criteria 与 future unlock evidence contract。
 
 ## 10. 产出
 

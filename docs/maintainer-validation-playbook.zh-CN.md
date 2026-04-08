@@ -201,6 +201,7 @@ pnpm run release:ga-check
 4. `release:ga-check` 面向维护者的发布准备判断，不适合作为普通 adopter 的日常命令。
 5. 当前本手册预期回链的结构化 evidence 包括 `.tmp/project-052-sprint-001-cleanroom-report.json`、`.tmp/project-052-sprint-001-local-distribution-report.json`、`.tmp/project-052-sprint-002-command-rehearsal-summary.json`、`.tmp/project-055-sprint-001-pilot-1-rehearsal-summary.json`、`.tmp/project-055-sprint-001-pilot-2-rehearsal-summary.json`、`.tmp/project-063-sprint-001-cleanroom-tgz-report.json`、`.tmp/project-063-sprint-001-local-distribution-report.json`、`.tmp/project-065-sprint-001-desktop-foundation-report.json`、`.tmp/project-067-sprint-001-host-distribution-report.json`，以及 `.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-002-ga-evidence-consolidation-and-closeout/tasks/DA-616-ga-evidence-dossier-and-cross-surface-backlinks.md`。
 6. 当这些信号变化时，应先更新 `docs/support-matrix.zh-CN.md`，而不是在本手册里再维护第二张状态表。
+7. `local-model` 仍只是一条 restricted-network / explicit-local-fallback 的 truth surface。不要把一次通过的本地 fallback rehearsal 误当成 `tool_calling`、`structured_output`、`confirmation_gate` 或 unattended reviewer delegation 已正式支持的证明；这些能力上限必须继续以 `docs/support-matrix*.md` 为准。
 
 ## 6. 如何理解 external-adopter warning
 

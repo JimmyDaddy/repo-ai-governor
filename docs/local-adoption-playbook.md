@@ -128,7 +128,8 @@ What to pay attention to:
 5. `tool_transport_matrix` now projects effective transport truth; CLI-backed adapters such as `codex`, `claude-code`, and `github-copilot` show `cli_exec` even when config omits an explicit `transport`.
 6. A `warn` or failed dry-run still counts as useful evidence when `report`, `replay`, and `diagnostics_trace` artifacts are emitted, because those artifacts preserve the failing stage and adapter attribution for follow-up routing fixes.
 7. In the current validated `codex` baseline, `run --dry-run --trace` can complete the baseline `prepare -> execute -> report` chain through real `cli_exec` routing without performing governed file edits or dependency mutations; it still persists audit artifacts under the active governor workspace, so treat that as the preferred success signal before enabling a non-dry-run run.
-8. `github-copilot` now follows the same CLI-backed truth model for tester-route verification, while `local-model` should still be read as a constrained fallback surface rather than a full substitute for required `tool_calling` or `structured_output` roles.
+8. `github-copilot` now follows the same CLI-backed truth model for tester-route verification, while `local-model` should still be read as a constrained fallback surface only for restricted-network or operator-selected local fallback flows whose route requirements stay capability-compatible.
+9. Do not treat `local-model` as a promoted primary substitute for repository-review reviewer delegation or for roles that require `tool_calling`, `structured_output`, or `confirmation_gate`; those paths remain unsupported or explicitly guarded.
 
 Helpful artifact paths:
 

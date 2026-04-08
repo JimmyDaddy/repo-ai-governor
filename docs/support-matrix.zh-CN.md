@@ -29,12 +29,12 @@
 | `codex` | Real-path available（environment-gated） | `cli_exec` 现已成为基线 `prepare -> execute -> report` dry-run 的已验证真实 transport；当本地 Codex CLI 可用时，`verify --adapters` 会把 `planner` / `architect` / `coder` / `reviewer` / `verifier` 的 primary route 如实投影为 `codex + cli_exec`。 |
 | `github-copilot` | Real-path available（environment-gated） | 被选中时默认真实 transport 为 `cli_exec`，`verify --adapters` 现在会把 `github-copilot` 的 tester route 如实投影为 `transport=cli_exec`；本地 probe 会优先检查 `copilot` CLI，再按需回退到 `gh copilot -- --version`，而 quota/auth/probe 失败仍只表现为降级或 reroute，而不是治理链路失效。 |
 | `claude-code` | Real-path available（environment-gated） | 被选中时默认真实 transport 为 `cli_exec`，`remote_api` 仍是可选路径；`verify --adapters` 现在会在未显式声明 `transport` 时投影 effective default transport truth，但当前 workspace 若本地 Claude health-check 失败仍会如实给出 warning。 |
-| `local-model`（`ollama`） | Fallback-only real-path（本地运行时受限） | 当 endpoint/model 配置齐全时，`ollama` 已具备 endpoint-backed 的 probe/invoke 真值，可用于 restricted-network 或显式本地 fallback；但 `tool_calling`、`structured_output`、`confirmation_gate` 仍保持保守或不支持口径，不能把它包装成主远端 adapter 的等价替代。 |
+| `local-model`（`ollama`） | Fallback-only real-path（本地运行时受限） | 当 endpoint/model 配置齐全时，`ollama` 已具备 endpoint-backed 的 probe/invoke 真值，但正式支持仅限于 restricted-network 或显式本地 fallback、且 route requirement 仍停留在 capability-compatible 纯文本基线的场景。`tool_calling`、`structured_output`、`confirmation_gate` 仍是 unsupported，`parallel_task` / `streaming` / `cancellation` 继续停留在 degraded，且当只剩 `local-model` fallback 时 repository-review reviewer delegation 仍保持显式 guard；不能把它包装成主远端 adapter 的 promoted primary 等价替代。 |
 
 ### 2.1 Adapter Truth Labels
 
 1. `Real-path available` 表示该 adapter 在被选中时已经可以暴露非 fixture 的真实执行真值（`cli_exec` 或可选 `remote_api`），即使当前 workspace 仍可能因为环境前置条件出现 warning。
-2. `Fallback-only real-path` 表示该 adapter 已具备真实 probe/invoke 真值，但正式支持边界仍限制在 fallback、restricted-network 或 capability-constrained 流程，不是 promoted primary lane。
+2. `Fallback-only real-path` 表示该 adapter 已具备真实 probe/invoke 真值，但正式支持边界仍限制在 fallback、restricted-network 或 capability-compatible 的本地受限流程，不是 promoted primary lane。
 3. `Fixture-backed` 表示产品 surface 已正式支持，但公开证据仍以 routing/fixture truth 为主，尚未提升为正式真实调用路径。
 
 ## 3. 治理模板目录
