@@ -14,13 +14,14 @@
 当前公开 CLI 与包级 surface 包括：
 
 1. 初始化与审计：`init`、`doctor`、`check`
-2. 多工具接入：`connect`、`verify`
-3. 受治理执行：`plan`、`run`、`review`、`review-verify`
-4. 会话优先入口：无子命令执行 `repo-ai-governor`，再用 `resume`
-5. 流程与生命周期工具：`workflow`、`upgrade`
-6. workspace 与壳层偏好：`workspace`、`set-ui-theme`
-7. 宿主分发：`host export`、`host verify`、`host pack`
-8. 可选 secondary/public package surface：源码仓 VS Code companion、desktop foundation，以及根包公开导出 `@cjhdev/repo-ai-governor/service-host`
+2. 受管仓库安装生命周期：`adopt list`、`adopt apply`、`adopt diff`、`adopt verify`、`adopt upgrade`、`adopt remove`
+3. 多工具接入：`connect`、`verify`
+4. 受治理执行：`plan`、`run`、`review`、`review-verify`
+5. 会话优先入口：无子命令执行 `repo-ai-governor`，再用 `resume`
+6. 流程与 schema 生命周期工具：`workflow`、`upgrade`
+7. workspace 与壳层偏好：`workspace`、`set-ui-theme`
+8. 低层宿主分发：`host export`、`host verify`、`host pack`
+9. 可选 secondary/public package surface：源码仓 VS Code companion、desktop foundation，以及根包公开导出 `@cjhdev/repo-ai-governor/service-host`
 
 这些 surface 的正式支持边界以 `docs/support-matrix.zh-CN.md` 为准。
 
@@ -109,9 +110,37 @@ node <governor-repo>/dist/bin/repo-ai-governor.js <command>
 3. `resume [session-id]` 可恢复最近一次或指定的持久化会话。
 4. 全新的外部仓库仍可能出现 `baseline_docs missing=5/5`、`script_not_found` 之类 self-host 相关 warning；除非你本来就要 vendoring 本仓库自己的治理文档和脚本，否则应把它们视为提示而不是失败。
 
+### 2.4 应用受管 adoption baseline
+
+```bash
+pnpm exec repo-ai-governor adopt list --output json
+pnpm exec repo-ai-governor adopt apply adopter-complete --repo . --hosts codex,claude-code,github-copilot --output json
+pnpm exec repo-ai-governor adopt verify --repo . --output json
+```
+
+当你想走“整仓安装”的首选路径，而不是手工 staging 低层 host export 时，使用这组命令。
+
+说明：
+
+1. 内置 adoption pack 会把受管宿主资产、guide 与安装元数据写到 `.repo-ai-governor/adoption/installations/**`。
+2. 内置 `adopt apply` 不要求目标仓库预先存在 source-local `.codex/skills/**`。
+3. 如果要走高级 self-host 路径，请使用 `adopt apply adopter-complete --adoption-profile self-host-complete --workspace-mode repo_local`。
+
 ## 3. 常见使用路径
 
-### 3.1 接入多种 AI 工具
+### 3.1 安装或维护一套受管仓库 baseline
+
+```bash
+pnpm exec repo-ai-governor adopt apply adopter-complete --repo . --hosts codex,claude-code,github-copilot --output json
+pnpm exec repo-ai-governor adopt verify --repo . --output json
+pnpm exec repo-ai-governor adopt diff --repo . --output json
+pnpm exec repo-ai-governor adopt upgrade adopter-complete --repo . --output json
+pnpm exec repo-ai-governor adopt remove adopter-complete --repo . --force --output json
+```
+
+适合在目标仓库上使用正式支持的高层安装、漂移检查、升级与移除路径。
+
+### 3.2 接入多种 AI 工具
 
 ```bash
 pnpm exec repo-ai-governor connect --tools codex,claude-code --preset multi-tool-default --output json
@@ -122,7 +151,7 @@ pnpm exec repo-ai-governor run --output json --dry-run --trace
 
 这条路径会生成可审阅的 candidate 配置、检查 adapter readiness，并在真实执行前完成一轮 dry-run 验证。
 
-### 3.2 跑通第一条受治理流程
+### 3.3 跑通第一条受治理流程
 
 ```bash
 pnpm exec repo-ai-governor plan --output json
@@ -133,7 +162,7 @@ pnpm exec repo-ai-governor review-verify --output json
 
 适合第一次体验完整的 plan -> run -> review -> verify 闭环，并查看 workspace 下的审计产物。
 
-### 3.3 切换 workspace 模式
+### 3.4 切换 workspace 模式
 
 ```bash
 pnpm exec repo-ai-governor workspace dry-run --workspace-mode repo_local --output json
@@ -143,7 +172,7 @@ pnpm exec repo-ai-governor workspace rollback <plan-path> --output json
 
 请保留命令输出中的 `plan-path`，它就是这次迁移的 rollback 参考。
 
-### 3.4 预览、应用与回滚 Upgrade
+### 3.5 预览、应用与回滚 Upgrade
 
 ```bash
 pnpm exec repo-ai-governor upgrade --output json
@@ -153,7 +182,7 @@ pnpm exec repo-ai-governor upgrade rollback <apply-receipt-or-rollback-snapshot>
 
 先跑 `upgrade` preview。保留 preview 输出里的 `report_path`，以及 apply 输出里的 `apply_receipt_path`；这两类产物就是 adopter-facing apply/rollback 路径的正式 hand-off 参考。
 
-### 3.5 导出或打包宿主资产
+### 3.6 导出或打包低层宿主资产
 
 ```bash
 pnpm exec repo-ai-governor host export --host codex --mode project-local --output-dir .repo-ai-governor/generated/hosts/codex
@@ -161,7 +190,7 @@ pnpm exec repo-ai-governor host verify --output-dir .repo-ai-governor/generated/
 pnpm exec repo-ai-governor host pack --host claude-code --mode plugin-bundle --bundle-dir .repo-ai-governor/generated/bundles/claude
 ```
 
-当你希望基于同一套治理真值，为 `codex`、`claude-code` 或 `github-copilot` 生成 staged host assets 或 installable bundle 时，使用这条路径。
+当你希望基于同一套治理真值，为 `codex`、`claude-code` 或 `github-copilot` 生成 staged host assets 或 installable bundle，而不是走首选的整仓 `adopt apply` 路径时，使用这条路径。
 
 ## 4. 给外部 adopter 的提醒
 
@@ -170,7 +199,7 @@ pnpm exec repo-ai-governor host pack --host claude-code --mode plugin-bundle --b
 3. 如果目标仓库本身是 Yarn/npm，或者已有脏工作树，建议先走 `dist-binary`；否则默认先用 `path`，只有在工作流需要时再切到 `link` 或 `tgz`。
 4. session shell、React shell、workflow/upgrade、宿主分发、workspace 工具、HITL 通知、故障排查等更完整说明，请看本地接入手册。
 5. 可选的 VS Code companion surface 目前只支持从已构建的 governor 源码仓通过 `apps/vscode-extension` 启动；已发布的 npm/tgz 安装面即便仍带有内部 `dist/apps/vscode-extension/**` 产物，也不提供正式支持的 VSIX、Marketplace 或可安装扩展 bundle。
-6. 仓库内的工作流辅助能力位于 `.codex/skills/`；普通 CLI bootstrap 不需要它们，但如果你希望复用同样的 self-host skill 体验，或要使用 `host export` / `host pack`，这些资产就会变得相关。
+6. 内置 `adopt apply` 不要求目标仓库预先存在 `.codex/skills/**`；只有在你希望复用同样的 self-host skill 体验，或要使用低层 `host export` / `host pack` 时，这些仓库内辅助资产才会变得相关。
 7. 若要在 clean-room 或 desktop-sidecar 场景下启动本地 service host，只支持通过根包公开导出 `@cjhdev/repo-ai-governor/service-host` 引入；不要深导入内部 `dist/**` host 文件。
 
 ## 5. 继续阅读

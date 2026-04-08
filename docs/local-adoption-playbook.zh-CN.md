@@ -53,7 +53,32 @@ node <governor-repo>/dist/bin/repo-ai-governor.js <command>
 2. 除非你的目标仓库本来就要 vendoring 本仓库自己的治理文档和脚本，否则应把这些 warning 当成提示，而不是失败。
 3. `init` 默认是 `tool_managed`，所以全新目标仓库未必会立刻生成 `.repo-ai-governor/`。
 
-### 3.1 可选的 VS Code Secondary Surface
+### 3.1 使用 `adopt` 的首选整仓安装路径
+
+当你希望走正式支持的“整仓安装”故事，而不是手工 staging 低层 host export 时，请使用：
+
+```bash
+pnpm exec repo-ai-governor adopt list --output json
+pnpm exec repo-ai-governor adopt apply adopter-complete --repo . --hosts codex,claude-code,github-copilot --output json
+pnpm exec repo-ai-governor adopt verify --repo . --output json
+```
+
+这条路径会带来：
+
+1. `adopt apply` 会物化受管宿主资产、`.mcp.json`、adoption guides，以及 `.repo-ai-governor/adoption/installations/**` 下的安装元数据。
+2. 内置 adoption pack 不要求目标仓库预先存在 source-local `.codex/skills/**`。
+3. `adopt verify`、`adopt diff`、`adopt upgrade` 与 `adopt remove` 会成为这套受管安装的正式生命周期路径。
+
+高级 self-host bootstrap：
+
+```bash
+pnpm exec repo-ai-governor adopt apply adopter-complete --adoption-profile self-host-complete --repo . --workspace-mode repo_local --hosts codex --output json
+pnpm exec repo-ai-governor adopt verify --repo . --output json
+```
+
+只有当目标仓库本身要承载一套 template-backed repo-local governance workspace 时，才应使用 self-host profile。它会 seed `current-context.md`、project/sprint/task 模板与 sqlite registries 等空白/模板化 surface，但不会克隆本仓库的任何 live execution state。
+
+### 3.2 可选的 VS Code Secondary Surface
 
 只有当你想在常规 CLI bootstrap 之上再验证 editor-native companion 时，才需要这条路径：
 
@@ -234,6 +259,7 @@ pnpm exec repo-ai-governor host pack --host claude-code --mode plugin-bundle --b
 2. 在把 repo-local 资产交给其他人或其他仓库消费之前，先校验 staged export 或 apply 结果。
 3. 当目标宿主支持 `plugin-bundle` 时，物化一份可安装 bundle。
 4. 为 `export`、`verify`、`pack` 全链路保留同一套 manifest/receipt 证据。
+5. 在首选的整仓 `adopt apply` 路径之下，按更低层的 host-native 方式工作。
 
 公开包边界：
 
@@ -242,7 +268,7 @@ pnpm exec repo-ai-governor host pack --host claude-code --mode plugin-bundle --b
 
 运行说明：
 
-1. 当你基于本仓库打包的 skill 层生成 host assets 时，`host export` 与 `host pack` 依赖 `.codex/skills/` 下的仓库本地 skills。
+1. 内置 `adopt apply` 不要求预先存在 `.codex/skills/**`；只有当 `host export` 与 `host pack` 需要基于本仓库打包的 skill 层生成低层 host assets 时，才依赖这棵目录。
 2. 不同 host 与模式（`project-local` / `plugin-bundle`）的 target capabilities 不同；请把生成出的 manifest 与 verification summary 视为正式 hand-off artifact。
 3. 对 GitHub Copilot，还可以通过 `--copilot-target repo-local|cli-plugin|github-com-agent` 选择更具体的导出或打包目标。
 
@@ -296,11 +322,11 @@ pnpm exec repo-ai-governor run --output json
 8. `workspace execute` 或 `workspace rollback` 之后，都应重新执行 `doctor` 来确认活动 `workspaceRoot`，不要只凭目录结构变化判断是否成功。
 9. 做 workspace migration 演练时，请在真实目标仓库或隔离的外部临时目录中执行。若直接在 governor 源仓库里跑，命令可能重新附着到该仓库的 Git root，产生误导性的 workspace 产物。
 10. 在 acceptance 窗口里保留生成出的 `*.rollback.json` 或 `*.rollback-receipt.json`；它们就是证明迁移或 upgrade closeout 已干净完成的审计凭证。
-11. 如果 `host export` 或 `host pack` 报告缺少仓库本地 skills，请先确认 `.codex/skills/` 存在；在真正使用宿主分发前，普通 CLI 接入可以忽略这一要求。
+11. 如果 `host export` 或 `host pack` 报告缺少仓库本地 skills，请先确认 `.codex/skills/` 存在；内置 `adopt apply` 不需要这棵目录，除非你后续还要继续使用低层宿主分发能力。
 
 ## 10. 可选 self-host 资产
 
-1. 仓库内的辅助能力位于 `.codex/skills/`；普通 CLI bootstrap 不需要它们，但如果你要复用同样的 self-host skill/workflow，或需要宿主分发能力，这些资产就会变得相关。
+1. 仓库内的辅助能力位于 `.codex/skills/`；普通 CLI bootstrap 和内置 `adopt apply` 不需要它们，但如果你要复用同样的 self-host skill/workflow，或需要低层宿主分发能力，这些资产就会变得相关。
 2. 这些资产属于本地 AI 工具辅助层，不是上文安装路径成立的前置条件。
 3. `apps/vscode-extension` 只是面向源码仓评估的可选 secondary surface，不属于已发布 package-install baseline。
 

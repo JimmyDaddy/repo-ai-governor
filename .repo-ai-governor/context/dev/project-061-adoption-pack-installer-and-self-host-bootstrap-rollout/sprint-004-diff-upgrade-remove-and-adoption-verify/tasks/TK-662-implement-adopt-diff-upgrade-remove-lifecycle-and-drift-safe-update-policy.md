@@ -1,6 +1,6 @@
 # TK-662 implement adopt diff upgrade remove lifecycle and drift-safe update policy
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-09
 - Owner: `AI-Agent`
 - Priority: `P0`
@@ -49,7 +49,12 @@
 ## 9. 执行记录
 
 1. 2026-04-09：任务创建，状态初始化为 `planned`。
+2. 2026-04-09：已实现 clean `adopt diff/upgrade/remove` lifecycle，并修正 upgrade action/result truth 与 managed-file-count 口径，确保 drift-safe update policy 保持 fail-closed。
+3. 2026-04-09：project-final CR 发现 `adopt remove --force` 的 drift guard 实际退化为允许删除 drifted managed file；已修正 remove guard 并补齐 drift-remove integration regression，恢复 fail-closed contract truth。
 
 ## 10. 产出
 
-1. 待执行：installer lifecycle commands and drift policy
+1. 已完成：`apps/cli/src/runtime/adoption-pack-runtime.ts`
+2. 已完成：`packages/shared/src/i18n/locales/en-us.ts`
+3. 已完成：`packages/shared/src/i18n/locales/zh-cn.ts`
+4. 已完成：`apps/cli/test/adopt-command.integration.test.ts`

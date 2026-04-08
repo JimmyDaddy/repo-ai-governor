@@ -1,6 +1,6 @@
 # TK-667 close docs alignment rollout audit and delivery evidence
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-09
 - Owner: `AI-Agent`
 - Priority: `P1`
@@ -52,7 +52,12 @@
 ## 9. 执行记录
 
 1. 2026-04-09：任务创建，状态初始化为 `planned`。
+2. 2026-04-09：已将 README、本地 adoption playbook 与 support matrix 对齐到真实 `adopt` / self-host / host-export 边界，并把 project-061 clean-room truthfulness evidence 回链到公开文档面。
+3. 2026-04-09：已补齐 `project-061-adoption-pack-installer-and-self-host-bootstrap-rollout-completion-audit-summary.md`，并将 support matrix clean-room evidence timestamp 刷新到最新 `dist` 构建后的 clean-room summary。
 
 ## 10. 产出
 
-1. 待执行：docs truthfulness, rollout audit, and delivery evidence closeout
+1. 已完成：`README.md` 与 `README.zh-CN.md`
+2. 已完成：`docs/local-adoption-playbook.md` 与 `docs/local-adoption-playbook.zh-CN.md`
+3. 已完成：`docs/support-matrix.md` 与 `docs/support-matrix.zh-CN.md`
+4. 已完成：`.repo-ai-governor/context/dev/project-061-adoption-pack-installer-and-self-host-bootstrap-rollout/project-061-adoption-pack-installer-and-self-host-bootstrap-rollout-completion-audit-summary.md`

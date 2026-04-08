@@ -1,6 +1,6 @@
 # TK-660 publish built-in adopter-complete pack and capability coverage map
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-09
 - Owner: `AI-Agent`
 - Priority: `P0`
@@ -51,7 +51,10 @@
 ## 9. 执行记录
 
 1. 2026-04-09：任务创建，状态初始化为 `planned`。
+2. 2026-04-09：已发布内置 `adopter-complete` pack definition，补齐 workflow/guide/bootstrap/capability coverage，并将其作为 adopter-facing 的默认整仓安装 baseline。
 
 ## 10. 产出
 
-1. 待执行：adopter-complete pack definition and coverage map
+1. 已完成：`packages/standards/src/built-in-adoption-pack-catalog.ts`
+2. 已完成：`packages/standards/src/index.ts`
+3. 已完成：`apps/cli/test/adopt-command.integration.test.ts`

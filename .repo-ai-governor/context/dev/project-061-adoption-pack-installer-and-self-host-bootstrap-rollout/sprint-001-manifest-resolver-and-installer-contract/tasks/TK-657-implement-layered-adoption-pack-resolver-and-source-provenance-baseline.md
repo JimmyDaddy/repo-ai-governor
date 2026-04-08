@@ -1,6 +1,6 @@
 # TK-657 implement layered adoption-pack resolver and source provenance baseline
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-09
 - Owner: `AI-Agent`
 - Priority: `P0`
@@ -49,7 +49,10 @@
 ## 9. 执行记录
 
 1. 2026-04-09：任务创建，状态初始化为 `planned`。
+2. 2026-04-09：已实现 `built_in / global / repo_local` layered resolver、source provenance 输出与 precedence 规则，并补齐 registry/unit/integration evidence。
 
 ## 10. 产出
 
-1. 待执行：resolver implementation and provenance evidence
+1. 已完成：`packages/standards/src/adoption-pack-registry.ts`
+2. 已完成：`packages/standards/test/adoption-pack-registry.unit.test.ts`
+3. 已完成：`apps/cli/test/adopt-command.integration.test.ts`

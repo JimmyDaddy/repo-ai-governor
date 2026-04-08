@@ -1,6 +1,6 @@
 # TK-659 write managed ownership install receipt and adoption metadata baseline
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-09
 - Owner: `AI-Agent`
 - Priority: `P0`
@@ -49,7 +49,10 @@
 ## 9. 执行记录
 
 1. 2026-04-09：任务创建，状态初始化为 `planned`。
+2. 2026-04-09：installer 已开始写入 install receipt、verification summary 与 managed ownership records，并把 installer metadata truth 固定到 `.repo-ai-governor/adoption/installations/**`。
 
 ## 10. 产出
 
-1. 待执行：managed ownership and install receipt baseline
+1. 已完成：`apps/cli/src/runtime/adoption-pack-runtime.ts`
+2. 已完成：`packages/standards/src/types/interfaces/adoption-pack.interface.ts`
+3. 已完成：`.tmp/project-061-adoption-pack-cleanroom-summary.json`

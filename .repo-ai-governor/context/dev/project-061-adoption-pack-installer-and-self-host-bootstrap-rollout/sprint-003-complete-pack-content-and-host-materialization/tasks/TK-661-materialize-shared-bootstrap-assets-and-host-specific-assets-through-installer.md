@@ -1,6 +1,6 @@
 # TK-661 materialize shared bootstrap assets and host-specific assets through installer
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-09
 - Owner: `AI-Agent`
 - Priority: `P0`
@@ -49,7 +49,10 @@
 ## 9. 执行记录
 
 1. 2026-04-09：任务创建，状态初始化为 `planned`。
+2. 2026-04-09：installer 已能统一物化 shared/bootstrap assets、merge `AGENTS.md` / `.mcp.json` / host-specific outputs，并处理 multi-host apply 时的 shared-root 冲突。
 
 ## 10. 产出
 
-1. 待执行：installer-driven materialization baseline
+1. 已完成：`apps/cli/src/runtime/adoption-pack-runtime.ts`
+2. 已完成：`packages/adapters/codex/src/codex-host-renderer.ts`
+3. 已完成：`packages/adapters/claude-code/src/claude-code-host-renderer.ts` 与 `packages/adapters/github-copilot/src/github-copilot-host-renderer.ts`

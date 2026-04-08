@@ -3,12 +3,12 @@
 ## Primary Stream
 
 - Status: idle
-- Project: `project-060-adoption-pack-promotion-and-decomposition`
-- Sprint: `sprint-001-promotion-and-followup-decomposition`
-- Docs root: `.repo-ai-governor/context/dev/project-060-adoption-pack-promotion-and-decomposition`
-- Task records: `.repo-ai-governor/context/dev/project-060-adoption-pack-promotion-and-decomposition/sprint-001-promotion-and-followup-decomposition/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-060-adoption-pack-promotion-and-decomposition/sprint-001-promotion-and-followup-decomposition/review/`
-- Note: `2026-04-09` `project-060` docs-only promotion/decomposition stream 已完成 closeout，`technical-solution.host-skill-distribution-and-discovery-followup` 已进入 `active` lifecycle，并把 `project-061 / sprint-001` 登记为 planned follow-up stream；当前 worktree 仅保留最近完成的 primary stream trace，暂无新的 active primary stream。
+- Project: `none`
+- Sprint: `none`
+- Docs root: `none`
+- Task records: `none`
+- Review records: `none`
+- Note: `2026-04-09` `project-061-adoption-pack-installer-and-self-host-bootstrap-rollout / sprint-006-clean-room-rehearsals-and-docs-truthfulness` 已完成 final closeout 并迁入 completed stream history；当前没有新的 active primary stream。
 
 ## Active Streams
 
@@ -16,7 +16,7 @@
 
 ## Planned Follow-Up Streams
 
-- `stream-project-061-sprint-001`: project=`project-061-adoption-pack-installer-and-self-host-bootstrap-rollout`, sprint=`sprint-001-manifest-resolver-and-installer-contract`, docs=`.repo-ai-governor/context/dev/project-061-adoption-pack-installer-and-self-host-bootstrap-rollout`, plan=`.repo-ai-governor/context/dev/project-061-adoption-pack-installer-and-self-host-bootstrap-rollout/sprint-001-manifest-resolver-and-installer-contract/plan.md`, tasks=`.repo-ai-governor/context/dev/project-061-adoption-pack-installer-and-self-host-bootstrap-rollout/sprint-001-manifest-resolver-and-installer-contract/tasks/`, review=`.repo-ai-governor/context/dev/project-061-adoption-pack-installer-and-self-host-bootstrap-rollout/sprint-001-manifest-resolver-and-installer-contract/review/`, status=`planned`
+- none currently registered.
 
 ## Completed Stream History
 

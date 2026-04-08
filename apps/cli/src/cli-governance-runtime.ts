@@ -76,6 +76,7 @@ import {
   RuntimeError,
   WorkspaceMigrationPolicy,
 } from '@repo-ai-governor/shared';
+import { CliAdoptCommand } from './commands/adopt-command.js';
 import { CliCheckCommand } from './commands/check-command.js';
 import { CliCommandRegistry } from './commands/cli-command-registry.js';
 import { CliConnectCommand } from './commands/connect-command.js';
@@ -256,6 +257,7 @@ export class CliGovernanceRuntime {
       new CliConnectCommand(),
       new CliDoctorCommand(),
       new CliCheckCommand(),
+      new CliAdoptCommand(),
       new CliVerifyCommand(),
       new CliPlanCommand(),
       new CliHostCommand(),

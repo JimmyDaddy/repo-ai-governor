@@ -81,6 +81,7 @@ export type {
   CliTaskInputArtifactReference,
   CliTaskInputReference,
   SessionMainSubagentDescriptor,
+  CliAdoptCommandOptions,
   CliHostCommandOptions,
   CliPlanCommandOptions,
   CliWorkspaceCommandOptions,

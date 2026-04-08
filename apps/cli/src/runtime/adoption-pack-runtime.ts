@@ -1,0 +1,1564 @@
+import { createHash, randomUUID } from 'node:crypto';
+import { existsSync } from 'node:fs';
+import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { dirname, resolve } from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
+
+import { ClaudeCodeHostRenderer } from '@repo-ai-governor/adapter-claude-code';
+import { CodexHostRenderer } from '@repo-ai-governor/adapter-codex';
+import { GithubCopilotHostRenderer } from '@repo-ai-governor/adapter-github-copilot';
+import { SqliteArtifactIndexStore } from '@repo-ai-governor/artifact-registry';
+import { GovernorErrorCode, RuntimeError, WorkspaceMode } from '@repo-ai-governor/shared';
+import {
+  type AdoptionPackInstallReceipt,
+  AdoptionPackManagedAssetGroup,
+  type AdoptionPackManagedFileRecord,
+  type AdoptionPackProfile,
+  AdoptionPackRegistry,
+  type AdoptionPackVerificationCheck,
+  type AdoptionPackVerificationSummary,
+  AdoptionPackWorkspaceModePolicy,
+  DEFAULT_ADOPTION_METADATA_ROOT_SEGMENTS,
+  HostDistributionHost,
+  HostDistributionMode,
+  HostDistributionTarget,
+  type HostExportProjectedFile,
+  type HostRendererRenderResult,
+  HostVerificationStatus,
+  type ResolvedAdoptionPackDefinition,
+  StructuredWorkflowAssetRegistry,
+} from '@repo-ai-governor/standards';
+import { CliAdoptAction } from '../constants/cli-adopt.constant.js';
+import type { CliAdoptCommandOptions } from '../types/interfaces/cli-adopt-command.interface.js';
+
+type AdoptionTextLocalizer = (english: string, chinese: string) => string;
+
+interface AdoptionListItem {
+  packId: string;
+  packVersion: string;
+  displayProfileIds: string[];
+  resolvedSourceKind: string;
+  resolvedSourceRef: string;
+  installSupported: boolean;
+}
+
+interface AdoptionOperationResult {
+  action: CliAdoptAction;
+  repoRoot: string;
+  packId: string | null;
+  profileId: string | null;
+  workspaceMode: WorkspaceMode | null;
+  sourceKind: string | null;
+  sourceRef: string | null;
+  hostTargets: HostDistributionTarget[];
+  verificationStatus: HostVerificationStatus;
+  managedFileCount: number;
+  receiptPath: string | null;
+  verificationSummaryPath: string | null;
+  diffReportPath: string | null;
+  writtenArtifacts: string[];
+  checks: AdoptionPackVerificationCheck[];
+  availablePacks?: AdoptionListItem[];
+}
+
+interface ResolvedInstallTarget {
+  definition: ResolvedAdoptionPackDefinition;
+  profile: AdoptionPackProfile;
+}
+
+interface MaterializedHostResult {
+  target: HostDistributionTarget;
+  verificationStatus: HostVerificationStatus;
+  checks: AdoptionPackVerificationCheck[];
+  managedFileRecords: AdoptionPackManagedFileRecord[];
+  writtenArtifacts: string[];
+  exportManifestPath: string;
+  verificationSummaryPath: string;
+  applyReportPath: string;
+}
+
+const ADOPTION_INSTALL_RECEIPT_FILE_NAME = 'adoption-install.receipt.json';
+const ADOPTION_VERIFICATION_SUMMARY_FILE_NAME = 'adoption-verification.summary.json';
+const ADOPTION_DIFF_REPORT_FILE_NAME = 'adoption-diff.report.json';
+const ARTIFACT_REGISTRY_HEADERS = [
+  'artifact_id',
+  'artifact_type',
+  'artifact_path',
+  'artifact_version',
+  'artifact_status',
+  'producer_task_id',
+  'producer_execution_id',
+  'registered_at',
+  'last_updated_at',
+  'dependent_tasks',
+];
+
+/**
+ * Orchestrates high-level adoption-pack resolution, materialization, and lifecycle checks.
+ */
+export class CliAdoptionPackRuntime {
+  private readonly adoptionPackRegistry: AdoptionPackRegistry;
+
+  public constructor(
+    private readonly currentWorkingDirectory: string,
+    private readonly localizeText: AdoptionTextLocalizer = (english) => english,
+    adoptionPackRegistry?: AdoptionPackRegistry,
+  ) {
+    this.adoptionPackRegistry =
+      adoptionPackRegistry ??
+      new AdoptionPackRegistry({
+        currentWorkingDirectory,
+      });
+  }
+
+  /**
+   * Lists available adoption packs after layered precedence has been applied.
+   */
+  public async list(options: CliAdoptCommandOptions): Promise<AdoptionOperationResult> {
+    const repoRoot = this.resolveRepoRoot(options.repoPath);
+    const manifests = await this.adoptionPackRegistry.list();
+
+    return {
+      action: CliAdoptAction.LIST,
+      repoRoot,
+      packId: null,
+      profileId: null,
+      workspaceMode: null,
+      sourceKind: null,
+      sourceRef: null,
+      hostTargets: [],
+      verificationStatus: HostVerificationStatus.PASS,
+      managedFileCount: 0,
+      receiptPath: null,
+      verificationSummaryPath: null,
+      diffReportPath: null,
+      writtenArtifacts: [],
+      checks: [
+        {
+          checkId: 'available-packs',
+          status: HostVerificationStatus.PASS,
+          detail: `available_packs=${manifests.length}`,
+        },
+      ],
+      availablePacks: manifests.map((manifest) => ({
+        packId: manifest.packId,
+        packVersion: manifest.packVersion,
+        displayProfileIds: manifest.profiles.map((profile) => profile.profileId),
+        resolvedSourceKind: manifest.resolvedSourceKind,
+        resolvedSourceRef: manifest.resolvedSourceRef,
+        installSupported: manifest.installSupported,
+      })),
+    };
+  }
+
+  /**
+   * Applies one resolved adoption pack into the target repository.
+   */
+  public async apply(options: CliAdoptCommandOptions): Promise<AdoptionOperationResult> {
+    const repoRoot = this.resolveRepoRoot(options.repoPath);
+    const resolvedTarget = await this.resolveInstallTarget(options);
+    const existingReceipt = await this.readExistingReceipt(repoRoot, options.packSelector);
+    const selectedTargets = this.resolveSelectedHostTargets(resolvedTarget.profile, options.hosts);
+    const workspaceMode = this.resolveWorkspaceMode(
+      resolvedTarget.profile,
+      options.workspaceMode,
+      true,
+    );
+    const installationRoot = this.resolveInstallationRoot(repoRoot, resolvedTarget.definition);
+    const receiptPath = resolve(installationRoot, ADOPTION_INSTALL_RECEIPT_FILE_NAME);
+    const verificationSummaryPath = resolve(
+      installationRoot,
+      ADOPTION_VERIFICATION_SUMMARY_FILE_NAME,
+    );
+    const writtenArtifacts: string[] = [];
+    const managedFileRecords: AdoptionPackManagedFileRecord[] = [];
+    const checks: AdoptionPackVerificationCheck[] = [];
+    const sessionManagedFileContentByPath = new Map<string, string>();
+
+    for (const target of selectedTargets) {
+      const hostResult = await this.materializeHostTarget({
+        repoRoot,
+        installationRoot,
+        definition: resolvedTarget.definition,
+        profile: resolvedTarget.profile,
+        target,
+        existingReceipt,
+        force: options.force,
+        sessionManagedFileContentByPath,
+      });
+      managedFileRecords.push(...hostResult.managedFileRecords);
+      writtenArtifacts.push(...hostResult.writtenArtifacts);
+      checks.push(...hostResult.checks);
+    }
+
+    const templateRecords = this.resolveTemplateRecords(
+      resolvedTarget.definition,
+      resolvedTarget.profile,
+    );
+    for (const templateRecord of templateRecords) {
+      const absolutePath = resolve(repoRoot, templateRecord.relativePath);
+      await this.writeManagedTextFile({
+        absolutePath,
+        relativePath: templateRecord.relativePath,
+        content: templateRecord.content,
+        assetGroup: templateRecord.assetGroup,
+        existingReceipt,
+        force: options.force,
+      });
+      managedFileRecords.push(
+        this.createManagedFileRecord(
+          templateRecord.relativePath,
+          absolutePath,
+          templateRecord.assetGroup,
+          templateRecord.content,
+        ),
+      );
+    }
+
+    if (resolvedTarget.profile.profileId === 'self-host-complete') {
+      const bootstrapResult = await this.bootstrapSelfHostSurface({
+        repoRoot,
+        existingReceipt,
+        force: options.force,
+      });
+      managedFileRecords.push(...bootstrapResult.managedFileRecords);
+      checks.push(...bootstrapResult.checks);
+      writtenArtifacts.push(...bootstrapResult.writtenArtifacts);
+    }
+
+    const deduplicatedManagedFileRecords = this.deduplicateManagedFileRecords(managedFileRecords);
+    const verificationSummary = this.buildVerificationSummary({
+      receiptPath,
+      verificationSummaryPath,
+      checks: [
+        {
+          checkId: 'source-resolution',
+          status: HostVerificationStatus.PASS,
+          detail: `source_kind=${resolvedTarget.definition.manifest.resolvedSourceKind}`,
+        },
+        {
+          checkId: 'selected-profile',
+          status: HostVerificationStatus.PASS,
+          detail: `profile_id=${resolvedTarget.profile.profileId}`,
+        },
+        {
+          checkId: 'managed-file-count',
+          status:
+            deduplicatedManagedFileRecords.length > 0
+              ? HostVerificationStatus.PASS
+              : HostVerificationStatus.FAIL,
+          detail: `managed_files=${deduplicatedManagedFileRecords.length}`,
+        },
+        ...checks,
+      ],
+    });
+    const now = new Date().toISOString();
+    const hostManifestPaths = writtenArtifacts.filter((artifactPath) =>
+      artifactPath.endsWith('host-export.manifest.json'),
+    );
+    const hostApplyReportPaths = writtenArtifacts.filter((artifactPath) =>
+      artifactPath.endsWith('host-apply.report.json'),
+    );
+    const receipt: AdoptionPackInstallReceipt = {
+      schemaVersion: 'adoption-pack-install-receipt-v1',
+      installationId: existingReceipt?.installationId ?? randomUUID(),
+      packId: resolvedTarget.definition.manifest.packId,
+      packVersion: resolvedTarget.definition.manifest.packVersion,
+      appliedProfileId: resolvedTarget.profile.profileId,
+      workspaceMode,
+      managedFileRecords: deduplicatedManagedFileRecords,
+      sourceResolution: {
+        sourceKind: resolvedTarget.definition.manifest.resolvedSourceKind,
+        sourceRef: resolvedTarget.definition.manifest.resolvedSourceRef,
+        canonicalSourceRefs: [...resolvedTarget.definition.manifest.canonicalSourceRefs],
+        sourcePackRefs: [...resolvedTarget.definition.manifest.sourcePackRefs],
+        resolutionOrder: [...resolvedTarget.definition.manifest.resolutionOrder],
+      },
+      verificationSummary,
+      installedAt: existingReceipt?.installedAt ?? now,
+      lastUpdatedAt: now,
+      receiptPath,
+      targetRepoRoot: repoRoot,
+      hostTargets: [...selectedTargets],
+      hostTarget: selectedTargets[0] ?? HostDistributionTarget.CODEX_PROJECT_LOCAL,
+      hostManifestPaths,
+      hostManifestPath: hostManifestPaths[0],
+      hostApplyReportPaths,
+      hostApplyReportPath: hostApplyReportPaths[0],
+    };
+
+    await this.writeJsonFile(receiptPath, receipt);
+    await this.writeJsonFile(verificationSummaryPath, verificationSummary);
+    writtenArtifacts.push(receiptPath, verificationSummaryPath);
+
+    return {
+      action: CliAdoptAction.APPLY,
+      repoRoot,
+      packId: receipt.packId,
+      profileId: receipt.appliedProfileId,
+      workspaceMode,
+      sourceKind: receipt.sourceResolution.sourceKind,
+      sourceRef: receipt.sourceResolution.sourceRef,
+      hostTargets: selectedTargets,
+      verificationStatus: verificationSummary.status,
+      managedFileCount: receipt.managedFileRecords.length,
+      receiptPath,
+      verificationSummaryPath,
+      diffReportPath: null,
+      writtenArtifacts,
+      checks: verificationSummary.checks,
+    };
+  }
+
+  /**
+   * Diffs current repository materialization against the active install receipt.
+   */
+  public async diff(options: CliAdoptCommandOptions): Promise<AdoptionOperationResult> {
+    const receipt = await this.loadReceiptForOperation(options);
+    const diffReportPath = resolve(dirname(receipt.receiptPath), ADOPTION_DIFF_REPORT_FILE_NAME);
+    const diffRecords = await this.buildDiffRecords(receipt);
+    const verificationSummary = this.buildVerificationSummary({
+      receiptPath: receipt.receiptPath,
+      verificationSummaryPath: receipt.verificationSummary.verificationSummaryPath,
+      checks: diffRecords.map((record) => ({
+        checkId: `managed:${record.relativePath}`,
+        status: HostVerificationStatus.FAIL,
+        detail: `${record.diffKind}:${record.assetGroup}`,
+        inspectedPath: record.relativePath,
+        expectedValue: record.receiptChecksumSha256,
+        actualValue: record.currentChecksumSha256 ?? 'missing',
+      })),
+    });
+
+    await this.writeJsonFile(diffReportPath, {
+      schemaVersion: 'adoption-pack-diff-report-v1',
+      installationId: receipt.installationId,
+      packId: receipt.packId,
+      packVersion: receipt.packVersion,
+      diffReportPath,
+      generatedAt: new Date().toISOString(),
+      status: verificationSummary.status,
+      records: diffRecords,
+      verificationSummary,
+    });
+
+    return {
+      action: CliAdoptAction.DIFF,
+      repoRoot: receipt.targetRepoRoot,
+      packId: receipt.packId,
+      profileId: receipt.appliedProfileId,
+      workspaceMode: receipt.workspaceMode,
+      sourceKind: receipt.sourceResolution.sourceKind,
+      sourceRef: receipt.sourceResolution.sourceRef,
+      hostTargets: this.resolveReceiptHostTargets(receipt),
+      verificationStatus:
+        diffRecords.length === 0 ? HostVerificationStatus.PASS : HostVerificationStatus.FAIL,
+      managedFileCount: receipt.managedFileRecords.length,
+      receiptPath: receipt.receiptPath,
+      verificationSummaryPath: receipt.verificationSummary.verificationSummaryPath,
+      diffReportPath,
+      writtenArtifacts: [diffReportPath],
+      checks:
+        diffRecords.length === 0
+          ? [
+              {
+                checkId: 'managed-drift',
+                status: HostVerificationStatus.PASS,
+                detail: 'managed_drift=clean',
+              },
+            ]
+          : verificationSummary.checks,
+    };
+  }
+
+  /**
+   * Verifies receipt, managed files, and lower-level host artifacts.
+   */
+  public async verify(options: CliAdoptCommandOptions): Promise<AdoptionOperationResult> {
+    const receipt = await this.loadReceiptForOperation(options);
+    const diffRecords = await this.buildDiffRecords(receipt);
+    const hostApplyReportPaths = this.resolveReceiptHostApplyReportPaths(receipt);
+    const checks: AdoptionPackVerificationCheck[] = [
+      {
+        checkId: 'receipt-path',
+        status: existsSync(receipt.receiptPath)
+          ? HostVerificationStatus.PASS
+          : HostVerificationStatus.FAIL,
+        detail: `receipt=${receipt.receiptPath}`,
+        inspectedPath: receipt.receiptPath,
+      },
+      {
+        checkId: 'host-verification-summary',
+        status:
+          hostApplyReportPaths.length > 0 &&
+          hostApplyReportPaths.every((reportPath) => existsSync(reportPath))
+            ? HostVerificationStatus.PASS
+            : HostVerificationStatus.WARN,
+        detail: `host_apply_reports=${hostApplyReportPaths.length > 0 ? hostApplyReportPaths.join(',') : 'missing'}`,
+        inspectedPath: hostApplyReportPaths[0] ?? undefined,
+      },
+    ];
+    checks.push(
+      ...diffRecords.map((record) => ({
+        checkId: `managed:${record.relativePath}`,
+        status: HostVerificationStatus.FAIL,
+        detail: `${record.diffKind}:${record.assetGroup}`,
+        inspectedPath: record.relativePath,
+        expectedValue: record.receiptChecksumSha256,
+        actualValue: record.currentChecksumSha256 ?? 'missing',
+      })),
+    );
+
+    const verificationSummary = this.buildVerificationSummary({
+      receiptPath: receipt.receiptPath,
+      verificationSummaryPath: receipt.verificationSummary.verificationSummaryPath,
+      checks,
+    });
+    await this.writeJsonFile(
+      receipt.verificationSummary.verificationSummaryPath,
+      verificationSummary,
+    );
+
+    return {
+      action: CliAdoptAction.VERIFY,
+      repoRoot: receipt.targetRepoRoot,
+      packId: receipt.packId,
+      profileId: receipt.appliedProfileId,
+      workspaceMode: receipt.workspaceMode,
+      sourceKind: receipt.sourceResolution.sourceKind,
+      sourceRef: receipt.sourceResolution.sourceRef,
+      hostTargets: this.resolveReceiptHostTargets(receipt),
+      verificationStatus: verificationSummary.status,
+      managedFileCount: receipt.managedFileRecords.length,
+      receiptPath: receipt.receiptPath,
+      verificationSummaryPath: receipt.verificationSummary.verificationSummaryPath,
+      diffReportPath: null,
+      writtenArtifacts: [receipt.verificationSummary.verificationSummaryPath],
+      checks:
+        diffRecords.length === 0
+          ? [
+              ...checks,
+              {
+                checkId: 'managed-drift',
+                status: HostVerificationStatus.PASS,
+                detail: 'managed_drift=clean',
+              },
+            ]
+          : verificationSummary.checks,
+    };
+  }
+
+  /**
+   * Reapplies the current or requested pack when managed files are clean.
+   */
+  public async upgrade(options: CliAdoptCommandOptions): Promise<AdoptionOperationResult> {
+    const receipt = await this.loadReceiptForOperation(options);
+    const diffRecords = await this.buildDiffRecords(receipt);
+    if (diffRecords.length > 0 && !options.force) {
+      throw new RuntimeError(
+        GovernorErrorCode.STANDARDS_PACK_INVALID,
+        this.localizeText(
+          'adopt upgrade refused because managed files drifted; rerun with --force after review.',
+          'adopt upgrade 已拒绝，因为受管文件已经漂移；确认后可使用 --force 重试。',
+        ),
+        {
+          receiptPath: receipt.receiptPath,
+          diffCount: diffRecords.length,
+        },
+      );
+    }
+
+    const applyResult = await this.apply({
+      ...options,
+      packSelector: options.packSelector ?? receipt.packId,
+      repoPath: receipt.targetRepoRoot,
+      adoptionProfileId: options.adoptionProfileId ?? receipt.appliedProfileId,
+      workspaceMode: options.workspaceMode ?? receipt.workspaceMode,
+      receiptPath: receipt.receiptPath,
+    });
+
+    return {
+      ...applyResult,
+      action: CliAdoptAction.UPGRADE,
+    };
+  }
+
+  /**
+   * Removes managed files recorded by the active install receipt.
+   */
+  public async remove(options: CliAdoptCommandOptions): Promise<AdoptionOperationResult> {
+    const receipt = await this.loadReceiptForOperation(options);
+    const diffRecords = await this.buildDiffRecords(receipt);
+    if (diffRecords.length > 0 || !options.force) {
+      throw new RuntimeError(
+        GovernorErrorCode.STANDARDS_PACK_INVALID,
+        this.localizeText(
+          'adopt remove requires --force and fails closed when managed files drift.',
+          'adopt remove 需要显式 --force，且在受管文件漂移时默认 fail-closed。',
+        ),
+        {
+          receiptPath: receipt.receiptPath,
+          diffCount: diffRecords.length,
+        },
+      );
+    }
+
+    for (const managedFileRecord of receipt.managedFileRecords) {
+      if (existsSync(managedFileRecord.absolutePath)) {
+        await rm(managedFileRecord.absolutePath, { force: true });
+      }
+    }
+
+    const installationRoot = dirname(receipt.receiptPath);
+    if (existsSync(installationRoot)) {
+      await rm(installationRoot, { recursive: true, force: true });
+    }
+
+    return {
+      action: CliAdoptAction.REMOVE,
+      repoRoot: receipt.targetRepoRoot,
+      packId: receipt.packId,
+      profileId: receipt.appliedProfileId,
+      workspaceMode: receipt.workspaceMode,
+      sourceKind: receipt.sourceResolution.sourceKind,
+      sourceRef: receipt.sourceResolution.sourceRef,
+      hostTargets: this.resolveReceiptHostTargets(receipt),
+      verificationStatus: HostVerificationStatus.PASS,
+      managedFileCount: 0,
+      receiptPath: null,
+      verificationSummaryPath: null,
+      diffReportPath: null,
+      writtenArtifacts: [],
+      checks: [
+        {
+          checkId: 'managed-remove',
+          status: HostVerificationStatus.PASS,
+          detail: `removed_files=${receipt.managedFileRecords.length}`,
+        },
+      ],
+    };
+  }
+
+  private async resolveInstallTarget(
+    options: CliAdoptCommandOptions,
+  ): Promise<ResolvedInstallTarget> {
+    if (!options.packSelector) {
+      throw new RuntimeError(
+        GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+        this.localizeText(
+          'adopt apply/upgrade/remove requires one pack selector.',
+          'adopt apply/upgrade/remove 需要提供 pack 选择器。',
+        ),
+      );
+    }
+
+    try {
+      const definition = await this.adoptionPackRegistry.resolveDefinition(options.packSelector);
+      return {
+        definition,
+        profile: this.resolveProfile(definition, options.adoptionProfileId, null),
+      };
+    } catch (error) {
+      const manifests = await this.adoptionPackRegistry.list();
+      const manifest = manifests.find((candidate) =>
+        candidate.profiles.some((profile) => profile.profileId === options.packSelector),
+      );
+      if (!manifest) {
+        throw error;
+      }
+
+      const definition = await this.adoptionPackRegistry.resolveDefinition(manifest.packId);
+      return {
+        definition,
+        profile: this.resolveProfile(definition, options.adoptionProfileId, options.packSelector),
+      };
+    }
+  }
+
+  private resolveProfile(
+    definition: ResolvedAdoptionPackDefinition,
+    requestedProfileId: string | null,
+    selectorDerivedProfileId: string | null,
+  ): AdoptionPackProfile {
+    const targetProfileId =
+      requestedProfileId ?? selectorDerivedProfileId ?? definition.manifest.profiles[0]?.profileId;
+    const profile = definition.manifest.profiles.find(
+      (candidate) => candidate.profileId === targetProfileId,
+    );
+
+    if (!profile) {
+      throw new RuntimeError(
+        GovernorErrorCode.STANDARDS_PACK_INVALID,
+        this.localizeText(
+          `Unknown adoption profile "${targetProfileId}".`,
+          `未知的 adoption profile "${targetProfileId}"。`,
+        ),
+        {
+          packId: definition.manifest.packId,
+          profileId: targetProfileId,
+        },
+      );
+    }
+
+    return profile;
+  }
+
+  private resolveRepoRoot(repoPath: string | null): string {
+    return repoPath
+      ? resolve(this.currentWorkingDirectory, repoPath)
+      : resolve(this.currentWorkingDirectory);
+  }
+
+  private resolveReceiptHostTargets(receipt: AdoptionPackInstallReceipt): HostDistributionTarget[] {
+    if (Array.isArray(receipt.hostTargets) && receipt.hostTargets.length > 0) {
+      return [...receipt.hostTargets];
+    }
+
+    return receipt.hostTarget ? [receipt.hostTarget] : [HostDistributionTarget.CODEX_PROJECT_LOCAL];
+  }
+
+  private resolveReceiptHostApplyReportPaths(receipt: AdoptionPackInstallReceipt): string[] {
+    if (receipt.hostApplyReportPaths && receipt.hostApplyReportPaths.length > 0) {
+      return [...receipt.hostApplyReportPaths];
+    }
+
+    return receipt.hostApplyReportPath ? [receipt.hostApplyReportPath] : [];
+  }
+
+  private resolveWorkspaceMode(
+    profile: AdoptionPackProfile,
+    requestedWorkspaceMode: WorkspaceMode | null,
+    enforcePolicy: boolean,
+  ): WorkspaceMode {
+    if (profile.workspaceModePolicy === AdoptionPackWorkspaceModePolicy.REPO_LOCAL_REQUIRED) {
+      if (
+        requestedWorkspaceMode !== null &&
+        requestedWorkspaceMode !== WorkspaceMode.REPO_LOCAL &&
+        enforcePolicy
+      ) {
+        throw new RuntimeError(
+          GovernorErrorCode.STANDARDS_PACK_INVALID,
+          this.localizeText(
+            `Profile "${profile.profileId}" requires workspace.mode=repo_local.`,
+            `profile "${profile.profileId}" 要求 workspace.mode=repo_local。`,
+          ),
+        );
+      }
+
+      return WorkspaceMode.REPO_LOCAL;
+    }
+
+    if (
+      requestedWorkspaceMode === WorkspaceMode.REPO_LOCAL &&
+      profile.workspaceModePolicy === AdoptionPackWorkspaceModePolicy.TOOL_MANAGED_DEFAULT
+    ) {
+      return WorkspaceMode.REPO_LOCAL;
+    }
+
+    return requestedWorkspaceMode ?? WorkspaceMode.TOOL_MANAGED;
+  }
+
+  private resolveSelectedHostTargets(
+    profile: AdoptionPackProfile,
+    requestedHosts: HostDistributionHost[],
+  ): HostDistributionTarget[] {
+    if (requestedHosts.length === 0) {
+      return [...profile.hostTargets];
+    }
+
+    const requestedTargets = new Set(
+      requestedHosts.map((host) => this.resolveProjectLocalTargetForHost(host)),
+    );
+    return profile.hostTargets.filter((target) => requestedTargets.has(target));
+  }
+
+  private resolveProjectLocalTargetForHost(host: HostDistributionHost): HostDistributionTarget {
+    switch (host) {
+      case HostDistributionHost.CLAUDE_CODE:
+        return HostDistributionTarget.CLAUDE_CODE_PROJECT_LOCAL;
+      case HostDistributionHost.GITHUB_COPILOT:
+        return HostDistributionTarget.GITHUB_COPILOT_REPO_LOCAL;
+      default:
+        return HostDistributionTarget.CODEX_PROJECT_LOCAL;
+    }
+  }
+
+  private resolveInstallationRoot(
+    repoRoot: string,
+    definition: ResolvedAdoptionPackDefinition,
+  ): string {
+    return resolve(
+      repoRoot,
+      ...DEFAULT_ADOPTION_METADATA_ROOT_SEGMENTS,
+      'installations',
+      this.slugify(definition.manifest.packId),
+    );
+  }
+
+  private resolveTemplateRecords(
+    definition: ResolvedAdoptionPackDefinition,
+    profile: AdoptionPackProfile,
+  ) {
+    return definition.templateRecords.filter((record) =>
+      record.profileIds.includes(profile.profileId),
+    );
+  }
+
+  private async materializeHostTarget(options: {
+    repoRoot: string;
+    installationRoot: string;
+    definition: ResolvedAdoptionPackDefinition;
+    profile: AdoptionPackProfile;
+    target: HostDistributionTarget;
+    existingReceipt: AdoptionPackInstallReceipt | null;
+    force: boolean;
+    sessionManagedFileContentByPath: Map<string, string>;
+  }): Promise<MaterializedHostResult> {
+    const host = this.resolveHostForTarget(options.target);
+    const targetSlug = options.target.replace(/\./g, '-').replace(/_/g, '-');
+    const stagedExportRoot = resolve(options.installationRoot, 'hosts', targetSlug);
+    const exportManifestPath = resolve(stagedExportRoot, 'host-export.manifest.json');
+    const verificationSummaryPath = resolve(stagedExportRoot, 'host-verification.summary.json');
+    const applyReportPath = resolve(stagedExportRoot, 'host-apply.report.json');
+    const registry = new StructuredWorkflowAssetRegistry({
+      records: options.definition.workflowRecords,
+    });
+    const rendered = this.resolveRenderer(host, registry).render({
+      host,
+      mode: HostDistributionMode.PROJECT_LOCAL,
+      target: options.target,
+      stagedExportRoot,
+      exportManifestPath,
+      verificationSummaryPath,
+      applyRoot: options.repoRoot,
+      applyReportPath,
+      handoffBridge: options.definition.manifest.handoffBridge,
+      workflowIds: options.profile.workflowAssetIds,
+      canonicalSourceRefs: [...options.definition.manifest.canonicalSourceRefs],
+      sourcePackRefs: [...options.definition.manifest.sourcePackRefs],
+    });
+
+    const { writtenArtifacts, appliedProjectedFiles } = await this.writeRenderedHostArtifacts(
+      options.repoRoot,
+      rendered,
+      options.existingReceipt,
+      options.force,
+      options.sessionManagedFileContentByPath,
+    );
+    const managedFileRecords = this.collectHostManagedFileRecords(
+      options.repoRoot,
+      rendered,
+      appliedProjectedFiles,
+    );
+
+    return {
+      target: options.target,
+      verificationStatus: rendered.verificationSummary.status,
+      checks: [
+        {
+          checkId: `host:${options.target}`,
+          status: rendered.verificationSummary.status,
+          detail: `projected_files=${rendered.projectedFiles.length}`,
+        },
+      ],
+      managedFileRecords,
+      writtenArtifacts,
+      exportManifestPath,
+      verificationSummaryPath,
+      applyReportPath,
+    };
+  }
+
+  private async writeRenderedHostArtifacts(
+    repoRoot: string,
+    rendered: HostRendererRenderResult,
+    existingReceipt: AdoptionPackInstallReceipt | null,
+    force: boolean,
+    sessionManagedFileContentByPath: Map<string, string>,
+  ): Promise<{
+    writtenArtifacts: string[];
+    appliedProjectedFiles: HostExportProjectedFile[];
+  }> {
+    const writtenArtifacts: string[] = [];
+    const appliedProjectedFiles: HostExportProjectedFile[] = [];
+    for (const projectedFile of rendered.projectedFiles) {
+      const absolutePath = resolve(repoRoot, projectedFile.relativePath);
+      const existingSessionContent = sessionManagedFileContentByPath.get(absolutePath);
+      const resolvedContent =
+        existingSessionContent === undefined
+          ? projectedFile.content
+          : this.resolveProjectedFileConflict(
+              projectedFile.relativePath,
+              existingSessionContent,
+              projectedFile.content,
+            );
+      if (existingSessionContent === undefined) {
+        await this.writeManagedTextFile({
+          absolutePath,
+          relativePath: projectedFile.relativePath,
+          content: resolvedContent,
+          assetGroup: this.inferHostAssetGroup(projectedFile.relativePath),
+          existingReceipt,
+          force,
+        });
+      } else if (resolvedContent !== existingSessionContent) {
+        await this.writeTextFile(absolutePath, resolvedContent);
+      }
+      sessionManagedFileContentByPath.set(absolutePath, resolvedContent);
+      appliedProjectedFiles.push({
+        ...projectedFile,
+        content: resolvedContent,
+      });
+      writtenArtifacts.push(absolutePath);
+    }
+
+    await this.writeJsonFile(rendered.exportManifest.exportManifestPath, rendered.exportManifest);
+    await this.writeJsonFile(
+      rendered.verificationSummary.verificationSummaryPath,
+      rendered.verificationSummary,
+    );
+    writtenArtifacts.push(
+      rendered.exportManifest.exportManifestPath,
+      rendered.verificationSummary.verificationSummaryPath,
+    );
+
+    if (rendered.applyReport) {
+      await this.writeJsonFile(rendered.applyReport.applyReportPath, rendered.applyReport);
+      writtenArtifacts.push(rendered.applyReport.applyReportPath);
+    }
+
+    return {
+      writtenArtifacts,
+      appliedProjectedFiles,
+    };
+  }
+
+  private collectHostManagedFileRecords(
+    repoRoot: string,
+    rendered: HostRendererRenderResult,
+    appliedProjectedFiles: HostExportProjectedFile[],
+  ): AdoptionPackManagedFileRecord[] {
+    return [
+      ...appliedProjectedFiles.map((projectedFile) =>
+        this.createManagedFileRecord(
+          projectedFile.relativePath,
+          resolve(repoRoot, projectedFile.relativePath),
+          this.inferHostAssetGroup(projectedFile.relativePath),
+          projectedFile.content,
+        ),
+      ),
+      this.createManagedFileRecord(
+        this.relativeFromRoot(rendered.exportManifest.exportManifestPath, repoRoot),
+        rendered.exportManifest.exportManifestPath,
+        AdoptionPackManagedAssetGroup.RUNTIME_HANDOFF_METADATA,
+        `${JSON.stringify(rendered.exportManifest, null, 2)}\n`,
+      ),
+      this.createManagedFileRecord(
+        this.relativeFromRoot(rendered.verificationSummary.verificationSummaryPath, repoRoot),
+        rendered.verificationSummary.verificationSummaryPath,
+        AdoptionPackManagedAssetGroup.RUNTIME_HANDOFF_METADATA,
+        `${JSON.stringify(rendered.verificationSummary, null, 2)}\n`,
+      ),
+      ...(rendered.applyReport
+        ? [
+            this.createManagedFileRecord(
+              this.relativeFromRoot(rendered.applyReport.applyReportPath, repoRoot),
+              rendered.applyReport.applyReportPath,
+              AdoptionPackManagedAssetGroup.RUNTIME_HANDOFF_METADATA,
+              `${JSON.stringify(rendered.applyReport, null, 2)}\n`,
+            ),
+          ]
+        : []),
+    ];
+  }
+
+  private resolveProjectedFileConflict(
+    relativePath: string,
+    currentContent: string,
+    nextContent: string,
+  ): string {
+    if (currentContent === nextContent) {
+      return currentContent;
+    }
+
+    if (relativePath === 'AGENTS.md') {
+      return `${currentContent.trimEnd()}\n\n---\n\n${nextContent.trim()}\n`;
+    }
+
+    if (relativePath === '.mcp.json') {
+      return this.stringifyMergedMcpConfiguration(currentContent, nextContent);
+    }
+
+    throw new RuntimeError(
+      GovernorErrorCode.STANDARDS_PACK_INVALID,
+      this.localizeText(
+        `adopt apply found conflicting multi-host projections for ${relativePath}.`,
+        `adopt apply 检测到 ${relativePath} 存在冲突的多宿主投影。`,
+      ),
+      {
+        relativePath,
+      },
+    );
+  }
+
+  private stringifyMergedMcpConfiguration(currentContent: string, nextContent: string): string {
+    const currentPayload = JSON.parse(currentContent) as {
+      mcpServers?: Record<string, Record<string, unknown>>;
+    };
+    const nextPayload = JSON.parse(nextContent) as {
+      mcpServers?: Record<string, Record<string, unknown>>;
+    };
+    const mergedServerNames = new Set<string>([
+      ...Object.keys(currentPayload.mcpServers ?? {}),
+      ...Object.keys(nextPayload.mcpServers ?? {}),
+    ]);
+    const mergedServers: Record<string, Record<string, unknown>> = {};
+
+    for (const serverName of mergedServerNames) {
+      const currentServer = currentPayload.mcpServers?.[serverName] ?? {};
+      const nextServer = nextPayload.mcpServers?.[serverName] ?? {};
+      const mergedWorkflowIds = this.mergeStringLists(
+        ...(Array.isArray(currentServer.workflowIds)
+          ? [currentServer.workflowIds as string[]]
+          : []),
+        ...(Array.isArray(nextServer.workflowIds) ? [nextServer.workflowIds as string[]] : []),
+      );
+      const mergedHosts = this.mergeStringLists(
+        ...(typeof currentServer.host === 'string' ? [[currentServer.host]] : []),
+        ...(typeof nextServer.host === 'string' ? [[nextServer.host]] : []),
+      );
+      const mergedTargets = this.mergeStringLists(
+        ...(typeof currentServer.target === 'string' ? [[currentServer.target]] : []),
+        ...(typeof nextServer.target === 'string' ? [[nextServer.target]] : []),
+      );
+      const mergedModes = this.mergeStringLists(
+        ...(typeof currentServer.mode === 'string' ? [[currentServer.mode]] : []),
+        ...(typeof nextServer.mode === 'string' ? [[nextServer.mode]] : []),
+      );
+
+      mergedServers[serverName] = {
+        ...currentServer,
+        ...nextServer,
+        ...(mergedWorkflowIds.length > 0 ? { workflowIds: mergedWorkflowIds } : {}),
+        ...(mergedHosts.length > 0 ? { supportedHosts: mergedHosts } : {}),
+        ...(mergedTargets.length > 0 ? { supportedTargets: mergedTargets } : {}),
+        ...(mergedModes.length > 0 ? { supportedModes: mergedModes } : {}),
+      };
+    }
+
+    return `${JSON.stringify({ mcpServers: mergedServers }, null, 2)}\n`;
+  }
+
+  private mergeStringLists(...lists: readonly string[][]): string[] {
+    return [...new Set(lists.flat().filter((value) => value.length > 0))].sort((left, right) =>
+      left.localeCompare(right),
+    );
+  }
+
+  private async bootstrapSelfHostSurface(options: {
+    repoRoot: string;
+    existingReceipt: AdoptionPackInstallReceipt | null;
+    force: boolean;
+  }): Promise<{
+    managedFileRecords: AdoptionPackManagedFileRecord[];
+    writtenArtifacts: string[];
+    checks: AdoptionPackVerificationCheck[];
+  }> {
+    const managedFileRecords: AdoptionPackManagedFileRecord[] = [];
+    const writtenArtifacts: string[] = [];
+    const dynamicFiles = [
+      {
+        relativePath: '.repo-ai-governor/governor.yaml',
+        content: [
+          'schemaVersion: "1.1"',
+          'workspace:',
+          '  mode: repo_local',
+          '  migrationPolicy: copy_verify_switch_rollback',
+          'i18n:',
+          '  runtimeEngine: i18next',
+          '  defaultLocale: zh-CN',
+          '  fallbackLocale: en-US',
+          '  supportedLocales:',
+          '    - zh-CN',
+          '    - en-US',
+          'memory:',
+          '  storeEngine: fs_csv',
+          '  storeRoot: context/memory',
+          '',
+        ].join('\n'),
+        assetGroup: AdoptionPackManagedAssetGroup.BOOTSTRAP_TEMPLATES,
+      },
+      {
+        relativePath:
+          '.repo-ai-governor/normative_knowledge_sources/technical-solutions/technical-solution-module-registry.yaml',
+        content: [
+          'schema_version: 2',
+          'generated_at: 1970-01-01',
+          'status: active',
+          'owner: self-host-template',
+          '',
+          'allowed_layers:',
+          '  - governance-core',
+          '  - runtime-core',
+          '',
+          'change_impact_classes:',
+          '  - local_detail_change',
+          '  - exported_contract_change',
+          '  - module_registry_change',
+          '  - north_star_change',
+          '  - layer_boundary_change',
+          '',
+          'sync_target_tokens:',
+          '  - summary_doc',
+          '  - module_registry',
+          '  - direct_consumers',
+          '  - overall_technical_solution',
+          '  - architecture_and_repo_layering',
+          '  - product_requirements',
+          '  - product_requirements_brief',
+          '',
+          'modules: []',
+          '',
+        ].join('\n'),
+        assetGroup: AdoptionPackManagedAssetGroup.NORMATIVE_TEMPLATES,
+      },
+      {
+        relativePath: '.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md',
+        content:
+          '# Code Standards\n\n- Status: draft\n- Date: 1970-01-01\n\n## Purpose\n\nDefine repository-specific code constraints before enabling unattended delivery.\n',
+        assetGroup: AdoptionPackManagedAssetGroup.NORMATIVE_TEMPLATES,
+      },
+      {
+        relativePath:
+          '.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md',
+        content:
+          '# Long-Term Maintenance Guide\n\n- Status: draft\n- Date: 1970-01-01\n\n## Purpose\n\nCapture maintenance expectations for self-hosted governance repositories.\n',
+        assetGroup: AdoptionPackManagedAssetGroup.NORMATIVE_TEMPLATES,
+      },
+    ];
+
+    for (const dynamicFile of dynamicFiles) {
+      const absolutePath = resolve(options.repoRoot, dynamicFile.relativePath);
+      await this.writeManagedTextFile({
+        absolutePath,
+        relativePath: dynamicFile.relativePath,
+        content: dynamicFile.content,
+        assetGroup: dynamicFile.assetGroup,
+        existingReceipt: options.existingReceipt,
+        force: options.force,
+      });
+      managedFileRecords.push(
+        this.createManagedFileRecord(
+          dynamicFile.relativePath,
+          absolutePath,
+          dynamicFile.assetGroup,
+          dynamicFile.content,
+        ),
+      );
+      writtenArtifacts.push(absolutePath);
+    }
+
+    const taskLedgerPath = resolve(
+      options.repoRoot,
+      '.repo-ai-governor/context/dev/sqlite/task-ledger.sqlite',
+    );
+    await this.initializeTaskLedgerSqlite(taskLedgerPath);
+    managedFileRecords.push(
+      await this.createManagedFileRecordFromFile(
+        '.repo-ai-governor/context/dev/sqlite/task-ledger.sqlite',
+        taskLedgerPath,
+        AdoptionPackManagedAssetGroup.SQLITE_REGISTRIES,
+      ),
+    );
+    writtenArtifacts.push(taskLedgerPath);
+
+    const artifactSqlitePath = resolve(
+      options.repoRoot,
+      '.repo-ai-governor/context/artifact-registry/sqlite/artifact-registry.sqlite',
+    );
+    await new SqliteArtifactIndexStore({
+      databaseFilePath: artifactSqlitePath,
+    }).dispose();
+    const artifactMainViewPath = resolve(
+      options.repoRoot,
+      '.repo-ai-governor/context/artifact-registry/artifacts.csv',
+    );
+    const artifactArchiveViewPath = resolve(
+      options.repoRoot,
+      '.repo-ai-governor/context/artifact-registry/archive/artifacts.archive.csv',
+    );
+    await this.writeTextFile(artifactMainViewPath, `${ARTIFACT_REGISTRY_HEADERS.join(',')}\n`);
+    await this.writeTextFile(artifactArchiveViewPath, `${ARTIFACT_REGISTRY_HEADERS.join(',')}\n`);
+    managedFileRecords.push(
+      await this.createManagedFileRecordFromFile(
+        '.repo-ai-governor/context/artifact-registry/sqlite/artifact-registry.sqlite',
+        artifactSqlitePath,
+        AdoptionPackManagedAssetGroup.SQLITE_REGISTRIES,
+      ),
+      this.createManagedFileRecord(
+        '.repo-ai-governor/context/artifact-registry/artifacts.csv',
+        artifactMainViewPath,
+        AdoptionPackManagedAssetGroup.SQLITE_REGISTRIES,
+        `${ARTIFACT_REGISTRY_HEADERS.join(',')}\n`,
+      ),
+      this.createManagedFileRecord(
+        '.repo-ai-governor/context/artifact-registry/archive/artifacts.archive.csv',
+        artifactArchiveViewPath,
+        AdoptionPackManagedAssetGroup.SQLITE_REGISTRIES,
+        `${ARTIFACT_REGISTRY_HEADERS.join(',')}\n`,
+      ),
+    );
+    writtenArtifacts.push(artifactSqlitePath, artifactMainViewPath, artifactArchiveViewPath);
+
+    return {
+      managedFileRecords,
+      writtenArtifacts,
+      checks: [
+        {
+          checkId: 'self-host-bootstrap',
+          status: HostVerificationStatus.PASS,
+          detail: `self_host_assets=${managedFileRecords.length}`,
+        },
+      ],
+    };
+  }
+
+  private async initializeTaskLedgerSqlite(databaseFilePath: string): Promise<void> {
+    await mkdir(dirname(databaseFilePath), { recursive: true });
+    const databaseConnection = new DatabaseSync(databaseFilePath);
+
+    try {
+      databaseConnection.exec('PRAGMA busy_timeout = 5000;');
+      databaseConnection.exec('PRAGMA journal_mode = WAL;');
+      databaseConnection.exec(`
+        CREATE TABLE IF NOT EXISTS task_ledger_sources (
+          source_path TEXT PRIMARY KEY,
+          source_mtime_ms INTEGER NOT NULL,
+          source_size INTEGER NOT NULL,
+          row_count INTEGER NOT NULL,
+          synced_at TEXT NOT NULL
+        );
+      `);
+      databaseConnection.exec(`
+        CREATE TABLE IF NOT EXISTS task_ledger_rows (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          source_path TEXT NOT NULL,
+          source_row_number INTEGER NOT NULL,
+          execution_id TEXT NOT NULL,
+          task_id TEXT NOT NULL,
+          title TEXT NOT NULL,
+          owner TEXT NOT NULL,
+          priority TEXT NOT NULL,
+          due_date TEXT NOT NULL,
+          status TEXT NOT NULL,
+          project TEXT NOT NULL,
+          sprint TEXT NOT NULL,
+          plan TEXT NOT NULL,
+          result TEXT NOT NULL,
+          verify TEXT NOT NULL,
+          review_delta TEXT NOT NULL,
+          recorded_at TEXT NOT NULL,
+          UNIQUE(source_path, source_row_number)
+        );
+      `);
+      databaseConnection.exec(`
+        CREATE INDEX IF NOT EXISTS idx_task_ledger_task_id
+        ON task_ledger_rows(task_id, source_row_number);
+      `);
+      databaseConnection.exec(`
+        CREATE INDEX IF NOT EXISTS idx_task_ledger_source
+        ON task_ledger_rows(source_path, source_row_number);
+      `);
+      databaseConnection.exec(`
+        CREATE INDEX IF NOT EXISTS idx_task_ledger_project_sprint
+        ON task_ledger_rows(project, sprint, source_row_number);
+      `);
+    } finally {
+      databaseConnection.close();
+    }
+  }
+
+  private async buildDiffRecords(receipt: AdoptionPackInstallReceipt) {
+    const diffRecords = [];
+    for (const managedFileRecord of receipt.managedFileRecords) {
+      if (!existsSync(managedFileRecord.absolutePath)) {
+        diffRecords.push({
+          relativePath: managedFileRecord.relativePath,
+          assetGroup: managedFileRecord.assetGroup,
+          diffKind: 'missing' as const,
+          receiptChecksumSha256: managedFileRecord.checksumSha256,
+          currentChecksumSha256: null,
+        });
+        continue;
+      }
+
+      const currentContent = await readFile(managedFileRecord.absolutePath);
+      const currentChecksumSha256 = this.calculateSha256(currentContent);
+      if (currentChecksumSha256 !== managedFileRecord.checksumSha256) {
+        diffRecords.push({
+          relativePath: managedFileRecord.relativePath,
+          assetGroup: managedFileRecord.assetGroup,
+          diffKind: 'changed' as const,
+          receiptChecksumSha256: managedFileRecord.checksumSha256,
+          currentChecksumSha256,
+        });
+      }
+    }
+
+    return diffRecords;
+  }
+
+  private async loadReceiptForOperation(
+    options: CliAdoptCommandOptions,
+  ): Promise<AdoptionPackInstallReceipt> {
+    if (options.receiptPath) {
+      return this.readInstallReceipt(resolve(this.currentWorkingDirectory, options.receiptPath));
+    }
+
+    const repoRoot = this.resolveRepoRoot(options.repoPath);
+    const receipt = await this.readExistingReceipt(repoRoot, options.packSelector, true);
+    if (!receipt) {
+      throw new RuntimeError(
+        GovernorErrorCode.STANDARDS_PACK_INVALID,
+        this.localizeText(
+          'No installed adoption receipt was found for the target repository.',
+          '目标仓库未找到已安装的 adoption receipt。',
+        ),
+        {
+          repoRoot,
+          packSelector: options.packSelector,
+        },
+      );
+    }
+    return receipt;
+  }
+
+  private async readExistingReceipt(
+    repoRoot: string,
+    packSelector: string | null,
+    required = false,
+  ): Promise<AdoptionPackInstallReceipt | null> {
+    const receiptCandidates = await this.scanReceiptPaths(repoRoot);
+    if (receiptCandidates.length === 0) {
+      if (required) {
+        throw new RuntimeError(
+          GovernorErrorCode.STANDARDS_PACK_INVALID,
+          this.localizeText(
+            'No installed adoption receipt was found for the target repository.',
+            '目标仓库未找到已安装的 adoption receipt。',
+          ),
+          {
+            repoRoot,
+          },
+        );
+      }
+      return null;
+    }
+
+    if (packSelector) {
+      const matchingReceiptPath = receiptCandidates.find((candidate) =>
+        candidate.includes(this.slugify(packSelector)),
+      );
+      if (matchingReceiptPath) {
+        return this.readInstallReceipt(matchingReceiptPath);
+      }
+    }
+
+    if (receiptCandidates.length === 1) {
+      return this.readInstallReceipt(receiptCandidates[0] as string);
+    }
+
+    if (required) {
+      throw new RuntimeError(
+        GovernorErrorCode.STANDARDS_PACK_INVALID,
+        this.localizeText(
+          'Multiple adoption receipts exist; pass --receipt or a pack selector.',
+          '存在多份 adoption receipt；请显式传入 --receipt 或 pack 选择器。',
+        ),
+        {
+          repoRoot,
+          receiptCandidates,
+        },
+      );
+    }
+
+    return null;
+  }
+
+  private async scanReceiptPaths(repoRoot: string): Promise<string[]> {
+    const installationsRoot = resolve(
+      repoRoot,
+      ...DEFAULT_ADOPTION_METADATA_ROOT_SEGMENTS,
+      'installations',
+    );
+    if (!existsSync(installationsRoot)) {
+      return [];
+    }
+
+    const entries = await readdir(installationsRoot, { withFileTypes: true });
+    const receiptPaths: string[] = [];
+    for (const entry of entries) {
+      if (!entry.isDirectory()) {
+        continue;
+      }
+
+      const receiptPath = resolve(
+        installationsRoot,
+        entry.name,
+        ADOPTION_INSTALL_RECEIPT_FILE_NAME,
+      );
+      if (existsSync(receiptPath)) {
+        receiptPaths.push(receiptPath);
+      }
+    }
+
+    return receiptPaths.sort((left, right) => left.localeCompare(right));
+  }
+
+  private resolveRenderer(host: HostDistributionHost, registry: StructuredWorkflowAssetRegistry) {
+    switch (host) {
+      case HostDistributionHost.CLAUDE_CODE:
+        return new ClaudeCodeHostRenderer({
+          registry,
+          currentWorkingDirectory: this.currentWorkingDirectory,
+        });
+      case HostDistributionHost.GITHUB_COPILOT:
+        return new GithubCopilotHostRenderer({
+          registry,
+          currentWorkingDirectory: this.currentWorkingDirectory,
+        });
+      default:
+        return new CodexHostRenderer({
+          registry,
+          currentWorkingDirectory: this.currentWorkingDirectory,
+        });
+    }
+  }
+
+  private resolveHostForTarget(target: HostDistributionTarget): HostDistributionHost {
+    if (target.startsWith('claude_code.')) {
+      return HostDistributionHost.CLAUDE_CODE;
+    }
+    if (target.startsWith('github_copilot.')) {
+      return HostDistributionHost.GITHUB_COPILOT;
+    }
+    return HostDistributionHost.CODEX;
+  }
+
+  private inferHostAssetGroup(relativePath: string): AdoptionPackManagedAssetGroup {
+    if (relativePath.endsWith('.mcp.json') || relativePath.endsWith('mcp.json')) {
+      return AdoptionPackManagedAssetGroup.MCP_BRIDGE;
+    }
+    if (relativePath.includes('/hooks/') || relativePath.endsWith('hooks.json')) {
+      return AdoptionPackManagedAssetGroup.HOOKS;
+    }
+    if (relativePath.includes('/skills/')) {
+      return AdoptionPackManagedAssetGroup.SKILLS;
+    }
+    if (relativePath.includes('/agents/') || relativePath.includes('/subagents/')) {
+      return AdoptionPackManagedAssetGroup.AGENTS;
+    }
+    return AdoptionPackManagedAssetGroup.INSTRUCTIONS;
+  }
+
+  private async writeManagedTextFile(options: {
+    absolutePath: string;
+    relativePath: string;
+    content: string;
+    assetGroup: AdoptionPackManagedAssetGroup;
+    existingReceipt: AdoptionPackInstallReceipt | null;
+    force: boolean;
+  }): Promise<void> {
+    const currentContent = await this.readTextIfExists(options.absolutePath);
+    if (currentContent !== null && currentContent !== options.content) {
+      const existingManagedRecord = options.existingReceipt?.managedFileRecords.find(
+        (record) => record.absolutePath === options.absolutePath,
+      );
+      const currentChecksumSha256 = this.calculateSha256(currentContent);
+      if (!options.force) {
+        if (
+          existingManagedRecord &&
+          currentChecksumSha256 === existingManagedRecord.checksumSha256
+        ) {
+          // Safe managed overwrite during upgrade/apply.
+        } else if (existingManagedRecord) {
+          throw new RuntimeError(
+            GovernorErrorCode.STANDARDS_PACK_INVALID,
+            this.localizeText(
+              `Managed file drift detected before writing ${options.relativePath}.`,
+              `写入 ${options.relativePath} 前检测到受管文件漂移。`,
+            ),
+            {
+              relativePath: options.relativePath,
+              assetGroup: options.assetGroup,
+            },
+          );
+        } else {
+          throw new RuntimeError(
+            GovernorErrorCode.STANDARDS_PACK_INVALID,
+            this.localizeText(
+              `Refusing to overwrite existing unmanaged file ${options.relativePath}.`,
+              `拒绝覆盖现有的未受管文件 ${options.relativePath}。`,
+            ),
+            {
+              relativePath: options.relativePath,
+              assetGroup: options.assetGroup,
+            },
+          );
+        }
+      }
+    }
+
+    await this.writeTextFile(options.absolutePath, options.content);
+  }
+
+  private async writeTextFile(filePath: string, content: string): Promise<void> {
+    await mkdir(dirname(filePath), { recursive: true });
+    await writeFile(filePath, content, 'utf8');
+  }
+
+  private async writeJsonFile(filePath: string, payload: unknown): Promise<void> {
+    await this.writeTextFile(filePath, `${JSON.stringify(payload, null, 2)}\n`);
+  }
+
+  private async readTextIfExists(filePath: string): Promise<string | null> {
+    if (!existsSync(filePath)) {
+      return null;
+    }
+
+    return readFile(filePath, 'utf8');
+  }
+
+  private async readInstallReceipt(filePath: string): Promise<AdoptionPackInstallReceipt> {
+    return this.normalizeInstallReceipt(
+      await this.readJsonFile<AdoptionPackInstallReceipt>(filePath),
+    );
+  }
+
+  private async readJsonFile<T>(filePath: string): Promise<T> {
+    return JSON.parse(await readFile(filePath, 'utf8')) as T;
+  }
+
+  private normalizeInstallReceipt(receipt: AdoptionPackInstallReceipt): AdoptionPackInstallReceipt {
+    const hostTargets = this.resolveReceiptHostTargets(receipt);
+    const hostManifestPaths =
+      receipt.hostManifestPaths && receipt.hostManifestPaths.length > 0
+        ? [...receipt.hostManifestPaths]
+        : receipt.hostManifestPath
+          ? [receipt.hostManifestPath]
+          : [];
+    const hostApplyReportPaths =
+      receipt.hostApplyReportPaths && receipt.hostApplyReportPaths.length > 0
+        ? [...receipt.hostApplyReportPaths]
+        : receipt.hostApplyReportPath
+          ? [receipt.hostApplyReportPath]
+          : [];
+
+    return {
+      ...receipt,
+      hostTargets,
+      hostTarget:
+        receipt.hostTarget ?? hostTargets[0] ?? HostDistributionTarget.CODEX_PROJECT_LOCAL,
+      hostManifestPaths,
+      hostManifestPath: hostManifestPaths[0],
+      hostApplyReportPaths,
+      hostApplyReportPath: hostApplyReportPaths[0],
+    };
+  }
+
+  private createManagedFileRecord(
+    relativePath: string,
+    absolutePath: string,
+    assetGroup: AdoptionPackManagedAssetGroup,
+    content: string | Uint8Array,
+  ): AdoptionPackManagedFileRecord {
+    return {
+      relativePath: relativePath.replace(/\\/g, '/'),
+      absolutePath,
+      assetGroup,
+      checksumSha256: this.calculateSha256(content),
+      managed: true,
+    };
+  }
+
+  private async createManagedFileRecordFromFile(
+    relativePath: string,
+    absolutePath: string,
+    assetGroup: AdoptionPackManagedAssetGroup,
+  ): Promise<AdoptionPackManagedFileRecord> {
+    return this.createManagedFileRecord(
+      relativePath,
+      absolutePath,
+      assetGroup,
+      await readFile(absolutePath),
+    );
+  }
+
+  private calculateSha256(content: string | Uint8Array): string {
+    return createHash('sha256').update(content).digest('hex');
+  }
+
+  private buildVerificationSummary(options: {
+    receiptPath: string;
+    verificationSummaryPath: string;
+    checks: AdoptionPackVerificationCheck[];
+  }): AdoptionPackVerificationSummary {
+    const normalizedChecks = options.checks.length
+      ? options.checks
+      : [
+          {
+            checkId: 'verification',
+            status: HostVerificationStatus.PASS,
+            detail: 'verification=clean',
+          },
+        ];
+
+    return {
+      schemaVersion: 'adoption-pack-verification-summary-v1',
+      status: this.reduceVerificationStatus(normalizedChecks),
+      verifiedAt: new Date().toISOString(),
+      verificationSummaryPath: options.verificationSummaryPath,
+      receiptPath: options.receiptPath,
+      checks: normalizedChecks,
+      driftDetected: normalizedChecks.some((check) => check.status === HostVerificationStatus.FAIL),
+    };
+  }
+
+  private reduceVerificationStatus(
+    checks: readonly AdoptionPackVerificationCheck[],
+  ): HostVerificationStatus {
+    if (checks.some((check) => check.status === HostVerificationStatus.FAIL)) {
+      return HostVerificationStatus.FAIL;
+    }
+    if (checks.some((check) => check.status === HostVerificationStatus.WARN)) {
+      return HostVerificationStatus.WARN;
+    }
+    return HostVerificationStatus.PASS;
+  }
+
+  private deduplicateManagedFileRecords(
+    managedFileRecords: AdoptionPackManagedFileRecord[],
+  ): AdoptionPackManagedFileRecord[] {
+    const byPath = new Map<string, AdoptionPackManagedFileRecord>();
+    for (const managedFileRecord of managedFileRecords) {
+      byPath.set(managedFileRecord.absolutePath, managedFileRecord);
+    }
+
+    return [...byPath.values()].sort((left, right) =>
+      left.relativePath.localeCompare(right.relativePath),
+    );
+  }
+
+  private slugify(value: string): string {
+    return value.replace(/[^a-zA-Z0-9._-]+/g, '-');
+  }
+
+  private relativeFromRoot(filePath: string, repoRoot: string): string {
+    const normalizedRepoRoot = resolve(repoRoot);
+    const absolutePath = resolve(filePath);
+    if (absolutePath.startsWith(normalizedRepoRoot)) {
+      return absolutePath.slice(normalizedRepoRoot.length + 1).replace(/\\/g, '/');
+    }
+    return absolutePath.replace(/\\/g, '/');
+  }
+}

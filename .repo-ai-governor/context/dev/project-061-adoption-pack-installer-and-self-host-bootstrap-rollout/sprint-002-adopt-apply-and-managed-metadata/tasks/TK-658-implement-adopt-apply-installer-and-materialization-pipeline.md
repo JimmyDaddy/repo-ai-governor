@@ -1,6 +1,6 @@
 # TK-658 implement adopt apply installer and materialization pipeline
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-09
 - Owner: `AI-Agent`
 - Priority: `P0`
@@ -49,7 +49,10 @@
 ## 9. 执行记录
 
 1. 2026-04-09：任务创建，状态初始化为 `planned`。
+2. 2026-04-09：已交付高层 `adopt` command surface 与 installer materialization pipeline，使 adopter 可以直接通过 `adopt apply` 安装整套受管仓库 baseline。
 
 ## 10. 产出
 
-1. 待执行：adopt apply installer baseline
+1. 已完成：`apps/cli/src/commands/adopt-command.ts`
+2. 已完成：`apps/cli/src/constants/cli-adopt.constant.ts`
+3. 已完成：`apps/cli/src/main.ts`

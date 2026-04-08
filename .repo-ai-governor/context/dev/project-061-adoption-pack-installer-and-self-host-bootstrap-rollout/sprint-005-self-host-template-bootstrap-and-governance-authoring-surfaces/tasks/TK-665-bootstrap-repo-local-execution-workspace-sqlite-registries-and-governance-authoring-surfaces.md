@@ -1,6 +1,6 @@
 # TK-665 bootstrap repo-local execution workspace sqlite registries and governance authoring surfaces
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-09
 - Owner: `AI-Agent`
 - Priority: `P0`
@@ -49,7 +49,10 @@
 ## 9. 执行记录
 
 1. 2026-04-09：任务创建，状态初始化为 `planned`。
+2. 2026-04-09：已通过 `self-host-complete` bootstrap 初始化 repo-local execution workspace、task-ledger/artifact-registry sqlite、project/sprint/task/review templates 与 governance authoring surfaces。
 
 ## 10. 产出
 
-1. 待执行：repo-local self-host bootstrap baseline
+1. 已完成：`apps/cli/src/runtime/adoption-pack-runtime.ts`
+2. 已完成：`packages/standards/src/built-in-adoption-pack-catalog.ts`
+3. 已完成：`.tmp/project-061-cleanroom-self-host/`

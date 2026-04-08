@@ -1,6 +1,6 @@
 # TK-664 publish self-host-complete profile and template contract
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-09
 - Owner: `AI-Agent`
 - Priority: `P0`
@@ -49,7 +49,10 @@
 ## 9. 执行记录
 
 1. 2026-04-09：任务创建，状态初始化为 `planned`。
+2. 2026-04-09：已将 `self-host-complete` 固化为正式 installer-supported profile，并把 `workspace.mode=repo_local` 与 template-bootstrap-only boundary 落到 pack definition / template assets / docs truth 中。
 
 ## 10. 产出
 
-1. 待执行：self-host-complete profile and template contract
+1. 已完成：`packages/standards/src/built-in-adoption-pack-catalog.ts`
+2. 已完成：`packages/standards/src/types/interfaces/adoption-pack.interface.ts`
+3. 已完成：`.tmp/project-061-adoption-pack-cleanroom-summary.json`

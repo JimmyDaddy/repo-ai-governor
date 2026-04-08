@@ -53,7 +53,32 @@ External-adopter notes:
 2. Treat those warnings as informational unless your target repository is intentionally vendoring this repository's own governance docs and scripts.
 3. `init` defaults to `tool_managed`, so a fresh target repo may not create `.repo-ai-governor/` immediately.
 
-### 3.1 Optional VS Code Secondary Surface
+### 3.1 Preferred managed repo installation with `adopt`
+
+Use this when you want the supported whole-repository installation story instead of manually staging lower-level host exports:
+
+```bash
+pnpm exec repo-ai-governor adopt list --output json
+pnpm exec repo-ai-governor adopt apply adopter-complete --repo . --hosts codex,claude-code,github-copilot --output json
+pnpm exec repo-ai-governor adopt verify --repo . --output json
+```
+
+What this path gives you:
+
+1. `adopt apply` materializes managed host-facing assets, `.mcp.json`, adoption guides, and install metadata under `.repo-ai-governor/adoption/installations/**`.
+2. Built-in adoption packs do not require a pre-existing source-local `.codex/skills/**` tree in the target repository.
+3. `adopt verify`, `adopt diff`, `adopt upgrade`, and `adopt remove` become the supported lifecycle path for that managed install.
+
+Advanced self-host bootstrap:
+
+```bash
+pnpm exec repo-ai-governor adopt apply adopter-complete --adoption-profile self-host-complete --repo . --workspace-mode repo_local --hosts codex --output json
+pnpm exec repo-ai-governor adopt verify --repo . --output json
+```
+
+Use the self-host profile only when the target repository itself should host a template-backed repo-local governance workspace. This seeds empty/template surfaces such as `current-context.md`, project/sprint/task templates, and sqlite registries; it does not clone any live execution state from this repository.
+
+### 3.2 Optional VS Code Secondary Surface
 
 Use this only when you want the editor-native companion on top of the normal CLI bootstrap path:
 
@@ -234,6 +259,7 @@ Use these when you want to:
 2. Verify staged exports or applied repo-local assets before handing them off to other users or repositories.
 3. Materialize an installable bundle when the chosen host target supports `plugin-bundle`.
 4. Keep one manifest/receipt trail for `export`, `verify`, and `pack` closeout.
+5. Work below the preferred `adopt apply` whole-repository install path.
 
 Public package boundary:
 
@@ -242,7 +268,7 @@ Public package boundary:
 
 Operational notes:
 
-1. `host export` and `host pack` rely on repository-local skills under `.codex/skills/` when generating host assets from this repo's packaged skill layer.
+1. Built-in `adopt apply` does not require pre-existing `.codex/skills/**`; the `.codex/skills/**` dependency applies to lower-level `host export` and `host pack` flows when they generate host assets from this repo's packaged skill layer.
 2. Target capabilities vary by host and mode (`project-local` vs `plugin-bundle`); keep the emitted manifest and verification summary as the hand-off artifacts.
 3. GitHub Copilot also supports `--copilot-target repo-local|cli-plugin|github-com-agent` when you need target-specific export or bundle selection.
 
@@ -296,11 +322,11 @@ Then layer the language pack you need, plus any team or repository overrides, on
 8. After `workspace execute` or `workspace rollback`, rerun `doctor` to confirm the active `workspaceRoot` instead of inferring success from directory layout alone.
 9. When rehearsing workspace migration, use a real target repository or an isolated external temp directory. Running the command from the governor source repository can reattach to that repo's Git root and create misleading workspace artifacts.
 10. Keep the generated `*.rollback.json` or `*.rollback-receipt.json` artifacts in your acceptance window; they are the audit trail that proves the migration or upgrade closeout completed cleanly.
-11. If `host export` or `host pack` reports missing repository-local skills, make sure `.codex/skills/` is present; plain CLI adoption can ignore that requirement until you use host distribution surfaces.
+11. If `host export` or `host pack` reports missing repository-local skills, make sure `.codex/skills/` is present; built-in `adopt apply` does not need that tree unless you later use the lower-level host distribution surfaces.
 
 ## 10. Optional Self-host Assets
 
-1. Repository-local helpers live under `.codex/skills/`; external adopters can ignore them for plain CLI bootstrap, but they become relevant when you want the same self-host skill prompts/workflows or need the host distribution surfaces.
+1. Repository-local helpers live under `.codex/skills/`; external adopters can ignore them for plain CLI bootstrap and built-in `adopt apply`, but they become relevant when you want the same self-host skill prompts/workflows or need the lower-level host distribution surfaces.
 2. These assets are operational helpers for local AI tooling, not a requirement for the CLI install surfaces documented above.
 3. `apps/vscode-extension` is an optional secondary surface for source-checkout evaluation, not part of the published package-install baseline.
 

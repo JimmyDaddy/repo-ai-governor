@@ -1,6 +1,6 @@
 # TK-666 run clean-room adopter and self-host rehearsals plus truthfulness evidence refresh
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-09
 - Owner: `AI-Agent`
 - Priority: `P0`
@@ -49,7 +49,10 @@
 ## 9. 执行记录
 
 1. 2026-04-09：任务创建，状态初始化为 `planned`。
+2. 2026-04-09：已用构建后的 `dist/bin/repo-ai-governor.js` 重新执行 adopter / lifecycle / self-host clean-room rehearsal，并刷新受管安装、升级移除与 self-host bootstrap 的正式证据包。
 
 ## 10. 产出
 
-1. 待执行：clean-room rehearsal and truthfulness evidence
+1. 已完成：`.tmp/project-061-adoption-pack-cleanroom-summary.json`
+2. 已完成：`.tmp/project-061-cleanroom-adopter/`
+3. 已完成：`.tmp/project-061-cleanroom-self-host/` 与 `.tmp/project-061-cleanroom-lifecycle/`

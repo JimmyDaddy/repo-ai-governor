@@ -1,6 +1,6 @@
 # TK-656 freeze adoption-pack manifest v1 and installer contract boundary
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-09
 - Owner: `AI-Agent`
 - Priority: `P0`
@@ -49,7 +49,11 @@
 ## 9. 执行记录
 
 1. 2026-04-09：任务创建，状态初始化为 `planned`。
+2. 2026-04-09：激活 `project-061 / sprint-001` 后开始执行，进入 `in_progress`。
+3. 2026-04-09：已冻结 adoption-pack manifest/profile/managed-asset-group/source-resolution 的 v1 contract baseline，并将字段边界落实到 `packages/standards` 的 constants / interfaces / registry export surface。
 
 ## 10. 产出
 
-1. 待执行：manifest / installer contract freeze evidence
+1. 已完成：`packages/standards/src/constants/adoption-pack.constant.ts`
+2. 已完成：`packages/standards/src/types/interfaces/adoption-pack.interface.ts`
+3. 已完成：`packages/standards/src/adoption-pack-registry.ts` 与 `packages/standards/src/index.ts`

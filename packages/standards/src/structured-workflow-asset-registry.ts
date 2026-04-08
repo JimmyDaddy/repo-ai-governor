@@ -542,6 +542,15 @@ export class StructuredWorkflowAssetRegistry {
         record.sourcePackRefs,
         'record.sourcePackRefs',
       ),
+      ...(record.projectedSkillMarkdown
+        ? {
+            projectedSkillMarkdown: readRequiredString(
+              record.projectedSkillMarkdown,
+              'record.projectedSkillMarkdown',
+              GovernorErrorCode.STANDARDS_PACK_INVALID,
+            ),
+          }
+        : {}),
       hostTargetMatrix: this.normalizeTargetList(
         record.hostTargetMatrix,
         'record.hostTargetMatrix',
@@ -598,6 +607,11 @@ export class StructuredWorkflowAssetRegistry {
           description: record.description,
           canonicalSourceRefs: record.canonicalSourceRefs,
           sourcePackRefs: record.sourcePackRefs,
+          ...(record.projectedSkillMarkdown
+            ? {
+                projectedSkillMarkdown: record.projectedSkillMarkdown,
+              }
+            : {}),
           hostTargetMatrix: record.hostTargetMatrix,
           triggerHints: record.triggerHints,
           inputs: record.inputs,

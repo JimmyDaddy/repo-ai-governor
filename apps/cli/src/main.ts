@@ -40,6 +40,7 @@ import {
 } from '@repo-ai-governor/shared';
 import { CliGovernanceRuntime } from './cli-governance-runtime.js';
 import { CliOutputPresenter } from './cli-output-presenter.js';
+import { CLI_ADOPT_HOST_VALUES, CliAdoptAction } from './constants/cli-adopt.constant.js';
 import {
   CLI_AGENT_ONBOARDING_PRESET_ORDER,
   CLI_AGENT_ONBOARDING_PRESET_VALUES,
@@ -139,6 +140,7 @@ export type {
   IdeWrapperCommandName,
 } from './types/index.js';
 import type {
+  CliAdoptCommandOptions,
   CliCommandDiagnostics,
   CliCommandExecutionResultPayload,
   CliConnectRoleBindingOverride,
@@ -378,7 +380,10 @@ export async function runCli(
     };
 
     const requestedLocale = readOptionValue(rawArgs, '--locale');
-    const requestedProfileId = readOptionValue(rawArgs, '--profile');
+    const requestedProfileId =
+      commandName === CliCommandName.ADOPT && !readOptionValue(rawArgs, '--adoption-profile')
+        ? null
+        : readOptionValue(rawArgs, '--profile');
     const ideWrapperEnvironment = resolveIdeWrapperEnvironment(environment);
     const codexExecFixtureRuntime = new CliCodexExecFixtureRuntime();
     const codexExecRunner = codexExecFixtureRuntime.resolveExecRunner(environment);
@@ -399,7 +404,7 @@ export async function runCli(
     });
     const runtimeContext = resolveRuntimeContext(
       io.cwd(),
-      requestedProfileId,
+      requestedProfileId ?? undefined,
       environment,
       globalCliThemePreferenceService,
     );
@@ -418,6 +423,7 @@ export async function runCli(
     );
     const workflowCommandOptions = resolveWorkflowCommandOptions(rawArgs);
     const planCommandOptions = resolvePlanCommandOptions(rawArgs);
+    const adoptCommandOptions = resolveAdoptCommandOptions(rawArgs);
     const hostCommandOptions = resolveHostCommandOptions(rawArgs);
     const upgradeCommandOptions = resolveUpgradeCommandOptions(rawArgs);
 
@@ -532,6 +538,7 @@ export async function runCli(
         workspaceCommandOptions,
         workflowCommandOptions,
         planCommandOptions,
+        adoptCommandOptions,
         hostCommandOptions,
         upgradeCommandOptions,
         orchestrationServiceRuntimeDependencies: {
@@ -768,6 +775,7 @@ export async function runCli(
       if (
         commandDefinition.name === CliCommandName.CONNECT ||
         commandDefinition.name === CliCommandName.PLAN ||
+        commandDefinition.name === CliCommandName.ADOPT ||
         commandDefinition.name === CliCommandName.HOST ||
         commandDefinition.name === CliCommandName.UPGRADE ||
         commandDefinition.name === CliCommandName.WORKFLOW ||
@@ -828,6 +836,80 @@ export async function runCli(
       .addHelpText('after', buildPlanHelpText(runtimeI18n))
       .action(async () => {
         await executeCliCommand(CliCommandName.PLAN);
+      });
+
+    const adoptCommand = program
+      .command(CliCommandName.ADOPT)
+      .description(runtimeI18n.t('cli.commands.adopt.description'))
+      .addHelpText('after', buildAdoptHelpText(runtimeI18n))
+      .action(async () => {
+        throw new RuntimeError(
+          GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+          runtimeI18n.t('cli.commands.adopt.subcommandRequired'),
+          {
+            command: CliCommandName.ADOPT,
+          },
+        );
+      });
+    adoptCommand
+      .command(CliAdoptAction.LIST)
+      .description(runtimeI18n.t('cli.commands.adopt.listDescription'))
+      .option('--repo <path>', runtimeI18n.t('cli.options.adoptRepo'))
+      .action(async () => {
+        await executeCliCommand(CliCommandName.ADOPT);
+      });
+    adoptCommand
+      .command(CliAdoptAction.APPLY)
+      .description(runtimeI18n.t('cli.commands.adopt.applyDescription'))
+      .argument('[packId]', runtimeI18n.t('cli.commands.adopt.packArgument'))
+      .option('--repo <path>', runtimeI18n.t('cli.options.adoptRepo'))
+      .option('--adoption-profile <profileId>', runtimeI18n.t('cli.options.adoptProfile'))
+      .option('--hosts <hosts>', runtimeI18n.t('cli.options.adoptHosts'))
+      .option('--workspace-mode <mode>', runtimeI18n.t('cli.options.workspaceMode'))
+      .option('--force', runtimeI18n.t('cli.options.force'))
+      .action(async () => {
+        await executeCliCommand(CliCommandName.ADOPT);
+      });
+    adoptCommand
+      .command(CliAdoptAction.DIFF)
+      .description(runtimeI18n.t('cli.commands.adopt.diffDescription'))
+      .argument('[packId]', runtimeI18n.t('cli.commands.adopt.packArgument'))
+      .option('--repo <path>', runtimeI18n.t('cli.options.adoptRepo'))
+      .option('--receipt <path>', runtimeI18n.t('cli.options.adoptReceipt'))
+      .action(async () => {
+        await executeCliCommand(CliCommandName.ADOPT);
+      });
+    adoptCommand
+      .command(CliAdoptAction.VERIFY)
+      .description(runtimeI18n.t('cli.commands.adopt.verifyDescription'))
+      .argument('[packId]', runtimeI18n.t('cli.commands.adopt.packArgument'))
+      .option('--repo <path>', runtimeI18n.t('cli.options.adoptRepo'))
+      .option('--receipt <path>', runtimeI18n.t('cli.options.adoptReceipt'))
+      .action(async () => {
+        await executeCliCommand(CliCommandName.ADOPT);
+      });
+    adoptCommand
+      .command(CliAdoptAction.UPGRADE)
+      .description(runtimeI18n.t('cli.commands.adopt.upgradeDescription'))
+      .argument('[packId]', runtimeI18n.t('cli.commands.adopt.packArgument'))
+      .option('--repo <path>', runtimeI18n.t('cli.options.adoptRepo'))
+      .option('--adoption-profile <profileId>', runtimeI18n.t('cli.options.adoptProfile'))
+      .option('--hosts <hosts>', runtimeI18n.t('cli.options.adoptHosts'))
+      .option('--workspace-mode <mode>', runtimeI18n.t('cli.options.workspaceMode'))
+      .option('--receipt <path>', runtimeI18n.t('cli.options.adoptReceipt'))
+      .option('--force', runtimeI18n.t('cli.options.force'))
+      .action(async () => {
+        await executeCliCommand(CliCommandName.ADOPT);
+      });
+    adoptCommand
+      .command(CliAdoptAction.REMOVE)
+      .description(runtimeI18n.t('cli.commands.adopt.removeDescription'))
+      .argument('[packId]', runtimeI18n.t('cli.commands.adopt.packArgument'))
+      .option('--repo <path>', runtimeI18n.t('cli.options.adoptRepo'))
+      .option('--receipt <path>', runtimeI18n.t('cli.options.adoptReceipt'))
+      .option('--force', runtimeI18n.t('cli.options.force'))
+      .action(async () => {
+        await executeCliCommand(CliCommandName.ADOPT);
       });
 
     const hostCommand = program
@@ -1161,6 +1243,33 @@ function buildPlanHelpText(i18n: I18nRuntime): string {
     `  ${CLI_PROGRAM_NAME} plan --output pretty`,
     `  ${CLI_PROGRAM_NAME} plan commit ./context/plan/plan-1234567890.preview.json --confirm-plan approve --output pretty`,
     `  ${CLI_PROGRAM_NAME} plan commit ./context/plan/plan-1234567890.preview.json --confirm-plan reject --output json`,
+  ].join('\n');
+}
+
+/**
+ * Builds one localized `adopt` command help appendix covering high-level install lifecycle flows.
+ * @param i18n Initialized CLI i18n runtime.
+ * @returns Multi-line help text appended after Commander-generated options.
+ */
+function buildAdoptHelpText(i18n: I18nRuntime): string {
+  return [
+    '',
+    i18n.t('cli.commands.adopt.actionGuideTitle'),
+    `  ${CliAdoptAction.LIST.padEnd(12)} ${i18n.t('cli.commands.adopt.actionGuideList')}`,
+    `  ${CliAdoptAction.APPLY.padEnd(12)} ${i18n.t('cli.commands.adopt.actionGuideApply')}`,
+    `  ${CliAdoptAction.DIFF.padEnd(12)} ${i18n.t('cli.commands.adopt.actionGuideDiff')}`,
+    `  ${CliAdoptAction.VERIFY.padEnd(12)} ${i18n.t('cli.commands.adopt.actionGuideVerify')}`,
+    `  ${CliAdoptAction.UPGRADE.padEnd(12)} ${i18n.t('cli.commands.adopt.actionGuideUpgrade')}`,
+    `  ${CliAdoptAction.REMOVE.padEnd(12)} ${i18n.t('cli.commands.adopt.actionGuideRemove')}`,
+    '',
+    i18n.t('cli.commands.adopt.examplesTitle'),
+    `  ${CLI_PROGRAM_NAME} adopt list`,
+    `  ${CLI_PROGRAM_NAME} adopt apply adopter-complete --repo . --hosts codex,claude-code,github-copilot`,
+    `  ${CLI_PROGRAM_NAME} adopt apply adopter-complete --adoption-profile self-host-complete --repo . --workspace-mode repo_local`,
+    `  ${CLI_PROGRAM_NAME} adopt diff --repo .`,
+    `  ${CLI_PROGRAM_NAME} adopt verify --repo .`,
+    `  ${CLI_PROGRAM_NAME} adopt upgrade adopter-complete --repo . --force`,
+    `  ${CLI_PROGRAM_NAME} adopt remove adopter-complete --repo . --force`,
   ].join('\n');
 }
 
@@ -2520,6 +2629,52 @@ function resolvePlanCommandOptions(args: string[]): CliPlanCommandOptions {
     action: resolveNestedSubcommandToken(args, CliCommandName.PLAN),
     artifactPath: resolvePositionalTokenAfterCommand(args, CliCommandName.PLAN, 1),
     confirmationDecision: readOptionValue(args, '--confirm-plan') ?? null,
+  };
+}
+
+/**
+ * Resolves raw adopt-command option values from CLI args.
+ * @param args CLI args excluding node and binary.
+ * @returns Parsed adopt command options.
+ */
+function resolveAdoptCommandOptions(args: string[]): CliAdoptCommandOptions {
+  const requestedCommandName = resolveRequestedCommandName(args);
+  const adoptionProfileAlias =
+    requestedCommandName === CliCommandName.ADOPT
+      ? (readOptionValue(args, '--profile') ?? null)
+      : null;
+  const rawHosts = readOptionValue(args, '--hosts');
+  const hosts =
+    rawHosts
+      ?.split(',')
+      .map((value) => value.trim().toLowerCase())
+      .filter(Boolean)
+      .map((value) => {
+        if (!CLI_ADOPT_HOST_VALUES.has(value)) {
+          throw new RuntimeError(
+            GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+            `adopt --hosts must only contain ${Array.from(CLI_ADOPT_HOST_VALUES).join('|')}; received '${value}'.`,
+            {
+              option: '--hosts',
+              value,
+            },
+          );
+        }
+        return value as CliAdoptCommandOptions['hosts'][number];
+      }) ?? [];
+
+  return {
+    action:
+      (resolveNestedSubcommandToken(args, CliCommandName.ADOPT) as CliAdoptAction | null) ?? null,
+    packSelector: resolvePositionalTokenAfterCommand(args, CliCommandName.ADOPT, 1),
+    repoPath: readOptionValue(args, '--repo') ?? null,
+    adoptionProfileId: readOptionValue(args, '--adoption-profile') ?? adoptionProfileAlias,
+    hosts,
+    workspaceMode:
+      (readOptionValue(args, '--workspace-mode') as CliAdoptCommandOptions['workspaceMode']) ??
+      null,
+    receiptPath: readOptionValue(args, '--receipt') ?? null,
+    force: hasFlag(args, '--force'),
   };
 }
 

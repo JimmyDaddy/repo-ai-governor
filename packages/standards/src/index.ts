@@ -1,4 +1,13 @@
 export {
+  ADOPTION_PACK_DIFF_REPORT_SCHEMA_VERSION,
+  ADOPTION_PACK_INSTALL_RECEIPT_SCHEMA_VERSION,
+  ADOPTION_PACK_MANAGED_ASSET_GROUP_VALUES,
+  ADOPTION_PACK_MANIFEST_SCHEMA_VERSION,
+  ADOPTION_PACK_REMOVE_POLICY_VALUES,
+  ADOPTION_PACK_SOURCE_KIND_VALUES,
+  ADOPTION_PACK_UPGRADE_POLICY_VALUES,
+  ADOPTION_PACK_VERIFICATION_SUMMARY_SCHEMA_VERSION,
+  ADOPTION_PACK_WORKSPACE_MODE_POLICY_VALUES,
   HOST_APPLY_REPORT_SCHEMA_VERSION,
   HOST_DISTRIBUTION_DISCOVERY_STATE_VALUES,
   HOST_DISTRIBUTION_HANDOFF_BRIDGE_VALUES,
@@ -10,7 +19,19 @@ export {
   HOST_VERIFICATION_SUMMARY_SCHEMA_VERSION,
   HOST_VERIFICATION_STATUS_VALUES,
   AgentsProjectionMetadataKey,
+  AdoptionPackManagedAssetGroup,
+  AdoptionPackRemovePolicy,
+  AdoptionPackSourceKind,
+  AdoptionPackUpgradePolicy,
+  AdoptionPackWorkspaceModePolicy,
+  BUILT_IN_ADOPTION_PACK_ID,
+  BUILT_IN_ADOPTION_PACK_PROFILE_IDS,
+  BUILT_IN_ADOPTION_PACK_VERSION,
   DEFAULT_AGENTS_PROJECTION_TARGET,
+  DEFAULT_ADOPTION_METADATA_ROOT_SEGMENTS,
+  DEFAULT_ADOPTION_PACK_WORKSPACE_MODE,
+  DEFAULT_GLOBAL_ADOPTION_PACK_ROOT_SEGMENTS,
+  DEFAULT_REPO_LOCAL_ADOPTION_PACK_ROOT_SEGMENTS,
   DEFAULT_STANDARDS_ALLOW_MINOR_AUTO_UPGRADE,
   DEFAULT_STANDARDS_ALLOW_PATCH_AUTO_UPGRADE,
   DEFAULT_STANDARDS_FALLBACK_LOCALE,
@@ -50,7 +71,12 @@ export {
   STANDARDS_UPGRADE_REQUIRED_ACTION_VALUES,
   STANDARDS_VERSION_PIN_MODE_VALUES,
 } from './constants/index.js';
+export { AdoptionPackRegistry } from './adoption-pack-registry.js';
 export { AgentsProjector } from './agents-projector.js';
+export {
+  listBuiltInAdoptionPackDefinitions,
+  resolveBuiltInAdoptionPackDefinition,
+} from './built-in-adoption-pack-catalog.js';
 export {
   AgentsProjectionNowProvider,
   DefaultAgentsProjectionNowProvider,
@@ -70,6 +96,17 @@ export { StandardsUpgradePlanner } from './standards-upgrade-planner.js';
 export { StandardsPackRegistry } from './standards-pack-registry.js';
 export { StandardsRuntimeLoader } from './standards-runtime-loader.js';
 export type {
+  AdoptionPackDiffRecord,
+  AdoptionPackDiffReport,
+  AdoptionPackInstallReceipt,
+  AdoptionPackManagedFileRecord,
+  AdoptionPackManifest,
+  AdoptionPackProfile,
+  AdoptionPackRegistryOptions,
+  AdoptionPackSourceResolution,
+  AdoptionPackTemplateRecord,
+  AdoptionPackVerificationCheck,
+  AdoptionPackVerificationSummary,
   HostApplyReport,
   HostExportManifest,
   HostExportProjectedFile,
@@ -80,6 +117,8 @@ export type {
   HostVerificationCheck,
   HostVerificationSummary,
   ProjectedReviewRuleBundle,
+  ResolvedAdoptionPackDefinition,
+  ResolvedAdoptionPackManifest,
   StructuredWorkflowAssetRecord,
   StructuredWorkflowAssetRegistryOptions,
   AgentsProjectionNowProviderContract,

@@ -1,6 +1,6 @@
 # TK-663 extend adoption verify and managed bundle artifact support
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-09
 - Owner: `AI-Agent`
 - Priority: `P1`
@@ -49,7 +49,10 @@
 ## 9. 执行记录
 
 1. 2026-04-09：任务创建，状态初始化为 `planned`。
+2. 2026-04-09：已扩展 adoption-level verify，使其覆盖 receipt provenance、managed-file drift、host apply artifacts 与 self-host sqlite bootstrap consistency，并补齐 regression evidence。
 
 ## 10. 产出
 
-1. 待执行：adoption verify and managed bundle support
+1. 已完成：`apps/cli/src/runtime/adoption-pack-runtime.ts`
+2. 已完成：`apps/cli/test/adopt-command.integration.test.ts`
+3. 已完成：`.tmp/project-061-adoption-pack-cleanroom-summary.json`
