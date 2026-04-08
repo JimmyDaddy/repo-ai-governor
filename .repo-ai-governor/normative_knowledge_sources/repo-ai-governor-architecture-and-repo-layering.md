@@ -1,7 +1,7 @@
 # Repo AI Governor 可扩展架构图与仓库分层结构
 
 - Status: active
-- Date: 2026-04-06
+- Date: 2026-04-08
 - Role: implementation blueprint
 - Basis:
   - `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md`
@@ -68,6 +68,7 @@ flowchart TB
     AgentProjection[Agent Projection Service]
     AdapterSDK[Adapter SDK]
     Adapters[Adapters Registry]
+    HostAssets[Host Asset Lifecycle Service]
   end
 
   subgraph Ext[Standards & Slot Layer]
@@ -130,7 +131,10 @@ flowchart TB
   NotifyDispatcher --> Audit
   Policy --> Coord
   Coord --> AdapterSDK --> Adapters
+  Adapters --> HostAssets
   AgentProjection --> Report
+  AgentProjection --> HostAssets
+  HostAssets --> Audit
   Runtime --> Slots
   Runtime --> StandardsPack
   StandardsPack --> PackRegistry --> RuleRenderer --> AgentsProjector
@@ -306,6 +310,9 @@ sequenceDiagram
    - 负责 `runtime.cli-interactive-shell` 这类 human-first shell 的模式解析、状态机、stderr 渲染与 classic fallback，但不拥有业务真相或 runtime 主状态。
 21. `Agent Onboarding & Projection`
    - 由 `runtime.agent-projection` 正式承接，把 `connect / doctor / verify` 的 onboarding 结果与 `AgentDescriptor` 投影统一收敛到同一条 runtime seam，避免 CLI、report、diagnostics 各自维护一套工具绑定语义。
+22. `Host Asset Lifecycle Service`
+   - 管理 Codex / Claude Code / GitHub Copilot 等入口的 project-local assets、plugin bundles、skills/agents、hooks/subagents、`.mcp.json` 等 host-native artifacts。
+   - 负责 `export / apply / verify / upgrade` 流程、support-truth 表达与 adopter-facing packaging evidence，但不持有 runtime canonical truth。
 
 ## 5. 目标仓库分层结构（Monorepo）
 
@@ -532,6 +539,7 @@ ai-governor/
    - 实现 `notification-providers/webhook` 基线，并按风险级别配置 `email/chat-im/issue-system` 回退渠道。
 5. Step 5（适配器模块化）
    - 将现有 codex/copilot/claude 适配拆到 `packages/adapters/*`。
+   - 同步收敛 host-native distribution / plugin bundle / hooks-subagents / MCP 生命周期承载位，避免这些 adopter-facing assets 长期散落在单次 rollout 资产里。
 6. Step 6（入口瘦身）
    - `apps/cli` 只保留命令路由与参数编排，核心逻辑下沉 packages。
    - CLI 输出渲染统一由 `packages/reporting/src/cli-output-presenter/` 承担，避免命令层分散实现。

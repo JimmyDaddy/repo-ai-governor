@@ -429,8 +429,10 @@ export const ZH_CN_TRANSLATIONS = {
           '{{laneLabel}}：已在 {{surface}}{{modelSummary}} 上刷新后端会话{{reasonSummary}}。',
         providerContinuationCleared:
           '{{laneLabel}}：已清理 {{surface}}{{modelSummary}} 的后端会话状态{{reasonSummary}}。',
+        providerContinuationFallbackActive:
+          '{{laneLabel}}：已通过轻量会话摘要保持连续性；{{surface}}{{modelSummary}} 未提供后端会话复用{{reasonSummary}}。',
         providerContinuationUnsupported:
-          '{{laneLabel}}：已在 {{surface}}{{modelSummary}} 上尝试复用后端会话，但当前不支持连续会话{{reasonSummary}}。',
+          '{{laneLabel}}：{{surface}}{{modelSummary}} 当前不支持后端会话复用，且没有轻量会话摘要可用于保持连续性{{reasonSummary}}。',
         mainTurnFollowUpPrompt: '主 agent 在 handoff 前还需要一次补充说明：',
         sessionStarted: '已在 {{routeId}} 上启动 service-backed session {{sessionId}}。',
         sessionResumed: '已通过 selector={{resumeSelector}} 恢复 session {{sessionId}}。',

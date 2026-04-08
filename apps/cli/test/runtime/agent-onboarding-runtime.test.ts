@@ -358,6 +358,110 @@ describe('CliAgentOnboardingRuntime', () => {
     ]);
   });
 
+  it('keeps probe availability truth separate from fallback binding status in verify tool rows', () => {
+    const runtime = new CliAgentOnboardingRuntime();
+    const sourceConfig = createGovernorConfigFixture();
+
+    const verification = {
+      overallStatus: CliGovernanceCheckStatus.WARN,
+      tools: [
+        {
+          toolId: AdapterSurface.CODEX,
+          enabled: true,
+          configuredAvailability: AdapterAvailability.AVAILABLE,
+          availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+          unavailableReasons: [],
+          healthCheck: buildLayeredHealthCheckResult({
+            adapterId: 'codex-agent',
+            surfaceId: AdapterSurface.CODEX,
+            availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+            selectedEntrypoint: AdapterSurface.CODEX,
+            routeKey: 'cli.adapter.probe.codex',
+            unavailableReasons: [],
+            transportKind: AdapterTransportKind.CLI_EXEC,
+          }),
+          capabilitySupportByCapability: new Map(),
+          failureAttributions: [],
+        },
+        {
+          toolId: AdapterSurface.CLAUDE_CODE,
+          enabled: true,
+          configuredAvailability: AdapterAvailability.AVAILABLE,
+          availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+          unavailableReasons: ['credential_missing:claude-code:provider-local'],
+          healthCheck: buildLayeredHealthCheckResult({
+            adapterId: 'claude-code-agent',
+            surfaceId: AdapterSurface.CLAUDE_CODE,
+            availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+            selectedEntrypoint: AdapterSurface.CLAUDE_CODE,
+            routeKey: 'cli.adapter.probe.claude-code',
+            unavailableReasons: ['credential_missing:claude-code:provider-local'],
+            transportKind: AdapterTransportKind.CLI_EXEC,
+          }),
+          capabilitySupportByCapability: new Map(),
+          failureAttributions: ['environment_precondition'],
+        },
+      ],
+      roleEvaluations: [
+        {
+          roleId: 'planner',
+          roleProfileId: 'planner-default',
+          required: true,
+          primarySurface: AdapterSurface.CLAUDE_CODE,
+          selectedSurface: AdapterSurface.CODEX,
+          selectedBy: CliAdapterRoleSelectionSource.FALLBACK,
+          unsupportedCapabilities: [],
+          degradedCapabilities: [],
+          unavailableReasons: ['surface_unavailable:claude-code:credential_missing:provider-local'],
+          healthCheck: buildLayeredHealthCheckResult({
+            adapterId: 'planner',
+            surfaceId: AdapterSurface.CODEX,
+            availabilityStatus: AgentAvailabilityStatus.DEGRADED,
+            selectedEntrypoint: AdapterSurface.CODEX,
+            routeKey: 'cli.adapter.role.planner',
+            fallbackAllowed: true,
+            unavailableReasons: [
+              'surface_unavailable:claude-code:credential_missing:provider-local',
+            ],
+            transportKind: AdapterTransportKind.CLI_EXEC,
+          }),
+          failureAttributions: ['environment_precondition'],
+          status: CliGovernanceCheckStatus.WARN,
+        },
+      ],
+      requiredRoleCount: 1,
+      requiredRoleFailedCount: 0,
+      degradedRoleCount: 1,
+      fallbackRoleCount: 1,
+      nextActions: ['Review routing priorities before unattended execution.'],
+    };
+
+    const verifyPayload = runtime.createVerifyMatrixPayload({
+      executionId: 'verify-fallback-status-split',
+      verification,
+      adaptersConfig: sourceConfig.adapters,
+    });
+
+    expect(verifyPayload.tool_matrix).toEqual([
+      expect.objectContaining({
+        tool: AdapterSurface.CODEX,
+        surface: AdapterSurface.CODEX,
+        role_profile_id: 'planner-default',
+        availability_status: AgentAvailabilityStatus.AVAILABLE,
+        binding_status: CliGovernanceCheckStatus.WARN,
+        selected_by: CliAdapterRoleSelectionSource.FALLBACK,
+        binding_unavailable_reasons: [
+          'surface_unavailable:claude-code:credential_missing:provider-local',
+        ],
+        binding_failure_attributions: ['environment_precondition'],
+        invoke_liveness_diagnostics: expect.objectContaining({
+          unavailable_reasons: [],
+          failure_attributions: [],
+        }),
+      }),
+    ]);
+  });
+
   it('preserves selected tool transport and remote-api config when building connect candidate config', () => {
     const runtime = new CliAgentOnboardingRuntime();
     const sourceConfig = createGovernorConfigFixture();

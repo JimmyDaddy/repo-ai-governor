@@ -1,7 +1,7 @@
 # Runtime Governance Clients Module Overview
 
 - Status: active
-- Date: 2026-04-06
+- Date: 2026-04-08
 - Module ID: `runtime.governance-clients`
 - Owner: runtime
 - Layer: `runtime-core`
@@ -20,7 +20,7 @@
 6. 约束所有表面都只能消费 service-owned query/command seam，不得直接读取 `.repo-ai-governor/**` canonical truth，也不得在 surface 或 plugin 内维护第二份 orchestration state。
 7. 拥有 worktree / editor / terminal / review 文档等 handoff affordance 与 host distribution apply/pack/verify 语义的正式产品边界，但不把 handoff consumer 或宿主插件升格为新的 runtime owner。
 8. 为 multi-workspace overview、parallel execution lane、background queue、notification ownership 与 host-native rollout phase map 提供正式方向，但不宣称这些方向已在代码面全部交付。
-9. 为 adopter truthfulness、real adapter invocation、secondary surface sequencing、GA evidence consolidation 与 standards runtime productization 提供 planning-side formal direction，但不把路线图判断误报为已完成交付。
+9. 为 adopter truthfulness、current surface baseline classification、secondary surface sequencing、host-native lifecycle carry slot 与 follow-up decomposition 提供 planning-side formal direction，但不把路线图判断误报为已完成交付。
 
 ## 3. 非目标
 
@@ -67,6 +67,11 @@
    - `staged export`、`apply/sync`、`pack`、`target-aware verify` 成为正式 contract，而不是文档层建议。
 5. 本模块 formalize 的是 surface boundary、host distribution boundary 与 phased rollout，不自动宣称 host renderer、bundle packager 或 MCP bridge 已全部实现；真实 delivery follow-up 由 `project-050-governance-surface-clients-host-distribution-rollout` 承接。
 6. 截至 `2026-04-06`，本模块进一步接受“adopter productization priority and surface sequencing”补充方向：当前 follow-up 固定先收口 CLI adopter truthfulness 与 GA closeout，再推进 real adapter invocation；secondary surface 固定采取 `VS Code first / desktop foundation`；GA evidence consolidation 与 standards runtime loader / pack productization 随后承接。
+7. 截至 `2026-04-08`，本模块进一步接受“current surface baseline classification and follow-up decomposition”补充方向：
+   - `project-052 ~ project-057` 保留为历史完成流，不再代表当前下一条 primary / planned stream。
+   - 当前 follow-up order 固定重置为 `project-062 -> project-063 -> project-067 -> project-064 -> project-065 -> project-066`。
+   - adopter-facing distribution truth lane 由 `project-063 + project-067` 共同承接。
+   - `project-068` 专门承接 `local-model` 与 `github-com-agent` 的 `P2 deferred` follow-up。
 
 ## 9. Detail Docs
 
@@ -77,3 +82,4 @@
    - `adrs/desktop-command-center-and-vscode-editor-companion-split.md`
    - `adrs/host-native-distribution-and-target-specific-consumption.md`
    - `adrs/adopter-productization-priority-and-surface-sequencing.md`
+   - `adrs/current-surface-baseline-classification-and-followup-decomposition.md`

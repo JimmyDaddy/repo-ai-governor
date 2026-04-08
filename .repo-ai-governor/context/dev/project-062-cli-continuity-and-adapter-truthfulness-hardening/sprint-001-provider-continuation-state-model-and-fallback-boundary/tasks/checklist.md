@@ -1,0 +1,25 @@
+# checklist
+
+- [x] TK-661 freeze provider continuation lifecycle and presenter truth contract
+  - 2026-04-08：任务创建，状态初始化为 `planned`。
+  - 2026-04-08：已把 `previewSummary / latestNoteSummary` 纳入 `SessionMainSupervisorTurnContext` 与 service runtime 投影，明确 lightweight session-note continuity 属于 presenter-safe fallback truth，而不是 provider-native backend reuse。
+  - 2026-04-08：已冻结 `SessionProviderContinuationSummary.lightweightSessionFallbackApplied` contract，并同步 `session-shell` i18n wording，明确 `unsupported + lightweight fallback active` 与 `unsupported + no lightweight fallback` 的对外表达差异。
+  - 2026-04-08：已完成本轮 contract freeze 需要的 targeted regression 与 same-window `pnpm run build`，任务切换为 `completed`。
+- [x] TK-662 implement provider-native continuation slot lifecycle and fallback-active separation
+  - 2026-04-08：任务创建，状态初始化为 `planned`。
+  - 2026-04-08：已把 session continuity note 注入 answer/delegate input，并在 `CliSessionMainSupervisorRuntime` 中按当前 turn context 投影 `providerContinuationSummaries`，避免 lightweight fallback 已生效时仍把结果误报成纯失败。
+  - 2026-04-08：已在 `CliSessionShellTranscriptStore` 中分离 fallback-active unsupported 与真正 unsupported/no-fallback 的 presenter path，并补齐 Claude CLI argv delimiter，避免 `--add-dir` 吞掉 probe prompt。
+  - 2026-04-08：已完成定向回归与 same-window `pnpm run build`，任务切换为 `completed`。
+- [x] TK-663 close continuity hardening with session-shell regression and build evidence
+  - 2026-04-08：任务创建，状态初始化为 `planned`。
+  - 2026-04-08：已完成 continuity-focused session-shell regression，确认 `provider-native / fallback-active / unsupported(no lightweight fallback)` 三类对外表达均有回归覆盖。
+  - 2026-04-08：已完成 `packages/adapters/claude-code/test/claude-code-agent-adapter.smoke.test.ts`、`apps/cli/test/runtime/session-main-supervisor-runtime.test.ts`、`apps/cli/test/runtime/session-shell-transcript-store.test.ts` 定向验证，以及 same-window `pnpm run build`。
+  - 2026-04-08：本 sprint 的实现证据已齐备，任务切换为 `completed`，下一边界进入 sprint-level delegated CR loop。
+- [x] CR-001 sprint-001-provider-continuation-state-model-and-fallback-boundary delegated review loop round 1
+  - 2026-04-08：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-08：fresh reviewer sub-agent 返回 1 条 actionable finding，已写入 `code_review_working-tree-20260408-0244.md`，等待主 agent 复核。
+  - 2026-04-08：主 agent 已完成复核，确认 `providerContinuationUnsupported` 在 no-fallback 分支误报 fallback-active，任务切换为 `verified`。
+  - 2026-04-08：已修正文案与 transcript regression 断言，并完成 targeted vitest、`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`，任务切换为 `resolved`。
+- [x] TK-697 sprint-001 closeout and sprint-002 activation handoff
+  - 2026-04-08：任务创建并切换为 `in_progress`，开始执行 sprint-001 closeout 与 sprint-002 activation handoff。
+  - 2026-04-08：已完成 `DA-697`、project/sprint/context/history 写回，并激活 `sprint-002` 与 `TK-664`。

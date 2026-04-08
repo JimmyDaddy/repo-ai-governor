@@ -16,6 +16,9 @@ const REQUIRED_RELEASE_ASSETS = [
   'scripts/release/check-runtime-js-whitelist.js',
   'scripts/ci/run-stage9-blackbox-ga-baseline.js',
   'scripts/ci/stage9-blackbox-ga-lib.js',
+  'scripts/release/pack-vscode-extension.js',
+  'scripts/release/verify-vscode-extension-distribution.js',
+  'scripts/release/verify-host-distribution.js',
   'scripts/release/verify-local-distribution.js',
   'scripts/release/verify-cleanroom-local-install.js',
   'scripts/examples/check-desktop-entry-smoke.js',
@@ -29,6 +32,9 @@ const REQUIRED_RELEASE_ASSETS = [
 const REQUIRED_PACKAGE_SCRIPTS = [
   'release:check',
   'release:notes',
+  'release:pack-vscode-extension',
+  'release:verify-vscode-extension-distribution',
+  'release:verify-host-distribution',
   'release:verify-local',
   'release:verify-local:plugin-enabled',
   'check:desktop-entry-smoke',
@@ -38,6 +44,7 @@ const REQUIRED_PACKAGE_SCRIPTS = [
   'release:verify-cleanroom-local-install:plugin-enabled:tgz',
   'release:rollback-rehearsal',
   'release:candidate',
+  'release:ga-entry-check',
   'release:ga-check',
   'release:ga-candidate-unified-gate',
   'test:stage9-blackbox-ga',
@@ -46,6 +53,11 @@ const REQUIRED_PACKAGE_SCRIPTS = [
 ];
 const REQUIRED_CHANNEL_NAMES = ['canary', 'rc', 'ga'];
 const REQUIRED_RELEASE_INIT_HOOK = 'pnpm run release:ga-check';
+const REQUIRED_GA_ENTRY_CHECK_SCRIPT = 'release:ga-entry-check';
+const REQUIRED_GA_CHECK_SCRIPT = 'release:ga-check';
+const REQUIRED_GA_UNIFIED_GATE_SCRIPT = 'release:ga-candidate-unified-gate';
+const REQUIRED_CANDIDATE_SCRIPT = 'release:candidate';
+const REQUIRED_GA_UNIFIED_GATE_SCRIPT_FRAGMENT = 'check-ga-candidate-unified-gate.js';
 
 /**
  * Reads one JSON file from repository root with explicit missing-file diagnostics.
@@ -240,6 +252,36 @@ function validatePackageScripts(packageJson) {
     if (!(requiredScriptName in scripts)) {
       throw new Error(`package.json is missing required script: ${requiredScriptName}`);
     }
+  }
+
+  const gaEntryCheckCommand = scripts[REQUIRED_GA_ENTRY_CHECK_SCRIPT];
+  if (
+    typeof gaEntryCheckCommand !== 'string' ||
+    !gaEntryCheckCommand.includes(REQUIRED_CANDIDATE_SCRIPT)
+  ) {
+    throw new Error(
+      `package.json script "${REQUIRED_GA_ENTRY_CHECK_SCRIPT}" must include "${REQUIRED_CANDIDATE_SCRIPT}" to preserve the non-recursive GA entry chain.`,
+    );
+  }
+
+  const gaCheckCommand = scripts[REQUIRED_GA_CHECK_SCRIPT];
+  if (
+    typeof gaCheckCommand !== 'string' ||
+    !gaCheckCommand.includes(REQUIRED_GA_UNIFIED_GATE_SCRIPT)
+  ) {
+    throw new Error(
+      `package.json script "${REQUIRED_GA_CHECK_SCRIPT}" must include "${REQUIRED_GA_UNIFIED_GATE_SCRIPT}" so the documented GA entry check reaches the unified gate.`,
+    );
+  }
+
+  const gaUnifiedGateCommand = scripts[REQUIRED_GA_UNIFIED_GATE_SCRIPT];
+  if (
+    typeof gaUnifiedGateCommand !== 'string' ||
+    !gaUnifiedGateCommand.includes(REQUIRED_GA_UNIFIED_GATE_SCRIPT_FRAGMENT)
+  ) {
+    throw new Error(
+      `package.json script "${REQUIRED_GA_UNIFIED_GATE_SCRIPT}" must include "${REQUIRED_GA_UNIFIED_GATE_SCRIPT_FRAGMENT}".`,
+    );
   }
 }
 

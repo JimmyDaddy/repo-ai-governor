@@ -3,20 +3,20 @@
 ## Primary Stream
 
 - Status: idle
-- Project: `project-056-standards-runtime-loader-and-pack-productization`
-- Sprint: `sprint-001-standards-runtime-loader-product-path`
-- Docs root: `.repo-ai-governor/context/dev/project-056-standards-runtime-loader-and-pack-productization`
-- Task records: `.repo-ai-governor/context/dev/project-056-standards-runtime-loader-and-pack-productization/sprint-001-standards-runtime-loader-product-path/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-056-standards-runtime-loader-and-pack-productization/sprint-001-standards-runtime-loader-product-path/review/`
-- Note: `2026-04-07` `project-056` project-final `CR-002` clean `resolved` 且 `TK-651 / DA-651` 已完成 final closeout write-back；当前 worktree 仅保留最近完成的 primary stream trace，暂无新的 active primary stream。
+- Project: `none`
+- Sprint: `none`
+- Docs root: `none`
+- Task records: `none`
+- Review records: `none`
+- Note: `2026-04-08` 已完成 `project-062 -> project-068` 的本地顺序执行；`project-068 / sprint-002` 已通过 `CR-002` 与 `TK-713 / DA-713` 完成最终 closeout，当前 worktree 不再保留 active primary stream。
 
 ## Active Streams
 
-- none currently registered.
+- None currently registered.
 
 ## Planned Follow-Up Streams
 
-- none currently registered.
+- None currently registered.
 
 ## Completed Stream History
 

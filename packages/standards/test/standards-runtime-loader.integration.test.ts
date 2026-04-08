@@ -160,4 +160,131 @@ describe('StandardsRuntimeLoader', () => {
       resolve(fixtureRoot, DEFAULT_AGENTS_PROJECTION_TARGET),
     );
   });
+
+  it('loads the first-wave official pack catalog from the repository examples module', async () => {
+    const loader = new StandardsRuntimeLoader();
+    const repositoryRoot = resolve(process.cwd());
+    const temporaryProjectionRoot = await mkdtemp(join(tmpdir(), 'runtime-loader-official-pack-'));
+    const projectionTarget = join(temporaryProjectionRoot, 'AGENTS.official.md');
+    // The workspace test harness resolves the in-repo examples module here; published package-module
+    // consumer paths are maintained by docs/release surfaces and should not be overstated as covered by this slice.
+    const repositoryExamplesModule = './packages/standards/src/examples/index.ts';
+
+    try {
+      const runtime = await loader.load({
+        baseDirectory: repositoryRoot,
+        standards: {
+          packSources: {
+            official: [
+              {
+                module: repositoryExamplesModule,
+                exportName: 'workflowReviewGovernancePack',
+              },
+              {
+                module: repositoryExamplesModule,
+                exportName: 'javascriptMinimalGovernancePack',
+              },
+              {
+                module: repositoryExamplesModule,
+                exportName: 'rustMinimalGovernancePack',
+              },
+            ],
+          },
+          renderTargets: [StandardsRenderTarget.HUMAN],
+          projectionTargets: [
+            {
+              targetFile: projectionTarget,
+              locale: 'en-US',
+            },
+          ],
+          defaultLocale: 'en-US',
+          fallbackLocale: 'zh-CN',
+        },
+      });
+      const renderResults = await loader.renderConfiguredTargets({
+        baseDirectory: repositoryRoot,
+        standards: {
+          packSources: {
+            official: [
+              {
+                module: repositoryExamplesModule,
+                exportName: 'workflowReviewGovernancePack',
+              },
+              {
+                module: repositoryExamplesModule,
+                exportName: 'javascriptMinimalGovernancePack',
+              },
+              {
+                module: repositoryExamplesModule,
+                exportName: 'rustMinimalGovernancePack',
+              },
+            ],
+          },
+          renderTargets: [StandardsRenderTarget.HUMAN],
+          projectionTargets: [
+            {
+              targetFile: projectionTarget,
+              locale: 'en-US',
+            },
+          ],
+          defaultLocale: 'en-US',
+          fallbackLocale: 'zh-CN',
+        },
+      });
+      const projections = await loader.projectAgents({
+        baseDirectory: repositoryRoot,
+        standards: {
+          packSources: {
+            official: [
+              {
+                module: repositoryExamplesModule,
+                exportName: 'workflowReviewGovernancePack',
+              },
+              {
+                module: repositoryExamplesModule,
+                exportName: 'javascriptMinimalGovernancePack',
+              },
+              {
+                module: repositoryExamplesModule,
+                exportName: 'rustMinimalGovernancePack',
+              },
+            ],
+          },
+          renderTargets: [StandardsRenderTarget.HUMAN],
+          projectionTargets: [
+            {
+              targetFile: projectionTarget,
+              locale: 'en-US',
+            },
+          ],
+          defaultLocale: 'en-US',
+          fallbackLocale: 'zh-CN',
+        },
+      });
+
+      expect(runtime.loadedPacks.map((loadedPack) => loadedPack.pack.packId)).toEqual([
+        'pack.official.workflow-review',
+        'pack.official.javascript.minimal',
+        'pack.official.rust.minimal',
+      ]);
+      expect(
+        renderResults[0]?.renderedRules.map((renderedRule) => renderedRule.semanticKey),
+      ).toEqual(
+        expect.arrayContaining([
+          'rule.workflow.review.cr-task-card',
+          'rule.javascript.project.package-manifest',
+          'rule.rust.format.cargo-fmt',
+        ]),
+      );
+      expect(projections[0]?.projectedContent).toContain('review_pending -> verified -> resolved');
+      expect(projections[0]?.projectedContent).toContain('package.json');
+      expect(projections[0]?.projectedContent).toContain('cargo fmt --all --check');
+      expect(existsSync(projectionTarget)).toBe(false);
+    } finally {
+      await rm(temporaryProjectionRoot, {
+        recursive: true,
+        force: true,
+      });
+    }
+  });
 });

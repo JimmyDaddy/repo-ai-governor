@@ -97,6 +97,8 @@ standards:
     official:
       - module: "@repo-ai-governor/standards/examples"
         exportName: "workflowReviewGovernancePack"
+      - module: "@repo-ai-governor/standards/examples"
+        exportName: "javascriptMinimalGovernancePack"
     team:
       - module: "@acme/governor-standards-team"
         exportName: "teamDeliveryPack"
@@ -112,6 +114,8 @@ standards:
   defaultLocale: zh-CN
   fallbackLocale: en-US
 ```
+
+说明：上面的 `module` 需要解析到你当前环境可用的 standards examples entrypoint；`project-066` 当前自动化证据覆盖的是仓库内 examples module 与 config-schema 接受面，而 packaged consumer path 仍由 release/distribution 面单独验证。
 
 约束说明：
 

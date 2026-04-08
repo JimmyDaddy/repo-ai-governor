@@ -12,14 +12,14 @@ If you maintain or release `repo-ai-governor` itself, use `docs/maintainer-valid
 |---|---|---|
 | `path` | Fast local adoption | `pnpm add --save-exact <governor-repo>` |
 | `link` | Source-linked development | `pnpm add --save-exact link:<governor-repo>` |
-| `tgz` | Packaged-install rehearsal | `pnpm pack --json` + `pnpm add --save-exact <tarball>` |
-| `dist-binary` | No-install rehearsal for Yarn/npm or dirty repositories | `node <governor-repo>/dist/bin/repo-ai-governor.js <command>` |
+| `tgz` | Online packaged CLI-install rehearsal | `pnpm pack --json` + `pnpm add --save-exact <tarball>` |
+| `dist-binary` | No-install CLI/runtime rehearsal for Yarn/npm or dirty repositories | `node <governor-repo>/dist/bin/repo-ai-governor.js <command>` |
 
 Choose the lightest path that matches your goal:
 
 1. Start with `path` unless you have a reason not to.
 2. Use `link` only when the target repo should follow local governor source changes.
-3. Use `tgz` only when you want a packaged-install rehearsal and the environment can still reach the npm registry.
+3. Use `tgz` only when you want an online packaged CLI-install rehearsal and the environment can still reach the npm registry.
 4. Use `dist-binary` when the target repo is dirty or non-`pnpm`, or when you want to validate CLI/runtime behavior before touching the target repo dependency graph.
 
 The formal acceptance contract for these install modes lives in `docs/support-matrix.md`.
@@ -66,10 +66,30 @@ code --extensionDevelopmentPath <governor-repo>/apps/vscode-extension <target-re
 
 Boundary notes:
 
-1. Current formal support is source-checkout only; build the governor repository before launching the extension-development host.
-2. The published npm/tgz package surface does not include the `apps/vscode-extension` workspace or an installable extension bundle; internal `dist/apps/vscode-extension/**` payloads may still exist, but they are not a supported npm/VSIX/Marketplace distribution.
-3. Trust-sensitive commands stay gated by `Workspace Trust`, so use a trusted workspace when validating review, HITL, recovery, or termination actions.
-4. The current VS Code MVP is a service-backed companion for execution/review/HITL/context flows; it does not replace the normal CLI bootstrap path or the session shell.
+1. Current formal support starts from a built governor source checkout; build the repository before launching the extension-development host or generating packaged artifacts.
+2. Use `pnpm run release:pack-vscode-extension -- --output <path>.vsix` or `pnpm run release:verify-vscode-extension-distribution -- --output <report>.json` when you want the supported packaged boundary from that same checkout.
+3. The supported packaged boundary is limited to the locally generated VSIX / packaged extension root from the built source checkout. Automated evidence covers archive structure and packaged module-resolution smoke, while `code --install-extension ...` or a real host launch remains optional manual rehearsal when available.
+4. The published npm/tgz package surface still does not include the `apps/vscode-extension` workspace or a published installable extension bundle; Marketplace remains unsupported.
+5. Trust-sensitive commands stay gated by `Workspace Trust`, so use a trusted workspace when validating review, HITL, recovery, or termination actions.
+6. The current VS Code MVP is a service-backed companion for execution/review/HITL/context flows; it does not replace the normal CLI bootstrap path or the session shell.
+
+### 3.2 Optional Desktop Foundation Surface
+
+Use this only when you want to validate the desktop sidecar foundation from a built governor source checkout on top of the normal CLI bootstrap path:
+
+```bash
+cd <governor-repo>
+pnpm run build
+pnpm run check:desktop-entry-smoke
+pnpm run release:verify-local
+```
+
+Boundary notes:
+
+1. Current formal support is limited to the built governor source checkout plus the foundation verification chain above, including `pnpm run release:verify-local`; `apps/desktop` is not a supported standalone desktop installer or published desktop bundle.
+2. `apps/desktop` remains a service-backed foundation surface for session, execution, HITL, artifact-pane, and queue-overview seams; it does not replace CLI bootstrap or session-shell ownership.
+3. Use `integrations/desktop/README.md` for the current desktop contract baseline and non-goal guardrails.
+4. Use `docs/support-matrix.md` for the single public support declaration for this surface.
 
 ## 4. Session Shell Quick Tour
 
@@ -108,7 +128,8 @@ What to pay attention to:
 5. `tool_transport_matrix` now projects effective transport truth; CLI-backed adapters such as `codex`, `claude-code`, and `github-copilot` show `cli_exec` even when config omits an explicit `transport`.
 6. A `warn` or failed dry-run still counts as useful evidence when `report`, `replay`, and `diagnostics_trace` artifacts are emitted, because those artifacts preserve the failing stage and adapter attribution for follow-up routing fixes.
 7. In the current validated `codex` baseline, `run --dry-run --trace` can complete the baseline `prepare -> execute -> report` chain through real `cli_exec` routing without performing governed file edits or dependency mutations; it still persists audit artifacts under the active governor workspace, so treat that as the preferred success signal before enabling a non-dry-run run.
-8. `github-copilot` now follows the same CLI-backed truth model for tester-route verification, while `local-model` should still be read as a constrained fallback surface rather than a full substitute for required `tool_calling` or `structured_output` roles.
+8. `github-copilot` now follows the same CLI-backed truth model for tester-route verification, while `local-model` should still be read as a constrained fallback surface only for restricted-network or operator-selected local fallback flows whose route requirements stay capability-compatible.
+9. Do not treat `local-model` as a promoted primary substitute for repository-review reviewer delegation or for roles that require `tool_calling`, `structured_output`, or `confirmation_gate`; those paths remain unsupported or explicitly guarded.
 
 Helpful artifact paths:
 
@@ -210,22 +231,33 @@ pnpm exec repo-ai-governor run --output json
 
 ### 8.3 Built-in Governance Packs
 
-The published package exposes three built-in governance packs through `@repo-ai-governor/standards`:
+The current official standards catalog includes five built-in governance packs:
 
 1. `workflowReviewGovernancePack`
-2. `pythonMinimalGovernancePack`
-3. `goMinimalGovernancePack`
+2. `javascriptMinimalGovernancePack`
+3. `pythonMinimalGovernancePack`
+4. `goMinimalGovernancePack`
+5. `rustMinimalGovernancePack`
 
 Use `workflowReviewGovernancePack` when you want the adopter-facing governance flow itself to allocate standalone `CR-xxx` review task cards and keep the `review_pending -> verified -> resolved` lifecycle synchronized.
 
-Then layer the language pack you need, plus any team or repository overrides, on top.
+Then layer the language pack you need on top:
+
+1. `javascriptMinimalGovernancePack` for `package.json` script-driven JavaScript / Node repositories.
+2. `pythonMinimalGovernancePack` for `pyproject.toml` + `ruff/pytest/pyright` style Python repositories.
+3. `goMinimalGovernancePack` for `go.mod` / `go.sum` repositories.
+4. `rustMinimalGovernancePack` for Cargo workspace repositories.
+
+The self-host TypeScript governance chain in this repository remains the canonical repository-level reference example, but it is not a separately published official language pack yet.
+The current `project-066` proof window rechecks the repository examples module plus config-schema acceptance for this catalog; packaged consumer-path verification still belongs to release/distribution surfaces.
 
 ## 9. Troubleshooting And Known Limitations
 
 1. `pnpm add <tarball>` failing with `ENOTFOUND` usually means the install environment cannot reach the npm registry; use `path`, `link`, or `dist-binary` instead.
 2. `dist-binary` validates CLI/runtime behavior, not packaged-install behavior.
 3. `tgz` is not offline/self-contained; installation still resolves external dependencies.
-4. If a target repository already uses Yarn/npm or has a dirty worktree, start with `dist-binary`; otherwise start with `path` and move to `link` or `tgz` only when the workflow requires it.
+4. The `tgz` path validates the published CLI tarball surface plus shipped docs/reference assets only; it does not widen packaged VS Code support beyond the built-source local VSIX / packaged-extension-root path, and it does not provide Marketplace or published-installable extension support.
+5. If a target repository already uses Yarn/npm or has a dirty worktree, start with `dist-binary`; otherwise start with `path` and move to `link` or `tgz` only when the workflow requires it.
 5. Self-host warnings such as `baseline_docs missing=5/5` or `script_not_found` are expected in fresh external repos unless you intentionally vendor this repository's own governance stack.
 6. If `upgrade` preview reports blocking confirmation items, stop before `apply`, review the saved `report_path` and `auto_migrated_config_path`, then rerun preview after fixing the configuration drift.
 7. Keep both the preview `report_path` and either the `apply_receipt_path` or `rollback_snapshot_path`; supported rollback depends on those hand-off artifacts rather than manual path guessing.
@@ -238,6 +270,46 @@ Then layer the language pack you need, plus any team or repository overrides, on
 1. Repository-local Codex helpers live under `.codex/skills/`; external adopters can ignore them unless they want the same self-host skill prompts and delivery workflows inside the target repository.
 2. These assets are operational helpers for local AI tooling, not a requirement for the CLI install surfaces documented above.
 3. `apps/vscode-extension` is an optional secondary surface for source-checkout evaluation, not part of the published package-install baseline.
+
+### 10.1 Optional Codex / Claude Code Host-native Lifecycle
+
+Use this path only when you already have a built governor source checkout and want generated Codex / Claude Code assets inside the target repository or as plugin bundles:
+
+Run these commands from `<governor-repo>`, and point `--apply-to-repo` at the adopter repository root that should receive the generated files.
+
+```bash
+pnpm exec repo-ai-governor host export --host codex --mode project-local --output-dir .repo-ai-governor/generated/hosts/codex --apply-to-repo /absolute/path/to/<target-repo>
+pnpm exec repo-ai-governor host export --host claude-code --mode project-local --output-dir .repo-ai-governor/generated/hosts/claude-code --apply-to-repo /absolute/path/to/<target-repo>
+pnpm exec repo-ai-governor host pack --host codex --mode plugin-bundle --output-dir .repo-ai-governor/generated/hosts/codex-plugin --bundle-dir .repo-ai-governor/generated/bundles/codex
+pnpm exec repo-ai-governor host pack --host claude-code --mode plugin-bundle --output-dir .repo-ai-governor/generated/hosts/claude-code-plugin --bundle-dir .repo-ai-governor/generated/bundles/claude-code
+```
+
+Then recheck the staged manifest that belongs to the export or bundle you just rendered:
+
+```bash
+pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/codex/host-export.manifest.json
+pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/claude-code/host-export.manifest.json
+pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/codex-plugin/host-export.manifest.json
+pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/claude-code-plugin/host-export.manifest.json
+```
+
+Formal contract:
+
+1. `host export` is the supported path for Codex / Claude Code `project-local` follow-up assets when you want generated AGENTS/skills/agents/hooks/MCP files in a target repository.
+2. `host pack` is the supported path for Codex / Claude Code plugin bundles when you want one installable host-side bundle materialized from the same built source checkout.
+3. `host verify` must be rerun against the generated manifest after every `host export` or `host pack`, and again after any governor source or vendored-skill refresh.
+4. “Upgrade” for these host-native assets means rerender plus verify after the source checkout or vendored skills changed. It is not a separate packaged installer, and it is not the same contract as `repo-ai-governor upgrade`.
+5. These generated host assets are source-checkout follow-up surfaces and adopter-facing distribution artifacts. They do not replace the canonical governor workspace truth under `context/`, `tasks/`, `review/`, or audit ledgers.
+
+### 10.2 GitHub Copilot Reserved Target Notice
+
+`github-com-agent` remains a reserved GitHub Copilot target. The current contract is intentionally blocked:
+
+1. The target id and renderer path exist only so staged exports can remain schema-safe and target-aware; they do not mean GitHub.com coding-agent consumption is formally supported.
+2. Current capability truth stays frozen at `supportedModes=[]`, `discoveryState=staged_export only`, `supportsApplyToRepo=false`, `supportsBundlePackaging=false`, and `isMvpTarget=false`.
+3. `host export --copilot-target github-com-agent --apply-to-repo ...` must still fail, and `host verify` on that reserved manifest must still return a blocking result until the target leaves deferred status.
+4. This blocked mode exits only after the target advertises at least one supported mode plus a discoverable/installed consumer path, pass-level export/verify evidence exists for that target, and the adopter-facing consumption narrative is proven to route back through the canonical governor runtime instead of a host-local fork.
+5. Maintainers should refresh `.tmp/project-068-sprint-002-github-com-agent-reserved-target-report.json` with `pnpm run release:verify-github-com-agent-reserved-target` whenever this reserved-target contract changes, so the blocked proof path remains replayable.
 
 ## 11. Remote-api Rehearsal
 

@@ -1,0 +1,40 @@
+# checklist
+
+- [x] TK-676 freeze official pack expansion matrix and acceptance contract
+  - 2026-04-08：任务创建，状态初始化为 `planned`。
+  - 2026-04-08：`project-065` final closeout 完成后，本任务作为下一条 primary stream 起点被激活，状态切换为 `in_progress`。
+  - 2026-04-08：已冻结 official pack catalog 与 acceptance contract：workflow baseline + JavaScript / Python / Go / Rust 语言基线构成官方发布目录，TypeScript 继续保留为 repository-level reference example。
+  - 2026-04-08：已补齐验证窗口：`pnpm exec vitest run packages/standards/test/language-minimal-governance-packs.integration.test.ts packages/standards/test/standards-runtime-loader.integration.test.ts packages/config/test/config.unit.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1`。
+  - 2026-04-08：matrix/contract freeze 已完成；当前 sprint 的 next boundary 是 fresh reviewer CR loop，状态切换为 `completed`。
+- [x] TK-677 implement first-wave official pack expansion and runtime/docs examples
+  - 2026-04-08：任务创建，状态初始化为 `planned`。
+  - 2026-04-08：已完成 first-wave official pack expansion：新增 `javascriptMinimalGovernancePack` 与 `rustMinimalGovernancePack`，并补齐 top-level export、runtime loader example、config example 与 render/projection tests。
+  - 2026-04-08：已补齐验证窗口：`pnpm exec vitest run packages/standards/test/language-minimal-governance-packs.integration.test.ts packages/standards/test/standards-runtime-loader.integration.test.ts packages/config/test/config.unit.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1`。
+  - 2026-04-08：first-wave official pack implementation 已完成；当前 sprint 的 next boundary 是 fresh reviewer CR loop，状态切换为 `completed`。
+- [x] TK-678 close ecosystem expansion baseline with validation evidence and support narrative refresh
+  - 2026-04-08：任务创建，状态初始化为 `planned`。
+  - 2026-04-08：已用 support-matrix、local adoption playbook 与 maintainer validation playbook 的中英文刷新完成 ecosystem narrative closeout；公开口径现已区分 official published baseline 与 repository reference example，不再只剩 “minimal baseline” 描述。
+  - 2026-04-08：已补齐验证窗口：`pnpm exec vitest run packages/standards/test/language-minimal-governance-packs.integration.test.ts packages/standards/test/standards-runtime-loader.integration.test.ts packages/config/test/config.unit.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1`。
+  - 2026-04-08：support narrative refresh 已完成；当前 sprint 的 next boundary 是 fresh reviewer CR loop，状态切换为 `completed`。
+- [x] CR-001 sprint-001-official-pack-expansion-matrix-and-first-wave delegated review loop round 1
+  - 2026-04-08：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-08：fresh reviewer round 返回 1 条 accepted finding：official-catalog loader proof 只覆盖 repository examples module，但 maintainer playbook 把这条证据写成更宽的 consumer-path contract proof；主 agent 已复核并接受该问题。
+  - 2026-04-08：补充 reviewer 复核后，确认 `docs/support-matrix*` 已把 `project-066` catalog claim 写入 formal support declaration，但 verification snapshot 缺少同窗口 `project-066` evidence；主 agent 同样接受并修复该证据漂移。
+  - 2026-04-08：已完成 accepted findings 修复，补入 targeted vitest + build 的 support-matrix evidence，并把 catalog proof boundary 统一收窄为 repository examples module + config-schema 接受面；本轮状态切换为 `resolved`。
+- [x] TK-708 sprint-001 exit acceptance and project-final review activation handoff
+  - 2026-04-08：任务在 `TK-676`、`TK-677`、`TK-678` 与 `CR-001` 全部进入终态后创建并于同一窗口完成，`sprint-001` 已完成 closeout write-back，接下来进入 `project-066` project-final CR loop。
+- [x] CR-002 project-066-standards-and-language-pack-ecosystem-expansion final delegated review loop round 2
+  - 2026-04-08：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-08：fresh reviewer `Tesla` 返回 1 条 accepted finding：`CR-002` task card 已创建，但尚未同步进 active sprint 的 canonical ledger / rendered checklist / tasks.csv；主 agent 复核后确认该问题成立，且 scoped code/docs surfaces 未发现其他 actionable finding。
+  - 2026-04-08：已通过 `sync-task-ledger` 补回 `CR-002` 的 `review_pending` 账面记录，并在同一窗口将 review artifact、task card、checklist 与 tasks.csv 同步推进到 `resolved`。
+- [x] CR-003 project-066-standards-and-language-pack-ecosystem-expansion final delegated review loop round 3
+  - 2026-04-08：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-08：fresh reviewer `Zeno` 返回 1 条 accepted finding：`sprint-001` 的 `plan.md` 仍维持 `Status: completed`，但 active sprint ledger 已因打开中的 `CR-003` 呈现 `active`，导致 `check-sprint-plan-status-sync` 失败；同时 scoped `packages/standards`、`packages/config` 与 support/playbook surfaces 未发现其他 actionable finding。
+  - 2026-04-08：主 agent 复核后接受该 finding，并将当前 sprint plan 恢复为 project-final CR loop 期间的 `active` 真值；由于本轮存在 accepted finding，`CR-003` 在治理修复完成后收口为 `resolved`，并要求立即进入下一轮 fresh project-final recheck。
+- [x] CR-004 project-066-standards-and-language-pack-ecosystem-expansion final delegated review loop round 4
+  - 2026-04-08：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-08：fresh reviewer `Avicenna` 返回 clean 结论：在 `packages/standards`、`packages/config`、support/playbook docs 与 `project-066` closeout 面上未发现新的 actionable finding；上一轮 `CR-002` / `CR-003` 的治理 blocker 也已确认收口。
+  - 2026-04-08：主 agent 复核 scoped boundary、reviewer 提供的 targeted vitest/build/test evidence 与治理检查后，确认 round 4 无新增 blocker，任务切换为 `resolved`，允许 `project-066` 进入 final closeout write-back。
+- [x] TK-709 finalize project-066 closeout and activate project-068 primary stream
+  - 2026-04-08：任务创建，用于承接 `project-066` clean project-final review 之后的最终 closeout write-back。
+  - 2026-04-08：已完成 completion audit、history/current-context 收口、delivery registry handoff，并将下一条 primary stream 激活为 `project-068 / sprint-001 / TK-682`。

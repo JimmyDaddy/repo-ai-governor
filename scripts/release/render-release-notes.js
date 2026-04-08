@@ -76,6 +76,64 @@ function renderBulletList(values) {
 }
 
 /**
+ * Reads one required entry-command string from a generic object.
+ * @param {unknown} rawObject Candidate object.
+ * @param {string} fieldName Field key.
+ * @returns {string}
+ */
+function readRequiredEntryCommand(rawObject, fieldName) {
+  if (!rawObject || typeof rawObject !== 'object') {
+    throw new Error(`Expected object to read "${fieldName}".`);
+  }
+
+  const entryCommand = rawObject[fieldName];
+  if (typeof entryCommand !== 'string' || entryCommand.trim().length === 0) {
+    throw new Error(`Expected non-empty string field "${fieldName}".`);
+  }
+
+  return entryCommand.trim();
+}
+
+/**
+ * Collects verification commands from policy-defined channel checks and GA gate config.
+ * Why: release notes should stay aligned with the authoritative release-governance policy
+ * instead of maintaining a second hardcoded checklist.
+ * @param {unknown} policyConfig Parsed release policy config.
+ * @returns {string[]}
+ */
+function collectVerificationCommands(policyConfig) {
+  if (!policyConfig || typeof policyConfig !== 'object') {
+    throw new Error('release-governance-policy payload is invalid.');
+  }
+
+  const channels = policyConfig.channels;
+  if (!Array.isArray(channels) || channels.length === 0) {
+    throw new Error('release-governance-policy must define channels.');
+  }
+
+  const collectedCommands = [];
+  const seenCommands = new Set();
+  const appendCommand = (command) => {
+    if (seenCommands.has(command)) {
+      return;
+    }
+    seenCommands.add(command);
+    collectedCommands.push(command);
+  };
+
+  for (const channel of channels) {
+    const requiredChecks = readRequiredStringArray(channel, 'requiredChecks');
+    for (const requiredCheck of requiredChecks) {
+      appendCommand(requiredCheck);
+    }
+  }
+
+  appendCommand(readRequiredEntryCommand(policyConfig.rollbackRehearsal, 'entryCommand'));
+  appendCommand(readRequiredEntryCommand(policyConfig.gaCandidateUnifiedGate, 'entryCommand'));
+  return collectedCommands;
+}
+
+/**
  * Builds markdown release notes text from policy and package metadata.
  * @param {unknown} packageJson Parsed package metadata.
  * @param {unknown} policyConfig Parsed release policy config.
@@ -102,6 +160,7 @@ function buildReleaseNotesMarkdown(packageJson, policyConfig) {
   if (!Array.isArray(channels) || channels.length === 0) {
     throw new Error('release-governance-policy must define channels.');
   }
+  const verificationCommands = collectVerificationCommands(policyConfig);
 
   const channelMarkdownBlocks = channels.map((channel) => {
     if (!channel || typeof channel !== 'object') {
@@ -155,12 +214,7 @@ function buildReleaseNotesMarkdown(packageJson, policyConfig) {
     '',
     '## Verification Commands',
     '',
-    '- `pnpm run release:check`',
-    '- `pnpm run release:verify-local`',
-    '- `pnpm run build:plugin-enabled && pnpm run release:verify-local:plugin-enabled`',
-    '- `pnpm run build:plugin-enabled && pnpm run release:verify-cleanroom-local-install:plugin-enabled`',
-    '- `pnpm run build:plugin-enabled && pnpm run release:verify-cleanroom-local-install:plugin-enabled:tgz`',
-    '- `pnpm run release:ga-check`',
+    renderBulletList(verificationCommands.map((command) => `\`${command}\``)),
     '',
   ].join('\n');
 }

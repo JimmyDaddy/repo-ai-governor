@@ -1,0 +1,26 @@
+# checklist
+
+- [x] TK-667 freeze packaged install support contract and acceptance matrix
+  - 2026-04-08：任务创建，状态初始化为 `planned`。
+  - 2026-04-08：`project-062` final closeout 完成后，当前任务切换为 `in_progress`，开始冻结 `path / link / dist-binary / tgz` 的 packaged install support contract 与 acceptance matrix。
+  - 2026-04-08：已冻结 install-mode contract：`path` 为默认本地接入、`link` 为源码跟随模式、`dist-binary` 仅证明 CLI/runtime rehearsal、`tgz` 仅证明“联网的 packaged CLI install rehearsal”；相关 README、adopter playbook、maintainer playbook 与 support matrix 已在同一窗口内完成对齐，任务切换为 `completed`。
+- [x] TK-668 implement packaged installer runtime layout follow-up or explicit online-only boundary hardening
+  - 2026-04-08：任务创建，状态初始化为 `planned`。
+  - 2026-04-08：已将 `verify-local-distribution.js` 的 standards runtime-loader dist smoke 断言切换为绝对 projection target，并把 `docs/support-matrix*.md` 与 maintainer/playbook truthfulness 一并纳入 packed-surface/documentation assertions，明确 online-only packaged boundary 不会误扩张为 secondary-surface packaged support。
+  - 2026-04-08：same-window `pnpm run build`、`pnpm exec vitest run packages/standards/test/standards-runtime-loader.integration.test.ts --maxWorkers=1 --maxConcurrency=1` 与 `node ./scripts/release/verify-local-distribution.js --output .tmp/project-063-sprint-001-local-distribution-report.json` 已通过，任务切换为 `completed`。
+- [x] TK-669 close packaged adoption boundary with clean-room rehearsal and support-matrix refresh
+  - 2026-04-08：任务创建，状态初始化为 `planned`。
+  - 2026-04-08：已重跑 `.tmp/project-063-sprint-001-cleanroom-tgz-report.json` 与 `.tmp/project-063-sprint-001-local-distribution-report.json`，并将 support matrix / maintainer playbook 的 packaged truth refresh 到当前机器证据窗口。
+  - 2026-04-08：same-window `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`node ./scripts/release/verify-cleanroom-local-install.js --modes tgz --iterations 1 --output .tmp/project-063-sprint-001-cleanroom-tgz-report.json` 与 `node ./scripts/release/verify-local-distribution.js --output .tmp/project-063-sprint-001-local-distribution-report.json` 已通过；`project-067` 的 next-stream input 现已冻结为“在 packaged install truth lane 之上继续 host plugin/skill/agent lifecycle 与 adopter consumption”，任务切换为 `completed`。
+- [x] CR-001 sprint-001-packaged-install-contract-and-acceptance-refresh delegated review loop round 1
+  - 2026-04-08：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-08：fresh reviewer round 由 `Confucius` 执行，未返回 actionable findings；主 agent 复核当前 sprint boundary 与既有验证证据后，直接写入 resolved review artifact 并将本任务收口为 `resolved`。
+- [x] TK-700 sprint-001 exit acceptance and project-final review activation handoff
+  - 2026-04-08：在 `TK-667`、`TK-668`、`TK-669` 与 `CR-001` 全部进入终态后创建本任务。
+  - 2026-04-08：已写入 `DA-700`、project/sprint closeout handoff 与 task-ledger 同步；当前 sprint surface 保留给后续 `project-final` CR loop。
+- [x] CR-002 project-063-packaged-distribution-and-install-surface-closeout final delegated review loop round 2
+  - 2026-04-08：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-08：fresh reviewer round 由 `Ohm` 执行，未返回 actionable findings；主 agent 复核 project-final boundary 与既有验证证据后，直接写入 resolved review artifact 并将本任务收口为 `resolved`。
+- [x] TK-701 finalize project-063 closeout and activate project-067 primary stream
+  - 2026-04-08：任务在 `CR-002` clean 后创建并于同一窗口完成，完成 `project-063` 的 final closeout write-back。
+  - 2026-04-08：已写入 `DA-701` 与 completion audit summary，project / sprint / context / history / delivery registry 已同步到完成态真值，并激活 `project-067 / sprint-001 / TK-679`。

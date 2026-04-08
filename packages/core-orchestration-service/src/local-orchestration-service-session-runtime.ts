@@ -272,6 +272,14 @@ export class LocalOrchestrationServiceSessionRuntime {
         selectedSurface: '',
         selectedBy: '',
         sessionRoutingPreferenceApplied: false,
+        previewSummary: this.readOptionalContextString(
+          existingSession.context,
+          SESSION_CONTEXT_PREVIEW_SUMMARY_KEY,
+        ),
+        latestNoteSummary: this.readOptionalContextString(
+          existingSession.context,
+          SESSION_CONTEXT_LATEST_NOTE_SUMMARY_KEY,
+        ),
         providerContinuationState: this.providerContinuationSessionRuntime.readSessionState(
           existingSession.context,
         ),

@@ -28,11 +28,12 @@
 11. `getExecution / submitHitlDecision / recoverExecution / terminateExecution / queryExecutionBoard / queryHitlInbox / queryQueueOverview / queryArtifactPane` 已纳入正式 preload/service seam。
 12. worktree / editor / terminal / review doc handoff 必须走 service-owned handoff target contract，renderer 不得自行重建路径真值。
 
-## Project-054 Guardrails
+## Project-065 Decision Guardrails
 
-1. `project-054` 只把 desktop 保留为 foundation surface，不把它提升为当前更优先收口的 secondary surface。
-2. 当前 baseline 不是 packaged desktop distribution 的正式支持声明；它只定义 future desktop shell 必须遵守的 service-owned seam。
-3. richer desktop panels 可以继续演进，但不应在本项目里反向扩张 public support claim 或要求与 VS Code MVP 做功能对等承诺。
+1. `project-065` 继续把 desktop 保留为 foundation-only surface，不把它提升为当前更优先收口的 secondary surface。
+2. 当前 baseline 不是 packaged desktop distribution 的正式支持声明；正式证明路径固定为 built governor source checkout + `pnpm run check:desktop-entry-smoke` + `pnpm run release:verify-local`。
+3. 当前没有正式支持的 standalone desktop installer、published desktop bundle 或 desktop-specific upgrader。
+4. richer desktop panels 可以继续演进，但不应在本项目里反向扩张 public support claim 或要求与 VS Code MVP 做功能对等承诺。
 
 ## Assets
 
@@ -47,6 +48,7 @@
 
 本入口的正式 smoke 由以下命令承接：
 
-1. `pnpm run check:desktop-entry-smoke`
-2. `pnpm run release:verify-local`
-3. `pnpm run release:verify-cleanroom-local-install`
+1. `pnpm run build`
+2. `pnpm run check:desktop-entry-smoke`
+3. `pnpm run release:verify-local`
+4. `pnpm run release:verify-cleanroom-local-install` 仍只验证 CLI packaged-install surface，不可被当成 desktop installer proof。

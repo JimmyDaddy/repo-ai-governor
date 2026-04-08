@@ -1,14 +1,25 @@
 {
-  "name": "@repo-ai-governor/vscode-extension",
+  "name": "repo-ai-governor-vscode",
   "displayName": "%extension.displayName%",
   "description": "%extension.description%",
   "version": "0.1.0",
+  "publisher": "cjhdev",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "engines": {
     "vscode": "^1.95.0"
   },
-  "main": "../../dist/apps/vscode-extension/src/extension.js",
+  "main": "./dist/src/extension.js",
+  "files": [
+    "dist",
+    "src",
+    "node_modules",
+    "resources",
+    "package.nls.json",
+    "package.nls.zh-cn.json",
+    "README.md"
+  ],
   "categories": ["Other", "Chat"],
   "capabilities": {
     "untrustedWorkspaces": {
@@ -154,7 +165,7 @@
   "exports": {
     ".": {
       "types": "./src/index.ts",
-      "default": "../../dist/apps/vscode-extension/src/index.js"
+      "default": "./dist/src/index.js"
     }
   },
   "dependencies": {

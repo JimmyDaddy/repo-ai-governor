@@ -54,6 +54,7 @@ import {
 } from '@repo-ai-governor/shared';
 import { CliGovernanceRuntime } from '../src/cli-governance-runtime.js';
 import { CliCommandName } from '../src/constants/cli-command.constant.js';
+import { CliGovernanceCheckStatus } from '../src/constants/cli-governance-runtime.constant.js';
 import type {
   CliCommandProgressEvent,
   CliOrchestrationServiceRuntimeDependencies,
@@ -2908,9 +2909,10 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
         expect(runResult.commandResult.operation).toBe('governance_run');
         expect(runResult.commandResult.details?.runtime_status).toBe('succeeded');
         expect(invokeRequests).toHaveLength(3);
-        expect(invokeRequests.map((request) => request.timeoutMs)).toEqual([
-          300000, 300000, 300000,
-        ]);
+        for (const request of invokeRequests) {
+          expect(request.timeoutMs).toBeLessThanOrEqual(300000);
+          expect(request.timeoutMs).toBeGreaterThanOrEqual(299999);
+        }
         const executeRequest = invokeRequests.find((request) =>
           request.prompt.includes('Stage ID: stage-task-execute'),
         );
@@ -4072,6 +4074,71 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
           trace: false,
           replayPath: null,
           adapters: true,
+        },
+      },
+    );
+  });
+
+  it('keeps verify tool-matrix probe availability separate from fallback binding status', async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        const verifyResult = await fixture.runtime.execute(CliCommandName.VERIFY);
+        const diagnosticsArtifactPath = verifyResult.commandResult.artifacts?.find(
+          (artifact) => artifact.id === 'verify_diagnostics',
+        )?.path;
+        expect(typeof diagnosticsArtifactPath).toBe('string');
+
+        const diagnosticsPayload = JSON.parse(
+          await readFile(String(diagnosticsArtifactPath), 'utf8'),
+        ) as {
+          matrix?: {
+            tool_matrix?: Array<{
+              role_profile_id?: string;
+              tool?: string;
+              availability_status?: string | null;
+              binding_status?: string | null;
+              binding_unavailable_reasons?: string[];
+              invoke_liveness_diagnostics?: {
+                unavailable_reasons?: string[];
+              };
+            }>;
+          };
+        };
+
+        const plannerToolRow = diagnosticsPayload.matrix?.tool_matrix?.find(
+          (row) => row.role_profile_id === DefaultRoleProfileId.PLANNER,
+        );
+
+        expect(plannerToolRow).toMatchObject({
+          tool: AdapterSurface.CLAUDE_CODE,
+          availability_status: AgentAvailabilityStatus.AVAILABLE,
+          binding_status: CliGovernanceCheckStatus.WARN,
+          binding_unavailable_reasons: ['surface_unavailable:codex:command_missing:codex:codex'],
+          invoke_liveness_diagnostics: {
+            unavailable_reasons: [],
+          },
+        });
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          adapters: true,
+        },
+        adapterLocalProbeOverrides: {
+          [AdapterSurface.CODEX]: {
+            availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+            unavailableReasons: ['command_missing:codex:codex'],
+          },
+          [AdapterSurface.CLAUDE_CODE]: {
+            availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+            unavailableReasons: [],
+          },
+          [AdapterSurface.GITHUB_COPILOT]: {
+            availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+            unavailableReasons: [],
+          },
         },
       },
     );

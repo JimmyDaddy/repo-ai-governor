@@ -714,6 +714,7 @@ export class CliSessionShellTranscriptStore {
       const surface = this.readOptionalString(record.surface) ?? 'unknown';
       const model = this.readOptionalString(record.model);
       const invalidationReason = this.readOptionalString(record.invalidationReason);
+      const lightweightSessionFallbackApplied = record.lightweightSessionFallbackApplied === true;
       const modelSummary = model
         ? translate('cli.sessionShell.responses.providerContinuationModelSummary', {
             model,
@@ -766,12 +767,17 @@ export class CliSessionShellTranscriptStore {
       }
       if (status === 'unsupported') {
         return [
-          translate('cli.sessionShell.responses.providerContinuationUnsupported', {
-            laneLabel,
-            surface,
-            modelSummary,
-            reasonSummary,
-          }),
+          translate(
+            lightweightSessionFallbackApplied
+              ? 'cli.sessionShell.responses.providerContinuationFallbackActive'
+              : 'cli.sessionShell.responses.providerContinuationUnsupported',
+            {
+              laneLabel,
+              surface,
+              modelSummary,
+              reasonSummary,
+            },
+          ),
         ];
       }
       return [];

@@ -30,6 +30,13 @@ const DISTRIBUTION_PACKAGES = [
     packageDistDirectory: resolve(PROJECT_ROOT, "apps/desktop/dist"),
   },
   {
+    packageName: "repo-ai-governor-vscode",
+    packageRoot: resolve(PROJECT_ROOT, "apps/vscode-extension"),
+    compiledDirectory: resolve(PROJECT_ROOT, "dist/apps/vscode-extension"),
+    packageDistDirectory: resolve(PROJECT_ROOT, "apps/vscode-extension/dist"),
+    includeInDistributionRuntime: false,
+  },
+  {
     packageName: "adapter-sdk",
     packageRoot: resolve(PROJECT_ROOT, "packages/adapter-sdk"),
     compiledDirectory: resolve(PROJECT_ROOT, "dist/packages/adapter-sdk"),
@@ -375,6 +382,9 @@ function stageWorkspacePackagesForDistributionRuntime(distributionMode) {
       distributionPackage.runtimeDistributionMode === "optional" &&
       distributionMode === DEFAULT_DISTRIBUTION_MODE
     ) {
+      continue;
+    }
+    if (distributionPackage.includeInDistributionRuntime === false) {
       continue;
     }
     const packageJsonPath = resolve(distributionPackage.packageRoot, "package.json");
