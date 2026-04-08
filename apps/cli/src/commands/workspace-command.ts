@@ -47,6 +47,7 @@ import { CliWorkspaceAction, CliWorkspaceThemeScope } from '../constants/cli-wor
 import {
   ReactCliCommandDescriptorCatalog,
   ReactCliCommandViewModelBuilder,
+  ReactCliFieldKind,
   type ReactCliViewModel,
 } from '../react-cli/index.js';
 import { GlobalCliThemePreferenceService } from '../runtime/global-cli-theme-preference-service.js';
@@ -438,25 +439,17 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
             action: CliWorkspaceAction.BRANCH_SWITCH,
             repositoryRoot: gitTopLevel,
             targetBranch,
-            suggestedRecovery: `git fetch origin && git switch -c ${targetBranch} --track origin/${targetBranch}`,
+            suggestedRecovery: `git fetch origin && git checkout -b ${targetBranch} --track origin/${targetBranch}`,
           },
         );
       }
 
-      await this.runGitCommand(
+      await this.switchBranchWithFallback(
+        context,
         gitTopLevel,
-        ['switch', '--quiet', targetBranch],
-        {
-          command: CliCommandName.WORKSPACE,
-          action: CliWorkspaceAction.BRANCH_SWITCH,
-          repositoryRoot: gitTopLevel,
-          targetBranch,
-          previousBranch: currentBranch,
-        },
-        this.translate(context, 'cli.reactShell.workspace.errors.branchSwitchSwitchFailed', {
-          currentBranch: currentBranch ?? detachedHeadLabel,
-          targetBranch,
-        }),
+        targetBranch,
+        currentBranch,
+        detachedHeadLabel,
       );
     }
 
@@ -1694,10 +1687,25 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
       ...baseDescriptor,
       title: this.translate(context, 'cli.reactShell.workspace.switchBranchTitle'),
       fields: baseDescriptor.fields.map((field) => {
+        if (field.fieldId === 'action') {
+          return {
+            ...field,
+            options: [
+              ...(field.options ?? []),
+              {
+                label: this.translate(context, 'cli.reactShell.workspace.actions.branchSwitch'),
+                value: CliWorkspaceAction.BRANCH_SWITCH,
+              },
+            ],
+          };
+        }
+
         if (field.fieldId === 'targetMode') {
           return {
             ...field,
+            kind: ReactCliFieldKind.TEXT,
             label: this.translate(context, 'cli.reactShell.workspace.fields.targetBranch'),
+            options: undefined,
           };
         }
 
@@ -1793,6 +1801,66 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
         stderr: standardizedError.message,
       });
     }
+  }
+
+  private async switchBranchWithFallback(
+    context: CliCommandExecutorContext,
+    repositoryRoot: string,
+    targetBranch: string,
+    currentBranch: string | null,
+    detachedHeadLabel: string,
+  ): Promise<void> {
+    const failureMessage = this.translate(
+      context,
+      'cli.reactShell.workspace.errors.branchSwitchSwitchFailed',
+      {
+        currentBranch: currentBranch ?? detachedHeadLabel,
+        targetBranch,
+      },
+    );
+    const commandDetails = {
+      command: CliCommandName.WORKSPACE,
+      action: CliWorkspaceAction.BRANCH_SWITCH,
+      repositoryRoot,
+      targetBranch,
+      previousBranch: currentBranch,
+    };
+
+    try {
+      await this.runGitCommand(
+        repositoryRoot,
+        ['switch', '--quiet', targetBranch],
+        commandDetails,
+        failureMessage,
+      );
+      return;
+    } catch (error) {
+      if (!this.isGitSwitchUnsupportedError(error)) {
+        throw error;
+      }
+    }
+
+    await this.runGitCommand(
+      repositoryRoot,
+      ['checkout', '--quiet', targetBranch],
+      {
+        ...commandDetails,
+        gitFallbackCommand: 'checkout',
+      },
+      failureMessage,
+    );
+  }
+
+  private isGitSwitchUnsupportedError(error: unknown): boolean {
+    const standardizedError = standardizeError(error);
+    const runtimeErrorStderr =
+      error instanceof RuntimeError && typeof error.details?.stderr === 'string'
+        ? error.details.stderr
+        : null;
+    const diagnosticText = `${runtimeErrorStderr ?? ''}\n${standardizedError.message}`;
+    return /git:\s+'switch'\s+is not a git command|unknown subcommand.+switch|unknown option.+switch/iu.test(
+      diagnosticText,
+    );
   }
 
   private async validateTargetBranch(

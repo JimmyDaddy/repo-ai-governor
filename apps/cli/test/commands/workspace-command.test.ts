@@ -1061,6 +1061,157 @@ describe('CliWorkspaceCommand', () => {
     }
   });
 
+  it('falls back to git checkout when git switch is unavailable', async () => {
+    const fixture = await createWorkspaceCommandFixture({
+      action: 'switch-branch',
+      actionValue: 'main',
+      targetMode: null,
+      targetRoot: null,
+      planPath: null,
+    });
+
+    try {
+      await initializeGitRepository(fixture.tempRoot);
+      await execFileAsync('git', ['switch', '-c', 'feature/testing'], {
+        cwd: fixture.tempRoot,
+      });
+      fixture.context.options.workspaceCommandOptions = {
+        action: 'switch-branch',
+        actionValue: 'main',
+        targetMode: null,
+        targetRoot: null,
+        planPath: null,
+      };
+      const command = new CliWorkspaceCommand();
+      const originalRunGitCommand = (
+        command as unknown as {
+          runGitCommand: (
+            repositoryRoot: string,
+            args: string[],
+            details: Record<string, string | null | undefined>,
+            failureMessage: string,
+          ) => Promise<{ stdout: string; stderr: string }>;
+        }
+      ).runGitCommand.bind(command);
+      const runGitCommandSpy = vi.fn(
+        async (
+          repositoryRoot: string,
+          args: string[],
+          details: Record<string, string | null | undefined>,
+          failureMessage: string,
+        ) => {
+          if (args[0] === 'switch' && args[1] === '--quiet') {
+            throw new RuntimeError(
+              GovernorErrorCode.WORKSPACE_MIGRATION_SWITCH_FAILED,
+              failureMessage,
+              {
+                ...details,
+                args: args.join(' '),
+                stderr: "git: 'switch' is not a git command. See 'git --help'.",
+              },
+            );
+          }
+
+          return originalRunGitCommand(repositoryRoot, args, details, failureMessage);
+        },
+      );
+      (
+        command as unknown as {
+          runGitCommand: typeof runGitCommandSpy;
+        }
+      ).runGitCommand = runGitCommandSpy;
+
+      const result = await command.execute(fixture.context);
+      const branchResult = await execFileAsync('git', ['branch', '--show-current'], {
+        cwd: fixture.tempRoot,
+      });
+
+      expect(result.commandResult.operation).toBe('workspace_branch_switch');
+      expect(result.commandResult.details?.target_branch).toBe('main');
+      expect(result.commandResult.details?.current_branch).toBe('main');
+      expect(result.commandResult.details?.switched).toBe(true);
+      expect(branchResult.stdout.trim()).toBe('main');
+      expect(
+        runGitCommandSpy.mock.calls.some(
+          ([, args, details]) =>
+            Array.isArray(args) &&
+            args[0] === 'checkout' &&
+            args[1] === '--quiet' &&
+            args[2] === 'main' &&
+            details?.gitFallbackCommand === 'checkout' &&
+            details?.targetBranch === 'main',
+        ),
+      ).toBe(true);
+    } finally {
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('renders a React shell summary for branch switching with branch-specific field labels', async () => {
+    const fixture = await createWorkspaceCommandFixture({
+      action: 'switch-branch',
+      actionValue: 'main',
+      targetMode: null,
+      targetRoot: null,
+      planPath: null,
+    });
+
+    try {
+      await initializeGitRepository(fixture.tempRoot);
+      await execFileAsync('git', ['switch', '-c', 'feature/testing'], {
+        cwd: fixture.tempRoot,
+      });
+      fixture.context.resolveRuntimeDebugOptions = () => ({
+        interactive: false,
+        requestedUiMode: CliInteractiveUiMode.REACT,
+        requestedUiTheme: null,
+        uiMode: CliInteractiveUiMode.REACT,
+        uiTheme: CliReactThemePreset.GOVERNOR,
+        uiFallbackBehavior: null,
+        inputTty: false,
+        stderrTty: false,
+        dryRun: false,
+        trace: false,
+        replayPath: null,
+        adapters: false,
+        fix: false,
+        recordLedger: false,
+        taskId: null,
+        restrictedNetwork: false,
+        restrictedReason: null,
+        allowLocalFallback: true,
+        hitlDecision: null,
+        hitlDecisionReason: null,
+        hitlResumeAction: null,
+        hitlDecidedBy: null,
+        hitlConstraints: [],
+      });
+      fixture.context.options.workspaceCommandOptions = {
+        action: 'switch-branch',
+        actionValue: 'main',
+        targetMode: null,
+        targetRoot: null,
+        planPath: null,
+      };
+      const command = new CliWorkspaceCommand();
+
+      const result = await command.execute(fixture.context);
+
+      expect(result.reactCliViewModel?.title).toContain('Switch current git branch');
+      expect(result.reactCliViewModel?.sections[0]?.lines).toContain(
+        'Workspace action: switch-branch',
+      );
+      expect(result.reactCliViewModel?.sections[0]?.lines).toContain('Target branch: main');
+      expect(
+        result.reactCliViewModel?.sections[0]?.lines.some((line) =>
+          line.startsWith('Receipt path: '),
+        ),
+      ).toBe(true);
+    } finally {
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
+
   it('localizes invalid branch-name errors when git rejects the target name', async () => {
     const fixture = await createWorkspaceCommandFixture({
       action: 'switch-branch',

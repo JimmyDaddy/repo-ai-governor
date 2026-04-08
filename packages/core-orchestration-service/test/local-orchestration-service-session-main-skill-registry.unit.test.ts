@@ -145,4 +145,34 @@ describe('LocalOrchestrationServiceSessionMainSkillRegistry', () => {
       }),
     );
   });
+
+  it('accepts dotted branch names and strips trailing sentence punctuation in natural-language requests', () => {
+    const registry = new LocalOrchestrationServiceSessionMainSkillRegistry();
+
+    const branchSwitchPlan = registry.resolvePlan('checkout release/1.2.3.', {
+      preferredSurface: AdapterSurface.CODEX,
+      configuredRoleMentionPresent: false,
+    });
+
+    expect(branchSwitchPlan).toEqual(
+      expect.objectContaining({
+        skillId: 'skill.workspace.switch_branch',
+        executionIntent: 'workspace.branch_switch',
+        suggestedSlashCommand: '/workspace switch-branch',
+        handoffExecutionMode: 'preview_confirm',
+        commandBatches: [
+          expect.objectContaining({
+            slashQuery: '/workspace switch-branch release/1.2.3',
+            bridgeArgv: [
+              'workspace',
+              'switch-branch',
+              'release/1.2.3',
+              '--single-tool-all-roles',
+              'codex',
+            ],
+          }),
+        ],
+      }),
+    );
+  });
 });

@@ -20,7 +20,7 @@ const SESSION_MAIN_BRANCH_SWITCH_KEYWORDS = [
   '切到',
   '切回',
 ];
-const SESSION_MAIN_BRANCH_NAME_TOKEN_PATTERN = '[^\\s,，;；。！？.!?]+';
+const SESSION_MAIN_BRANCH_NAME_TOKEN_PATTERN = '[^\\s,，;；。！？!?]+';
 const SESSION_MAIN_BRANCH_SWITCH_PATTERNS = [
   new RegExp(
     `(?:switch|move)(?:\\s+(?:me|us))?\\s+(?:the\\s+)?(?:(?:current|code)\\s+)?branch\\s+(?:to\\s+)?(?<branch>${SESSION_MAIN_BRANCH_NAME_TOKEN_PATTERN})(?:\\s+branch)?(?:\\s*$|[.!?])`,
@@ -384,13 +384,27 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
   private resolveBranchNameFromPatterns(message: string): string | null {
     for (const pattern of SESSION_MAIN_BRANCH_SWITCH_PATTERNS) {
       const match = pattern.exec(message);
-      const branchCandidate = match?.groups?.branch?.trim();
+      const branchCandidate = this.normalizeBranchCandidate(match?.groups?.branch);
       if (branchCandidate && this.isSafeBranchName(branchCandidate)) {
         return branchCandidate;
       }
     }
 
     return null;
+  }
+
+  /**
+   * Allows Git-valid dots inside branch names while stripping sentence-ending punctuation
+   * from natural-language requests such as `checkout release/1.2.3.`.
+   */
+  private normalizeBranchCandidate(rawBranchCandidate: string | undefined): string | null {
+    const trimmedBranchCandidate = rawBranchCandidate?.trim();
+    if (!trimmedBranchCandidate) {
+      return null;
+    }
+
+    const normalizedBranchCandidate = trimmedBranchCandidate.replace(/[.!?。！？]+$/u, '').trim();
+    return normalizedBranchCandidate.length > 0 ? normalizedBranchCandidate : null;
   }
 
   private isSafeBranchName(branchCandidate: string): boolean {
