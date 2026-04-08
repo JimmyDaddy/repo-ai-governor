@@ -2,17 +2,17 @@
 
 ## Primary Stream
 
-- Status: idle
-- Project: `none`
-- Sprint: `none`
-- Docs root: `none`
-- Task records: `none`
-- Review records: `none`
-- Note: `2026-04-08` 已完成 `project-062 -> project-068` 的本地顺序执行；`project-068 / sprint-002` 已通过 `CR-002` 与 `TK-713 / DA-713` 完成最终 closeout，当前 worktree 不再保留 active primary stream。
+- Status: active
+- Project: `project-073-direct-answer-stability-and-governed-branch-switch-remediation`
+- Sprint: `sprint-001-direct-answer-stability-and-branch-switch`
+- Docs root: `.repo-ai-governor/context/dev/project-073-direct-answer-stability-and-governed-branch-switch-remediation`
+- Task records: `.repo-ai-governor/context/dev/project-073-direct-answer-stability-and-governed-branch-switch-remediation/sprint-001-direct-answer-stability-and-branch-switch/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-073-direct-answer-stability-and-governed-branch-switch-remediation/sprint-001-direct-answer-stability-and-branch-switch/review/`
+- Note: `2026-04-08` 已创建 `project-073 / sprint-001`，用于按顺序执行 `问题 2：direct-answer 稳定性修复` 与 `问题 1：受治理分支切换能力`，并按 workspace-scoped-cr-loop 执行 fresh reviewer CR 循环与边界提交。
 
 ## Active Streams
 
-- None currently registered.
+- `primary`: project=`project-073-direct-answer-stability-and-governed-branch-switch-remediation`, sprint=`sprint-001-direct-answer-stability-and-branch-switch`, docs=`.repo-ai-governor/context/dev/project-073-direct-answer-stability-and-governed-branch-switch-remediation`, plan=`.repo-ai-governor/context/dev/project-073-direct-answer-stability-and-governed-branch-switch-remediation/plan.md`, tasks=`.repo-ai-governor/context/dev/project-073-direct-answer-stability-and-governed-branch-switch-remediation/sprint-001-direct-answer-stability-and-branch-switch/tasks/`, checklist=`.repo-ai-governor/context/dev/project-073-direct-answer-stability-and-governed-branch-switch-remediation/sprint-001-direct-answer-stability-and-branch-switch/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-073-direct-answer-stability-and-governed-branch-switch-remediation/sprint-001-direct-answer-stability-and-branch-switch/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-073-direct-answer-stability-and-governed-branch-switch-remediation/sprint-001-direct-answer-stability-and-branch-switch/review/`, status=`active`, note=`TK-714 与 CR-001 已 clean；当前边界准备完成 TK-714 本地提交，然后进入 TK-715 受治理分支切换能力。`
 
 ## Planned Follow-Up Streams
 

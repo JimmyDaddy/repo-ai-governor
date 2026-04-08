@@ -66,9 +66,9 @@ const CODEX_CLI_EXECUTION_CACHE_TTL_MS = 30000;
 const CODEX_CLI_WATCHDOG_MIN_INTERVAL_MS = 1000;
 const CODEX_CLI_WATCHDOG_MAX_INTERVAL_MS = 5000;
 const CODEX_CLI_WATCHDOG_MIN_TRANSPORT_IDLE_MS = 5000;
-const CODEX_CLI_WATCHDOG_MAX_TRANSPORT_IDLE_MS = 15000;
+const CODEX_CLI_WATCHDOG_MAX_TRANSPORT_IDLE_MS = 25000;
 const CODEX_CLI_WATCHDOG_MIN_SEMANTIC_STALL_MS = 8000;
-const CODEX_CLI_WATCHDOG_MAX_SEMANTIC_STALL_MS = 20000;
+const CODEX_CLI_WATCHDOG_MAX_SEMANTIC_STALL_MS = 28000;
 const CODEX_CLI_TERMINATE_GRACE_MIN_MS = 250;
 const CODEX_CLI_TERMINATE_GRACE_MAX_MS = 2000;
 const CODEX_EXEC_ARGS = ['exec', '--skip-git-repo-check', '--json', '-'] as const;
@@ -3001,14 +3001,14 @@ export class CodexAgentAdapter extends AgentProtocol {
   private resolveCliTransportIdleTimeoutMs(timeoutMs: number): number {
     return Math.min(
       CODEX_CLI_WATCHDOG_MAX_TRANSPORT_IDLE_MS,
-      Math.max(CODEX_CLI_WATCHDOG_MIN_TRANSPORT_IDLE_MS, Math.floor(timeoutMs * 0.4)),
+      Math.max(CODEX_CLI_WATCHDOG_MIN_TRANSPORT_IDLE_MS, Math.floor(timeoutMs * 0.7)),
     );
   }
 
   private resolveCliSemanticStallTimeoutMs(timeoutMs: number): number {
     return Math.min(
       CODEX_CLI_WATCHDOG_MAX_SEMANTIC_STALL_MS,
-      Math.max(CODEX_CLI_WATCHDOG_MIN_SEMANTIC_STALL_MS, Math.floor(timeoutMs * 0.6)),
+      Math.max(CODEX_CLI_WATCHDOG_MIN_SEMANTIC_STALL_MS, Math.floor(timeoutMs * 0.85)),
     );
   }
 
