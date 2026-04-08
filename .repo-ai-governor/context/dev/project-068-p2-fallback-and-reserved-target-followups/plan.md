@@ -1,6 +1,6 @@
 # project-068-p2-fallback-and-reserved-target-followups 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-08
 - Stage Mapping: constrained surfaces follow-up
 - Phase Mapping: local-model capability ceiling + reserved host target follow-up
@@ -17,7 +17,7 @@
 
 ## 2.1 sprint-001-local-model-capability-ceiling-and-promoted-use-case
 
-- Status: planned
+- Status: active
 - Sprint Goal: 冻结 `local-model` 能力天花板与 promoted use case。
 - Task Package: `TK-682`、`TK-683`。
 
@@ -31,7 +31,7 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 | --- | --- | --- | --- | --- | --- |
-| TK-682 | sprint-001 | freeze local-model capability ceiling and promoted use-case contract | product/contract | project-066 recommended | planned |
+| TK-682 | sprint-001 | freeze local-model capability ceiling and promoted use-case contract | product/contract | project-066 recommended | in_progress |
 | TK-683 | sprint-001 | implement constrained local-model capability follow-up or explicit non-goal guardrails | implementation/boundary | TK-682 | planned |
 | TK-684 | sprint-002 | freeze github-com-agent target contract and blocked-mode exit criteria | host/contract | TK-683 | planned |
 | TK-685 | sprint-002 | implement github-com-agent export verify follow-up or reserved-boundary reinforcement | host/follow-up | TK-684 | planned |
@@ -46,3 +46,8 @@
 
 1. `local-model` 不再长期停留在“知道是 fallback-only，但没有进一步产品判断”的状态。
 2. reserved target 有清晰 follow-up contract，而不是只存在 blocked export 资产。
+
+## 6. 里程碑记录
+
+1. 2026-04-08：作为 `project-072` follow-up decomposition 产物创建，当前保持 `planned`。
+2. 2026-04-08：`project-066` final closeout 完成后被激活为当前 primary project，`sprint-001 / TK-682` 进入执行窗口；当前 project 保持 `P2 deferred` contract，不扩张为新的 secondary-surface 产品化实现。

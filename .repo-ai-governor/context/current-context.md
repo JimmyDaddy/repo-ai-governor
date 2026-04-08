@@ -3,20 +3,20 @@
 ## Primary Stream
 
 - Status: active
-- Project: `project-066-standards-and-language-pack-ecosystem-expansion`
-- Sprint: `sprint-001-official-pack-expansion-matrix-and-first-wave`
-- Docs root: `.repo-ai-governor/context/dev/project-066-standards-and-language-pack-ecosystem-expansion`
-- Task records: `.repo-ai-governor/context/dev/project-066-standards-and-language-pack-ecosystem-expansion/sprint-001-official-pack-expansion-matrix-and-first-wave/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-066-standards-and-language-pack-ecosystem-expansion/sprint-001-official-pack-expansion-matrix-and-first-wave/review/`
-- Note: `2026-04-08` 已通过 `CR-003 / TK-707 / DA-707` 完成 `project-065` final closeout，并将当前主执行流切换到 `project-066 / sprint-001 / TK-676`；当前 `project-066` 已完成 `CR-001 / TK-708 / DA-708` 的 sprint-level closeout，接下来进入 project-final CR loop。
+- Project: `project-068-p2-fallback-and-reserved-target-followups`
+- Sprint: `sprint-001-local-model-capability-ceiling-and-promoted-use-case`
+- Docs root: `.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups`
+- Task records: `.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-001-local-model-capability-ceiling-and-promoted-use-case/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-001-local-model-capability-ceiling-and-promoted-use-case/review/`
+- Note: `2026-04-08` 已通过 `CR-004 / TK-709 / DA-709` 完成 `project-066` final closeout，并将当前主执行流切换到 `project-068 / sprint-001 / TK-682`；当前 `project-068` 保持 `P2 deferred` 语义，仅收口 `local-model` capability ceiling、reserved-target contract 与 backlog handoff。
 
 ## Active Streams
 
-- `active-1`: role=`primary`, project=`project-066-standards-and-language-pack-ecosystem-expansion`, sprint=`sprint-001-official-pack-expansion-matrix-and-first-wave`, docs=`.repo-ai-governor/context/dev/project-066-standards-and-language-pack-ecosystem-expansion`, plan=`.repo-ai-governor/context/dev/project-066-standards-and-language-pack-ecosystem-expansion/sprint-001-official-pack-expansion-matrix-and-first-wave/plan.md`, tasks=`.repo-ai-governor/context/dev/project-066-standards-and-language-pack-ecosystem-expansion/sprint-001-official-pack-expansion-matrix-and-first-wave/tasks/`, checklist=`.repo-ai-governor/context/dev/project-066-standards-and-language-pack-ecosystem-expansion/sprint-001-official-pack-expansion-matrix-and-first-wave/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-066-standards-and-language-pack-ecosystem-expansion/sprint-001-official-pack-expansion-matrix-and-first-wave/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-066-standards-and-language-pack-ecosystem-expansion/sprint-001-official-pack-expansion-matrix-and-first-wave/review/`, status=`active`, note=`TK-708 sprint closeout is complete; this sprint surface is now reserved for the project-final CR loop`
+- `active-1`: role=`primary`, project=`project-068-p2-fallback-and-reserved-target-followups`, sprint=`sprint-001-local-model-capability-ceiling-and-promoted-use-case`, docs=`.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups`, plan=`.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-001-local-model-capability-ceiling-and-promoted-use-case/plan.md`, tasks=`.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-001-local-model-capability-ceiling-and-promoted-use-case/tasks/`, checklist=`.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-001-local-model-capability-ceiling-and-promoted-use-case/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-001-local-model-capability-ceiling-and-promoted-use-case/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-001-local-model-capability-ceiling-and-promoted-use-case/review/`, status=`active`, note=`TK-682 is now in progress; keep project-068 inside the P2 deferred local-model/reserved-target closeout boundary`
 
 ## Planned Follow-Up Streams
 
-- `stream-project-068-sprint-001`: project=`project-068-p2-fallback-and-reserved-target-followups`, sprint=`sprint-001-local-model-capability-ceiling-and-promoted-use-case`, docs=`.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups`, plan=`.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-001-local-model-capability-ceiling-and-promoted-use-case/plan.md`, tasks=`.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-001-local-model-capability-ceiling-and-promoted-use-case/tasks/`, checklist=`.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-001-local-model-capability-ceiling-and-promoted-use-case/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-001-local-model-capability-ceiling-and-promoted-use-case/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-001-local-model-capability-ceiling-and-promoted-use-case/review/`, status=`planned`, note=`P2 deferred backlog`
+- None currently registered.
 
 ## Completed Stream History
 

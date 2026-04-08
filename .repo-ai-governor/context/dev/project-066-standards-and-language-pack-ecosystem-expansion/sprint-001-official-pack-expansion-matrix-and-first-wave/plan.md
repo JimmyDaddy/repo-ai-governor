@@ -11,6 +11,7 @@
 2. `TK-677` implement first-wave official pack expansion and runtime/docs examples
 3. `TK-678` close ecosystem expansion baseline with validation evidence and support narrative refresh
 4. `TK-708` sprint-001 exit acceptance and project-final review activation handoff
+5. `TK-709` finalize project-066 closeout and activate project-068 primary stream
 
 ## 2. Exit Criteria
 
@@ -18,6 +19,7 @@
 2. 第一波 pack 扩展与 runtime/docs examples 已完成。
 3. validation evidence 与 support narrative 已同步。
 4. sprint-level clean closure 已写回，并将当前 sprint surface 固定为 project-final delegated CR loop 的默认面。
+5. project-final clean closure 已完成，并已把主执行流切换到 `project-068 / sprint-001 / TK-682`。
 
 ## 3. Milestones
 
@@ -25,3 +27,5 @@
 2. 2026-04-08：在 `project-065` final closeout 完成后被激活为当前 primary sprint，`TK-676` 已切换为 `in_progress`。
 3. 2026-04-08：`TK-676 ~ TK-678` 已全部完成，当前 sprint 已具备进入 fresh reviewer CR loop 的实现、文档与验证输入。
 4. 2026-04-08：`CR-001` clean `resolved` 后，`TK-708 / DA-708` 已完成 sprint-level closeout；当前 sprint surface 继续保留给 `project-066` project-final CR loop。
+5. 2026-04-08：`CR-003` 已作为 `project-066` 的 project-final delegated CR loop 打开；在 fresh reviewer recheck clean 且 final closeout write-back 完成前，当前 sprint 继续作为 closeout-ready active surface 保留。
+6. 2026-04-08：`CR-004` clean `resolved`；`TK-709 / DA-709` 已完成 project-final closeout write-back，当前 sprint 已恢复为最终 `completed` 真值并移入 completed history。
