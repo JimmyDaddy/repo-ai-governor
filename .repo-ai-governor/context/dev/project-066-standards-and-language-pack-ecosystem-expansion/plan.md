@@ -1,6 +1,6 @@
 # project-066-standards-and-language-pack-ecosystem-expansion 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-08
 - Stage Mapping: ecosystem expansion
 - Phase Mapping: official pack roadmap + first-wave expansion
@@ -26,7 +26,7 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 | --- | --- | --- | --- | --- | --- |
-| TK-676 | sprint-001 | freeze official pack expansion matrix and acceptance contract | product/contract | project-062 recommended | planned |
+| TK-676 | sprint-001 | freeze official pack expansion matrix and acceptance contract | product/contract | project-062 recommended | in_progress |
 | TK-677 | sprint-001 | implement first-wave official pack expansion and runtime/docs examples | standards/implementation | TK-676 | planned |
 | TK-678 | sprint-001 | close ecosystem expansion baseline with validation evidence and support narrative refresh | acceptance/closeout | TK-676、TK-677 | planned |
 
@@ -40,3 +40,8 @@
 1. 官方维护的 pack 范围明确。
 2. 至少一波新的 official pack 扩展与 runtime/docs example 完成。
 3. support narrative 不再只剩 minimal baseline 描述。
+
+## 6. 里程碑记录
+
+1. 2026-04-08：作为 `project-072` follow-up decomposition 产物创建，当前保持 `planned`。
+2. 2026-04-08：`project-065` final closeout 完成后被激活为当前 primary project，`sprint-001 / TK-676` 进入执行窗口。

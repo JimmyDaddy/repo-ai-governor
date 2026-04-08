@@ -516,16 +516,16 @@ deliveries:
     execution_status: in_progress
     rollout_status: in_progress
     owner: runtime
-    project_ref: project-065-desktop-secondary-surface-productization-decision
-    sprint_ref: sprint-001-secondary-surface-decision-and-packaging-boundary
+    project_ref: project-066-standards-and-language-pack-ecosystem-expansion
+    sprint_ref: sprint-001-official-pack-expansion-matrix-and-first-wave
     task_ids:
-      - TK-673
-      - TK-674
-      - TK-675
-    project_plan_path: .repo-ai-governor/context/dev/project-065-desktop-secondary-surface-productization-decision/plan.md
-    sprint_plan_path: .repo-ai-governor/context/dev/project-065-desktop-secondary-surface-productization-decision/sprint-001-secondary-surface-decision-and-packaging-boundary/plan.md
-    task_csv_path: .repo-ai-governor/context/dev/project-065-desktop-secondary-surface-productization-decision/sprint-001-secondary-surface-decision-and-packaging-boundary/tasks/tasks.csv
-    handoff_artifact_path: .repo-ai-governor/context/dev/project-064-vscode-packaged-secondary-surface-rollout/sprint-001-packaged-distribution-and-extension-host-smoke/tasks/DA-705-project-064-final-closeout-and-project-065-primary-stream-activation.md
+      - TK-676
+      - TK-677
+      - TK-678
+    project_plan_path: .repo-ai-governor/context/dev/project-066-standards-and-language-pack-ecosystem-expansion/plan.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-066-standards-and-language-pack-ecosystem-expansion/sprint-001-official-pack-expansion-matrix-and-first-wave/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-066-standards-and-language-pack-ecosystem-expansion/sprint-001-official-pack-expansion-matrix-and-first-wave/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-065-desktop-secondary-surface-productization-decision/sprint-001-secondary-surface-decision-and-packaging-boundary/tasks/DA-707-project-065-final-closeout-and-project-066-primary-stream-activation.md
     rollout_artifacts:
       - .repo-ai-governor/context/dev/project-072-current-surface-priority-promotion-and-decomposition/sprint-001-promotion-and-formal-followup-decomposition/tasks/DA-696-current-surface-priority-promotion-and-followup-decomposition-handoff.md
       - .repo-ai-governor/context/dev/project-062-cli-continuity-and-adapter-truthfulness-hardening/plan.md
@@ -541,7 +541,12 @@ deliveries:
       - .repo-ai-governor/context/dev/project-064-vscode-packaged-secondary-surface-rollout/sprint-001-packaged-distribution-and-extension-host-smoke/tasks/DA-705-project-064-final-closeout-and-project-065-primary-stream-activation.md
       - .repo-ai-governor/context/dev/project-064-vscode-packaged-secondary-surface-rollout/project-064-vscode-packaged-secondary-surface-rollout-completion-audit-summary.md
       - .repo-ai-governor/context/dev/project-065-desktop-secondary-surface-productization-decision/plan.md
+      - .repo-ai-governor/context/dev/project-065-desktop-secondary-surface-productization-decision/sprint-001-secondary-surface-decision-and-packaging-boundary/plan.md
+      - .repo-ai-governor/context/dev/project-065-desktop-secondary-surface-productization-decision/sprint-001-secondary-surface-decision-and-packaging-boundary/tasks/DA-706-sprint-001-closeout-and-project-final-review-activation-handoff.md
+      - .repo-ai-governor/context/dev/project-065-desktop-secondary-surface-productization-decision/sprint-001-secondary-surface-decision-and-packaging-boundary/tasks/DA-707-project-065-final-closeout-and-project-066-primary-stream-activation.md
+      - .repo-ai-governor/context/dev/project-065-desktop-secondary-surface-productization-decision/project-065-desktop-secondary-surface-productization-decision-completion-audit-summary.md
       - .repo-ai-governor/context/dev/project-066-standards-and-language-pack-ecosystem-expansion/plan.md
+      - .repo-ai-governor/context/dev/project-066-standards-and-language-pack-ecosystem-expansion/sprint-001-official-pack-expansion-matrix-and-first-wave/plan.md
       - .repo-ai-governor/context/dev/project-067-host-plugin-skill-agent-lifecycle-and-adopter-consumption/plan.md
       - .repo-ai-governor/context/dev/project-067-host-plugin-skill-agent-lifecycle-and-adopter-consumption/sprint-001-codex-claude-host-ergonomics-lifecycle-and-upgrade/tasks/DA-702-sprint-001-closeout-and-project-final-review-activation-handoff.md
       - .repo-ai-governor/context/dev/project-067-host-plugin-skill-agent-lifecycle-and-adopter-consumption/sprint-001-codex-claude-host-ergonomics-lifecycle-and-upgrade/tasks/DA-703-project-067-final-closeout-and-project-064-primary-stream-activation.md
