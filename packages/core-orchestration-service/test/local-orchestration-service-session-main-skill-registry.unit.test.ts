@@ -61,4 +61,88 @@ describe('LocalOrchestrationServiceSessionMainSkillRegistry', () => {
       }),
     );
   });
+
+  it('derives governed branch-switch metadata from the canonical capability catalog seed', () => {
+    const registry = new LocalOrchestrationServiceSessionMainSkillRegistry();
+
+    const branchSwitchPlan = registry.resolvePlan('帮我把当前代码分支切换到 main', {
+      preferredSurface: AdapterSurface.CODEX,
+      configuredRoleMentionPresent: false,
+    });
+
+    expect(branchSwitchPlan).toEqual(
+      expect.objectContaining({
+        skillId: 'skill.workspace.switch_branch',
+        executionIntent: 'workspace.branch_switch',
+        suggestedSlashCommand: '/workspace switch-branch',
+        handoffExecutionMode: 'preview_confirm',
+        commandBatches: [
+          expect.objectContaining({
+            slashQuery: '/workspace switch-branch main',
+            bridgeArgv: ['workspace', 'switch-branch', 'main', '--single-tool-all-roles', 'codex'],
+          }),
+        ],
+      }),
+    );
+  });
+
+  it('accepts Git-valid branch names such as feature+foo in natural-language branch-switch requests', () => {
+    const registry = new LocalOrchestrationServiceSessionMainSkillRegistry();
+
+    const branchSwitchPlan = registry.resolvePlan('帮我把当前代码分支切换到 feature+foo', {
+      preferredSurface: AdapterSurface.CODEX,
+      configuredRoleMentionPresent: false,
+    });
+
+    expect(branchSwitchPlan).toEqual(
+      expect.objectContaining({
+        skillId: 'skill.workspace.switch_branch',
+        executionIntent: 'workspace.branch_switch',
+        suggestedSlashCommand: '/workspace switch-branch',
+        handoffExecutionMode: 'preview_confirm',
+        commandBatches: [
+          expect.objectContaining({
+            slashQuery: '/workspace switch-branch feature+foo',
+            bridgeArgv: [
+              'workspace',
+              'switch-branch',
+              'feature+foo',
+              '--single-tool-all-roles',
+              'codex',
+            ],
+          }),
+        ],
+      }),
+    );
+  });
+
+  it('accepts Unicode branch names in natural-language branch-switch requests', () => {
+    const registry = new LocalOrchestrationServiceSessionMainSkillRegistry();
+
+    const branchSwitchPlan = registry.resolvePlan('checkout 修复-分支', {
+      preferredSurface: AdapterSurface.CODEX,
+      configuredRoleMentionPresent: false,
+    });
+
+    expect(branchSwitchPlan).toEqual(
+      expect.objectContaining({
+        skillId: 'skill.workspace.switch_branch',
+        executionIntent: 'workspace.branch_switch',
+        suggestedSlashCommand: '/workspace switch-branch',
+        handoffExecutionMode: 'preview_confirm',
+        commandBatches: [
+          expect.objectContaining({
+            slashQuery: '/workspace switch-branch 修复-分支',
+            bridgeArgv: [
+              'workspace',
+              'switch-branch',
+              '修复-分支',
+              '--single-tool-all-roles',
+              'codex',
+            ],
+          }),
+        ],
+      }),
+    );
+  });
 });

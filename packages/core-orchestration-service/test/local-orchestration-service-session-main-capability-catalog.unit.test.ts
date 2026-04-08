@@ -20,6 +20,9 @@ describe('LocalOrchestrationServiceSessionMainCapabilityCatalog', () => {
         capabilityId: SESSION_MAIN_CAPABILITY_ID.CONNECT,
       }),
       expect.objectContaining({
+        capabilityId: SESSION_MAIN_CAPABILITY_ID.BRANCH_SWITCH,
+      }),
+      expect.objectContaining({
         capabilityId: SESSION_MAIN_CAPABILITY_ID.DOCTOR,
       }),
       expect.objectContaining({

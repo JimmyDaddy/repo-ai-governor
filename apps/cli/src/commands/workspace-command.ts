@@ -1,6 +1,8 @@
+import { execFile } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { readFile, rm } from 'node:fs/promises';
 import { isAbsolute, resolve } from 'node:path';
+import { promisify } from 'node:util';
 
 import {
   ConfigLoader,
@@ -57,6 +59,9 @@ import type {
   CliGovernanceCommandResult,
 } from '../types/index.js';
 import type { CliCommandExecutor } from './cli-command-executor.interface.js';
+
+const execFileAsync = promisify(execFile);
+const WORKSPACE_BRANCH_SWITCH_ERROR_CODE = GovernorErrorCode.WORKSPACE_MIGRATION_SWITCH_FAILED;
 
 interface CliWorkspaceCommandDependencies {
   configLoader?: Pick<ConfigLoader, 'loadFromFile'>;
@@ -115,6 +120,10 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
 
     if (action === CliWorkspaceAction.CLEAR_CONFIG) {
       return this.executeClearConfig(context);
+    }
+
+    if (action === CliWorkspaceAction.BRANCH_SWITCH) {
+      return this.executeBranchSwitch(context);
     }
 
     if (
@@ -187,6 +196,7 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
       rawAction === CliWorkspaceAction.EXECUTE ||
       rawAction === CliWorkspaceAction.ROLLBACK ||
       rawAction === CliWorkspaceAction.CLEAR_CONFIG ||
+      rawAction === CliWorkspaceAction.BRANCH_SWITCH ||
       rawAction === CliWorkspaceAction.SET_UI_THEME
     ) {
       return rawAction;
@@ -194,12 +204,28 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
 
     throw new RuntimeError(
       GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
-      'workspace requires --workspace-action dry-run|execute|rollback|clear-config|set-ui-theme.',
+      'workspace requires --workspace-action dry-run|execute|rollback|clear-config|switch-branch|set-ui-theme.',
       {
         command: CliCommandName.WORKSPACE,
         action: rawAction,
       },
     );
+  }
+
+  private resolveTargetBranch(context: CliCommandExecutorContext): string {
+    const targetBranch = context.options.workspaceCommandOptions?.actionValue?.trim() ?? '';
+    if (!targetBranch) {
+      throw new RuntimeError(
+        GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+        this.translate(context, 'cli.reactShell.workspace.errors.branchSwitchTargetRequired'),
+        {
+          command: CliCommandName.WORKSPACE,
+          action: CliWorkspaceAction.BRANCH_SWITCH,
+        },
+      );
+    }
+
+    return targetBranch;
   }
 
   private async executeClearConfig(context: CliCommandExecutorContext) {
@@ -340,6 +366,227 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
           cleared_config_paths: clearedConfigPaths.join(' | '),
           cleared_path_count: clearedPathCount,
           inspected_path_count: inspectedConfigPaths.length,
+        },
+      },
+    };
+  }
+
+  private async executeBranchSwitch(
+    context: CliCommandExecutorContext,
+  ): Promise<CliGovernanceCommandResult> {
+    const targetBranch = this.resolveTargetBranch(context);
+    const repositoryRoot = resolve(context.options.workspace.repositoryRoot);
+    const gitTopLevel = await this.readGitStdout(
+      repositoryRoot,
+      ['rev-parse', '--show-toplevel'],
+      {
+        command: CliCommandName.WORKSPACE,
+        action: CliWorkspaceAction.BRANCH_SWITCH,
+        repositoryRoot,
+      },
+      this.translate(context, 'cli.reactShell.workspace.errors.branchSwitchRequiresGitRepo', {
+        repositoryRoot,
+      }),
+    );
+    await this.validateTargetBranch(context, gitTopLevel, targetBranch);
+    const detachedHeadLabel = this.localizeText(context, 'detached HEAD', '游离 HEAD');
+    const currentBranch = this.normalizeOptionalGitValue(
+      await this.readGitStdout(
+        gitTopLevel,
+        ['branch', '--show-current'],
+        {
+          command: CliCommandName.WORKSPACE,
+          action: CliWorkspaceAction.BRANCH_SWITCH,
+          repositoryRoot: gitTopLevel,
+        },
+        this.translate(context, 'cli.reactShell.workspace.errors.branchSwitchReadCurrentFailed', {
+          repositoryRoot: gitTopLevel,
+        }),
+      ),
+    );
+    const switched = currentBranch !== targetBranch;
+    const dirtyEntries = await this.listGitStatusEntries(context, gitTopLevel);
+    if (switched && dirtyEntries.length > 0) {
+      throw new RuntimeError(
+        WORKSPACE_BRANCH_SWITCH_ERROR_CODE,
+        this.translate(context, 'cli.reactShell.workspace.errors.branchSwitchDirtyWorktree'),
+        {
+          command: CliCommandName.WORKSPACE,
+          action: CliWorkspaceAction.BRANCH_SWITCH,
+          repositoryRoot: gitTopLevel,
+          targetBranch,
+          dirtyEntryCount: dirtyEntries.length,
+          dirtyEntries,
+        },
+      );
+    }
+
+    if (switched) {
+      const branchExists = await this.checkLocalBranchExists(context, gitTopLevel, targetBranch);
+      if (!branchExists) {
+        throw new RuntimeError(
+          WORKSPACE_BRANCH_SWITCH_ERROR_CODE,
+          this.translate(
+            context,
+            'cli.reactShell.workspace.errors.branchSwitchMissingLocalBranch',
+            {
+              targetBranch,
+            },
+          ),
+          {
+            command: CliCommandName.WORKSPACE,
+            action: CliWorkspaceAction.BRANCH_SWITCH,
+            repositoryRoot: gitTopLevel,
+            targetBranch,
+            suggestedRecovery: `git fetch origin && git switch -c ${targetBranch} --track origin/${targetBranch}`,
+          },
+        );
+      }
+
+      await this.runGitCommand(
+        gitTopLevel,
+        ['switch', '--quiet', targetBranch],
+        {
+          command: CliCommandName.WORKSPACE,
+          action: CliWorkspaceAction.BRANCH_SWITCH,
+          repositoryRoot: gitTopLevel,
+          targetBranch,
+          previousBranch: currentBranch,
+        },
+        this.translate(context, 'cli.reactShell.workspace.errors.branchSwitchSwitchFailed', {
+          currentBranch: currentBranch ?? detachedHeadLabel,
+          targetBranch,
+        }),
+      );
+    }
+
+    const resolvedCurrentBranch = await this.readGitStdout(
+      gitTopLevel,
+      ['branch', '--show-current'],
+      {
+        command: CliCommandName.WORKSPACE,
+        action: CliWorkspaceAction.BRANCH_SWITCH,
+        repositoryRoot: gitTopLevel,
+        targetBranch,
+      },
+      this.translate(context, 'cli.reactShell.workspace.errors.branchSwitchVerifyActiveFailed', {
+        targetBranch,
+      }),
+    );
+    if (resolvedCurrentBranch !== targetBranch) {
+      throw new RuntimeError(
+        WORKSPACE_BRANCH_SWITCH_ERROR_CODE,
+        this.translate(
+          context,
+          'cli.reactShell.workspace.errors.branchSwitchUnexpectedActiveBranch',
+          {
+            targetBranch,
+            currentBranch: resolvedCurrentBranch || detachedHeadLabel,
+          },
+        ),
+        {
+          command: CliCommandName.WORKSPACE,
+          action: CliWorkspaceAction.BRANCH_SWITCH,
+          repositoryRoot: gitTopLevel,
+          targetBranch,
+          currentBranch: resolvedCurrentBranch,
+        },
+      );
+    }
+
+    const artifactPath = this.buildWorkspaceBranchSwitchArtifactPath(
+      context.options.workspace.workspaceRoot,
+      `branch-switch-${this.createArtifactTimestamp(new Date())}-${this.sanitizeArtifactToken(targetBranch)}`,
+    );
+    await context.artifactWriter.writeJsonArtifact(artifactPath, {
+      generatedAt: context.toRfc3339SecondsTimestamp(new Date()),
+      action: CliWorkspaceAction.BRANCH_SWITCH,
+      repositoryRoot,
+      gitTopLevel,
+      previousBranch: currentBranch,
+      currentBranch: resolvedCurrentBranch,
+      targetBranch,
+      switched,
+      dirtyEntryCount: dirtyEntries.length,
+    });
+
+    const statusTranslationKey = switched
+      ? 'cli.reactShell.workspace.status.branchSwitchCompleted'
+      : 'cli.reactShell.workspace.status.branchSwitchNoop';
+    const messageTranslationKey = switched
+      ? 'cli.reactShell.workspace.message.branchSwitchCompleted'
+      : 'cli.reactShell.workspace.message.branchSwitchNoop';
+    const statusMessage = this.translate(context, statusTranslationKey, {
+      targetBranch,
+      currentBranch: currentBranch ?? detachedHeadLabel,
+      repositoryRoot: gitTopLevel,
+    });
+    const message = this.translate(context, messageTranslationKey, {
+      targetBranch,
+      currentBranch: currentBranch ?? detachedHeadLabel,
+      repositoryRoot: gitTopLevel,
+      artifactPath,
+    });
+    const checks: CliCommandResultCheck[] = [
+      {
+        id: CliCommandResultCheckId.WORKSPACE_ACTION,
+        status: CliGovernanceCheckStatus.PASS,
+        detail: `action=branch_switch target_branch=${targetBranch} switched=${String(switched)}`,
+      },
+      {
+        id: CliCommandResultCheckId.WORKSPACE_TARGET,
+        status: CliGovernanceCheckStatus.PASS,
+        detail: this.createWorkspaceTargetDetail(context.options.workspace.mode, gitTopLevel),
+      },
+    ];
+    const nextActions = [
+      this.translate(context, 'cli.reactShell.workspace.nextActions.verifyActiveBranchStatus', {
+        targetBranch,
+      }),
+      this.translate(context, 'cli.reactShell.workspace.nextActions.continueOnSwitchedBranch', {
+        targetBranch,
+      }),
+    ];
+    const experience = this.buildWorkspaceExperience(context, {
+      blocking: false,
+      summary: statusMessage,
+      artifactPath,
+      nextActions,
+    });
+
+    return {
+      message,
+      reactCliViewModel: this.buildWorkspaceBranchSwitchViewModel(context, {
+        message,
+        statusMessage,
+        checks,
+        experience,
+        repositoryRoot: gitTopLevel,
+        currentBranch,
+        targetBranch,
+        artifactPath,
+      }),
+      commandResult: {
+        operation: CLI_RUNTIME_OPERATION.WORKSPACE_BRANCH_SWITCH,
+        summary: message,
+        check_totals: context.calculateCheckTotals(checks),
+        checks,
+        artifacts: [
+          {
+            id: 'workspace_branch_switch_receipt',
+            path: artifactPath,
+          },
+        ],
+        experience,
+        details: {
+          action: 'branch_switch',
+          repository_root: repositoryRoot,
+          git_top_level: gitTopLevel,
+          previous_branch: currentBranch ?? 'detached_head',
+          current_branch: resolvedCurrentBranch,
+          target_branch: targetBranch,
+          switched,
+          artifact_path: artifactPath,
         },
       },
     };
@@ -1415,6 +1662,262 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
     });
   }
 
+  private buildWorkspaceBranchSwitchViewModel(
+    context: CliCommandExecutorContext,
+    options: {
+      message: string;
+      statusMessage: string;
+      checks: CliCommandResultCheck[];
+      experience: CliCommandExperiencePayload;
+      repositoryRoot: string;
+      currentBranch: string | null;
+      targetBranch: string;
+      artifactPath: string;
+    },
+  ): ReactCliViewModel | undefined {
+    const runtimeDebugOptions = context.resolveRuntimeDebugOptions();
+    if (runtimeDebugOptions.uiMode !== CliInteractiveUiMode.REACT) {
+      return undefined;
+    }
+
+    const baseDescriptor = this.descriptorCatalog
+      .createRegistry({
+        translate: context.translate,
+      })
+      .resolve(CliCommandName.WORKSPACE);
+
+    if (!baseDescriptor) {
+      return undefined;
+    }
+
+    const descriptor = {
+      ...baseDescriptor,
+      title: this.translate(context, 'cli.reactShell.workspace.switchBranchTitle'),
+      fields: baseDescriptor.fields.map((field) => {
+        if (field.fieldId === 'targetMode') {
+          return {
+            ...field,
+            label: this.translate(context, 'cli.reactShell.workspace.fields.targetBranch'),
+          };
+        }
+
+        if (field.fieldId === 'targetRoot') {
+          return {
+            ...field,
+            label: this.translate(context, 'cli.reactShell.workspace.fields.repositoryRoot'),
+          };
+        }
+
+        if (field.fieldId === 'planPath') {
+          return {
+            ...field,
+            label: this.translate(context, 'cli.reactShell.workspace.fields.receiptPath'),
+          };
+        }
+
+        return field;
+      }),
+      helpLines: [
+        this.translate(context, 'cli.reactShell.workspace.help.branchSwitchRequiresCleanTree'),
+        this.translate(context, 'cli.reactShell.workspace.help.branchSwitchLocalOnly'),
+      ],
+    };
+
+    const resolvedThemePreset = runtimeDebugOptions.uiTheme ?? DEFAULT_CLI_REACT_THEME_PRESET;
+    return this.viewModelBuilder.build({
+      commandName: CliCommandName.WORKSPACE,
+      descriptor,
+      subtitle: `ui=${runtimeDebugOptions.uiMode} theme=${resolvedThemePreset} stdout=${context.options.outputMode} workspace=${context.options.workspace.mode}`,
+      inputTitle: this.translate(context, 'cli.reactShell.shared.inputs'),
+      summaryTitle: this.translate(context, 'cli.reactShell.shared.summary'),
+      attentionTitle: this.translate(context, 'cli.reactShell.shared.attention'),
+      themePreset: resolvedThemePreset,
+      statusMessage: options.statusMessage,
+      statusVariant: this.viewModelBuilder.resolveStatusVariantFromChecks(options.checks),
+      fieldValues: {
+        action: CliWorkspaceAction.BRANCH_SWITCH,
+        targetMode: options.targetBranch,
+        targetRoot: options.repositoryRoot,
+        planPath: options.artifactPath,
+      },
+      summaryLines: [
+        options.message,
+        this.translate(context, 'cli.reactShell.workspace.summary.activeBranch', {
+          branch: options.currentBranch ?? this.localizeText(context, 'detached HEAD', '游离 HEAD'),
+        }),
+        this.translate(context, 'cli.reactShell.workspace.summary.targetBranch', {
+          branch: options.targetBranch,
+        }),
+        this.translate(context, 'cli.reactShell.workspace.summary.primaryArtifact', {
+          path: options.artifactPath,
+        }),
+      ],
+      footerShortcutsTitle: this.translate(context, 'cli.reactShell.shared.shortcuts'),
+      checks: options.checks,
+      interactionPrompts: options.experience.interactionPrompts,
+    });
+  }
+
+  private async readGitStdout(
+    repositoryRoot: string,
+    args: string[],
+    details: Record<string, string | null | undefined>,
+    failureMessage: string,
+  ): Promise<string> {
+    const result = await this.runGitCommand(repositoryRoot, args, details, failureMessage);
+    return result.stdout.trim();
+  }
+
+  private async runGitCommand(
+    repositoryRoot: string,
+    args: string[],
+    details: Record<string, string | null | undefined>,
+    failureMessage: string,
+  ): Promise<{
+    stdout: string;
+    stderr: string;
+  }> {
+    try {
+      const result = await execFileAsync('git', args, {
+        cwd: repositoryRoot,
+      });
+      return {
+        stdout: result.stdout,
+        stderr: result.stderr,
+      };
+    } catch (error) {
+      const standardizedError = standardizeError(error);
+      throw new RuntimeError(WORKSPACE_BRANCH_SWITCH_ERROR_CODE, failureMessage, {
+        ...details,
+        args: args.join(' '),
+        stderr: standardizedError.message,
+      });
+    }
+  }
+
+  private async validateTargetBranch(
+    context: CliCommandExecutorContext,
+    repositoryRoot: string,
+    targetBranch: string,
+  ): Promise<void> {
+    try {
+      await execFileAsync('git', ['check-ref-format', '--branch', targetBranch], {
+        cwd: repositoryRoot,
+      });
+    } catch (error) {
+      const standardizedError = standardizeError(error);
+      if (this.readProcessExitCode(error) === 128) {
+        throw new RuntimeError(
+          GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+          this.translate(context, 'cli.reactShell.workspace.errors.branchSwitchInvalidTarget', {
+            targetBranch,
+          }),
+          {
+            command: CliCommandName.WORKSPACE,
+            action: CliWorkspaceAction.BRANCH_SWITCH,
+            repositoryRoot,
+            targetBranch,
+            stderr: standardizedError.message,
+          },
+        );
+      }
+
+      throw new RuntimeError(
+        WORKSPACE_BRANCH_SWITCH_ERROR_CODE,
+        this.translate(
+          context,
+          'cli.reactShell.workspace.errors.branchSwitchValidateTargetFailed',
+          {
+            targetBranch,
+          },
+        ),
+        {
+          command: CliCommandName.WORKSPACE,
+          action: CliWorkspaceAction.BRANCH_SWITCH,
+          repositoryRoot,
+          targetBranch,
+          stderr: standardizedError.message,
+        },
+      );
+    }
+  }
+
+  private async checkLocalBranchExists(
+    context: CliCommandExecutorContext,
+    repositoryRoot: string,
+    targetBranch: string,
+  ): Promise<boolean> {
+    try {
+      await execFileAsync(
+        'git',
+        ['show-ref', '--verify', '--quiet', `refs/heads/${targetBranch}`],
+        {
+          cwd: repositoryRoot,
+        },
+      );
+      return true;
+    } catch (error) {
+      if (this.readProcessExitCode(error) === 1) {
+        return false;
+      }
+
+      const standardizedError = standardizeError(error);
+      throw new RuntimeError(
+        WORKSPACE_BRANCH_SWITCH_ERROR_CODE,
+        this.translate(context, 'cli.reactShell.workspace.errors.branchSwitchCheckLocalFailed', {
+          targetBranch,
+        }),
+        {
+          command: CliCommandName.WORKSPACE,
+          action: CliWorkspaceAction.BRANCH_SWITCH,
+          repositoryRoot,
+          targetBranch,
+          stderr: standardizedError.message,
+        },
+      );
+    }
+  }
+
+  private async listGitStatusEntries(
+    context: CliCommandExecutorContext,
+    repositoryRoot: string,
+  ): Promise<string[]> {
+    const stdout = await this.readGitStdout(
+      repositoryRoot,
+      ['status', '--porcelain'],
+      {
+        command: CliCommandName.WORKSPACE,
+        action: CliWorkspaceAction.BRANCH_SWITCH,
+        repositoryRoot,
+      },
+      this.translate(context, 'cli.reactShell.workspace.errors.branchSwitchInspectStatusFailed', {
+        repositoryRoot,
+      }),
+    );
+
+    return stdout
+      .split('\n')
+      .map((line) => line.trimEnd())
+      .filter((line) => line.length > 0);
+  }
+
+  private readProcessExitCode(error: unknown): number | null {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      typeof (error as { code?: unknown }).code === 'number'
+    ) {
+      return (error as { code: number }).code;
+    }
+
+    return null;
+  }
+
+  private normalizeOptionalGitValue(value: string): string | null {
+    return value.length > 0 ? value : null;
+  }
+
   /**
    * Resolves one localized React-shell string through i18n runtime.
    * @param context Command execution context.
@@ -1428,6 +1931,21 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
     interpolation?: Record<string, string>,
   ): string {
     return context.translate?.(key, interpolation) ?? key;
+  }
+
+  /**
+   * Resolves one inline bilingual string through the active localization bridge.
+   * @param context Command execution context.
+   * @param english English fallback copy.
+   * @param chinese Simplified Chinese copy.
+   * @returns Localized string when the bridge is available.
+   */
+  private localizeText(
+    context: Pick<CliCommandExecutorContext, 'localizeText'>,
+    english: string,
+    chinese: string,
+  ): string {
+    return context.localizeText?.(english, chinese) ?? english;
   }
 
   /**
@@ -1638,6 +2156,21 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
     artifactType: 'plan' | 'execution' | 'failure' | 'rollback',
   ): string {
     return resolve(workspaceRoot, 'context', 'workspace', `${migrationId}.${artifactType}.json`);
+  }
+
+  private buildWorkspaceBranchSwitchArtifactPath(
+    workspaceRoot: string,
+    artifactId: string,
+  ): string {
+    return resolve(workspaceRoot, 'context', 'workspace', `${artifactId}.json`);
+  }
+
+  private createArtifactTimestamp(value: Date): string {
+    return value.toISOString().replace(/[:.]/gu, '-');
+  }
+
+  private sanitizeArtifactToken(value: string): string {
+    return value.replace(/[^A-Za-z0-9._-]/gu, '-');
   }
 
   private resolveMigrationScratchRoot(plan: WorkspaceMigrationPlan): string {

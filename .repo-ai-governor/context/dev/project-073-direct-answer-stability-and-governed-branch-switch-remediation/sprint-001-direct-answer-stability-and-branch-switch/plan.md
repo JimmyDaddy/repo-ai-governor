@@ -23,3 +23,5 @@
 2. 2026-04-08：`TK-714` 已在创建窗口直接进入 `in_progress`，当前 sprint 先锁定 direct-answer 稳定性边界。
 3. 2026-04-08：`TK-714` 已完成 direct-answer preflight 短路、invoke fallback 与 Codex liveness threshold 调整；当前 sprint 的下一边界进入该任务的 fresh reviewer CR loop。
 4. 2026-04-08：`CR-001` 已接受并修复 direct-answer fallback relay-state 可见性问题，`TK-714` 当前边界 clean；sprint 下一边界切换为 `TK-715`。
+5. 2026-04-08：`TK-715` 已完成受治理分支切换 capability / routing / CLI execution path 与 targeted regression tests；当前 sprint 边界进入该任务的 fresh reviewer CR loop。
+6. 2026-04-08：`CR-002` 至 `CR-005` 已完成 fresh reviewer recheck 并全部 `resolved`；`TK-715` 当前边界 clean，sprint 下一边界切换为 `TK-716` closeout / handoff。

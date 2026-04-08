@@ -1,7 +1,9 @@
+import { execFile } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, resolve } from 'node:path';
+import { promisify } from 'node:util';
 import { vi } from 'vitest';
 
 import type {
@@ -32,6 +34,8 @@ import type {
   CliCommandExecutorContext,
   CliWorkspaceCommandOptions,
 } from '../../src/types/index.js';
+
+const execFileAsync = promisify(execFile);
 
 interface WorkspaceCommandFixture {
   tempRoot: string;
@@ -176,6 +180,28 @@ async function createWorkspaceCommandFixture(
     configPath,
     context,
   };
+}
+
+async function initializeGitRepository(repositoryRoot: string): Promise<void> {
+  await execFileAsync('git', ['init', '-b', 'main'], {
+    cwd: repositoryRoot,
+  });
+  await execFileAsync('git', ['config', 'commit.gpgSign', 'false'], {
+    cwd: repositoryRoot,
+  });
+  await execFileAsync('git', ['config', 'user.email', 'codex@example.com'], {
+    cwd: repositoryRoot,
+  });
+  await execFileAsync('git', ['config', 'user.name', 'Codex Test'], {
+    cwd: repositoryRoot,
+  });
+  await writeFile(resolve(repositoryRoot, 'README.md'), '# workspace command fixture\n', 'utf8');
+  await execFileAsync('git', ['add', '.'], {
+    cwd: repositoryRoot,
+  });
+  await execFileAsync('git', ['commit', '--no-verify', '-m', 'chore: seed workspace fixture'], {
+    cwd: repositoryRoot,
+  });
 }
 
 describe('CliWorkspaceCommand', () => {
@@ -946,6 +972,196 @@ describe('CliWorkspaceCommand', () => {
       };
       expect(failureSummary.failedStep).toBe('verify');
       expect(failureSummary.steps?.length).toBe(steps.length);
+    } finally {
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('switches to an existing local branch and writes a governed receipt artifact', async () => {
+    const fixture = await createWorkspaceCommandFixture({
+      action: 'switch-branch',
+      actionValue: 'main',
+      targetMode: null,
+      targetRoot: null,
+      planPath: null,
+    });
+
+    try {
+      await initializeGitRepository(fixture.tempRoot);
+      await execFileAsync('git', ['switch', '-c', 'feature/testing'], {
+        cwd: fixture.tempRoot,
+      });
+      fixture.context.options.workspaceCommandOptions = {
+        action: 'switch-branch',
+        actionValue: 'main',
+        targetMode: null,
+        targetRoot: null,
+        planPath: null,
+      };
+      const command = new CliWorkspaceCommand();
+
+      const result = await command.execute(fixture.context);
+      const receiptPath = result.commandResult.artifacts?.find(
+        (artifact) => artifact.id === 'workspace_branch_switch_receipt',
+      )?.path;
+      const branchResult = await execFileAsync('git', ['branch', '--show-current'], {
+        cwd: fixture.tempRoot,
+      });
+
+      expect(result.commandResult.operation).toBe('workspace_branch_switch');
+      expect(result.commandResult.details?.target_branch).toBe('main');
+      expect(result.commandResult.details?.current_branch).toBe('main');
+      expect(result.commandResult.details?.switched).toBe(true);
+      expect(branchResult.stdout.trim()).toBe('main');
+      expect(typeof receiptPath).toBe('string');
+      expect(existsSync(String(receiptPath))).toBe(true);
+    } finally {
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('accepts Git-valid branch names such as feature+foo when switching branches', async () => {
+    const fixture = await createWorkspaceCommandFixture({
+      action: 'switch-branch',
+      actionValue: 'feature+foo',
+      targetMode: null,
+      targetRoot: null,
+      planPath: null,
+    });
+
+    try {
+      await initializeGitRepository(fixture.tempRoot);
+      await execFileAsync('git', ['switch', '-c', 'feature+foo'], {
+        cwd: fixture.tempRoot,
+      });
+      await execFileAsync('git', ['switch', 'main'], {
+        cwd: fixture.tempRoot,
+      });
+      fixture.context.options.workspaceCommandOptions = {
+        action: 'switch-branch',
+        actionValue: 'feature+foo',
+        targetMode: null,
+        targetRoot: null,
+        planPath: null,
+      };
+      const command = new CliWorkspaceCommand();
+
+      const result = await command.execute(fixture.context);
+      const branchResult = await execFileAsync('git', ['branch', '--show-current'], {
+        cwd: fixture.tempRoot,
+      });
+
+      expect(result.commandResult.operation).toBe('workspace_branch_switch');
+      expect(result.commandResult.details?.target_branch).toBe('feature+foo');
+      expect(result.commandResult.details?.current_branch).toBe('feature+foo');
+      expect(result.commandResult.details?.switched).toBe(true);
+      expect(branchResult.stdout.trim()).toBe('feature+foo');
+    } finally {
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('localizes invalid branch-name errors when git rejects the target name', async () => {
+    const fixture = await createWorkspaceCommandFixture({
+      action: 'switch-branch',
+      actionValue: 'bad..name',
+      targetMode: null,
+      targetRoot: null,
+      planPath: null,
+    });
+
+    try {
+      await initializeGitRepository(fixture.tempRoot);
+      const zhCnRuntime = new I18nRuntime();
+      await zhCnRuntime.initialize(DEFAULT_I18N_RUNTIME_CONFIG, 'zh-CN');
+      fixture.context.options.locale = 'zh-CN';
+      fixture.context.translate = (key: string, interpolation?: Record<string, string>) =>
+        zhCnRuntime.t(key, interpolation);
+      fixture.context.localizeText = (_english: string, chinese: string) => chinese;
+      fixture.context.options.workspaceCommandOptions = {
+        action: 'switch-branch',
+        actionValue: 'bad..name',
+        targetMode: null,
+        targetRoot: null,
+        planPath: null,
+      };
+      const command = new CliWorkspaceCommand();
+
+      await expect(command.execute(fixture.context)).rejects.toMatchObject({
+        code: GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+        message: expect.stringContaining('不是有效的 Git 分支名'),
+      });
+    } finally {
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses to switch branches when the git worktree is dirty', async () => {
+    const fixture = await createWorkspaceCommandFixture({
+      action: 'switch-branch',
+      actionValue: 'main',
+      targetMode: null,
+      targetRoot: null,
+      planPath: null,
+    });
+
+    try {
+      await initializeGitRepository(fixture.tempRoot);
+      await execFileAsync('git', ['switch', '-c', 'feature/testing'], {
+        cwd: fixture.tempRoot,
+      });
+      await writeFile(resolve(fixture.tempRoot, 'README.md'), '# dirty fixture\n', 'utf8');
+      fixture.context.options.workspaceCommandOptions = {
+        action: 'switch-branch',
+        actionValue: 'main',
+        targetMode: null,
+        targetRoot: null,
+        planPath: null,
+      };
+      const command = new CliWorkspaceCommand();
+
+      await expect(command.execute(fixture.context)).rejects.toMatchObject({
+        code: GovernorErrorCode.WORKSPACE_MIGRATION_SWITCH_FAILED,
+        message: expect.stringContaining(
+          'refuses to switch branches while the worktree has uncommitted changes',
+        ),
+      });
+    } finally {
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('allows a dirty worktree when switch-branch is a no-op on the current branch', async () => {
+    const fixture = await createWorkspaceCommandFixture({
+      action: 'switch-branch',
+      actionValue: 'main',
+      targetMode: null,
+      targetRoot: null,
+      planPath: null,
+    });
+
+    try {
+      await initializeGitRepository(fixture.tempRoot);
+      await writeFile(resolve(fixture.tempRoot, 'README.md'), '# still on main\n', 'utf8');
+      fixture.context.options.workspaceCommandOptions = {
+        action: 'switch-branch',
+        actionValue: 'main',
+        targetMode: null,
+        targetRoot: null,
+        planPath: null,
+      };
+      const command = new CliWorkspaceCommand();
+
+      const result = await command.execute(fixture.context);
+      const branchResult = await execFileAsync('git', ['branch', '--show-current'], {
+        cwd: fixture.tempRoot,
+      });
+
+      expect(result.commandResult.operation).toBe('workspace_branch_switch');
+      expect(result.commandResult.details?.target_branch).toBe('main');
+      expect(result.commandResult.details?.current_branch).toBe('main');
+      expect(result.commandResult.details?.switched).toBe(false);
+      expect(branchResult.stdout.trim()).toBe('main');
     } finally {
       await rm(fixture.tempRoot, { recursive: true, force: true });
     }

@@ -28,7 +28,7 @@
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 | --- | --- | --- | --- | --- | --- |
 | TK-714 | sprint-001 | stabilize session.main direct-answer preflight and liveness degradation handling | runtime/stability | current session.main baseline | completed |
-| TK-715 | sprint-001 | add governed branch-switch execution path for session.main | governed command/capability | TK-714 | planned |
+| TK-715 | sprint-001 | add governed branch-switch execution path for session.main | governed command/capability | TK-714 | completed |
 | TK-716 | sprint-001 | sprint-001 closeout and project-final review activation handoff | closeout/handoff | TK-714、TK-715、CR rounds | planned |
 
 ## 4. 依赖产物策略
@@ -48,3 +48,5 @@
 1. 2026-04-08：基于用户报告的新建 `project-073`，当前 primary boundary 固定为 `TK-714` direct-answer 稳定性修复。
 2. 2026-04-08：`TK-714` 已完成 direct-answer preflight 快路径、invoke failure auto-fallback 与更保守的 Codex liveness suspect 调整，并已拿到 targeted tests + `pnpm run build` 证据；下一边界进入 fresh reviewer CR loop。
 3. 2026-04-08：`CR-001` 已接受并收口了 reviewer 指出的 relay-state fallback 可见性问题；`TK-714` 当前边界已 clean，下一边界切换到 `TK-715` 受治理分支切换能力。
+4. 2026-04-08：`TK-715` 已完成 `branch_switch` capability、`/workspace switch-branch` discoverability、`workspace switch-branch <branch>` 本地执行与 receipt artifact 路径，并通过 targeted vitest + `pnpm run build`；当前边界进入 fresh reviewer CR loop。
+5. 2026-04-08：`CR-002` 至 `CR-005` 已完成 fresh reviewer 循环并全部 `resolved`；`TK-715` 当前边界 clean，下一边界切换为 `TK-716` sprint closeout 与 project-final review activation handoff。
