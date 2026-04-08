@@ -1,6 +1,6 @@
 # project-068-p2-fallback-and-reserved-target-followups 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-08
 - Stage Mapping: constrained surfaces follow-up
 - Phase Mapping: local-model capability ceiling + reserved host target follow-up
@@ -38,6 +38,7 @@
 | TK-685 | sprint-002 | implement github-com-agent export verify follow-up or reserved-boundary reinforcement | host/follow-up | TK-684 | completed |
 | TK-686 | sprint-002 | close P2 follow-up recommendation and backlog handoff | closeout/backlog | TK-684、TK-685 | completed |
 | TK-712 | sprint-002 | sprint-002 closeout and project-final review activation handoff | closeout/handoff | TK-684、TK-685、TK-686、CR-001 | completed |
+| TK-713 | sprint-002 | finalize project-068 closeout and clear the active primary stream | closeout/audit | CR-002 | completed |
 
 ## 4. 依赖产物策略
 
@@ -57,3 +58,5 @@
 4. 2026-04-08：`CR-001` 已完成 2 个 accepted findings 的最小修复并 clean `resolved`；`TK-710 / DA-710` 已完成 `sprint-001` closeout，并把下一条 primary boundary 固定为 `sprint-002 / TK-684`。
 5. 2026-04-08：`TK-684`、`TK-685` 与 `TK-686` 已完成 `github-com-agent` reserved-target contract freeze、fail-closed evidence refresh 与 `DA-711` backlog handoff；当前 sprint 实现面已清零，下一边界进入 `sprint-002` fresh reviewer CR loop。
 6. 2026-04-08：`CR-001` 已 clean `resolved`，`TK-712 / DA-712` 已完成 `sprint-002` closeout，并把下一边界切换为 `project-068` project-final CR loop。
+7. 2026-04-08：`CR-002` 已作为 `project-068` 的 project-final delegated review round 创建并进入 `review_pending`；当前 project 继续保持 `P2 deferred` closeout-only boundary，待该轮 clean 后再进入最终 closeout。
+8. 2026-04-08：`CR-002` 已完成 accepted finding 修复并 clean `resolved`；`TK-713 / DA-713` 已完成 final closeout write-back，`project-068` 正式进入 `completed`，并在此里程碑回链 [project-068 completion audit summary](./project-068-p2-fallback-and-reserved-target-followups-completion-audit-summary.md)。

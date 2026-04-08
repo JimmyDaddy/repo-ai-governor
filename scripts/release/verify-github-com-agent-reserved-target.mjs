@@ -446,6 +446,11 @@ function runApplyRejectedScenario(distCliPath, workingRoot) {
  * @returns {Record<string, unknown>}
  */
 function runVerifyBlockedScenario(distCliPath, manifestPath, verificationSummaryPath) {
+  // Force host verify to regenerate its own summary so this scenario cannot pass on stale export output.
+  rmSync(verificationSummaryPath, {
+    force: true,
+  });
+
   const commandResult = runCommand(
     'node',
     [distCliPath, '--output', 'json', 'host', 'verify', '--manifest', manifestPath],

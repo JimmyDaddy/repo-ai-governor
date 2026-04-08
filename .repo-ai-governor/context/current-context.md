@@ -2,17 +2,17 @@
 
 ## Primary Stream
 
-- Status: active
-- Project: `project-068-p2-fallback-and-reserved-target-followups`
-- Sprint: `sprint-002-github-com-agent-target-followup`
-- Docs root: `.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups`
-- Task records: `.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-002-github-com-agent-target-followup/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-002-github-com-agent-target-followup/review/`
-- Note: `2026-04-08` 已完成 `TK-684 / TK-685 / TK-686 / CR-001 / TK-712` 与 `DA-711 / DA-712`，当前主执行流继续停留在 `project-068 / sprint-002` 作为 final closeout surface，下一边界切换为 `project-068` project-final CR loop；`project-068` 继续保持 `P2 deferred` 语义，仅收口 reserved-target contract、blocked-mode exit criteria、fail-closed evidence 与 backlog handoff。
+- Status: idle
+- Project: `none`
+- Sprint: `none`
+- Docs root: `none`
+- Task records: `none`
+- Review records: `none`
+- Note: `2026-04-08` 已完成 `project-062 -> project-068` 的本地顺序执行；`project-068 / sprint-002` 已通过 `CR-002` 与 `TK-713 / DA-713` 完成最终 closeout，当前 worktree 不再保留 active primary stream。
 
 ## Active Streams
 
-- `active-1`: role=`primary`, project=`project-068-p2-fallback-and-reserved-target-followups`, sprint=`sprint-002-github-com-agent-target-followup`, docs=`.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups`, plan=`.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-002-github-com-agent-target-followup/plan.md`, tasks=`.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-002-github-com-agent-target-followup/tasks/`, checklist=`.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-002-github-com-agent-target-followup/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-002-github-com-agent-target-followup/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-068-p2-fallback-and-reserved-target-followups/sprint-002-github-com-agent-target-followup/review/`, status=`active`, note=`sprint-002 is now a completed closeout surface; keep project-068 inside the P2 deferred reserved-target boundary and use this stream for the project-final CR loop`
+- None currently registered.
 
 ## Planned Follow-Up Streams
 

@@ -24,3 +24,10 @@
   - 2026-04-08：任务创建，状态初始化并直接推进为 `completed`，用于承接 sprint-002 clean closeout。
   - 2026-04-08：已通过 `DA-712-sprint-002-closeout-and-project-final-review-activation-handoff.md` 记录 sprint-002 closeout 结论：`TK-684`、`TK-685`、`TK-686` 与 `CR-001` 已全部 clean 终态，reserved-target fail-closed evidence 与 backlog handoff 已写回 docs/ledger truth。
   - 2026-04-08：已把 sprint-002 计划状态回写为 `completed`，并把下一边界固定为 `project-068` project-final CR loop；当前 worktree 仍沿用 sprint-002 surface 作为 project-final review target。
+- [x] CR-002 project-068-p2-fallback-and-reserved-target-followups final delegated review loop round 2
+  - 2026-04-08：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-08：fresh reviewer `Chandrasekhar` 返回 1 条 accepted finding：`verify-blocked` 场景会复用 staged export 已生成的 verification summary，可能让 reserved-target fail-closed gate 在 summary 未刷新时误判为绿色；主 agent 复核后确认该问题成立，并将本任务推进到 `verified`。
+  - 2026-04-08：已在 `scripts/release/verify-github-com-agent-reserved-target.mjs` 中加入旧 summary 清理逻辑，并重新通过定向 host tests、`pnpm run build`、`pnpm run release:verify-github-com-agent-reserved-target` 与 `pnpm run check`；报告已收口为 `resolved_code_review_working-tree-20260408-1304.md`，本任务推进到 `resolved`。
+- [x] TK-713 finalize project-068 closeout and clear the active primary stream
+  - 2026-04-08：任务创建并在同一窗口直接推进到 `completed`，用于承接 `project-068` clean project-final review 之后的最终 closeout write-back。
+  - 2026-04-08：已写入 `DA-713` 与 completion audit summary，并把 project / sprint / history / current-context / delivery registry 同步到完成态真值。
