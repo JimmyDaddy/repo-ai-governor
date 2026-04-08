@@ -1,9 +1,25 @@
 # checklist
 
-- [ ] TK-673 freeze desktop secondary-surface productization decision and packaging boundary
+- [x] TK-673 freeze desktop secondary-surface productization decision and packaging boundary
   - 2026-04-08：任务创建，状态初始化为 `planned`。
   - 2026-04-08：`project-064` final closeout 已完成，当前任务切换为 `in_progress`，开始冻结 desktop secondary-surface decision、packaging boundary 与 public support-truth contract。
-- [ ] TK-674 implement minimum desktop productization seam or reaffirm foundation-only guardrails with explicit evidence
+  - 2026-04-08：已正式冻结 desktop 的 secondary-surface decision 为 built-source `foundation-only`。当前正式支持边界只覆盖“已构建 governor 源码仓 + `pnpm run build` + `pnpm run check:desktop-entry-smoke` + `pnpm run release:verify-local`”，并明确排除 standalone desktop installer、published desktop bundle 与 preferred-secondary-surface claim。
+- [x] TK-674 implement minimum desktop productization seam or reaffirm foundation-only guardrails with explicit evidence
   - 2026-04-08：任务创建，状态初始化为 `planned`。
-- [ ] TK-675 close desktop surface recommendation with support-truth refresh
+  - 2026-04-08：已明确选择“不扩张 minimum desktop productization seam”，转而收口 foundation-only guardrails：README、local adoption playbook、maintainer validation playbook 与 integration docs 的中英文版本都同步写明当前没有 standalone desktop installer、published desktop bundle 或 packaged desktop product claim。
+  - 2026-04-08：`scripts/release/verify-local-distribution.js` 已新增 desktop foundation truthfulness 断言与 `desktopFoundationContract` 报告字段，并通过 `pnpm run build`、`pnpm run check:desktop-entry-smoke` 与 `node ./scripts/release/verify-local-distribution.js --output .tmp/project-065-sprint-001-desktop-foundation-report.json` 验证。
+- [x] TK-675 close desktop surface recommendation with support-truth refresh
   - 2026-04-08：任务创建，状态初始化为 `planned`。
+  - 2026-04-08：已把 README、local adoption playbook、maintainer validation playbook、support matrix 与 desktop integration docs 的中英文口径统一收敛到同一条 support-truth：desktop 继续保持 built-source `foundation-only`，当前公开支持只覆盖 sidecar foundation verification，不扩大为 installer 或 packaged product 叙事。
+  - 2026-04-08：已补齐证据窗口：`pnpm exec vitest run apps/desktop/test/desktop-governance-console-view-model-builder.test.ts apps/desktop/test/desktop-preload-bridge.test.ts apps/desktop/test/desktop-shell-bootstrap.test.ts apps/desktop/test/desktop-session-bridge.test.ts test/desktop-entry-smoke.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run build`、`pnpm run check:desktop-entry-smoke`、`node ./scripts/release/verify-local-distribution.js --output .tmp/project-065-sprint-001-desktop-foundation-report.json`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1`。
+- [x] CR-001 sprint-001-secondary-surface-decision-and-packaging-boundary delegated review loop round 1
+  - 2026-04-08：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-08：delegated reviewer 的两条 P1 findings 已写入 `verified_code_review_working-tree-20260408-0816.md`，主 agent 复核结论为“认可”，当前状态推进到 `verified`。
+  - 2026-04-08：accepted findings 已完成修复并通过同窗口 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1`、`pnpm run check:desktop-entry-smoke`、`node ./scripts/release/verify-local-distribution.js --output .tmp/project-065-sprint-001-desktop-foundation-report.json` 与 `pnpm run check`，当前状态推进到 `resolved`。
+- [x] CR-002 sprint-001-secondary-surface-decision-and-packaging-boundary delegated recheck loop round 2
+  - 2026-04-08：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-08：fresh reviewer 返回 1 条 P2 文档 contract drift finding；主 agent 复核认可，并将 `verified_code_review_working-tree-20260408-0834.md` 写回到当前 sprint review surface，当前状态推进到 `verified`。
+  - 2026-04-08：accepted finding 已修复并通过 `pnpm run build`、`pnpm run check` 与三条治理同步检查；当前状态推进到 `resolved`。
+- [x] TK-706 sprint-001 exit acceptance and project-final review activation handoff
+  - 2026-04-08：任务在 `TK-673`、`TK-674`、`TK-675`、`CR-001` 与 `CR-002` 全部进入终态后创建。
+  - 2026-04-08：已写入 `DA-706`、project/sprint closeout handoff 与 `current-context` note；当前 sprint surface 保留给后续 `project-065` project-final CR loop。

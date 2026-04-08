@@ -73,6 +73,24 @@ code --extensionDevelopmentPath <governor-repo>/apps/vscode-extension <target-re
 5. review、HITL、recover、terminate 等 trust-sensitive 命令仍受 `Workspace Trust` 保护，因此请在 trusted workspace 中验证这些能力。
 6. 当前 VS Code MVP 只是面向 execution/review/HITL/context 的 service-backed companion，不替代常规 CLI bootstrap 路径或 session shell。
 
+### 3.2 可选 Desktop Foundation Surface
+
+只有当你想在常规 CLI bootstrap 之外，从已构建的 governor 源码仓验证 desktop sidecar foundation 时，才使用这条路径：
+
+```bash
+cd <governor-repo>
+pnpm run build
+pnpm run check:desktop-entry-smoke
+pnpm run release:verify-local
+```
+
+边界说明：
+
+1. 当前正式支持只覆盖“已构建的 governor 源码仓 + 上述 foundation 验证链（含 `pnpm run release:verify-local`）”；`apps/desktop` 不是正式支持的独立桌面安装器，也不是已发布桌面 bundle。
+2. `apps/desktop` 继续作为 service-backed foundation surface，承接 session、execution、HITL、artifact-pane 与 queue-overview seam；它不替代 CLI bootstrap 或 session shell 的主入口职责。
+3. 当前 desktop 契约基线与 non-goal guardrail 以 `integrations/desktop/README.md` 为准。
+4. 该 surface 的唯一公开支持声明以 `docs/support-matrix.zh-CN.md` 为准。
+
 ## 4. Session Shell 快速上手
 
 如果你更喜欢“对话式入口”而不是一次性子命令，可以直接用 session shell：

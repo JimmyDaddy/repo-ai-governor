@@ -1,6 +1,6 @@
 # TK-673 freeze desktop secondary-surface productization decision and packaging boundary
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-04-08
 - Owner: `AI-Agent`
 - Priority: `P1`
@@ -53,8 +53,11 @@
 
 1. 2026-04-08：任务创建，状态初始化为 `planned`。
 2. 2026-04-08：`project-064` final closeout 已完成，当前任务切换为 `in_progress`，开始冻结 desktop secondary-surface decision、packaging boundary 与 public support-truth contract。
+3. 2026-04-08：已正式冻结 desktop 的 secondary-surface decision 为 built-source `foundation-only`。当前正式支持边界只覆盖“已构建 governor 源码仓 + `pnpm run build` + `pnpm run check:desktop-entry-smoke` + `pnpm run release:verify-local`”，并明确排除 standalone desktop installer、published desktop bundle 与 preferred-secondary-surface claim。
 
 ## 10. 产出
 
-1. 待执行：desktop decision contract
-2. 待执行：packaging boundary
+1. `/Users/jimmydaddy/study/ai-governor/apps/desktop/README.md`
+2. `/Users/jimmydaddy/study/ai-governor/integrations/desktop/README.md`
+3. `/Users/jimmydaddy/study/ai-governor/docs/support-matrix.md`
+4. `/Users/jimmydaddy/study/ai-governor/docs/support-matrix.zh-CN.md`

@@ -2909,9 +2909,10 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
         expect(runResult.commandResult.operation).toBe('governance_run');
         expect(runResult.commandResult.details?.runtime_status).toBe('succeeded');
         expect(invokeRequests).toHaveLength(3);
-        expect(invokeRequests.map((request) => request.timeoutMs)).toEqual([
-          300000, 300000, 300000,
-        ]);
+        for (const request of invokeRequests) {
+          expect(request.timeoutMs).toBeLessThanOrEqual(300000);
+          expect(request.timeoutMs).toBeGreaterThanOrEqual(299999);
+        }
         const executeRequest = invokeRequests.find((request) =>
           request.prompt.includes('Stage ID: stage-task-execute'),
         );

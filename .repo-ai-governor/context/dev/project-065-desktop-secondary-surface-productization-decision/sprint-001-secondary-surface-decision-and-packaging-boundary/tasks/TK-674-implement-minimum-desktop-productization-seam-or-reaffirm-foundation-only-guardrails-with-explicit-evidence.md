@@ -1,6 +1,6 @@
 # TK-674 implement minimum desktop productization seam or reaffirm foundation-only guardrails with explicit evidence
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-08
 - Owner: `AI-Agent`
 - Priority: `P1`
@@ -52,8 +52,17 @@
 ## 9. 执行记录
 
 1. 2026-04-08：任务创建，状态初始化为 `planned`。
+2. 2026-04-08：已明确选择“不扩张 minimum desktop productization seam”，转而收口 foundation-only guardrails：README、local adoption playbook、maintainer validation playbook 与 integration docs 的中英文版本都同步写明当前没有 standalone desktop installer、published desktop bundle 或 packaged desktop product claim。
+3. 2026-04-08：`scripts/release/verify-local-distribution.js` 已新增 desktop foundation truthfulness 断言与 `desktopFoundationContract` 报告字段，并通过 `pnpm run build`、`pnpm run check:desktop-entry-smoke` 与 `node ./scripts/release/verify-local-distribution.js --output .tmp/project-065-sprint-001-desktop-foundation-report.json` 验证。
 
 ## 10. 产出
 
-1. 待执行：minimum seam or explicit guardrails
-2. 待执行：support-truth evidence
+1. `/Users/jimmydaddy/study/ai-governor/README.md`
+2. `/Users/jimmydaddy/study/ai-governor/README.zh-CN.md`
+3. `/Users/jimmydaddy/study/ai-governor/docs/local-adoption-playbook.md`
+4. `/Users/jimmydaddy/study/ai-governor/docs/local-adoption-playbook.zh-CN.md`
+5. `/Users/jimmydaddy/study/ai-governor/docs/maintainer-validation-playbook.md`
+6. `/Users/jimmydaddy/study/ai-governor/docs/maintainer-validation-playbook.zh-CN.md`
+7. `/Users/jimmydaddy/study/ai-governor/integrations/desktop/examples/README.md`
+8. `/Users/jimmydaddy/study/ai-governor/scripts/release/verify-local-distribution.js`
+9. `/Users/jimmydaddy/study/ai-governor/.tmp/project-065-sprint-001-desktop-foundation-report.json`

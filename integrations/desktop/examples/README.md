@@ -8,6 +8,8 @@
 4. memory provider 必须由 service host 通过 shared loader 解析，desktop 只消费 `memoryProvider` composition summary
 5. packaged local host bootstrap 只能通过 `@cjhdev/repo-ai-governor/service-host`，不能依赖内部 `dist/node_modules` 目录结构
 
+这条候选基线当前只服务于 foundation-only desktop contract。它不创建也不暗示 standalone desktop installer、published desktop bundle 或 packaged desktop product claim。
+
 ## Projection Consumer Seam
 
 desktop / richer UI 如需显示 `agent projection`，当前推荐复用以下正式 seam，而不是直接消费命令私有字符串摘要：
@@ -31,3 +33,4 @@ desktop / richer UI 如需显示 `agent projection`，当前推荐复用以下�
 4. 固定 default / plugin-enabled 两条 memory provider 预期基线
 5. 固定 preload bridge 所需的最小 operation contract
 6. 为 `check:desktop-entry-smoke` 和 release local verification 提供统一输入
+7. 让 `project-065` 的 foundation-only guardrails 能被复查，而不是被误读成 installer rollout

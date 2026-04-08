@@ -92,6 +92,7 @@ const REQUIRED_PACKED_PATH_SUFFIXES = [
 ];
 const PLUGIN_ENABLED_REQUIRED_PACKED_PATH_SUFFIXES = [];
 const FORBIDDEN_DEFAULT_PACKED_PATH_FRAGMENTS = [];
+const FORBIDDEN_PACKED_PATH_FRAGMENTS = ['apps/desktop/'];
 const DOCUMENT_TRUTHFULNESS_ASSERTIONS = [
   {
     filePath: 'README.md',
@@ -100,6 +101,8 @@ const DOCUMENT_TRUTHFULNESS_ASSERTIONS = [
       '.codex/skills/',
       'npm registry',
       'offline/self-contained',
+      'desktop foundation-only',
+      'standalone desktop installer',
     ],
   },
   {
@@ -109,6 +112,8 @@ const DOCUMENT_TRUTHFULNESS_ASSERTIONS = [
       '.codex/skills/',
       'npm registry',
       '离线自包含',
+      'desktop foundation-only',
+      '独立桌面安装器',
     ],
   },
   {
@@ -120,6 +125,8 @@ const DOCUMENT_TRUTHFULNESS_ASSERTIONS = [
       'remote-api rehearsal',
       'OPENAI_API_KEY',
       'ANTHROPIC_API_KEY',
+      'standalone desktop installer',
+      'published desktop bundle',
     ],
   },
   {
@@ -131,6 +138,8 @@ const DOCUMENT_TRUTHFULNESS_ASSERTIONS = [
       'remote-api rehearsal',
       'OPENAI_API_KEY',
       'ANTHROPIC_API_KEY',
+      '独立桌面安装器',
+      '已发布桌面 bundle',
     ],
   },
   {
@@ -143,6 +152,8 @@ const DOCUMENT_TRUTHFULNESS_ASSERTIONS = [
       'Supported for source-built local packaging only',
       'release:verify-vscode-extension-distribution',
       'Marketplace distribution',
+      'Supported for MVP foundation only',
+      'standalone desktop installer',
     ],
   },
   {
@@ -155,6 +166,8 @@ const DOCUMENT_TRUTHFULNESS_ASSERTIONS = [
       '作为源码仓本地打包路径正式支持',
       'release:verify-vscode-extension-distribution',
       'Marketplace 分发',
+      '仅 MVP foundation 正式支持',
+      '独立桌面安装器',
     ],
   },
   {
@@ -163,6 +176,8 @@ const DOCUMENT_TRUTHFULNESS_ASSERTIONS = [
       'docs/support-matrix.md',
       'packaged delivery surfaces',
       'release:verify-cleanroom-local-install',
+      'project-065',
+      '.tmp/project-065-sprint-001-desktop-foundation-report.json',
     ],
   },
   {
@@ -171,7 +186,17 @@ const DOCUMENT_TRUTHFULNESS_ASSERTIONS = [
       'docs/support-matrix.zh-CN.md',
       '演练打包发布面',
       'release:verify-cleanroom-local-install',
+      'project-065',
+      '.tmp/project-065-sprint-001-desktop-foundation-report.json',
     ],
+  },
+  {
+    filePath: 'integrations/desktop/README.md',
+    requiredFragments: ['foundation-only', 'standalone desktop installer', 'release:verify-local'],
+  },
+  {
+    filePath: 'integrations/desktop/examples/README.md',
+    requiredFragments: ['foundation-only desktop contract', 'standalone desktop installer'],
   },
 ];
 const PACKAGED_INSTALL_CONTRACT = {
@@ -181,6 +206,12 @@ const PACKAGED_INSTALL_CONTRACT = {
   distBinary: 'supported-cli-runtime-rehearsal-only',
   offlineTarballInstall: 'not-supported',
   packagedVscodeDistribution: 'supported-source-built-local-vsix-only',
+};
+const DESKTOP_FOUNDATION_CONTRACT = {
+  desktopFoundationSurface: 'supported-built-source-foundation-only',
+  standaloneDesktopInstaller: 'not-supported',
+  publishedDesktopBundle: 'not-supported',
+  preferredSecondarySurface: 'vscode-first-desktop-foundation',
 };
 
 /**
@@ -418,6 +449,19 @@ function hasPackedPathSuffix(packedFilePaths, requiredSuffix) {
 function hasPackedPathFragment(packedFilePaths, forbiddenFragment) {
   const normalizedFragment = normalizeFilePath(forbiddenFragment);
   return packedFilePaths.some((candidatePath) => candidatePath.includes(normalizedFragment));
+}
+
+/**
+ * Returns whether a packed file manifest contains one unsupported path prefix.
+ * @param {string[]} packedFilePaths Packed file path list.
+ * @param {string} forbiddenPrefix Forbidden path prefix rooted at the tarball.
+ * @returns {boolean}
+ */
+function hasPackedPathPrefix(packedFilePaths, forbiddenPrefix) {
+  const normalizedPrefix = normalizeFilePath(forbiddenPrefix);
+  return packedFilePaths.some((candidatePath) => {
+    return candidatePath === normalizedPrefix || candidatePath.startsWith(normalizedPrefix);
+  });
 }
 
 /**
@@ -1003,6 +1047,14 @@ async function main() {
     }
   }
 
+  for (const forbiddenFragment of FORBIDDEN_PACKED_PATH_FRAGMENTS) {
+    if (hasPackedPathPrefix(packedFilePaths, forbiddenFragment)) {
+      throw new Error(
+        `Packed artifact contains an unsupported application workspace path: ${forbiddenFragment}`,
+      );
+    }
+  }
+
   const rawFilename = packRecord.filename;
   if (typeof rawFilename !== 'string' || rawFilename.trim().length === 0) {
     throw new Error('pnpm pack --json did not provide tarball filename.');
@@ -1025,6 +1077,8 @@ async function main() {
         (assertion) => assertion.filePath,
       ),
       packagedInstallContract: PACKAGED_INSTALL_CONTRACT,
+      desktopFoundationContract: DESKTOP_FOUNDATION_CONTRACT,
+      forbiddenPackedPathFragmentsValidated: FORBIDDEN_PACKED_PATH_FRAGMENTS,
       standardsRuntimeLoaderDistSmoke,
       remoteApiDistSmoke,
     });

@@ -73,6 +73,24 @@ Boundary notes:
 5. Trust-sensitive commands stay gated by `Workspace Trust`, so use a trusted workspace when validating review, HITL, recovery, or termination actions.
 6. The current VS Code MVP is a service-backed companion for execution/review/HITL/context flows; it does not replace the normal CLI bootstrap path or the session shell.
 
+### 3.2 Optional Desktop Foundation Surface
+
+Use this only when you want to validate the desktop sidecar foundation from a built governor source checkout on top of the normal CLI bootstrap path:
+
+```bash
+cd <governor-repo>
+pnpm run build
+pnpm run check:desktop-entry-smoke
+pnpm run release:verify-local
+```
+
+Boundary notes:
+
+1. Current formal support is limited to the built governor source checkout plus the foundation verification chain above, including `pnpm run release:verify-local`; `apps/desktop` is not a supported standalone desktop installer or published desktop bundle.
+2. `apps/desktop` remains a service-backed foundation surface for session, execution, HITL, artifact-pane, and queue-overview seams; it does not replace CLI bootstrap or session-shell ownership.
+3. Use `integrations/desktop/README.md` for the current desktop contract baseline and non-goal guardrails.
+4. Use `docs/support-matrix.md` for the single public support declaration for this surface.
+
 ## 4. Session Shell Quick Tour
 
 Use the session shell when you want a conversation-first entrypoint instead of a one-shot subcommand.

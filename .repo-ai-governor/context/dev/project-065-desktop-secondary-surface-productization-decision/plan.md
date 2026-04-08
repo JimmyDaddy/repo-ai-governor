@@ -18,17 +18,18 @@
 
 ## 2.1 sprint-001-secondary-surface-decision-and-packaging-boundary
 
-- Status: active
+- Status: completed
 - Sprint Goal: 冻结 desktop 的产品化决策与最小支持边界。
-- Task Package: `TK-673`、`TK-674`、`TK-675`。
+- Task Package: `TK-673`、`TK-674`、`TK-675`、`TK-706`。
 
 ## 3. 任务拆解矩阵（WBS）
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 | --- | --- | --- | --- | --- | --- |
-| TK-673 | sprint-001 | freeze desktop secondary-surface productization decision and packaging boundary | product/contract | project-064 recommended | in_progress |
-| TK-674 | sprint-001 | implement minimum desktop productization seam or reaffirm foundation-only guardrails with explicit evidence | implementation/boundary | TK-673 | planned |
-| TK-675 | sprint-001 | close desktop surface recommendation with support-truth refresh | docs/evidence/closeout | TK-673、TK-674 | planned |
+| TK-673 | sprint-001 | freeze desktop secondary-surface productization decision and packaging boundary | product/contract | project-064 recommended | completed |
+| TK-674 | sprint-001 | implement minimum desktop productization seam or reaffirm foundation-only guardrails with explicit evidence | implementation/boundary | TK-673 | completed |
+| TK-675 | sprint-001 | close desktop surface recommendation with support-truth refresh | docs/evidence/closeout | TK-673、TK-674 | completed |
+| TK-706 | sprint-001 | sprint-001 exit acceptance and project-final review activation handoff | closeout/handoff | TK-673、TK-674、TK-675、CR-001、CR-002 | completed |
 
 ## 4. 依赖产物策略
 
@@ -45,3 +46,5 @@
 
 1. 2026-04-08：作为 `project-072` follow-up decomposition 产物创建，当前保持 `planned`。
 2. 2026-04-08：`project-064` final closeout 完成后被激活为当前 primary project，`sprint-001 / TK-673` 进入执行窗口。
+3. 2026-04-08：已冻结 desktop secondary surface 的正式决策为 built-source `foundation-only`，并完成 README / playbook / support-matrix / integration docs 以及 `verify-local-distribution` 的 support-truth 收口；当前 sprint 已进入 delegated CR loop 前的实现完成态。
+4. 2026-04-08：`CR-001` 与 `CR-002` 均已 clean `resolved`；`TK-706 / DA-706` 已完成 sprint closeout handoff，当前下一边界固定为 `project-065` project-final delegated CR loop。

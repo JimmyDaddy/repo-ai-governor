@@ -163,8 +163,9 @@ The supported refresh path is: update the governor source checkout or the vendor
 4. If a target repository already uses Yarn/npm or has a dirty worktree, start with `dist-binary`; otherwise start with `path` and move to `link` or `tgz` only when the workflow requires it.
 5. Session shell, React-shell command surfaces, workflow editing, upgrade analysis, HITL notifications, and troubleshooting details are covered in the local adoption playbook.
 6. The optional VS Code companion surface supports either one extension-development host or one locally generated VSIX / packaged extension root from a built governor source checkout via `apps/vscode-extension` and the release packaging scripts. Published npm/tgz install may still carry internal `dist/apps/vscode-extension/**` payloads, but it does not ship a supported installable extension bundle, and Marketplace remains unsupported.
-7. Repository-local Codex workflow helpers ship under `.codex/skills/`; they are included for self-host and maintainer flows, but external adopters do not need to vendor them unless they want the same local skill ergonomics inside their own repository.
-8. Optional Codex / Claude Code host-native assets (`host export` / `host verify` / `host pack`) are supported only as source-checkout follow-up surfaces. After a governor or skill refresh, rerun the host command plus `host verify`; do not treat that path as packaged-install proof or a separate host upgrader.
+7. The optional desktop surface stays desktop foundation-only on a built governor source checkout. There is no supported standalone desktop installer, published desktop bundle, or packaged desktop product claim.
+8. Repository-local Codex workflow helpers ship under `.codex/skills/`; they are included for self-host and maintainer flows, but external adopters do not need to vendor them unless they want the same local skill ergonomics inside their own repository.
+9. Optional Codex / Claude Code host-native assets (`host export` / `host verify` / `host pack`) are supported only as source-checkout follow-up surfaces. After a governor or skill refresh, rerun the host command plus `host verify`; do not treat that path as packaged-install proof or a separate host upgrader.
 
 ## 4. Read More
 

@@ -144,6 +144,23 @@ pnpm run release:verify-host-distribution -- --output .tmp/project-067-sprint-00
 2. `host verify` 是每次 manifest 刷新后的正式复核步骤；这些资产的“升级”语义固定为源码仓或 vendored skills 变化后重新渲染并重新校验，而不是新增一条独立 installer 路径。
 3. 只要渲染资产形态、支持 target 或刷新契约有变化，就必须同步收口 `README*`、`docs/local-adoption-playbook*` 与 `docs/support-matrix*` 中的公开叙事。
 
+### 4.3 Desktop Foundation-only Surface 验证
+
+当你需要刷新 desktop secondary-surface decision、但又不能把公开支持边界扩张到 built-source foundation 之外时，使用这条 runbook：
+
+```bash
+pnpm exec vitest run apps/desktop/test/desktop-governance-console-view-model-builder.test.ts apps/desktop/test/desktop-preload-bridge.test.ts apps/desktop/test/desktop-shell-bootstrap.test.ts apps/desktop/test/desktop-session-bridge.test.ts test/desktop-entry-smoke.integration.test.ts --maxWorkers=1 --maxConcurrency=1
+pnpm run build
+pnpm run check:desktop-entry-smoke
+pnpm run release:verify-local -- --output .tmp/project-065-sprint-001-desktop-foundation-report.json
+```
+
+说明：
+
+1. `project-065` 明确把 desktop 固定为 foundation-only 支持边界：只覆盖“已构建 governor 源码仓 + 本地 foundation 验证”，不会新增独立桌面安装器、已发布桌面 app bundle 或 preferred secondary surface 声明。
+2. `pnpm run release:verify-local` 是这条边界的 maintainer truthfulness 复核命令；它会确认 packaged CLI 产物仍然携带 desktop integration docs，同时继续排除把 `apps/desktop` workspace 当成独立 package-install root 的误导口径。
+3. 唯一公开支持声明仍是 `docs/support-matrix.zh-CN.md`；只要 desktop narrative 变化，就必须同步收口 `apps/desktop/README.md`、`integrations/desktop/README.md` 与 `docs/local-adoption-playbook.zh-CN.md`。
+
 ## 5. Clean-room 与 Release 验证
 
 在 `<governor-repo>` 执行 clean-room 安装验证：
@@ -167,7 +184,7 @@ pnpm run release:ga-check
 2. 当你刷新“联网 tarball 安装支持边界”时，应显式使用 `--modes tgz --iterations 1`，而不是只沿用旧的 `path/link` 基线。
 3. `release:verify-local` 适合 rollout 前的本地维护者验证，并会覆盖已发布文档与参考资产的 packed-surface truthfulness。
 4. `release:ga-check` 面向维护者的发布准备判断，不适合作为普通 adopter 的日常命令。
-5. 当前本手册预期回链的结构化 evidence 包括 `.tmp/project-052-sprint-001-cleanroom-report.json`、`.tmp/project-052-sprint-001-local-distribution-report.json`、`.tmp/project-052-sprint-002-command-rehearsal-summary.json`、`.tmp/project-055-sprint-001-pilot-1-rehearsal-summary.json`、`.tmp/project-055-sprint-001-pilot-2-rehearsal-summary.json`、`.tmp/project-063-sprint-001-cleanroom-tgz-report.json`、`.tmp/project-063-sprint-001-local-distribution-report.json`、`.tmp/project-067-sprint-001-host-distribution-report.json`，以及 `.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-002-ga-evidence-consolidation-and-closeout/tasks/DA-616-ga-evidence-dossier-and-cross-surface-backlinks.md`。
+5. 当前本手册预期回链的结构化 evidence 包括 `.tmp/project-052-sprint-001-cleanroom-report.json`、`.tmp/project-052-sprint-001-local-distribution-report.json`、`.tmp/project-052-sprint-002-command-rehearsal-summary.json`、`.tmp/project-055-sprint-001-pilot-1-rehearsal-summary.json`、`.tmp/project-055-sprint-001-pilot-2-rehearsal-summary.json`、`.tmp/project-063-sprint-001-cleanroom-tgz-report.json`、`.tmp/project-063-sprint-001-local-distribution-report.json`、`.tmp/project-065-sprint-001-desktop-foundation-report.json`、`.tmp/project-067-sprint-001-host-distribution-report.json`，以及 `.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-002-ga-evidence-consolidation-and-closeout/tasks/DA-616-ga-evidence-dossier-and-cross-surface-backlinks.md`。
 6. 当这些信号变化时，应先更新 `docs/support-matrix.zh-CN.md`，而不是在本手册里再维护第二张状态表。
 
 ## 6. 如何理解 external-adopter warning
