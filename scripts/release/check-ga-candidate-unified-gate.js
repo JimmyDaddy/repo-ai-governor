@@ -28,7 +28,7 @@ const UNIFIED_GATE_STEPS = [
     command: ['pnpm', 'run', 'test:e2e', '--', '--maxWorkers=1', '--maxConcurrency=1'],
   },
   {
-    stepId: 'release-ga-check',
+    stepId: 'release-ga-entry-check',
     command: ['pnpm', 'run', 'release:ga-entry-check'],
   },
   {

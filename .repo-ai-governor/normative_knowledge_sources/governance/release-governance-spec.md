@@ -120,7 +120,7 @@ Promotion criteria:
    - `resilience-regression`
    - `integration-regression`
    - `e2e-regression`
-   - `release-ga-check`
+   - `release-ga-entry-check`
    - `rollback-rehearsal`
    - `governance-gate`
 4. Unified gate semantics:

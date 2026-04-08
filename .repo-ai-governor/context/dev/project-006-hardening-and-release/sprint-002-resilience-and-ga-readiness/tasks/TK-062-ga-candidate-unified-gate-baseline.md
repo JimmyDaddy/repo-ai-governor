@@ -44,7 +44,7 @@
    - `resilience-regression`：`test:resilience`
    - `integration-regression`：`test:integration`
    - `e2e-regression`：`test:e2e`
-   - `release-ga-check`：`release:ga-check`
+   - `release-ga-entry-check`：`release:ga-entry-check`
    - `rollback-rehearsal`：`release:rollback-rehearsal`
    - `governance-gate`：`check`
 3. 失败阻断语义

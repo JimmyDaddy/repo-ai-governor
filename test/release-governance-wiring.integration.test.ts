@@ -18,6 +18,7 @@ interface ReleasePolicyShape {
   };
   gaCandidateUnifiedGate: {
     entryCommand: string;
+    requiredCheckGroups: string[];
   };
 }
 
@@ -61,11 +62,20 @@ function collectExpectedVerificationCommands(policyConfig: ReleasePolicyShape): 
 describe('release governance wiring', () => {
   it('routes release:ga-check through the unified GA gate while keeping a non-recursive entry check', () => {
     const packageJson = readJsonFile<PackageJsonShape>('package.json');
+    const policyConfig = readJsonFile<ReleasePolicyShape>(
+      'scripts/release/release-governance-policy.json',
+    );
 
     expect(packageJson.scripts['release:ga-entry-check']).toContain('release:candidate');
     expect(packageJson.scripts['release:ga-check']).toContain('release:ga-candidate-unified-gate');
     expect(packageJson.scripts['release:ga-check']).not.toBe(
       packageJson.scripts['release:ga-entry-check'],
+    );
+    expect(policyConfig.gaCandidateUnifiedGate.requiredCheckGroups).toContain(
+      'release-ga-entry-check',
+    );
+    expect(policyConfig.gaCandidateUnifiedGate.requiredCheckGroups).not.toContain(
+      'release-ga-check',
     );
   });
 
