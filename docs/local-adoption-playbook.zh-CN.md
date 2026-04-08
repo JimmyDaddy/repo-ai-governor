@@ -230,15 +230,25 @@ pnpm exec repo-ai-governor run --output json
 
 ### 8.3 内置治理模板
 
-已发布包通过 `@repo-ai-governor/standards` 暴露三套内置治理模板：
+当前官方 standards catalog 包含五套内置治理模板：
 
 1. `workflowReviewGovernancePack`
-2. `pythonMinimalGovernancePack`
-3. `goMinimalGovernancePack`
+2. `javascriptMinimalGovernancePack`
+3. `pythonMinimalGovernancePack`
+4. `goMinimalGovernancePack`
+5. `rustMinimalGovernancePack`
 
 如果你希望 adopter-facing 的治理流程本身就内置独立 `CR-xxx` 评审任务卡，以及 `review_pending -> verified -> resolved` 生命周期同步，请先引入 `workflowReviewGovernancePack`。
 
-然后再按语言需要叠加 `pythonMinimalGovernancePack` 或 `goMinimalGovernancePack`，以及团队或仓库自己的 override。
+然后再按语言需要叠加对应 pack：
+
+1. `javascriptMinimalGovernancePack`：适合 `package.json` 脚本驱动的 JavaScript / Node 仓库。
+2. `pythonMinimalGovernancePack`：适合 `pyproject.toml` + `ruff/pytest/pyright` 风格的 Python 仓库。
+3. `goMinimalGovernancePack`：适合 `go.mod` / `go.sum` 仓库。
+4. `rustMinimalGovernancePack`：适合 Cargo workspace 仓库。
+
+本仓库自身的 TypeScript 治理链继续作为 canonical 的 repository-level reference example 存在，但它目前还不是一套单独发布的官方语言 pack。
+当前 `project-066` 的证明窗口覆盖的是这个 catalog 的 repository examples module 与 config-schema 接受面；packaged consumer path 的验证仍归 release/distribution surface 负责。
 
 ## 9. 故障排查与已知限制
 

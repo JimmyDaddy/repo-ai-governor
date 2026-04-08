@@ -1,6 +1,6 @@
 # TK-678 close ecosystem expansion baseline with validation evidence and support narrative refresh
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-08
 - Owner: `AI-Agent`
 - Priority: `P1`
@@ -46,14 +46,23 @@
 
 ## 8. Delivery Verification
 
-1. official pack validation suite
+1. `pnpm exec vitest run packages/standards/test/language-minimal-governance-packs.integration.test.ts packages/standards/test/standards-runtime-loader.integration.test.ts packages/config/test/config.unit.test.ts --maxWorkers=1 --maxConcurrency=1`
 2. `pnpm run build`
+3. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
+4. `pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1`
 
 ## 9. 执行记录
 
 1. 2026-04-08：任务创建，状态初始化为 `planned`。
+2. 2026-04-08：已用 support-matrix、local adoption playbook 与 maintainer validation playbook 的中英文刷新完成 ecosystem narrative closeout；公开口径现已区分 official published baseline 与 repository reference example，不再只剩 “minimal baseline” 描述。
+3. 2026-04-08：已补齐验证窗口：`pnpm exec vitest run packages/standards/test/language-minimal-governance-packs.integration.test.ts packages/standards/test/standards-runtime-loader.integration.test.ts packages/config/test/config.unit.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1`。
+4. 2026-04-08：support narrative refresh 已完成；当前 sprint 的 next boundary 是 fresh reviewer CR loop，状态切换为 `completed`。
 
 ## 10. 产出
 
-1. 待执行：validation evidence
-2. 待执行：support narrative refresh
+1. `/Users/jimmydaddy/study/ai-governor/docs/support-matrix.md`
+2. `/Users/jimmydaddy/study/ai-governor/docs/support-matrix.zh-CN.md`
+3. `/Users/jimmydaddy/study/ai-governor/docs/local-adoption-playbook.md`
+4. `/Users/jimmydaddy/study/ai-governor/docs/local-adoption-playbook.zh-CN.md`
+5. `/Users/jimmydaddy/study/ai-governor/docs/maintainer-validation-playbook.md`
+6. `/Users/jimmydaddy/study/ai-governor/docs/maintainer-validation-playbook.zh-CN.md`

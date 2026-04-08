@@ -230,15 +230,25 @@ pnpm exec repo-ai-governor run --output json
 
 ### 8.3 Built-in Governance Packs
 
-The published package exposes three built-in governance packs through `@repo-ai-governor/standards`:
+The current official standards catalog includes five built-in governance packs:
 
 1. `workflowReviewGovernancePack`
-2. `pythonMinimalGovernancePack`
-3. `goMinimalGovernancePack`
+2. `javascriptMinimalGovernancePack`
+3. `pythonMinimalGovernancePack`
+4. `goMinimalGovernancePack`
+5. `rustMinimalGovernancePack`
 
 Use `workflowReviewGovernancePack` when you want the adopter-facing governance flow itself to allocate standalone `CR-xxx` review task cards and keep the `review_pending -> verified -> resolved` lifecycle synchronized.
 
-Then layer the language pack you need, plus any team or repository overrides, on top.
+Then layer the language pack you need on top:
+
+1. `javascriptMinimalGovernancePack` for `package.json` script-driven JavaScript / Node repositories.
+2. `pythonMinimalGovernancePack` for `pyproject.toml` + `ruff/pytest/pyright` style Python repositories.
+3. `goMinimalGovernancePack` for `go.mod` / `go.sum` repositories.
+4. `rustMinimalGovernancePack` for Cargo workspace repositories.
+
+The self-host TypeScript governance chain in this repository remains the canonical repository-level reference example, but it is not a separately published official language pack yet.
+The current `project-066` proof window rechecks the repository examples module plus config-schema acceptance for this catalog; packaged consumer-path verification still belongs to release/distribution surfaces.
 
 ## 9. Troubleshooting And Known Limitations
 

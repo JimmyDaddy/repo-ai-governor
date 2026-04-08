@@ -2,7 +2,7 @@
 
 - Status: active
 - Last updated: 2026-04-08
-- Scope: formal support declaration refreshed by `project-026 / sprint-004` (`TK-301`), `project-044 / sprint-003` (`TK-547`), `project-046 / sprint-001` (`TK-551`, `TK-552`, `TK-554`), `project-052 / sprint-001` (`TK-589`, `TK-590`, `TK-591`), `project-052 / sprint-002` (`TK-592`, `TK-593`, `TK-594`), `project-052 / sprint-003` (`TK-595`, `TK-596`), `project-053 / sprint-001` (`TK-598`, `TK-599`, `TK-600`), `project-053 / sprint-002` (`TK-601`, `TK-602`, `TK-603`), `project-053 / sprint-003` (`TK-604`, `TK-605`, `TK-606`), `project-054 / sprint-001` (`TK-607`, `TK-608`, `TK-609`), `project-054 / sprint-002` (`TK-610`), `project-055 / sprint-002` (`TK-616`), `project-063 / sprint-001` (`TK-667`, `TK-668`, `TK-669`), `project-065 / sprint-001` (`TK-673`, `TK-674`, `TK-675`), and `project-067 / sprint-001` (`TK-679`, `TK-680`, `TK-681`)
+- Scope: formal support declaration refreshed by `project-026 / sprint-004` (`TK-301`), `project-044 / sprint-003` (`TK-547`), `project-046 / sprint-001` (`TK-551`, `TK-552`, `TK-554`), `project-052 / sprint-001` (`TK-589`, `TK-590`, `TK-591`), `project-052 / sprint-002` (`TK-592`, `TK-593`, `TK-594`), `project-052 / sprint-003` (`TK-595`, `TK-596`), `project-053 / sprint-001` (`TK-598`, `TK-599`, `TK-600`), `project-053 / sprint-002` (`TK-601`, `TK-602`, `TK-603`), `project-053 / sprint-003` (`TK-604`, `TK-605`, `TK-606`), `project-054 / sprint-001` (`TK-607`, `TK-608`, `TK-609`), `project-054 / sprint-002` (`TK-610`), `project-055 / sprint-002` (`TK-616`), `project-063 / sprint-001` (`TK-667`, `TK-668`, `TK-669`), `project-065 / sprint-001` (`TK-673`, `TK-674`, `TK-675`), `project-066 / sprint-001` (`TK-676`, `TK-677`, `TK-678`), and `project-067 / sprint-001` (`TK-679`, `TK-680`, `TK-681`)
 
 ## 1. Installation Modes
 
@@ -37,14 +37,20 @@
 2. `Fallback-only real-path` means the adapter has real probe/invoke truth, but that truth is intentionally limited to fallback, restricted-network, or capability-constrained flows instead of a promoted primary adapter lane.
 3. `Fixture-backed` means the product surface is supported, but the formal public evidence remains routing/fixture truth instead of a promoted real invocation path.
 
-## 3. Published Governance Packs
+## 3. Governance Pack Catalog
 
 | Pack | Status | Notes |
 |---|---|---|
-| TypeScript repository baseline | Built-in | Full governance chain in repository baseline. |
-| Workflow review | Minimal baseline | `workflowReviewGovernancePack` is published via `@repo-ai-governor/standards` and carries the `CR-xxx` review task-card lifecycle. |
-| Python | Minimal baseline | `pythonMinimalGovernancePack` is published via `@repo-ai-governor/standards`. |
-| Go | Minimal baseline | `goMinimalGovernancePack` is published via `@repo-ai-governor/standards`. |
+| TypeScript repository baseline | Built-in repository example | Full governance chain is exercised in this repository baseline; treat it as the canonical self-host TypeScript reference instead of a separately published official pack. |
+| Workflow review | Official workflow baseline | `workflowReviewGovernancePack` is published via `@repo-ai-governor/standards` and carries the `CR-xxx` review task-card lifecycle. |
+| JavaScript | Official language baseline | `javascriptMinimalGovernancePack` is published via `@repo-ai-governor/standards` for `package.json` script-driven JavaScript / Node repositories. |
+| Python | Official language baseline | `pythonMinimalGovernancePack` is published via `@repo-ai-governor/standards`. |
+| Go | Official language baseline | `goMinimalGovernancePack` is published via `@repo-ai-governor/standards`. |
+| Rust | Official language baseline | `rustMinimalGovernancePack` is published via `@repo-ai-governor/standards` for Cargo workspace repositories. |
+
+Notes:
+
+1. `project-066` proof window currently rechecks the repository examples module plus config-schema acceptance for this catalog; packaged consumer-path validation remains a release/distribution surface rather than part of this snapshot.
 
 ## 4. Runtime Baseline
 
@@ -64,10 +70,12 @@
 | VS Code packaged distribution (local VSIX / packaged extension root) | built source checkout + local packaging scripts | Supported for source-built local packaging only | `pnpm run release:pack-vscode-extension` and `pnpm run release:verify-vscode-extension-distribution` can generate and recheck one local VSIX plus packaged extension root from a built source checkout. This support does not extend to the published governor tarball, direct npm/tgz install, or Marketplace distribution. |
 | Desktop sidecar entry | built source checkout / local distribution rehearsal | Supported for MVP foundation only | `apps/desktop` remains the foundation surface with service-owned session/execution/HITL/artifact-pane seams; `project-065` keeps it at built-source foundation-only support, does not promote it into the preferred secondary surface, and does not add a standalone desktop installer or packaged desktop product claim. `check-desktop-entry-smoke` plus `release:verify-local` remain the formal proof path while richer desktop panels stay staged evolution. |
 
-## 6. Verification Snapshot (TK-301 + TK-547 + TK-551/TK-552/TK-554 + TK-589/TK-590/TK-591 + TK-592/TK-593/TK-594 + TK-598/TK-599/TK-600 + TK-601/TK-602/TK-603 + TK-604/TK-605/TK-606 + TK-607/TK-608/TK-609 + TK-610 + TK-614/TK-615 + TK-616 + TK-667/TK-668/TK-669 + TK-673/TK-674/TK-675 + TK-679/TK-680/TK-681)
+## 6. Verification Snapshot (TK-301 + TK-547 + TK-551/TK-552/TK-554 + TK-589/TK-590/TK-591 + TK-592/TK-593/TK-594 + TK-598/TK-599/TK-600 + TK-601/TK-602/TK-603 + TK-604/TK-605/TK-606 + TK-607/TK-608/TK-609 + TK-610 + TK-614/TK-615 + TK-616 + TK-667/TK-668/TK-669 + TK-673/TK-674/TK-675 + TK-676/TK-677/TK-678 + TK-679/TK-680/TK-681)
 
 | Time (UTC) | Command | Result | Evidence |
 |---|---|---|---|
+| 2026-04-08T02:54:00Z | `pnpm exec vitest run packages/standards/test/language-minimal-governance-packs.integration.test.ts packages/standards/test/standards-runtime-loader.integration.test.ts packages/config/test/config.unit.test.ts --maxWorkers=1 --maxConcurrency=1` | Pass | `project-066` official-pack catalog slice passed `3` files / `31` tests after the proof-boundary truthfulness fix; the JavaScript / Rust first-wave catalog stayed renderable through the repository examples module, and the config schema continued accepting the documented catalog entries. |
+| 2026-04-08T02:54:15Z | `pnpm run build` | Pass | Build stayed green in the same `project-066` closeout window after narrowing the runtime-loader proof claim and refreshing the catalog evidence/support-truth wording. |
 | 2026-04-08T00:12:43Z | `pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1` | Pass | Integration-scoped verification stayed green after the desktop foundation-only closeout refresh (`24` files / `57` tests), including `test/desktop-entry-smoke.integration.test.ts`. |
 | 2026-04-08T00:12:24Z | `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` | Pass | Package-scoped verification stayed green after the desktop support-truth hardening window (`136` files / `831` tests), including the desktop runtime and CLI support-truth surfaces touched in this change. |
 | 2026-04-08T00:10:59Z | `node ./scripts/release/verify-local-distribution.js --output .tmp/project-065-sprint-001-desktop-foundation-report.json` | Pass | The new desktop foundation report revalidated that the packaged CLI artifact still ships the refreshed README/playbook/support-matrix/integration docs, records the `desktopFoundationContract`, and keeps `apps/desktop/` out of the tarball as a standalone package-install root. |

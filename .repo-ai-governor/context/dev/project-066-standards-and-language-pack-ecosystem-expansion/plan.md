@@ -18,17 +18,17 @@
 
 ## 2.1 sprint-001-official-pack-expansion-matrix-and-first-wave
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 定义官方 pack 扩展矩阵，并完成第一波扩展与验证。
-- Task Package: `TK-676`、`TK-677`、`TK-678`。
+- Task Package: `TK-676`、`TK-677`、`TK-678`、`TK-708`。
 
 ## 3. 任务拆解矩阵（WBS）
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 | --- | --- | --- | --- | --- | --- |
-| TK-676 | sprint-001 | freeze official pack expansion matrix and acceptance contract | product/contract | project-062 recommended | in_progress |
-| TK-677 | sprint-001 | implement first-wave official pack expansion and runtime/docs examples | standards/implementation | TK-676 | planned |
-| TK-678 | sprint-001 | close ecosystem expansion baseline with validation evidence and support narrative refresh | acceptance/closeout | TK-676、TK-677 | planned |
+| TK-676 | sprint-001 | freeze official pack expansion matrix and acceptance contract | product/contract | project-062 recommended | completed |
+| TK-677 | sprint-001 | implement first-wave official pack expansion and runtime/docs examples | standards/implementation | TK-676 | completed |
+| TK-678 | sprint-001 | close ecosystem expansion baseline with validation evidence and support narrative refresh | acceptance/closeout | TK-676、TK-677 | completed |
 
 ## 4. 依赖产物策略
 
@@ -45,3 +45,5 @@
 
 1. 2026-04-08：作为 `project-072` follow-up decomposition 产物创建，当前保持 `planned`。
 2. 2026-04-08：`project-065` final closeout 完成后被激活为当前 primary project，`sprint-001 / TK-676` 进入执行窗口。
+3. 2026-04-08：`TK-676 ~ TK-678` 已在同一实现窗口完成；当前 sprint 已具备进入 fresh reviewer CR loop 的官方 pack catalog、runtime/docs example 与 support-narrative 输入。
+4. 2026-04-08：`CR-001` clean `resolved` 后，`TK-708 / DA-708` 已完成 sprint-level closeout，并将当前 sprint surface 保留给后续 `project-066` project-final CR loop。

@@ -161,6 +161,21 @@ pnpm run release:verify-local -- --output .tmp/project-065-sprint-001-desktop-fo
 2. `pnpm run release:verify-local` 是这条边界的 maintainer truthfulness 复核命令；它会确认 packaged CLI 产物仍然携带 desktop integration docs，同时继续排除把 `apps/desktop` workspace 当成独立 package-install root 的误导口径。
 3. 唯一公开支持声明仍是 `docs/support-matrix.zh-CN.md`；只要 desktop narrative 变化，就必须同步收口 `apps/desktop/README.md`、`integrations/desktop/README.md` 与 `docs/local-adoption-playbook.zh-CN.md`。
 
+### 4.4 官方治理模板目录验证
+
+当你需要刷新已发布的官方 standards-pack 目录，或同步调整对应 runtime/docs example 时，使用这条 runbook：
+
+```bash
+pnpm exec vitest run packages/standards/test/language-minimal-governance-packs.integration.test.ts packages/standards/test/standards-runtime-loader.integration.test.ts packages/config/test/config.unit.test.ts --maxWorkers=1 --maxConcurrency=1
+pnpm run build
+```
+
+说明：
+
+1. `project-066` 的 first-wave scope 已固定：官方目录包含 `workflowReviewGovernancePack`，以及 JavaScript / Python / Go / Rust 语言基线；本仓库自举用的 TypeScript 治理链继续保留为 repository-level reference example，而不是单独发布的官方 pack。
+2. 只要官方导出 pack 列表或推荐 layering 变化，就必须同步收口 `packages/standards/README.md`、`packages/config/README.md`、`docs/local-adoption-playbook*.md` 与 `docs/support-matrix*.md`。
+3. 这组定向 vitest slice 是正式契约证据：它证明仓库内的 official-pack examples 仍能通过 `StandardsRuntimeLoader` 干净渲染，同时文档声明的官方目录继续保持对 config schema 可接受。
+
 ## 5. Clean-room 与 Release 验证
 
 在 `<governor-repo>` 执行 clean-room 安装验证：

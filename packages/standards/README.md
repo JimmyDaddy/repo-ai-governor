@@ -49,6 +49,8 @@ standards:
     official:
       - module: "@repo-ai-governor/standards/examples"
         exportName: "workflowReviewGovernancePack"
+      - module: "@repo-ai-governor/standards/examples"
+        exportName: "javascriptMinimalGovernancePack"
     team:
       - module: "@acme/governor-standards-team"
         exportName: "teamDeliveryPack"
@@ -64,6 +66,8 @@ standards:
   defaultLocale: zh-CN
   fallbackLocale: en-US
 ```
+
+说明：这里的 `module` 代表当前环境已解析好的 standards examples entrypoint；`project-066` 当前自动化证据覆盖的是仓库内 examples module 与 config-schema 接受面，而 packaged consumer path 仍归 release/distribution 面验证。
 
 Runtime 消费示例：
 
@@ -178,33 +182,43 @@ const agentsProjection = projector.project({
 
 ## Built-in Governance Packs
 
-`packages/standards` 现在内置三套可直接复用的治理模板：
+`packages/standards` 现在内置五套可直接复用的治理模板：
 
 1. `workflowReviewGovernancePack`
    - 聚焦 `CR-xxx` 评审任务卡、`review_pending -> verified -> resolved` 生命周期，以及 review 文档与任务台账同步
-   - 适合作为 adopter 面向用户工具治理流程里的 review 基线
-2. `pythonMinimalGovernancePack`
+   - 适合作为 adopter 面向用户工具治理流程里的 workflow baseline，并建议与任一语言 pack 叠加使用
+2. `javascriptMinimalGovernancePack`
+   - 聚焦 `package.json` / lockfile、repo-declared lint or formatter script、repo-declared test script，以及 `build` / `typecheck` 的交付前回归收敛
+   - 适合作为 JavaScript / Node adopter 的 first-wave official baseline
+3. `pythonMinimalGovernancePack`
    - 聚焦 `pyproject.toml`、`ruff format/check`、`pytest`、`pyright`
    - 适合作为 Python adopter 的最低可用 pack 基线
-3. `goMinimalGovernancePack`
+4. `goMinimalGovernancePack`
    - 聚焦 `go.mod/go.sum`、`go fmt ./...`、`go test ./...`、`go vet ./...`
    - 适合作为 Go adopter 的最低可用 pack 基线
+5. `rustMinimalGovernancePack`
+   - 聚焦 `Cargo.toml/Cargo.lock`、`cargo fmt --all --check`、`cargo clippy --workspace --all-targets --all-features`、`cargo test --workspace`
+   - 适合作为 Rust adopter 的 first-wave official baseline
 
 最小示例：
 
 ```ts
 import {
+  javascriptMinimalGovernancePack,
   StandardsPackRegistry,
   goMinimalGovernancePack,
   pythonMinimalGovernancePack,
+  rustMinimalGovernancePack,
   workflowReviewGovernancePack,
 } from "@repo-ai-governor/standards";
 
 const registry = new StandardsPackRegistry({
   packs: [
     workflowReviewGovernancePack,
+    javascriptMinimalGovernancePack,
     pythonMinimalGovernancePack,
     goMinimalGovernancePack,
+    rustMinimalGovernancePack,
   ],
 });
 ```
@@ -212,5 +226,8 @@ const registry = new StandardsPackRegistry({
 说明：
 
 1. `workflowReviewGovernancePack` 用于把 `CR-xxx` 评审任务卡语义带到 adopter-facing 治理流程；建议与任一语言 pack 叠加使用。
-2. 这三套模板仍遵循 `official -> team -> repository` layering 口径，并可作为 `StandardsRuntimeLoader` 的官方 pack 输入。
-3. 它们是“最小可用”产品化模板，而不是完整语言或流程最佳实践全集；团队仍可在其上叠加自己的 team / repository overrides。
+2. `javascriptMinimalGovernancePack` 与 `rustMinimalGovernancePack` 是 `project-066` first-wave official catalog expansion；Python/Go 继续保留为官方 language baseline。
+3. 当前仓库自身的 TypeScript 治理链仍作为 repository-level reference example 存在，而不是单独的 published official pack。
+4. `project-066` 当前的自动化证明窗口覆盖 repository examples module 与 config-schema 接受面；packaged consumer path 的验证仍归 release/distribution 面。
+5. 这些模板仍遵循 `official -> team -> repository` layering 口径，并可作为 `StandardsRuntimeLoader` 的官方 pack 输入。
+6. 它们是官方 baseline，而不是完整语言或流程最佳实践全集；团队仍可在其上叠加自己的 team / repository overrides。

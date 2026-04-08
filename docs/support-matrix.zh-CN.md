@@ -2,7 +2,7 @@
 
 - 状态：active
 - 最后更新：2026-04-08
-- 适用范围：由 `project-026 / sprint-004`（`TK-301`）、`project-044 / sprint-003`（`TK-547`）、`project-046 / sprint-001`（`TK-551`、`TK-552`、`TK-554`）、`project-052 / sprint-001`（`TK-589`、`TK-590`、`TK-591`）、`project-052 / sprint-002`（`TK-592`、`TK-593`、`TK-594`）、`project-052 / sprint-003`（`TK-595`、`TK-596`）、`project-053 / sprint-001`（`TK-598`、`TK-599`、`TK-600`）、`project-053 / sprint-002`（`TK-601`、`TK-602`、`TK-603`）、`project-053 / sprint-003`（`TK-604`、`TK-605`、`TK-606`）、`project-054 / sprint-001`（`TK-607`、`TK-608`、`TK-609`）、`project-054 / sprint-002`（`TK-610`）、`project-055 / sprint-002`（`TK-616`）、`project-063 / sprint-001`（`TK-667`、`TK-668`、`TK-669`）、`project-065 / sprint-001`（`TK-673`、`TK-674`、`TK-675`）与 `project-067 / sprint-001`（`TK-679`、`TK-680`、`TK-681`）共同刷新后的正式支持声明
+- 适用范围：由 `project-026 / sprint-004`（`TK-301`）、`project-044 / sprint-003`（`TK-547`）、`project-046 / sprint-001`（`TK-551`、`TK-552`、`TK-554`）、`project-052 / sprint-001`（`TK-589`、`TK-590`、`TK-591`）、`project-052 / sprint-002`（`TK-592`、`TK-593`、`TK-594`）、`project-052 / sprint-003`（`TK-595`、`TK-596`）、`project-053 / sprint-001`（`TK-598`、`TK-599`、`TK-600`）、`project-053 / sprint-002`（`TK-601`、`TK-602`、`TK-603`）、`project-053 / sprint-003`（`TK-604`、`TK-605`、`TK-606`）、`project-054 / sprint-001`（`TK-607`、`TK-608`、`TK-609`）、`project-054 / sprint-002`（`TK-610`）、`project-055 / sprint-002`（`TK-616`）、`project-063 / sprint-001`（`TK-667`、`TK-668`、`TK-669`）、`project-065 / sprint-001`（`TK-673`、`TK-674`、`TK-675`）、`project-066 / sprint-001`（`TK-676`、`TK-677`、`TK-678`）与 `project-067 / sprint-001`（`TK-679`、`TK-680`、`TK-681`）共同刷新后的正式支持声明
 
 ## 1. 安装模式
 
@@ -37,14 +37,20 @@
 2. `Fallback-only real-path` 表示该 adapter 已具备真实 probe/invoke 真值，但正式支持边界仍限制在 fallback、restricted-network 或 capability-constrained 流程，不是 promoted primary lane。
 3. `Fixture-backed` 表示产品 surface 已正式支持，但公开证据仍以 routing/fixture truth 为主，尚未提升为正式真实调用路径。
 
-## 3. 已发布治理模板
+## 3. 治理模板目录
 
 | 模板 | 支持状态 | 说明 |
 |---|---|---|
-| TypeScript 仓库基线 | Built-in | 仓库基线已内置完整治理链。 |
-| Workflow review | Minimal baseline | 通过 `@repo-ai-governor/standards` 发布 `workflowReviewGovernancePack`，并内置 `CR-xxx` 评审任务卡生命周期。 |
-| Python | Minimal baseline | 通过 `@repo-ai-governor/standards` 发布 `pythonMinimalGovernancePack`。 |
-| Go | Minimal baseline | 通过 `@repo-ai-governor/standards` 发布 `goMinimalGovernancePack`。 |
+| TypeScript 仓库基线 | Built-in repository example | 当前仓库基线已内置完整治理链；它是 canonical 的 self-host TypeScript 参考例子，不是一套单独发布的官方 pack。 |
+| Workflow review | Official workflow baseline | 通过 `@repo-ai-governor/standards` 发布 `workflowReviewGovernancePack`，并内置 `CR-xxx` 评审任务卡生命周期。 |
+| JavaScript | Official language baseline | 通过 `@repo-ai-governor/standards` 发布 `javascriptMinimalGovernancePack`，适用于 `package.json` 脚本驱动的 JavaScript / Node 仓库。 |
+| Python | Official language baseline | 通过 `@repo-ai-governor/standards` 发布 `pythonMinimalGovernancePack`。 |
+| Go | Official language baseline | 通过 `@repo-ai-governor/standards` 发布 `goMinimalGovernancePack`。 |
+| Rust | Official language baseline | 通过 `@repo-ai-governor/standards` 发布 `rustMinimalGovernancePack`，适用于 Cargo workspace 仓库。 |
+
+说明：
+
+1. `project-066` 当前这组正式证据覆盖的是 repository examples module 与 config schema 接受面；packaged consumer path 的验证仍归属于 release/distribution surface，而不是这张快照直接证明的范围。
 
 ## 4. 运行时基线
 
@@ -64,10 +70,12 @@
 | VS Code 打包分发（本地 VSIX / packaged extension root） | 已构建源码仓 + 本地 packaging 脚本 | 作为源码仓本地打包路径正式支持 | `pnpm run release:pack-vscode-extension` 与 `pnpm run release:verify-vscode-extension-distribution` 现在可以从已构建的 governor 源码仓生成并复核一份本地 VSIX 与 packaged extension root。这一支持范围不会扩大到已发布 governor tarball、直接 npm/tgz 安装或 Marketplace 分发。 |
 | Desktop sidecar entry | 已构建源码仓 / 本地分发演练 | 仅 MVP foundation 正式支持 | `apps/desktop` 继续作为 foundation surface，提供 service-owned session/execution/HITL/artifact-pane seam；`project-065` 明确把它固定为 built-source foundation-only 支持边界，不把它提升为首选 secondary surface，也不会新增独立桌面安装器或 packaged desktop product claim。`check-desktop-entry-smoke` 与 `release:verify-local` 继续作为正式证明路径，更丰富的 desktop 面板仍按后续阶段演进。 |
 
-## 6. 验证快照（TK-301 + TK-547 + TK-551/TK-552/TK-554 + TK-589/TK-590/TK-591 + TK-592/TK-593/TK-594 + TK-598/TK-599/TK-600 + TK-601/TK-602/TK-603 + TK-604/TK-605/TK-606 + TK-607/TK-608/TK-609 + TK-610 + TK-614/TK-615 + TK-616 + TK-667/TK-668/TK-669 + TK-673/TK-674/TK-675 + TK-679/TK-680/TK-681）
+## 6. 验证快照（TK-301 + TK-547 + TK-551/TK-552/TK-554 + TK-589/TK-590/TK-591 + TK-592/TK-593/TK-594 + TK-598/TK-599/TK-600 + TK-601/TK-602/TK-603 + TK-604/TK-605/TK-606 + TK-607/TK-608/TK-609 + TK-610 + TK-614/TK-615 + TK-616 + TK-667/TK-668/TK-669 + TK-673/TK-674/TK-675 + TK-676/TK-677/TK-678 + TK-679/TK-680/TK-681）
 
 | 时间（UTC） | 命令 | 结果 | 证据摘要 |
 |---|---|---|---|
+| 2026-04-08T02:54:00Z | `pnpm exec vitest run packages/standards/test/language-minimal-governance-packs.integration.test.ts packages/standards/test/standards-runtime-loader.integration.test.ts packages/config/test/config.unit.test.ts --maxWorkers=1 --maxConcurrency=1` | Pass | `project-066` 的 official-pack catalog 定向切片在 proof-boundary truthfulness 修复后继续通过，`3` 个文件 / `31` 个测试全部为绿色；JavaScript / Rust first-wave catalog 继续可通过 repository examples module 渲染，config schema 也继续接受文档声明的 catalog entries。 |
+| 2026-04-08T02:54:15Z | `pnpm run build` | Pass | 在同一 `project-066` closeout 窗口内，build 在 runtime-loader 证明口径收窄与 catalog evidence/support-truth 文字修复后继续保持绿色。 |
 | 2026-04-08T00:12:43Z | `pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1` | Pass | desktop foundation-only closeout 刷新后的 integration-scoped 验证继续保持绿色（`24` 个文件 / `57` 个测试），其中包含 `test/desktop-entry-smoke.integration.test.ts`。 |
 | 2026-04-08T00:12:24Z | `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` | Pass | desktop support-truth hardening 窗口后的 package-scoped 验证继续保持绿色（`136` 个文件 / `831` 个测试），其中包含这次变更触及的 desktop runtime 与 CLI support-truth 面。 |
 | 2026-04-08T00:10:59Z | `node ./scripts/release/verify-local-distribution.js --output .tmp/project-065-sprint-001-desktop-foundation-report.json` | Pass | 新的 desktop foundation 报告重新验证了 packaged CLI 产物仍然携带刷新后的 README / playbook / support-matrix / integration docs，记录了 `desktopFoundationContract`，并继续把 `apps/desktop/` 排除在 tarball 的 standalone package-install root 之外。 |

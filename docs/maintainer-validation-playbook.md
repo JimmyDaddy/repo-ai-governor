@@ -161,6 +161,21 @@ Notes:
 2. `pnpm run release:verify-local` is the maintainer truthfulness recheck for this boundary; it confirms the packaged CLI artifact still ships the desktop integration docs and still omits the `apps/desktop` workspace as a standalone package-install root.
 3. The single public support declaration remains `docs/support-matrix.md`; keep `apps/desktop/README.md`, `integrations/desktop/README.md`, and `docs/local-adoption-playbook.md` aligned whenever the desktop narrative changes.
 
+### 4.4 Official Governance Pack Catalog Validation
+
+Use this runbook when refreshing the published official standards-pack catalog or the related runtime/docs examples:
+
+```bash
+pnpm exec vitest run packages/standards/test/language-minimal-governance-packs.integration.test.ts packages/standards/test/standards-runtime-loader.integration.test.ts packages/config/test/config.unit.test.ts --maxWorkers=1 --maxConcurrency=1
+pnpm run build
+```
+
+Notes:
+
+1. `project-066` first-wave scope fixes the official catalog to `workflowReviewGovernancePack` plus the JavaScript / Python / Go / Rust language baselines; the self-host TypeScript governance chain remains a repository-level reference example instead of a separately published official pack.
+2. Keep `packages/standards/README.md`, `packages/config/README.md`, `docs/local-adoption-playbook*.md`, and `docs/support-matrix*.md` aligned whenever the exported official pack list or recommended layering changes.
+3. The targeted vitest slice is the contract proof that the in-repo official-pack examples still render cleanly through `StandardsRuntimeLoader` and that the documented official catalog remains acceptable to the config schema.
+
 ## 5. Clean-room And Release Verification
 
 Run clean-room install verification from `<governor-repo>`:

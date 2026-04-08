@@ -1,6 +1,6 @@
 # TK-677 implement first-wave official pack expansion and runtime/docs examples
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-08
 - Owner: `AI-Agent`
 - Priority: `P1`
@@ -46,14 +46,22 @@
 
 ## 8. Delivery Verification
 
-1. expanded pack acceptance checks
+1. `pnpm exec vitest run packages/standards/test/language-minimal-governance-packs.integration.test.ts packages/standards/test/standards-runtime-loader.integration.test.ts packages/config/test/config.unit.test.ts --maxWorkers=1 --maxConcurrency=1`
 2. `pnpm run build`
+3. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
+4. `pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1`
 
 ## 9. 执行记录
 
 1. 2026-04-08：任务创建，状态初始化为 `planned`。
+2. 2026-04-08：已完成 first-wave official pack expansion：新增 `javascriptMinimalGovernancePack` 与 `rustMinimalGovernancePack`，并补齐 top-level export、runtime loader example、config example 与 render/projection tests。
+3. 2026-04-08：已补齐验证窗口：`pnpm exec vitest run packages/standards/test/language-minimal-governance-packs.integration.test.ts packages/standards/test/standards-runtime-loader.integration.test.ts packages/config/test/config.unit.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1`。
+4. 2026-04-08：first-wave official pack implementation 已完成；当前 sprint 的 next boundary 是 fresh reviewer CR loop，状态切换为 `completed`。
 
 ## 10. 产出
 
-1. 待执行：first-wave pack expansion
-2. 待执行：runtime/docs examples
+1. `/Users/jimmydaddy/study/ai-governor/packages/standards/src/examples/javascript-minimal-governance-pack.ts`
+2. `/Users/jimmydaddy/study/ai-governor/packages/standards/src/examples/rust-minimal-governance-pack.ts`
+3. `/Users/jimmydaddy/study/ai-governor/packages/standards/test/language-minimal-governance-packs.integration.test.ts`
+4. `/Users/jimmydaddy/study/ai-governor/packages/standards/test/standards-runtime-loader.integration.test.ts`
+5. `/Users/jimmydaddy/study/ai-governor/packages/config/README.md`

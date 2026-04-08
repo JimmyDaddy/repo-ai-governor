@@ -4,7 +4,9 @@ import {
   StandardsPackRegistry,
   StandardsRenderTarget,
   goMinimalGovernancePack,
+  javascriptMinimalGovernancePack,
   pythonMinimalGovernancePack,
+  rustMinimalGovernancePack,
   workflowReviewGovernancePack,
 } from '../src/index.js';
 import type { AgentsProjectorProjectResult, StandardsPack } from '../src/index.js';
@@ -69,6 +71,19 @@ describe('built-in governance packs', () => {
     expect(projection.projectedContent).toContain('review_pending -> verified -> resolved');
   });
 
+  it('provides one renderable JavaScript governance baseline pack', () => {
+    expect(javascriptMinimalGovernancePack.rules.map((rule) => rule.semanticKey)).toEqual([
+      'rule.javascript.project.package-manifest',
+      'rule.javascript.lint.project-script',
+      'rule.javascript.test.project-script',
+      'rule.javascript.runtime.build-or-typecheck',
+    ]);
+
+    const projection = expectPackToRender(javascriptMinimalGovernancePack);
+    expect(projection.projectedContent).toContain('package.json');
+    expect(projection.projectedContent).toContain('lint or formatter');
+  });
+
   it('provides one renderable Python governance baseline pack', () => {
     expect(pythonMinimalGovernancePack.rules.map((rule) => rule.semanticKey)).toEqual([
       'rule.python.project.pyproject',
@@ -87,5 +102,18 @@ describe('built-in governance packs', () => {
       'rule.go.vet.go-vet',
     ]);
     expectPackToRender(goMinimalGovernancePack);
+  });
+
+  it('provides one renderable Rust governance baseline pack', () => {
+    expect(rustMinimalGovernancePack.rules.map((rule) => rule.semanticKey)).toEqual([
+      'rule.rust.project.cargo-manifest',
+      'rule.rust.format.cargo-fmt',
+      'rule.rust.lint.cargo-clippy',
+      'rule.rust.test.cargo-test',
+    ]);
+
+    const projection = expectPackToRender(rustMinimalGovernancePack);
+    expect(projection.projectedContent).toContain('cargo fmt --all --check');
+    expect(projection.projectedContent).toContain('cargo test --workspace');
   });
 });
