@@ -3,12 +3,12 @@
 ## Primary Stream
 
 - Status: idle
-- Project: `project-056-standards-runtime-loader-and-pack-productization`
-- Sprint: `sprint-001-standards-runtime-loader-product-path`
-- Docs root: `.repo-ai-governor/context/dev/project-056-standards-runtime-loader-and-pack-productization`
-- Task records: `.repo-ai-governor/context/dev/project-056-standards-runtime-loader-and-pack-productization/sprint-001-standards-runtime-loader-product-path/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-056-standards-runtime-loader-and-pack-productization/sprint-001-standards-runtime-loader-product-path/review/`
-- Note: `2026-04-07` `project-056` project-final `CR-002` clean `resolved` 且 `TK-651 / DA-651` 已完成 final closeout write-back；当前 worktree 仅保留最近完成的 primary stream trace，暂无新的 active primary stream。
+- Project: `project-060-adoption-pack-promotion-and-decomposition`
+- Sprint: `sprint-001-promotion-and-followup-decomposition`
+- Docs root: `.repo-ai-governor/context/dev/project-060-adoption-pack-promotion-and-decomposition`
+- Task records: `.repo-ai-governor/context/dev/project-060-adoption-pack-promotion-and-decomposition/sprint-001-promotion-and-followup-decomposition/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-060-adoption-pack-promotion-and-decomposition/sprint-001-promotion-and-followup-decomposition/review/`
+- Note: `2026-04-09` `project-060` docs-only promotion/decomposition stream 已完成 closeout，`technical-solution.host-skill-distribution-and-discovery-followup` 已进入 `active` lifecycle，并把 `project-061 / sprint-001` 登记为 planned follow-up stream；当前 worktree 仅保留最近完成的 primary stream trace，暂无新的 active primary stream。
 
 ## Active Streams
 
@@ -16,7 +16,7 @@
 
 ## Planned Follow-Up Streams
 
-- none currently registered.
+- `stream-project-061-sprint-001`: project=`project-061-adoption-pack-installer-and-self-host-bootstrap-rollout`, sprint=`sprint-001-manifest-resolver-and-installer-contract`, docs=`.repo-ai-governor/context/dev/project-061-adoption-pack-installer-and-self-host-bootstrap-rollout`, plan=`.repo-ai-governor/context/dev/project-061-adoption-pack-installer-and-self-host-bootstrap-rollout/sprint-001-manifest-resolver-and-installer-contract/plan.md`, tasks=`.repo-ai-governor/context/dev/project-061-adoption-pack-installer-and-self-host-bootstrap-rollout/sprint-001-manifest-resolver-and-installer-contract/tasks/`, review=`.repo-ai-governor/context/dev/project-061-adoption-pack-installer-and-self-host-bootstrap-rollout/sprint-001-manifest-resolver-and-installer-contract/review/`, status=`planned`
 
 ## Completed Stream History
 

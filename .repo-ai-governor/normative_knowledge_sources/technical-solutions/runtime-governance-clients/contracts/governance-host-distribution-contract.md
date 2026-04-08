@@ -1,13 +1,13 @@
 # Governance Host Distribution Contract
 
 - Status: active
-- Date: 2026-04-06
+- Date: 2026-04-09
 - Contract ID: `contract.runtime.governance-host-distribution.v1`
 - Producer Module: `runtime.governance-clients`
 
 ## 1. 目标
 
-定义 `Codex`、`Claude Code` 与 `GitHub Copilot` 的 host-native distribution target、`staged export -> apply/sync -> pack -> verify` 生命周期，以及 Copilot target-aware consumption 约束，确保 exported assets 只是 canonical workflow source 的薄投影。
+定义 `Codex`、`Claude Code` 与 `GitHub Copilot` 的 host-native distribution target、`staged export -> apply/sync -> pack -> verify` 生命周期，以及 Copilot target-aware consumption 约束，确保 exported assets 只是 canonical workflow source 的薄投影；installer-layer 的 adopter installation / target-repo bootstrap 语义则由独立的 `contract.runtime.adoption-pack-install.v1` 承担。
 
 ## 2. Minimum Fields
 
@@ -69,6 +69,7 @@
    - `github_copilot.github_com_agent` 在 `v1` 中保留 schema，但不属于 MVP 必达导出目标
 8. verify 必须显式阻断已停用的 `GitHub App Copilot Extensions` 路径，不得把其作为合法 target。
 9. host-native enhancement 缺失时，所有 target 都必须能回退到 `cli_wrapper` baseline，而不是静默绕过治理主链。
+10. `host export` / `host verify` / `host pack` formalize 的是 host projection substrate，不直接承载 `adoption pack` receipt、managed ownership、repo-local bootstrap template 或 `self-host-complete` template bootstrap 的 installer truth。
 
 ## 5. Consumers
 
@@ -85,3 +86,4 @@
 1. `v1` formalize 的是 host target matrix、export/apply/pack/verify 语义与 Copilot target dimension，不要求首轮实现已覆盖所有 advanced host enhancements。
 2. `v1` 的 `GitHub Copilot` MVP 只要求 `repo_local + cli_plugin`，并保留 `github_com_agent` 作为后续 schema-safe 扩展位。
 3. `v1` 允许 workflow 先通过 `cli_wrapper` bridge 落地，再在后续 sprint 中升级到 `mcp` bridge。
+4. 自 `2026-04-09` 起，higher-level adopter installation story 由 `contract.runtime.adoption-pack-install.v1` 扩展；本 contract 保持 host target matrix 与 projection lifecycle 的 lower-level owner，不回退去接管 installer metadata。

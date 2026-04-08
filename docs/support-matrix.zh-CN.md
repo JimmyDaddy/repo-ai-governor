@@ -1,8 +1,8 @@
 # Repo AI Governor 正式支持矩阵
 
 - 状态：active
-- 最后更新：2026-04-07
-- 适用范围：由 `project-026 / sprint-004`（`TK-301`）、`project-044 / sprint-003`（`TK-547`）、`project-046 / sprint-001`（`TK-551`、`TK-552`、`TK-554`）、`project-052 / sprint-001`（`TK-589`、`TK-590`、`TK-591`）、`project-052 / sprint-002`（`TK-592`、`TK-593`、`TK-594`）、`project-052 / sprint-003`（`TK-595`、`TK-596`）、`project-053 / sprint-001`（`TK-598`、`TK-599`、`TK-600`）、`project-053 / sprint-002`（`TK-601`、`TK-602`、`TK-603`）、`project-053 / sprint-003`（`TK-604`、`TK-605`、`TK-606`）、`project-054 / sprint-001`（`TK-607`、`TK-608`、`TK-609`）、`project-054 / sprint-002`（`TK-610`）与 `project-055 / sprint-002`（`TK-616`）共同刷新后的正式支持声明
+- 最后更新：2026-04-08
+- 适用范围：由 `project-026 / sprint-004`（`TK-301`）、`project-044 / sprint-003`（`TK-547`）、`project-046 / sprint-001`（`TK-551`、`TK-552`、`TK-554`）、`project-052 / sprint-001`（`TK-589`、`TK-590`、`TK-591`）、`project-052 / sprint-002`（`TK-592`、`TK-593`、`TK-594`）、`project-052 / sprint-003`（`TK-595`、`TK-596`）、`project-053 / sprint-001`（`TK-598`、`TK-599`、`TK-600`）、`project-053 / sprint-002`（`TK-601`、`TK-602`、`TK-603`）、`project-053 / sprint-003`（`TK-604`、`TK-605`、`TK-606`）、`project-054 / sprint-001`（`TK-607`、`TK-608`、`TK-609`）、`project-054 / sprint-002`（`TK-610`）与 `project-055 / sprint-002`（`TK-616`）共同刷新，并追加 2026-04-08 的公开命令面真值同步后的正式支持声明
 
 ## 1. 安装模式
 
@@ -53,6 +53,18 @@
 | pnpm | package manager 基线；本次快照 `10.30.3` |
 | OS 面 | macOS / Linux / WSL2 |
 
+### 4.1 公开命令 Surface
+
+| Surface | 支持状态 | 说明 |
+|---|---|---|
+| 初始化与审计（`init`、`doctor`、`check`） | Supported | 面向外部 adopter 的基线入口，用于环境初始化与机器可读治理事实输出。 |
+| 多工具接入（`connect`、`verify`） | Supported | `connect` 负责生成、diff、apply candidate 配置；`verify --adapters` 是真实执行前的 readiness gate。 |
+| 受治理执行（`plan`、`run`、`review`、`review-verify`） | Supported | `plan` 支持 `preview|commit`；review 链会持久化审计产物，并在 workspace 暴露 sprint task surface 时同步 canonical `CR-xxx` 生命周期。 |
+| Session shell（`repo-ai-governor`、`resume`） | Supported | 在交互式 TTY + `pretty` 模式下进入 session-first shell；`resume` 可恢复最近一次或指定的持久化会话，而非交互面仍保持 plain/json 命令语义。 |
+| 流程与 schema 生命周期（`workflow`、`upgrade`） | Supported | `workflow` 支持 `preview/create/edit`；`upgrade` 支持 `preview/apply/rollback`，并附带显式 hand-off artifact 与确认闸口。 |
+| Workspace 工具与壳层偏好（`workspace`、`set-ui-theme`） | Supported | 迁移/回滚仍是 adopter 主契约；`clear-config`、`switch-branch` 与主题持久化也已经属于正式公开命令面。 |
+| 宿主分发与 service host（`host export/verify/pack`、`@cjhdev/repo-ai-governor/service-host`） | 支持 staged asset generation | 典型路径是先用 `host export --mode project-local` 生成宿主原生 repo 资产，需要时再用 `--apply-to-repo` 落到目标仓库，最后通过 `host verify` 校验 manifest/receipt；如果目标支持可安装 bundle，则使用 `host pack --mode plugin-bundle`。当前公开 host family 覆盖 `codex`、`claude-code` 与 `github-copilot`；host 生成依赖仓库本地 `.codex/skills`，而根包的 `service-host` 导出是 clean-room/desktop bootstrap 唯一正式支持的导入路径。 |
+
 ## 5. IDE / 执行面
 
 | Surface | 打包/运行路径 | 支持状态 | 说明 |
@@ -66,6 +78,7 @@
 
 | 时间（UTC） | 命令 | 结果 | 证据摘要 |
 |---|---|---|---|
+| 2026-04-08T14:54:37Z | `pnpm exec vitest run apps/cli/test/cli-skeleton.integration.test.ts apps/cli/test/cli-output-contract.integration.test.ts apps/cli/test/commands/workflow-command.test.ts apps/cli/test/commands/workspace-command.test.ts apps/cli/test/commands/host-command.test.ts apps/cli/test/host-command.integration.test.ts --maxWorkers=1 --maxConcurrency=1` | Pass | 这组公开命令面验证切片覆盖了 public help/catalog、session-shell entry/resume 契约、workflow preview/create/edit、workspace clear-config 与主题持久化，以及 host export/verify/pack 行为，全部保持绿色（`6` 个文件 / `89` 个测试）。 |
 | 2026-04-07T04:23:35Z | `dist-binary pilot-2 rehearsal (init -> doctor -> check -> upgrade preview/apply/rollback -> workspace dry-run/execute/rollback)` | Pass | `.tmp/project-055-sprint-001-pilot-2-rehearsal-summary.json` 记录了恢复后 `react-native-image-marker-1.1.x` acceptance rerun，完整窗口耗时 `5326ms`；其中 onboarding 子链（`init -> doctor -> check`）耗时 `1711ms`，`workspace execute` 成功切到 `repo_local`，rollback 后回到 `tool_managed`，`gitStatusPreserved=true`，scratch cleanup 结果为 `removed`。 |
 | 2026-04-07T04:09:36Z | `link-install pilot-1 rehearsal (pnpm install -> init -> doctor -> check -> verify --adapters -> run --dry-run --trace)` | Pass | `.tmp/project-055-sprint-001-pilot-1-rehearsal-summary.json` 记录了 `playground` 的完整 adopter-path rehearsal，总耗时 `50473ms`；`required_role_failures=0`，唯一的 adapter degrade/fallback 仍为非阻断项，且 traced dry-run 成功保留 replay/report/diagnostics 证据。 |
 | 2026-04-07T03:30:14Z | `pnpm exec vitest run apps/vscode-extension/test/vscode-extension-service-runtime.test.ts apps/vscode-extension/test/vscode-extension-contract.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-selection-store.test.ts apps/vscode-extension/test/vscode-extension-packaging-boundary.test.ts --maxWorkers=1 --maxConcurrency=1` | Pass | VS Code extension 的 service-runtime degrade-path guard、contract、controller/provider 流程、presentation mapping、selection-store 生命周期与 packaging-boundary guard 在修复 reviewer finding 后的同一轮定向验证切片中全部通过（`6` 个文件 / `12` 个测试）。 |
@@ -134,4 +147,4 @@
 1. adapter 的 degrade / warning 仍属于环境前置条件（如 `github-copilot` quota/probe、`claude-code` CLI health-check / auth 前置条件、`local-model` endpoint/model capability 限制），而不是治理链路失败。
 2. `project-046` 已把 desktop artifact pane 从 deferred gate 推进为 service-owned typed query contract；renderer 仍不允许直接旁路 workspace 文件系统。
 3. 官方 `GitLab CI` 与 `Jenkins` 模板现已发布到 `integrations/ci/`，并复用与 GitHub Actions 相同的 install、quality-gate 与 release-governance 命令契约。
-4. 本文档定义 `TK-301`、desktop baseline refresh `TK-547`、`project-046` P1 收口工作、`project-052 / sprint-001` install-mode truth refresh、`project-052 / sprint-002` upgrade/workspace contract 与 acceptance closeout、`project-052 / sprint-003` 的 GA support truthfulness consolidation、`project-053 / sprint-001` 的 `claude-code` real-path baseline truth refresh、`project-053 / sprint-002` 的 `codex` real-path plus routed dry-run acceptance refresh、`project-053 / sprint-003` 的 `github-copilot` real-path 与 `local-model` fallback-only positioning closeout、`project-054 / sprint-001` 的 VS Code secondary-surface packaging/support freeze、`project-054 / sprint-002 / TK-610` 冻结出的 VS Code MVP gap list 与 desktop foundation non-goal guardrails，以及 `project-055 / sprint-002 / TK-616` 的真实目标仓库试点 dossier 与 GA evidence refresh 这些正式支持边界；更广义的 GA Readiness 收口接下来继续通过 `project-057` 与 `project-056` 推进。
+4. 本文档定义 `TK-301`、desktop baseline refresh `TK-547`、`project-046` P1 收口工作、`project-052 / sprint-001` install-mode truth refresh、`project-052 / sprint-002` upgrade/workspace contract 与 acceptance closeout、`project-052 / sprint-003` 的 GA support truthfulness consolidation、`project-053 / sprint-001` 的 `claude-code` real-path baseline truth refresh、`project-053 / sprint-002` 的 `codex` real-path plus routed dry-run acceptance refresh、`project-053 / sprint-003` 的 `github-copilot` real-path 与 `local-model` fallback-only positioning closeout、`project-054 / sprint-001` 的 VS Code secondary-surface packaging/support freeze、`project-054 / sprint-002 / TK-610` 冻结出的 VS Code MVP gap list 与 desktop foundation non-goal guardrails、`project-055 / sprint-002 / TK-616` 的真实目标仓库试点 dossier 与 GA evidence refresh，以及 2026-04-08 对 session/workflow/workspace/host/service-host 入口的公开命令面真值同步这些正式支持边界；更广义的 GA Readiness 收口接下来继续通过 `project-057` 与 `project-056` 推进。

@@ -198,7 +198,71 @@ Common artifacts:
 6. Upgrade apply receipt: `<workspace_root>/context/upgrade/<apply-id>.apply-receipt.json`
 7. Upgrade rollback receipt: `<workspace_root>/context/upgrade/<rollback-id>.rollback-receipt.json`
 
-### 8.2 HITL Notification Providers
+### 8.2 Workspace Utilities And Shell Themes
+
+```bash
+pnpm exec repo-ai-governor workspace clear-config --output pretty
+pnpm exec repo-ai-governor workspace switch-branch main --output pretty
+pnpm exec repo-ai-governor set-ui-theme calm --output pretty
+pnpm exec repo-ai-governor workspace set-ui-theme --output pretty
+```
+
+Use these when you want to:
+
+1. Remove the current selector/config file without deleting diagnostics, workflow, or review artifacts.
+2. Switch to an existing local Git branch through the governed preview-confirm path.
+3. Persist the default React shell theme globally or per workspace.
+4. Open the interactive theme selector by running `set-ui-theme` or `workspace set-ui-theme` without `[theme]` in an interactive TTY + `pretty` shell.
+
+Notes:
+
+1. `workspace switch-branch` only switches to an existing local branch; it does not fetch or create one for you.
+2. Theme precedence is one-shot `--ui-theme` override -> workspace config -> global CLI preference.
+3. Top-level `set-ui-theme` defaults to global scope; `workspace set-ui-theme` defaults to workspace scope.
+
+### 8.3 Host Distribution And Public Service Host
+
+```bash
+pnpm exec repo-ai-governor host export --host codex --mode project-local --output-dir .repo-ai-governor/generated/hosts/codex
+pnpm exec repo-ai-governor host verify --output-dir .repo-ai-governor/generated/hosts/codex
+pnpm exec repo-ai-governor host pack --host claude-code --mode plugin-bundle --bundle-dir .repo-ai-governor/generated/bundles/claude
+```
+
+Use these when you want to:
+
+1. Render staged host assets for `codex`, `claude-code`, or `github-copilot`.
+2. Verify staged exports or applied repo-local assets before handing them off to other users or repositories.
+3. Materialize an installable bundle when the chosen host target supports `plugin-bundle`.
+4. Keep one manifest/receipt trail for `export`, `verify`, and `pack` closeout.
+
+Public package boundary:
+
+1. For clean-room or desktop-sidecar bootstrap, the only supported root-package service-host import path is `@cjhdev/repo-ai-governor/service-host`.
+2. Do not deep-import internal `dist/**` host files from the published tarball.
+
+Operational notes:
+
+1. `host export` and `host pack` rely on repository-local skills under `.codex/skills/` when generating host assets from this repo's packaged skill layer.
+2. Target capabilities vary by host and mode (`project-local` vs `plugin-bundle`); keep the emitted manifest and verification summary as the hand-off artifacts.
+3. GitHub Copilot also supports `--copilot-target repo-local|cli-plugin|github-com-agent` when you need target-specific export or bundle selection.
+
+Typical usage patterns:
+
+1. Repo-local onboarding for one target repository:
+   Run `host export --mode project-local`, optionally add `--apply-to-repo <target-repo>`, then run `host verify`.
+   Typical outputs include host-native instruction/skill files plus a staged `host-export.manifest.json` and `host-verification.summary.json`.
+2. Codex project-local example:
+   `host export --host codex --mode project-local` stages `AGENTS.md`, `.agents/skills/**`, `.agents/subagents/**`, and `.mcp.json` for a repository-local Codex setup.
+3. Claude Code project-local example:
+   `host export --host claude-code --mode project-local` stages `.claude/settings.json`, `.claude/hooks/hooks.json`, `.claude/skills/**`, `.claude/agents/**`, and `.mcp.json`.
+4. GitHub Copilot repo-local example:
+   `host export --host github-copilot --mode project-local --copilot-target repo-local` stages `.github/copilot-instructions.md`, `.github/instructions/**`, `.github/skills/**`, `.github/agents/**`, and `.github/mcp.json`.
+5. Plugin distribution example:
+   `host pack --mode plugin-bundle` produces a bundle plus `host-pack.report.json`; for example Codex emits `.codex-plugin/plugin.json`, while Claude Code emits `.claude-plugin/plugin.json`.
+6. Verification step:
+   `host verify --manifest <manifest-path>` or `host verify --output-dir <staged-export-dir>` checks the staged export plus any apply/pack receipts for drift before hand-off.
+
+### 8.4 HITL Notification Providers
 
 You can enable webhook-style HITL notifications with environment variables:
 
@@ -208,7 +272,7 @@ export REPO_AI_GOVERNOR_NOTIFICATION_CHAT_IM_URL="https://example.com/chat-im"
 pnpm exec repo-ai-governor run --output json
 ```
 
-### 8.3 Built-in Governance Packs
+### 8.5 Built-in Governance Packs
 
 The published package exposes three built-in governance packs through `@repo-ai-governor/standards`:
 
@@ -232,10 +296,11 @@ Then layer the language pack you need, plus any team or repository overrides, on
 8. After `workspace execute` or `workspace rollback`, rerun `doctor` to confirm the active `workspaceRoot` instead of inferring success from directory layout alone.
 9. When rehearsing workspace migration, use a real target repository or an isolated external temp directory. Running the command from the governor source repository can reattach to that repo's Git root and create misleading workspace artifacts.
 10. Keep the generated `*.rollback.json` or `*.rollback-receipt.json` artifacts in your acceptance window; they are the audit trail that proves the migration or upgrade closeout completed cleanly.
+11. If `host export` or `host pack` reports missing repository-local skills, make sure `.codex/skills/` is present; plain CLI adoption can ignore that requirement until you use host distribution surfaces.
 
 ## 10. Optional Self-host Assets
 
-1. Repository-local Codex helpers live under `.codex/skills/`; external adopters can ignore them unless they want the same self-host skill prompts and delivery workflows inside the target repository.
+1. Repository-local helpers live under `.codex/skills/`; external adopters can ignore them for plain CLI bootstrap, but they become relevant when you want the same self-host skill prompts/workflows or need the host distribution surfaces.
 2. These assets are operational helpers for local AI tooling, not a requirement for the CLI install surfaces documented above.
 3. `apps/vscode-extension` is an optional secondary surface for source-checkout evaluation, not part of the published package-install baseline.
 
