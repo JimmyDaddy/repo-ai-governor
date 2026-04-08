@@ -12,8 +12,11 @@
   - 2026-04-08：已将“切换到 main / checkout main”补齐为 `session.main` 的新 governed capability，并打通 `/workspace switch-branch <branch>` 的 preview-confirm handoff、CLI discoverability、`workspace` 本地分支切换执行与 receipt artifact 写入路径。
   - 2026-04-08：已补齐 capability/dispatcher/shell/slash-registry/workspace-command/runtime 集成回归测试，并通过 `pnpm exec vitest run packages/core-orchestration-service/test/local-orchestration-service-session-main-capability-catalog.unit.test.ts packages/core-orchestration-service/test/local-orchestration-service-session-main-capability-explainer.unit.test.ts packages/core-orchestration-service/test/local-orchestration-service-session-main-skill-registry.unit.test.ts packages/core-orchestration-service/test/local-orchestration-service-session-main-agent-dispatcher.unit.test.ts packages/core-orchestration-service/test/local-orchestration-service-shell.unit.test.ts apps/cli/test/runtime/session-slash-command-registry.test.ts apps/cli/test/commands/workspace-command.test.ts apps/cli/test/cli-governance-runtime.integration.test.ts --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run build`；当前任务状态切换为 `completed`，下一边界进入 fresh reviewer CR loop。
   - 2026-04-08：`CR-002` 至 `CR-005` 已完成 fresh reviewer 循环并全部 `resolved`；第 5 轮 reviewer 未发现新的 actionable findings，当前任务边界 clean，下一边界切换为 `TK-716` sprint closeout / project-final review activation handoff。
-- [ ] TK-716 sprint-001 closeout and project-final review activation handoff
+- [x] TK-716 sprint-001 closeout and project-final review activation handoff
   - 2026-04-08：任务创建，状态初始化为 `planned`，待 sprint 内实现任务与 CR rounds clean 后推进。
+  - 2026-04-08：`TK-714`、`TK-715` 与对应 `CR` 已全部 clean，当前任务切换为 `in_progress`，开始执行 sprint closeout write-back 与 project-final review activation handoff 的真值校对和产物准备。
+  - 2026-04-08：已写入 `DA-716`、project/sprint closeout handoff 与 task-ledger 同步；当前 sprint surface 保留给后续 `project-final` delegated review loop。
+  - 2026-04-08：本窗口仅修改 docs/ledger closeout 产物并通过治理同步检查；未新增可执行代码变更，因此 build not required，当前任务切换为 `completed`。
 - [x] CR-001 TK-714 delegated review loop round 1
   - 2026-04-08：任务创建，状态初始化为 `review_pending`。
   - 2026-04-08：fresh reviewer round 识别出 direct-answer fallback 复用了跨 attempt 的 relay state，可能让失败 surface 的 partial token 覆盖恢复后的最终答案，进入主 agent 复核与修复窗口。
@@ -37,3 +40,11 @@
 - [x] CR-005 TK-715 delegated review loop round 5
   - 2026-04-08：任务创建，状态初始化为 `review_pending`。
   - 2026-04-08：fresh reviewer 第 5 轮复核未发现新的 actionable findings；仅保留一条“missing-local-branch recovery path 尚未被 targeted vitest 直接单测命中”的非阻断备注，当前 round 直接推进到 `resolved`。
+- [x] CR-006 project-073-direct-answer-stability-and-governed-branch-switch-remediation final delegated review loop round 6
+  - 2026-04-08：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-08：fresh reviewer sub-agent `Kant` 返回 “No actionable findings”，并确认当前 project-final scope 可以直接进入 `resolved`。
+  - 2026-04-08：主 agent 完成当前 project-final boundary 的复核并写入 `resolved_code_review_working-tree-20260408-1953.md`；targeted vitest、`pnpm run build`、治理检查与 `pnpm run check` 全部通过，当前任务切换为 `resolved`。
+- [x] TK-717 finalize project-073 closeout and restore idle context
+  - 2026-04-08：任务创建并在同一窗口直接推进到 `completed`，用于承接 `CR-006` clean `resolved` 之后的最终 project closeout write-back。
+  - 2026-04-08：已写入 `DA-717` 与 completion audit summary，并将 `project-073 / sprint-001` plan、`current-context.md` 与 `completed-streams-history.md` 同步到最终 completed / idle 真值。
+  - 2026-04-08：已完成 `TK-717` canonical task-ledger sync，并通过治理检查与 `pnpm run check`；由于本窗口未修改可执行代码，build not required。

@@ -1,6 +1,6 @@
 # project-073-direct-answer-stability-and-governed-branch-switch-remediation 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-08
 - Stage Mapping: session.main remediation
 - Phase Mapping: direct-answer stability hardening + governed workspace action follow-up
@@ -19,9 +19,9 @@
 
 ## 2.1 sprint-001-direct-answer-stability-and-branch-switch
 
-- Status: active
+- Status: completed
 - Sprint Goal: 先稳定 direct-answer，再补齐受治理分支切换能力，并在同一 sprint 内完成 closeout 与 project-final review 激活。
-- Task Package: `TK-714`、`TK-715`、`TK-716`。
+- Task Package: `TK-714`、`TK-715`、`TK-716`、`TK-717`。
 
 ## 3. 任务拆解矩阵（WBS）
 
@@ -29,7 +29,8 @@
 | --- | --- | --- | --- | --- | --- |
 | TK-714 | sprint-001 | stabilize session.main direct-answer preflight and liveness degradation handling | runtime/stability | current session.main baseline | completed |
 | TK-715 | sprint-001 | add governed branch-switch execution path for session.main | governed command/capability | TK-714 | completed |
-| TK-716 | sprint-001 | sprint-001 closeout and project-final review activation handoff | closeout/handoff | TK-714、TK-715、CR rounds | planned |
+| TK-716 | sprint-001 | sprint-001 closeout and project-final review activation handoff | closeout/handoff | TK-714、TK-715、CR rounds | completed |
+| TK-717 | sprint-001 | finalize project-073 closeout and restore idle context | closeout/final-audit | TK-716、CR-006 | completed |
 
 ## 4. 依赖产物策略
 
@@ -50,3 +51,6 @@
 3. 2026-04-08：`CR-001` 已接受并收口了 reviewer 指出的 relay-state fallback 可见性问题；`TK-714` 当前边界已 clean，下一边界切换到 `TK-715` 受治理分支切换能力。
 4. 2026-04-08：`TK-715` 已完成 `branch_switch` capability、`/workspace switch-branch` discoverability、`workspace switch-branch <branch>` 本地执行与 receipt artifact 路径，并通过 targeted vitest + `pnpm run build`；当前边界进入 fresh reviewer CR loop。
 5. 2026-04-08：`CR-002` 至 `CR-005` 已完成 fresh reviewer 循环并全部 `resolved`；`TK-715` 当前边界 clean，下一边界切换为 `TK-716` sprint closeout 与 project-final review activation handoff。
+6. 2026-04-08：`TK-715` 边界提交已推送到 `origin/codex/app-feature-gap-priority-draft-20260408`；`TK-716` 进入 `in_progress`，开始执行 sprint closeout 真值收口与 project-final review activation 准备。
+7. 2026-04-08：`TK-716 / DA-716` 已完成 sprint-level closeout write-back，并把当前 `project-073 / sprint-001` surface 固定为 project-final delegated review loop 的默认 `tasks/` / `review/` 面。
+8. 2026-04-08：`CR-006` 已 clean `resolved`，`TK-717 / DA-717` 已完成 final closeout write-back，`project-073` 正式进入 `completed`，并在此里程碑回链 [project-073 completion audit summary](./project-073-direct-answer-stability-and-governed-branch-switch-remediation-completion-audit-summary.md)。
