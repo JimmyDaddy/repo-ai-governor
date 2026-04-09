@@ -69,6 +69,11 @@ export class AgentProjectionService {
       failureReasons: [...(input.failureReasons ?? [])],
       unsupportedCapabilities: [...(input.unsupportedCapabilities ?? [])],
       degradedCapabilities: [...(input.degradedCapabilities ?? [])],
+      selectedTransport: input.selectedTransport ?? null,
+      selectedProviderKind: input.selectedProviderKind ?? null,
+      selectedVendorBindingKind: input.selectedVendorBindingKind ?? null,
+      selectedModel: input.selectedModel ?? null,
+      capabilitySnapshotSource: input.capabilitySnapshotSource ?? null,
     };
   }
 

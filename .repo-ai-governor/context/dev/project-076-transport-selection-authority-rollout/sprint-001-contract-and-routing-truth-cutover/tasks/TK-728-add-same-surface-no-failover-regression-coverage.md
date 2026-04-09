@@ -1,6 +1,6 @@
 # TK-728 add same-surface no-failover regression coverage
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-09
 - Owner: AI-Agent
 - Priority: P1
@@ -53,8 +53,13 @@
 ## 9. 执行记录
 
 1. 2026-04-09：任务创建，状态初始化为 `planned`。
+2. 2026-04-09：已为 onboarding truth、projection truth 与 same-surface no-failover 补齐回归覆盖，覆盖 `config_explicit`、`surface_default` 与显式 `remote_api` 失败不静默改写为 `cli_exec` 的基线。
+3. 2026-04-09：新增 `agent-projection-runtime` / core projection service 回归测试，确保 selected transport 及 capability snapshot source 在 runtime 与 projection 间稳定传递。
+4. 2026-04-09：已通过 `pnpm run build` 与 sprint-001 targeted vitest 回归集验证测试基线可重复执行。
 
 ## 10. 产出
 
-1. 待执行：regression coverage patch
-2. 待执行：verification baseline note
+1. `apps/cli/test/runtime/agent-onboarding-runtime.test.ts`
+2. `apps/cli/test/runtime/agent-projection-runtime.test.ts`
+3. `apps/cli/test/runtime/adapter-verification-runtime.test.ts`
+4. `packages/core-agent-projection/test/agent-projection-service.unit.test.ts`

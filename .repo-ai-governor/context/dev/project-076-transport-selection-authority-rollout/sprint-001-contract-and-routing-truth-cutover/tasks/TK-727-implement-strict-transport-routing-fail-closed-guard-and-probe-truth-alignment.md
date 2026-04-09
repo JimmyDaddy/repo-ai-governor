@@ -1,6 +1,6 @@
 # TK-727 implement strict transport routing fail-closed guard and probe truth alignment
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-09
 - Owner: AI-Agent
 - Priority: P0
@@ -53,8 +53,13 @@
 ## 9. 执行记录
 
 1. 2026-04-09：任务创建，状态初始化为 `planned`。
+2. 2026-04-09：已把 selected transport / provider / vendor binding / model / capability snapshot source 投影到 CLI projection surfaces，保证 runtime、probe 与 presenter 消费同一套 transport truth。
+3. 2026-04-09：已补齐显式 `remote_api` 失败时的 fail-closed 投影与 diagnostics 语义，避免同 surface `cli_exec` 成功结果覆盖显式 transport 选择失败。
+4. 2026-04-09：已通过 `pnpm run build` 与 sprint-001 targeted vitest 回归集验证 runtime / projection truth 对齐。
 
 ## 10. 产出
 
-1. 待执行：runtime guard patch
-2. 待执行：probe truth alignment patch
+1. `apps/cli/src/runtime/agent-projection-runtime.ts`
+2. `packages/core-agent-projection/src/agent-projection-service.ts`
+3. `packages/core-agent-projection/src/types/interfaces/agent-projection.interface.ts`
+4. `apps/cli/test/runtime/adapter-verification-runtime.test.ts`

@@ -1,8 +1,25 @@
 # checklist
 
-- [ ] TK-726 converge enabled-tools canonical transport truth and compatibility bridge
+- [x] TK-726 converge enabled-tools canonical transport truth and compatibility bridge
   - 2026-04-09：任务创建，状态初始化为 `planned`。
-- [ ] TK-727 implement strict transport routing fail-closed guard and probe truth alignment
+  - 2026-04-09：已将 onboarding transport truth 收敛到结构化 `enabled_tools[]` machine surface，并把 `tool_transport_matrix` 改为从 canonical truth 派生的兼容 bridge。
+  - 2026-04-09：已在 runtime payload 中补齐 `transport_kind`、`provider_kind`、`vendor_binding_kind`、`credential_mode`、`endpoint_source`、`transport_selection_source`、`transport_selection_locked` 与 `configured_remote_api` 等真值字段，同时保留 `remote_api_candidate` 兼容 alias。
+  - 2026-04-09：已通过 `pnpm run build` 与 sprint-001 targeted vitest 回归集验证实现收口。
+- [x] TK-727 implement strict transport routing fail-closed guard and probe truth alignment
   - 2026-04-09：任务创建，状态初始化为 `planned`。
-- [ ] TK-728 add same-surface no-failover regression coverage
+  - 2026-04-09：已把 selected transport / provider / vendor binding / model / capability snapshot source 投影到 CLI projection surfaces，保证 runtime、probe 与 presenter 消费同一套 transport truth。
+  - 2026-04-09：已补齐显式 `remote_api` 失败时的 fail-closed 投影与 diagnostics 语义，避免同 surface `cli_exec` 成功结果覆盖显式 transport 选择失败。
+  - 2026-04-09：已通过 `pnpm run build` 与 sprint-001 targeted vitest 回归集验证 runtime / projection truth 对齐。
+- [x] TK-728 add same-surface no-failover regression coverage
   - 2026-04-09：任务创建，状态初始化为 `planned`。
+  - 2026-04-09：已为 onboarding truth、projection truth 与 same-surface no-failover 补齐回归覆盖，覆盖 `config_explicit`、`surface_default` 与显式 `remote_api` 失败不静默改写为 `cli_exec` 的基线。
+  - 2026-04-09：新增 `agent-projection-runtime` / core projection service 回归测试，确保 selected transport 及 capability snapshot source 在 runtime 与 projection 间稳定传递。
+  - 2026-04-09：已通过 `pnpm run build` 与 sprint-001 targeted vitest 回归集验证测试基线可重复执行。
+- [x] CR-001 sprint-001-contract-and-routing-truth-cutover delegated review loop round 1
+  - 2026-04-09：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-09：已多次调起 fresh reviewer sub-agent，但平台在等待窗口内未返回 final review；为避免主执行流阻塞，本轮改由 main-agent 在相同 scope 与验证基线下执行 fallback recheck。
+  - 2026-04-09：fallback recheck 认可 `2.1 [P2] Inferred remote_api rows dropped resolved vendor binding from liveness diagnostics`，并确认其余 sprint-001 边界未发现新的 actionable finding。
+  - 2026-04-09：已修复 `invoke_liveness_diagnostics.vendor_binding_kind` 的 resolved-binding drift，并通过 `pnpm run build`、targeted vitest 与 `pnpm run check` 完成同窗复验，当前任务切换为 `resolved`。
+- [x] TK-735 sprint-001 exit acceptance and sprint-002 activation handoff
+  - 2026-04-09：任务创建并直接执行 sprint-001 closeout、context/history 写回与 sprint-002 activation handoff。
+  - 2026-04-09：已完成 `DA-735`、project/sprint/context/history 写回，并激活 `sprint-002` 与 `TK-729`。

@@ -5,8 +5,13 @@ import {
 import type { AdaptersConfig, GovernorConfig } from '@repo-ai-governor/config';
 import {
   AdapterAvailability,
+  AdapterCredentialSource,
+  AdapterEndpointSource,
+  AdapterProviderKind,
   AdapterSurface,
   AdapterTransportKind,
+  AdapterTransportSelectionSource,
+  AdapterVendorBindingKind,
   GovernorErrorCode,
   RuntimeError,
 } from '@repo-ai-governor/shared';
@@ -102,16 +107,17 @@ export class CliAgentOnboardingRuntime {
     repairScope?: 'safe_local' | 'manual_only' | null;
     diagnosticSummary: string;
   }) {
+    const enabledToolRows = this.createEnabledToolRowsPayload({
+      enabledTools: options.enabledTools,
+      adaptersConfig: options.adaptersConfig,
+      verification: options.verification,
+    });
     return {
       schema_version: CLI_AGENT_ONBOARDING_SCHEMA_VERSION,
       command_name: options.commandName,
       preset_id: options.presetId ?? null,
-      enabled_tools: [...options.enabledTools],
-      tool_transport_matrix: this.createToolTransportMatrixPayload({
-        enabledTools: options.enabledTools,
-        adaptersConfig: options.adaptersConfig,
-        verification: options.verification,
-      }),
+      enabled_tools: enabledToolRows,
+      tool_transport_matrix: this.createToolTransportMatrixPayload(enabledToolRows),
       role_bindings: options.adaptersConfig.roles.map((role) => ({
         role_id: role.roleId,
         role_profile_id: role.roleProfileId,
@@ -145,14 +151,15 @@ export class CliAgentOnboardingRuntime {
     const verificationToolById = new Map(
       options.verification.tools.map((tool) => [tool.toolId, tool]),
     );
+    const enabledToolRows = this.createEnabledToolRowsPayload({
+      enabledTools: (options.adaptersConfig.tools ?? []).map((tool) => tool.toolId),
+      adaptersConfig: options.adaptersConfig,
+      verification: options.verification,
+    });
     return {
       execution_id: options.executionId,
       summary: options.verification.overallStatus,
-      tool_transport_matrix: this.createToolTransportMatrixPayload({
-        enabledTools: (options.adaptersConfig.tools ?? []).map((tool) => tool.toolId),
-        adaptersConfig: options.adaptersConfig,
-        verification: options.verification,
-      }),
+      tool_transport_matrix: this.createToolTransportMatrixPayload(enabledToolRows),
       tool_matrix: options.verification.roleEvaluations.map((roleEvaluation) => {
         const resolvedSurface = roleEvaluation.selectedSurface ?? roleEvaluation.primarySurface;
         const verificationTool = verificationToolById.get(resolvedSurface);
@@ -187,6 +194,7 @@ export class CliAgentOnboardingRuntime {
               ?.fallbackSurfaces ?? []),
           ],
           invoke_liveness_diagnostics: this.createInvokeLivenessDiagnosticsPayload({
+            toolId: resolvedSurface,
             configuredTool: configuredToolById.get(resolvedSurface),
             healthCheck: toolHealthCheck,
             unavailableReasons: toolUnavailableReasons,
@@ -204,6 +212,7 @@ export class CliAgentOnboardingRuntime {
         ],
         binding_status: roleEvaluation.status,
         invoke_liveness_diagnostics: this.createInvokeLivenessDiagnosticsPayload({
+          toolId: roleEvaluation.selectedSurface ?? roleEvaluation.primarySurface,
           configuredTool: configuredToolById.get(
             roleEvaluation.selectedSurface ?? roleEvaluation.primarySurface,
           ),
@@ -215,7 +224,7 @@ export class CliAgentOnboardingRuntime {
     };
   }
 
-  private createToolTransportMatrixPayload(options: {
+  private createEnabledToolRowsPayload(options: {
     enabledTools: AdapterSurface[];
     adaptersConfig: AdaptersConfig;
     verification?: CliAdapterVerificationResolution;
@@ -230,31 +239,39 @@ export class CliAgentOnboardingRuntime {
     return options.enabledTools.map((toolId) => {
       const configuredTool = configuredToolById.get(toolId);
       const verificationTool = verificationToolById.get(toolId);
+      const transportSelectionSource = this.resolveTransportSelectionSource(configuredTool);
       return {
         tool_id: toolId,
         enabled: configuredTool?.enabled ?? true,
         configured_availability: configuredTool?.availability ?? null,
         availability_status: verificationTool?.availabilityStatus ?? null,
-        transport: this.resolveToolTransportKind(
+        transport_kind: this.resolveToolTransportKind(
+          toolId,
           configuredTool,
           verificationTool?.healthCheck?.transportKind,
         ),
-        remote_api_candidate: configuredTool?.remoteApi
-          ? {
-              provider: configuredTool.remoteApi.provider,
-              vendor_binding: configuredTool.remoteApi.vendorBinding ?? null,
-              model: configuredTool.remoteApi.model,
-              credential_env_var: configuredTool.remoteApi.credentialEnvVar ?? null,
-              credential_ref: configuredTool.remoteApi.credentialRef ?? null,
-              allow_provider_local_config:
-                configuredTool.remoteApi.allowProviderLocalConfig ?? false,
-              endpoint: configuredTool.remoteApi.endpoint ?? null,
-              request_timeout_ms: configuredTool.remoteApi.requestTimeoutMs ?? null,
-              max_retries: configuredTool.remoteApi.maxRetries ?? null,
-              discovery_mode: 'read_only',
-              mutation_scope: 'manual_only',
-            }
-          : null,
+        provider_kind:
+          verificationTool?.healthCheck?.providerKind ??
+          configuredTool?.remoteApi?.provider ??
+          null,
+        vendor_binding_kind:
+          verificationTool?.healthCheck?.vendorBindingKind ??
+          this.resolveConfiguredVendorBindingKind(
+            toolId,
+            configuredTool?.remoteApi?.provider ?? null,
+            configuredTool?.remoteApi?.vendorBinding ?? null,
+          ),
+        model:
+          verificationTool?.healthCheck?.model ??
+          configuredTool?.remoteApi?.model ??
+          configuredTool?.localModel?.model ??
+          null,
+        credential_mode: this.resolveConfiguredCredentialMode(configuredTool),
+        endpoint_source: this.resolveConfiguredEndpointSource(configuredTool),
+        transport_selection_source: transportSelectionSource,
+        transport_selection_locked:
+          transportSelectionSource === AdapterTransportSelectionSource.CONFIG_EXPLICIT,
+        configured_remote_api: this.createConfiguredRemoteApiPayload(toolId, configuredTool),
         probe_truth: verificationTool?.healthCheck
           ? {
               transport_kind: verificationTool.healthCheck.transportKind,
@@ -273,6 +290,7 @@ export class CliAgentOnboardingRuntime {
             }
           : null,
         invoke_liveness_diagnostics: this.createInvokeLivenessDiagnosticsPayload({
+          toolId,
           configuredTool,
           healthCheck: verificationTool?.healthCheck,
           unavailableReasons: verificationTool?.unavailableReasons,
@@ -282,13 +300,39 @@ export class CliAgentOnboardingRuntime {
     });
   }
 
+  private createToolTransportMatrixPayload(
+    enabledToolRows: Array<Record<string, unknown>>,
+  ): Array<Record<string, unknown>> {
+    return enabledToolRows.map((row) => ({
+      tool_id: row.tool_id,
+      enabled: row.enabled,
+      configured_availability: row.configured_availability,
+      availability_status: row.availability_status,
+      transport: row.transport_kind,
+      transport_kind: row.transport_kind,
+      provider_kind: row.provider_kind,
+      vendor_binding_kind: row.vendor_binding_kind,
+      model: row.model,
+      credential_mode: row.credential_mode,
+      endpoint_source: row.endpoint_source,
+      transport_selection_source: row.transport_selection_source,
+      transport_selection_locked: row.transport_selection_locked,
+      configured_remote_api: row.configured_remote_api,
+      remote_api_candidate: row.configured_remote_api,
+      probe_truth: row.probe_truth,
+      invoke_liveness_diagnostics: row.invoke_liveness_diagnostics,
+    }));
+  }
+
   private createInvokeLivenessDiagnosticsPayload(options: {
+    toolId: AdapterSurface;
     configuredTool?: NonNullable<AdaptersConfig['tools']>[number];
     healthCheck?: CliAdapterVerificationResolution['tools'][number]['healthCheck'];
     unavailableReasons?: string[];
     failureAttributions?: string[];
   }): Record<string, unknown> {
     const resolvedTransportKind = this.resolveToolTransportKind(
+      options.toolId,
       options.configuredTool,
       options.healthCheck?.transportKind,
     );
@@ -298,7 +342,11 @@ export class CliAgentOnboardingRuntime {
         options.healthCheck?.providerKind ?? options.configuredTool?.remoteApi?.provider ?? null,
       vendor_binding_kind:
         options.healthCheck?.vendorBindingKind ??
-        options.configuredTool?.remoteApi?.vendorBinding ??
+        this.resolveConfiguredVendorBindingKind(
+          options.toolId,
+          options.configuredTool?.remoteApi?.provider ?? null,
+          options.configuredTool?.remoteApi?.vendorBinding ?? null,
+        ) ??
         null,
       model:
         options.healthCheck?.model ??
@@ -344,6 +392,7 @@ export class CliAgentOnboardingRuntime {
   }
 
   private resolveToolTransportKind(
+    toolId: AdapterSurface,
     configuredTool?: NonNullable<AdaptersConfig['tools']>[number],
     healthCheckTransportKind?: string | null,
   ): AdapterTransportKind | null {
@@ -355,34 +404,123 @@ export class CliAgentOnboardingRuntime {
       return healthCheckTransportKind;
     }
 
-    if (!configuredTool) {
-      return null;
-    }
-
-    if (configuredTool.transport) {
+    if (configuredTool?.transport) {
       return configuredTool.transport;
     }
 
-    if (configuredTool.remoteApi) {
+    if (configuredTool?.remoteApi) {
       return AdapterTransportKind.REMOTE_API;
     }
 
-    if (configuredTool.localModel) {
+    if (configuredTool?.localModel) {
       return AdapterTransportKind.BASELINE;
     }
 
     if (
-      configuredTool.toolId === AdapterSurface.CODEX ||
-      configuredTool.toolId === AdapterSurface.CLAUDE_CODE ||
-      configuredTool.toolId === AdapterSurface.GITHUB_COPILOT
+      toolId === AdapterSurface.CODEX ||
+      toolId === AdapterSurface.CLAUDE_CODE ||
+      toolId === AdapterSurface.GITHUB_COPILOT
     ) {
       return AdapterTransportKind.CLI_EXEC;
     }
 
-    if (configuredTool.toolId === AdapterSurface.OLLAMA) {
+    if (toolId === AdapterSurface.OLLAMA) {
       return AdapterTransportKind.BASELINE;
     }
 
+    return null;
+  }
+
+  private resolveTransportSelectionSource(
+    configuredTool?: NonNullable<AdaptersConfig['tools']>[number],
+  ): AdapterTransportSelectionSource {
+    if (configuredTool?.transport) {
+      return AdapterTransportSelectionSource.CONFIG_EXPLICIT;
+    }
+    if (configuredTool?.remoteApi) {
+      return AdapterTransportSelectionSource.INFERRED_FROM_REMOTE_API;
+    }
+    return AdapterTransportSelectionSource.SURFACE_DEFAULT;
+  }
+
+  private resolveConfiguredCredentialMode(
+    configuredTool?: NonNullable<AdaptersConfig['tools']>[number],
+  ): AdapterCredentialSource | null {
+    if (!configuredTool?.remoteApi) {
+      return null;
+    }
+    if (configuredTool.remoteApi.credentialRef) {
+      return AdapterCredentialSource.CREDENTIAL_REF;
+    }
+    if (configuredTool.remoteApi.credentialEnvVar) {
+      return AdapterCredentialSource.ENV_EXPLICIT;
+    }
+    if (configuredTool.remoteApi.allowProviderLocalConfig) {
+      return AdapterCredentialSource.PROVIDER_LOCAL;
+    }
+    return AdapterCredentialSource.ENV_DEFAULT;
+  }
+
+  private resolveConfiguredEndpointSource(
+    configuredTool?: NonNullable<AdaptersConfig['tools']>[number],
+  ): AdapterEndpointSource | null {
+    if (!configuredTool?.remoteApi) {
+      return null;
+    }
+    if (configuredTool.remoteApi.endpoint) {
+      return AdapterEndpointSource.CONFIG_EXPLICIT;
+    }
+    if (configuredTool.remoteApi.allowProviderLocalConfig) {
+      return AdapterEndpointSource.PROVIDER_LOCAL;
+    }
+    return AdapterEndpointSource.VENDOR_DEFAULT;
+  }
+
+  private createConfiguredRemoteApiPayload(
+    toolId: AdapterSurface,
+    configuredTool?: NonNullable<AdaptersConfig['tools']>[number],
+  ): Record<string, unknown> | null {
+    if (!configuredTool?.remoteApi) {
+      return null;
+    }
+    return {
+      provider_kind: configuredTool.remoteApi.provider,
+      vendor_binding_kind: this.resolveConfiguredVendorBindingKind(
+        toolId,
+        configuredTool.remoteApi.provider,
+        configuredTool.remoteApi.vendorBinding ?? null,
+      ),
+      model: configuredTool.remoteApi.model,
+      credential_mode: this.resolveConfiguredCredentialMode(configuredTool),
+      credential_env_var: configuredTool.remoteApi.credentialEnvVar ?? null,
+      credential_ref: configuredTool.remoteApi.credentialRef ?? null,
+      allow_provider_local_config: configuredTool.remoteApi.allowProviderLocalConfig ?? false,
+      endpoint: configuredTool.remoteApi.endpoint ?? null,
+      endpoint_source: this.resolveConfiguredEndpointSource(configuredTool),
+      request_timeout_ms: configuredTool.remoteApi.requestTimeoutMs ?? null,
+      max_retries: configuredTool.remoteApi.maxRetries ?? null,
+      discovery_mode: 'read_only',
+      mutation_scope: 'manual_only',
+    };
+  }
+
+  private resolveConfiguredVendorBindingKind(
+    toolId: AdapterSurface,
+    providerKind: AdapterProviderKind | null,
+    vendorBindingKind: AdapterVendorBindingKind | null,
+  ): AdapterVendorBindingKind | null {
+    if (vendorBindingKind) {
+      return vendorBindingKind;
+    }
+    if (toolId === AdapterSurface.CODEX || providerKind === AdapterProviderKind.OPENAI) {
+      return AdapterVendorBindingKind.OPENAI_RESPONSES;
+    }
+    if (toolId === AdapterSurface.CLAUDE_CODE || providerKind === AdapterProviderKind.ANTHROPIC) {
+      return AdapterVendorBindingKind.ANTHROPIC_MESSAGES;
+    }
+    if (providerKind === AdapterProviderKind.GITHUB_MODELS) {
+      return AdapterVendorBindingKind.GITHUB_MODELS_INFERENCE;
+    }
     return null;
   }
 

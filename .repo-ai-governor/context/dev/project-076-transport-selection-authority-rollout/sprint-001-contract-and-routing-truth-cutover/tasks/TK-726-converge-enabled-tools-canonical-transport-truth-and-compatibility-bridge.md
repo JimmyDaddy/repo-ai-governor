@@ -1,6 +1,6 @@
 # TK-726 converge enabled-tools canonical transport truth and compatibility bridge
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-09
 - Owner: AI-Agent
 - Priority: P0
@@ -52,8 +52,13 @@
 ## 9. 执行记录
 
 1. 2026-04-09：任务创建，状态初始化为 `planned`。
+2. 2026-04-09：已将 onboarding transport truth 收敛到结构化 `enabled_tools[]` machine surface，并把 `tool_transport_matrix` 改为从 canonical truth 派生的兼容 bridge。
+3. 2026-04-09：已在 runtime payload 中补齐 `transport_kind`、`provider_kind`、`vendor_binding_kind`、`credential_mode`、`endpoint_source`、`transport_selection_source`、`transport_selection_locked` 与 `configured_remote_api` 等真值字段，同时保留 `remote_api_candidate` 兼容 alias。
+4. 2026-04-09：已通过 `pnpm run build` 与 sprint-001 targeted vitest 回归集验证实现收口。
 
 ## 10. 产出
 
-1. 待执行：onboarding runtime convergence patch
-2. 待执行：compatibility bridge migration note
+1. `apps/cli/src/runtime/agent-onboarding-runtime.ts`
+2. `packages/shared/src/constants/adapter-runtime.constant.ts`
+3. `packages/shared/src/constants/index.ts`
+4. `packages/shared/src/index.ts`

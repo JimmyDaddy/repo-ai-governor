@@ -22,6 +22,15 @@ export enum AdapterTransportKind {
 }
 
 /**
+ * Defines how the current transport selection was resolved for one tool row.
+ */
+export enum AdapterTransportSelectionSource {
+  CONFIG_EXPLICIT = 'config_explicit',
+  INFERRED_FROM_REMOTE_API = 'inferred_from_remote_api',
+  SURFACE_DEFAULT = 'surface_default',
+}
+
+/**
  * Defines remote provider identifiers used by remote-api capable adapter surfaces.
  */
 export enum AdapterProviderKind {
@@ -66,6 +75,15 @@ export enum AdapterRequestCancellationMode {
   NOT_SUPPORTED = 'not_supported',
   LOCAL_ABORT_ONLY = 'local_abort_only',
   PROVIDER_CANCEL_ATTEMPTED = 'provider_cancel_attempted',
+}
+
+/**
+ * Defines where one capability/transport snapshot was sourced from.
+ */
+export enum AdapterCapabilitySnapshotSource {
+  HEALTH_CHECK = 'health_check',
+  CONFIG = 'config',
+  SURFACE_DEFAULT = 'surface_default',
 }
 
 /**

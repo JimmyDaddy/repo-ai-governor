@@ -24,13 +24,13 @@
 
 ## 2.1 sprint-001-contract-and-routing-truth-cutover
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 收敛 onboarding / probe / runtime contract truth，并建立 same-surface no-failover guard 与回归基线。
-- Task Package: `TK-726`、`TK-727`、`TK-728`
+- Task Package: `TK-726`、`TK-727`、`TK-728`、`TK-735`
 
 ## 2.2 sprint-002-connect-selection-ux-and-candidate-materialization
 
-- Status: planned
+- Status: active
 - Sprint Goal: 为 `connect` 增加显式 transport 选择 UX，并保证 candidate config / diagnostics 稳定 materialize user-selected transport。
 - Task Package: `TK-729`、`TK-730`、`TK-731`
 
@@ -44,10 +44,11 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 |---|---|---|---|---|---|
-| TK-726 | sprint-001 | converge enabled-tools canonical transport truth and compatibility bridge | contract/runtime | promotion handoff | planned |
-| TK-727 | sprint-001 | implement strict transport routing fail-closed guard and probe truth alignment | runtime/diagnostics | TK-726 | planned |
-| TK-728 | sprint-001 | add same-surface no-failover regression coverage | tests/verification | TK-727 | planned |
-| TK-729 | sprint-002 | add per-tool transport selection flags to connect | cli/ux | TK-728 | planned |
+| TK-726 | sprint-001 | converge enabled-tools canonical transport truth and compatibility bridge | contract/runtime | promotion handoff | completed |
+| TK-727 | sprint-001 | implement strict transport routing fail-closed guard and probe truth alignment | runtime/diagnostics | TK-726 | completed |
+| TK-728 | sprint-001 | add same-surface no-failover regression coverage | tests/verification | TK-727 | completed |
+| TK-735 | sprint-001 | sprint-001 exit acceptance and sprint-002 activation handoff | sprint/closeout | TK-726、TK-727、TK-728、CR-001 | completed |
+| TK-729 | sprint-002 | add per-tool transport selection flags to connect | cli/ux | TK-728 | in_progress |
 | TK-730 | sprint-002 | materialize explicit transport in candidate config and validate unsupported combinations | config/validation | TK-729 | planned |
 | TK-731 | sprint-002 | project transport selection source and lock state across connect-doctor-verify outputs | diagnostics/output | TK-730 | planned |
 | TK-732 | sprint-003 | produce clean-room and verify evidence for codex and claude-code remote_api paths | evidence/verification | TK-731 | planned |
@@ -72,3 +73,5 @@
 1. 2026-04-09：`project-076` 作为 `technical-solution.transport-selection-authority-and-strict-routing` 的 planned rollout stream 被创建。
 2. 2026-04-09：三阶段拆解已冻结为 `contract truth -> connect UX -> evidence-gated docs`。
 3. 2026-04-09：用户要求开始任务拆解后，`sprint-001-contract-and-routing-truth-cutover` 已被激活为当前 primary execution surface。
+4. 2026-04-09：`TK-726`、`TK-727`、`TK-728` 已完成实现与定向验证，当前进入 `sprint-001` scoped CR loop。
+5. 2026-04-09：`CR-001` 已 resolved，`TK-735 / DA-735` 已完成 sprint-001 closeout 与 sprint-002 activation handoff；当前下一边界固定为 `TK-729`。

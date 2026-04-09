@@ -11,6 +11,7 @@ import {
   AdapterRequestCancellationMode,
   AdapterSurface,
   AdapterTransportKind,
+  AdapterTransportSelectionSource,
   AdapterVendorBindingKind,
   GovernorErrorCode,
   LocalModelProvider,
@@ -235,13 +236,36 @@ describe('CliAgentOnboardingRuntime', () => {
       adaptersConfig: sourceConfig.adapters,
     });
 
+    expect(onboardingPayload.enabled_tools).toEqual([
+      expect.objectContaining({
+        tool_id: AdapterSurface.CODEX,
+        transport_kind: AdapterTransportKind.REMOTE_API,
+        provider_kind: AdapterProviderKind.OPENAI,
+        vendor_binding_kind: AdapterVendorBindingKind.OPENAI_RESPONSES,
+        transport_selection_source: AdapterTransportSelectionSource.CONFIG_EXPLICIT,
+        transport_selection_locked: true,
+        configured_remote_api: expect.objectContaining({
+          provider_kind: AdapterProviderKind.OPENAI,
+          vendor_binding_kind: AdapterVendorBindingKind.OPENAI_RESPONSES,
+          credential_mode: AdapterCredentialSource.ENV_EXPLICIT,
+          endpoint_source: AdapterEndpointSource.PROVIDER_LOCAL,
+        }),
+      }),
+    ]);
     expect(onboardingPayload.tool_transport_matrix).toEqual([
       expect.objectContaining({
         tool_id: AdapterSurface.CODEX,
         transport: AdapterTransportKind.REMOTE_API,
+        transport_kind: AdapterTransportKind.REMOTE_API,
+        transport_selection_source: AdapterTransportSelectionSource.CONFIG_EXPLICIT,
+        transport_selection_locked: true,
+        configured_remote_api: expect.objectContaining({
+          provider_kind: AdapterProviderKind.OPENAI,
+          vendor_binding_kind: AdapterVendorBindingKind.OPENAI_RESPONSES,
+        }),
         remote_api_candidate: expect.objectContaining({
-          provider: AdapterProviderKind.OPENAI,
-          vendor_binding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+          provider_kind: AdapterProviderKind.OPENAI,
+          vendor_binding_kind: AdapterVendorBindingKind.OPENAI_RESPONSES,
           model: 'gpt-5',
           credential_env_var: 'OPENAI_API_KEY',
           allow_provider_local_config: true,
@@ -270,6 +294,56 @@ describe('CliAgentOnboardingRuntime', () => {
     ]);
     expect(verifyPayload.tool_transport_matrix).toEqual(onboardingPayload.tool_transport_matrix);
     expect(verifyPayload.role_binding_matrix).toEqual([]);
+  });
+
+  it('distinguishes inferred remote_api selection from an explicit transport lock', () => {
+    const runtime = new CliAgentOnboardingRuntime();
+    const sourceConfig = createGovernorConfigFixture();
+    sourceConfig.adapters.tools = [
+      {
+        toolId: AdapterSurface.CODEX,
+        enabled: true,
+        availability: AdapterAvailability.AVAILABLE,
+        remoteApi: {
+          provider: AdapterProviderKind.OPENAI,
+          model: 'gpt-5',
+        },
+      },
+    ];
+
+    const onboardingPayload = runtime.createOnboardingContractPayload({
+      commandName: 'connect',
+      executionId: 'connect-inferred-transport',
+      workspaceId: 'workspace-1',
+      verificationStatus: CliGovernanceCheckStatus.PASS,
+      nextActions: [],
+      enabledTools: [AdapterSurface.CODEX],
+      adaptersConfig: sourceConfig.adapters,
+      dryRun: true,
+      overwrite: false,
+      singleToolAllRoles: false,
+      diagnosticSummary: 'status=pass',
+    });
+
+    expect(onboardingPayload.enabled_tools).toEqual([
+      expect.objectContaining({
+        tool_id: AdapterSurface.CODEX,
+        transport_kind: AdapterTransportKind.REMOTE_API,
+        transport_selection_source: AdapterTransportSelectionSource.INFERRED_FROM_REMOTE_API,
+        transport_selection_locked: false,
+        configured_remote_api: expect.objectContaining({
+          provider_kind: AdapterProviderKind.OPENAI,
+          vendor_binding_kind: AdapterVendorBindingKind.OPENAI_RESPONSES,
+          credential_mode: AdapterCredentialSource.ENV_DEFAULT,
+          endpoint_source: AdapterEndpointSource.VENDOR_DEFAULT,
+        }),
+        invoke_liveness_diagnostics: expect.objectContaining({
+          transport_kind: AdapterTransportKind.REMOTE_API,
+          provider_kind: AdapterProviderKind.OPENAI,
+          vendor_binding_kind: AdapterVendorBindingKind.OPENAI_RESPONSES,
+        }),
+      }),
+    ]);
   });
 
   it('projects invoke-liveness diagnostics into verify role binding rows', () => {
@@ -598,6 +672,9 @@ describe('CliAgentOnboardingRuntime', () => {
         expect.objectContaining({
           tool_id: AdapterSurface.CODEX,
           transport: AdapterTransportKind.CLI_EXEC,
+          transport_kind: AdapterTransportKind.CLI_EXEC,
+          transport_selection_source: AdapterTransportSelectionSource.SURFACE_DEFAULT,
+          transport_selection_locked: false,
           invoke_liveness_diagnostics: expect.objectContaining({
             transport_kind: AdapterTransportKind.CLI_EXEC,
             request_timeout_ms: 30000,
@@ -631,6 +708,9 @@ describe('CliAgentOnboardingRuntime', () => {
       expect.objectContaining({
         tool_id: AdapterSurface.CLAUDE_CODE,
         transport: AdapterTransportKind.CLI_EXEC,
+        transport_kind: AdapterTransportKind.CLI_EXEC,
+        transport_selection_source: AdapterTransportSelectionSource.SURFACE_DEFAULT,
+        transport_selection_locked: false,
         invoke_liveness_diagnostics: expect.objectContaining({
           transport_kind: AdapterTransportKind.CLI_EXEC,
           request_timeout_ms: 30000,

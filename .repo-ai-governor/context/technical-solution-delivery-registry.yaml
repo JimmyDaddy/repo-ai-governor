@@ -642,23 +642,24 @@ deliveries:
       - runtime_service
       - docs_playbook
     user_impact_level: medium
-    execution_status: planned
-    rollout_status: planned
+    execution_status: in_progress
+    rollout_status: in_progress
     owner: runtime
     project_ref: project-076-transport-selection-authority-rollout
-    sprint_ref: sprint-001-contract-and-routing-truth-cutover
+    sprint_ref: sprint-002-connect-selection-ux-and-candidate-materialization
     task_ids:
-      - TK-726
-      - TK-727
-      - TK-728
+      - TK-729
+      - TK-730
+      - TK-731
     project_plan_path: .repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/plan.md
-    sprint_plan_path: .repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-001-contract-and-routing-truth-cutover/plan.md
-    task_csv_path: .repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-001-contract-and-routing-truth-cutover/tasks/tasks.csv
+    sprint_plan_path: .repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-002-connect-selection-ux-and-candidate-materialization/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-002-connect-selection-ux-and-candidate-materialization/tasks/tasks.csv
     handoff_artifact_path: .repo-ai-governor/context/dev/project-075-transport-selection-authority-promotion-and-decomposition/sprint-001-promotion-and-followup-decomposition/tasks/DA-718-transport-selection-authority-promotion-and-rollout-decomposition-handoff.md
     rollout_artifacts:
       - .repo-ai-governor/context/dev/project-075-transport-selection-authority-promotion-and-decomposition/sprint-001-promotion-and-followup-decomposition/tasks/DA-718-transport-selection-authority-promotion-and-rollout-decomposition-handoff.md
       - .repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/plan.md
       - .repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-001-contract-and-routing-truth-cutover/plan.md
+      - .repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-001-contract-and-routing-truth-cutover/tasks/DA-735-sprint-001-closeout-and-sprint-002-activation-handoff.md
       - .repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-002-connect-selection-ux-and-candidate-materialization/plan.md
       - .repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-003-evidence-gated-docs-and-adopter-truth/plan.md
     accepted_at: 2026-04-09
