@@ -2,21 +2,22 @@
 
 ## Primary Stream
 
-- Status: idle
-- Project: `none`
-- Sprint: `none`
-- Docs root: `none`
-- Task records: `none`
-- Review records: `none`
-- Note: `2026-04-09` `project-061-adoption-pack-installer-and-self-host-bootstrap-rollout / sprint-006-clean-room-rehearsals-and-docs-truthfulness` 与 `2026-04-08` `project-073 / sprint-001` 均已完成最终 closeout 并迁入 completed stream history；当前 worktree 不再保留 active primary stream。
+- Status: active
+- Project: `project-076-transport-selection-authority-rollout`
+- Sprint: `sprint-001-contract-and-routing-truth-cutover`
+- Docs root: `.repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout`
+- Task records: `.repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-001-contract-and-routing-truth-cutover/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-001-contract-and-routing-truth-cutover/review/`
+- Note: `2026-04-09` 用户已要求开始任务拆解；`project-076 / sprint-001` 现作为 active primary stream 承接 transport truth 与 strict routing rollout 的第一阶段执行面。`project-075` promotion / decomposition 已完成并迁入 completed stream history。
 
 ## Active Streams
 
-- None currently registered.
+- `stream-project-076-sprint-001`: project=`project-076-transport-selection-authority-rollout`, sprint=`sprint-001-contract-and-routing-truth-cutover`, docs=`.repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout`, plan=`.repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-001-contract-and-routing-truth-cutover/plan.md`, tasks=`.repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-001-contract-and-routing-truth-cutover/tasks/`, checklist=`.repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-001-contract-and-routing-truth-cutover/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-001-contract-and-routing-truth-cutover/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-001-contract-and-routing-truth-cutover/review/`, status=`active`
 
 ## Planned Follow-Up Streams
 
-- None currently registered.
+- `stream-project-076-sprint-002`: project=`project-076-transport-selection-authority-rollout`, sprint=`sprint-002-connect-selection-ux-and-candidate-materialization`, docs=`.repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout`, plan=`.repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-002-connect-selection-ux-and-candidate-materialization/plan.md`, tasks=`.repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-002-connect-selection-ux-and-candidate-materialization/tasks/`, checklist=`.repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-002-connect-selection-ux-and-candidate-materialization/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-002-connect-selection-ux-and-candidate-materialization/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-002-connect-selection-ux-and-candidate-materialization/review/`, status=`planned`
+- `stream-project-076-sprint-003`: project=`project-076-transport-selection-authority-rollout`, sprint=`sprint-003-evidence-gated-docs-and-adopter-truth`, docs=`.repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout`, plan=`.repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-003-evidence-gated-docs-and-adopter-truth/plan.md`, tasks=`.repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-003-evidence-gated-docs-and-adopter-truth/tasks/`, checklist=`.repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-003-evidence-gated-docs-and-adopter-truth/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-003-evidence-gated-docs-and-adopter-truth/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-003-evidence-gated-docs-and-adopter-truth/review/`, status=`planned`
 
 ## Completed Stream History
 

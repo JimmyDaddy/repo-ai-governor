@@ -1,5 +1,5 @@
 schema_version: 1
-generated_at: 2026-04-06
+generated_at: 2026-04-09
 status: active
 owner: repo-ai-governor
 
@@ -782,6 +782,21 @@ documents:
       - technical_solution_promotion_change
     owner: runtime
     last_reviewed_at: 2026-04-02
+
+  - doc_id: technical_solution_runtime_agent_projection_transport_selection_authority_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/transport-selection-authority-and-strict-transport-routing.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - runtime_contract_change
+      - adapter_change
+      - cli_ui_change
+      - command_surface_change
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+    owner: runtime
+    last_reviewed_at: 2026-04-09
 
   - doc_id: technical_solution_runtime_agent_projection_provider_continuation_adr
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/provider-session-reuse-and-continuation-handle-seam.md

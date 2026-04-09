@@ -1,7 +1,7 @@
 # Runtime Agent Projection Module Overview
 
 - Status: active
-- Date: 2026-04-06
+- Date: 2026-04-09
 - Module ID: `runtime.agent-projection`
 - Owner: runtime
 - Layer: `runtime-core`
@@ -12,17 +12,19 @@
 
 ## 2. 职责边界
 
-1. 统一 `connect / doctor / verify` 的 onboarding contract、分层 adapter health check / route probe 语义，以及 `surface -> transport -> provider binding` 的最小支持矩阵。
+1. 统一 `connect / doctor / verify` 的 onboarding contract、分层 adapter health check / route probe 语义，以及 `surface -> transport -> provider binding` 的最小支持矩阵，并把 transport selection authority 视为 runtime truth 的正式组成部分。
 2. 将 `connect` 默认保持为 analyze-first candidate 生成面，并通过显式 `diff/apply` follow-up surface 承接 reviewable write-back。
 3. 将 role、surface、session、transport、provider binding、capability、budget、timeout 与 invoke-liveness 预算组合成 agent descriptor 视图。
 4. 将 install / auth / protocol / semantic / route-capability 五层 probe 结果归一化为 presenter-safe 的 health-check 事实，并稳定带出 transport / provider / model / binding truth，供 CLI、report、diagnostics 与路由 fallback 共用。
-5. 将 agent invoke 生命周期统一建模为 process liveness、transport activity、semantic progress、graceful interrupt 与 hard-timeout fuse，使长 review / verifier / tester 任务不再只靠固定 wall-clock timeout 决定是否中断；当 transport 为 `remote_api` 时，同样要求覆盖 HTTP chunk / SSE / structured stream 活动。
-6. 正式拥有 adapter-facing provider continuation seam，包括 `AgentStageContinuationRequest/Result`、non-secret continuation handle 边界、transport/provider-compatible reuse truth，以及 unsupported/invalid 时的 stateless fallback 语义。
-7. 为 CLI、report、diagnostics 与后续 UI 提供同一份 agent projection 数据与 presenter-safe / panel-safe view model；phase-2 formal UI consumer baseline 通过 transport-neutral `AgentProjectionPanelViewModel` seam 落地。
-8. 将 `AgentSessionRegistry` 作为共享 session 的投影层，而不是新的会话事实源。
-9. 允许 LangGraph supervisor 消费 agent descriptor，但不把 supervisor 升格为新的 canonical runtime。
-10. 在 secret store 与 provider-owned config 上保持 analyze-first / read-only 边界；`connect / doctor / verify` 与 continuation seam 都只能生成 candidate、diagnostics、`next_action` 或非敏感 provider reference，不得静默写入 keychain、provider 配置或持久化 bearer-like continuation token。
-11. 正式拥有 standards-guided delegated reviewer handoff 的 projection 语义：orchestration service 只产出结构化 review request，projection 模块负责把 `projectedRules / deterministicFindings / uncoveredRuleIds` 等事实渲染到具体宿主 surface，并将 reviewer 输出归一化回 provenance-aware finding 结构，但不得把 prompt prose 自身升格为事实源。
+5. 把 tool row 上显式 `transport` 选择视为 authoritative selection：同一 surface 内禁止静默 `remote_api <-> cli_exec` 自动切换；若当前 transport 不可用，必须 fail-closed 并把切换建议降格为 explicit `next_action`。
+6. 将 agent invoke 生命周期统一建模为 process liveness、transport activity、semantic progress、graceful interrupt 与 hard-timeout fuse，使长 review / verifier / tester 任务不再只靠固定 wall-clock timeout 决定是否中断；当 transport 为 `remote_api` 时，同样要求覆盖 HTTP chunk / SSE / structured stream 活动。
+7. 正式拥有 adapter-facing provider continuation seam，包括 `AgentStageContinuationRequest/Result`、non-secret continuation handle 边界、transport/provider-compatible reuse truth，以及 unsupported/invalid 时的 stateless fallback 语义。
+8. 为 CLI、report、diagnostics 与后续 UI 提供同一份 agent projection 数据与 presenter-safe / panel-safe view model；phase-2 formal UI consumer baseline 通过 transport-neutral `AgentProjectionPanelViewModel` seam 落地。
+9. 将 `AgentSessionRegistry` 作为共享 session 的投影层，而不是新的会话事实源。
+10. 允许 LangGraph supervisor 消费 agent descriptor，但不把 supervisor 升格为新的 canonical runtime。
+11. 在 secret store 与 provider-owned config 上保持 analyze-first / read-only 边界；`connect / doctor / verify` 与 continuation seam 都只能生成 candidate、diagnostics、`next_action` 或非敏感 provider reference，不得静默写入 keychain、provider 配置或持久化 bearer-like continuation token。
+12. 正式拥有 runtime / contract support truth 与 adopter-facing public support wording 的边界：`codex` / `claude-code` 的 `remote_api` 可先在 runtime/contract 层 formalize 为用户可选 transport，但 support-matrix / playbook uplift 仍受单独 evidence gate 约束。
+13. 正式拥有 standards-guided delegated reviewer handoff 的 projection 语义：orchestration service 只产出结构化 review request，projection 模块负责把 `projectedRules / deterministicFindings / uncoveredRuleIds` 等事实渲染到具体宿主 surface，并将 reviewer 输出归一化回 provenance-aware finding 结构，但不得把 prompt prose 自身升格为事实源。
 
 ## 3. 非目标
 
@@ -33,6 +35,8 @@
 5. 不允许 `connect` 默认静默改写活动 `governor.yaml`。
 6. 不把 `GitHub Copilot`、`GitHub Models` 与 `Copilot SDK` 强行压平成单一“GitHub 远程等价物”；若需要 key-based remote inference，必须显式区分 surface 与 binding。
 7. 不拥有 laneKey、session slot lifecycle、turn-level continuation summary 或 shared-session truth；这些边界仍属于 `runtime.orchestration`。
+8. 不在同一 surface 内自动把失败的 `remote_api` 改写为 `cli_exec` 成功结果，反之亦然。
+9. 不因 runtime / contract 层已 formalize 某条 `remote_api` 路径，就自动升级 adopter-facing `docs/support-matrix*` 或 `docs/local-adoption-playbook*` 的公开支持声明。
 
 ## 4. North Star References
 
@@ -76,4 +80,5 @@
    - `adrs/layered-adapter-health-check-and-route-capability-probe.md`
    - `adrs/agent-invoke-liveness-and-timeout-governance.md`
    - `adrs/remote-api-transport-and-provider-binding-seam.md`
+   - `adrs/transport-selection-authority-and-strict-transport-routing.md`
    - `adrs/provider-session-reuse-and-continuation-handle-seam.md`

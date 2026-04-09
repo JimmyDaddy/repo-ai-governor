@@ -1,7 +1,7 @@
 # Adapter Health And Route Probe Contract
 
 - Status: active
-- Date: 2026-04-02
+- Date: 2026-04-09
 - Contract ID: `contract.runtime.adapter-health-check.v1`
 - Producer Module: `runtime.agent-projection`
 
@@ -63,6 +63,8 @@
 6. `diagnostics[]` 必须允许保留 adapter-specific 细节，但不得破坏稳定顶层字段。
 7. route fallback 必须把 `transport_kind / provider_kind / vendor_binding_kind` 一起纳入真值，不得再把同一 surface 的不同 transport 混为单一 availability。
 8. 当 `remote_api` binding 无法唯一解析或与 surface 不匹配时，probe 必须以结构化 reason code fail-closed，而不是静默退回默认 binding。
+9. 当 route input 已显式锁定 `transport_kind` 时，probe 只允许针对该 transport 生成 availability truth；同一 surface 的其他 transport 成功结果不得覆盖这次失败。
+10. `fallback_allowed` 只能表达 route consumer 是否可继续尝试其他 surface；若 presenter 想建议 `switch_to_cli_exec`，那只能作为 follow-up next action，而不是 probe runtime 的隐式重试。
 
 ## 5. Output Semantics
 
@@ -74,6 +76,7 @@
 6. `overall_status=degraded` 允许表示“基础聊天可用，但当前 route 不可用”或“核心能力可用但诊断存在轻微风险”。
 7. `credential_source` 与 `endpoint_source` 应帮助 consumer 区分 repo 显式配置、env override、secret store、provider-local discovery 与 vendor default。
 8. `request_cancellation_mode=local_abort_only` 表示 Governor 只能保证本地 stream / request 已发出 abort，而不默认宣称 provider 端任务已被强取消。
+9. 当当前尝试来自显式 transport 选择时，diagnostics 应让 consumer 可区分 `config_explicit`、`inferred_from_remote_api` 与 `surface_default` 三种选择来源。
 
 ## 6. Stable Reason Codes
 

@@ -1,7 +1,7 @@
 # Agent Projection Contract
 
 - Status: active
-- Date: 2026-04-04
+- Date: 2026-04-09
 - Contract ID: `contract.runtime.agent-projection.v1`
 - Producer Module: `runtime.agent-projection`
 
@@ -69,6 +69,8 @@
 6. `selected_surface` 继续保留为用户语义主键，但当 runtime 已解析到 transport / provider binding 时，replay truth 不得只剩 surface 名称。
 7. capability snapshot 必须按 transport 计算，不允许把同一 surface 的 `cli_exec` 能力偷渡给 `remote_api` 路径。
 8. fallback 决策必须能区分“surface 不可用”和“同 surface 的 remote_api binding 不可用”。
+9. 当 `selected_transport` 来自显式 tool config 或 candidate config 时，projection / replay truth 必须把该 transport 视为 locked selection；同一 surface 内失败不得被自动重写为另一种 transport 的成功执行。
+10. 如果 consumer 想建议 `switch_to_cli_exec` 或其他替代 route，只能通过 descriptor companion diagnostics / next-action surface 暴露，不得篡改当前 `AgentDescriptor` 的 canonical transport truth。
 
 ## 5. Provider Continuation Extension
 
@@ -138,3 +140,4 @@
 5. `v1` 允许以 additive `continuation` request/result 扩展 invoke/stream seams，只要旧 consumer 在未读取 continuation 字段时仍保持兼容。
 6. `v1` 不要求所有 provider 与所有 transport 第一阶段都支持 continuation reuse；不支持时必须诚实返回 `unsupported`。
 7. `v1` 目前只接受 non-secret inline provider reference；若某个 provider 只能返回敏感 continuation token，则在 secret-store reference seam formalized 之前应保持 unsupported。
+8. `v1` 允许 companion diagnostics 以 additive fields 暴露 `transport_selection_source` 与 `transport_selection_locked`，只要 `AgentDescriptor` minimum fields 与 replay semantics 继续保持兼容。
