@@ -542,7 +542,7 @@ export class StructuredWorkflowAssetRegistry {
         record.sourcePackRefs,
         'record.sourcePackRefs',
       ),
-      ...(record.projectedSkillMarkdown
+      ...(record.projectedSkillMarkdown !== undefined
         ? {
             projectedSkillMarkdown: readRequiredString(
               record.projectedSkillMarkdown,

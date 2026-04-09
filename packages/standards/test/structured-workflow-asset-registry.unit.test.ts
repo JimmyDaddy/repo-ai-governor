@@ -1,3 +1,4 @@
+import { GovernorErrorCode } from '@repo-ai-governor/shared';
 import {
   HostDistributionDiscoveryState,
   HostDistributionHandoffBridge,
@@ -126,5 +127,28 @@ describe('StructuredWorkflowAssetRegistry', () => {
     expect(targetCapabilities.supportsApplyToRepo).toBe(false);
     expect(targetCapabilities.supportsBundlePackaging).toBe(false);
     expect(targetCapabilities.isMvpTarget).toBe(false);
+  });
+
+  it('rejects explicitly present empty projected skill markdown values', () => {
+    let capturedError: unknown;
+
+    try {
+      new StructuredWorkflowAssetRegistry({
+        records: [
+          {
+            ...workflowFixtures[0],
+            workflowId: 'workspace-code-review-workflow-empty-skill-markdown',
+            projectedSkillMarkdown: '   ',
+          },
+        ],
+      });
+    } catch (error) {
+      capturedError = error;
+    }
+
+    expect(capturedError).toMatchObject({
+      code: GovernorErrorCode.STANDARDS_PACK_INVALID,
+      message: expect.stringContaining('record.projectedSkillMarkdown'),
+    });
   });
 });

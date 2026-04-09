@@ -1,8 +1,8 @@
 # @repo-ai-governor/cli
 
 - Status: baseline
-- Date: 2026-04-08
-- Scope: `project-009-production-readiness / TK-075,TK-076`
+- Date: 2026-04-09
+- Scope: `project-009-production-readiness / TK-075,TK-076`; `project-061-adoption-pack-installer-and-self-host-bootstrap-rollout / TK-656~TK-667`
 
 ## Purpose
 
@@ -14,9 +14,10 @@
 2. 多工具接入：`connect`、`verify`
 3. 受治理执行：`plan`、`run`、`review`、`review-verify`
 4. 会话入口：无子命令 session shell、`resume`
-5. 流程与生命周期：`workflow`、`upgrade`
-6. workspace 与壳层偏好：`workspace`、`set-ui-theme`
-7. 宿主分发：`host export`、`host verify`、`host pack`
+5. adopter 安装生命周期：`adopt list`、`adopt apply`、`adopt diff`、`adopt verify`、`adopt upgrade`、`adopt remove`
+6. 流程与生命周期：`workflow`、`upgrade`
+7. workspace 与壳层偏好：`workspace`、`set-ui-theme`
+8. 宿主分发：`host export`、`host verify`、`host pack`
 
 ## Notes
 
@@ -30,4 +31,5 @@
 8. `review-verify` 结果会同时生成 `context/ledger-backfill/review-verify/*.json`，用于后续台账回填与归因。
 9. 无子命令入口在交互式 TTY + `pretty` 模式下会进入 session shell；`resume` 可恢复最近一次或指定的持久化会话。
 10. `workspace` 现在同时承接 `dry-run|execute|rollback|clear-config|switch-branch|set-ui-theme`，而顶层 `set-ui-theme` 负责持久化 React shell 主题。
-11. `host export/verify/pack` 负责 staged host assets、verification summary 与 pack receipt；公开的 service-host 根包入口固定为 `@cjhdev/repo-ai-governor/service-host`。
+11. `adopt list/apply/diff/verify/upgrade/remove` 负责 built-in 或 override adoption pack 的解析、受管安装、差异检查、验证与移除；`self-host-complete` profile 只在显式选择时才会 materialize `repo_local` governance bootstrap surface。
+12. `host export/verify/pack` 负责 staged host assets、verification summary 与 pack receipt；公开的 service-host 根包入口固定为 `@cjhdev/repo-ai-governor/service-host`。

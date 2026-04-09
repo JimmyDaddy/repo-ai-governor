@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import { GovernorErrorCode } from '@repo-ai-governor/shared';
 import {
   ADOPTION_PACK_MANIFEST_SCHEMA_VERSION,
   AdoptionPackManagedAssetGroup,
@@ -86,5 +87,26 @@ describe('AdoptionPackRegistry', () => {
     expect(definition.workflowRecords[0]?.projectedSkillMarkdown).toContain(
       '# Workspace Code Review Workflow',
     );
+  });
+
+  it('wraps invalid manifest JSON with source-aware runtime diagnostics', async () => {
+    const cwd = await mkdtemp(join(tmpdir(), 'adoption-pack-registry-invalid-'));
+    const repoLocalRoot = join(cwd, '.repo-ai-governor', 'adoption-packs');
+    const manifestPath = join(repoLocalRoot, 'invalid.json');
+    await mkdir(repoLocalRoot, { recursive: true });
+    await writeFile(manifestPath, '{"packId":', 'utf8');
+
+    const registry = new AdoptionPackRegistry({
+      currentWorkingDirectory: cwd,
+    });
+
+    await expect(registry.list()).rejects.toMatchObject({
+      code: GovernorErrorCode.STANDARDS_PACK_INVALID,
+      details: expect.objectContaining({
+        sourceKind: AdoptionPackSourceKind.REPO_LOCAL,
+        sourceRef: manifestPath,
+        fieldName: 'manifest',
+      }),
+    });
   });
 });

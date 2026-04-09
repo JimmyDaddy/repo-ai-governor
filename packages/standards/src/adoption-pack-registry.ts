@@ -3,22 +3,31 @@ import { readFile, readdir } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { resolve } from 'node:path';
 
-import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
+import { GovernorErrorCode, RuntimeError, standardizeError } from '@repo-ai-governor/shared';
 import {
   listBuiltInAdoptionPackDefinitions,
   resolveBuiltInAdoptionPackDefinition,
 } from './built-in-adoption-pack-catalog.js';
 import {
+  ADOPTION_PACK_MANAGED_ASSET_GROUP_VALUES,
+  ADOPTION_PACK_REMOVE_POLICY_VALUES,
+  ADOPTION_PACK_UPGRADE_POLICY_VALUES,
+  ADOPTION_PACK_WORKSPACE_MODE_POLICY_VALUES,
   AdoptionPackSourceKind,
   DEFAULT_GLOBAL_ADOPTION_PACK_ROOT_SEGMENTS,
   DEFAULT_REPO_LOCAL_ADOPTION_PACK_ROOT_SEGMENTS,
 } from './constants/adoption-pack.constant.js';
+import {
+  HOST_DISTRIBUTION_HANDOFF_BRIDGE_VALUES,
+  HOST_DISTRIBUTION_TARGET_VALUES,
+} from './constants/host-distribution.constant.js';
 import type {
   AdoptionPackManifest,
   AdoptionPackRegistryOptions,
   ResolvedAdoptionPackDefinition,
   ResolvedAdoptionPackManifest,
 } from './types/index.js';
+import { readRequiredString } from './utils/validation.util.js';
 
 interface AdoptionPackSourceDocument {
   manifest: AdoptionPackManifest;
@@ -135,7 +144,11 @@ export class AdoptionPackRegistry {
 
     for (const entry of fileEntries) {
       const absolutePath = resolve(root, entry.name);
-      const manifest = JSON.parse(await readFile(absolutePath, 'utf8')) as AdoptionPackManifest;
+      const manifest = this.parseManifestDocument(
+        await readFile(absolutePath, 'utf8'),
+        sourceKind,
+        absolutePath,
+      );
       documents.push({
         manifest: {
           ...manifest,
@@ -148,6 +161,349 @@ export class AdoptionPackRegistry {
     }
 
     return documents;
+  }
+
+  private parseManifestDocument(
+    rawManifestContent: string,
+    sourceKind: AdoptionPackSourceKind,
+    sourceRef: string,
+  ): AdoptionPackManifest {
+    let parsedManifest: unknown;
+
+    try {
+      parsedManifest = JSON.parse(rawManifestContent);
+    } catch (error) {
+      this.throwManifestValidationError(
+        'Failed to parse adoption-pack manifest JSON.',
+        sourceKind,
+        sourceRef,
+        'manifest',
+        error,
+      );
+    }
+
+    if (!parsedManifest || typeof parsedManifest !== 'object' || Array.isArray(parsedManifest)) {
+      this.throwManifestValidationError(
+        'Adoption-pack manifest must be a plain object.',
+        sourceKind,
+        sourceRef,
+        'manifest',
+      );
+    }
+
+    const manifestRecord = parsedManifest as Record<string, unknown>;
+
+    return {
+      schemaVersion: this.readManifestRequiredString(
+        manifestRecord.schemaVersion,
+        'manifest.schemaVersion',
+        sourceKind,
+        sourceRef,
+      ),
+      packId: this.readManifestRequiredString(
+        manifestRecord.packId,
+        'manifest.packId',
+        sourceKind,
+        sourceRef,
+      ),
+      packVersion: this.readManifestRequiredString(
+        manifestRecord.packVersion,
+        'manifest.packVersion',
+        sourceKind,
+        sourceRef,
+      ),
+      status: this.readManifestRequiredString(
+        manifestRecord.status,
+        'manifest.status',
+        sourceKind,
+        sourceRef,
+      ),
+      ownerModule: this.readManifestRequiredString(
+        manifestRecord.ownerModule,
+        'manifest.ownerModule',
+        sourceKind,
+        sourceRef,
+      ),
+      sourceKind,
+      sourceRef,
+      profiles: this.readManifestProfileList(
+        manifestRecord.profiles,
+        'manifest.profiles',
+        sourceKind,
+        sourceRef,
+      ),
+      managedAssetGroups: this.readManifestEnumList(
+        manifestRecord.managedAssetGroups,
+        'manifest.managedAssetGroups',
+        ADOPTION_PACK_MANAGED_ASSET_GROUP_VALUES,
+        sourceKind,
+        sourceRef,
+      ) as AdoptionPackManifest['managedAssetGroups'],
+      managedPaths: this.readManifestStringList(
+        manifestRecord.managedPaths,
+        'manifest.managedPaths',
+        sourceKind,
+        sourceRef,
+      ),
+      canonicalSourceRefs: this.readManifestStringList(
+        manifestRecord.canonicalSourceRefs,
+        'manifest.canonicalSourceRefs',
+        sourceKind,
+        sourceRef,
+      ),
+      sourcePackRefs: this.readManifestStringList(
+        manifestRecord.sourcePackRefs,
+        'manifest.sourcePackRefs',
+        sourceKind,
+        sourceRef,
+      ),
+      hostTargets: this.readManifestEnumList(
+        manifestRecord.hostTargets,
+        'manifest.hostTargets',
+        HOST_DISTRIBUTION_TARGET_VALUES,
+        sourceKind,
+        sourceRef,
+      ) as AdoptionPackManifest['hostTargets'],
+      handoffBridge: this.readManifestEnumValue(
+        manifestRecord.handoffBridge,
+        'manifest.handoffBridge',
+        HOST_DISTRIBUTION_HANDOFF_BRIDGE_VALUES,
+        sourceKind,
+        sourceRef,
+      ) as AdoptionPackManifest['handoffBridge'],
+      verificationProfileRefs: this.readManifestStringList(
+        manifestRecord.verificationProfileRefs,
+        'manifest.verificationProfileRefs',
+        sourceKind,
+        sourceRef,
+      ),
+      upgradePolicy: this.readManifestEnumValue(
+        manifestRecord.upgradePolicy,
+        'manifest.upgradePolicy',
+        ADOPTION_PACK_UPGRADE_POLICY_VALUES,
+        sourceKind,
+        sourceRef,
+      ) as AdoptionPackManifest['upgradePolicy'],
+      removePolicy: this.readManifestEnumValue(
+        manifestRecord.removePolicy,
+        'manifest.removePolicy',
+        ADOPTION_PACK_REMOVE_POLICY_VALUES,
+        sourceKind,
+        sourceRef,
+      ) as AdoptionPackManifest['removePolicy'],
+      docsEntrypoints: this.readManifestStringList(
+        manifestRecord.docsEntrypoints,
+        'manifest.docsEntrypoints',
+        sourceKind,
+        sourceRef,
+      ),
+    };
+  }
+
+  private readManifestProfileList(
+    value: unknown,
+    fieldName: string,
+    sourceKind: AdoptionPackSourceKind,
+    sourceRef: string,
+  ): AdoptionPackManifest['profiles'] {
+    if (!Array.isArray(value)) {
+      this.throwManifestValidationError(
+        `Field "${fieldName}" must be an array.`,
+        sourceKind,
+        sourceRef,
+        fieldName,
+      );
+    }
+
+    return value.map((profile, index) =>
+      this.readManifestProfile(profile, `${fieldName}[${index}]`, sourceKind, sourceRef),
+    );
+  }
+
+  private readManifestProfile(
+    value: unknown,
+    fieldName: string,
+    sourceKind: AdoptionPackSourceKind,
+    sourceRef: string,
+  ): AdoptionPackManifest['profiles'][number] {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      this.throwManifestValidationError(
+        `Field "${fieldName}" must be an object.`,
+        sourceKind,
+        sourceRef,
+        fieldName,
+      );
+    }
+
+    const profileRecord = value as Record<string, unknown>;
+
+    return {
+      profileId: this.readManifestRequiredString(
+        profileRecord.profileId,
+        `${fieldName}.profileId`,
+        sourceKind,
+        sourceRef,
+      ),
+      displayName: this.readManifestRequiredString(
+        profileRecord.displayName,
+        `${fieldName}.displayName`,
+        sourceKind,
+        sourceRef,
+      ),
+      workflowAssetIds: this.readManifestStringList(
+        profileRecord.workflowAssetIds,
+        `${fieldName}.workflowAssetIds`,
+        sourceKind,
+        sourceRef,
+      ),
+      commandEntrypoints: this.readManifestStringList(
+        profileRecord.commandEntrypoints,
+        `${fieldName}.commandEntrypoints`,
+        sourceKind,
+        sourceRef,
+      ),
+      guideEntrypoints: this.readManifestStringList(
+        profileRecord.guideEntrypoints,
+        `${fieldName}.guideEntrypoints`,
+        sourceKind,
+        sourceRef,
+      ),
+      standardsPackRefs: this.readManifestStringList(
+        profileRecord.standardsPackRefs,
+        `${fieldName}.standardsPackRefs`,
+        sourceKind,
+        sourceRef,
+      ),
+      hostTargets: this.readManifestEnumList(
+        profileRecord.hostTargets,
+        `${fieldName}.hostTargets`,
+        HOST_DISTRIBUTION_TARGET_VALUES,
+        sourceKind,
+        sourceRef,
+      ) as AdoptionPackManifest['profiles'][number]['hostTargets'],
+      bootstrapActions: this.readManifestStringList(
+        profileRecord.bootstrapActions,
+        `${fieldName}.bootstrapActions`,
+        sourceKind,
+        sourceRef,
+      ),
+      workspaceModePolicy: this.readManifestEnumValue(
+        profileRecord.workspaceModePolicy,
+        `${fieldName}.workspaceModePolicy`,
+        ADOPTION_PACK_WORKSPACE_MODE_POLICY_VALUES,
+        sourceKind,
+        sourceRef,
+      ) as AdoptionPackManifest['profiles'][number]['workspaceModePolicy'],
+    };
+  }
+
+  private readManifestStringList(
+    value: unknown,
+    fieldName: string,
+    sourceKind: AdoptionPackSourceKind,
+    sourceRef: string,
+  ): string[] {
+    if (!Array.isArray(value)) {
+      this.throwManifestValidationError(
+        `Field "${fieldName}" must be an array.`,
+        sourceKind,
+        sourceRef,
+        fieldName,
+      );
+    }
+
+    return value.map((entry, index) =>
+      this.readManifestRequiredString(entry, `${fieldName}[${index}]`, sourceKind, sourceRef),
+    );
+  }
+
+  private readManifestEnumList(
+    value: unknown,
+    fieldName: string,
+    allowedValues: Set<string>,
+    sourceKind: AdoptionPackSourceKind,
+    sourceRef: string,
+  ): string[] {
+    const normalizedValues = this.readManifestStringList(value, fieldName, sourceKind, sourceRef);
+    return normalizedValues.map((entry, index) =>
+      this.readManifestEnumValue(
+        entry,
+        `${fieldName}[${index}]`,
+        allowedValues,
+        sourceKind,
+        sourceRef,
+      ),
+    );
+  }
+
+  private readManifestEnumValue(
+    value: unknown,
+    fieldName: string,
+    allowedValues: Set<string>,
+    sourceKind: AdoptionPackSourceKind,
+    sourceRef: string,
+  ): string {
+    const normalizedValue = this.readManifestRequiredString(
+      value,
+      fieldName,
+      sourceKind,
+      sourceRef,
+    );
+    if (!allowedValues.has(normalizedValue)) {
+      this.throwManifestValidationError(
+        `Field "${fieldName}" contains unsupported value.`,
+        sourceKind,
+        sourceRef,
+        fieldName,
+        undefined,
+        {
+          value: normalizedValue,
+          allowedValues: Array.from(allowedValues),
+        },
+      );
+    }
+
+    return normalizedValue;
+  }
+
+  private readManifestRequiredString(
+    value: unknown,
+    fieldName: string,
+    sourceKind: AdoptionPackSourceKind,
+    sourceRef: string,
+  ): string {
+    try {
+      return readRequiredString(value, fieldName, GovernorErrorCode.STANDARDS_PACK_INVALID);
+    } catch (error) {
+      this.throwManifestValidationError(
+        standardizeError(error).message || `Field "${fieldName}" is invalid.`,
+        sourceKind,
+        sourceRef,
+        fieldName,
+        error,
+      );
+    }
+  }
+
+  private throwManifestValidationError(
+    message: string,
+    sourceKind: AdoptionPackSourceKind,
+    sourceRef: string,
+    fieldName: string,
+    cause?: unknown,
+    extraDetails?: Record<string, unknown>,
+  ): never {
+    throw new RuntimeError(
+      GovernorErrorCode.STANDARDS_PACK_INVALID,
+      message,
+      {
+        sourceKind,
+        sourceRef,
+        fieldName,
+        ...extraDetails,
+      },
+      cause,
+    );
   }
 
   private toResolvedDefinition(
