@@ -1,7 +1,7 @@
 # Runtime Governance Clients Module Overview
 
 - Status: active
-- Date: 2026-04-08
+- Date: 2026-04-09
 - Module ID: `runtime.governance-clients`
 - Owner: runtime
 - Layer: `runtime-core`
@@ -19,8 +19,11 @@
 5. 正式区分 `staged export`、`host-discoverable project-local assets` 与 `installed bundle` 三种状态，避免把导出工作区误判为宿主已经可消费的资产。
 6. 约束所有表面都只能消费 service-owned query/command seam，不得直接读取 `.repo-ai-governor/**` canonical truth，也不得在 surface 或 plugin 内维护第二份 orchestration state。
 7. 拥有 worktree / editor / terminal / review 文档等 handoff affordance 与 host distribution apply/pack/verify 语义的正式产品边界，但不把 handoff consumer 或宿主插件升格为新的 runtime owner。
-8. 为 multi-workspace overview、parallel execution lane、background queue、notification ownership 与 host-native rollout phase map 提供正式方向，但不宣称这些方向已在代码面全部交付。
-9. 为 adopter truthfulness、current surface baseline classification、secondary surface sequencing、host-native lifecycle carry slot 与 follow-up decomposition 提供 planning-side formal direction，但不把路线图判断误报为已完成交付。
+8. 定义 installer-layer `adoption pack` 与 target-repo bootstrap boundary：高层 installer 负责 pack resolve/apply/diff/upgrade/remove、managed ownership、receipt 与 bootstrap template，而底层 host export/apply/pack/verify 仍只负责 host-native projection。
+9. 约束 installer 只可物化 host-consumable projection、installer metadata 与显式 repo-local bootstrap template；默认 `tool_managed` 工作区事实、`repo_local` 运行态 state 与 self-host authoring surface 不能被静态 install payload 冒充。
+10. 为 multi-workspace overview、parallel execution lane、background queue、notification ownership 与 host-native rollout phase map 提供正式方向，但不宣称这些方向已在代码面全部交付。
+11. 为 adopter truthfulness、real adapter invocation、secondary surface sequencing、GA evidence consolidation、standards runtime productization 与 adoption-pack installer rollout 提供 planning-side formal direction，但不把路线图判断误报为已完成交付。
+12. 为 current surface baseline classification、host-native lifecycle carry slot 与 follow-up decomposition 提供 planning-side formal direction，但不把路线图判断误报为已完成交付。
 
 ## 3. 非目标
 
@@ -49,6 +52,7 @@
 
 1. `contract.runtime.governance-surface-client.v1`
 2. `contract.runtime.governance-host-distribution.v1`
+3. `contract.runtime.adoption-pack-install.v1`
 
 ## 7. Loading Guidance
 
@@ -67,7 +71,12 @@
    - `staged export`、`apply/sync`、`pack`、`target-aware verify` 成为正式 contract，而不是文档层建议。
 5. 本模块 formalize 的是 surface boundary、host distribution boundary 与 phased rollout，不自动宣称 host renderer、bundle packager 或 MCP bridge 已全部实现；真实 delivery follow-up 由 `project-050-governance-surface-clients-host-distribution-rollout` 承接。
 6. 截至 `2026-04-06`，本模块进一步接受“adopter productization priority and surface sequencing”补充方向：当前 follow-up 固定先收口 CLI adopter truthfulness 与 GA closeout，再推进 real adapter invocation；secondary surface 固定采取 `VS Code first / desktop foundation`；GA evidence consolidation 与 standards runtime loader / pack productization 随后承接。
-7. 截至 `2026-04-08`，本模块进一步接受“current surface baseline classification and follow-up decomposition”补充方向：
+7. 截至 `2026-04-09`，`v3` 进一步接受 installer-layer `adoption pack` 与 target-repo bootstrap direction：
+   - `host export/apply/pack/verify` 保持为 host projection substrate，而不是完整 adopter installation story。
+   - 新增 installer-focused contract formalize `adopt apply/diff/upgrade/remove`、managed ownership、install receipt 与 `self-host-complete` template bootstrap boundary。
+   - `self-host-complete` 只允许作为显式高级 profile，在 `workspace.mode=repo_local` 下 seed template-backed canonical surfaces；它复刻的是治理模型，不是源仓库 live-state clone。
+   - 真实 rollout follow-up 由 `project-061-adoption-pack-installer-and-self-host-bootstrap-rollout` 承接。
+8. 截至 `2026-04-08`，本模块进一步接受“current surface baseline classification and follow-up decomposition”补充方向：
    - `project-052 ~ project-057` 保留为历史完成流，不再代表当前下一条 primary / planned stream。
    - 当前 follow-up order 固定重置为 `project-062 -> project-063 -> project-067 -> project-064 -> project-065 -> project-066`。
    - adopter-facing distribution truth lane 由 `project-063 + project-067` 共同承接。
@@ -78,8 +87,10 @@
 1. Contract:
    - `contracts/governance-surface-client-contract.md`
    - `contracts/governance-host-distribution-contract.md`
+   - `contracts/governance-adoption-pack-install-contract.md`
 2. ADR:
    - `adrs/desktop-command-center-and-vscode-editor-companion-split.md`
    - `adrs/host-native-distribution-and-target-specific-consumption.md`
    - `adrs/adopter-productization-priority-and-surface-sequencing.md`
+   - `adrs/adoption-pack-installer-and-self-host-template-bootstrap.md`
    - `adrs/current-surface-baseline-classification-and-followup-decomposition.md`

@@ -1,4 +1,19 @@
 export type {
+  AdoptionPackDiffRecord,
+  AdoptionPackDiffReport,
+  AdoptionPackInstallReceipt,
+  AdoptionPackManagedFileRecord,
+  AdoptionPackManifest,
+  AdoptionPackProfile,
+  AdoptionPackRegistryOptions,
+  AdoptionPackSourceResolution,
+  AdoptionPackTemplateRecord,
+  AdoptionPackVerificationCheck,
+  AdoptionPackVerificationSummary,
+  ResolvedAdoptionPackDefinition,
+  ResolvedAdoptionPackManifest,
+} from './adoption-pack.interface.js';
+export type {
   ProjectedReviewRuleBundle,
   ReviewRuleBundleProjectionOptions,
   ReviewRuleDefinition,

@@ -19,6 +19,7 @@ export interface StructuredWorkflowAssetRecord {
   description: string;
   canonicalSourceRefs: string[];
   sourcePackRefs: string[];
+  projectedSkillMarkdown?: string;
   hostTargetMatrix: HostDistributionTarget[];
   triggerHints: string[];
   inputs: string[];

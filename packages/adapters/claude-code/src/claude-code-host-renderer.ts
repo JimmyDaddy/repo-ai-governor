@@ -354,6 +354,10 @@ export class ClaudeCodeHostRenderer {
   }
 
   private loadSkillMarkdown(record: StructuredWorkflowAssetRecord): string {
+    if (record.projectedSkillMarkdown) {
+      return `${record.projectedSkillMarkdown.trimEnd()}\n`;
+    }
+
     const skillPath = record.canonicalSourceRefs.find((sourceRef) =>
       sourceRef.endsWith('SKILL.md'),
     );

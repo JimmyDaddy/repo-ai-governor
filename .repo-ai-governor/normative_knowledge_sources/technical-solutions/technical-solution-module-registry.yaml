@@ -521,6 +521,8 @@ modules:
         kind: contract
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/governance-host-distribution-contract.md
         kind: contract
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/governance-adoption-pack-install-contract.md
+        kind: contract
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/desktop-command-center-and-vscode-editor-companion-split.md
         kind: adr
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/host-native-distribution-and-target-specific-consumption.md
@@ -528,6 +530,8 @@ modules:
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/adopter-productization-priority-and-surface-sequencing.md
         kind: adr
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/current-surface-baseline-classification-and-followup-decomposition.md
+        kind: adr
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/adoption-pack-installer-and-self-host-template-bootstrap.md
         kind: adr
     north_star_refs:
       - prd.multi-agent-orchestration
@@ -537,6 +541,7 @@ modules:
     exports_contracts:
       - contract.runtime.governance-surface-client.v1
       - contract.runtime.governance-host-distribution.v1
+      - contract.runtime.adoption-pack-install.v1
     imports_contracts:
       - contract.runtime.graph-execution.v1
       - contract.runtime.agent-projection.v1

@@ -2,6 +2,9 @@ import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+const SQLITE_EXPERIMENTAL_WARNING_PATTERN =
+  /\(node:\d+\) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n(?:\(Use `node --trace-warnings \.\.\.` to show where the warning was created\)\n?)?/g;
+
 /**
  * Resolves a runnable CLI command for e2e validation.
  * Why: `test:e2e` may run before or after `dist` build artifacts exist.
@@ -25,6 +28,16 @@ function resolveCliInvocation(): {
   };
 }
 
+/**
+ * Removes known Node runtime warnings that are environment-specific and not CLI regressions.
+ * Why: GitHub's Node 22 runner emits SQLite experimental warnings on stderr even when help succeeds.
+ * @param stderr Raw stderr from the spawned CLI process.
+ * @returns Remaining stderr content after known benign warnings are removed.
+ */
+function stripKnownRuntimeWarnings(stderr: string): string {
+  return stderr.replace(SQLITE_EXPERIMENTAL_WARNING_PATTERN, '').trim();
+}
+
 describe('CLI help e2e', () => {
   it('prints stable help output from runtime entrypoint', () => {
     const invocation = resolveCliInvocation();
@@ -36,6 +49,6 @@ describe('CLI help e2e', () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('Usage: repo-ai-governor');
     expect(result.stdout).toContain('Commands:');
-    expect(result.stderr).toBe('');
+    expect(stripKnownRuntimeWarnings(result.stderr)).toBe('');
   });
 });

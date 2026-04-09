@@ -9,15 +9,31 @@
 - 示例资产：`examples/`
 - 变更日志：`CHANGELOG.zh-CN.md`
 
-## 1. 快速开始
+## 1. 当前公开能力面
 
-### 1.1 前置条件
+当前公开 CLI 与包级 surface 包括：
+
+1. 初始化与审计：`init`、`doctor`、`check`
+2. 受管仓库安装生命周期：`adopt list`、`adopt apply`、`adopt diff`、`adopt verify`、`adopt upgrade`、`adopt remove`
+3. 多工具接入：`connect`、`verify`
+4. 受治理执行：`plan`、`run`、`review`、`review-verify`
+5. 会话优先入口：无子命令执行 `repo-ai-governor`，再用 `resume`
+6. 流程与 schema 生命周期工具：`workflow`、`upgrade`
+7. workspace 与壳层偏好：`workspace`、`set-ui-theme`
+8. 低层宿主分发：`host export`、`host verify`、`host pack`
+9. 可选 secondary/public package surface：源码仓 VS Code companion、desktop foundation，以及根包公开导出 `@cjhdev/repo-ai-governor/service-host`
+
+这些 surface 的正式支持边界以 `docs/support-matrix.zh-CN.md` 为准。
+
+## 2. 快速开始
+
+### 2.1 前置条件
 
 1. Node.js `>=18`
 2. 使用 `path`、`link`、`tgz` 安装方式时需要 `pnpm`
 3. 一个准备接入治理流程的目标仓库
 
-### 1.2 选择安装方式
+### 2.2 选择安装方式
 
 假设本仓库根目录为 `<governor-repo>`，目标仓库为 `<target-repo>`。
 
@@ -72,7 +88,7 @@ node <governor-repo>/dist/bin/repo-ai-governor.js --help
 
 适合先验证 CLI/runtime 行为、暂时不改目标仓库依赖图的场景；它不证明 packaged install 已经成立。
 
-### 1.3 在目标仓库跑通第一轮
+### 2.3 在目标仓库跑通第一轮
 
 ```bash
 pnpm exec repo-ai-governor --help
@@ -94,9 +110,37 @@ node <governor-repo>/dist/bin/repo-ai-governor.js <command>
 3. `resume [session-id]` 可恢复最近一次或指定的持久化会话。
 4. 全新的外部仓库仍可能出现 `baseline_docs missing=5/5`、`script_not_found` 之类 self-host 相关 warning；除非你本来就要 vendoring 本仓库自己的治理文档和脚本，否则应把它们视为提示而不是失败。
 
-## 2. 常见使用路径
+### 2.4 应用受管 adoption baseline
 
-### 2.1 接入多种 AI 工具
+```bash
+pnpm exec repo-ai-governor adopt list --output json
+pnpm exec repo-ai-governor adopt apply adopter-complete --repo . --hosts codex,claude-code,github-copilot --output json
+pnpm exec repo-ai-governor adopt verify --repo . --output json
+```
+
+当你想走“整仓安装”的首选路径，而不是手工 staging 低层 host export 时，使用这组命令。
+
+说明：
+
+1. 内置 adoption pack 会把受管宿主资产、guide 与安装元数据写到 `.repo-ai-governor/adoption/installations/**`。
+2. 内置 `adopt apply` 不要求目标仓库预先存在 source-local `.codex/skills/**`。
+3. 如果要走高级 self-host 路径，请使用 `adopt apply adopter-complete --adoption-profile self-host-complete --workspace-mode repo_local`。
+
+## 3. 常见使用路径
+
+### 3.1 安装或维护一套受管仓库 baseline
+
+```bash
+pnpm exec repo-ai-governor adopt apply adopter-complete --repo . --hosts codex,claude-code,github-copilot --output json
+pnpm exec repo-ai-governor adopt verify --repo . --output json
+pnpm exec repo-ai-governor adopt diff --repo . --output json
+pnpm exec repo-ai-governor adopt upgrade adopter-complete --repo . --output json
+pnpm exec repo-ai-governor adopt remove adopter-complete --repo . --force --output json
+```
+
+适合在目标仓库上使用正式支持的高层安装、漂移检查、升级与移除路径。
+
+### 3.2 接入多种 AI 工具
 
 ```bash
 pnpm exec repo-ai-governor connect --tools codex,claude-code --preset multi-tool-default --output json
@@ -107,7 +151,7 @@ pnpm exec repo-ai-governor run --output json --dry-run --trace
 
 这条路径会生成可审阅的 candidate 配置、检查 adapter readiness，并在真实执行前完成一轮 dry-run 验证。
 
-### 2.2 跑通第一条受治理流程
+### 3.3 跑通第一条受治理流程
 
 ```bash
 pnpm exec repo-ai-governor plan --output json
@@ -118,7 +162,7 @@ pnpm exec repo-ai-governor review-verify --output json
 
 适合第一次体验完整的 plan -> run -> review -> verify 闭环，并查看 workspace 下的审计产物。
 
-### 2.3 切换 workspace 模式
+### 3.4 切换 workspace 模式
 
 ```bash
 pnpm exec repo-ai-governor workspace dry-run --workspace-mode repo_local --output json
@@ -128,7 +172,7 @@ pnpm exec repo-ai-governor workspace rollback <plan-path> --output json
 
 请保留命令输出中的 `plan-path`，它就是这次迁移的 rollback 参考。
 
-### 2.4 预览、应用与回滚 Upgrade
+### 3.5 预览、应用与回滚 Upgrade
 
 ```bash
 pnpm exec repo-ai-governor upgrade --output json
@@ -138,7 +182,7 @@ pnpm exec repo-ai-governor upgrade rollback <apply-receipt-or-rollback-snapshot>
 
 先跑 `upgrade` preview。保留 preview 输出里的 `report_path`，以及 apply 输出里的 `apply_receipt_path`；这两类产物就是 adopter-facing apply/rollback 路径的正式 hand-off 参考。
 
-### 2.5 刷新可选的 Codex / Claude Code 宿主资产
+### 3.6 刷新可选的 Codex / Claude Code 宿主资产
 
 ```bash
 pnpm exec repo-ai-governor host export --host codex --mode project-local --output-dir .repo-ai-governor/generated/hosts/codex --apply-to-repo /absolute/path/to/<target-repo>
@@ -153,19 +197,20 @@ pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/ho
 
 正式刷新路径固定为：更新 governor 源码 checkout 或 vendored 的宿主侧 skills，然后重新执行 `host export` 或 `host pack`，最后重新执行 `host verify`。这属于源码仓 follow-up surface，不属于 packaged-install baseline，也不是一条独立的 host installer contract。
 
-## 3. 给外部 adopter 的提醒
+## 4. 给外部 adopter 的提醒
 
 1. `dist-binary` 演练证明的是 CLI/runtime 行为，不等于已经验证 package install surface。
 2. `tgz` 不是离线自包含安装；安装阶段仍会从 npm registry 解析外部依赖。
 3. `tgz` 路径验证的只是“已发布 CLI tarball + 随包文档/参考资产”这条打包面；它不会把 VS Code 的打包支持扩大到“源码仓本地生成 VSIX / packaged extension root”之外，也不会提供 Marketplace 或已发布可安装扩展的支持声明。
 4. 如果目标仓库本身是 Yarn/npm，或者已有脏工作树，建议先走 `dist-binary`；否则默认先用 `path`，只有在工作流需要时再切到 `link` 或 `tgz`。
-5. session shell、React shell、workflow/upgrade、HITL 通知、故障排查等更完整说明，请看本地接入手册。
+5. session shell、React shell、workflow/upgrade、宿主分发、workspace 工具、HITL 通知、故障排查等更完整说明，请看本地接入手册。
 6. 可选的 VS Code companion surface 现在支持两条路径：从已构建的 governor 源码仓通过 `apps/vscode-extension` 启动 extension-development host，或从同一源码仓本地生成 VSIX / packaged extension root。已发布的 npm/tgz 安装面即便仍带有内部 `dist/apps/vscode-extension/**` 产物，也不会交付正式支持的可安装扩展 bundle，Marketplace 仍不在支持范围内。
 7. 可选 desktop surface 继续保持 desktop foundation-only，并且只在已构建的 governor 源码仓上正式支持。当前没有正式支持的独立桌面安装器、已发布桌面 bundle 或 packaged desktop product claim。
-8. 仓库内的 Codex 本地工作流辅助能力位于 `.codex/skills/`；它们主要服务 self-host 与维护者流程，外部 adopter 只有在希望复用同样的本地 skill 体验时才需要一并 vendoring。
+8. 内置 `adopt apply` 不要求目标仓库预先存在 source-local `.codex/skills/**`；仓库内的 Codex 本地工作流辅助能力位于 `.codex/skills/`，主要服务 self-host 与维护者流程，外部 adopter 只有在希望复用同样的本地 skill 体验时才需要一并 vendoring。
 9. 可选的 Codex / Claude Code 宿主原生资产（`host export` / `host verify` / `host pack`）只在源码仓 follow-up surface 上正式支持。只要 governor 或技能资产有刷新，就要重新执行对应 host 命令并重新 `host verify`；不要把这条路径当成 packaged-install 证明或独立的 host upgrader。
+10. 若要在 clean-room 或 desktop-sidecar 场景下启动本地 service host，只支持通过根包公开导出 `@cjhdev/repo-ai-governor/service-host` 引入；不要深导入内部 `dist/**` host 文件。
 
-## 4. 继续阅读
+## 5. 继续阅读
 
 1. `docs/local-adoption-playbook.zh-CN.md`：面向使用者的完整接入、onboarding、rollback、workflow 与 troubleshooting 手册。
 2. `docs/support-matrix.zh-CN.md`：当前 install mode、adapter 与验证范围的支持边界。

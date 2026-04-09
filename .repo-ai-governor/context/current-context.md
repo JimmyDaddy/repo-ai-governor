@@ -8,7 +8,7 @@
 - Docs root: `none`
 - Task records: `none`
 - Review records: `none`
-- Note: `2026-04-08` `project-073 / sprint-001` 已通过 `CR-006` 与 `TK-717 / DA-717` 完成最终 closeout；当前 worktree 不再保留 active primary stream。
+- Note: `2026-04-09` `project-061-adoption-pack-installer-and-self-host-bootstrap-rollout / sprint-006-clean-room-rehearsals-and-docs-truthfulness` 与 `2026-04-08` `project-073 / sprint-001` 均已完成最终 closeout 并迁入 completed stream history；当前 worktree 不再保留 active primary stream。
 
 ## Active Streams
 

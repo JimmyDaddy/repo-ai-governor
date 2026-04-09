@@ -54,6 +54,12 @@ export const EN_US_TRANSLATIONS = {
         'Upgrade target schema version used by the preview action. Defaults to the latest supported version.',
       confirmPlan: 'Explicit plan confirmation decision for commit: approve|reject.',
       confirmUpgrade: 'Explicit upgrade confirmation decision for apply: approve|reject.',
+      adoptRepo: 'Target repository root used by the adoption-pack installer.',
+      adoptProfile:
+        'Optional adoption profile id. `--profile` is also accepted as a command-local alias for adopt.',
+      adoptHosts:
+        'Comma-separated host families to materialize: codex, claude-code, github-copilot.',
+      adoptReceipt: 'Explicit adoption install receipt path used by diff/verify/remove/upgrade.',
       host: 'Host family used by the host distribution command.',
       hostMode: 'Host distribution mode: project-local|plugin-bundle.',
       hostTarget: 'Explicit host target override such as codex.project_local.',
@@ -87,6 +93,45 @@ export const EN_US_TRANSLATIONS = {
       },
       doctor: { description: 'Run environment diagnostics baseline.' },
       check: { description: 'Run governance quality checks baseline.' },
+      adopt: {
+        description:
+          'List, apply, diff, verify, upgrade, or remove one managed adoption pack from a target repository.',
+        listDescription: 'List resolved adoption packs and their supported profiles.',
+        applyDescription:
+          'Apply one adoption pack into the target repository and write managed ownership receipts.',
+        diffDescription:
+          'Compare the current repository state against the active adoption install receipt.',
+        verifyDescription:
+          'Verify receipt provenance, managed files, and lower-level host artifacts for one installation.',
+        upgradeDescription:
+          'Reapply the managed adoption pack when current managed files are clean or --force is supplied.',
+        removeDescription:
+          'Remove managed projection files recorded by the active adoption receipt.',
+        packArgument:
+          'Optional pack selector. Profile ids like adopter-complete are also accepted.',
+        actionGuideTitle: 'Action guide:',
+        actionGuideList:
+          'Inspect built-in/global/repo-local pack resolution and available profiles.',
+        actionGuideApply:
+          'Materialize project-local host assets, self-host templates, and managed metadata into one repository.',
+        actionGuideDiff:
+          'Show managed-file drift between the current repository and the saved install receipt.',
+        actionGuideVerify:
+          'Recheck the saved receipt plus installed files to confirm source-aware adoption state.',
+        actionGuideUpgrade:
+          'Reapply the current pack definition after confirming managed files are clean or explicitly forced.',
+        actionGuideRemove:
+          'Delete only managed files tracked by the install receipt; removal remains explicit and fail-closed.',
+        examplesTitle: 'Examples:',
+        subcommandRequired:
+          'adopt requires an explicit subcommand; use `adopt list`, `adopt apply`, `adopt diff`, `adopt verify`, `adopt upgrade`, or `adopt remove`.',
+        listCompleted: 'Adoption pack catalog listed successfully.',
+        applyCompleted: 'Adoption pack {{packId}} applied successfully.',
+        diffCompleted: 'Adoption pack {{packId}} diff completed.',
+        verifyCompleted: 'Adoption pack {{packId}} verification completed.',
+        upgradeCompleted: 'Adoption pack {{packId}} upgrade completed.',
+        removeCompleted: 'Adoption pack {{packId}} removal completed.',
+      },
       run: { description: 'Execute process runtime baseline.' },
       review: { description: 'Generate code review baseline output.' },
       reviewVerify: { description: 'Verify code review baseline output.' },

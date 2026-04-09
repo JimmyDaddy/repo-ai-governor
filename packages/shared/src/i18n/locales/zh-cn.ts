@@ -44,6 +44,11 @@ export const ZH_CN_TRANSLATIONS = {
       targetVersion: '指定 upgrade preview 使用的目标 schema 版本；默认采用当前支持的最新版本。',
       confirmPlan: '指定 plan commit 的显式确认决策：approve|reject。',
       confirmUpgrade: '指定 upgrade apply 的显式确认决策：approve|reject。',
+      adoptRepo: '指定 adoption-pack installer 使用的目标仓库根路径。',
+      adoptProfile:
+        '指定 adoption profile 标识。对于 adopt 命令，也接受 `--profile` 作为命令级别别名。',
+      adoptHosts: '指定要物化的宿主族，逗号分隔：codex、claude-code、github-copilot。',
+      adoptReceipt: '指定 diff/verify/remove/upgrade 使用的 adoption install receipt 路径。',
       host: '指定 host distribution 命令使用的宿主族。',
       hostMode: '指定 host distribution 模式：project-local|plugin-bundle。',
       hostTarget: '指定显式 host target，例如 codex.project_local。',
@@ -71,6 +76,36 @@ export const ZH_CN_TRANSLATIONS = {
       },
       doctor: { description: '执行环境诊断基线。' },
       check: { description: '执行治理质量检查基线。' },
+      adopt: {
+        description: '列出、安装、对比、校验、升级或移除目标仓库中的受管 adoption pack。',
+        listDescription: '列出解析后的 adoption packs 及其支持的 profiles。',
+        applyDescription: '把一个 adoption pack 应用到目标仓库，并写入受管 ownership receipt。',
+        diffDescription: '对比当前仓库状态与 active adoption install receipt 的差异。',
+        verifyDescription:
+          '校验一份安装记录的 receipt provenance、managed files 与 host 子链产物。',
+        upgradeDescription:
+          '当受管文件保持 clean，或显式传入 --force 时，重新应用当前 adoption pack。',
+        removeDescription: '移除 active adoption receipt 记录的受管投影文件。',
+        packArgument: '可选 pack 选择器；也支持直接传入 adopter-complete 这类 profile id。',
+        actionGuideTitle: '动作说明：',
+        actionGuideList: '查看 built-in/global/repo-local 的 pack 解析结果，以及可用 profiles。',
+        actionGuideApply:
+          '把 project-local host assets、self-host templates 与 managed metadata 物化进一个仓库。',
+        actionGuideDiff: '显示当前仓库与已保存 install receipt 之间的受管文件漂移。',
+        actionGuideVerify: '重新核验 receipt 与已安装文件，确认 adoption 状态仍然 source-aware。',
+        actionGuideUpgrade: '在确认受管文件 clean 或显式 force 后，重新应用当前 pack definition。',
+        actionGuideRemove:
+          '只删除 install receipt 跟踪的受管文件；移除始终需要显式确认并保持 fail-closed。',
+        examplesTitle: '示例：',
+        subcommandRequired:
+          'adopt 需要显式子命令；请使用 `adopt list`、`adopt apply`、`adopt diff`、`adopt verify`、`adopt upgrade` 或 `adopt remove`。',
+        listCompleted: 'adoption pack catalog 已成功列出。',
+        applyCompleted: 'adoption pack {{packId}} 已成功应用。',
+        diffCompleted: 'adoption pack {{packId}} diff 已完成。',
+        verifyCompleted: 'adoption pack {{packId}} 校验已完成。',
+        upgradeCompleted: 'adoption pack {{packId}} 升级已完成。',
+        removeCompleted: 'adoption pack {{packId}} 移除已完成。',
+      },
       run: { description: '执行流程运行时基线。' },
       review: { description: '生成代码评审基线输出。' },
       reviewVerify: { description: '验证代码评审基线输出。' },

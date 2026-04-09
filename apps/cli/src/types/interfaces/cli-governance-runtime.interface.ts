@@ -29,6 +29,7 @@ import type { CliOrchestrationServiceRuntime } from '../../runtime/orchestration
 import type { CliCommandExperienceBuilder } from '../../runtime/presentation/command-experience-builder.js';
 import type { CliLocalAdapterProbeOverride } from './cli-adapter-verification.interface.js';
 import type { CliAdapterVerificationResolution } from './cli-adapter-verification.interface.js';
+import type { CliAdoptCommandOptions } from './cli-adopt-command.interface.js';
 import type { CliCommandProgressSink } from './cli-command-progress.interface.js';
 import type { CliHostCommandOptions } from './cli-host-command.interface.js';
 import type { CliOrchestrationServiceRuntimeDependencies } from './cli-orchestration-service-runtime.interface.js';
@@ -66,6 +67,7 @@ export interface CliGovernanceRuntimeOptions {
   workspaceCommandOptions?: CliWorkspaceCommandOptions;
   workflowCommandOptions?: CliWorkflowCommandOptions;
   planCommandOptions?: CliPlanCommandOptions;
+  adoptCommandOptions?: CliAdoptCommandOptions;
   hostCommandOptions?: CliHostCommandOptions;
   upgradeCommandOptions?: CliUpgradeCommandOptions;
   runtimeDebugOptions?: CliRuntimeDebugOptions;
