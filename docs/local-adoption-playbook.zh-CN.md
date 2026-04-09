@@ -12,14 +12,14 @@
 |---|---|---|
 | `path` | 最直接的本地接入 | `pnpm add --save-exact <governor-repo>` |
 | `link` | 源码联调 | `pnpm add --save-exact link:<governor-repo>` |
-| `tgz` | 打包安装演练 | `pnpm pack --json` + `pnpm add --save-exact <tarball>` |
-| `dist-binary` | 对 Yarn/npm 或脏工作树做无侵入演练 | `node <governor-repo>/dist/bin/repo-ai-governor.js <command>` |
+| `tgz` | 联网的 packaged CLI 安装演练 | `pnpm pack --json` + `pnpm add --save-exact <tarball>` |
+| `dist-binary` | 对 Yarn/npm 或脏工作树做 CLI/runtime 无侵入演练 | `node <governor-repo>/dist/bin/repo-ai-governor.js <command>` |
 
 选择建议：
 
 1. 默认先选 `path`。
 2. 只有在目标仓库需要跟随本地 governor 源码变化时，才选 `link`。
-3. 只有在安装环境仍能访问 npm registry、且你明确要演练打包安装时，才选 `tgz`。
+3. 只有在安装环境仍能访问 npm registry、且你明确要演练“联网的 packaged CLI 安装”时，才选 `tgz`。
 4. 目标仓库是脏工作树、使用 Yarn/npm，或你只想先验证 CLI/runtime 行为时，选 `dist-binary`。
 
 这些安装模式的正式 acceptance contract 以 `docs/support-matrix.zh-CN.md` 为准。
@@ -91,10 +91,30 @@ code --extensionDevelopmentPath <governor-repo>/apps/vscode-extension <target-re
 
 边界说明：
 
-1. 当前正式支持只覆盖源码仓 checkout 路径；启动 extension-development host 之前，请先完成 governor 源仓构建。
-2. 已发布的 npm/tgz 包面不包含 `apps/vscode-extension` workspace 或可安装扩展 bundle；其中即便仍有内部 `dist/apps/vscode-extension/**` 产物，也不构成正式支持的 npm/VSIX/Marketplace 分发。
-3. review、HITL、recover、terminate 等 trust-sensitive 命令仍受 `Workspace Trust` 保护，因此请在 trusted workspace 中验证这些能力。
-4. 当前 VS Code MVP 只是面向 execution/review/HITL/context 的 service-backed companion，不替代常规 CLI bootstrap 路径或 session shell。
+1. 当前正式支持从“已构建 governor 源码仓”开始；无论是启动 extension-development host，还是生成打包产物，都要先完成构建。
+2. 如果你要验证正式支持的打包边界，请使用 `pnpm run release:pack-vscode-extension -- --output <path>.vsix`，或使用 `pnpm run release:verify-vscode-extension-distribution -- --output <report>.json` 做完整复核。
+3. 当前正式支持的打包边界只覆盖“从已构建源码仓本地生成的 VSIX / packaged extension root”。自动化证据覆盖 archive structure 与 packaged module-resolution smoke；`code --install-extension ...` 或真实宿主启动仍属于可选的人工演练。
+4. 已发布的 npm/tgz 包面仍不包含 `apps/vscode-extension` workspace 或“已发布可安装扩展 bundle”；Marketplace 仍不在正式支持范围内。
+5. review、HITL、recover、terminate 等 trust-sensitive 命令仍受 `Workspace Trust` 保护，因此请在 trusted workspace 中验证这些能力。
+6. 当前 VS Code MVP 只是面向 execution/review/HITL/context 的 service-backed companion，不替代常规 CLI bootstrap 路径或 session shell。
+
+### 3.2 可选 Desktop Foundation Surface
+
+只有当你想在常规 CLI bootstrap 之外，从已构建的 governor 源码仓验证 desktop sidecar foundation 时，才使用这条路径：
+
+```bash
+cd <governor-repo>
+pnpm run build
+pnpm run check:desktop-entry-smoke
+pnpm run release:verify-local
+```
+
+边界说明：
+
+1. 当前正式支持只覆盖“已构建的 governor 源码仓 + 上述 foundation 验证链（含 `pnpm run release:verify-local`）”；`apps/desktop` 不是正式支持的独立桌面安装器，也不是已发布桌面 bundle。
+2. `apps/desktop` 继续作为 service-backed foundation surface，承接 session、execution、HITL、artifact-pane 与 queue-overview seam；它不替代 CLI bootstrap 或 session shell 的主入口职责。
+3. 当前 desktop 契约基线与 non-goal guardrail 以 `integrations/desktop/README.md` 为准。
+4. 该 surface 的唯一公开支持声明以 `docs/support-matrix.zh-CN.md` 为准。
 
 ## 4. Session Shell 快速上手
 
@@ -133,7 +153,8 @@ pnpm exec repo-ai-governor run --output json --dry-run --trace
 5. `tool_transport_matrix` 现在会投影 effective transport truth；像 `codex`、`claude-code`、`github-copilot` 这样的 CLI-backed adapter，即使配置里没显式写 `transport`，也会显示 `cli_exec`。
 6. 只要 `report`、`replay`、`diagnostics_trace` 都已落盘，`warn` 或失败的 dry-run 仍然是有价值的正式证据，因为它保留了失败 stage 与 adapter attribution，便于后续修正 routing。
 7. 在当前已验证的 `codex` 基线中，`run --dry-run --trace` 已可通过真实 `cli_exec` 路由完成基线 `prepare -> execute -> report` 链路，且不会执行受治理文件改动或依赖变更；但它仍会在活动 governor workspace 下持久化审计产物，因此在放开非 dry-run 之前，应优先把它视为成功信号。
-8. `github-copilot` 现在在 tester-route verify 上也遵循同样的 CLI-backed truth；而 `local-model` 仍应被理解为受能力约束的 fallback surface，而不是 `tool_calling` / `structured_output` 必需角色的完整替代品。
+8. `github-copilot` 现在在 tester-route verify 上也遵循同样的 CLI-backed truth；而 `local-model` 仍应被理解为受能力约束的 fallback surface，并且只适用于 restricted-network 或 operator 明确选择的本地 fallback、且 route requirement 仍保持 capability-compatible 的场景。
+9. 不要把 `local-model` 当成 repository-review reviewer delegation 的 promoted primary substitute，也不要把它扩张成 `tool_calling`、`structured_output` 或 `confirmation_gate` 必需角色的等价替代；这些路径当前仍保持 unsupported 或显式 guard。
 
 常用产物路径：
 
@@ -300,22 +321,33 @@ pnpm exec repo-ai-governor run --output json
 
 ### 8.5 内置治理模板
 
-已发布包通过 `@repo-ai-governor/standards` 暴露三套内置治理模板：
+当前官方 standards catalog 包含五套内置治理模板：
 
 1. `workflowReviewGovernancePack`
-2. `pythonMinimalGovernancePack`
-3. `goMinimalGovernancePack`
+2. `javascriptMinimalGovernancePack`
+3. `pythonMinimalGovernancePack`
+4. `goMinimalGovernancePack`
+5. `rustMinimalGovernancePack`
 
 如果你希望 adopter-facing 的治理流程本身就内置独立 `CR-xxx` 评审任务卡，以及 `review_pending -> verified -> resolved` 生命周期同步，请先引入 `workflowReviewGovernancePack`。
 
-然后再按语言需要叠加 `pythonMinimalGovernancePack` 或 `goMinimalGovernancePack`，以及团队或仓库自己的 override。
+然后再按语言需要叠加对应 pack：
+
+1. `javascriptMinimalGovernancePack`：适合 `package.json` 脚本驱动的 JavaScript / Node 仓库。
+2. `pythonMinimalGovernancePack`：适合 `pyproject.toml` + `ruff/pytest/pyright` 风格的 Python 仓库。
+3. `goMinimalGovernancePack`：适合 `go.mod` / `go.sum` 仓库。
+4. `rustMinimalGovernancePack`：适合 Cargo workspace 仓库。
+
+本仓库自身的 TypeScript 治理链继续作为 canonical 的 repository-level reference example 存在，但它目前还不是一套单独发布的官方语言 pack。
+当前 `project-066` 的证明窗口覆盖的是这个 catalog 的 repository examples module 与 config-schema 接受面；packaged consumer path 的验证仍归 release/distribution surface 负责。
 
 ## 9. 故障排查与已知限制
 
 1. `pnpm add <tarball>` 报 `ENOTFOUND` 时，通常是安装环境无法访问 npm registry；请改用 `path`、`link` 或 `dist-binary`。
 2. `dist-binary` 验证的是 CLI/runtime 行为，不等于验证了 package install surface。
 3. `tgz` 不是离线自包含安装；安装阶段仍会解析外部依赖。
-4. 如果目标仓库本身是 Yarn/npm 或已有脏工作树，建议先用 `dist-binary`；否则默认先用 `path`，只有在工作流需要时再切换到 `link` 或 `tgz`。
+4. `tgz` 路径验证的只是“已发布 CLI tarball + 随包文档/参考资产”这条打包面；它不会把 VS Code 的打包支持扩大到“源码仓本地生成 VSIX / packaged extension root”之外，也不会提供 Marketplace 或已发布可安装扩展的支持声明。
+5. 如果目标仓库本身是 Yarn/npm 或已有脏工作树，建议先用 `dist-binary`；否则默认先用 `path`，只有在工作流需要时再切换到 `link` 或 `tgz`。
 5. `baseline_docs missing=5/5`、`script_not_found` 这类 self-host warning，在外部 adopter 仓库里通常是预期现象。
 6. 如果 `upgrade` preview 提示存在 blocking confirmation items，不要直接 `apply`；先查看保存下来的 `report_path` 与 `auto_migrated_config_path`，修完配置漂移后再重新 preview。
 7. 请同时保留 preview 的 `report_path`，以及 `apply_receipt_path` 或 `rollback_snapshot_path` 之一；正式 rollback 依赖这些 hand-off artifact，而不是靠手工猜路径。
@@ -329,6 +361,46 @@ pnpm exec repo-ai-governor run --output json
 1. 仓库内的辅助能力位于 `.codex/skills/`；普通 CLI bootstrap 和内置 `adopt apply` 不需要它们，但如果你要复用同样的 self-host skill/workflow，或需要低层宿主分发能力，这些资产就会变得相关。
 2. 这些资产属于本地 AI 工具辅助层，不是上文安装路径成立的前置条件。
 3. `apps/vscode-extension` 只是面向源码仓评估的可选 secondary surface，不属于已发布 package-install baseline。
+
+### 10.1 可选的 Codex / Claude Code 宿主原生生命周期
+
+只有当你已经持有一份已构建的 governor 源码仓，并且希望把生成后的 Codex / Claude Code 资产应用到目标仓库或打成 plugin bundle 时，才走这条路径：
+
+这些命令应从 `<governor-repo>` 执行，且 `--apply-to-repo` 必须显式指向真正接收生成文件的 adopter 仓库根目录。
+
+```bash
+pnpm exec repo-ai-governor host export --host codex --mode project-local --output-dir .repo-ai-governor/generated/hosts/codex --apply-to-repo /absolute/path/to/<target-repo>
+pnpm exec repo-ai-governor host export --host claude-code --mode project-local --output-dir .repo-ai-governor/generated/hosts/claude-code --apply-to-repo /absolute/path/to/<target-repo>
+pnpm exec repo-ai-governor host pack --host codex --mode plugin-bundle --output-dir .repo-ai-governor/generated/hosts/codex-plugin --bundle-dir .repo-ai-governor/generated/bundles/codex
+pnpm exec repo-ai-governor host pack --host claude-code --mode plugin-bundle --output-dir .repo-ai-governor/generated/hosts/claude-code-plugin --bundle-dir .repo-ai-governor/generated/bundles/claude-code
+```
+
+随后请针对刚刚生成的 export 或 bundle manifest 重新执行校验：
+
+```bash
+pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/codex/host-export.manifest.json
+pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/claude-code/host-export.manifest.json
+pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/codex-plugin/host-export.manifest.json
+pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/claude-code-plugin/host-export.manifest.json
+```
+
+正式 contract：
+
+1. `host export` 是 Codex / Claude Code `project-local` follow-up 资产的正式路径，适用于把生成后的 AGENTS/skills/agents/hooks/MCP 文件落到目标仓库。
+2. `host pack` 是 Codex / Claude Code plugin bundle 的正式路径，适用于从同一份已构建源码仓生成一份可安装的宿主侧 bundle。
+3. 每次执行 `host export` 或 `host pack` 后，都必须针对对应 manifest 重新执行一次 `host verify`；只要 governor 源码或 vendored skills 有刷新，也必须再执行一轮。
+4. 这些宿主原生资产的“升级”语义固定为：源码仓或 vendored skills 更新后，重新渲染并重新校验。它不是单独的 packaged installer，也不等于 `repo-ai-governor upgrade` 的契约。
+5. 这些生成后的宿主资产属于源码仓 follow-up surface 和 adopter-facing distribution artifact；它们不能反向替代 `context/`、`tasks/`、`review/` 或审计台账这些 canonical governor workspace 真值。
+
+### 10.2 GitHub Copilot 保留 target 提示
+
+`github-com-agent` 仍然是 GitHub Copilot 的 reserved target。当前 contract 故意保持 blocked 模式：
+
+1. 这个 target id 与 renderer 路径存在的唯一目的，是让 staged export 继续保持 schema-safe 与 target-aware；它不代表 GitHub.com coding-agent consumption 已正式支持。
+2. 当前 capability truth 固定为：`supportedModes=[]`、`discoveryState=staged_export only`、`supportsApplyToRepo=false`、`supportsBundlePackaging=false`、`isMvpTarget=false`。
+3. `host export --copilot-target github-com-agent --apply-to-repo ...` 仍必须失败，而针对该 reserved manifest 的 `host verify` 也必须继续返回阻断结果，直到该 target 离开 deferred 状态。
+4. 只有当该 target 至少声明一个 supported mode 与可 discoverable / installed 的真实消费路径、拿到 pass 级 export/verify 证据，并证明 adopter-facing consumption 仍会回接 canonical governor runtime 而不是宿主侧分叉实现时，blocked mode 才能解除。
+5. 只要这个 reserved-target contract 有变化，maintainer 就应重新执行 `pnpm run release:verify-github-com-agent-reserved-target` 刷新 `.tmp/project-068-sprint-002-github-com-agent-reserved-target-report.json`，确保 blocked proof path 仍可回放。
 
 ## 11. Remote-api rehearsal
 

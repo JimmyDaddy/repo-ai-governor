@@ -1,8 +1,8 @@
 # VS Code Extension App
 
 - Status: active
-- Date: 2026-04-07
-- Scope: `project-048 / sprint-002 / TK-562 ~ TK-564` + `project-054 / sprint-001 / TK-607 ~ TK-609` + `project-054 / sprint-002 / TK-610 ~ TK-611`
+- Date: 2026-04-08
+- Scope: `project-048 / sprint-002 / TK-562 ~ TK-564` + `project-054 / sprint-001 / TK-607 ~ TK-609` + `project-054 / sprint-002 / TK-610 ~ TK-611` + `project-064 / sprint-001 / TK-670 ~ TK-672`
 
 ## Purpose
 
@@ -40,10 +40,11 @@ It is intentionally separate from `integrations/ide/`, which continues to own wr
 
 ## Packaging Support Boundary
 
-1. The current formal support path is a built governor source checkout plus one VS Code extension-development host pointed at `apps/vscode-extension`.
-2. Trust-sensitive commands remain gated by `Workspace Trust`; the extension must not bypass those editor-native guardrails.
-3. The published npm/tgz package surface does not ship the `apps/vscode-extension` workspace or an installable VS Code extension bundle; it may still contain internal `dist/apps/vscode-extension/**` build artifacts, but those are not a supported npm/VSIX/Marketplace distribution.
-4. Public support truth for this secondary surface lives in `docs/support-matrix.md` and `docs/support-matrix.zh-CN.md`.
+1. Current formal support starts from a built governor source checkout.
+2. From that checkout, the supported editor-native paths are either one VS Code extension-development host pointed at `apps/vscode-extension` or one locally generated packaged extension root / VSIX produced by `pnpm run release:pack-vscode-extension` and rechecked by `pnpm run release:verify-vscode-extension-distribution`.
+3. Trust-sensitive commands remain gated by `Workspace Trust`; the extension must not bypass those editor-native guardrails.
+4. The supported packaged boundary is limited to the locally generated packaged extension root / VSIX from that built checkout. The published npm/tgz surface still does not ship an installable extension bundle, and Marketplace distribution remains unsupported.
+5. Public support truth for this secondary surface lives in `docs/support-matrix.md` and `docs/support-matrix.zh-CN.md`.
 
 ## MVP Surface
 
@@ -72,16 +73,17 @@ It is intentionally separate from `integrations/ide/`, which continues to own wr
 
 ## Frozen MVP Gaps
 
-1. The extension is still source-checkout only; packaged npm/tgz, VSIX, and Marketplace delivery remain unsupported.
+1. Packaged support is still limited to locally generated artifacts from a built source checkout; published npm/tgz install, direct registry delivery, and Marketplace rollout remain unsupported.
 2. The extension does not replace the CLI bootstrap path or become the primary home for `init / doctor / check / workflow authoring / session shell`.
-3. Automated evidence currently proves contract/controller/presentation/packaging/doc parity, but a real extension-development-host launch remains an optional manual rehearsal rather than a dedicated automated smoke gate.
+3. Automated evidence currently proves contract/controller/presentation/doc parity plus VSIX archive structure and packaged module-resolution smoke, but a real extension-development-host launch or `code --install-extension` rehearsal remains optional manual evidence rather than a dedicated automated smoke gate.
 4. Richer desktop command-center breadth such as queue overview, automation inbox, and broader artifact workbench remains a desktop-only or later follow-up surface, not a VS Code MVP parity promise.
 
 ## Verification
 
 1. `pnpm exec vitest run apps/vscode-extension/test/vscode-extension-service-runtime.test.ts apps/vscode-extension/test/vscode-extension-contract.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-selection-store.test.ts apps/vscode-extension/test/vscode-extension-packaging-boundary.test.ts --maxWorkers=1 --maxConcurrency=1`
 2. `pnpm run build`
-3. `pnpm pack --json --dry-run`
-4. `pnpm run check:ide-entry-smoke`
-5. `pnpm run check:ide-docs-parity`
-6. `pnpm exec biome check apps/vscode-extension/src apps/vscode-extension/test apps/vscode-extension/package.json apps/vscode-extension/README.md`
+3. `pnpm run release:verify-vscode-extension-distribution -- --output .tmp/project-064-vscode-extension-distribution-report.json`
+4. `pnpm pack --json --dry-run`
+5. `pnpm run check:ide-entry-smoke`
+6. `pnpm run check:ide-docs-parity`
+7. `pnpm exec biome check apps/vscode-extension/src apps/vscode-extension/test apps/vscode-extension/package.json apps/vscode-extension/README.md`

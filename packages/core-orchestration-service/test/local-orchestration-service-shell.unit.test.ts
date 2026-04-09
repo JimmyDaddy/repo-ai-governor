@@ -1697,6 +1697,45 @@ describe('core-orchestration-service local shell', () => {
     }
   });
 
+  it('projects branch-switch requests into preview-confirm turn metadata', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+    });
+
+    try {
+      const started = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
+      await orchestrationService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: '帮我把当前代码分支切换到 main',
+      });
+      const subscription = await orchestrationService.subscribeSession({
+        sessionId: started.session.sessionId,
+      });
+      const completedEvent = subscription.events.find(
+        (event) => event.type === OrchestrationSessionEventType.TURN_COMPLETED,
+      );
+
+      expect(completedEvent?.payload.responseMode).toBe('command_handoff_preview');
+      expect(completedEvent?.payload.suggestedSlashCommand).toBe('/workspace switch-branch');
+      expect(completedEvent?.payload.requiresConfirmation).toBe(true);
+      expect(completedEvent?.payload.skillId).toBe('skill.workspace.switch_branch');
+      expect(completedEvent?.payload.handoffExecutionMode).toBe('preview_confirm');
+      expect(completedEvent?.payload.commandBatches).toEqual([
+        {
+          slashQuery: '/workspace switch-branch main',
+          bridgeArgv: ['workspace', 'switch-branch', 'main'],
+          previewCommandLine: 'repo-ai-governor workspace switch-branch main',
+        },
+      ]);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
   it('projects onboarding bundle previews into shared command-batch truth', async () => {
     const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
     const orchestrationService = new LocalOrchestrationServiceShell({

@@ -105,6 +105,8 @@ export interface SessionMainSupervisorTurnContext {
   selectedSurface: string;
   selectedBy: string;
   sessionRoutingPreferenceApplied: boolean;
+  previewSummary?: string;
+  latestNoteSummary?: string;
   metadata?: Record<string, unknown>;
   providerContinuationState?: SessionProviderContinuationSessionState;
   publishStreamEvent?: (event: SessionMainSupervisorStreamEvent) => Promise<void>;

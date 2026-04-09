@@ -10,7 +10,7 @@ import type {
   SessionMainCapabilityId,
 } from './types/index.js';
 
-const SESSION_MAIN_CAPABILITY_SKILL_VERSION = '2026-04-01';
+const SESSION_MAIN_CAPABILITY_SKILL_VERSION = '2026-04-08';
 const SESSION_MAIN_CAPABILITY_TRANSLATION_KEY_PREFIX = 'sessionMainCapabilities.catalog';
 
 /**
@@ -47,6 +47,15 @@ export class LocalOrchestrationServiceSessionMainCapabilityCatalog {
           SESSION_MAIN_CAPABILITY_ID.DOCTOR,
           SESSION_MAIN_CAPABILITY_ID.VERIFY,
         ],
+      }),
+      this.createDescriptorSeed({
+        capabilityId: SESSION_MAIN_CAPABILITY_ID.BRANCH_SWITCH,
+        skillId: 'skill.workspace.switch_branch',
+        executionIntent: 'workspace.branch_switch',
+        suggestedSlashCommand: '/workspace switch-branch',
+        handoffExecutionMode: SESSION_MAIN_HANDOFF_EXECUTION_MODE.PREVIEW_CONFIRM,
+        confirmationRequired: true,
+        relatedCapabilityIds: [SESSION_MAIN_CAPABILITY_ID.DOCTOR, SESSION_MAIN_CAPABILITY_ID.RUN],
       }),
       this.createDescriptorSeed({
         capabilityId: SESSION_MAIN_CAPABILITY_ID.DOCTOR,

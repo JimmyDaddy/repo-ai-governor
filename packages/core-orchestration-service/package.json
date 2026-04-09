@@ -8,6 +8,10 @@
       "types": "./src/index.ts",
       "default": "./dist/src/index.js"
     },
+    "./sidecar-client": {
+      "types": "./src/local-orchestration-service-sidecar-client.ts",
+      "default": "./dist/src/local-orchestration-service-sidecar-client.js"
+    },
     "./constants": {
       "types": "./src/constants/index.ts",
       "default": "./dist/src/constants/index.js"

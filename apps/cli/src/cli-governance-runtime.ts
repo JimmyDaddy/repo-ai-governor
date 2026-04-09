@@ -310,7 +310,10 @@ export class CliGovernanceRuntime {
     }
 
     const workspaceAction = this.options.workspaceCommandOptions?.action?.trim().toLowerCase();
-    if (workspaceAction === CliWorkspaceAction.CLEAR_CONFIG) {
+    if (
+      workspaceAction === CliWorkspaceAction.CLEAR_CONFIG ||
+      workspaceAction === CliWorkspaceAction.BRANCH_SWITCH
+    ) {
       return false;
     }
 

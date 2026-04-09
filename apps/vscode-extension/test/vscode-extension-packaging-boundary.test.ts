@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 describe('vscode extension packaging boundary', () => {
-  it('keeps the extension on the source-checkout support path only', () => {
+  it('keeps the published tarball separate from the source-checkout-generated packaged extension path', () => {
     const rootPackage = JSON.parse(
       readFileSync(resolve(process.cwd(), 'package.json'), 'utf8'),
     ) as {
@@ -12,20 +12,36 @@ describe('vscode extension packaging boundary', () => {
     const extensionPackage = JSON.parse(
       readFileSync(resolve(process.cwd(), 'apps/vscode-extension/package.json'), 'utf8'),
     ) as {
+      name?: string;
+      publisher?: string;
       private?: boolean;
+      files?: string[];
       main?: string;
       exports?: {
         '.': {
+          types?: string;
           default?: string;
         };
       };
     };
 
+    expect(extensionPackage.name).toBe('repo-ai-governor-vscode');
+    expect(extensionPackage.publisher).toBe('cjhdev');
     expect(extensionPackage.private).toBe(true);
-    expect(extensionPackage.main).toBe('../../dist/apps/vscode-extension/src/extension.js');
-    expect(extensionPackage.exports?.['.']?.default).toBe(
-      '../../dist/apps/vscode-extension/src/index.js',
+    expect(extensionPackage.main).toBe('./dist/src/extension.js');
+    expect(extensionPackage.files ?? []).toEqual(
+      expect.arrayContaining([
+        'dist',
+        'src',
+        'node_modules',
+        'resources',
+        'package.nls.json',
+        'package.nls.zh-cn.json',
+        'README.md',
+      ]),
     );
+    expect(extensionPackage.exports?.['.']?.types).toBe('./src/index.ts');
+    expect(extensionPackage.exports?.['.']?.default).toBe('./dist/src/index.js');
     expect(rootPackage.files ?? []).not.toContain('apps/vscode-extension');
     expect(rootPackage.files ?? []).toEqual(
       expect.arrayContaining(['integrations/ide', 'integrations/desktop']),
@@ -51,11 +67,6 @@ describe('vscode extension packaging boundary', () => {
     expect(packagedPaths.has('apps/vscode-extension/package.nls.json')).toBe(false);
     expect(packagedPaths.has('apps/vscode-extension/package.nls.zh-cn.json')).toBe(false);
     expect(packagedPaths.has('apps/vscode-extension/resources/governor.svg')).toBe(false);
-    expect(
-      Array.from(packagedPaths).some((path) =>
-        path.startsWith('dist/node_modules/@repo-ai-governor/vscode-extension/'),
-      ),
-    ).toBe(false);
     expect(packagedPaths.has('dist/apps/vscode-extension/src/extension.js')).toBe(true);
   });
 });

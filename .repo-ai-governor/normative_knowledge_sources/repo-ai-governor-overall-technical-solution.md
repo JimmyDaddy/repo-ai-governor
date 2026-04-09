@@ -1,7 +1,7 @@
 # Repo AI Governor 工具级总技术方案
 
 - Status: active
-- Date: 2026-04-06
+- Date: 2026-04-08
 - Scope: whole product (tool-level)
 - Basis:
   - `.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md`
@@ -32,6 +32,7 @@
 10. `共享能力单层收敛`：共享类型、通用工具与 i18n 基础能力统一收敛到 `packages/shared`，避免跨域重复实现。
 11. `TypeScript 优先实现`：项目应用与核心包默认使用 TypeScript 开发，统一类型系统与契约表达，降低跨模块协作歧义。
 12. `运行时内核可替换，治理事实源稳定`：可替换 orchestration backend，但 `current-context/tasks/review/artifacts/audit` 继续由 workspace canonical source 与领域服务掌控。
+13. `宿主原生资产显式承载`：Codex / Claude Code / Copilot 等入口的 project-local assets、plugin bundles、skills/agents、hooks/subagents、MCP 等 host-native artifacts 必须拥有独立 lifecycle / upgrade / verify / support-truth contract，但不升格为新的 canonical truth。
 
 ## 3. 系统边界
 
@@ -39,7 +40,7 @@
 
 1. 仓库治理初始化、配置加载、规范注入。
 2. 多 Agent 流程编排与策略门禁执行。
-3. 适配器与技能体系（多入口接入）。
+3. 适配器、技能体系与 host-native distribution artifacts（多入口接入）。
 4. 审计、报告、任务台账与 CR 生命周期映射。
 5. 本地与 CI 质量门禁、发布前检查与运维流程。
 6. workspace 生命周期管理（创建、解析、迁移、归档）。
@@ -82,7 +83,7 @@
 5. `Notification & Escalation Layer`
    - HITL 通知分发、升级策略与渠道回退。
 6. `Agent Runtime & Adapter Layer`
-   - 多角色 Agent 运行时（默认角色 + 用户自定义角色）与 Skill 能力装配，结合跨工具适配、能力矩阵、multi-tool onboarding 与 role-agent projection；其中 `runtime.agent-projection` 负责把 `connect / doctor / verify` 的 onboarding 结果与 agent descriptor 投影收敛为正式 runtime seam。
+   - 多角色 Agent 运行时（默认角色 + 用户自定义角色）与 Skill 能力装配，结合跨工具适配、能力矩阵、multi-tool onboarding、role-agent projection 与 host-native asset lifecycle；其中 `runtime.agent-projection` 负责把 `connect / doctor / verify` 的 onboarding 结果与 agent descriptor 投影收敛为正式 runtime seam，而 target-specific host assets 负责承接 adopter-facing `export / apply / verify / upgrade` 契约。
 7. `Standards & Slot Layer`
    - 官方规范包、团队扩展包、声明式/脚本插槽机制。
 8. `Audit & Reporting Layer`
@@ -109,19 +110,21 @@
    - 管理默认角色与用户自定义角色定义、约束与版本。
 7. `Agent Projection Service`
    - 将 `roleProfileId`、`routeKey`、`execution_context` 与 adapter 能力投影为 `AgentDescriptor`，供 CLI / report / diagnostics 共享；这条能力由 `runtime.agent-projection` 正式承接。
-8. `Shared Session Manager`
+8. `Host Asset Lifecycle Manager`
+   - 管理 target-specific host assets（project-local export、plugin bundle、skills/agents、hooks/subagents、MCP）的 `export / apply / verify / upgrade` 生命周期与 support-truth contract；这些产物属于 adopter-facing distribution artifacts，不升格为 workspace canonical truth。
+9. `Shared Session Manager`
    - 管理跨 Agent 共享 session 生命周期、快照与回放。
-9. `Agent Session Registry`
+10. `Agent Session Registry`
    - 以共享 session 为事实源生成可回放的 agent 视图，不引入新的 session canonical source。
-10. `Notification Dispatcher`
+11. `Notification Dispatcher`
    - 在 HITL 触发与升级场景下统一分发通知，支持多渠道与重试策略。
-11. `Audit Recorder`
+12. `Audit Recorder`
    - 记录策略命中、人工介入、阶段结果与通知回执。
-12. `Memory Manager`
+13. `Memory Manager`
    - 统一管理永久记忆与执行记忆读写策略。
-13. `Artifact Registry & Dependency Resolver`
+14. `Artifact Registry & Dependency Resolver`
    - 统一登记关键产物元数据，解析任务依赖产物并在执行前注入上下文。
-14. `Spec Sync Guard`
+15. `Spec Sync Guard`
    - 校验“需求 -> 方案 -> 架构”三层文档与简版 PRD 的同步一致性，并输出可阻断结果。
 
 ## 4.2.1 基础设施组件（Adapter/Provider）
@@ -534,6 +537,8 @@
    - Agent 生命周期绑定执行 session；Skill 生命周期绑定版本与发布，可跨 session 复用。
 6. 审计要求
    - 审计必须至少记录 `agent_role/role_profile_id` 与 `skill_id/skill_version`，确保可追溯与可回放。
+7. 宿主原生资产边界
+   - `.codex-plugin`、`.claude-plugin`、`.codex/skills`、`.claude/skills`、Codex subagents、Claude hooks、`.mcp.json` 等属于 host-native distribution artifacts；它们承载入口消费与安装升级体验，但不替代 Agent / Skill 的 canonical runtime identity。
 
 ## 8.5 Slot 脚本安全执行模型（Script Slot Security Model）
 
@@ -560,6 +565,7 @@
 4. 角色事实源由 `Role Registry` 与 `governor.yaml.roles` 统一管理，支持默认角色与用户自定义角色并存。
 5. workspace 事实源由 `governor.yaml.workspace` 管理，支持 `tool_managed/repo_local`。
 6. 技术方案模块事实源由 `technical-solution-module-registry.yaml` 与 `technical-solutions/**` 下的 `module-overview / contracts` 管理；总技术方案保留北极星索引，不重复承载模块深度细节。
+7. host-native distribution facts 由 target-specific export manifest、pack receipt、verify report 与相关 technical solution 模块共同管理，只表达 adopter-facing asset lifecycle，不覆盖 workspace canonical truth。
 
 ## 9.2 执行产物
 

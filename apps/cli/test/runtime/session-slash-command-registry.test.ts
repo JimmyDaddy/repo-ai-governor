@@ -20,6 +20,8 @@ const TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.commands.agent.summary': 'Inspect the current foreground route.',
   'cli.commands.init.description': 'Initialize governor workspace baseline.',
   'cli.commands.workspace.description': 'Plan or execute workspace migration baseline.',
+  'sessionMainCapabilities.catalog.branch_switch.summary':
+    'Switch the current repository to an existing local git branch through a governed preview-confirm path.',
   'sessionMainCapabilities.catalog.connect.summary':
     'Prepare and apply adapter onboarding changes for this workspace.',
   'sessionMainCapabilities.catalog.doctor.summary':
@@ -50,6 +52,7 @@ describe('CliSessionSlashCommandRegistry', () => {
 
     expect(suggestions.map((suggestion) => suggestion.command)).toEqual([
       '/workspace',
+      '/workspace switch-branch',
       '/doctor',
       '/verify',
       '/connect',
@@ -67,6 +70,7 @@ describe('CliSessionSlashCommandRegistry', () => {
 
     expect(suggestions.map((suggestion) => suggestion.command)).toEqual([
       '/workspace',
+      '/workspace switch-branch',
       '/workflow',
     ]);
     expect(suggestions[0]?.highlightSegments).toEqual([
@@ -89,6 +93,9 @@ describe('CliSessionSlashCommandRegistry', () => {
     expect(suggestions.map((suggestion) => suggestion.command)).toContain('/archive');
     expect(suggestions.map((suggestion) => suggestion.command)).toContain('/unarchive');
     expect(suggestions.map((suggestion) => suggestion.command)).toContain('/workflow');
+    expect(suggestions.map((suggestion) => suggestion.command)).toContain(
+      '/workspace switch-branch',
+    );
     expect(suggestions.map((suggestion) => suggestion.command)).toContain('/review verify');
     expect(suggestions[0]?.command).toBe('/help');
   });
@@ -103,6 +110,11 @@ describe('CliSessionSlashCommandRegistry', () => {
     expect(registry.findByCommand('/review verify latest', translate)).toEqual({
       command: '/review verify',
       summary: 'Recheck a review report and confirm whether accepted findings are actually fixed.',
+    });
+    expect(registry.findByCommand('/workspace switch-branch main', translate)).toEqual({
+      command: '/workspace switch-branch',
+      summary:
+        'Switch the current repository to an existing local git branch through a governed preview-confirm path.',
     });
     expect(registry.findByCommand('/missing', translate)).toBeNull();
   });
@@ -154,6 +166,13 @@ describe('CliSessionSlashCommandRegistry', () => {
       executionMode: 'confirm',
       kind: 'bridge',
       summaryKey: 'sessionMainCapabilities.catalog.workflow.summary',
+    });
+    expect(registry.resolveAction('/workspace switch-branch main')).toEqual({
+      bridgeArgv: ['workspace', 'switch-branch', 'main'],
+      command: '/workspace switch-branch',
+      executionMode: 'confirm',
+      kind: 'bridge',
+      summaryKey: 'sessionMainCapabilities.catalog.branch_switch.summary',
     });
     expect(registry.resolveAction('/connect')).toEqual({
       bridgeArgv: ['connect'],

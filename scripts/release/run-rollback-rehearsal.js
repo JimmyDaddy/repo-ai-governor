@@ -27,7 +27,7 @@ const REHEARSAL_SCENARIOS = [
     scenarioId: 'lockstep-contract-incompatibility',
     rollbackTrigger: 'incompatible contract change in lockstep group',
     requiredEvidence: 'channel_promotion_record',
-    command: ['pnpm', 'run', 'release:ga-check'],
+    command: ['pnpm', 'run', 'release:ga-entry-check'],
   },
 ];
 

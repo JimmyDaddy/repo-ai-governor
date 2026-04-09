@@ -1,0 +1,23 @@
+# checklist
+
+- [x] TK-682 freeze local-model capability ceiling and promoted use-case contract
+  - 2026-04-08：任务创建，状态初始化为 `planned`。
+  - 2026-04-08：`project-066` final closeout 完成后，本任务作为当前 primary stream 起点被激活，状态切换为 `in_progress`；接下来先冻结 `local-model` 的 promoted use case、capability ceiling 与 explicit non-goal contract。
+  - 2026-04-08：已正式冻结 `local-model` 的 promoted use case：只面向 restricted-network 或 operator-selected local fallback、且 route requirement 保持 capability-compatible 纯文本基线的场景；它不是 promoted primary coder/reviewer lane。
+  - 2026-04-08：当前 capability ceiling 已写死到公开 contract：`tool_calling`、`structured_output`、`confirmation_gate` 维持 unsupported，`parallel_task` / `streaming` / `cancellation` 维持 degraded；repository-review reviewer delegation 在只剩 `local-model` fallback 时继续保持 guard。
+  - 2026-04-08：已完成 docs truth 对齐：`packages/adapters/local-model/README.md`、`docs/local-adoption-playbook*.md`、`docs/support-matrix*.md` 与 `docs/maintainer-validation-playbook*.md` 现在共用同一条 promoted use-case / capability ceiling contract；本轮未修改可执行代码，因此 build not required。
+  - 2026-04-08：contract freeze 已完成；后续 explicit non-goal guardrail 与 support narrative refresh 已交给并由 `TK-683` 同窗吸收，当前 sprint 的 next boundary 是 fresh reviewer CR loop，状态切换为 `completed`。
+- [x] TK-683 implement constrained local-model capability follow-up or explicit non-goal guardrails
+  - 2026-04-08：任务创建，状态初始化为 `planned`。
+  - 2026-04-08：已选择 explicit non-goal guardrail 路径，而不是扩张新的 `local-model` productization seam：当前 docs/support-truth 统一收口为 restricted-network / explicit local fallback only。
+  - 2026-04-08：已在 `packages/adapters/local-model/README.md`、`docs/local-adoption-playbook*.md`、`docs/support-matrix*.md` 与 `docs/maintainer-validation-playbook*.md` 中同步写明非目标边界，不再允许把 `local-model` 误读成 repository-review reviewer delegation 或 `tool_calling` / `structured_output` / `confirmation_gate` required-role 的等价替代品。
+  - 2026-04-08：已完成 guardrail truth review：当前 contract 已同时回链到 local-model adapter README、adopter support-truth、maintainer validation notes 与 support matrix；本轮未修改可执行代码，因此 build not required。
+  - 2026-04-08：guardrail refresh 已完成；当前 sprint 下一边界进入 fresh reviewer CR loop，状态切换为 `completed`。
+- [x] CR-001 sprint-001-local-model-capability-ceiling-and-promoted-use-case delegated review loop round 1
+  - 2026-04-08：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-08：fresh reviewer round 返回 2 个 actionable findings：`local-model` README 仍残留“本地优先”解读空间，且 `CR-001` verification entries 错误地包含 `pnpm run check`；主 agent 已复核证据并全部认可，当前状态推进为 `verified`，进入修复闭环。
+  - 2026-04-08：已完成最小修复：README 收窄为 restricted-network / operator-selected local fallback contract，`CR-001` verification entries 删除 aggregate `pnpm run check`；随后重跑 task-ledger / sprint-plan / code-review / worktree-review-target 治理检查，当前状态推进为 `resolved`。
+- [x] TK-710 sprint-001 closeout and sprint-002 activation handoff
+  - 2026-04-08：在 `TK-682`、`TK-683` 与 `CR-001` 全部进入终态后创建并于同一窗口完成本 closeout 任务，开始执行 sprint-001 closeout 与 sprint-002 activation handoff。
+  - 2026-04-08：已完成 `DA-710`、project/sprint/context/history 写回，并激活 `sprint-002` 与 `TK-684`。
+  - 2026-04-08：治理同步检查与最终 delivery gate 已在同一窗口通过：`node ./scripts/governance/check-task-ledger-sync.js`、`node ./scripts/governance/check-sprint-plan-status-sync.js`、`node ./scripts/governance/check-code-review-status-sync.js`、`node ./scripts/governance/check-worktree-review-target.js`、`node ./scripts/governance/check-technical-solution-delivery-registry.js` 与 `pnpm run check`。

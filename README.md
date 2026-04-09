@@ -42,7 +42,7 @@ Recommended start order:
 1. Start with `path` when the target repo already uses `pnpm` and you want the default local adoption route.
 2. Move to `link` only when the target repo should follow local governor source changes closely.
 3. Use `dist-binary` when the target repo is dirty, uses Yarn/npm, or you want a no-install CLI/runtime rehearsal first.
-4. Use `tgz` only for a packaged-install rehearsal in an environment that can still reach the npm registry.
+4. Use `tgz` only for an online packaged CLI-install rehearsal in an environment that can still reach the npm registry.
 
 The formal acceptance contract for these install modes lives in `docs/support-matrix.md`.
 
@@ -74,7 +74,7 @@ cd <target-repo>
 pnpm add --save-exact /absolute/path/to/cjhdev-repo-ai-governor-<version>.tgz
 ```
 
-Use this when you want a packaged-install rehearsal. It still requires registry access for external dependencies.
+Use this when you want an online packaged CLI-install rehearsal. It still requires registry access for external dependencies and does not widen packaged VS Code or other secondary-surface support.
 
 #### Option D: `dist-binary`
 
@@ -86,7 +86,7 @@ cd <target-repo>
 node <governor-repo>/dist/bin/repo-ai-governor.js --help
 ```
 
-Use this when you want to validate CLI behavior before changing the target repo dependency graph.
+Use this when you want to validate CLI/runtime behavior before changing the target repo dependency graph. It does not prove packaged-install behavior.
 
 ### 2.3 First run in a target repository
 
@@ -184,25 +184,33 @@ pnpm exec repo-ai-governor upgrade rollback <apply-receipt-or-rollback-snapshot>
 
 Use `upgrade` preview first. Keep the emitted `report_path` from preview and the `apply_receipt_path` from apply; those are the supported hand-off artifacts for the adopter-facing apply/rollback path.
 
-### 3.6 Export Or Pack Lower-level Host Assets
+### 3.6 Refresh Optional Codex / Claude Code Host Assets
 
 ```bash
-pnpm exec repo-ai-governor host export --host codex --mode project-local --output-dir .repo-ai-governor/generated/hosts/codex
-pnpm exec repo-ai-governor host verify --output-dir .repo-ai-governor/generated/hosts/codex
-pnpm exec repo-ai-governor host pack --host claude-code --mode plugin-bundle --bundle-dir .repo-ai-governor/generated/bundles/claude
+pnpm exec repo-ai-governor host export --host codex --mode project-local --output-dir .repo-ai-governor/generated/hosts/codex --apply-to-repo /absolute/path/to/<target-repo>
+pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/codex/host-export.manifest.json
+pnpm exec repo-ai-governor host pack --host claude-code --mode plugin-bundle --output-dir .repo-ai-governor/generated/hosts/claude-code-plugin --bundle-dir .repo-ai-governor/generated/bundles/claude-code
+pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/claude-code-plugin/host-export.manifest.json
 ```
 
-Use this when you want staged host assets or installable bundles for `codex`, `claude-code`, or `github-copilot` from one governed source of truth, rather than the preferred whole-repo `adopt apply` story.
+Run these commands from `<governor-repo>` and point `--apply-to-repo` at the actual adopter repository root you want to receive the generated files.
+
+Use this only when you are working from a built governor source checkout and want optional Codex / Claude Code host-native assets on top of the normal CLI bootstrap path.
+
+The supported refresh path is: update the governor source checkout or the vendored host-facing skills, rerun `host export` or `host pack`, then rerun `host verify`. This is a source-checkout follow-up surface, not a packaged-install baseline or a separate installer contract.
 
 ## 4. Notes For External Adopters
 
 1. `dist-binary` rehearsal proves CLI/runtime behavior, not packaged-install behavior.
 2. `tgz` is not offline/self-contained; package installation still resolves external dependencies from the npm registry.
-3. If a target repository already uses Yarn/npm or has a dirty worktree, start with `dist-binary`; otherwise start with `path` and move to `link` or `tgz` only when the workflow requires it.
-4. Session shell, React-shell command surfaces, workflow editing, upgrade analysis, host distribution, workspace utilities, HITL notifications, and troubleshooting details are covered in the local adoption playbook.
-5. The optional VS Code companion surface currently runs only from a built governor source checkout via `apps/vscode-extension`; published npm/tgz install may still carry internal `dist/apps/vscode-extension/**` payloads, but it does not provide a supported VSIX, Marketplace, or installable extension bundle.
-6. Built-in `adopt apply` does not require pre-existing `.codex/skills/**` in the target repository; repository-local workflow helpers only become relevant when you want the same self-host skill ergonomics or use the lower-level `host export` / `host pack` surfaces.
-7. For clean-room or desktop-sidecar bootstrap, `@cjhdev/repo-ai-governor/service-host` is the only supported root-package service-host import path; do not deep-import internal `dist/**` host files.
+3. The `tgz` path validates the published CLI tarball surface and shipped docs/reference assets only; it does not widen packaged VS Code support beyond the built-source local VSIX / packaged-extension-root path, and it does not provide Marketplace or published-installable extension support.
+4. If a target repository already uses Yarn/npm or has a dirty worktree, start with `dist-binary`; otherwise start with `path` and move to `link` or `tgz` only when the workflow requires it.
+5. Session shell, React-shell command surfaces, workflow editing, upgrade analysis, host distribution, workspace utilities, HITL notifications, and troubleshooting details are covered in the local adoption playbook.
+6. The optional VS Code companion surface supports either one extension-development host or one locally generated VSIX / packaged extension root from a built governor source checkout via `apps/vscode-extension` and the release packaging scripts. Published npm/tgz install may still carry internal `dist/apps/vscode-extension/**` payloads, but it does not ship a supported installable extension bundle, and Marketplace remains unsupported.
+7. The optional desktop surface stays desktop foundation-only on a built governor source checkout. There is no supported standalone desktop installer, published desktop bundle, or packaged desktop product claim.
+8. Built-in `adopt apply` does not require a pre-existing source-local `.codex/skills/**` tree in the target repository; repository-local Codex helpers ship under `.codex/skills/` for self-host and maintainer flows, and external adopters only need to vendor them when they want the same local skill ergonomics.
+9. Optional Codex / Claude Code host-native assets (`host export` / `host verify` / `host pack`) are supported only as source-checkout follow-up surfaces. After a governor or skill refresh, rerun the host command plus `host verify`; do not treat that path as packaged-install proof or a separate host upgrader.
+10. For clean-room or desktop-sidecar bootstrap, `@cjhdev/repo-ai-governor/service-host` is the only supported root-package service-host import path; do not deep-import internal `dist/**` host files.
 
 ## 5. Read More
 

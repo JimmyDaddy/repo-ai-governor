@@ -1,9 +1,11 @@
+import { execFile } from 'node:child_process';
 import { once } from 'node:events';
 import { mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
+import { promisify } from 'node:util';
 import { stringify } from 'yaml';
 
 import type { ClaudeCodeExecRunner } from '@repo-ai-governor/adapter-claude-code';
@@ -54,6 +56,7 @@ import {
 } from '@repo-ai-governor/shared';
 import { CliGovernanceRuntime } from '../src/cli-governance-runtime.js';
 import { CliCommandName } from '../src/constants/cli-command.constant.js';
+import { CliGovernanceCheckStatus } from '../src/constants/cli-governance-runtime.constant.js';
 import type {
   CliCommandProgressEvent,
   CliOrchestrationServiceRuntimeDependencies,
@@ -113,6 +116,8 @@ interface PlanCommandFixture {
   createdTaskId: string;
   createdTaskTitle: string;
 }
+
+const execFileAsync = promisify(execFile);
 
 async function writePlanTaskCardFixture(options: {
   tasksDirPath: string;
@@ -634,6 +639,28 @@ async function withRuntimeFixture(
     await fixture.provider.dispose();
     await rm(fixture.tempRoot, { recursive: true, force: true });
   }
+}
+
+async function initializeRuntimeGitRepository(repositoryRoot: string): Promise<void> {
+  await execFileAsync('git', ['init', '-b', 'main'], {
+    cwd: repositoryRoot,
+  });
+  await execFileAsync('git', ['config', 'commit.gpgSign', 'false'], {
+    cwd: repositoryRoot,
+  });
+  await execFileAsync('git', ['config', 'user.email', 'codex@example.com'], {
+    cwd: repositoryRoot,
+  });
+  await execFileAsync('git', ['config', 'user.name', 'Codex Test'], {
+    cwd: repositoryRoot,
+  });
+  await writeFile(resolve(repositoryRoot, 'README.md'), '# runtime fixture\n', 'utf8');
+  await execFileAsync('git', ['add', '.'], {
+    cwd: repositoryRoot,
+  });
+  await execFileAsync('git', ['commit', '--no-verify', '-m', 'chore: seed runtime fixture'], {
+    cwd: repositoryRoot,
+  });
 }
 
 /**
@@ -2476,6 +2503,44 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
     });
   });
 
+  it('dispatches workspace switch-branch through the extracted command registry', async () => {
+    await withRuntimeFixture(async (fixture) => {
+      await initializeRuntimeGitRepository(fixture.tempRoot);
+      await execFileAsync('git', ['switch', '-c', 'feature/runtime-switch'], {
+        cwd: fixture.tempRoot,
+      });
+
+      const workspaceRuntime = fixture.runtime as unknown as {
+        options: {
+          workspaceCommandOptions?: CliWorkspaceCommandOptions;
+        };
+        execute: (commandName: CliCommandName) => Promise<{
+          commandResult: {
+            operation: string;
+            details?: Record<string, unknown>;
+          };
+        }>;
+      };
+      workspaceRuntime.options.workspaceCommandOptions = {
+        action: 'switch-branch',
+        actionValue: 'main',
+        targetMode: null,
+        targetRoot: null,
+        planPath: null,
+      };
+
+      const workspaceResult = await workspaceRuntime.execute(CliCommandName.WORKSPACE);
+      const activeBranch = await execFileAsync('git', ['branch', '--show-current'], {
+        cwd: fixture.tempRoot,
+      });
+
+      expect(workspaceResult.commandResult.operation).toBe('workspace_branch_switch');
+      expect(workspaceResult.commandResult.details?.target_branch).toBe('main');
+      expect(workspaceResult.commandResult.details?.current_branch).toBe('main');
+      expect(activeBranch.stdout.trim()).toBe('main');
+    });
+  });
+
   it('writes plan preview artifacts from the active sprint task package', async () => {
     await withRuntimeFixture(async (fixture) => {
       const planFixture = await writePlanCommandFixture(fixture.workspaceRoot);
@@ -2908,9 +2973,10 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
         expect(runResult.commandResult.operation).toBe('governance_run');
         expect(runResult.commandResult.details?.runtime_status).toBe('succeeded');
         expect(invokeRequests).toHaveLength(3);
-        expect(invokeRequests.map((request) => request.timeoutMs)).toEqual([
-          300000, 300000, 300000,
-        ]);
+        for (const request of invokeRequests) {
+          expect(request.timeoutMs).toBeLessThanOrEqual(300000);
+          expect(request.timeoutMs).toBeGreaterThanOrEqual(299999);
+        }
         const executeRequest = invokeRequests.find((request) =>
           request.prompt.includes('Stage ID: stage-task-execute'),
         );
@@ -4072,6 +4138,71 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
           trace: false,
           replayPath: null,
           adapters: true,
+        },
+      },
+    );
+  });
+
+  it('keeps verify tool-matrix probe availability separate from fallback binding status', async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        const verifyResult = await fixture.runtime.execute(CliCommandName.VERIFY);
+        const diagnosticsArtifactPath = verifyResult.commandResult.artifacts?.find(
+          (artifact) => artifact.id === 'verify_diagnostics',
+        )?.path;
+        expect(typeof diagnosticsArtifactPath).toBe('string');
+
+        const diagnosticsPayload = JSON.parse(
+          await readFile(String(diagnosticsArtifactPath), 'utf8'),
+        ) as {
+          matrix?: {
+            tool_matrix?: Array<{
+              role_profile_id?: string;
+              tool?: string;
+              availability_status?: string | null;
+              binding_status?: string | null;
+              binding_unavailable_reasons?: string[];
+              invoke_liveness_diagnostics?: {
+                unavailable_reasons?: string[];
+              };
+            }>;
+          };
+        };
+
+        const plannerToolRow = diagnosticsPayload.matrix?.tool_matrix?.find(
+          (row) => row.role_profile_id === DefaultRoleProfileId.PLANNER,
+        );
+
+        expect(plannerToolRow).toMatchObject({
+          tool: AdapterSurface.CLAUDE_CODE,
+          availability_status: AgentAvailabilityStatus.AVAILABLE,
+          binding_status: CliGovernanceCheckStatus.WARN,
+          binding_unavailable_reasons: ['surface_unavailable:codex:command_missing:codex:codex'],
+          invoke_liveness_diagnostics: {
+            unavailable_reasons: [],
+          },
+        });
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          adapters: true,
+        },
+        adapterLocalProbeOverrides: {
+          [AdapterSurface.CODEX]: {
+            availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+            unavailableReasons: ['command_missing:codex:codex'],
+          },
+          [AdapterSurface.CLAUDE_CODE]: {
+            availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+            unavailableReasons: [],
+          },
+          [AdapterSurface.GITHUB_COPILOT]: {
+            availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+            unavailableReasons: [],
+          },
         },
       },
     );

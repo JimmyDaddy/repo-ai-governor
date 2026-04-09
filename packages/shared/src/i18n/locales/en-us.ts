@@ -45,7 +45,7 @@ export const EN_US_TRANSLATIONS = {
       noInteractive:
         'Disable interactive setup prompts for first-time init and force non-interactive config bootstrap.',
       workspaceAction:
-        'Workspace command action: dry-run|execute|rollback|clear-config|set-ui-theme.',
+        'Workspace command action: dry-run|execute|rollback|clear-config|switch-branch|set-ui-theme.',
       workspaceMode:
         'Workspace target mode for migration planning/execution: repo_local|tool_managed.',
       workspaceRoot: 'Workspace target root override used by the workspace migration command.',
@@ -199,11 +199,11 @@ export const EN_US_TRANSLATIONS = {
       },
       workspace: {
         description:
-          'Plan, execute, or roll back workspace migration baseline, clear the current workspace config, or persist a workspace/global React shell default theme.',
+          'Plan, execute, or roll back workspace migration baseline, clear the current workspace config, switch to an existing local git branch, or persist a workspace/global React shell default theme.',
         actionArgument:
           'Workspace action shorthand. Equivalent to --workspace-action for human-driven runs.',
         valueArgument:
-          'Optional action value. Use a plan path for rollback or a theme preset for set-ui-theme.',
+          'Optional action value. Use a plan path for rollback, a target branch for switch-branch, or a theme preset for set-ui-theme.',
         actionGuideTitle: 'Action guide:',
         actionGuideDryRun:
           'Preview one migration plan only; requires --workspace-mode <repo_local|tool_managed>.',
@@ -213,12 +213,15 @@ export const EN_US_TRANSLATIONS = {
           'Restore the prior workspace surface from a saved --workspace-plan artifact.',
         actionGuideClearConfig:
           'Remove only the current selector/config files and keep diagnostics/workflow/review artifacts.',
+        actionGuideBranchSwitch:
+          'Switch to one existing local git branch after confirming the worktree is clean; this action does not fetch or create branches for you.',
         actionGuideSetUiTheme:
           'Persist the default React shell theme; pass [theme] or omit it in interactive pretty mode to open a selector. --theme-scope <workspace|global> stays optional.',
         compatibilityTitle: 'Compatibility:',
         compatibilityDetail:
           'The older --workspace-action / --workspace-plan / --ui-theme form still works for scripts; [action] [value] is the shorter human-facing shorthand, and theme precedence remains command override > workspace config > global preference.',
         examplesTitle: 'Examples:',
+        switchBranchExample: '{{programName}} workspace switch-branch main --output pretty',
       },
       workflow: {
         description:
@@ -523,8 +526,10 @@ export const EN_US_TRANSLATIONS = {
           '{{laneLabel}}: refreshed backend conversation on {{surface}}{{modelSummary}}{{reasonSummary}}.',
         providerContinuationCleared:
           '{{laneLabel}}: cleared backend conversation state on {{surface}}{{modelSummary}}{{reasonSummary}}.',
+        providerContinuationFallbackActive:
+          '{{laneLabel}}: continuity stayed available through the lightweight session note; {{surface}}{{modelSummary}} did not provide backend reuse{{reasonSummary}}.',
         providerContinuationUnsupported:
-          '{{laneLabel}}: attempted backend conversation reuse on {{surface}}, but continuation is unsupported{{modelSummary}}{{reasonSummary}}.',
+          '{{laneLabel}}: backend reuse on {{surface}}{{modelSummary}} is unsupported, and no lightweight session note was available to preserve continuity{{reasonSummary}}.',
         mainTurnFollowUpPrompt: 'The main agent needs one clarification before handoff:',
         sessionStarted: 'Started service-backed session {{sessionId}} on {{routeId}}.',
         sessionResumed: 'Resumed session {{sessionId}} via selector={{resumeSelector}}.',
@@ -900,6 +905,7 @@ export const EN_US_TRANSLATIONS = {
       },
       workspace: {
         clearConfigTitle: 'Clear current workspace config',
+        switchBranchTitle: 'Switch current git branch',
         setThemeTitle: 'Persist current React shell theme',
         title: 'Plan or execute workspace migration',
         fields: {
@@ -910,6 +916,9 @@ export const EN_US_TRANSLATIONS = {
           currentMode: 'Current workspace mode',
           currentRoot: 'Current workspace root',
           activeConfigPaths: 'Active config paths',
+          targetBranch: 'Target branch',
+          repositoryRoot: 'Repository root',
+          receiptPath: 'Receipt path',
           themeScope: 'Theme scope',
           themePreferencePaths: 'Theme preference paths',
         },
@@ -918,6 +927,7 @@ export const EN_US_TRANSLATIONS = {
           execute: 'Execute',
           rollback: 'Rollback',
           clearConfig: 'Clear config',
+          branchSwitch: 'Switch branch',
           setUiTheme: 'Set UI theme',
         },
         help: {
@@ -929,6 +939,10 @@ export const EN_US_TRANSLATIONS = {
             'clear-config removes the current selector/config files used to resolve the active workspace surface.',
           clearConfigKeepsArtifacts:
             'clear-config does not delete diagnostics, workflow definitions, review queue artifacts, or other workspace records.',
+          branchSwitchRequiresCleanTree:
+            'switch-branch only runs when the current git worktree is clean, so it cannot silently strand uncommitted changes.',
+          branchSwitchLocalOnly:
+            'switch-branch only targets existing local branches; fetch or create the branch explicitly first when it is not present.',
           setThemePersistsToConfig:
             'set-ui-theme persists the workspace config by default, or the global CLI preference file when --theme-scope global is used; repo-local selector config is kept in sync only when it already exists.',
           setThemeFlagStillOverrides:
@@ -940,6 +954,8 @@ export const EN_US_TRANSLATIONS = {
           dryRunCompleted: 'Workspace migration dry-run completed.',
           clearConfigCompleted: 'Current workspace config cleared.',
           clearConfigNoop: 'No current workspace config was present to clear.',
+          branchSwitchCompleted: 'Switched the current repository branch to {{targetBranch}}.',
+          branchSwitchNoop: 'The current repository is already on branch {{targetBranch}}.',
           setThemeCompleted:
             'Default React shell theme persisted as {{theme}} for {{scope}} scope.',
         },
@@ -949,8 +965,35 @@ export const EN_US_TRANSLATIONS = {
           dryRunCompleted: 'Workspace migration plan generated; plan={{planPath}}.',
           clearConfigCompleted: 'Cleared {{count}} workspace config file(s): {{paths}}.',
           clearConfigNoop: 'No current workspace config file was found. Inspected: {{paths}}.',
+          branchSwitchCompleted:
+            'Switched from {{currentBranch}} to {{targetBranch}} in {{repositoryRoot}}; receipt={{artifactPath}}.',
+          branchSwitchNoop:
+            'Already on {{targetBranch}} in {{repositoryRoot}}; receipt={{artifactPath}}.',
           setThemeCompleted:
             'Persisted React shell theme {{theme}} for {{scope}} scope into {{count}} file(s): {{paths}}.',
+        },
+        errors: {
+          branchSwitchTargetRequired:
+            'workspace switch-branch requires a target branch. Pass one existing local branch name after the action.',
+          branchSwitchRequiresGitRepo:
+            'workspace switch-branch requires a git repository root. Could not resolve one from {{repositoryRoot}}.',
+          branchSwitchInvalidTarget: '"{{targetBranch}}" is not a valid Git branch name.',
+          branchSwitchValidateTargetFailed:
+            'Failed to validate branch name "{{targetBranch}}" with git check-ref-format.',
+          branchSwitchReadCurrentFailed:
+            'Failed to read the current git branch from {{repositoryRoot}}.',
+          branchSwitchDirtyWorktree:
+            'workspace switch-branch refuses to switch branches while the worktree has uncommitted changes.',
+          branchSwitchMissingLocalBranch:
+            'Local branch "{{targetBranch}}" does not exist yet. Fetch or create it explicitly before switching.',
+          branchSwitchCheckLocalFailed:
+            'Failed to verify whether local branch "{{targetBranch}}" exists.',
+          branchSwitchInspectStatusFailed: 'Failed to inspect git status for {{repositoryRoot}}.',
+          branchSwitchSwitchFailed: 'Failed to switch from {{currentBranch}} to {{targetBranch}}.',
+          branchSwitchVerifyActiveFailed:
+            'Failed to verify that {{targetBranch}} became the active branch after switching.',
+          branchSwitchUnexpectedActiveBranch:
+            'Expected {{targetBranch}} to be active, but git reports {{currentBranch}} instead.',
         },
         nextStepTitle: 'Next step',
         nextActions: {
@@ -970,6 +1013,10 @@ export const EN_US_TRANSLATIONS = {
             'Re-run workspace dry-run/execute if you want to recreate the workspace selector from scratch.',
           inspectExpectedConfigPaths:
             'Inspect {{paths}} if you expected an active workspace config to exist.',
+          verifyActiveBranchStatus:
+            'Run `git status --short --branch` to confirm {{targetBranch}} is now active and the worktree is still clean.',
+          continueOnSwitchedBranch:
+            'Continue your governed work on {{targetBranch}} now that the branch switch receipt is recorded.',
           rerunPrettyAfterThemeChange:
             'Re-run one pretty-mode command to confirm the persisted {{theme}} theme is now the default React shell surface.',
           useUiThemeFlagAsOverride:
@@ -981,6 +1028,8 @@ export const EN_US_TRANSLATIONS = {
           inspectedConfigPaths: 'Inspected config paths: {{paths}}',
           clearedConfigPath: 'Cleared config path: {{path}}',
           noConfigRemoved: 'No config paths were removed.',
+          activeBranch: 'Previously active branch: {{branch}}',
+          targetBranch: 'Target branch: {{branch}}',
           appliedTheme: 'Applied theme: {{theme}}',
           appliedThemeScope: 'Applied theme scope: {{scope}}',
           persistedConfigPaths: 'Persisted config paths: {{paths}}',
@@ -1169,6 +1218,17 @@ export const EN_US_TRANSLATIONS = {
         examples: {
           0: 'Help me connect Codex and Claude Code.',
           1: 'Set up adapter onboarding for this repo.',
+        },
+      },
+      branch_switch: {
+        title: 'Branch Switch',
+        summary:
+          'Switch the current repository to an existing local git branch through a governed preview-confirm path.',
+        detail:
+          'Branch Switch is the governed workspace action for requests like "switch to main"; it checks that the worktree is clean, refuses silent fetch/create side effects, and then executes the branch switch after confirmation.',
+        examples: {
+          0: 'Switch the current branch to main.',
+          1: 'Help me checkout the release branch.',
         },
       },
       doctor: {

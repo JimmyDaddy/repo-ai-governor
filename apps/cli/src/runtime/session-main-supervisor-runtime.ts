@@ -34,7 +34,12 @@ import type {
   SessionMainSupervisorTurnContext,
   SessionMainSupervisorTurnOutcome,
 } from '@repo-ai-governor/core-orchestration-service/types';
-import { AdapterSurface, standardizeError } from '@repo-ai-governor/shared';
+import {
+  AdapterSurface,
+  GovernorErrorCode,
+  RuntimeError,
+  standardizeError,
+} from '@repo-ai-governor/shared';
 import { SessionMainProviderContinuationPolicyEnvelope } from '../constants/session-main-provider-continuation.constant.js';
 import type { SessionMainSubagentDescriptor } from '../types/index.js';
 import { CliAdapterRoutingRuntime } from './adapter-routing-runtime.js';
@@ -294,6 +299,7 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       undefined,
       {
         allowToolCapableSurfaces: true,
+        stopAfterFirstSafeCandidate: true,
         streamContext: {
           context,
           title: this.localizeText('Session Main Answer', '主会话回答'),
@@ -328,96 +334,185 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       });
       return this.createGuardedFallbackOutcome(context, preflightExecutionDetailsLines);
     }
-    const routeRunner = this.createRouteRunner({
-      routeKey: SESSION_MAIN_ANSWER_ROUTE_KEY,
-      protocolBySurface,
-      safeCandidateSurfaces,
-      toolConfigBySurface,
-    });
     const answerInput = this.createAnswerInput(context);
-    const primaryAnswerSurface = safeCandidateSurfaces[0] ?? AdapterSurface.CODEX;
-    const directAnswerContinuation = this.providerContinuationRuntime.prepareRequest({
-      sessionId: context.sessionId,
-      routeId: context.routeId,
-      stageId: SESSION_MAIN_ANSWER_STAGE_ID,
-      roleId: null,
-      selectedSurface: primaryAnswerSurface,
-      toolConfig: toolConfigBySurface.get(primaryAnswerSurface),
-      providerContinuationState: context.providerContinuationState,
-      policyEnvelope: SessionMainProviderContinuationPolicyEnvelope.CHAT_ONLY,
-    });
-    const relayState = this.createProtocolStreamRelayState();
-    await this.publishStreamEvent(context, {
-      kind: 'lifecycle',
-      state: 'running',
-      title: this.localizeText('Session Main Answer', '主会话回答'),
-      detail: this.localizeText(
-        'The supervisor is preparing a direct answer.',
-        'supervisor 正在准备 direct answer。',
-      ),
-      activityKey: SESSION_MAIN_ANSWER_PREFLIGHT_ACTIVITY_KEY,
-      stageId: SESSION_MAIN_ANSWER_STAGE_ID,
-      routeKey: SESSION_MAIN_ANSWER_ROUTE_KEY,
-      selectedSurface: primaryAnswerSurface,
-    });
-    const dispatchRequest = {
-      processId: context.sessionId,
-      executionId: context.turnId,
-      stageId: SESSION_MAIN_ANSWER_STAGE_ID,
-      routeKey: SESSION_MAIN_ANSWER_ROUTE_KEY,
-      input: answerInput,
-      ...(directAnswerContinuation
-        ? {
-            continuation: directAnswerContinuation.request,
-          }
-        : {}),
-      runtimeContext: {
-        networkMode: AgentNetworkMode.STANDARD,
-      },
-    };
-    const relayPromise = directAnswerContinuation?.suppressStreamRelay
-      ? Promise.resolve()
-      : this.relayProtocolStreamEvents(
-          context,
-          protocolBySurface[primaryAnswerSurface],
-          dispatchRequest,
-          relayState,
-        );
-    const directAnswerInvokeStartedAtMs = Date.now();
-    let dispatchResult: Awaited<ReturnType<typeof routeRunner.dispatchStage>>;
-    try {
-      dispatchResult = await routeRunner.dispatchStage(dispatchRequest);
-    } catch (error) {
-      await relayPromise;
+    const directAnswerInvokeExecutionDetailsLines: string[] = [];
+    const attemptedDirectAnswerSurfaces = new Set<AdapterSurface>();
+    let candidateSafeSurfaces = [...safeCandidateSurfaces];
+    let invokeFallbackActivated = false;
+    let dispatchResult: Awaited<ReturnType<AgentRouteRunner['dispatchStage']>> | null = null;
+    let successfulRelayState = this.createProtocolStreamRelayState();
+    let successfulDirectAnswerContinuation: ReturnType<
+      SessionMainProviderContinuationRuntime['prepareRequest']
+    > | null = null;
+    while (candidateSafeSurfaces.length > 0) {
+      const primaryAnswerSurface = candidateSafeSurfaces[0] ?? AdapterSurface.CODEX;
+      attemptedDirectAnswerSurfaces.add(primaryAnswerSurface);
       await this.publishStreamEvent(context, {
         kind: 'lifecycle',
-        state: 'failed',
+        state: 'running',
         title: this.localizeText('Session Main Answer', '主会话回答'),
-        detail: this.localizeText(
-          'The direct-answer stage failed before completion.',
-          'direct-answer 阶段在完成前失败。',
-        ),
+        detail: invokeFallbackActivated
+          ? this.localizeText(
+              `The primary direct-answer surface failed, so the supervisor is retrying on ${primaryAnswerSurface}.`,
+              `主 direct-answer surface 调用失败，supervisor 正在改用 ${primaryAnswerSurface} 重试。`,
+            )
+          : this.localizeText(
+              'The supervisor is preparing a direct answer.',
+              'supervisor 正在准备 direct answer。',
+            ),
+        activityKey: SESSION_MAIN_ANSWER_PREFLIGHT_ACTIVITY_KEY,
         stageId: SESSION_MAIN_ANSWER_STAGE_ID,
         routeKey: SESSION_MAIN_ANSWER_ROUTE_KEY,
+        selectedSurface: primaryAnswerSurface,
       });
-      throw error;
+      const directAnswerContinuation = this.providerContinuationRuntime.prepareRequest({
+        sessionId: context.sessionId,
+        routeId: context.routeId,
+        stageId: SESSION_MAIN_ANSWER_STAGE_ID,
+        roleId: null,
+        selectedSurface: primaryAnswerSurface,
+        toolConfig: toolConfigBySurface.get(primaryAnswerSurface),
+        providerContinuationState: context.providerContinuationState,
+        policyEnvelope: SessionMainProviderContinuationPolicyEnvelope.CHAT_ONLY,
+      });
+      const dispatchRequest = {
+        processId: context.sessionId,
+        executionId: context.turnId,
+        stageId: SESSION_MAIN_ANSWER_STAGE_ID,
+        routeKey: SESSION_MAIN_ANSWER_ROUTE_KEY,
+        input: answerInput,
+        ...(directAnswerContinuation
+          ? {
+              continuation: directAnswerContinuation.request,
+            }
+          : {}),
+        runtimeContext: {
+          networkMode: AgentNetworkMode.STANDARD,
+        },
+      };
+      const attemptRelayState = this.createProtocolStreamRelayState();
+      const relayPromise = directAnswerContinuation?.suppressStreamRelay
+        ? Promise.resolve()
+        : this.relayProtocolStreamEvents(
+            context,
+            protocolBySurface[primaryAnswerSurface],
+            dispatchRequest,
+            attemptRelayState,
+          );
+      const directAnswerInvokeStartedAtMs = Date.now();
+      const routeRunner = this.createRouteRunner({
+        routeKey: SESSION_MAIN_ANSWER_ROUTE_KEY,
+        protocolBySurface,
+        safeCandidateSurfaces: [primaryAnswerSurface],
+        toolConfigBySurface,
+      });
+      try {
+        dispatchResult = await routeRunner.dispatchStage(dispatchRequest);
+        await relayPromise;
+        successfulRelayState = attemptRelayState;
+        successfulDirectAnswerContinuation = directAnswerContinuation;
+        const directAnswerInvokeElapsedMs =
+          typeof dispatchResult.invokeResult.elapsedMs === 'number'
+            ? Math.max(dispatchResult.invokeResult.elapsedMs, 0)
+            : Math.max(Date.now() - directAnswerInvokeStartedAtMs, 0);
+        directAnswerInvokeExecutionDetailsLines.push(
+          this.localizeText(
+            `Performance: direct-answer invoke completed in ${String(directAnswerInvokeElapsedMs)}ms on ${dispatchResult.selectedSurface}.`,
+            `性能：direct-answer 调用在 ${dispatchResult.selectedSurface} 上耗时 ${String(directAnswerInvokeElapsedMs)}ms 完成。`,
+          ),
+        );
+        break;
+      } catch (error) {
+        await relayPromise;
+        const invokeFailureReason = this.readInvokeFailureReason(error);
+        const directAnswerInvokeElapsedMs = Math.max(Date.now() - directAnswerInvokeStartedAtMs, 0);
+        directAnswerInvokeExecutionDetailsLines.push(
+          this.localizeText(
+            `Performance: direct-answer invoke failed in ${String(directAnswerInvokeElapsedMs)}ms on ${primaryAnswerSurface}.`,
+            `性能：direct-answer 调用在 ${primaryAnswerSurface} 上耗时 ${String(directAnswerInvokeElapsedMs)}ms 后失败。`,
+          ),
+          this.formatSurfaceInvokeFailureLine(primaryAnswerSurface, invokeFailureReason),
+        );
+        const remainingCandidateSurfaces = directAnswerCandidateSurfaces.filter(
+          (surface) => !attemptedDirectAnswerSurfaces.has(surface),
+        );
+        if (remainingCandidateSurfaces.length === 0) {
+          await this.publishStreamEvent(context, {
+            kind: 'lifecycle',
+            state: 'failed',
+            title: this.localizeText('Session Main Answer', '主会话回答'),
+            detail: this.localizeText(
+              'The direct-answer stage failed before completion.',
+              'direct-answer 阶段在完成前失败。',
+            ),
+            stageId: SESSION_MAIN_ANSWER_STAGE_ID,
+            routeKey: SESSION_MAIN_ANSWER_ROUTE_KEY,
+            selectedSurface: primaryAnswerSurface,
+          });
+          throw error;
+        }
+        const retrySurfaceEvaluation = await this.evaluateCandidateSurfaces(
+          remainingCandidateSurfaces,
+          SESSION_MAIN_ANSWER_ROUTE_KEY,
+          protocolBySurface,
+          undefined,
+          {
+            allowToolCapableSurfaces: true,
+            stopAfterFirstSafeCandidate: true,
+            streamContext: {
+              context,
+              title: this.localizeText('Session Main Answer', '主会话回答'),
+              stageId: SESSION_MAIN_ANSWER_STAGE_ID,
+              routeKey: SESSION_MAIN_ANSWER_ROUTE_KEY,
+            },
+          },
+        );
+        directAnswerInvokeExecutionDetailsLines.push(
+          ...retrySurfaceEvaluation.executionDetailsLines.slice(1),
+        );
+        if (retrySurfaceEvaluation.safeCandidateSurfaces.length === 0) {
+          await this.publishStreamEvent(context, {
+            kind: 'lifecycle',
+            state: 'failed',
+            title: this.localizeText('Session Main Answer', '主会话回答'),
+            detail: this.localizeText(
+              'The direct-answer stage failed before completion.',
+              'direct-answer 阶段在完成前失败。',
+            ),
+            stageId: SESSION_MAIN_ANSWER_STAGE_ID,
+            routeKey: SESSION_MAIN_ANSWER_ROUTE_KEY,
+            selectedSurface: primaryAnswerSurface,
+          });
+          throw error;
+        }
+        invokeFallbackActivated = true;
+        candidateSafeSurfaces = retrySurfaceEvaluation.safeCandidateSurfaces;
+      }
     }
-    await relayPromise;
+    if (!dispatchResult) {
+      throw new RuntimeError(
+        GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+        'The direct-answer stage did not produce a dispatch result.',
+      );
+    }
     const assistantMessage = this.resolveAssistantMessage(
       dispatchResult.invokeResult.output,
       context,
     );
-    if (!relayState.sawToken) {
+    const resolvedSelectedBy = invokeFallbackActivated
+      ? 'session.main.answer.fallback'
+      : this.resolveSelectedBy(
+          dispatchResult.auditRecord.selectedBy,
+          context.sessionRoutingPreferenceApplied,
+          !safeCandidateSurfaces.includes(context.selectedSurface as AdapterSurface),
+        );
+    if (!successfulRelayState.sawToken) {
       await this.publishAssistantTokenStream(context, assistantMessage, {
         title: this.localizeText('Assistant Draft', '回答草稿'),
         stageId: SESSION_MAIN_ANSWER_STAGE_ID,
         routeKey: SESSION_MAIN_ANSWER_ROUTE_KEY,
         selectedSurface: dispatchResult.selectedSurface,
-        selectedBy: this.resolveSelectedBy(
-          dispatchResult.auditRecord.selectedBy,
-          context.sessionRoutingPreferenceApplied,
-          !safeCandidateSurfaces.includes(context.selectedSurface as AdapterSurface),
-        ),
+        selectedBy: resolvedSelectedBy,
       });
     }
     await this.publishStreamEvent(context, {
@@ -429,17 +524,8 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       routeKey: SESSION_MAIN_ANSWER_ROUTE_KEY,
       selectedSurface: dispatchResult.selectedSurface,
     });
-    const directAnswerInvokeElapsedMs =
-      typeof dispatchResult.invokeResult.elapsedMs === 'number'
-        ? Math.max(dispatchResult.invokeResult.elapsedMs, 0)
-        : Math.max(Date.now() - directAnswerInvokeStartedAtMs, 0);
-    const resolvedSelectedBy = this.resolveSelectedBy(
-      dispatchResult.auditRecord.selectedBy,
-      context.sessionRoutingPreferenceApplied,
-      !safeCandidateSurfaces.includes(context.selectedSurface as AdapterSurface),
-    );
     const providerContinuationMutations = this.providerContinuationRuntime.resolveMutations(
-      directAnswerContinuation,
+      successfulDirectAnswerContinuation,
       dispatchResult.invokeResult.continuation,
     );
     return {
@@ -449,8 +535,7 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       assistantMessage,
       executionDetailsLines: this.buildDirectAnswerExecutionDetailsLines({
         preflightExecutionDetailsLines,
-        invokeElapsedMs: directAnswerInvokeElapsedMs,
-        selectedSurface: dispatchResult.selectedSurface,
+        invokeExecutionDetailsLines: directAnswerInvokeExecutionDetailsLines,
       }),
       routerDecisionReason: SESSION_MAIN_ROUTER_REASON_DIRECT_ANSWER,
       executionIntent: 'session.answer',
@@ -463,8 +548,9 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       subagentCount: 0,
       ...(providerContinuationMutations.length > 0
         ? {
-            providerContinuationSummaries: providerContinuationMutations.map(
-              (mutation) => mutation.summary,
+            providerContinuationSummaries: this.projectProviderContinuationSummaries(
+              context,
+              providerContinuationMutations,
             ),
             providerContinuationMutations,
           }
@@ -699,6 +785,7 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     capabilityRequirement?: AgentCapabilityRequirement,
     options?: {
       allowToolCapableSurfaces?: boolean;
+      stopAfterFirstSafeCandidate?: boolean;
       streamContext?: SurfaceProbeStreamContext;
     },
   ): Promise<{
@@ -711,24 +798,45 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
         '本轮 turn 的 surface 探针诊断：',
       ),
     ];
-    const evaluations = await Promise.all(
-      candidateSurfaces.map((surface) =>
-        this.evaluateCandidateSurface(
+    const safeCandidateSurfaces: AdapterSurface[] = [];
+    if (options?.stopAfterFirstSafeCandidate) {
+      for (const surface of candidateSurfaces) {
+        const evaluation = await this.evaluateCandidateSurface(
           surface,
           routeKey,
           protocolBySurface,
           capabilityRequirement,
           options,
-        ),
-      ),
-    );
-    const safeCandidateSurfaces: AdapterSurface[] = [];
-    for (const evaluation of evaluations) {
-      if (evaluation.safe) {
-        safeCandidateSurfaces.push(evaluation.surface);
+        );
+        if (evaluation.safe) {
+          safeCandidateSurfaces.push(evaluation.surface);
+        }
+        if (evaluation.executionDetailsLine) {
+          executionDetailsLines.push(evaluation.executionDetailsLine);
+        }
+        if (safeCandidateSurfaces.length > 0) {
+          break;
+        }
       }
-      if (evaluation.executionDetailsLine) {
-        executionDetailsLines.push(evaluation.executionDetailsLine);
+    } else {
+      const evaluations = await Promise.all(
+        candidateSurfaces.map((surface) =>
+          this.evaluateCandidateSurface(
+            surface,
+            routeKey,
+            protocolBySurface,
+            capabilityRequirement,
+            options,
+          ),
+        ),
+      );
+      for (const evaluation of evaluations) {
+        if (evaluation.safe) {
+          safeCandidateSurfaces.push(evaluation.surface);
+        }
+        if (evaluation.executionDetailsLine) {
+          executionDetailsLines.push(evaluation.executionDetailsLine);
+        }
       }
     }
     return {
@@ -967,8 +1075,9 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       subagentCount: 1,
       ...(providerContinuationMutations.length > 0
         ? {
-            providerContinuationSummaries: providerContinuationMutations.map(
-              (mutation) => mutation.summary,
+            providerContinuationSummaries: this.projectProviderContinuationSummaries(
+              context,
+              providerContinuationMutations,
             ),
             providerContinuationMutations,
           }
@@ -1045,8 +1154,9 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       subagentCount: executedDispatches.length,
       ...(providerContinuationMutations.length > 0
         ? {
-            providerContinuationSummaries: providerContinuationMutations.map(
-              (mutation) => mutation.summary,
+            providerContinuationSummaries: this.projectProviderContinuationSummaries(
+              context,
+              providerContinuationMutations,
             ),
             providerContinuationMutations,
           }
@@ -1121,8 +1231,9 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       subagentCount: executedDispatches.length,
       ...(providerContinuationMutations.length > 0
         ? {
-            providerContinuationSummaries: providerContinuationMutations.map(
-              (mutation) => mutation.summary,
+            providerContinuationSummaries: this.projectProviderContinuationSummaries(
+              context,
+              providerContinuationMutations,
             ),
             providerContinuationMutations,
           }
@@ -1599,8 +1710,9 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       ...(providerContinuationMutations.length > 0
         ? {
             providerContinuationMutations,
-            providerContinuationSummaries: providerContinuationMutations.map(
-              (mutation) => mutation.summary,
+            providerContinuationSummaries: this.projectProviderContinuationSummaries(
+              context,
+              providerContinuationMutations,
             ),
           }
         : {}),
@@ -1894,6 +2006,26 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     return standardizedError.message;
   }
 
+  private readInvokeFailureReason(error: unknown): string {
+    const standardizedError = standardizeError(error);
+    let resolvedMessage = standardizedError.message;
+    const visited = new Set<unknown>();
+    let cursor: unknown = error;
+    while (cursor && typeof cursor === 'object' && !visited.has(cursor)) {
+      visited.add(cursor);
+      const candidateMessage = (cursor as { message?: unknown }).message;
+      if (
+        typeof candidateMessage === 'string' &&
+        candidateMessage.length > 0 &&
+        candidateMessage !== standardizedError.message
+      ) {
+        resolvedMessage = candidateMessage;
+      }
+      cursor = (cursor as { cause?: unknown }).cause;
+    }
+    return resolvedMessage;
+  }
+
   private formatSurfaceEligibilityFailureLine(surface: string, reason: string): string {
     return this.localizeText(
       `${surface} · not eligible · ${reason}`,
@@ -1901,7 +2033,15 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     );
   }
 
+  private formatSurfaceInvokeFailureLine(surface: string, reason: string): string {
+    return this.localizeText(
+      `${surface} · invoke failed · ${reason}`,
+      `${surface} · 调用失败 · ${reason}`,
+    );
+  }
+
   private createAnswerInput(context: SessionMainSupervisorTurnContext): Record<string, unknown> {
+    const sessionContinuityNote = this.createSessionContinuityNote(context);
     return {
       userMessage: context.userMessage,
       locale: this.options.locale,
@@ -1923,6 +2063,7 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
         interactionMode: AgentStageExecutionMode.CHAT_ONLY,
         toolUsePolicy: AgentStageToolUsePolicy.FORBIDDEN,
       },
+      ...(sessionContinuityNote ? { sessionContinuityNote } : {}),
       ...(context.metadata ? { metadata: { ...context.metadata } } : {}),
     };
   }
@@ -1934,6 +2075,7 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     const repositoryReviewScope = this.isRepositoryReviewRoleDispatch(context, descriptor)
       ? SESSION_MAIN_REPOSITORY_REVIEW_SCOPE
       : null;
+    const sessionContinuityNote = this.createSessionContinuityNote(context);
     return {
       userMessage: this.stripRoleMentions(context.userMessage),
       locale: this.options.locale,
@@ -1951,8 +2093,45 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       interactionMode: SESSION_MAIN_INTERACTION_MODE.SINGLE_ROLE_DELEGATE,
       governorInstructions: this.createRoleDelegateGovernorInstructions(context, descriptor),
       ...(repositoryReviewScope ? { reviewScope: repositoryReviewScope } : {}),
+      ...(sessionContinuityNote ? { sessionContinuityNote } : {}),
       ...(context.metadata ? { metadata: { ...context.metadata } } : {}),
     };
+  }
+
+  private createSessionContinuityNote(
+    context: SessionMainSupervisorTurnContext,
+  ): Record<string, string> | undefined {
+    const latestNoteSummary = this.readOptionalString(context.latestNoteSummary);
+    const previewSummary = this.readOptionalString(context.previewSummary);
+    if (!latestNoteSummary && !previewSummary) {
+      return undefined;
+    }
+
+    return {
+      ...(latestNoteSummary ? { latestNoteSummary } : {}),
+      ...(previewSummary ? { previewSummary } : {}),
+    };
+  }
+
+  private projectProviderContinuationSummaries(
+    context: SessionMainSupervisorTurnContext,
+    providerContinuationMutations: NonNullable<
+      SessionMainSupervisorTurnOutcome['providerContinuationMutations']
+    >,
+  ): NonNullable<SessionMainSupervisorTurnOutcome['providerContinuationSummaries']> {
+    const lightweightSessionFallbackApplied = this.hasSessionContinuityNote(context);
+    return providerContinuationMutations.map((mutation) =>
+      mutation.summary.status === 'unsupported' && lightweightSessionFallbackApplied
+        ? {
+            ...mutation.summary,
+            lightweightSessionFallbackApplied: true,
+          }
+        : mutation.summary,
+    );
+  }
+
+  private hasSessionContinuityNote(context: SessionMainSupervisorTurnContext): boolean {
+    return Boolean(this.createSessionContinuityNote(context));
   }
 
   private isRepositoryReviewRequest(userMessage: string): boolean {
@@ -2258,16 +2437,9 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
 
   private buildDirectAnswerExecutionDetailsLines(options: {
     preflightExecutionDetailsLines: string[];
-    invokeElapsedMs: number;
-    selectedSurface: string;
+    invokeExecutionDetailsLines: string[];
   }): string[] {
-    return [
-      ...options.preflightExecutionDetailsLines,
-      this.localizeText(
-        `Performance: direct-answer invoke completed in ${String(options.invokeElapsedMs)}ms on ${options.selectedSurface}.`,
-        `性能：direct-answer 调用在 ${options.selectedSurface} 上耗时 ${String(options.invokeElapsedMs)}ms 完成。`,
-      ),
-    ];
+    return [...options.preflightExecutionDetailsLines, ...options.invokeExecutionDetailsLines];
   }
 
   private buildSurfaceAvailabilityExecutionDetailsLines(options: {

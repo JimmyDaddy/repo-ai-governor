@@ -18,12 +18,14 @@ describe('LocalOrchestrationServiceSessionMainCapabilityExplainer', () => {
         routerDecisionReason: 'session.main.router.capability_answer.overview',
         referencedCapabilityIds: expect.arrayContaining([
           SESSION_MAIN_CAPABILITY_ID.CONNECT,
+          SESSION_MAIN_CAPABILITY_ID.BRANCH_SWITCH,
           SESSION_MAIN_CAPABILITY_ID.REVIEW,
           SESSION_MAIN_CAPABILITY_ID.RUN,
         ]),
       }),
     );
     expect(answer?.assistantMessage).toContain('/connect');
+    expect(answer?.assistantMessage).toContain('/workspace switch-branch');
     expect(answer?.assistantMessage).toContain('/review');
   });
 

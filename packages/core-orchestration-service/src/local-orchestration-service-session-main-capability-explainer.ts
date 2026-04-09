@@ -68,6 +68,17 @@ const SESSION_MAIN_CAPABILITY_REFERENCE_RULES = [
     patterns: [/review[- ]verify/iu, /\/review verify/iu, /复核/u, /cr verify/iu],
   },
   {
+    capabilityId: SESSION_MAIN_CAPABILITY_ID.BRANCH_SWITCH,
+    patterns: [
+      /switch(?:ing)?\s+(?:the\s+)?branch/iu,
+      /checkout(?:\s+(?:the\s+)?branch)?/iu,
+      /switch-branch/iu,
+      /切(?:换)?分支/u,
+      /切到.*分支/u,
+      /切回.*分支/u,
+    ],
+  },
+  {
     capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW,
     patterns: [/\bcode review\b/iu, /(?<![/\w-])review(?![-\w])/iu, /评审/u, /审查/u],
   },
@@ -103,6 +114,7 @@ const SESSION_MAIN_CAPABILITY_REFERENCE_RULES = [
 
 const SESSION_MAIN_OVERVIEW_LIST_CAPABILITY_IDS = [
   SESSION_MAIN_CAPABILITY_ID.CONNECT,
+  SESSION_MAIN_CAPABILITY_ID.BRANCH_SWITCH,
   SESSION_MAIN_CAPABILITY_ID.DOCTOR,
   SESSION_MAIN_CAPABILITY_ID.VERIFY,
   SESSION_MAIN_CAPABILITY_ID.WORKFLOW,

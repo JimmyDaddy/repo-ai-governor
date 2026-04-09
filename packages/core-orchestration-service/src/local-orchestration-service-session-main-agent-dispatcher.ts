@@ -20,8 +20,8 @@ import type {
 const SESSION_MAIN_FAILURE_KEYWORDS = ['simulate failure', 'force failure'];
 const SESSION_MAIN_CANCEL_KEYWORDS = ['cancel this turn', 'simulate cancel'];
 const SESSION_MAIN_FALLBACK_ANSWER_DELTA_MAX_LENGTH = 80;
-const SESSION_MAIN_ROLE_MENTION_PATTERN = /@[a-z0-9_.-]+/giu;
-const SESSION_MAIN_ROLE_MENTION_PRESENCE_PATTERN = /@[a-z0-9_.-]+/iu;
+const SESSION_MAIN_ROLE_MENTION_PATTERN = /(^|[\s([{])@[a-z0-9_.-]+/giu;
+const SESSION_MAIN_ROLE_MENTION_PRESENCE_PATTERN = /(^|[\s([{])@[a-z0-9_.-]+/iu;
 const SESSION_MAIN_IMPLICIT_REVIEW_ROLE_ID = 'reviewer';
 const SESSION_MAIN_GREETING_PATTERN =
   /^(?:(?:hi|hello|hey|greetings)(?:\s+(?:governor|agent|there))?|你好|您好|哈喽|嗨|早上好|下午好|晚上好)[!,.? ]*$/iu;
@@ -84,7 +84,7 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
     const preferredSurface = this.resolvePreferredSurface(sessionRoutingPreference);
     const selectionMetadata = this.resolveSelectionMetadata(preferredSurface);
     const splitIntentSkillPlan = this.resolveSplitIntentSkillPlan(
-      normalizedLowerMessageWithoutRoleMentions,
+      normalizedMessageWithoutRoleMentions,
       {
         preferredSurface,
         configuredRoleMentionPresent,
@@ -192,7 +192,7 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
       };
     }
 
-    const skillPlan = this.skillRegistry.resolvePlan(normalizedLowerMessageWithoutRoleMentions, {
+    const skillPlan = this.skillRegistry.resolvePlan(normalizedMessageWithoutRoleMentions, {
       preferredSurface,
       configuredRoleMentionPresent,
     });
@@ -431,13 +431,13 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
   }
 
   private resolveSplitIntentSkillPlan(
-    normalizedUserMessage: string,
+    userMessage: string,
     options: {
       preferredSurface: AdapterSurface | null;
       configuredRoleMentionPresent: boolean;
     },
   ) {
-    const segments = normalizedUserMessage
+    const segments = userMessage
       .split(SESSION_MAIN_SPLIT_INTENT_SEGMENT_SEPARATOR)
       .map((segment) => segment.trim())
       .filter((segment) => segment.length > 0);
@@ -556,7 +556,10 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
   }
 
   private stripRoleMentions(message: string): string {
-    return message.replaceAll(SESSION_MAIN_ROLE_MENTION_PATTERN, '').trim();
+    return message
+      .replaceAll(SESSION_MAIN_ROLE_MENTION_PATTERN, '$1')
+      .replace(/\s{2,}/gu, ' ')
+      .trim();
   }
 
   private isConversationalGreeting(message: string): boolean {

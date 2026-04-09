@@ -252,6 +252,82 @@ describe('LocalOrchestrationServiceSessionMainAgentDispatcher', () => {
     ]);
   });
 
+  it('projects branch-switch requests into preview-confirm command batches', async () => {
+    const resolveTurn = vi.fn();
+    const dispatcher = new LocalOrchestrationServiceSessionMainAgentDispatcher({
+      resolveTurn,
+      resolveMentionedRoleId: () => null,
+    });
+
+    const result = await dispatcher.dispatch({
+      sessionId: 'session-skill-branch-switch-001',
+      routeId: 'session.main',
+      turnId: 'turn-skill-branch-switch-001',
+      turnIndex: 5,
+      userMessage: '帮我把当前代码分支切换到 main',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+    });
+
+    expect(resolveTurn).not.toHaveBeenCalled();
+    expect(result).toEqual(
+      expect.objectContaining({
+        responseMode: 'command_handoff_preview',
+        suggestedSlashCommand: '/workspace switch-branch',
+        executionIntent: 'workspace.branch_switch',
+        requiresConfirmation: true,
+        skillId: 'skill.workspace.switch_branch',
+        handoffExecutionMode: 'preview_confirm',
+      }),
+    );
+    expect(result.commandBatches).toEqual([
+      {
+        slashQuery: '/workspace switch-branch main',
+        bridgeArgv: ['workspace', 'switch-branch', 'main'],
+        previewCommandLine: 'repo-ai-governor workspace switch-branch main',
+      },
+    ]);
+  });
+
+  it('projects Git-valid branch targets such as bugfix@bar into preview-confirm command batches', async () => {
+    const resolveTurn = vi.fn();
+    const dispatcher = new LocalOrchestrationServiceSessionMainAgentDispatcher({
+      resolveTurn,
+      resolveMentionedRoleId: () => null,
+    });
+
+    const result = await dispatcher.dispatch({
+      sessionId: 'session-skill-branch-switch-002',
+      routeId: 'session.main',
+      turnId: 'turn-skill-branch-switch-002',
+      turnIndex: 6,
+      userMessage: 'checkout bugfix@bar',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+    });
+
+    expect(resolveTurn).not.toHaveBeenCalled();
+    expect(result).toEqual(
+      expect.objectContaining({
+        responseMode: 'command_handoff_preview',
+        suggestedSlashCommand: '/workspace switch-branch',
+        executionIntent: 'workspace.branch_switch',
+        requiresConfirmation: true,
+        skillId: 'skill.workspace.switch_branch',
+        handoffExecutionMode: 'preview_confirm',
+      }),
+    );
+    expect(result.commandBatches).toEqual([
+      {
+        slashQuery: '/workspace switch-branch bugfix@bar',
+        bridgeArgv: ['workspace', 'switch-branch', 'bugfix@bar'],
+        previewCommandLine: 'repo-ai-governor workspace switch-branch bugfix@bar',
+      },
+    ]);
+  });
+
   it('bridges same-turn explain-plus-execute verify requests into direct-execute governed handoff', async () => {
     const resolveTurn = vi.fn();
     const dispatcher = new LocalOrchestrationServiceSessionMainAgentDispatcher({

@@ -155,7 +155,7 @@ describe('session.main parity integration', () => {
         suggestedSlashCommand: '/connect',
         executionIntent: 'connect.adapters.bootstrap',
         skillId: 'skill.connect.adapters',
-        skillVersion: '2026-04-01',
+        skillVersion: '2026-04-08',
         handoffExecutionMode: 'preview_confirm',
         selectedSurface: 'claude-code',
         selectedBy: 'session.main.preference',

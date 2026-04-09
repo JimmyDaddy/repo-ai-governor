@@ -1,0 +1,50 @@
+# checklist
+
+- [x] TK-714 stabilize session.main direct-answer preflight and liveness degradation handling
+  - 2026-04-08：任务创建并直接切换为 `in_progress`，当前先修复 direct-answer 稳定性边界。
+  - 2026-04-08：已将 direct-answer preflight 收敛为“首个安全 surface 快路径”，避免慢 probe 持续阻塞整轮自由回答。
+  - 2026-04-08：已为首选 direct-answer surface 的 invoke failure 增加自动 fallback 到下一个安全 surface 的恢复路径，并补充对应 supervisor regression tests。
+  - 2026-04-08：已将 Codex CLI liveness suspect 阈值调整得更保守，并通过 `pnpm exec vitest run apps/cli/test/runtime/session-main-supervisor-runtime.test.ts packages/adapters/codex/test/codex-agent-adapter.smoke.test.ts apps/cli/test/runtime/session-shell-turn-progress-dock.test.ts --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run build`，任务状态切换为 `completed`，下一边界进入 fresh reviewer CR loop。
+  - 2026-04-08：在 `CR-001` 复核中确认了 direct-answer fallback 复用跨 attempt relay state 的可见性回归风险，已修正为 per-attempt relay state，并新增 partial-token fallback 回归测试；`CR-001` 已 resolved，当前任务边界 clean。
+- [x] TK-715 add governed branch-switch execution path for session.main
+  - 2026-04-08：任务创建，状态初始化为 `planned`，等待 `TK-714` clean 后进入执行窗口。
+  - 2026-04-08：`TK-714` 与 `CR-001` 边界已 clean，当前任务切换为 `in_progress`，开始为 “切换到 main 分支” 补齐 session.main 的受治理 handoff + execution path。
+  - 2026-04-08：已将“切换到 main / checkout main”补齐为 `session.main` 的新 governed capability，并打通 `/workspace switch-branch <branch>` 的 preview-confirm handoff、CLI discoverability、`workspace` 本地分支切换执行与 receipt artifact 写入路径。
+  - 2026-04-08：已补齐 capability/dispatcher/shell/slash-registry/workspace-command/runtime 集成回归测试，并通过 `pnpm exec vitest run packages/core-orchestration-service/test/local-orchestration-service-session-main-capability-catalog.unit.test.ts packages/core-orchestration-service/test/local-orchestration-service-session-main-capability-explainer.unit.test.ts packages/core-orchestration-service/test/local-orchestration-service-session-main-skill-registry.unit.test.ts packages/core-orchestration-service/test/local-orchestration-service-session-main-agent-dispatcher.unit.test.ts packages/core-orchestration-service/test/local-orchestration-service-shell.unit.test.ts apps/cli/test/runtime/session-slash-command-registry.test.ts apps/cli/test/commands/workspace-command.test.ts apps/cli/test/cli-governance-runtime.integration.test.ts --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run build`；当前任务状态切换为 `completed`，下一边界进入 fresh reviewer CR loop。
+  - 2026-04-08：`CR-002` 至 `CR-005` 已完成 fresh reviewer 循环并全部 `resolved`；第 5 轮 reviewer 未发现新的 actionable findings，当前任务边界 clean，下一边界切换为 `TK-716` sprint closeout / project-final review activation handoff。
+- [x] TK-716 sprint-001 closeout and project-final review activation handoff
+  - 2026-04-08：任务创建，状态初始化为 `planned`，待 sprint 内实现任务与 CR rounds clean 后推进。
+  - 2026-04-08：`TK-714`、`TK-715` 与对应 `CR` 已全部 clean，当前任务切换为 `in_progress`，开始执行 sprint closeout write-back 与 project-final review activation handoff 的真值校对和产物准备。
+  - 2026-04-08：已写入 `DA-716`、project/sprint closeout handoff 与 task-ledger 同步；当前 sprint surface 保留给后续 `project-final` delegated review loop。
+  - 2026-04-08：本窗口仅修改 docs/ledger closeout 产物并通过治理同步检查；未新增可执行代码变更，因此 build not required，当前任务切换为 `completed`。
+- [x] CR-001 TK-714 delegated review loop round 1
+  - 2026-04-08：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-08：fresh reviewer round 识别出 direct-answer fallback 复用了跨 attempt 的 relay state，可能让失败 surface 的 partial token 覆盖恢复后的最终答案，进入主 agent 复核与修复窗口。
+  - 2026-04-08：主 agent 复核确认 finding 2.1 成立，判定为 `认可`，并已完成最小安全修复与回归测试补强，当前状态推进到 `verified`。
+  - 2026-04-08：已将 direct-answer retry relay state 修正为 per-attempt 语义，并新增 partial-token fallback 回归测试；targeted vitest 与 build 均通过，`CR-001` 收口为 `resolved`。
+- [x] CR-002 TK-715 delegated review loop round 2
+  - 2026-04-08：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-08：fresh reviewer round 识别出 branch name validator 过窄与 branch-switch 文案绕过 i18n 两条 actionable findings，当前进入主 agent 复核与修复窗口。
+  - 2026-04-08：主 agent 已完成 findings 复核并判定两项均为 `accepted`；对应修复已落地，并通过 targeted vitest 与 `pnpm run build`，当前推进到 `verified`。
+  - 2026-04-08：accepted findings 已全部修复并再次通过 targeted vitest 与 `pnpm run build`，当前 round 推进到 `resolved`，等待下一轮 fresh reviewer recheck。
+- [x] CR-003 TK-715 delegated review loop round 3
+  - 2026-04-08：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-08：fresh reviewer 发现 `session.main` 的分支提取与校验仍过窄，导致 `feature+foo` / `bugfix@bar` 无法从自然语言入口进入 `/workspace switch-branch` handoff；当前进入主 agent 修复窗口。
+  - 2026-04-08：主 agent 已复核并接受该 finding，修复已覆盖 skill-registry / dispatcher 入口与回归测试，并通过 targeted vitest + `pnpm run build`，当前推进到 `verified`。
+  - 2026-04-08：accepted finding 已完成修复并再次通过 targeted vitest + `pnpm run build`，当前 round 推进到 `resolved`，继续进入下一轮 fresh reviewer recheck。
+- [x] CR-004 TK-715 delegated review loop round 4
+  - 2026-04-08：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-08：fresh reviewer 识别出 dirty no-op branch switch 仍会被 worktree gate 误拦，以及 Unicode 合法分支名仍无法从自然语言入口进入受治理 handoff；当前进入主 agent 修复窗口。
+  - 2026-04-08：主 agent 已复核并接受两条 finding，修复已覆盖 no-op dirty gate 与 Unicode 分支 token 路由，并通过 targeted vitest + `pnpm run build`，当前推进到 `verified`。
+  - 2026-04-08：accepted findings 已全部修复并再次通过 targeted vitest + `pnpm run build`，当前 round 推进到 `resolved`，继续进入下一轮 fresh reviewer recheck。
+- [x] CR-005 TK-715 delegated review loop round 5
+  - 2026-04-08：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-08：fresh reviewer 第 5 轮复核未发现新的 actionable findings；仅保留一条“missing-local-branch recovery path 尚未被 targeted vitest 直接单测命中”的非阻断备注，当前 round 直接推进到 `resolved`。
+- [x] CR-006 project-073-direct-answer-stability-and-governed-branch-switch-remediation final delegated review loop round 6
+  - 2026-04-08：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-08：fresh reviewer sub-agent `Kant` 返回 “No actionable findings”，并确认当前 project-final scope 可以直接进入 `resolved`。
+  - 2026-04-08：主 agent 完成当前 project-final boundary 的复核并写入 `resolved_code_review_working-tree-20260408-1953.md`；targeted vitest、`pnpm run build`、治理检查与 `pnpm run check` 全部通过，当前任务切换为 `resolved`。
+- [x] TK-717 finalize project-073 closeout and restore idle context
+  - 2026-04-08：任务创建并在同一窗口直接推进到 `completed`，用于承接 `CR-006` clean `resolved` 之后的最终 project closeout write-back。
+  - 2026-04-08：已写入 `DA-717` 与 completion audit summary，并将 `project-073 / sprint-001` plan、`current-context.md` 与 `completed-streams-history.md` 同步到最终 completed / idle 真值。
+  - 2026-04-08：已完成 `TK-717` canonical task-ledger sync，并通过治理检查与 `pnpm run check`；由于本窗口未修改可执行代码，build not required。

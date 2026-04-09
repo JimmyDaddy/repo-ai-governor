@@ -42,7 +42,7 @@
 1. 目标仓库已经使用 `pnpm`，且想走默认本地接入时，先选 `path`。
 2. 只有在目标仓库需要紧跟本地 governor 源码变化时，才切到 `link`。
 3. 目标仓库是脏工作树、使用 Yarn/npm，或你想先做无安装的 CLI/runtime 演练时，使用 `dist-binary`。
-4. 只有在安装环境仍能访问 npm registry、且你明确要做打包安装演练时，才使用 `tgz`。
+4. 只有在安装环境仍能访问 npm registry、且你明确要做“联网的 packaged CLI 安装演练”时，才使用 `tgz`。
 
 这些安装模式的正式 acceptance contract 以 `docs/support-matrix.zh-CN.md` 为准。
 
@@ -74,7 +74,7 @@ cd <target-repo>
 pnpm add --save-exact /绝对路径/cjhdev-repo-ai-governor-<version>.tgz
 ```
 
-适合做打包安装演练，但仍需要安装环境能访问 registry。
+适合做“联网的 packaged CLI 安装演练”，但仍需要安装环境能访问 registry，也不会因此扩大 VS Code 或其他 secondary surface 的打包支持口径。
 
 #### 方式 D：`dist-binary`
 
@@ -86,7 +86,7 @@ cd <target-repo>
 node <governor-repo>/dist/bin/repo-ai-governor.js --help
 ```
 
-适合先验证 CLI 行为、暂时不改目标仓库依赖图的场景。
+适合先验证 CLI/runtime 行为、暂时不改目标仓库依赖图的场景；它不证明 packaged install 已经成立。
 
 ### 2.3 在目标仓库跑通第一轮
 
@@ -182,25 +182,33 @@ pnpm exec repo-ai-governor upgrade rollback <apply-receipt-or-rollback-snapshot>
 
 先跑 `upgrade` preview。保留 preview 输出里的 `report_path`，以及 apply 输出里的 `apply_receipt_path`；这两类产物就是 adopter-facing apply/rollback 路径的正式 hand-off 参考。
 
-### 3.6 导出或打包低层宿主资产
+### 3.6 刷新可选的 Codex / Claude Code 宿主资产
 
 ```bash
-pnpm exec repo-ai-governor host export --host codex --mode project-local --output-dir .repo-ai-governor/generated/hosts/codex
-pnpm exec repo-ai-governor host verify --output-dir .repo-ai-governor/generated/hosts/codex
-pnpm exec repo-ai-governor host pack --host claude-code --mode plugin-bundle --bundle-dir .repo-ai-governor/generated/bundles/claude
+pnpm exec repo-ai-governor host export --host codex --mode project-local --output-dir .repo-ai-governor/generated/hosts/codex --apply-to-repo /absolute/path/to/<target-repo>
+pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/codex/host-export.manifest.json
+pnpm exec repo-ai-governor host pack --host claude-code --mode plugin-bundle --output-dir .repo-ai-governor/generated/hosts/claude-code-plugin --bundle-dir .repo-ai-governor/generated/bundles/claude-code
+pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/claude-code-plugin/host-export.manifest.json
 ```
 
-当你希望基于同一套治理真值，为 `codex`、`claude-code` 或 `github-copilot` 生成 staged host assets 或 installable bundle，而不是走首选的整仓 `adopt apply` 路径时，使用这条路径。
+这些命令应从 `<governor-repo>` 执行，且 `--apply-to-repo` 必须显式指向真正接收生成文件的 adopter 仓库根目录。
+
+只有当你在已构建的 governor 源码仓上，需要在常规 CLI bootstrap 之外再生成可选的 Codex / Claude Code 宿主原生资产时，才使用这条路径。
+
+正式刷新路径固定为：更新 governor 源码 checkout 或 vendored 的宿主侧 skills，然后重新执行 `host export` 或 `host pack`，最后重新执行 `host verify`。这属于源码仓 follow-up surface，不属于 packaged-install baseline，也不是一条独立的 host installer contract。
 
 ## 4. 给外部 adopter 的提醒
 
 1. `dist-binary` 演练证明的是 CLI/runtime 行为，不等于已经验证 package install surface。
 2. `tgz` 不是离线自包含安装；安装阶段仍会从 npm registry 解析外部依赖。
-3. 如果目标仓库本身是 Yarn/npm，或者已有脏工作树，建议先走 `dist-binary`；否则默认先用 `path`，只有在工作流需要时再切到 `link` 或 `tgz`。
-4. session shell、React shell、workflow/upgrade、宿主分发、workspace 工具、HITL 通知、故障排查等更完整说明，请看本地接入手册。
-5. 可选的 VS Code companion surface 目前只支持从已构建的 governor 源码仓通过 `apps/vscode-extension` 启动；已发布的 npm/tgz 安装面即便仍带有内部 `dist/apps/vscode-extension/**` 产物，也不提供正式支持的 VSIX、Marketplace 或可安装扩展 bundle。
-6. 内置 `adopt apply` 不要求目标仓库预先存在 `.codex/skills/**`；只有在你希望复用同样的 self-host skill 体验，或要使用低层 `host export` / `host pack` 时，这些仓库内辅助资产才会变得相关。
-7. 若要在 clean-room 或 desktop-sidecar 场景下启动本地 service host，只支持通过根包公开导出 `@cjhdev/repo-ai-governor/service-host` 引入；不要深导入内部 `dist/**` host 文件。
+3. `tgz` 路径验证的只是“已发布 CLI tarball + 随包文档/参考资产”这条打包面；它不会把 VS Code 的打包支持扩大到“源码仓本地生成 VSIX / packaged extension root”之外，也不会提供 Marketplace 或已发布可安装扩展的支持声明。
+4. 如果目标仓库本身是 Yarn/npm，或者已有脏工作树，建议先走 `dist-binary`；否则默认先用 `path`，只有在工作流需要时再切到 `link` 或 `tgz`。
+5. session shell、React shell、workflow/upgrade、宿主分发、workspace 工具、HITL 通知、故障排查等更完整说明，请看本地接入手册。
+6. 可选的 VS Code companion surface 现在支持两条路径：从已构建的 governor 源码仓通过 `apps/vscode-extension` 启动 extension-development host，或从同一源码仓本地生成 VSIX / packaged extension root。已发布的 npm/tgz 安装面即便仍带有内部 `dist/apps/vscode-extension/**` 产物，也不会交付正式支持的可安装扩展 bundle，Marketplace 仍不在支持范围内。
+7. 可选 desktop surface 继续保持 desktop foundation-only，并且只在已构建的 governor 源码仓上正式支持。当前没有正式支持的独立桌面安装器、已发布桌面 bundle 或 packaged desktop product claim。
+8. 内置 `adopt apply` 不要求目标仓库预先存在 source-local `.codex/skills/**`；仓库内的 Codex 本地工作流辅助能力位于 `.codex/skills/`，主要服务 self-host 与维护者流程，外部 adopter 只有在希望复用同样的本地 skill 体验时才需要一并 vendoring。
+9. 可选的 Codex / Claude Code 宿主原生资产（`host export` / `host verify` / `host pack`）只在源码仓 follow-up surface 上正式支持。只要 governor 或技能资产有刷新，就要重新执行对应 host 命令并重新 `host verify`；不要把这条路径当成 packaged-install 证明或独立的 host upgrader。
+10. 若要在 clean-room 或 desktop-sidecar 场景下启动本地 service host，只支持通过根包公开导出 `@cjhdev/repo-ai-governor/service-host` 引入；不要深导入内部 `dist/**` host 文件。
 
 ## 5. 继续阅读
 

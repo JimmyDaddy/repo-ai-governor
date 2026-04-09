@@ -1,0 +1,33 @@
+# checklist
+
+- [x] TK-684 freeze github-com-agent target contract and blocked-mode exit criteria
+  - 2026-04-08：任务创建，状态初始化为 `planned`。
+  - 2026-04-08：`TK-710 / DA-710` 完成 `sprint-001` closeout 后，本任务已切换为当前 primary boundary 的 `in_progress`；接下来先冻结 `github-com-agent` target contract、blocked-mode exit criteria 与 future unlock evidence contract。
+  - 2026-04-08：已冻结 `github-com-agent` reserved-target contract：target id 与 renderer path 可以继续保持 schema-safe staged export，但 capability profile 仍固定为 `supportedModes=[]`、`staged_export only`、`supportsApplyToRepo=false`、`supportsBundlePackaging=false`、`isMvpTarget=false`，不得被误读成正式 adopter-facing support。
+  - 2026-04-08：已同步收口 blocked-mode exit criteria：只有当 target 至少具备一个 supported mode 与 discoverable/installed consumer path、拿到 pass 级 target-specific export/verify evidence，并证明 GitHub.com consumption 仍通过 canonical governor runtime handoff 时，`github-com-agent` 才能离开 deferred 状态；本轮未修改 executable surface，因此 build not required。
+  - 2026-04-08：已将上述 contract 写回 `packages/adapters/github-copilot/README.md`、`docs/local-adoption-playbook*.md`、`docs/maintainer-validation-playbook*.md` 与 `docs/support-matrix*.md`，当前任务状态切换为 `completed`，下一边界进入 `TK-685`。
+- [x] TK-685 implement github-com-agent export verify follow-up or reserved-boundary reinforcement
+  - 2026-04-08：任务创建，状态初始化为 `planned`。
+  - 2026-04-08：已把 reserved-boundary reinforcement 收敛为可重放证据链：新增 `scripts/release/verify-github-com-agent-reserved-target.mjs` 与 `package.json` 脚本 `release:verify-github-com-agent-reserved-target`，固定验证 `github-com-agent` staged export fail-closed、`--apply-to-repo` rejection、`host verify` blocking，以及 bundle packaging rejection。
+  - 2026-04-08：已运行 `pnpm exec vitest run apps/cli/test/commands/host-command.test.ts apps/cli/test/host-command.integration.test.ts packages/adapters/github-copilot/test/github-copilot-host-renderer.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run build` 与 `pnpm run release:verify-github-com-agent-reserved-target -- --output .tmp/project-068-sprint-002-github-com-agent-reserved-target-report.json`，确认 reserved target 继续保持 schema-safe staged export + fail-closed support truth。
+  - 2026-04-08：已把 report/backlink 入口同步到 `docs/local-adoption-playbook*.md`、`docs/maintainer-validation-playbook*.md` 与 `docs/support-matrix*.md`，当前任务状态切换为 `completed`，下一边界进入 `TK-686` backlog handoff 收口。
+- [x] TK-686 close P2 follow-up recommendation and backlog handoff
+  - 2026-04-08：任务创建，状态初始化为 `planned`。
+  - 2026-04-08：已新增 `DA-711-project-068-p2-follow-up-recommendation-and-backlog-handoff.md`，汇总 `local-model` 与 `github-com-agent` 的 P2 conclusion、future unlock dependency、non-goal guardrails 与 backlog 建议。
+  - 2026-04-08：已明确保持 `project-068` 为 `P2 deferred` 收口，不新增新的 host-native productization、GitHub.com adopter-facing support claim，或 packaged secondary-surface 扩张；本边界只回写 docs/ledger/handoff 真值，因此 build not required。
+  - 2026-04-08：当前任务状态切换为 `completed`，`project-068 / sprint-002` 的实现任务已全部完成，下一边界进入 fresh reviewer CR loop。
+- [x] CR-001 sprint-002-github-com-agent-target-followup delegated review loop round 1
+  - 2026-04-08：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-08：fresh reviewer round 1 未发现 actionable finding；已写入 `verified_code_review_working-tree-20260408-1245.md` 并将本任务推进到 `verified`。
+  - 2026-04-08：本轮无需修复 accepted finding；已将报告收口为 `resolved_code_review_working-tree-20260408-1245.md`，并把本任务推进到 `resolved`。
+- [x] TK-712 sprint-002 closeout and project-final review activation handoff
+  - 2026-04-08：任务创建，状态初始化并直接推进为 `completed`，用于承接 sprint-002 clean closeout。
+  - 2026-04-08：已通过 `DA-712-sprint-002-closeout-and-project-final-review-activation-handoff.md` 记录 sprint-002 closeout 结论：`TK-684`、`TK-685`、`TK-686` 与 `CR-001` 已全部 clean 终态，reserved-target fail-closed evidence 与 backlog handoff 已写回 docs/ledger truth。
+  - 2026-04-08：已把 sprint-002 计划状态回写为 `completed`，并把下一边界固定为 `project-068` project-final CR loop；当前 worktree 仍沿用 sprint-002 surface 作为 project-final review target。
+- [x] CR-002 project-068-p2-fallback-and-reserved-target-followups final delegated review loop round 2
+  - 2026-04-08：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-08：fresh reviewer `Chandrasekhar` 返回 1 条 accepted finding：`verify-blocked` 场景会复用 staged export 已生成的 verification summary，可能让 reserved-target fail-closed gate 在 summary 未刷新时误判为绿色；主 agent 复核后确认该问题成立，并将本任务推进到 `verified`。
+  - 2026-04-08：已在 `scripts/release/verify-github-com-agent-reserved-target.mjs` 中加入旧 summary 清理逻辑，并重新通过定向 host tests、`pnpm run build`、`pnpm run release:verify-github-com-agent-reserved-target` 与 `pnpm run check`；报告已收口为 `resolved_code_review_working-tree-20260408-1304.md`，本任务推进到 `resolved`。
+- [x] TK-713 finalize project-068 closeout and clear the active primary stream
+  - 2026-04-08：任务创建并在同一窗口直接推进到 `completed`，用于承接 `project-068` clean project-final review 之后的最终 closeout write-back。
+  - 2026-04-08：已写入 `DA-713` 与 completion audit summary，并把 project / sprint / history / current-context / delivery registry 同步到完成态真值。

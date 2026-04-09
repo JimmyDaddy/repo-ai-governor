@@ -82,11 +82,13 @@ export {
   DefaultAgentsProjectionNowProvider,
 } from './providers/index.js';
 export {
+  javascriptMinimalGovernancePack,
   goMinimalGovernancePack,
   phaseAProjectedReviewRuleBundle,
   phaseAReviewRuleDefinitions,
   phaseAReviewRuleRegistry,
   pythonMinimalGovernancePack,
+  rustMinimalGovernancePack,
   workflowReviewGovernancePack,
 } from './examples/index.js';
 export { ReviewRuleRegistry } from './review-rule-registry.js';

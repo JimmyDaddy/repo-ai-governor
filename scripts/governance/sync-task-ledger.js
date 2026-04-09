@@ -568,6 +568,9 @@ function syncTaskLedger(options) {
   replaceTaskLedgerCanonicalRowsForSource({
     taskCsvPath: csvPath,
     rows: tasksCsvState.rows,
+    // Preserve the in-memory canonical rows we just built instead of re-bootstrapping
+    // from the stale on-disk CSV view during the same write-back window.
+    bootstrapFromCsv: false,
     writeRenderedView: true,
   });
 

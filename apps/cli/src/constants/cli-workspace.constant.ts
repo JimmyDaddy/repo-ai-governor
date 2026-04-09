@@ -6,6 +6,7 @@ export enum CliWorkspaceAction {
   EXECUTE = 'execute',
   ROLLBACK = 'rollback',
   CLEAR_CONFIG = 'clear-config',
+  BRANCH_SWITCH = 'switch-branch',
   SET_UI_THEME = 'set-ui-theme',
 }
 

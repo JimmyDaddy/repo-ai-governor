@@ -37,7 +37,7 @@ export const ZH_CN_TRANSLATIONS = {
       noLocalFallback: '在受限网络演练中禁用本地 fallback，用于验证阻断语义。',
       noInteractive: '禁用首次 init 的交互式问答配置，强制使用非交互初始化。',
       workspaceAction:
-        '指定 workspace 命令动作：dry-run|execute|rollback|clear-config|set-ui-theme。',
+        '指定 workspace 命令动作：dry-run|execute|rollback|clear-config|switch-branch|set-ui-theme。',
       workspaceMode: '指定 workspace 迁移目标模式：repo_local|tool_managed。',
       workspaceRoot: '指定 workspace 迁移命令使用的目标根路径覆盖。',
       workspacePlan: '指定 rollback 动作使用的 workspace migration plan 产物路径。',
@@ -166,9 +166,10 @@ export const ZH_CN_TRANSLATIONS = {
       },
       workspace: {
         description:
-          '规划、执行、回滚工作区迁移基线，清除当前工作区配置，或持久化 workspace/global 默认 React shell 主题。',
+          '规划、执行、回滚工作区迁移基线，清除当前工作区配置，切换到现有本地 git 分支，或持久化 workspace/global 默认 React shell 主题。',
         actionArgument: 'workspace 动作短写。面向人工执行，等价于 --workspace-action。',
-        valueArgument: '可选动作值。`rollback` 时填写 plan 路径，`set-ui-theme` 时填写主题预设。',
+        valueArgument:
+          '可选动作值。`rollback` 时填写 plan 路径，`switch-branch` 时填写目标分支，`set-ui-theme` 时填写主题预设。',
         actionGuideTitle: '动作说明：',
         actionGuideDryRun: '仅预览迁移计划；需要 --workspace-mode <repo_local|tool_managed>。',
         actionGuideExecute:
@@ -176,12 +177,15 @@ export const ZH_CN_TRANSLATIONS = {
         actionGuideRollback: '根据已保存的 --workspace-plan 产物恢复之前的工作区面。',
         actionGuideClearConfig:
           '只移除当前 selector/config 文件，保留 diagnostics、workflow、review 等产物。',
+        actionGuideBranchSwitch:
+          '在确认工作树干净后切换到一个已存在的本地 git 分支；该动作不会替你 fetch 或新建分支。',
         actionGuideSetUiTheme:
           '持久化默认 React shell 主题；可直接传 [theme]，也可在交互式 pretty 模式下省略它以打开 selector。--theme-scope <workspace|global> 仍是可选项。',
         compatibilityTitle: '兼容性：',
         compatibilityDetail:
           '旧的 --workspace-action / --workspace-plan / --ui-theme 长写法仍可继续用于脚本；[action] [value] 是更短的人手执行写法，同时主题优先级保持为命令覆盖 > workspace config > 全局偏好。',
         examplesTitle: '示例：',
+        switchBranchExample: '{{programName}} workspace switch-branch main --output pretty',
       },
       workflow: {
         description: '预览流程模板、创建已保存的 workflow 定义，或编辑当前已保存的 workflow。',
@@ -464,8 +468,10 @@ export const ZH_CN_TRANSLATIONS = {
           '{{laneLabel}}：已在 {{surface}}{{modelSummary}} 上刷新后端会话{{reasonSummary}}。',
         providerContinuationCleared:
           '{{laneLabel}}：已清理 {{surface}}{{modelSummary}} 的后端会话状态{{reasonSummary}}。',
+        providerContinuationFallbackActive:
+          '{{laneLabel}}：已通过轻量会话摘要保持连续性；{{surface}}{{modelSummary}} 未提供后端会话复用{{reasonSummary}}。',
         providerContinuationUnsupported:
-          '{{laneLabel}}：已在 {{surface}}{{modelSummary}} 上尝试复用后端会话，但当前不支持连续会话{{reasonSummary}}。',
+          '{{laneLabel}}：{{surface}}{{modelSummary}} 当前不支持后端会话复用，且没有轻量会话摘要可用于保持连续性{{reasonSummary}}。',
         mainTurnFollowUpPrompt: '主 agent 在 handoff 前还需要一次补充说明：',
         sessionStarted: '已在 {{routeId}} 上启动 service-backed session {{sessionId}}。',
         sessionResumed: '已通过 selector={{resumeSelector}} 恢复 session {{sessionId}}。',
@@ -821,6 +827,7 @@ export const ZH_CN_TRANSLATIONS = {
       },
       workspace: {
         clearConfigTitle: '清除当前工作区配置',
+        switchBranchTitle: '切换当前 Git 分支',
         setThemeTitle: '持久化当前 React shell 主题',
         title: '规划或执行工作区迁移',
         fields: {
@@ -831,6 +838,9 @@ export const ZH_CN_TRANSLATIONS = {
           currentMode: '当前工作区模式',
           currentRoot: '当前工作区根路径',
           activeConfigPaths: '活动配置路径',
+          targetBranch: '目标分支',
+          repositoryRoot: '仓库根路径',
+          receiptPath: '回执路径',
           themeScope: '主题范围',
           themePreferencePaths: '主题偏好路径',
         },
@@ -839,6 +849,7 @@ export const ZH_CN_TRANSLATIONS = {
           execute: '执行',
           rollback: '回滚',
           clearConfig: '清除配置',
+          branchSwitch: '切换分支',
           setUiTheme: '设置 UI 主题',
         },
         help: {
@@ -849,6 +860,10 @@ export const ZH_CN_TRANSLATIONS = {
             'clear-config 会移除当前用于解析活动工作区面的 selector/config 文件。',
           clearConfigKeepsArtifacts:
             'clear-config 不会删除 diagnostics、workflow definition、review queue 等其它工作区产物。',
+          branchSwitchRequiresCleanTree:
+            'switch-branch 只会在当前 git 工作树干净时执行，避免把未提交改动悄悄留在错误分支上。',
+          branchSwitchLocalOnly:
+            'switch-branch 只面向已存在的本地分支；如果目标分支还不存在，需要先显式 fetch 或创建它。',
           setThemePersistsToConfig:
             'set-ui-theme 默认持久化到当前活动工作区配置；使用 --theme-scope global 时则写入全局 CLI 偏好文件。repo-local selector config 只有在原本已存在时才会同步。',
           setThemeFlagStillOverrides:
@@ -860,6 +875,8 @@ export const ZH_CN_TRANSLATIONS = {
           dryRunCompleted: '工作区迁移 dry-run 已完成。',
           clearConfigCompleted: '当前工作区配置已清除。',
           clearConfigNoop: '当前没有可清除的工作区配置。',
+          branchSwitchCompleted: '当前仓库分支已切换到 {{targetBranch}}。',
+          branchSwitchNoop: '当前仓库已经位于分支 {{targetBranch}}。',
           setThemeCompleted: '默认 React shell 主题已为 {{scope}} 范围持久化为 {{theme}}。',
         },
         message: {
@@ -868,8 +885,32 @@ export const ZH_CN_TRANSLATIONS = {
           dryRunCompleted: '工作区迁移计划已生成；计划文件={{planPath}}。',
           clearConfigCompleted: '已清除 {{count}} 个工作区配置文件：{{paths}}。',
           clearConfigNoop: '未发现可清除的当前工作区配置文件。已检查：{{paths}}。',
+          branchSwitchCompleted:
+            '已在 {{repositoryRoot}} 中从 {{currentBranch}} 切换到 {{targetBranch}}；回执={{artifactPath}}。',
+          branchSwitchNoop:
+            '当前已位于 {{repositoryRoot}} 的 {{targetBranch}} 分支；回执={{artifactPath}}。',
           setThemeCompleted:
             '已将 React shell 主题 {{theme}} 以 {{scope}} 范围持久化到 {{count}} 个文件：{{paths}}。',
+        },
+        errors: {
+          branchSwitchTargetRequired:
+            'workspace switch-branch 需要一个目标分支；请在动作后传入一个已存在的本地分支名。',
+          branchSwitchRequiresGitRepo:
+            'workspace switch-branch 需要位于 Git 仓库中；无法从 {{repositoryRoot}} 解析出仓库根路径。',
+          branchSwitchInvalidTarget: '"{{targetBranch}}" 不是有效的 Git 分支名。',
+          branchSwitchValidateTargetFailed:
+            '无法通过 git check-ref-format 校验分支名“{{targetBranch}}”。',
+          branchSwitchReadCurrentFailed: '无法从 {{repositoryRoot}} 读取当前 Git 分支。',
+          branchSwitchDirtyWorktree:
+            'workspace switch-branch 在工作树仍有未提交改动时拒绝切换分支。',
+          branchSwitchMissingLocalBranch:
+            '本地分支“{{targetBranch}}”还不存在；请先显式 fetch 或创建后再切换。',
+          branchSwitchCheckLocalFailed: '无法确认本地分支“{{targetBranch}}”是否存在。',
+          branchSwitchInspectStatusFailed: '无法检查 {{repositoryRoot}} 的 Git 状态。',
+          branchSwitchSwitchFailed: '无法从 {{currentBranch}} 切换到 {{targetBranch}}。',
+          branchSwitchVerifyActiveFailed: '切换后无法确认 {{targetBranch}} 是否已经成为当前分支。',
+          branchSwitchUnexpectedActiveBranch:
+            '预期当前分支应为 {{targetBranch}}，但 Git 实际返回的是 {{currentBranch}}。',
         },
         nextStepTitle: '下一步',
         nextActions: {
@@ -887,6 +928,10 @@ export const ZH_CN_TRANSLATIONS = {
             '如果你想从零开始重新生成工作区 selector，请重新执行 workspace dry-run/execute。',
           inspectExpectedConfigPaths:
             '如果你原本预期存在活动工作区配置，请检查这些路径：{{paths}}。',
+          verifyActiveBranchStatus:
+            '请执行 `git status --short --branch`，确认 {{targetBranch}} 已成为当前分支且工作树仍然干净。',
+          continueOnSwitchedBranch:
+            '既然分支切换回执已经记录完成，你现在可以继续在 {{targetBranch}} 上执行受治理工作流。',
           rerunPrettyAfterThemeChange:
             '请重新执行一条 pretty 模式命令，确认持久化后的 {{theme}} 已成为默认 React shell 外观。',
           useUiThemeFlagAsOverride:
@@ -898,6 +943,8 @@ export const ZH_CN_TRANSLATIONS = {
           inspectedConfigPaths: '已检查配置路径：{{paths}}',
           clearedConfigPath: '已清除配置路径：{{path}}',
           noConfigRemoved: '没有移除任何配置路径。',
+          activeBranch: '原活动分支：{{branch}}',
+          targetBranch: '目标分支：{{branch}}',
           appliedTheme: '已应用主题：{{theme}}',
           appliedThemeScope: '已应用主题范围：{{scope}}',
           persistedConfigPaths: '已持久化配置路径：{{paths}}',
@@ -1081,6 +1128,16 @@ export const ZH_CN_TRANSLATIONS = {
         examples: {
           0: '帮我把 Codex 和 Claude Code 接上。',
           1: '给这个仓库做一遍 adapter onboarding。',
+        },
+      },
+      branch_switch: {
+        title: '切换分支',
+        summary: '通过受治理的 preview-confirm 路径把当前仓库切换到一个已存在的本地 git 分支。',
+        detail:
+          '当你提出“切到 main”这类请求时，应当使用切换分支能力。它会先校验工作树是否干净，拒绝隐式 fetch/create 副作用，然后在确认后执行分支切换。',
+        examples: {
+          0: '帮我把当前分支切到 main。',
+          1: '切到 release 分支。',
         },
       },
       doctor: {

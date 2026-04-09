@@ -23,6 +23,7 @@
 9. 约束 installer 只可物化 host-consumable projection、installer metadata 与显式 repo-local bootstrap template；默认 `tool_managed` 工作区事实、`repo_local` 运行态 state 与 self-host authoring surface 不能被静态 install payload 冒充。
 10. 为 multi-workspace overview、parallel execution lane、background queue、notification ownership 与 host-native rollout phase map 提供正式方向，但不宣称这些方向已在代码面全部交付。
 11. 为 adopter truthfulness、real adapter invocation、secondary surface sequencing、GA evidence consolidation、standards runtime productization 与 adoption-pack installer rollout 提供 planning-side formal direction，但不把路线图判断误报为已完成交付。
+12. 为 current surface baseline classification、host-native lifecycle carry slot 与 follow-up decomposition 提供 planning-side formal direction，但不把路线图判断误报为已完成交付。
 
 ## 3. 非目标
 
@@ -75,6 +76,11 @@
    - 新增 installer-focused contract formalize `adopt apply/diff/upgrade/remove`、managed ownership、install receipt 与 `self-host-complete` template bootstrap boundary。
    - `self-host-complete` 只允许作为显式高级 profile，在 `workspace.mode=repo_local` 下 seed template-backed canonical surfaces；它复刻的是治理模型，不是源仓库 live-state clone。
    - 真实 rollout follow-up 由 `project-061-adoption-pack-installer-and-self-host-bootstrap-rollout` 承接。
+8. 截至 `2026-04-08`，本模块进一步接受“current surface baseline classification and follow-up decomposition”补充方向：
+   - `project-052 ~ project-057` 保留为历史完成流，不再代表当前下一条 primary / planned stream。
+   - 当前 follow-up order 固定重置为 `project-062 -> project-063 -> project-067 -> project-064 -> project-065 -> project-066`。
+   - adopter-facing distribution truth lane 由 `project-063 + project-067` 共同承接。
+   - `project-068` 专门承接 `local-model` 与 `github-com-agent` 的 `P2 deferred` follow-up。
 
 ## 9. Detail Docs
 
@@ -87,3 +93,4 @@
    - `adrs/host-native-distribution-and-target-specific-consumption.md`
    - `adrs/adopter-productization-priority-and-surface-sequencing.md`
    - `adrs/adoption-pack-installer-and-self-host-template-bootstrap.md`
+   - `adrs/current-surface-baseline-classification-and-followup-decomposition.md`

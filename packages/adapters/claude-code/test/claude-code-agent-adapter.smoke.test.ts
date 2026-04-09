@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -1034,6 +1034,44 @@ describe('claude-code-agent-adapter smoke', () => {
         command: 'claude-code',
       }),
     );
+  });
+
+  it('places the prompt after a delimiter so --add-dir does not swallow it', async () => {
+    const tempRoot = mkdtempSync(join(tmpdir(), 'claude-cli-argv-'));
+    const commandPath = join(tempRoot, 'fake-claude');
+    const argvLogPath = join(tempRoot, 'argv-log.json');
+    writeFileSync(
+      commandPath,
+      [
+        '#!/usr/bin/env node',
+        `require('node:fs').writeFileSync(${JSON.stringify(argvLogPath)}, JSON.stringify(process.argv.slice(2)));`,
+        "process.stdout.write('OK\\n');",
+      ].join('\n'),
+      'utf8',
+    );
+    chmodSync(commandPath, 0o755);
+
+    const adapter = new ClaudeCodeAgentAdapter({
+      executionMode: ClaudeCodeAgentAdapterExecutionMode.CLI_EXEC,
+      command: commandPath,
+      currentWorkingDirectory: tempRoot,
+    });
+
+    try {
+      const probeResult = await adapter.probe({
+        routeKey: 'cli.adapter.probe.claude-code',
+      });
+      const argv = JSON.parse(readFileSync(argvLogPath, 'utf8')) as string[];
+
+      expect(probeResult.availabilityStatus).toBe('available');
+      expect(argv).toEqual(
+        expect.arrayContaining(['--add-dir', tempRoot, '--', 'Respond with exactly OK.']),
+      );
+      expect(argv.at(-2)).toBe('--');
+      expect(argv.at(-1)).toBe('Respond with exactly OK.');
+    } finally {
+      rmSync(tempRoot, { recursive: true, force: true });
+    }
   });
 
   it('clamps requested invoke timeout overrides into the supported contract window', async () => {

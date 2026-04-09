@@ -53,7 +53,7 @@ vi.mock(
   { virtual: true },
 );
 
-vi.mock('@repo-ai-governor/core-orchestration-service', () => ({
+vi.mock('@repo-ai-governor/core-orchestration-service/sidecar-client', () => ({
   LocalOrchestrationServiceSidecarClient: class LocalOrchestrationServiceSidecarClient {
     public readonly getHealth = serviceClientMock.getHealth;
 

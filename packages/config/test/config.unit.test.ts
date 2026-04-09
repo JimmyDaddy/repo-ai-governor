@@ -46,6 +46,10 @@ function createConfigFixture(): GovernorConfig {
             module: '@repo-ai-governor/standards/examples',
             exportName: 'workflowReviewGovernancePack',
           },
+          {
+            module: '@repo-ai-governor/standards/examples',
+            exportName: 'javascriptMinimalGovernancePack',
+          },
         ],
         team: [
           {
@@ -176,6 +180,9 @@ describe('config unit', () => {
     const validator = new SchemaValidator();
     const validatedConfig = validator.validateOrThrow(createConfigFixture());
 
+    expect(validatedConfig.standards?.packSources.official?.map((pack) => pack.exportName)).toEqual(
+      ['workflowReviewGovernancePack', 'javascriptMinimalGovernancePack'],
+    );
     expect(validatedConfig.standards?.packSources.team?.[0]?.exportName).toBe('teamDeliveryPack');
     expect(validatedConfig.standards?.renderTargets).toEqual(['human', 'ai']);
     expect(validatedConfig.standards?.projectionTargets?.[0]?.targetFile).toBe(
