@@ -96,6 +96,7 @@ export type {
   CliLocalAdapterProbeOverride,
   CliLocalAdapterProbeResolution,
   CliConnectRoleBindingOverride,
+  CliConnectToolTransportOverride,
   CliNormalizedRuntimeDebugOptions,
   CliRuntimeDebugOptions,
   CliCommandRunState,

@@ -1247,6 +1247,188 @@ describe('Cli session-main supervisor runtime', () => {
     );
   });
 
+  it('invalidates remote_api continuation handles when explicit cli_exec transport is selected', async () => {
+    const laneKey = 'session.main::stage-session-main-answer::session.main::codex::chat_only';
+    const providerContinuationState: SessionProviderContinuationSessionState = {
+      version: 1,
+      slots: {
+        [laneKey]: {
+          laneKey,
+          routeId: 'session.main',
+          stageId: 'stage-session-main-answer',
+          roleId: null,
+          selectedSurface: AdapterSurface.CODEX,
+          providerId: AdapterProviderKind.OPENAI,
+          transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+          model: 'gpt-5',
+          policyEnvelope: SessionMainProviderContinuationPolicyEnvelope.CHAT_ONLY,
+          workspaceRoot: '/workspace/repo/.repo-ai-governor',
+          currentWorkingDirectory: '/workspace/repo',
+          handle: {
+            providerId: AdapterProviderKind.OPENAI,
+            surface: AdapterSurface.CODEX,
+            transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+            handleKind: AgentStageContinuationHandleKind.RESPONSE_ID,
+            value: 'resp-existing',
+            model: 'gpt-5',
+            acquiredAt: '2026-04-04T12:00:00.000Z',
+          },
+          updatedAt: '2026-04-04T12:00:00.000Z',
+        },
+      },
+    };
+    const publishedStreamEvents: Array<Record<string, unknown>> = [];
+    const codexInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+      expect(request.continuation).toEqual(
+        expect.objectContaining({
+          mode: AgentStageContinuationMode.PREFER_REUSE,
+          sessionId: 'session-continuation-cli-exec-001',
+          laneKey,
+        }),
+      );
+      expect(request.continuation).not.toHaveProperty('handle');
+      return {
+        output: {
+          responseText: 'cli exec answer',
+        },
+        continuation: {
+          status: AgentStageContinuationStatus.UNSUPPORTED,
+          laneKey,
+        },
+        elapsedMs: 1,
+      };
+    });
+    const continuationAdaptersConfig: AdaptersConfig = {
+      ...adaptersConfig,
+      tools:
+        adaptersConfig.tools?.map((tool) =>
+          tool.toolId === AdapterSurface.CODEX
+            ? {
+                ...tool,
+                transport: AdapterTransportKind.CLI_EXEC,
+                remoteApi: {
+                  provider: AdapterProviderKind.OPENAI,
+                  vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+                  model: 'gpt-5',
+                },
+              }
+            : tool,
+        ) ?? [],
+    };
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      continuationAdaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createAvailableProtocol(AdapterSurface.CODEX, 'unused', {
+        invokeStageSpy: codexInvokeStage,
+        streamEvents: [
+          {
+            eventType: AgentStreamEventType.STATUS,
+            payload: {
+              title: 'Session Main Answer',
+              detail: 'Codex CLI execution started.',
+              surface: AdapterSurface.CODEX,
+            },
+          },
+          {
+            eventType: AgentStreamEventType.TOKEN,
+            payload: {
+              title: 'Assistant Draft',
+              text: 'cli exec draft',
+              accumulatedText: 'cli exec draft',
+              surface: AdapterSurface.CODEX,
+            },
+          },
+        ],
+      }),
+      [AdapterSurface.CLAUDE_CODE]: createUnavailableProtocol(AdapterSurface.CLAUDE_CODE),
+      [AdapterSurface.OLLAMA]: createUnavailableProtocol(AdapterSurface.OLLAMA),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'en-US',
+      adaptersConfig: continuationAdaptersConfig,
+      adapterRoutingRuntime,
+    });
+    const outcome = await runtime.resolveTurn({
+      sessionId: 'session-continuation-cli-exec-001',
+      routeId: 'session.main',
+      turnId: 'turn-continuation-cli-exec-001',
+      turnIndex: 3,
+      userMessage: 'follow up using the configured codex surface',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+      providerContinuationState,
+      publishStreamEvent: async (event) => {
+        publishedStreamEvents.push(event as Record<string, unknown>);
+      },
+    });
+
+    expect(codexInvokeStage).toHaveBeenCalledTimes(1);
+    expect(outcome.assistantMessage).toBe('cli exec answer');
+    expect(outcome.providerContinuationMutations).toEqual([
+      expect.objectContaining({
+        laneKey,
+        summary: expect.objectContaining({
+          status: AgentStageContinuationStatus.CLEARED,
+          invalidationReason: 'provider_changed',
+          providerId: AdapterSurface.CODEX,
+          transportKind: AgentStageContinuationTransportKind.CLI_EXEC,
+          model: null,
+        }),
+      }),
+      expect.objectContaining({
+        laneKey,
+        summary: expect.objectContaining({
+          status: AgentStageContinuationStatus.UNSUPPORTED,
+          providerId: AdapterSurface.CODEX,
+          transportKind: AgentStageContinuationTransportKind.CLI_EXEC,
+          model: null,
+        }),
+      }),
+    ]);
+    expect(outcome.providerContinuationSummaries).toEqual([
+      expect.objectContaining({
+        laneKey,
+        status: AgentStageContinuationStatus.CLEARED,
+        providerId: AdapterSurface.CODEX,
+        transportKind: AgentStageContinuationTransportKind.CLI_EXEC,
+        model: null,
+      }),
+      expect.objectContaining({
+        laneKey,
+        status: AgentStageContinuationStatus.UNSUPPORTED,
+        providerId: AdapterSurface.CODEX,
+        transportKind: AgentStageContinuationTransportKind.CLI_EXEC,
+        model: null,
+      }),
+    ]);
+    expect(publishedStreamEvents).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'lifecycle',
+          state: 'running',
+          title: 'Session Main Answer',
+          detail: 'Codex CLI execution started.',
+          selectedSurface: AdapterSurface.CODEX,
+        }),
+        expect.objectContaining({
+          kind: 'token',
+          state: 'running',
+          title: 'Assistant Draft',
+          accumulatedText: 'cli exec draft',
+          selectedSurface: AdapterSurface.CODEX,
+        }),
+      ]),
+    );
+  });
+
   it('publishes mapped direct-answer stream events while preserving empty invoked-role truth', async () => {
     const publishedStreamEvents: Array<Record<string, unknown>> = [];
     const adapterRoutingRuntime = new CliAdapterRoutingRuntime(

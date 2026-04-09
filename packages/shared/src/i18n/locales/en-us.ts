@@ -20,6 +20,8 @@ export const EN_US_TRANSLATIONS = {
       preset:
         'Connect preset id for agent onboarding: single-tool-minimal|multi-tool-default|single-tool-all-roles|restricted-network-safe.',
       tools: 'Comma-separated adapter tool ids used by connect/doctor/verify onboarding views.',
+      toolTransport:
+        'Repeatable per-tool transport override in toolId=transport form. Supported surfaces are transport-aware only.',
       overwrite:
         'Allow connect candidate config to replace existing role/routing fragments instead of merge-only output.',
       latest: 'Use the latest generated connect candidate artifact for diff/apply.',
@@ -412,6 +414,9 @@ export const EN_US_TRANSLATIONS = {
         },
         multiline: {
           summary: 'Capture one multi-line user message before sending it as a single turn.',
+        },
+        planSync: {
+          summary: 'Preview or commit deterministic sprint-ledger projection for an existing plan.',
         },
         status: {
           summary: 'Show session-shell status and hidden runtime details.',
@@ -1263,9 +1268,9 @@ export const EN_US_TRANSLATIONS = {
       },
       plan: {
         title: 'Plan',
-        summary: 'Generate or refine a task breakdown for the current goal.',
+        summary: 'Run the productized planning workflow for the current goal.',
         detail:
-          'Plan is the low-risk execution-prep path when you want a structured task package before implementation.',
+          'Plan is the productized planner workflow entry for generating a structured execution plan. Use `/plan sync` when you want to project an existing task package into the sprint ledger, and use `@planner` for expert raw-role discussion.',
         examples: {
           0: 'Break this work into tasks.',
           1: 'Create an execution plan for the next sprint.',

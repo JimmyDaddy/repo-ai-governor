@@ -91,6 +91,7 @@ export const CLI_OPTIONS_REQUIRING_VALUE = new Set<string>([
   '--replay',
   '--preset',
   '--tools',
+  '--tool-transport',
   '--task-id',
   '--single-tool-all-roles',
   '--role-binding',

@@ -1,6 +1,6 @@
 # TK-731 project transport selection source and lock state across connect-doctor-verify outputs
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-09
 - Owner: AI-Agent
 - Priority: P1
@@ -46,14 +46,17 @@
 
 ## 8. Delivery Verification
 
-1. `node ./scripts/governance/check-task-ledger-sync.js`
-2. `node ./scripts/governance/check-sprint-plan-status-sync.js`
+1. `pnpm run build`
+2. `pnpm exec vitest run packages/config/test/config.unit.test.ts apps/cli/test/runtime/agent-onboarding-runtime.test.ts apps/cli/test/runtime/agent-projection-runtime.test.ts apps/cli/test/connect-phase2.integration.test.ts apps/cli/test/cli-output-contract.integration.test.ts --maxWorkers=1 --maxConcurrency=1`
 
 ## 9. 执行记录
 
 1. 2026-04-09：任务创建，状态初始化为 `planned`。
+2. 2026-04-10：已将 onboarding / verify / projection 输出改成按 selected transport 投影 provider/model/binding truth，同时保留 `configured_remote_api` 作为独立 nested truth，避免显式 `cli_exec` 行误投 remote_api provider 信息。
 
 ## 10. 产出
 
-1. 待执行：output projection patch
-2. 待执行：diagnostics alignment note
+1. `apps/cli/src/runtime/agent-onboarding-runtime.ts`
+2. `apps/cli/src/runtime/agent-projection-runtime.ts`
+3. `apps/cli/test/runtime/agent-onboarding-runtime.test.ts`
+4. `apps/cli/test/runtime/agent-projection-runtime.test.ts`

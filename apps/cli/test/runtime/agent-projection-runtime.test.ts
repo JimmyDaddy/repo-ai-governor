@@ -113,4 +113,80 @@ describe('CliAgentProjectionRuntime', () => {
       }),
     ]);
   });
+
+  it('keeps explicit cli_exec projection truth separate from configured remote_api fields', () => {
+    const runtime = new CliAgentProjectionRuntime();
+    const adaptersConfig: AdaptersConfig = {
+      roles: [
+        {
+          roleId: 'coder',
+          roleProfileId: DefaultRoleProfileId.CODER,
+          requiredCapabilities: ['tool_calling'],
+          required: true,
+        },
+      ],
+      routing: {
+        roleBindings: {
+          coder: {
+            primarySurface: AdapterSurface.CODEX,
+          },
+        },
+      },
+      tools: [
+        {
+          toolId: AdapterSurface.CODEX,
+          enabled: true,
+          availability: AdapterAvailability.AVAILABLE,
+          transport: AdapterTransportKind.CLI_EXEC,
+          remoteApi: {
+            provider: AdapterProviderKind.OPENAI,
+            vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+            model: 'gpt-5',
+          },
+        },
+      ],
+    };
+
+    const descriptors = runtime.createDescriptorsFromRoleEvaluations({
+      adaptersConfig,
+      verification: {
+        overallStatus: CliGovernanceCheckStatus.PASS,
+        tools: [],
+        roleEvaluations: [
+          {
+            roleId: 'coder',
+            roleProfileId: DefaultRoleProfileId.CODER,
+            required: true,
+            primarySurface: AdapterSurface.CODEX,
+            selectedSurface: AdapterSurface.CODEX,
+            selectedBy: CliAdapterRoleSelectionSource.PRIMARY,
+            unsupportedCapabilities: [],
+            degradedCapabilities: [],
+            unavailableReasons: [],
+            healthCheck: null,
+            failureAttributions: [],
+            status: CliGovernanceCheckStatus.PASS,
+          },
+        ],
+        requiredRoleCount: 1,
+        requiredRoleFailedCount: 0,
+        degradedRoleCount: 0,
+        fallbackRoleCount: 0,
+        nextActions: [],
+      },
+      workspace: {
+        workspaceId: 'workspace-1',
+        mode: WorkspaceMode.REPO_LOCAL,
+      },
+    });
+
+    expect(descriptors).toEqual([
+      expect.objectContaining({
+        selectedTransport: AdapterTransportKind.CLI_EXEC,
+        selectedProviderKind: null,
+        selectedVendorBindingKind: null,
+        selectedModel: null,
+      }),
+    ]);
+  });
 });

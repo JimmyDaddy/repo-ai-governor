@@ -1,6 +1,6 @@
 # TK-730 materialize explicit transport in candidate config and validate unsupported combinations
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-09
 - Owner: AI-Agent
 - Priority: P0
@@ -46,14 +46,17 @@
 
 ## 8. Delivery Verification
 
-1. `node ./scripts/governance/check-task-ledger-sync.js`
-2. `node ./scripts/governance/check-sprint-plan-status-sync.js`
+1. `pnpm run build`
+2. `pnpm exec vitest run packages/config/test/config.unit.test.ts apps/cli/test/runtime/agent-onboarding-runtime.test.ts apps/cli/test/runtime/agent-projection-runtime.test.ts apps/cli/test/connect-phase2.integration.test.ts apps/cli/test/cli-output-contract.integration.test.ts --maxWorkers=1 --maxConcurrency=1`
 
 ## 9. 执行记录
 
 1. 2026-04-09：任务创建，状态初始化为 `planned`。
+2. 2026-04-10：已让 schema validator 保留 `remoteApi`-only 兼容写法，不再静默补写 `transport=remote_api`；connect candidate 现在会为 transport-aware surface 显式 materialize transport，并对 unsupported / missing-remoteApi override 直接 fail-closed。
 
 ## 10. 产出
 
-1. 待执行：candidate materialization patch
-2. 待执行：unsupported combination validation patch
+1. `packages/config/src/schema-validator.ts`
+2. `packages/config/test/config.unit.test.ts`
+3. `apps/cli/src/runtime/agent-onboarding-runtime.ts`
+4. `apps/cli/test/runtime/agent-onboarding-runtime.test.ts`

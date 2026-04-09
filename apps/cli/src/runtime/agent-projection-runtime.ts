@@ -42,6 +42,11 @@ export class CliAgentProjectionRuntime {
             : ((options.adaptersConfig.tools ?? []).find(
                 (tool) => tool.toolId === roleEvaluation.selectedSurface,
               ) ?? null);
+        const selectedTransport = this.resolveSelectedTransport(
+          roleEvaluation.selectedSurface,
+          selectedToolConfig,
+          roleEvaluation.healthCheck?.transportKind ?? null,
+        );
 
         return this.projectionService.project({
           roleId: role.roleId,
@@ -60,27 +65,23 @@ export class CliAgentProjectionRuntime {
           failureReasons: [...roleEvaluation.unavailableReasons],
           unsupportedCapabilities: [...roleEvaluation.unsupportedCapabilities],
           degradedCapabilities: [...roleEvaluation.degradedCapabilities],
-          selectedTransport: this.resolveSelectedTransport(
-            roleEvaluation.selectedSurface,
+          selectedTransport,
+          selectedProviderKind: this.resolveSelectedProviderKind({
             selectedToolConfig,
-            roleEvaluation.healthCheck?.transportKind ?? null,
-          ),
-          selectedProviderKind:
-            roleEvaluation.healthCheck?.providerKind ??
-            selectedToolConfig?.remoteApi?.provider ??
-            null,
-          selectedVendorBindingKind:
-            roleEvaluation.healthCheck?.vendorBindingKind ??
-            this.resolveConfiguredVendorBindingKind(
-              roleEvaluation.selectedSurface,
-              selectedToolConfig?.remoteApi?.provider ?? null,
-              selectedToolConfig?.remoteApi?.vendorBinding ?? null,
-            ),
-          selectedModel:
-            roleEvaluation.healthCheck?.model ??
-            selectedToolConfig?.remoteApi?.model ??
-            selectedToolConfig?.localModel?.model ??
-            null,
+            healthCheck: roleEvaluation.healthCheck,
+            selectedTransport,
+          }),
+          selectedVendorBindingKind: this.resolveSelectedVendorBindingKind({
+            selectedSurface: roleEvaluation.selectedSurface,
+            selectedToolConfig,
+            healthCheck: roleEvaluation.healthCheck,
+            selectedTransport,
+          }),
+          selectedModel: this.resolveSelectedModel({
+            selectedToolConfig,
+            healthCheck: roleEvaluation.healthCheck,
+            selectedTransport,
+          }),
           capabilitySnapshotSource: this.resolveCapabilitySnapshotSource(
             roleEvaluation.selectedSurface,
             selectedToolConfig,
@@ -229,6 +230,56 @@ export class CliAgentProjectionRuntime {
     }
     if (providerKind === AdapterProviderKind.GITHUB_MODELS) {
       return AdapterVendorBindingKind.GITHUB_MODELS_INFERENCE;
+    }
+    return null;
+  }
+
+  private resolveSelectedProviderKind(options: {
+    selectedToolConfig: NonNullable<AdaptersConfig['tools']>[number] | null;
+    healthCheck: CliAdapterVerificationResolution['roleEvaluations'][number]['healthCheck'];
+    selectedTransport: AdapterTransportKind | null;
+  }): AdapterProviderKind | null {
+    if (options.healthCheck?.providerKind) {
+      return options.healthCheck.providerKind;
+    }
+    if (options.selectedTransport === AdapterTransportKind.REMOTE_API) {
+      return options.selectedToolConfig?.remoteApi?.provider ?? null;
+    }
+    return null;
+  }
+
+  private resolveSelectedVendorBindingKind(options: {
+    selectedSurface: AdapterSurface | null;
+    selectedToolConfig: NonNullable<AdaptersConfig['tools']>[number] | null;
+    healthCheck: CliAdapterVerificationResolution['roleEvaluations'][number]['healthCheck'];
+    selectedTransport: AdapterTransportKind | null;
+  }): AdapterVendorBindingKind | null {
+    if (options.healthCheck?.vendorBindingKind) {
+      return options.healthCheck.vendorBindingKind;
+    }
+    if (options.selectedTransport !== AdapterTransportKind.REMOTE_API) {
+      return null;
+    }
+    return this.resolveConfiguredVendorBindingKind(
+      options.selectedSurface,
+      options.selectedToolConfig?.remoteApi?.provider ?? null,
+      options.selectedToolConfig?.remoteApi?.vendorBinding ?? null,
+    );
+  }
+
+  private resolveSelectedModel(options: {
+    selectedToolConfig: NonNullable<AdaptersConfig['tools']>[number] | null;
+    healthCheck: CliAdapterVerificationResolution['roleEvaluations'][number]['healthCheck'];
+    selectedTransport: AdapterTransportKind | null;
+  }): string | null {
+    if (options.healthCheck?.model) {
+      return options.healthCheck.model;
+    }
+    if (options.selectedTransport === AdapterTransportKind.REMOTE_API) {
+      return options.selectedToolConfig?.remoteApi?.model ?? null;
+    }
+    if (options.selectedTransport === AdapterTransportKind.BASELINE) {
+      return options.selectedToolConfig?.localModel?.model ?? null;
     }
     return null;
   }

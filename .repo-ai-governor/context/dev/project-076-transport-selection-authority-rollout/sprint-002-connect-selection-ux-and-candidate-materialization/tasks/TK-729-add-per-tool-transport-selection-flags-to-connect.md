@@ -1,6 +1,6 @@
 # TK-729 add per-tool transport selection flags to connect
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-04-09
 - Owner: AI-Agent
 - Priority: P0
@@ -47,15 +47,24 @@
 
 ## 8. Delivery Verification
 
-1. `node ./scripts/governance/check-task-ledger-sync.js`
-2. `node ./scripts/governance/check-sprint-plan-status-sync.js`
+1. `pnpm run build`
+2. `pnpm exec vitest run packages/config/test/config.unit.test.ts apps/cli/test/runtime/agent-onboarding-runtime.test.ts apps/cli/test/runtime/agent-projection-runtime.test.ts apps/cli/test/connect-phase2.integration.test.ts apps/cli/test/cli-output-contract.integration.test.ts --maxWorkers=1 --maxConcurrency=1`
 
 ## 9. 执行记录
 
 1. 2026-04-09：任务创建，状态初始化为 `planned`。
 2. 2026-04-09：`TK-735 / DA-735` 完成 `sprint-001` closeout 与 activation handoff 后，当前任务切换为 `in_progress`，开始梳理 `connect` authoring surface 与 candidate materialization 入口。
+3. 2026-04-10：已为 `connect` 增加 repeatable `--tool-transport <tool>=<transport>` authoring surface，并补齐 CLI 入口解析、选项说明与 candidate config 集成测试。
 
 ## 10. 产出
 
-1. 待执行：connect transport flag patch
-2. 待执行：CLI help text update
+1. `apps/cli/src/main.ts`
+2. `apps/cli/src/commands/connect-command.ts`
+3. `apps/cli/src/constants/cli-connect.constant.ts`
+4. `apps/cli/src/constants/cli-output.constant.ts`
+5. `apps/cli/src/types/interfaces/cli-runtime-debug.interface.ts`
+6. `apps/cli/src/types/interfaces/cli-governance-runtime.interface.ts`
+7. `apps/cli/src/types/index.ts`
+8. `packages/shared/src/i18n/locales/en-us.ts`
+9. `packages/shared/src/i18n/locales/zh-cn.ts`
+10. `apps/cli/test/connect-phase2.integration.test.ts`

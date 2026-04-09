@@ -1772,6 +1772,21 @@ export class CliGovernanceRuntime {
               typeof surface === 'string' && surface.trim().length > 0,
           )
         : [],
+      toolTransportOverrides: Array.isArray(
+        this.options.runtimeDebugOptions?.toolTransportOverrides,
+      )
+        ? this.options.runtimeDebugOptions.toolTransportOverrides.filter(
+            (
+              override,
+            ): override is NonNullable<
+              CliNormalizedRuntimeDebugOptions['toolTransportOverrides']
+            >[number] =>
+              typeof override?.toolId === 'string' &&
+              override.toolId.trim().length > 0 &&
+              typeof override.transport === 'string' &&
+              override.transport.trim().length > 0,
+          )
+        : [],
       overwrite: this.options.runtimeDebugOptions?.overwrite === true,
       singleToolAllRoles: this.options.runtimeDebugOptions?.singleToolAllRoles === true,
       roleBindingOverrides: Array.isArray(this.options.runtimeDebugOptions?.roleBindingOverrides)

@@ -314,6 +314,109 @@ describe('config unit', () => {
     expect(codexTool?.remoteApi?.vendorBinding).toBe(AdapterVendorBindingKind.OPENAI_RESPONSES);
   });
 
+  it('preserves inferred remote_api config when transport is omitted', () => {
+    const validator = new SchemaValidator();
+    const baseConfig = createConfigFixture();
+    const baseAdapters = requireAdaptersFixture(baseConfig);
+    const configWithInferredRemoteApi: GovernorConfig = {
+      ...baseConfig,
+      adapters: {
+        ...baseAdapters,
+        tools: [
+          {
+            toolId: AdapterSurface.CODEX,
+            enabled: true,
+            availability: AdapterAvailability.AVAILABLE,
+            remoteApi: {
+              provider: AdapterProviderKind.OPENAI,
+              vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+              model: 'gpt-5',
+              credentialEnvVar: 'OPENAI_API_KEY',
+            },
+          },
+        ],
+      },
+    };
+
+    const validatedConfig = validator.validateOrThrow(configWithInferredRemoteApi);
+    const codexTool = validatedConfig.adapters?.tools?.find(
+      (tool) => tool.toolId === AdapterSurface.CODEX,
+    );
+
+    expect(codexTool?.transport).toBeUndefined();
+    expect(codexTool?.remoteApi?.provider).toBe(AdapterProviderKind.OPENAI);
+    expect(codexTool?.remoteApi?.vendorBinding).toBe(AdapterVendorBindingKind.OPENAI_RESPONSES);
+  });
+
+  it('accepts explicit cli_exec transport while preserving configured remote_api truth', () => {
+    const validator = new SchemaValidator();
+    const baseConfig = createConfigFixture();
+    const baseAdapters = requireAdaptersFixture(baseConfig);
+    const configWithExplicitCliExec: GovernorConfig = {
+      ...baseConfig,
+      adapters: {
+        ...baseAdapters,
+        tools: [
+          {
+            toolId: AdapterSurface.CODEX,
+            enabled: true,
+            availability: AdapterAvailability.AVAILABLE,
+            transport: AdapterTransportKind.CLI_EXEC,
+            remoteApi: {
+              provider: AdapterProviderKind.OPENAI,
+              vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+              model: 'gpt-5',
+              credentialEnvVar: 'OPENAI_API_KEY',
+            },
+          },
+        ],
+      },
+    };
+
+    const validatedConfig = validator.validateOrThrow(configWithExplicitCliExec);
+    const codexTool = validatedConfig.adapters?.tools?.find(
+      (tool) => tool.toolId === AdapterSurface.CODEX,
+    );
+
+    expect(codexTool?.transport).toBe(AdapterTransportKind.CLI_EXEC);
+    expect(codexTool?.remoteApi?.provider).toBe(AdapterProviderKind.OPENAI);
+    expect(codexTool?.remoteApi?.vendorBinding).toBe(AdapterVendorBindingKind.OPENAI_RESPONSES);
+  });
+
+  it('preserves inferred remote_api selection when remoteApi is configured without transport', () => {
+    const validator = new SchemaValidator();
+    const baseConfig = createConfigFixture();
+    const baseAdapters = requireAdaptersFixture(baseConfig);
+    const configWithInferredRemoteApi: GovernorConfig = {
+      ...baseConfig,
+      adapters: {
+        ...baseAdapters,
+        tools: [
+          {
+            toolId: AdapterSurface.CODEX,
+            enabled: true,
+            availability: AdapterAvailability.AVAILABLE,
+            remoteApi: {
+              provider: AdapterProviderKind.OPENAI,
+              vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+              model: 'gpt-5',
+              credentialEnvVar: 'OPENAI_API_KEY',
+            },
+          },
+        ],
+      },
+    };
+
+    const validatedConfig = validator.validateOrThrow(configWithInferredRemoteApi);
+    const codexTool = validatedConfig.adapters?.tools?.find(
+      (tool) => tool.toolId === AdapterSurface.CODEX,
+    );
+
+    expect(codexTool?.transport).toBeUndefined();
+    expect(codexTool?.remoteApi?.provider).toBe(AdapterProviderKind.OPENAI);
+    expect(codexTool?.remoteApi?.vendorBinding).toBe(AdapterVendorBindingKind.OPENAI_RESPONSES);
+  });
+
   it('rejects unsupported remote_api provider mapping for codex', () => {
     const validator = new SchemaValidator();
     const baseConfig = createConfigFixture();

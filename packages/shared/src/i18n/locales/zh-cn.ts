@@ -20,6 +20,8 @@ export const ZH_CN_TRANSLATIONS = {
       preset:
         '指定 connect 的 onboarding 模板：single-tool-minimal|multi-tool-default|single-tool-all-roles|restricted-network-safe。',
       tools: '指定 connect/doctor/verify onboarding 视图使用的逗号分隔工具列表。',
+      toolTransport:
+        '可重复传入的单工具 transport 覆盖，格式为 toolId=transport；仅支持 transport-aware surface。',
       overwrite: '允许 connect 候选配置覆盖现有角色/路由片段，而不是只做合并输出。',
       latest: '在 diff/apply 中直接使用最近一次生成的 connect 候选产物。',
       force: '在 connect diff/apply 中绕过 source fingerprint 漂移或 apply-ready blocker 等保护。',
@@ -363,6 +365,9 @@ export const ZH_CN_TRANSLATIONS = {
         },
         multiline: {
           summary: '先采集一段多行消息，再作为单个 user turn 发送。',
+        },
+        planSync: {
+          summary: '预览或提交一个既有计划到 sprint ledger 的确定性投影动作。',
         },
         status: {
           summary: '查看当前 session shell 状态与隐藏运行时详情。',
@@ -1172,8 +1177,9 @@ export const ZH_CN_TRANSLATIONS = {
       },
       plan: {
         title: '计划',
-        summary: '为当前目标生成或细化任务拆解。',
-        detail: '当你想在开始实现前先把工作拆成结构化任务包，并冻结执行顺序时，应该使用 plan。',
+        summary: '对当前目标运行产品化 planning workflow。',
+        detail:
+          '当你想直接生成一份标准化执行计划时，应当使用 plan。若你要把既有 task package 同步进 sprint ledger，请改用 `/plan sync`；若你想做开放式专家讨论，则使用 `@planner`。',
         examples: {
           0: '帮我拆一下这项工作的任务。',
           1: '给下一个 sprint 做一份执行计划。',

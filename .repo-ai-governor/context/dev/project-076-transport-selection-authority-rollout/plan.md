@@ -30,13 +30,13 @@
 
 ## 2.2 sprint-002-connect-selection-ux-and-candidate-materialization
 
-- Status: active
+- Status: completed
 - Sprint Goal: 为 `connect` 增加显式 transport 选择 UX，并保证 candidate config / diagnostics 稳定 materialize user-selected transport。
-- Task Package: `TK-729`、`TK-730`、`TK-731`
+- Task Package: `TK-729`、`TK-730`、`TK-731`、`TK-736`
 
 ## 2.3 sprint-003-evidence-gated-docs-and-adopter-truth
 
-- Status: planned
+- Status: active
 - Sprint Goal: 产出 clean-room / verify evidence，并仅在 gate 通过时升级 public support wording 与 delivery closeout。
 - Task Package: `TK-732`、`TK-733`、`TK-734`
 
@@ -48,11 +48,12 @@
 | TK-727 | sprint-001 | implement strict transport routing fail-closed guard and probe truth alignment | runtime/diagnostics | TK-726 | completed |
 | TK-728 | sprint-001 | add same-surface no-failover regression coverage | tests/verification | TK-727 | completed |
 | TK-735 | sprint-001 | sprint-001 exit acceptance and sprint-002 activation handoff | sprint/closeout | TK-726、TK-727、TK-728、CR-001 | completed |
-| TK-729 | sprint-002 | add per-tool transport selection flags to connect | cli/ux | TK-728 | in_progress |
-| TK-730 | sprint-002 | materialize explicit transport in candidate config and validate unsupported combinations | config/validation | TK-729 | planned |
-| TK-731 | sprint-002 | project transport selection source and lock state across connect-doctor-verify outputs | diagnostics/output | TK-730 | planned |
-| TK-732 | sprint-003 | produce clean-room and verify evidence for codex and claude-code remote_api paths | evidence/verification | TK-731 | planned |
-| TK-733 | sprint-003 | uplift adopter-facing support wording only when evidence gate passes | docs/evidence-gated uplift | TK-732 | planned |
+| TK-729 | sprint-002 | add per-tool transport selection flags to connect | cli/ux | TK-728 | completed |
+| TK-730 | sprint-002 | materialize explicit transport in candidate config and validate unsupported combinations | config/validation | TK-729 | completed |
+| TK-731 | sprint-002 | project transport selection source and lock state across connect-doctor-verify outputs | diagnostics/output | TK-730 | completed |
+| TK-736 | sprint-002 | sprint-002 exit acceptance and sprint-003 activation handoff | sprint/closeout | TK-729、TK-730、TK-731、CR-001、CR-002、CR-003 | completed |
+| TK-732 | sprint-003 | produce clean-room and verify evidence for codex and claude-code remote_api paths | evidence/verification | TK-731 | completed |
+| TK-733 | sprint-003 | uplift adopter-facing support wording only when evidence gate passes | docs/evidence-gated uplift | TK-732 | completed |
 | TK-734 | sprint-003 | finalize rollout closeout and delivery evidence handoff | closeout/delivery | TK-733 | planned |
 
 ## 4. 依赖产物策略
@@ -75,3 +76,7 @@
 3. 2026-04-09：用户要求开始任务拆解后，`sprint-001-contract-and-routing-truth-cutover` 已被激活为当前 primary execution surface。
 4. 2026-04-09：`TK-726`、`TK-727`、`TK-728` 已完成实现与定向验证，当前进入 `sprint-001` scoped CR loop。
 5. 2026-04-09：`CR-001` 已 resolved，`TK-735 / DA-735` 已完成 sprint-001 closeout 与 sprint-002 activation handoff；当前下一边界固定为 `TK-729`。
+6. 2026-04-10：`TK-729`、`TK-730`、`TK-731` 的实现与定向验证已完成；当前边界进入 `sprint-002` scoped CR loop。
+7. 2026-04-10：`CR-002` 的迟到 reviewer finding 已完成修复，`CR-003` fresh delegated recheck 返回 clean verdict；`TK-736 / DA-736` 已完成 sprint-002 closeout，并将 primary execution surface 激活到 `sprint-003`。
+8. 2026-04-10：`TK-732 / DA-732` 已完成 Codex / Claude Code 显式 `remote_api` 的 targeted adapter、packaged distribution 与 clean-room 证据汇总，evidence gate 判定为 `passed`。
+9. 2026-04-10：`TK-733` 已基于 `TK-732` 的 gate verdict 受控升级 `docs/support-matrix*` 与 `docs/local-adoption-playbook*` wording；下一边界为 `sprint-003` scoped CR loop。

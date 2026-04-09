@@ -23,6 +23,7 @@ export type {
 } from './cli-output.interface.js';
 export type {
   CliConnectRoleBindingOverride,
+  CliConnectToolTransportOverride,
   CliRuntimeDebugOptions,
 } from './cli-runtime-debug.interface.js';
 export type {

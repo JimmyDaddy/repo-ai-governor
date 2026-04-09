@@ -1153,12 +1153,6 @@ export class SchemaValidator {
           `${toolPointer}/remoteApi`,
         );
       }
-      if (remoteApi && transport && transport !== AdapterTransportKind.REMOTE_API) {
-        this.throwConfigSchemaValidationError(
-          `${toolPointer}/transport must be "${AdapterTransportKind.REMOTE_API}" when remoteApi is configured.`,
-          `${toolPointer}/transport`,
-        );
-      }
       if (!remoteApi && transport === AdapterTransportKind.REMOTE_API) {
         this.throwConfigSchemaValidationError(
           `${toolPointer}/remoteApi is required when transport="${AdapterTransportKind.REMOTE_API}".`,
@@ -1170,14 +1164,12 @@ export class SchemaValidator {
         `${toolPointer}/localModel`,
         toolId === AdapterSurface.OLLAMA,
       );
-      const resolvedTransport = remoteApi ? AdapterTransportKind.REMOTE_API : transport;
-
       return {
         toolId,
         ...(enabled !== undefined ? { enabled } : {}),
         ...(availability ? { availability } : {}),
         ...(unavailableReasons ? { unavailableReasons } : {}),
-        ...(resolvedTransport ? { transport: resolvedTransport } : {}),
+        ...(transport ? { transport } : {}),
         ...(remoteApi ? { remoteApi } : {}),
         ...(localModel ? { localModel } : {}),
       };
