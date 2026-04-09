@@ -84,9 +84,11 @@ describe('AdoptionPackRegistry', () => {
     expect(definition.manifest.resolvedSourceKind).toBe(AdoptionPackSourceKind.REPO_LOCAL);
     expect(definition.manifest.installSupported).toBe(true);
     expect(definition.workflowRecords.length).toBeGreaterThan(0);
-    expect(definition.workflowRecords[0]?.projectedSkillMarkdown).toContain(
-      '# Workspace Code Review Workflow',
+    const projectedWorkflowRecord = definition.workflowRecords.find(
+      (record) => record.workflowId === 'workspace-scoped-cr-loop',
     );
+
+    expect(projectedWorkflowRecord?.projectedSkillMarkdown).toContain('# Workspace Scoped CR Loop');
   });
 
   it('wraps invalid manifest JSON with source-aware runtime diagnostics', async () => {

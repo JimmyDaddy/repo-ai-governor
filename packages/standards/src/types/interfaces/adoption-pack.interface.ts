@@ -148,8 +148,10 @@ export interface AdoptionPackInstallReceipt {
   lastUpdatedAt: string;
   receiptPath: string;
   targetRepoRoot: string;
+  /** Preferred multi-target compatibility shape for current receipts. */
   hostTargets?: HostDistributionTarget[];
-  hostTarget: HostDistributionTarget;
+  /** Legacy single-target compatibility alias retained for older receipts and consumers. */
+  hostTarget?: HostDistributionTarget;
   hostManifestPaths?: string[];
   hostManifestPath?: string;
   hostApplyReportPaths?: string[];

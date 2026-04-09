@@ -109,6 +109,10 @@ export class CliAdoptCommand implements CliCommandExecutor {
         : []),
     ];
     const message = this.resolveMessage(context, operationResult.action, operationResult.packId);
+    const checkTotals = context.calculateCheckTotals(checks);
+    const blockingChecks = checks
+      .filter((check) => check.status === CliGovernanceCheckStatus.FAIL)
+      .map((check) => check.id);
 
     if (operationResult.verificationStatus === 'fail') {
       throw new RuntimeError(GovernorErrorCode.STANDARDS_PACK_INVALID, message, {
@@ -116,6 +120,16 @@ export class CliAdoptCommand implements CliCommandExecutor {
         packId: operationResult.packId,
         profileId: operationResult.profileId,
         repoRoot: operationResult.repoRoot,
+        ...(operationResult.receiptPath ? { receiptPath: operationResult.receiptPath } : {}),
+        ...(operationResult.verificationSummaryPath
+          ? { verificationSummaryPath: operationResult.verificationSummaryPath }
+          : {}),
+        ...(operationResult.diffReportPath
+          ? { diffReportPath: operationResult.diffReportPath }
+          : {}),
+        checks,
+        blockingChecks,
+        checkTotals,
         artifacts,
       });
     }
@@ -125,7 +139,7 @@ export class CliAdoptCommand implements CliCommandExecutor {
       commandResult: {
         operation: this.resolveOperation(operationResult.action),
         summary: message,
-        check_totals: context.calculateCheckTotals(checks),
+        check_totals: checkTotals,
         checks,
         artifacts,
         details: {
