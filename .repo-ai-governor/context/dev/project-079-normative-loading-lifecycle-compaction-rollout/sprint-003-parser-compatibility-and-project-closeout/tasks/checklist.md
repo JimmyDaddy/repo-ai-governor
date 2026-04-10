@@ -15,11 +15,19 @@
   - 2026-04-11：任务创建，状态初始化为 `planned`。
   - 2026-04-11：`CR-001` 已 clean 收口为 `resolved`，sprint-003 当前实现边界已不存在阻止 exit acceptance 的 actionable finding。
   - 2026-04-11：已产出 `DA-759` handoff artifact，确认 `TK-760` 是下一条 project-final closeout boundary，且当前 sprint surface 继续保持 active closeout role。
-  - 2026-04-11：已完成 sprint-003 exit acceptance，并产出 DA-759 作为 project-final closeout handoff。
-- [ ] TK-760 finalize project-079 closeout and completion audit
+- [x] TK-760 finalize project-079 closeout and completion audit
   - 2026-04-11：任务创建，状态初始化为 `planned`。
+  - 2026-04-11：已生成 `project-079` completion audit summary draft，并将其 milestone backlink 写回 project plan。
+  - 2026-04-11：已准备 `DA-760` project-final closeout packet，并完成 delivery handoff / current-context / completed-history 的预写回。
+  - 2026-04-11：project-final delegated review round `CR-002` 指出最终 closeout 真值提前写回；当前已恢复 `project-079 / sprint-003` 为 active closeout surface，并将最终 `completed` write-back 延后到 `CR-002 resolved` 后同窗口执行。
+  - 2026-04-11：在 `CR-002` 进入同窗口收口阶段后，已重新执行 project/sprint/context/delivery 的最终 `completed` write-back，并将 `project-079 / sprint-003` 移入 completed history。
 - [x] CR-001 sprint-003-parser-compatibility-and-project-closeout delegated review loop round 1
   - 2026-04-11：任务创建，状态初始化为 `review_pending`。
   - 2026-04-11：已创建 `code_review_working-tree-20260411-0255.md`，记录 2 条 actionable findings，等待主 agent 复核并修复。
   - 2026-04-11：已复核两条 findings，均判定为 `accepted`，并纳入同窗口修复闭环。
   - 2026-04-11：已完成 `CR-001` ledger sync 与 absolute-path archive compatibility 修复，review lifecycle 进入 `resolved`。
+- [x] CR-002 project-079-normative-loading-lifecycle-compaction-rollout final delegated review loop round 2
+  - 2026-04-11：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-11：已复核 delegated reviewer finding，判定为 `accepted`；当前已先恢复 `project-079 / sprint-003` 为 active closeout surface，并将最终 `completed` write-back 延后到 `CR-002 resolved` 后同窗口执行。
+  - 2026-04-11：accepted finding 已完成修复；已在同窗口重新执行最终 completed write-back，并将本轮 project-final delegated review 收口为 `resolved`。
+  - 2026-04-11：accepted finding 已完成修复；已重新执行最终 completed write-back，并将 CR-002 收口为 resolved。

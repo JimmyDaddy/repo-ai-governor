@@ -2,17 +2,17 @@
 
 ## Primary Stream
 
-- Status: active
-- Project: `project-079-normative-loading-lifecycle-compaction-rollout`
-- Sprint: `sprint-003-parser-compatibility-and-project-closeout`
-- Docs root: `.repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout`
-- Task records: `.repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout/sprint-003-parser-compatibility-and-project-closeout/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout/sprint-003-parser-compatibility-and-project-closeout/review/`
-- Note: `2026-04-11` `project-079 / sprint-002` 已完成 clean closeout 并移入 completed history；当前由 `project-079 / sprint-003` 接管 primary implementation stream，收口 parser/gate compatibility、rollback guidance、migration evidence 与 project-final closeout。
+- Status: idle
+- Project: `none`
+- Sprint: `none`
+- Docs root: `n/a`
+- Task records: `n/a`
+- Review records: `n/a`
+- Note: `2026-04-11` `project-079 / sprint-003` 已在 `CR-002` 修复窗口内完成最终 closeout，并移入 completed history；当前 worktree 不再保留 active primary stream。新的执行流激活前，不应从 `Primary Stream` 推断默认写入路径。
 
 ## Active Streams
 
-- `primary`: project=`project-079-normative-loading-lifecycle-compaction-rollout`, sprint=`sprint-003-parser-compatibility-and-project-closeout`, docs=`.repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout`, plan=`.repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout/sprint-003-parser-compatibility-and-project-closeout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout/sprint-003-parser-compatibility-and-project-closeout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout/sprint-003-parser-compatibility-and-project-closeout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout/sprint-003-parser-compatibility-and-project-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout/sprint-003-parser-compatibility-and-project-closeout/review/`, status=`active`, note=`project-079 / sprint-003` is the active implementation boundary for parser/gate compatibility, rollback guidance, migration evidence, and project-final closeout`
+- None. Active stream queue is currently empty.
 
 ## Planned Follow-Up Streams
 

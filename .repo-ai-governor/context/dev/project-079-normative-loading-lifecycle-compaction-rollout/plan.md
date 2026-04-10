@@ -1,6 +1,6 @@
 # project-079-normative-loading-lifecycle-compaction-rollout 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-11
 - Stage Mapping: normative loading manifest lifecycle compaction rollout
 - Phase Mapping: archive split / deprecated compact / parser-gate closeout
@@ -32,7 +32,7 @@
 
 ## 2.3 sprint-003-parser-compatibility-and-project-closeout
 
-- Status: active
+- Status: completed
 - Sprint Goal: 收口 parser/gate compatibility、rollback guidance、migration evidence 与 project-final closeout。
 - Task Package: `TK-755`、`TK-756`、`TK-759`、`TK-760`。
 
@@ -49,7 +49,7 @@
 | TK-757 | sprint-001 | sprint-001 exit acceptance and sprint-002 handoff readiness | closeout/handoff | TK-751、TK-752 | completed |
 | TK-758 | sprint-002 | sprint-002 exit acceptance and sprint-003 handoff readiness | closeout/handoff | TK-753、TK-754 | completed |
 | TK-759 | sprint-003 | sprint-003 exit acceptance and project-final closeout readiness | closeout/handoff | TK-755、TK-756 | completed |
-| TK-760 | sprint-003 | finalize project-079 closeout and completion audit | closeout/final-audit | TK-759 | planned |
+| TK-760 | sprint-003 | finalize project-079 closeout and completion audit | closeout/final-audit | TK-759 | completed |
 
 ## 4. 依赖产物策略
 
@@ -77,3 +77,4 @@
 7. 2026-04-11：`CR-001` 已在 sprint-002 收口为 `resolved`，`TK-758 / DA-758` 已完成 closeout handoff，`sprint-003` 现已激活为新的 primary implementation stream。
 8. 2026-04-11：`TK-755 / TK-756` 已完成 archive-sidecar parser/gate compatibility、rollback playbook 固化与 migration evidence refresh，sprint-003 implementation boundary 已准备进入 fresh delegated CR loop。
 9. 2026-04-11：sprint-003 fresh delegated CR round `CR-001` 已 clean 收口，`TK-759 / DA-759` 已完成 sprint exit acceptance；下一边界进入 `TK-760` project-final closeout。
+10. 2026-04-11：`CR-002` 已接受并修复“过早完成 project-final closeout”的 finding；`TK-760 / DA-760` 已在同窗口重新执行最终 completed write-back，`project-079` 完成 closeout、delivery handoff 更新、current-context clearance 与 completion audit summary 回链：`.repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout/project-079-normative-loading-lifecycle-compaction-rollout-completion-audit-summary.md`

@@ -710,7 +710,7 @@ deliveries:
     consumer_surfaces:
       - internal_governance
     user_impact_level: none
-    execution_status: in_progress
+    execution_status: completed
     rollout_status: not_required
     owner: architecture
     project_ref: project-079-normative-loading-lifecycle-compaction-rollout
@@ -723,6 +723,6 @@ deliveries:
     project_plan_path: .repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout/plan.md
     sprint_plan_path: .repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout/sprint-003-parser-compatibility-and-project-closeout/plan.md
     task_csv_path: .repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout/sprint-003-parser-compatibility-and-project-closeout/tasks/tasks.csv
-    handoff_artifact_path: .repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout/sprint-002-deprecated-compact-and-archive-integrity-automation/tasks/DA-758-sprint-002-compaction-and-archive-integrity-acceptance-and-sprint-003-handoff.md
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout/sprint-003-parser-compatibility-and-project-closeout/tasks/DA-760-project-079-final-closeout-and-active-stream-clearance.md
     rollout_artifacts: []
     accepted_at: 2026-04-11
