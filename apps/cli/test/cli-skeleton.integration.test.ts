@@ -54,7 +54,7 @@ describe('CLI command integration', () => {
     expect(stderrBuffer.join('')).toBe('');
     expect(stdoutBuffer.join('')).toContain('connect');
     expect(stdoutBuffer.join('')).toContain('review-verify');
-    expect(stdoutBuffer.join('')).toContain('verify');
+    expect(stdoutBuffer.join('')).not.toContain('\n  verify');
     expect(stdoutBuffer.join('')).toContain('adopt');
     expect(stdoutBuffer.join('')).toContain('host');
     expect(stdoutBuffer.join('')).toContain('upgrade');

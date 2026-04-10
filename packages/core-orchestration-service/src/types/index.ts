@@ -1,9 +1,12 @@
 export type {
+  SessionMainCapabilityBackingExecution,
   SessionMainCapabilityAnswerKind,
   SessionMainCapabilityAvailabilityStatus,
   SessionMainCapabilityCatalogOwnerModuleId,
   SessionMainCapabilityDescriptorVersion,
   SessionMainCapabilityId,
+  SessionMainCapabilityInteractionModel,
+  SessionMainCapabilityPrimaryEntry,
 } from './aliases/index.js';
 export type {
   SessionMainCapabilityAvailability,

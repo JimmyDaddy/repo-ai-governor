@@ -669,3 +669,33 @@ deliveries:
       - .repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-003-evidence-gated-docs-and-adopter-truth/tasks/DA-734-rollout-closeout-and-delivery-evidence-handoff.md
       - .repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/project-076-transport-selection-authority-rollout-completion-audit-summary.md
     accepted_at: 2026-04-09
+
+  - solution_id: technical-solution.session-main-prompt-first-command-model
+    delivery_mode: followup_required
+    consumer_surfaces:
+      - adopter_cli
+      - runtime_service
+      - docs_playbook
+    user_impact_level: high
+    execution_status: in_progress
+    rollout_status: in_progress
+    owner: runtime
+    project_ref: project-077-session-main-command-model-rollout
+    sprint_ref: sprint-004-run-scope-resolution-and-routing-cutover
+    task_ids:
+      - TK-735
+      - TK-736
+      - TK-737
+    project_plan_path: .repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/plan.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-004-run-scope-resolution-and-routing-cutover/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-004-run-scope-resolution-and-routing-cutover/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-001-solution-review-promotion-and-rollout-decomposition/tasks/DA-719-session-main-command-model-promotion-and-rollout-decomposition-handoff.md
+    rollout_artifacts:
+      - .repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-001-solution-review-promotion-and-rollout-decomposition/tasks/DA-719-session-main-command-model-promotion-and-rollout-decomposition-handoff.md
+      - .repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/plan.md
+      - .repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-001-solution-review-promotion-and-rollout-decomposition/plan.md
+      - .repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-002-capability-model-and-plan-workflow-cutover/plan.md
+      - .repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-003-review-workflow-and-verify-removal/plan.md
+      - .repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-004-run-scope-resolution-and-routing-cutover/plan.md
+      - .repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-005-regression-migration-cleanup-and-project-closeout/plan.md
+    accepted_at: 2026-04-10

@@ -215,7 +215,13 @@ export type CliSessionShellPassthroughExecutor = (
 export interface CliSessionShellServiceClientLike {
   startSession(): Promise<OrchestrationStartSessionResponse>;
   resumeSession(sessionId?: string): Promise<OrchestrationResumeSessionResponse>;
-  sendMainTurn(sessionId: string, userMessage: string): Promise<unknown>;
+  sendMainTurn(
+    sessionId: string,
+    userMessage: string,
+    options?: {
+      displayUserMessage?: string;
+    },
+  ): Promise<unknown>;
   appendMessage(
     sessionId: string,
     role: OrchestrationSessionTranscriptRole,

@@ -393,8 +393,8 @@ describe('session.main parity integration', () => {
     }
   });
 
-  it('auto-executes low-risk verify skills without requiring /confirm', async () => {
-    const temporaryRoot = await mkdtemp(resolve(tmpdir(), 'session-main-parity-verify-'));
+  it('auto-executes migrated doctor follow-up skills without requiring /confirm', async () => {
+    const temporaryRoot = await mkdtemp(resolve(tmpdir(), 'session-main-parity-doctor-'));
     const workspaceRoot = resolve(temporaryRoot, '.repo-ai-governor');
     await mkdir(workspaceRoot, { recursive: true });
     const runtime = createRuntime(workspaceRoot);
@@ -402,9 +402,9 @@ describe('session.main parity integration', () => {
     const commandExecutor = vi.fn(async (argv: string[]) => ({
       artifactPaths: [],
       commandLine: argv.join(' '),
-      message: 'verify completed',
+      message: 'doctor completed',
       status: 'success' as const,
-      summaryLines: ['Summary: verify completed'],
+      summaryLines: ['Summary: doctor completed'],
     }));
 
     try {
@@ -418,7 +418,7 @@ describe('session.main parity integration', () => {
 
       expect(result.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
       expect(commandExecutor).toHaveBeenCalledWith(
-        ['verify', '--adapters', '--output', 'pretty'],
+        ['doctor', '--adapters', '--output', 'pretty'],
         expect.objectContaining({
           progressSink: expect.objectContaining({
             publish: expect.any(Function),
@@ -429,7 +429,7 @@ describe('session.main parity integration', () => {
         renderer.frames.some((frame) => frame.promptBarLines.includes('/confirm · /cancel · Esc')),
       ).toBe(false);
       expect(
-        result.transcriptItems.some((item) => item.lines.includes('Summary: verify completed')),
+        result.transcriptItems.some((item) => item.lines.includes('Summary: doctor completed')),
       ).toBe(true);
     } finally {
       await runtime.dispose();
@@ -441,7 +441,25 @@ describe('session.main parity integration', () => {
     const temporaryRoot = await mkdtemp(resolve(tmpdir(), 'session-main-parity-plan-'));
     const workspaceRoot = resolve(temporaryRoot, '.repo-ai-governor');
     await mkdir(workspaceRoot, { recursive: true });
-    const runtime = createRuntime(workspaceRoot);
+    const resolveTurn = vi.fn(async () => ({
+      responseMode: 'role_collaboration' as const,
+      interactionMode: 'single_role_delegate' as const,
+      assistantDelta: '## Planner perspective',
+      assistantMessage: '## Planner perspective\n\n- direct plan workflow is active',
+      executionIntent: 'session.role_delegate.planner',
+      requiresConfirmation: false,
+      selectedSurface: 'codex',
+      selectedBy: 'session.main.router.single_role_delegate.implicit_role',
+      sessionRoutingPreferenceApplied: false,
+      invokedRoleIds: ['planner'],
+      subagentCount: 1,
+    }));
+    const runtime = createRuntime(workspaceRoot, {
+      sessionMainSupervisorRuntime: {
+        resolveMentionedRoleId: () => null,
+        resolveTurn,
+      },
+    });
     const sessionClient = new CliSessionShellServiceClient(runtime);
     const commandExecutor = vi.fn(async (argv: string[]) => ({
       artifactPaths: [],
@@ -461,19 +479,21 @@ describe('session.main parity integration', () => {
       );
 
       expect(result.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
-      expect(commandExecutor).toHaveBeenCalledWith(
-        ['plan', '--output', 'pretty'],
+      expect(resolveTurn).toHaveBeenCalledWith(
         expect.objectContaining({
-          progressSink: expect.objectContaining({
-            publish: expect.any(Function),
+          userMessage: '帮我拆一下任务计划',
+          metadata: expect.objectContaining({
+            [SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY]: 'planner',
+            locale: 'en-US',
           }),
         }),
       );
+      expect(commandExecutor).not.toHaveBeenCalled();
       expect(
         renderer.frames.some((frame) => frame.promptBarLines.includes('/confirm · /cancel · Esc')),
       ).toBe(false);
       expect(
-        result.transcriptItems.some((item) => item.lines.includes('Summary: plan completed')),
+        result.transcriptItems.some((item) => item.markdownSource?.includes('Planner perspective')),
       ).toBe(true);
     } finally {
       await runtime.dispose();
@@ -481,7 +501,7 @@ describe('session.main parity integration', () => {
     }
   });
 
-  it('routes natural-language review requests into a reviewer collaboration recap instead of /review command handoff', async () => {
+  it('routes natural-language review requests into the governed review workflow without /confirm', async () => {
     const temporaryRoot = await mkdtemp(resolve(tmpdir(), 'session-main-parity-review-'));
     const workspaceRoot = resolve(temporaryRoot, '.repo-ai-governor');
     await mkdir(workspaceRoot, { recursive: true });
@@ -505,7 +525,13 @@ describe('session.main parity integration', () => {
       },
     });
     const sessionClient = new CliSessionShellServiceClient(runtime);
-    const commandExecutor = vi.fn();
+    const commandExecutor = vi.fn(async (argv: string[]) => ({
+      artifactPaths: [],
+      commandLine: argv.join(' '),
+      message: `${argv.join(' ')} completed`,
+      status: 'success' as const,
+      summaryLines: [`Summary: ${argv.join(' ')} completed`],
+    }));
 
     try {
       const renderer = new RecordingSessionShellRenderer();
@@ -516,26 +542,21 @@ describe('session.main parity integration', () => {
         }),
       );
 
-      expect(resolveTurn).toHaveBeenCalledWith(
+      expect(resolveTurn).not.toHaveBeenCalled();
+      expect(commandExecutor).toHaveBeenCalledWith(
+        ['review', '--output', 'pretty'],
         expect.objectContaining({
-          locale: 'en-US',
-          userMessage: '很好,帮我 review 一下代码',
-          metadata: expect.objectContaining({
-            [SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY]: 'reviewer',
-            locale: 'en-US',
+          progressSink: expect.objectContaining({
+            publish: expect.any(Function),
           }),
         }),
       );
-      expect(commandExecutor).not.toHaveBeenCalled();
-      expect(result.transcriptItems.some((item) => item.renderKind === 'command_recap')).toBe(
-        false,
-      );
       expect(
-        result.transcriptItems.some(
-          (item) =>
-            item.renderKind === 'collaboration_recap' &&
-            item.lines.includes('Single-role delegate completed.') &&
-            item.lines.includes('Execution surface: codex'),
+        renderer.frames.some((frame) => frame.promptBarLines.includes('/confirm · /cancel · Esc')),
+      ).toBe(false);
+      expect(
+        result.transcriptItems.some((item) =>
+          item.lines.includes('Summary: review --output pretty completed'),
         ),
       ).toBe(true);
     } finally {
@@ -544,8 +565,8 @@ describe('session.main parity integration', () => {
     }
   });
 
-  it('auto-resumes unresolved low-risk verify skills without downgrading them into /confirm preview state', async () => {
-    const temporaryRoot = await mkdtemp(resolve(tmpdir(), 'session-main-parity-verify-resume-'));
+  it('auto-resumes unresolved doctor follow-up skills without downgrading them into /confirm preview state', async () => {
+    const temporaryRoot = await mkdtemp(resolve(tmpdir(), 'session-main-parity-doctor-resume-'));
     const workspaceRoot = resolve(temporaryRoot, '.repo-ai-governor');
     await mkdir(workspaceRoot, { recursive: true });
     const runtime = createRuntime(workspaceRoot);
@@ -580,7 +601,7 @@ describe('session.main parity integration', () => {
 
       expect(resumedRenderer.frames[0]?.sessionId).toBe(started.session.sessionId);
       expect(commandExecutor).toHaveBeenCalledWith(
-        ['verify', '--adapters', '--output', 'pretty'],
+        ['doctor', '--adapters', '--output', 'pretty'],
         expect.objectContaining({
           progressSink: expect.objectContaining({
             publish: expect.any(Function),
@@ -594,7 +615,7 @@ describe('session.main parity integration', () => {
       ).toBe(false);
       expect(
         resumedResult.transcriptItems.some((item) =>
-          item.lines.includes('Summary: verify --adapters --output pretty completed'),
+          item.lines.includes('Summary: doctor --adapters --output pretty completed'),
         ),
       ).toBe(true);
     } finally {
@@ -629,7 +650,7 @@ describe('session.main parity integration', () => {
           (item) =>
             item.lines.includes('Suggested next step: adapter onboarding bundle') &&
             item.lines.includes(
-              'Preview: 1. repo-ai-governor connect --preset multi-tool-default --output pretty\n2. repo-ai-governor verify --adapters --output pretty',
+              'Preview: 1. repo-ai-governor connect --preset multi-tool-default --output pretty\n2. repo-ai-governor doctor --adapters --output pretty',
             ),
         ),
       ).toBe(true);
@@ -650,7 +671,7 @@ describe('session.main parity integration', () => {
             frame.commandPreview?.includes(
               'repo-ai-governor connect --preset multi-tool-default --output pretty',
             ) &&
-            frame.commandPreview?.includes('repo-ai-governor verify --adapters --output pretty') &&
+            frame.commandPreview?.includes('repo-ai-governor doctor --adapters --output pretty') &&
             frame.promptBarLines.some((line) => line.includes('/confirm · /cancel · Esc')),
         ),
       ).toBe(true);
@@ -665,7 +686,7 @@ describe('session.main parity integration', () => {
       );
       expect(commandExecutor).toHaveBeenNthCalledWith(
         2,
-        ['verify', '--adapters', '--output', 'pretty'],
+        ['doctor', '--adapters', '--output', 'pretty'],
         expect.objectContaining({
           progressSink: expect.objectContaining({
             publish: expect.any(Function),
@@ -684,7 +705,7 @@ describe('session.main parity integration', () => {
             ]),
           }),
           expect.objectContaining({
-            lines: expect.arrayContaining(['Summary: verify --adapters --output pretty completed']),
+            lines: expect.arrayContaining(['Summary: doctor --adapters --output pretty completed']),
           }),
         ]),
       );

@@ -9,6 +9,7 @@ import {
   MemoryProviderRuntimeMode,
 } from '@repo-ai-governor/memory-provider-registry';
 import {
+  ORCHESTRATION_SESSION_DISPLAY_USER_MESSAGE_METADATA_KEY,
   OrchestrationClientSurface,
   OrchestrationExecutionKind,
   OrchestrationExecutionStatus,
@@ -1658,7 +1659,7 @@ describe('core-orchestration-service local shell', () => {
     }
   });
 
-  it('projects low-risk natural-language verify skills into direct-execute turn metadata', async () => {
+  it('migrates low-risk natural-language verify skills into direct-execute doctor turn metadata', async () => {
     const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
     const orchestrationService = new LocalOrchestrationServiceShell({
       workspaceRoot: temporaryRoot,
@@ -1681,15 +1682,15 @@ describe('core-orchestration-service local shell', () => {
       );
 
       expect(completedEvent?.payload.responseMode).toBe('command_handoff_preview');
-      expect(completedEvent?.payload.suggestedSlashCommand).toBe('/verify');
+      expect(completedEvent?.payload.suggestedSlashCommand).toBe('/doctor');
       expect(completedEvent?.payload.requiresConfirmation).toBe(false);
-      expect(completedEvent?.payload.skillId).toBe('skill.verify.adapters');
+      expect(completedEvent?.payload.skillId).toBe('skill.doctor.environment');
       expect(completedEvent?.payload.handoffExecutionMode).toBe('direct_execute');
       expect(completedEvent?.payload.commandBatches).toEqual([
         {
-          slashQuery: '/verify',
-          bridgeArgv: ['verify', '--adapters', '--output', 'pretty'],
-          previewCommandLine: 'repo-ai-governor verify --adapters --output pretty',
+          slashQuery: '/doctor',
+          bridgeArgv: ['doctor', '--adapters', '--output', 'pretty'],
+          previewCommandLine: 'repo-ai-governor doctor --adapters --output pretty',
         },
       ]);
     } finally {
@@ -1770,9 +1771,9 @@ describe('core-orchestration-service local shell', () => {
             'repo-ai-governor connect --preset multi-tool-default --output pretty',
         },
         {
-          slashQuery: '/verify',
-          bridgeArgv: ['verify', '--adapters', '--output', 'pretty'],
-          previewCommandLine: 'repo-ai-governor verify --adapters --output pretty',
+          slashQuery: '/doctor',
+          bridgeArgv: ['doctor', '--adapters', '--output', 'pretty'],
+          previewCommandLine: 'repo-ai-governor doctor --adapters --output pretty',
         },
       ]);
     } finally {
@@ -1780,10 +1781,25 @@ describe('core-orchestration-service local shell', () => {
     }
   });
 
-  it('projects low-risk natural-language plan skills into direct-execute turn metadata', async () => {
+  it('routes natural-language planning asks through the injected planner collaboration runtime', async () => {
     const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
     const orchestrationService = new LocalOrchestrationServiceShell({
       workspaceRoot: temporaryRoot,
+      sessionMainSupervisorRuntime: {
+        resolveTurn: async (context) => ({
+          responseMode: 'role_collaboration',
+          interactionMode: 'single_role_delegate',
+          assistantDelta: '## Planner perspective',
+          assistantMessage: `## Planner perspective\n\n- user_message: ${context.userMessage}`,
+          executionIntent: 'session.role_delegate.planner',
+          requiresConfirmation: false,
+          selectedSurface: context.selectedSurface,
+          selectedBy: 'session.main.router.single_role_delegate.implicit_role',
+          sessionRoutingPreferenceApplied: context.sessionRoutingPreferenceApplied,
+          invokedRoleIds: ['planner'],
+          subagentCount: 1,
+        }),
+      },
     });
 
     try {
@@ -1802,18 +1818,70 @@ describe('core-orchestration-service local shell', () => {
         (event) => event.type === OrchestrationSessionEventType.TURN_COMPLETED,
       );
 
-      expect(completedEvent?.payload.responseMode).toBe('command_handoff_preview');
-      expect(completedEvent?.payload.suggestedSlashCommand).toBe('/plan');
+      expect(completedEvent?.payload.responseMode).toBe('role_collaboration');
       expect(completedEvent?.payload.requiresConfirmation).toBe(false);
-      expect(completedEvent?.payload.skillId).toBe('skill.plan.task');
-      expect(completedEvent?.payload.handoffExecutionMode).toBe('direct_execute');
-      expect(completedEvent?.payload.commandBatches).toEqual([
-        {
-          slashQuery: '/plan',
-          bridgeArgv: ['plan', '--output', 'pretty'],
-          previewCommandLine: 'repo-ai-governor plan --output pretty',
+      expect(completedEvent?.payload.executionIntent).toBe('session.role_delegate.planner');
+      expect(completedEvent?.payload.invokedRoleIds).toEqual(['planner']);
+      expect(completedEvent?.payload.assistantMessage).toContain('user_message: 帮我拆一下任务计划');
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('preserves transcript-facing slash input when turn metadata supplies a display user message', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+      sessionMainSupervisorRuntime: {
+        resolveTurn: async (context) => ({
+          responseMode: 'role_collaboration',
+          interactionMode: 'single_role_delegate',
+          assistantDelta: '## Planner perspective',
+          assistantMessage: `## Planner perspective\n\n- user_message: ${context.userMessage}`,
+          executionIntent: 'session.role_delegate.planner',
+          requiresConfirmation: false,
+          selectedSurface: context.selectedSurface,
+          selectedBy: 'session.main.router.single_role_delegate.implicit_role',
+          sessionRoutingPreferenceApplied: context.sessionRoutingPreferenceApplied,
+          invokedRoleIds: ['planner'],
+          subagentCount: 1,
+        }),
+      },
+    });
+
+    try {
+      const started = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
+      await orchestrationService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: [
+          'Use the standard planning template to create an execution plan for the following goal.',
+          'Do not sync anything to the sprint ledger yet.',
+          '',
+          'Goal: ship a tetris clone',
+        ].join('\n'),
+        metadata: {
+          [ORCHESTRATION_SESSION_DISPLAY_USER_MESSAGE_METADATA_KEY]:
+            '/plan ship a tetris clone',
         },
-      ]);
+      });
+      const subscription = await orchestrationService.subscribeSession({
+        sessionId: started.session.sessionId,
+      });
+      const submittedEvent = subscription.events.find(
+        (event) => event.type === OrchestrationSessionEventType.TURN_SUBMITTED,
+      );
+      const completedEvent = subscription.events.find(
+        (event) => event.type === OrchestrationSessionEventType.TURN_COMPLETED,
+      );
+
+      expect(submittedEvent?.payload.content).toBe('/plan ship a tetris clone');
+      expect(completedEvent?.payload.latestUserMessage).toBe('/plan ship a tetris clone');
+      expect(completedEvent?.payload.assistantMessage).toContain(
+        'user_message: Use the standard planning template to create an execution plan for the following goal.',
+      );
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }
@@ -2384,7 +2452,7 @@ describe('core-orchestration-service local shell', () => {
     const orchestrationService = new LocalOrchestrationServiceShell({
       workspaceRoot: temporaryRoot,
       sessionMainSupervisorRuntime: {
-        resolveMentionedRoleId: () => null,
+        resolveMentionedRoleId: () => 'reviewer',
         resolveTurn: async () => {
           throw new GovernorError(
             GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
@@ -2412,7 +2480,7 @@ describe('core-orchestration-service local shell', () => {
       await orchestrationService.sendSessionTurn({
         sessionId: started.session.sessionId,
         routeId: OrchestrationSessionRouteId.MAIN,
-        userMessage: '帮我 review 一下代码',
+        userMessage: '@reviewer 帮我 review 一下代码',
       });
 
       const subscription = await orchestrationService.subscribeSession({

@@ -2,7 +2,7 @@
 
 - 文档版本：brief-v1
 - 状态：active
-- 日期：2026-04-08
+- 日期：2026-04-10
 - 对齐来源：`.repo-ai-governor/normative_knowledge_sources/product-requirements.md`（完整版）
 - 实施总纲：`.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md`
 - 工程蓝图：`.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-architecture-and-repo-layering.md`
@@ -33,7 +33,7 @@
    - `Loop` 节点必须同时声明 `maxCycles` 与 `maxWallTimeSeconds`。
    - 编排运行时需保持 `DSL/IR/policy/audit/ledger` 与执行后端解耦，并演进到 graph-first backend；CLI 与未来桌面端应共用同一套本地 orchestration service。
 2. 多工具接入与投影：
-   - 支持 `connect / doctor / verify` 的 onboarding 链路，并将 role/session 投影为 agent descriptor。
+   - 支持 `connect / doctor` 的公开 onboarding 链路，并由 connect follow-up / doctor mode / internal readiness gate 承接 verification，再将 role/session 投影为 agent descriptor。
    - 对 Codex / Claude Code / GitHub Copilot 等首批入口，还要显式承载 host-native assets（如 project-local assets、plugin bundles、skills/agents、hooks/subagents、MCP）的 `export / apply / verify / upgrade / support-truth` contract。
 3. 工具无关适配：
    - 允许不同角色由不同 AI 工具实现。

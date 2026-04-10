@@ -59,17 +59,63 @@ const SESSION_MAIN_DOCTOR_PATTERNS = [
   /(?:帮我|请)?(?:诊断|检查|体检|排查)(?:一下)?(?:当前|这个)?(?:项目|仓库|workspace|repo)(?:环境|状态|接入|配置)?/iu,
   /(?:diagnose|health check|inspect|troubleshoot|check)\s+(?:the\s+)?(?:current\s+)?(?:project|repo|repository|workspace)(?:\s+(?:health|environment|setup|adapters?))?/iu,
 ];
-const SESSION_MAIN_VERIFY_KEYWORDS = ['verify', 'validation', 'validate', '验证', '校验'];
+const SESSION_MAIN_VERIFY_ACTION_PATTERNS = [
+  /\b(?:verify|validation|validate)\b/iu,
+  /(?:验证|校验)/u,
+] as const;
+const SESSION_MAIN_VERIFY_READINESS_CONTEXT_PATTERNS = [
+  /\b(?:adapters?|readiness|ready|setup|environment|routing|binding|onboarding|projection|connection)\b/iu,
+  /(?:适配器|接入|就绪|环境|配置|路由|绑定|投影|连接)/u,
+  /(?:adapter|adapters?|适配器).*(?:status|状态|health|健康)/iu,
+  /(?:status|状态|health|健康).*(?:adapter|adapters?|适配器)/iu,
+] as const;
 const SESSION_MAIN_WORKFLOW_KEYWORDS = ['workflow', '流程', 'workflow preview', '流程预览'];
+const SESSION_MAIN_RUN_EXCLUDED_PATTERNS = [
+  /\bworkflow preview\b/iu,
+  /\bpreview\b/iu,
+  /\bcreate\b/iu,
+  /\bedit\b/iu,
+  /\btemplate\b/iu,
+  /预览/u,
+  /模板/u,
+  /创建/u,
+  /编辑/u,
+];
 const SESSION_MAIN_PLAN_KEYWORDS = ['plan', 'planning', 'break down', 'task breakdown', '拆任务'];
 const SESSION_MAIN_PLAN_PATTERNS = [
   /(?:帮我|请)?(?:拆|做|生成|整理)?(?:一下)?(?:任务|执行)?计划/iu,
   /(?:帮我|请)?拆一下任务/iu,
   /(?:帮我|请)?规划(?:一下)?(?:任务|执行)?/iu,
 ];
-const SESSION_MAIN_REVIEW_KEYWORDS = ['review', 'cr', 'code review', '审查'];
-const SESSION_MAIN_REVIEW_VERIFY_KEYWORDS = ['review verify', 'verify review', '复核', 'cr verify'];
-const SESSION_MAIN_RUN_KEYWORDS = ['run', 'execute', 'ship', 'implement', '开始做', '实现'];
+const SESSION_MAIN_REVIEW_PATTERNS = [
+  /\bcode[- ]review\b/iu,
+  /(?<![/\w-])review(?![-\w])/iu,
+  /\bcr\b/iu,
+  /评审/u,
+  /审查/u,
+];
+const SESSION_MAIN_REVIEW_VERIFY_KEYWORDS = [
+  'review verify',
+  'review verification',
+  'review-verification',
+  'verify review',
+  '复核',
+  'cr verify',
+];
+const SESSION_MAIN_REVIEW_VERIFY_PATTERNS = [
+  /(?:verify|validate|recheck)\s+(?:that\s+)?(?:the\s+)?(?:current\s+)?(?:review\s+findings|review\s+report|cr\s+report|fixes?)/iu,
+  /(?:review\s+findings|review\s+report|cr\s+report).*(?:verify|validate|recheck)/iu,
+  /(?:验证|校验|复核).*(?:review findings|review report|cr 报告|评审报告|修复结果)/iu,
+  /(?:复核|校验).*(?:当前)?(?:cr|review).*(?:报告|结果)/iu,
+];
+const SESSION_MAIN_RUN_PATTERNS = [
+  /\brun\b(?:\s+the)?\s+(?:next\s+)?(?:governed\s+|reusable\s+)?(?:workflow|flow|pipeline|task-driven execution flow|execution flow)\b/iu,
+  /\b(?:start|launch|execute)\b(?:\s+the)?\s+(?:next\s+)?(?:governed\s+|reusable\s+)?(?:workflow|flow|pipeline|task-driven execution flow|execution flow)\b/iu,
+  /\b(?:run|execute|start)\b.*\b(?:tk-\d+|task package)\b/iu,
+  /(?:运行|执行|启动|跑一下).*(?:受治理|可复用)?(?:workflow|工作流|流程|执行流|任务驱动执行流|任务包)/iu,
+  /(?:workflow|工作流|流程|执行流|任务驱动执行流|任务包).*(?:运行|执行|启动|跑一下)/iu,
+  /(?:运行|执行|启动).*(?:TK-\d+)/iu,
+];
 const SESSION_MAIN_ONBOARDING_PATTERNS = [
   /adapter onboarding/iu,
   /connect\s+(?:and|then)\s+verify/iu,
@@ -115,6 +161,12 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
     const rawMessage = userMessage.trim();
     const normalizedMessage = rawMessage.toLowerCase();
 
+    // Explicit @role entry should stay on the raw collaboration path instead of being
+    // re-captured by deterministic command routing after the dispatcher strips mentions.
+    if (options.configuredRoleMentionPresent) {
+      return null;
+    }
+
     if (this.matchesAnyPattern(normalizedMessage, SESSION_MAIN_ONBOARDING_PATTERNS)) {
       return this.createPlanFromInlineBundle({
         skillId: 'skill.onboard.adapters',
@@ -130,15 +182,15 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
             options.preferredSurface,
           ),
           this.createCommandBatch(
-            '/verify',
-            ['verify', '--adapters', '--output', 'pretty'],
+            '/doctor',
+            ['doctor', '--adapters', '--output', 'pretty'],
             options.preferredSurface,
           ),
         ],
       });
     }
 
-    if (this.includesAnyKeyword(normalizedMessage, SESSION_MAIN_REVIEW_VERIFY_KEYWORDS)) {
+    if (this.matchesReviewVerifyIntent(normalizedMessage)) {
       return this.createPlanFromCapabilityId({
         capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW_VERIFY,
         routerDecisionReason: 'session.main.router.command_handoff_preview.review_verify',
@@ -194,34 +246,23 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
       });
     }
 
-    if (this.includesAnyKeyword(normalizedMessage, SESSION_MAIN_VERIFY_KEYWORDS)) {
+    if (this.matchesVerifyMigrationIntent(normalizedMessage)) {
       return this.createPlanFromCapabilityId({
-        capabilityId: SESSION_MAIN_CAPABILITY_ID.VERIFY,
-        routerDecisionReason: 'session.main.router.direct_execute.verify',
+        capabilityId: SESSION_MAIN_CAPABILITY_ID.DOCTOR,
+        routerDecisionReason: 'session.main.router.direct_execute.verify_migrated_doctor',
         commandBatches: [
           this.createCommandBatch(
-            '/verify',
-            ['verify', '--adapters', '--output', 'pretty'],
+            '/doctor',
+            ['doctor', '--adapters', '--output', 'pretty'],
             options.preferredSurface,
           ),
         ],
       });
     }
 
-    if (this.includesAnyKeyword(normalizedMessage, SESSION_MAIN_WORKFLOW_KEYWORDS)) {
-      return this.createPlanFromCapabilityId({
-        capabilityId: SESSION_MAIN_CAPABILITY_ID.WORKFLOW,
-        routerDecisionReason: 'session.main.router.direct_execute.workflow',
-        commandBatches: [
-          this.createCommandBatch('/workflow', ['workflow', 'preview'], options.preferredSurface),
-        ],
-      });
-    }
-
     if (
-      !options.configuredRoleMentionPresent &&
-      (this.includesAnyKeyword(normalizedMessage, SESSION_MAIN_PLAN_KEYWORDS) ||
-        this.matchesAnyPattern(normalizedMessage, SESSION_MAIN_PLAN_PATTERNS))
+      this.includesAnyKeyword(normalizedMessage, SESSION_MAIN_PLAN_KEYWORDS) ||
+      this.matchesAnyPattern(normalizedMessage, SESSION_MAIN_PLAN_PATTERNS)
     ) {
       return this.createPlanFromCapabilityId({
         capabilityId: SESSION_MAIN_CAPABILITY_ID.PLAN,
@@ -236,10 +277,7 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
       });
     }
 
-    if (
-      !options.configuredRoleMentionPresent &&
-      this.includesAnyKeyword(normalizedMessage, SESSION_MAIN_REVIEW_KEYWORDS)
-    ) {
+    if (this.matchesReviewIntent(normalizedMessage)) {
       return this.createPlanFromCapabilityId({
         capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW,
         routerDecisionReason: 'session.main.router.direct_execute.review',
@@ -253,7 +291,7 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
       });
     }
 
-    if (this.includesAnyKeyword(normalizedMessage, SESSION_MAIN_RUN_KEYWORDS)) {
+    if (this.matchesRunIntent(rawMessage)) {
       return this.createPlanFromCapabilityId({
         capabilityId: SESSION_MAIN_CAPABILITY_ID.RUN,
         routerDecisionReason: 'session.main.router.command_handoff_preview.run',
@@ -263,6 +301,16 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
             ['run', '--dry-run', '--trace'],
             options.preferredSurface,
           ),
+        ],
+      });
+    }
+
+    if (this.includesAnyKeyword(normalizedMessage, SESSION_MAIN_WORKFLOW_KEYWORDS)) {
+      return this.createPlanFromCapabilityId({
+        capabilityId: SESSION_MAIN_CAPABILITY_ID.WORKFLOW,
+        routerDecisionReason: 'session.main.router.direct_execute.workflow',
+        commandBatches: [
+          this.createCommandBatch('/workflow', ['workflow', 'preview'], options.preferredSurface),
         ],
       });
     }
@@ -364,7 +412,32 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
     return keywords.some((keyword) => message.includes(keyword));
   }
 
-  private matchesAnyPattern(message: string, patterns: RegExp[]): boolean {
+  private matchesReviewVerifyIntent(message: string): boolean {
+    return (
+      this.includesAnyKeyword(message, SESSION_MAIN_REVIEW_VERIFY_KEYWORDS) ||
+      this.matchesAnyPattern(message, SESSION_MAIN_REVIEW_VERIFY_PATTERNS)
+    );
+  }
+
+  private matchesReviewIntent(message: string): boolean {
+    return this.matchesAnyPattern(message, SESSION_MAIN_REVIEW_PATTERNS);
+  }
+
+  private matchesVerifyMigrationIntent(message: string): boolean {
+    return (
+      this.matchesAnyPattern(message, SESSION_MAIN_VERIFY_ACTION_PATTERNS) &&
+      this.matchesAnyPattern(message, SESSION_MAIN_VERIFY_READINESS_CONTEXT_PATTERNS)
+    );
+  }
+
+  private matchesRunIntent(message: string): boolean {
+    return (
+      this.matchesAnyPattern(message, SESSION_MAIN_RUN_PATTERNS) &&
+      !this.matchesAnyPattern(message, SESSION_MAIN_RUN_EXCLUDED_PATTERNS)
+    );
+  }
+
+  private matchesAnyPattern(message: string, patterns: readonly RegExp[]): boolean {
     return patterns.some((pattern) => pattern.test(message));
   }
 

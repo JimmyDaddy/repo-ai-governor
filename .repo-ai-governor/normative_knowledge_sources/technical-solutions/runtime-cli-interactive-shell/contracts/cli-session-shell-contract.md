@@ -145,6 +145,10 @@
 25. `turn_suggested_actions` 只能表示用户可点击/可追问的 follow-up affordance；shell 可以渲染，但不得自动执行、不得绕过既有 risk/policy gate，也不得把它们写成新的 pending handoff truth。
 26. shell 如果需要统一呈现 governed capability discoverability 与 slash command palette，只能把 service-owned capability metadata 与 shell-local builtin metadata 在 presenter/registry 组合层合并；不得要求 `runtime.orchestration` 拥有 `/confirm`、`/cancel`、`/clear`、`/exit`、`/resume`、`/history`、`/search`、`/multiline`、`/status`、`/theme`、`/agent` 等 CLI-only builtin 的 canonical truth。
 27. capability explanation 所展示的用户可见 prose 必须来自 locale-neutral capability seed 经 i18n 渲染后的结果；CLI 不得继续维护一份与 service-owned catalog 平行漂移的独立 help prose source。
+28. session shell discoverability 必须把 raw `@role` expert entry 与 governed slash-command entry 明确区分；`@planner / @reviewer / ...` 不得被伪装成 slash bridge command。
+29. governed slash entries 至少必须区分 `ai_fixed_workflow` 与 `deterministic_utility`：`/plan`、`/review`、`/review verify` 不能再呈现成 plain CLI bridge，而 `/plan sync`、`/workflow`、`/connect`、`/doctor`、`/workspace switch-branch` 继续属于 deterministic utility。
+30. `/verify` 在 public command model 删除后，不得继续出现在 session-shell slash palette、launcher shortlist 或 help appendix 中；相关 readiness guidance 必须改写到 `connect`、`doctor` 或 workflow-local preflight 文案。
+31. `/run` 可以继续出现在 discoverability surface 中，但 presenter copy 必须把它限制为 reusable governed execution flow，不得让 generic implementation ask 看起来默认等价于 `/run`。
 
 ## 5. Consumers
 
@@ -162,3 +166,4 @@
 6. `v1` 现正式接受“service-owned session.main supervisor + role subagents / handoffs”方向；第一阶段 rollout 允许只交付 direct answer、command handoff preview 与 `1` 条 role-subagent bootstrap path，再逐步扩展 richer collaboration/streaming/sidecar parity。
 7. `v1` 现进一步接受“conversation-first chatability + risk-tiered natural-language skill handoff”补充方向；低风险、只读、scope-resolved skill 可走 governed `direct_execute`，但 state-mutating、高成本或高歧义 skill 仍保留 `preview_confirm`。
 8. `v1` 现进一步接受“service-owned capability explainer + contextual command guidance”补充方向；capability explanation turn 仍属于 `answer` path，但 shell 需要额外消费 capability metadata 与 suggested-action affordance，同时保持 shell-local builtins 不被误并入 service-owned governed capability catalog。
+9. `v1` 现进一步接受“prompt-first command model split”补充方向；`/plan`、`/review`、`/review verify` 作为 AI fixed workflow 呈现，`/plan sync` 与其他 utility slash command 继续保持 deterministic bridge，而 public `/verify` 被删除。

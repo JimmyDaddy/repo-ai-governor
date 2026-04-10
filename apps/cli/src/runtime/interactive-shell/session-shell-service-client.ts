@@ -1,4 +1,7 @@
-import { OrchestrationSessionRouteId } from '@repo-ai-governor/orchestration-service-client';
+import {
+  ORCHESTRATION_SESSION_DISPLAY_USER_MESSAGE_METADATA_KEY,
+  OrchestrationSessionRouteId,
+} from '@repo-ai-governor/orchestration-service-client';
 import type {
   OrchestrationAppendSessionMessageResponse,
   OrchestrationArchiveSessionResponse,
@@ -62,13 +65,25 @@ export class CliSessionShellServiceClient {
    * @param userMessage User-authored message.
    * @returns Turn completion response.
    */
-  public async sendMainTurn(sessionId: string, userMessage: string) {
+  public async sendMainTurn(
+    sessionId: string,
+    userMessage: string,
+    options?: {
+      displayUserMessage?: string;
+    },
+  ) {
     return this.orchestrationServiceRuntime.sendSessionTurn({
       sessionId,
       routeId: OrchestrationSessionRouteId.MAIN,
       userMessage,
       metadata: {
         locale: this.locale,
+        ...(options?.displayUserMessage
+          ? {
+              [ORCHESTRATION_SESSION_DISPLAY_USER_MESSAGE_METADATA_KEY]:
+                options.displayUserMessage,
+            }
+          : {}),
       },
     });
   }

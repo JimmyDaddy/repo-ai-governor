@@ -1,4 +1,7 @@
-import { SESSION_MAIN_HANDOFF_EXECUTION_MODE } from '@repo-ai-governor/core-orchestration-service/constants';
+import {
+  SESSION_MAIN_CAPABILITY_BACKING_EXECUTION,
+  SESSION_MAIN_HANDOFF_EXECUTION_MODE,
+} from '@repo-ai-governor/core-orchestration-service/constants';
 import { CliCommandName } from '../../constants/cli-command.constant.js';
 import type {
   CliSessionSlashCommandHighlightSegment,
@@ -7,7 +10,7 @@ import type {
 } from '../../types/index.js';
 import { CliSessionMainCapabilityDiscoverabilityRuntime } from '../session-main-capability-discoverability-runtime.js';
 
-type SessionSlashCommandKind = 'builtin' | 'bridge';
+type SessionSlashCommandKind = 'builtin' | 'bridge' | 'ai_workflow';
 type SessionSlashCommandExecutionMode = 'direct' | 'confirm';
 
 interface SessionSlashCommandDefinition {
@@ -15,6 +18,7 @@ interface SessionSlashCommandDefinition {
   summaryKey: string;
   kind: SessionSlashCommandKind;
   executionMode?: SessionSlashCommandExecutionMode;
+  discoverable?: boolean;
 }
 
 interface SessionSlashCommandResolution {
@@ -22,6 +26,7 @@ interface SessionSlashCommandResolution {
   summaryKey: string;
   kind: SessionSlashCommandKind;
   bridgeArgv?: string[];
+  aiWorkflowPrompt?: string;
   executionMode?: SessionSlashCommandExecutionMode;
 }
 
@@ -76,6 +81,12 @@ const SESSION_SLASH_LOCAL_BRIDGE_DEFINITIONS: SessionSlashCommandDefinition[] = 
     executionMode: 'direct',
   },
   {
+    command: '/plan sync',
+    summaryKey: 'cli.sessionShell.commands.planSync.summary',
+    kind: 'bridge',
+    executionMode: 'direct',
+  },
+  {
     command: '/workspace',
     summaryKey: 'cli.commands.workspace.description',
     kind: 'bridge',
@@ -108,7 +119,7 @@ const SESSION_SLASH_COMMAND_FULL_ORDER = [
   '/init',
   '/connect',
   '/doctor',
-  '/verify',
+  '/plan sync',
   '/workspace',
   '/workspace switch-branch',
   '/workflow',
@@ -122,7 +133,6 @@ const SESSION_SLASH_COMMAND_LAUNCHER_ORDER = [
   '/workspace',
   '/workspace switch-branch',
   '/doctor',
-  '/verify',
   '/connect',
   '/review',
   '/plan',
@@ -175,14 +185,13 @@ export class CliSessionSlashCommandRegistry {
    * @returns Runtime command resolution or `null` when no exact command exists.
    */
   public resolveAction(query: string): SessionSlashCommandResolution | null {
-    const normalizedQuery = this.normalizeAliasedQuery(query);
     const definition = this.resolveDefinition(query);
 
     if (!definition) {
       return null;
     }
 
-    const argumentTokens = this.resolveArgumentTokens(normalizedQuery, definition.command);
+    const argumentTokens = this.resolveArgumentTokens(this.resolveQueryTokens(query), definition);
 
     return {
       command: definition.command,
@@ -197,7 +206,12 @@ export class CliSessionSlashCommandRegistry {
             ),
             bridgeArgv: this.resolveBridgeArgv(definition.command, argumentTokens),
           }
-        : {}),
+        : definition.kind === 'ai_workflow'
+          ? {
+              executionMode: definition.executionMode ?? 'direct',
+              aiWorkflowPrompt: this.resolveAiWorkflowPrompt(definition.command, argumentTokens),
+            }
+          : {}),
     };
   }
 
@@ -239,7 +253,9 @@ export class CliSessionSlashCommandRegistry {
         ? SESSION_SLASH_COMMAND_LAUNCHER_ORDER
         : SESSION_SLASH_COMMAND_FULL_ORDER;
     const metadataMap = new Map(
-      this.listAllDefinitions().map((definition) => [
+      this.listAllDefinitions()
+        .filter((definition) => definition.discoverable !== false)
+        .map((definition) => [
         definition.command,
         {
           command: definition.command,
@@ -264,12 +280,19 @@ export class CliSessionSlashCommandRegistry {
         .map((descriptorSeed) => ({
           command: descriptorSeed.suggestedSlashCommand,
           summaryKey: descriptorSeed.summaryKey,
-          kind: 'bridge' as const,
+          kind:
+            descriptorSeed.backingExecution ===
+            SESSION_MAIN_CAPABILITY_BACKING_EXECUTION.TEMPLATED_AI_WORKFLOW
+              ? ('ai_workflow' as const)
+              : ('bridge' as const),
           executionMode:
-            descriptorSeed.handoffExecutionMode ===
-            SESSION_MAIN_HANDOFF_EXECUTION_MODE.DIRECT_EXECUTE
+            descriptorSeed.backingExecution ===
+              SESSION_MAIN_CAPABILITY_BACKING_EXECUTION.TEMPLATED_AI_WORKFLOW
               ? ('direct' as const)
-              : ('confirm' as const),
+              : descriptorSeed.handoffExecutionMode ===
+                  SESSION_MAIN_HANDOFF_EXECUTION_MODE.DIRECT_EXECUTE
+                ? ('direct' as const)
+                : ('confirm' as const),
         })),
     ];
   }
@@ -284,12 +307,17 @@ export class CliSessionSlashCommandRegistry {
       return workflowAction === 'preview' ? 'direct' : 'confirm';
     }
 
+    if (command === '/plan sync') {
+      const planAction = argumentTokens[0]?.toLowerCase() ?? 'preview';
+      return planAction === 'commit' ? 'confirm' : 'direct';
+    }
+
     return defaultMode;
   }
 
   private resolveDefinition(query: string): SessionSlashCommandDefinition | null {
-    const normalizedQuery = this.normalizeAliasedQuery(query);
-    if (normalizedQuery.length === 0) {
+    const queryTokens = this.resolveQueryTokens(query);
+    if (queryTokens.length === 0) {
       return null;
     }
 
@@ -300,14 +328,14 @@ export class CliSessionSlashCommandRegistry {
 
     return (
       definitions.find((definition) =>
-        this.matchesSlashCommand(normalizedQuery, definition.command),
+        this.matchesSlashCommandTokens(queryTokens, definition),
       ) ?? null
     );
   }
 
   private resolveBridgeArgv(command: string, argumentTokens: string[]): string[] {
-    if (command === '/review verify') {
-      return [CliCommandName.REVIEW_VERIFY, ...argumentTokens];
+    if (command === '/plan sync') {
+      return [CliCommandName.PLAN, ...argumentTokens];
     }
 
     if (command === '/workflow') {
@@ -322,6 +350,56 @@ export class CliSessionSlashCommandRegistry {
     }
 
     return [command.slice(1), ...argumentTokens];
+  }
+
+  private resolveAiWorkflowPrompt(command: string, argumentTokens: string[]): string {
+    if (command === '/plan') {
+      const goal = argumentTokens.join(' ').trim();
+      return goal.length > 0
+        ? [
+            'Use the standard planning template to create an execution plan for the following goal.',
+            'Do not sync anything to the sprint ledger yet.',
+            '',
+            `Goal: ${goal}`,
+          ].join('\n')
+        : 'Use the standard planning template to create an execution plan for the current goal. Do not sync anything to the sprint ledger yet.';
+    }
+
+    if (command === '/review') {
+      const target = argumentTokens.join(' ').trim();
+      return target.length > 0
+        ? [
+            'Run the standard governed code-review workflow for the following scope.',
+            'Focus on user-visible regressions, behavior risk, and missing tests.',
+            'Return a structured review-style result instead of a free-form expert brainstorm.',
+            '',
+            `Review scope: ${target}`,
+          ].join('\n')
+        : [
+            'Run the standard governed code-review workflow for the current working scope.',
+            'Focus on user-visible regressions, behavior risk, and missing tests.',
+            'Return a structured review-style result instead of a free-form expert brainstorm.',
+          ].join('\n');
+    }
+
+    if (command === '/review verify') {
+      const target = argumentTokens.join(' ').trim();
+      return target.length > 0
+        ? [
+            'Run the standard review-verification workflow for the following target.',
+            'Recheck the existing review artifact or fix result and determine whether accepted findings are actually resolved.',
+            'Return a structured verification result rather than an open-ended expert discussion.',
+            '',
+            `Verification target: ${target}`,
+          ].join('\n')
+        : [
+            'Run the standard review-verification workflow for the latest governed review context.',
+            'Recheck the existing review artifact or fix result and determine whether accepted findings are actually resolved.',
+            'Return a structured verification result rather than an open-ended expert discussion.',
+          ].join('\n');
+    }
+
+    return command;
   }
 
   private normalizePrefix(query: string): string {
@@ -343,13 +421,47 @@ export class CliSessionSlashCommandRegistry {
     return [normalizedCommand, ...tokens.slice(1)].join(' ');
   }
 
-  private resolveArgumentTokens(normalizedQuery: string, command: string): string[] {
-    const argumentQuery = normalizedQuery.slice(command.length).trim();
-    return argumentQuery.length === 0 ? [] : argumentQuery.split(/\s+/u);
+  private resolveQueryTokens(query: string): string[] {
+    return query
+      .trim()
+      .split(/\s+/u)
+      .filter((token) => token.length > 0);
   }
 
-  private matchesSlashCommand(normalizedQuery: string, command: string): boolean {
-    return normalizedQuery === command || normalizedQuery.startsWith(`${command} `);
+  private resolveArgumentTokens(
+    queryTokens: string[],
+    definition: SessionSlashCommandDefinition,
+  ): string[] {
+    const commandTokenCount = definition.command.split(/\s+/u).length;
+    return queryTokens.slice(commandTokenCount);
+  }
+
+  private matchesSlashCommandTokens(
+    queryTokens: string[],
+    definition: SessionSlashCommandDefinition,
+  ): boolean {
+    const commandTokens = definition.command.split(/\s+/u);
+    if (queryTokens.length < commandTokens.length) {
+      return false;
+    }
+
+    return commandTokens.every((commandToken, index) => {
+      const queryToken = queryTokens[index];
+      if (!queryToken) {
+        return false;
+      }
+
+      if (index === 0) {
+        return this.normalizeSlashCommandToken(queryToken) === commandToken;
+      }
+
+      return queryToken.toLowerCase() === commandToken;
+    });
+  }
+
+  private normalizeSlashCommandToken(token: string): string {
+    const normalizedToken = token.toLowerCase();
+    return SESSION_SLASH_COMMAND_ALIASES[normalizedToken] ?? normalizedToken;
   }
 
   private buildHighlightSegments(

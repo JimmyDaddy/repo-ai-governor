@@ -1,0 +1,51 @@
+# checklist
+
+- [x] TK-732 fix `/review` and `/review verify` as AI fixed workflows
+  - 2026-04-10：任务创建，状态初始化为 `planned`。
+  - 2026-04-10：将 `REVIEW` / `REVIEW_VERIFY` capability metadata 固化为 `ai_fixed_workflow`，并把 slash registry、dispatcher、skill routing 与 session supervisor 的 direct-execute 语义对齐。
+  - 2026-04-10：明确自然语言 review 请求走 governed review workflow，不再隐式降级到 raw `@reviewer`；显式 `@reviewer` 入口继续保留给 expert/raw collaboration。
+  - 2026-04-10：补齐 review/review-verify 相关 runtime、parity、slash registry 与 command tests，并完成 build / package / integration 验证。
+- [x] TK-733 remove public `/verify` command and capability surface
+  - 2026-04-10：任务创建，状态初始化为 `planned`。
+  - 2026-04-10：将 public `VERIFY` capability 从 governed catalog、session-shell discoverability、CLI help/skeleton surface 与 README 暴露面移除。
+  - 2026-04-10：保留 hidden `verify` CLI shim，仅输出结构化 migration error，引导用户改用 `doctor` 或 `connect`，同时避免旧入口继续出现在 public help surface。
+  - 2026-04-10：修复 commander hidden command 注册方式与 public command-name typing seam，确保删除 `/verify` 后 build、package tests、integration tests 仍保持通过。
+- [x] TK-734 add `/verify` removal migration guidance and follow-up routing
+  - 2026-04-10：任务创建，状态初始化为 `planned`。
+  - 2026-04-10：把 verify-like 自然语言请求迁移到 `/doctor` follow-up，并在 explainer、session parity、CLI output contract 中补齐 `/verify` 已删除后的替代入口说明。
+  - 2026-04-10：为 removed `verify` command 增加稳定 JSON error contract 覆盖，为 profile-only adapter baseline 改由 `doctor` 验证。
+  - 2026-04-10：结合 build、`pnpm run test:packages` 与 `pnpm run test:integration` 验证 migration routing 与 follow-up copy 没有引入回归。
+- [x] TK-744 sprint-003 activation and sprint-002 closeout handoff
+  - 2026-04-10：任务创建，状态初始化为 `planned`。
+  - 2026-04-10：`sprint-002` 的 `TK-729 ~ TK-731` 与 `CR-001` 已全部进入终态，开始执行 sprint closeout 与下一 sprint activation handoff。
+  - 2026-04-10：已将 `sprint-002` 写回 `completed`，激活 `sprint-003` 为新的 primary execution surface，并把 `stream-project-077-sprint-002` 迁入 completed stream history。
+  - 2026-04-10：治理检查通过，任务完成。
+- [x] CR-001 sprint-003-review-workflow-and-verify-removal delegated review loop round 1
+  - 2026-04-10：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-10：根据 fresh reviewer sub-agent 结论回填 pending review artifact，并完成 `2.1 ~ 2.3` accepted findings 修复。
+  - 2026-04-10：重跑 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1` 与治理检查，`CR-001` 在同窗口推进为 `resolved`。
+- [x] CR-002 sprint-003-review-workflow-and-verify-removal delegated recheck loop round 2
+  - 2026-04-10：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-10：fresh reviewer 发现 `/review` 与 `/review verify` 的 shell AI-workflow prompt 会被误路由到 `/workflow`。
+  - 2026-04-10：已修复 skill-registry routing priority 与 review intent matching，并重跑 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1` 及治理检查，任务推进为 `resolved`。
+- [x] CR-003 sprint-003-review-workflow-and-verify-removal delegated recheck loop round 3
+  - 2026-04-10：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-10：fresh reviewer 发现 prompt-first slash workflows 没有写入 shell history，`/history` 与 history-backed search/recall 会遗漏 `/plan`、`/review`、`/review verify`。
+  - 2026-04-10：已修复 AI-workflow branch 的 history persistence，并补齐真正断言 `/history` 输出的 runner 回归测试；重跑 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1` 与治理检查，任务推进为 `resolved`。
+- [x] CR-004 sprint-003-review-workflow-and-verify-removal delegated recheck loop round 4
+  - 2026-04-10：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-10：fresh reviewer 发现 AI fixed workflow slash inputs 会在 shell history 中重复记录，原因是 slash submit 入口与 AI-workflow 分支同时写入同一条 history。
+  - 2026-04-10：已将 history 写入恢复为 slash submit 单点持久化，并把 runner 回归测试收紧为“恰好一条 history 行”；重跑 `pnpm exec vitest run apps/cli/test/runtime/session-shell-runner.test.ts`、`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1` 与治理检查，任务推进为 `resolved`。
+- [x] CR-005 sprint-003-review-workflow-and-verify-removal delegated review loop round 5
+  - 2026-04-10：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-10：fresh reviewer 发现两项问题：显式 `@reviewer` verify-style 请求仍可能被 deterministic routing 抢走，且 removed `/verify` shell migration branch 缺少直接 runner 回归测试。
+  - 2026-04-10：已将显式 role mention 收紧为 raw-role bypass，并补齐 skill-registry / dispatcher / runner 回归测试；重跑 targeted tests、`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1` 与治理检查，任务推进为 `resolved`。
+- [x] CR-006 sprint-003-review-workflow-and-verify-removal delegated recheck loop round 6
+  - 2026-04-10：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-10：`CR-005` 收口后进入 final clean recheck 窗口，已按 post-fix recheck round 6 分配本轮 `CR-006`。
+  - 2026-04-10：fresh reviewer sub-agent 完成 clean recheck；主 agent 在同一 review surface 与 verification baseline 下收束等待后，确认未发现新的 actionable finding，任务推进为 `resolved`。
+  - 2026-04-10：更正 `CR-006` 记录为 fresh reviewer clean recheck；最终 clean 结论来自新起的 reviewer sub-agent，而非 fallback 自检。
+- [x] TK-745 sprint-003 closeout and sprint-004 activation handoff
+  - 2026-04-10：`sprint-003` 的 `TK-732 ~ TK-745` 与 `CR-001 ~ CR-006` 已全部进入终态，开始执行 sprint closeout 与下一 sprint activation handoff。
+  - 2026-04-10：已将 `sprint-003` 写回 `completed`，激活 `sprint-004` 为新的 primary execution surface，并把 `stream-project-077-sprint-003` 迁入 completed stream history。
+  - 2026-04-10：治理检查通过，任务完成。

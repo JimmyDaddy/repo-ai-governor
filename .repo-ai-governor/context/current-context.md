@@ -4,15 +4,15 @@
 
 - Status: active
 - Project: `project-077-session-main-command-model-rollout`
-- Sprint: `sprint-002-capability-model-and-plan-workflow-cutover`
+- Sprint: `sprint-005-regression-migration-cleanup-and-project-closeout`
 - Docs root: `.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout`
-- Task records: `.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-002-capability-model-and-plan-workflow-cutover/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-002-capability-model-and-plan-workflow-cutover/review/`
-- Note: `2026-04-10` 已按 `project-077` 的 promotion + decomposition handoff 将 primary execution surface 切换到 `sprint-002`；同日 `project-076 / sprint-003` 完成 project-final closeout 后已迁入 completed stream history。
+- Task records: `.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-005-regression-migration-cleanup-and-project-closeout/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-005-regression-migration-cleanup-and-project-closeout/review/`
+- Note: `2026-04-10` 已在 `sprint-004` 全部 `TK` / `CR` 终态后，通过 `TK-746 / DA-746` 将 primary execution surface 切换到 `sprint-005`；`sprint-004` 已迁入 completed stream history。
 
 ## Active Streams
 
-- `primary`: project=`project-077-session-main-command-model-rollout`, sprint=`sprint-002-capability-model-and-plan-workflow-cutover`, docs=`.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout`, plan=`.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-002-capability-model-and-plan-workflow-cutover/plan.md`, tasks=`.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-002-capability-model-and-plan-workflow-cutover/tasks/`, checklist=`.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-002-capability-model-and-plan-workflow-cutover/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-002-capability-model-and-plan-workflow-cutover/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-002-capability-model-and-plan-workflow-cutover/review/`, status=`active`
+- `primary`: project=`project-077-session-main-command-model-rollout`, sprint=`sprint-005-regression-migration-cleanup-and-project-closeout`, docs=`.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout`, plan=`.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-005-regression-migration-cleanup-and-project-closeout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-005-regression-migration-cleanup-and-project-closeout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-005-regression-migration-cleanup-and-project-closeout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-005-regression-migration-cleanup-and-project-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-005-regression-migration-cleanup-and-project-closeout/review/`, status=`active`
 
 ## Planned Follow-Up Streams
 

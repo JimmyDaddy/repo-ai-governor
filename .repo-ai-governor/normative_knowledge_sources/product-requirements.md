@@ -2,7 +2,7 @@
 
 - 文档版本：v0.3
 - 状态：执行中（MVP 已完成，P1 深化中）
-- 日期：2026-04-08
+- 日期：2026-04-10
 - 暂定产品名：Repo AI Governor
 
 ## 0. v0.3 更新说明
@@ -65,7 +65,7 @@ Repo AI Governor 是一个可通过 npm 安装的 AI 开发治理工具，用于
 6. 支持多模型、多 IDE、多 Agent 工具接入。
 7. 支持多语言仓库与多自然语言使用场景。
 8. 支持多 Agent 编排执行（Planner/Architect/Coder/Tester/Reviewer/Verifier 等）并具备明确角色边界。
-9. 支持多工具 onboarding 与 role-agent projection，将 `connect / doctor / verify` 产物投影为可回放的 `AgentDescriptor` 供 CLI、report 与 diagnostics 共用。
+9. 支持多工具 onboarding 与 role-agent projection，将 `connect / doctor` 公开链路与 internal readiness verification 产物投影为可回放的 `AgentDescriptor` 供 CLI、report 与 diagnostics 共用。
 10. 支持策略驱动的人机协同闸口，只在关键节点请求人工确认。
 
 ### 4.2 成功指标
@@ -749,7 +749,7 @@ AI 先完成方案与实现，再进入评审 Agent 与复核 Agent 的循环；
 支持策略如下：
 
 1. 优先支持“规范注入”和“流程约束”能力。
-2. 首批支持口径必须同时声明 `connect / doctor / verify` onboarding 与 host-native distribution / verify / upgrade / support-truth 边界，不能只写“可注入规范”。
+2. 首批支持口径必须同时声明 `connect / doctor + readiness gate` onboarding 与 host-native distribution / verify / upgrade / support-truth 边界，不能只写“可注入规范”。
 3. 通过适配器对不同工具做差异化兼容，不要求底层实现完全一致。
 4. 在执行计划中单列“后续适配路线图”，提前规划更多 IDE、CLI Agent 和 API 驱动入口。
 5. 后续扩展应优先复用统一适配器接口，避免为单个工具做一次性实现。

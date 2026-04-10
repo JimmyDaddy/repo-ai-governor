@@ -22,7 +22,7 @@ const SESSION_MAIN_CANCEL_KEYWORDS = ['cancel this turn', 'simulate cancel'];
 const SESSION_MAIN_FALLBACK_ANSWER_DELTA_MAX_LENGTH = 80;
 const SESSION_MAIN_ROLE_MENTION_PATTERN = /(^|[\s([{])@[a-z0-9_.-]+/giu;
 const SESSION_MAIN_ROLE_MENTION_PRESENCE_PATTERN = /(^|[\s([{])@[a-z0-9_.-]+/iu;
-const SESSION_MAIN_IMPLICIT_REVIEW_ROLE_ID = 'reviewer';
+const SESSION_MAIN_IMPLICIT_PLANNER_ROLE_ID = 'planner';
 const SESSION_MAIN_GREETING_PATTERN =
   /^(?:(?:hi|hello|hey|greetings)(?:\s+(?:governor|agent|there))?|你好|您好|哈喽|嗨|早上好|下午好|晚上好)[!,.? ]*$/iu;
 const SESSION_MAIN_FOLLOW_UP_PATTERN =
@@ -142,21 +142,24 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
         splitIntentSkillPlan &&
         bridgeCapabilityId &&
         this.isCapabilityBridgeAvailabilityReady(availabilityOverlay, bridgeCapabilityId) &&
-        splitIntentSkillPlan.executionIntent === 'review.start' &&
         this.sessionMainSupervisorRuntime &&
         !hasAnyRoleMention
       ) {
-        return this.sessionMainSupervisorRuntime.resolveTurn({
-          ...turnContext,
-          selectedSurface: selectionMetadata.selectedSurface,
-          selectedBy: selectionMetadata.selectedBy,
-          sessionRoutingPreferenceApplied: selectionMetadata.sessionRoutingPreferenceApplied,
-          metadata: {
-            ...(turnContext.metadata ? { ...turnContext.metadata } : {}),
-            [SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY]:
-              SESSION_MAIN_IMPLICIT_REVIEW_ROLE_ID,
-          },
-        });
+        const implicitRoleDelegateId = this.resolveImplicitRoleDelegateId(
+          splitIntentSkillPlan.executionIntent,
+        );
+        if (implicitRoleDelegateId) {
+          return this.sessionMainSupervisorRuntime.resolveTurn({
+            ...turnContext,
+            selectedSurface: selectionMetadata.selectedSurface,
+            selectedBy: selectionMetadata.selectedBy,
+            sessionRoutingPreferenceApplied: selectionMetadata.sessionRoutingPreferenceApplied,
+            metadata: {
+              ...(turnContext.metadata ? { ...turnContext.metadata } : {}),
+              [SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY]: implicitRoleDelegateId,
+            },
+          });
+        }
       }
       const bridgeCandidate =
         splitIntentSkillPlan && bridgeCapabilityId
@@ -196,11 +199,11 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
       preferredSurface,
       configuredRoleMentionPresent,
     });
-    if (
-      skillPlan?.executionIntent === 'review.start' &&
-      this.sessionMainSupervisorRuntime &&
-      !hasAnyRoleMention
-    ) {
+    const implicitRoleDelegateId =
+      skillPlan && !hasAnyRoleMention
+        ? this.resolveImplicitRoleDelegateId(skillPlan.executionIntent)
+        : null;
+    if (implicitRoleDelegateId && this.sessionMainSupervisorRuntime) {
       return this.sessionMainSupervisorRuntime.resolveTurn({
         ...turnContext,
         selectedSurface: selectionMetadata.selectedSurface,
@@ -210,7 +213,7 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
         sessionRoutingPreferenceApplied: selectionMetadata.sessionRoutingPreferenceApplied,
         metadata: {
           ...(turnContext.metadata ? { ...turnContext.metadata } : {}),
-          [SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY]: SESSION_MAIN_IMPLICIT_REVIEW_ROLE_ID,
+          [SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY]: implicitRoleDelegateId,
         },
       });
     }
@@ -468,6 +471,13 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
     return descriptorSeed?.capabilityId ?? null;
   }
 
+  private resolveImplicitRoleDelegateId(executionIntent: string): string | null {
+    if (executionIntent === 'plan.generate') {
+      return SESSION_MAIN_IMPLICIT_PLANNER_ROLE_ID;
+    }
+    return null;
+  }
+
   private createFallbackAnswerResult(
     normalizedMessage: string,
     selectionMetadata: {
@@ -483,7 +493,7 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
       '',
       `Selected surface: \`${selectionMetadata.selectedSurface}\`.`,
       '',
-      'The direct-answer supervisor seam is active. Ask a specific repo question to continue, or request a governed command such as connect, doctor, verify, review, or run.',
+      'The direct-answer supervisor seam is active. Ask a specific repo question to continue, or request a governed command such as connect, doctor, plan, review, workflow, or run.',
     ].join('\n');
     return {
       responseMode: SESSION_MAIN_RESPONSE_MODE.ANSWER,

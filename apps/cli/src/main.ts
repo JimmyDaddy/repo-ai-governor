@@ -843,6 +843,20 @@ export async function runCli(
         await executeCliCommand(CliCommandName.PLAN);
       });
 
+    program
+      .command(CliCommandName.VERIFY, { hidden: true })
+      .description(runtimeI18n.t('cli.commands.verify.description'))
+      .action(async () => {
+        throw new RuntimeError(
+          GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+          runtimeI18n.t('cli.commands.verify.removed'),
+          {
+            command: CliCommandName.VERIFY,
+            replacementCommands: ['/doctor', '/connect'],
+          },
+        );
+      });
+
     const adoptCommand = program
       .command(CliCommandName.ADOPT)
       .description(runtimeI18n.t('cli.commands.adopt.description'))

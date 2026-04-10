@@ -108,10 +108,14 @@ export const ZH_CN_TRANSLATIONS = {
         upgradeCompleted: 'adoption pack {{packId}} 升级已完成。',
         removeCompleted: 'adoption pack {{packId}} 移除已完成。',
       },
-      run: { description: '执行流程运行时基线。' },
+      run: { description: '执行可复用的受治理工作流或任务驱动执行流。' },
       review: { description: '生成代码评审基线输出。' },
       reviewVerify: { description: '验证代码评审基线输出。' },
-      verify: { description: '校验适配器路由 pass/warn/fail 基线。' },
+      verify: {
+        description: '校验适配器路由 pass/warn/fail 基线。',
+        removed:
+          '公开 `verify` 命令已删除。若你要做 readiness 诊断，请使用 `doctor`；若你需要接入变更并串上后续检查，请使用 `connect`。',
+      },
       plan: {
         description: '预览或提交结构化 sprint planning 产物。',
         actionArgument: '可选 plan 动作：preview|commit。',
@@ -388,6 +392,9 @@ export const ZH_CN_TRANSLATIONS = {
         unknownSlashCommand:
           '未知 slash command "{{command}}"。当前 session shell 只暴露文档化命令面。',
         trySlashHelp: '可输入 /help 查看当前已暴露的 slash command 集合。',
+        verifyRemoved: '公开 `/verify` slash command 已从 session shell 删除。',
+        verifyRemovedNextAction:
+          '若你要做 readiness 诊断，请改用 `/doctor`；若你需要接入变更并串上后续检查，请改用 `/connect`。',
         commandPreview: '就绪：{{command}}',
         commandHandoffPending: '{{command}} 的 command handoff 预览已经就绪。',
         commandConfirmHint: '输入 /confirm 执行当前 handoff，或输入 /cancel 放弃本次预览。',
@@ -1187,8 +1194,9 @@ export const ZH_CN_TRANSLATIONS = {
       },
       review: {
         title: '评审',
-        summary: '对当前范围执行受治理的代码评审路径。',
-        detail: '当你需要对当前改动做只读检查、识别风险或输出 findings 时，review 是主路径。',
+        summary: '对当前范围运行产品化的受治理代码评审工作流。',
+        detail:
+          '当你需要对当前改动做结构化 code review、识别风险并输出 findings 时，应当使用 review。若你想做开放式专家讨论，而不是标准受治理评审工作流，请改用 `@reviewer`。',
         examples: {
           0: '帮我 review 当前改动。',
           1: '帮我对这个分支做一轮 code review。',
@@ -1196,9 +1204,9 @@ export const ZH_CN_TRANSLATIONS = {
       },
       review_verify: {
         title: '评审复核',
-        summary: '复查已有评审报告，并确认已接受的问题是否真的修好。',
+        summary: '对既有评审报告或修复结果运行产品化的复核工作流。',
         detail:
-          'review verify 属于正式的评审验证动作，因此默认保留 preview-confirm 治理，而不是静默直接执行。',
+          '当你要复核既有评审报告、修复结果，并判断已接受问题是否真的 resolved 时，应当使用 review verify。若你想做开放式 reviewer 协作而不是标准复核流程，请改用 `@reviewer`。',
         examples: {
           0: '帮我验证 review findings 是否都修好了。',
           1: '复核当前 CR 报告并确认修复结果。',
@@ -1206,12 +1214,12 @@ export const ZH_CN_TRANSLATIONS = {
       },
       run: {
         title: '执行',
-        summary: '启动实现或 workflow 的受治理执行流。',
+        summary: '启动可复用的受治理工作流或任务驱动执行流。',
         detail:
-          '当你要真正进入任务交付或运行 workflow 时，run 是高影响路径，因此保留 preview-confirm continuity。',
+          '当目标工作已经明确、你要真正执行一个可复用的受治理工作流或任务驱动交付流时，应当使用 run。若请求仍是开放式“帮我实现/帮我做”，请先直接对话或改用 `/plan` 收敛范围。',
         examples: {
-          0: '开始做这个任务。',
-          1: '运行这个仓库接下来的 governed workflow。',
+          0: '运行这个仓库下一个可复用的受治理工作流。',
+          1: '执行 TK-123 的任务驱动交付流。',
         },
       },
     },

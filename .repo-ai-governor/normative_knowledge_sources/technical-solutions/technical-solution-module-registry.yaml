@@ -1,5 +1,5 @@
 schema_version: 2
-generated_at: 2026-04-09
+generated_at: 2026-04-10
 status: active
 owner: architecture
 
@@ -330,9 +330,13 @@ modules:
     detail_docs:
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/contracts/runtime-graph-execution-contract.md
         kind: contract
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/contracts/session-main-capability-interaction-model-contract.md
+        kind: contract
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/adrs/graph-first-runtime-and-service-backed-execution-cutover.md
         kind: adr
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/adrs/session-main-supervisor-and-role-subagent-collaboration.md
+        kind: adr
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/adrs/session-main-prompt-first-command-model-and-deterministic-workflow-split.md
         kind: adr
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/adrs/standards-native-review-engine-and-provenance-aware-cr.md
         kind: adr
@@ -342,6 +346,7 @@ modules:
       - architecture.runtime-boundary
     exports_contracts:
       - contract.runtime.graph-execution.v1
+      - contract.runtime.session-main.capability-interaction-model.v1
     imports_contracts:
       - contract.memory-provider.loading.v1
       - contract.memory.context-assembly.v1
@@ -419,6 +424,7 @@ modules:
       - contract.runtime.agent-invoke-liveness.v1
     imports_contracts:
       - contract.runtime.graph-execution.v1
+      - contract.runtime.session-main.capability-interaction-model.v1
       - contract.cli.interactive-shell.v1
     depends_on_modules:
       - runtime.orchestration

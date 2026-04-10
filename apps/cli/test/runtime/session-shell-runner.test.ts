@@ -249,8 +249,15 @@ class FakeSessionShellServiceClient {
     };
   }
 
-  public async sendMainTurn(sessionId: string, userMessage: string): Promise<void> {
+  public async sendMainTurn(
+    sessionId: string,
+    userMessage: string,
+    options?: {
+      displayUserMessage?: string;
+    },
+  ): Promise<void> {
     const session = this.requireSession(sessionId);
+    const visibleUserMessage = options?.displayUserMessage ?? userMessage;
     const turnIndex =
       session.events.filter((event) => event.type === OrchestrationSessionEventType.TURN_COMPLETED)
         .length + 1;
@@ -261,7 +268,7 @@ class FakeSessionShellServiceClient {
         role: OrchestrationSessionTranscriptRole.USER,
         routeId: OrchestrationSessionRouteId.MAIN,
         turnId,
-        content: userMessage,
+        content: visibleUserMessage,
       },
     });
     this.appendEvent(sessionId, {
@@ -279,15 +286,15 @@ class FakeSessionShellServiceClient {
         routeId: OrchestrationSessionRouteId.MAIN,
         turnId,
         turnIndex,
-        latestUserMessage: userMessage,
+        latestUserMessage: visibleUserMessage,
       },
     });
     session.summary.context = {
       ...session.summary.context,
       latestTurnId: turnId,
       latestTurnAt: '2026-03-30T12:00:00Z',
-      previewSummary: `answer:${userMessage}`,
-      latestNoteSummary: `goal=${userMessage} | last_reply=answer:${userMessage}`,
+      previewSummary: `answer:${visibleUserMessage}`,
+      latestNoteSummary: `goal=${visibleUserMessage} | last_reply=answer:${visibleUserMessage}`,
     };
     session.summary = this.rebuildSummary(sessionId);
   }
@@ -559,9 +566,37 @@ class FakeSessionShellServiceClient {
   }
 }
 
+class RecordingTurnPayloadSessionShellServiceClient extends FakeSessionShellServiceClient {
+  public readonly turnPayloads: Array<{
+    userMessage: string;
+    displayUserMessage: string | null;
+  }> = [];
+
+  public override async sendMainTurn(
+    sessionId: string,
+    userMessage: string,
+    options?: {
+      displayUserMessage?: string;
+    },
+  ): Promise<void> {
+    this.turnPayloads.push({
+      userMessage,
+      displayUserMessage: options?.displayUserMessage ?? null,
+    });
+    return super.sendMainTurn(sessionId, userMessage, options);
+  }
+}
+
 class StreamingTurnSessionShellServiceClient extends FakeSessionShellServiceClient {
-  public override async sendMainTurn(sessionId: string, userMessage: string): Promise<void> {
+  public override async sendMainTurn(
+    sessionId: string,
+    userMessage: string,
+    options?: {
+      displayUserMessage?: string;
+    },
+  ): Promise<void> {
     const session = this.requireSession(sessionId);
+    const visibleUserMessage = options?.displayUserMessage ?? userMessage;
     const turnIndex =
       session.events.filter((event) => event.type === OrchestrationSessionEventType.TURN_COMPLETED)
         .length + 1;
@@ -572,7 +607,7 @@ class StreamingTurnSessionShellServiceClient extends FakeSessionShellServiceClie
       payload: {
         role: OrchestrationSessionTranscriptRole.USER,
         routeId: OrchestrationSessionRouteId.MAIN,
-        content: userMessage,
+        content: visibleUserMessage,
       },
     });
     this.appendEvent(sessionId, {
@@ -656,8 +691,15 @@ class StreamingTurnSessionShellServiceClient extends FakeSessionShellServiceClie
 }
 
 class DelayedTurnWithoutStreamSessionShellServiceClient extends FakeSessionShellServiceClient {
-  public override async sendMainTurn(sessionId: string, userMessage: string): Promise<void> {
+  public override async sendMainTurn(
+    sessionId: string,
+    userMessage: string,
+    options?: {
+      displayUserMessage?: string;
+    },
+  ): Promise<void> {
     const session = this.requireSession(sessionId);
+    const visibleUserMessage = options?.displayUserMessage ?? userMessage;
     const turnIndex =
       session.events.filter((event) => event.type === OrchestrationSessionEventType.TURN_COMPLETED)
         .length + 1;
@@ -668,7 +710,7 @@ class DelayedTurnWithoutStreamSessionShellServiceClient extends FakeSessionShell
       payload: {
         role: OrchestrationSessionTranscriptRole.USER,
         routeId: OrchestrationSessionRouteId.MAIN,
-        content: userMessage,
+        content: visibleUserMessage,
       },
     });
     session.summary = this.rebuildSummary(sessionId);
@@ -702,7 +744,13 @@ class DelayedTurnWithoutStreamSessionShellServiceClient extends FakeSessionShell
 class MissingSessionOnFirstTurnSessionShellServiceClient extends FakeSessionShellServiceClient {
   private failedOnce = false;
 
-  public override async sendMainTurn(sessionId: string, userMessage: string): Promise<void> {
+  public override async sendMainTurn(
+    sessionId: string,
+    userMessage: string,
+    options?: {
+      displayUserMessage?: string;
+    },
+  ): Promise<void> {
     if (!this.failedOnce) {
       this.failedOnce = true;
       this.sessions.delete(sessionId);
@@ -712,14 +760,20 @@ class MissingSessionOnFirstTurnSessionShellServiceClient extends FakeSessionShel
       );
     }
 
-    return super.sendMainTurn(sessionId, userMessage);
+    return super.sendMainTurn(sessionId, userMessage, options);
   }
 }
 
 class MissingSessionOnFirstTwoTurnsSessionShellServiceClient extends FakeSessionShellServiceClient {
   private failureCount = 0;
 
-  public override async sendMainTurn(sessionId: string, userMessage: string): Promise<void> {
+  public override async sendMainTurn(
+    sessionId: string,
+    userMessage: string,
+    options?: {
+      displayUserMessage?: string;
+    },
+  ): Promise<void> {
     if (this.failureCount < 2) {
       this.failureCount += 1;
       this.sessions.delete(sessionId);
@@ -729,14 +783,20 @@ class MissingSessionOnFirstTwoTurnsSessionShellServiceClient extends FakeSession
       );
     }
 
-    return super.sendMainTurn(sessionId, userMessage);
+    return super.sendMainTurn(sessionId, userMessage, options);
   }
 }
 
 class MissingSessionThenDelayedTurnWithoutStreamSessionShellServiceClient extends DelayedTurnWithoutStreamSessionShellServiceClient {
   private failedOnce = false;
 
-  public override async sendMainTurn(sessionId: string, userMessage: string): Promise<void> {
+  public override async sendMainTurn(
+    sessionId: string,
+    userMessage: string,
+    options?: {
+      displayUserMessage?: string;
+    },
+  ): Promise<void> {
     if (!this.failedOnce) {
       this.failedOnce = true;
       this.sessions.delete(sessionId);
@@ -746,7 +806,7 @@ class MissingSessionThenDelayedTurnWithoutStreamSessionShellServiceClient extend
       );
     }
 
-    return super.sendMainTurn(sessionId, userMessage);
+    return super.sendMainTurn(sessionId, userMessage, options);
   }
 }
 
@@ -832,6 +892,8 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.commands.history.summary': 'Show recent shell input history.',
   'cli.sessionShell.commands.search.summary': 'Search transcript and history.',
   'cli.sessionShell.commands.multiline.summary': 'Capture one multi-line turn.',
+  'cli.sessionShell.commands.planSync.summary':
+    'Preview or commit deterministic sprint-ledger projection for an existing plan.',
   'cli.sessionShell.commands.status.summary':
     'Show session-shell status and hidden runtime details.',
   'cli.sessionShell.commands.theme.summary': 'Inspect or update the theme.',
@@ -847,7 +909,7 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
   'sessionMainCapabilities.catalog.workflow.summary':
     'Preview or enter the governed workflow definition surface.',
   'sessionMainCapabilities.catalog.run.summary':
-    'Start a governed execution flow for implementation or workflow work.',
+    'Start a reusable governed workflow or task-driven execution flow.',
   'sessionMainCapabilities.catalog.plan.summary':
     'Generate or refine a task breakdown for the current goal.',
   'sessionMainCapabilities.catalog.review.summary':
@@ -875,6 +937,10 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.responses.partialSlashMatch': 'Matched commands for prefix {{query}}.',
   'cli.sessionShell.responses.unknownSlashCommand': 'Unknown slash command {{command}}.',
   'cli.sessionShell.responses.trySlashHelp': 'Use /help to inspect commands.',
+  'cli.sessionShell.responses.verifyRemoved':
+    'The public `/verify` slash command has been removed from the session shell.',
+  'cli.sessionShell.responses.verifyRemovedNextAction':
+    'Use `/doctor` for readiness diagnostics, or `/connect` if you need onboarding changes plus follow-up checks.',
   'cli.sessionShell.responses.commandPreview': 'Ready: {{command}}',
   'cli.sessionShell.responses.commandHandoffPending':
     'Command handoff preview is ready for {{command}}.',
@@ -1901,9 +1967,9 @@ describe('CliSessionShellRunner', () => {
     }));
     sessionClient.seedPendingCommandTurn({
       sessionId: 'session-shell-002',
-      slashQuery: '/verify',
-      bridgeArgv: ['verify', '--adapters', '--output', 'pretty'],
-      previewCommandLine: 'verify --adapters --output pretty',
+      slashQuery: '/doctor',
+      bridgeArgv: ['doctor', '--adapters', '--output', 'pretty'],
+      previewCommandLine: 'doctor --adapters --output pretty',
       executionMode: 'direct_execute',
     });
     const runner = new CliSessionShellRunner(
@@ -1925,7 +1991,7 @@ describe('CliSessionShellRunner', () => {
 
     expect(result.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
     expect(commandExecutor).toHaveBeenCalledWith(
-      ['verify', '--adapters', '--output', 'pretty'],
+      ['doctor', '--adapters', '--output', 'pretty'],
       expect.objectContaining({
         progressSink: expect.objectContaining({
           publish: expect.any(Function),
@@ -1937,9 +2003,59 @@ describe('CliSessionShellRunner', () => {
     ).toBe(false);
     expect(
       result.transcriptItems.some((item) =>
-        item.lines.includes('Summary: verify --adapters --output pretty completed'),
+        item.lines.includes('Summary: doctor --adapters --output pretty completed'),
       ),
     ).toBe(true);
+  });
+
+  it('shows verify removal guidance instead of generic unknown-command copy for /verify inputs', async () => {
+    const renderer = new RecordingSessionShellRenderer();
+    const commandExecutor = vi.fn<
+      (argv: string[]) => Promise<CliSessionShellCommandExecutionResult>
+    >(async (argv) => ({
+      artifactPaths: [],
+      commandLine: argv.join(' '),
+      message: `${argv.join(' ')} completed`,
+      status: 'success',
+      summaryLines: [`Summary: ${argv.join(' ')} completed`],
+    }));
+    const runner = new CliSessionShellRunner(
+      undefined,
+      renderer as never,
+      () => new StubSessionShellPromptAdapter(['/verify adapters', '/exit']),
+      undefined,
+      undefined,
+      () => false,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(
+      DEFAULT_RUN_OPTIONS({
+        commandExecutor,
+      }),
+    );
+
+    expect(result.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
+    expect(commandExecutor).not.toHaveBeenCalled();
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes(
+          'The public `/verify` slash command has been removed from the session shell.',
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes(
+          'Use `/doctor` for readiness diagnostics, or `/connect` if you need onboarding changes plus follow-up checks.',
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes('Unknown slash command /verify adapters.'),
+      ),
+    ).toBe(false);
   });
 
   it('closes cleanly on Ctrl+D and keeps the transcript note intact', async () => {
@@ -2034,7 +2150,7 @@ describe('CliSessionShellRunner', () => {
         (frame) =>
           frame.composerValue === '/' &&
           frame.slashSuggestions.map((suggestion) => suggestion.command).join(',') ===
-            '/workspace,/workspace switch-branch,/doctor,/verify,/connect,/review,/plan,/run,/help',
+            '/workspace,/workspace switch-branch,/doctor,/connect,/review,/plan,/run,/help',
       ),
     ).toBe(true);
     expect(
@@ -2127,6 +2243,82 @@ describe('CliSessionShellRunner', () => {
         (item) => item.markdownSource === '## Workspace status\n\n- clean',
       ),
     ).toBe(true);
+  });
+
+  it('keeps /plan ai-workflow transcript and history on the user-authored slash input without duplicate history rows', async () => {
+    const sessionClient = new RecordingTurnPayloadSessionShellServiceClient();
+    const inkRunner = new StubSessionShellInkRunner([
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/plan ship a tetris clone',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/history',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/exit',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+    ]);
+    const runner = new CliSessionShellRunner(
+      undefined,
+      new RecordingSessionShellRenderer() as never,
+      () => new StubSessionShellPromptAdapter([]),
+      () => new CliSessionShellInkController(),
+      () => inkRunner as never,
+      () => true,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(
+      DEFAULT_RUN_OPTIONS({
+        sessionClient,
+      }),
+    );
+
+    expect(result.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
+    expect(sessionClient.turnPayloads).toEqual([
+      {
+        userMessage: [
+          'Use the standard planning template to create an execution plan for the following goal.',
+          'Do not sync anything to the sprint ledger yet.',
+          '',
+          'Goal: ship a tetris clone',
+        ].join('\n'),
+        displayUserMessage: '/plan ship a tetris clone',
+      },
+    ]);
+    expect(
+      result.transcriptItems.some((item) => item.lines.includes('/plan ship a tetris clone')),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.some((line) => line.endsWith('/plan ship a tetris clone')),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.some((line) =>
+          line.includes(
+            'Use the standard planning template to create an execution plan for the following goal.',
+          ),
+        ),
+      ),
+    ).toBe(false);
+    const historyMatches = result.transcriptItems.flatMap((item) =>
+      item.lines.filter((line) => /^1\. \[[^\]]+\] \/plan ship a tetris clone$/u.test(line)),
+    );
+    expect(historyMatches).toHaveLength(1);
   });
 
   it('shows immediate running feedback for delayed session.main turns before assistant output arrives', async () => {
