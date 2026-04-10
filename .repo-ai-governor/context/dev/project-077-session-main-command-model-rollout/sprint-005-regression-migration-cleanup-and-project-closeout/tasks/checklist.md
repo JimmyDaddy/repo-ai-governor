@@ -1,0 +1,48 @@
+# checklist
+
+- [x] TK-738 remove remaining hidden `/verify` shims and docs residue
+  - 2026-04-10：任务创建，状态初始化为 `planned`。
+  - 2026-04-10：`TK-746 / DA-746` 已完成 sprint-004 closeout 与 sprint-005 activation handoff，`TK-738` 切换为 `in_progress`，并接管为 sprint-005 的当前 active implementation boundary。
+  - 2026-04-10：已删除 hidden public `verify` wrapper 与 runtime registration，移除 `CliCommandName.VERIFY` / `CliVerifyCommand` public command entry，并把 direct CLI `verify` invocation 收口为显式 migration error。
+  - 2026-04-10：已同步清理 `connect` follow-up、adapter/onboarding i18n、cancellation policy、相关 tests 与 public wording residue；完成 targeted vitest 回归、`pnpm run build` 与 residue scan，任务完成。
+- [x] TK-739 add end-to-end regressions for plan review run and verify removal paths
+  - 2026-04-10：任务创建，状态初始化为 `planned`。
+  - 2026-04-10：开始补齐 `/review`、`/run` slash surface 与 `@reviewer` raw-role bypass 回归覆盖，任务状态切换为 `in_progress`。
+  - 2026-04-10：已新增 slash registry regression 断言，明确 `/review` 仍是 AI fixed workflow、`/run` 仍是 governed bridge，并补齐 explicit `@reviewer` single-role delegate raw-role bypass 回归；定向 vitest 与 `pnpm run build` 均通过，任务完成。
+- [x] TK-740 finalize delivery rollout closeout and project completion audit
+  - 2026-04-10：任务创建，状态初始化为 `planned`。
+  - 2026-04-10：`TK-738`、`TK-739` 已完成，`CR-001` 已 clean resolved，开始汇总 sprint-005 final closeout truth、delivery registry write-back 与 project completion audit。
+  - 2026-04-10：已完成 `DA-740`、project completion audit summary、project/sprint plan completed truth、delivery registry completed write-back 与 current-context closeout note 更新。
+  - 2026-04-10：project-final `CR-002` fresh reviewer round 命中治理 finding；依据 `current-context` Update Rule 4，当前将 project/sprint/delivery closeout truth 暂时回退到 `active/in_progress`，待 clean recheck 后再恢复 `completed`。
+  - 2026-04-10：既有治理 finding 已按轮次修复；当前由 latest project-final clean recheck round 承担最后一轮 delegated reviewer gate，closeout claim 继续保持 `in_progress`，直到最新 delegated reviewer round clean resolved。
+  - 2026-04-10：`CR-006` clean recheck 发现并修复 round-type metadata drift 后已 `resolved`；`project-077 / sprint-005 / TK-740 / delivery` 已同步恢复最终 `completed` 真值，`current-context` 临时保留该 stream 作为 active closeout surface，任务完成。
+  - 2026-04-10：同一 change window 再次执行 `node ./scripts/governance/check-technical-solution-delivery-registry.js --format json` 已恢复为 `通过`；project-final closeout 的 latest governance evidence 完整闭环。
+  - 2026-04-10：fresh project-final clean round `CR-007` 返回 `CLEAN` verdict；`project-077` closeout 继续保持最终 `completed` 真值，并将 latest clean review evidence 回写到 task ledger / completion audit / delivery registry。
+- [x] CR-001 sprint-005-regression-migration-cleanup-and-project-closeout delegated review loop round 1
+  - 2026-04-10：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-10：已为当前 sprint-005 implementation boundary 分配 canonical review artifact 路径并同步到 task ledger。
+  - 2026-04-10：在 reviewer 子 agent 多次超时后，fresh reviewer 子 agent `Sagan` 已对当前 tracked git diff 返回 clean verdict：未发现 actionable finding；主 agent spot-check 后与该结论一致，CR 收口为 `resolved`。
+- [x] CR-002 project-077-session-main-command-model-rollout final delegated review loop round 2
+  - 2026-04-10：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-10：fresh reviewer 子 agent `Hubble` 返回 4 条 finding；其中 3 条被主 agent 认可并进入修复（过早 completed truth、project-owned canonical artifacts 未进入 tracked boundary、delivery evidence 未进入 tracked boundary），1 条因属于并行 draft 变更而判定为 out-of-scope。
+  - 2026-04-10：已完成 closeout truth rollback、project-owned CR / review / handoff artifacts tracked boundary 补齐，以及 delivery registry `in_progress` 对齐；`CR-002` 本轮 accepted findings 已修复并推进到 `resolved`。
+- [x] CR-003 project-077-session-main-command-model-rollout delegated recheck loop round 3
+  - 2026-04-10：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-10：fresh recheck reviewer 指出两类治理漂移：`project-077` project plan / delivery registry 仍残留 completed truth，以及 closeout audit chain 仍把 `CR-002` 误写为当前阻塞 round。
+  - 2026-04-10：已完成 project plan sprint-005/WBS、delivery registry、current-context、`TK-740`、`DA-740` 与 completion audit summary 的最新 round 对齐；`CR-003` accepted findings 已修复并推进到 `resolved`。
+- [x] CR-004 project-077-session-main-command-model-rollout delegated recheck loop round 4
+  - 2026-04-10：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-10：fresh staged-diff reviewer 返回 1 条 accepted finding：`technical-solution-delivery-registry.yaml` 仍将 `project-077` closeout 写成 `completed`，与 latest project-final clean recheck round 的 open state 不一致。
+  - 2026-04-10：已将 `technical-solution.session-main-prompt-first-command-model` delivery entry 回退为 `execution_status=in_progress`、`rollout_status=in_progress`；`CR-004` accepted finding 已修复并推进到 `resolved`。
+- [x] CR-005 project-077-session-main-command-model-rollout delegated recheck loop round 5
+  - 2026-04-10：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-10：fresh delegated reviewer 返回 1 条 accepted finding：staged `.repo-ai-governor/context/technical-solution-delivery-registry.yaml` 仍把 `project-077` closeout truth 写成 `completed/completed`，与 latest project-final clean recheck round 的 open state 不一致。
+  - 2026-04-10：已将 `project-077` delivery entry 保持为 `execution_status=in_progress`、`rollout_status=in_progress`，并把该文件从 index 拆分为“只 stage 当前边界 hunk”；`CR-005` accepted finding 已修复并推进到 `resolved`。
+- [x] CR-006 project-077-session-main-command-model-rollout final delegated review loop round 6
+  - 2026-04-10：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-10：project-final clean recheck spot-check 发现 `CR-006` task card 元数据仍把当前 round 标记为 `Round Type: initial`，与本轮 final closeout gate 的语义不一致。
+  - 2026-04-10：已将 `Round Type` 校正为 `project-final`，并完成 `resolved_code_review_working-tree-20260410-1836.md`；本轮 clean recheck 未发现其他 project-077-owned actionable finding，`CR-006` 收口为 `resolved`，后续 closeout write-back 采用“completed truth + active closeout surface retained”模式完成。
+  - 2026-04-10：同一 change window 再次执行 `node ./scripts/governance/check-technical-solution-delivery-registry.js --format json` 已恢复为 `通过`；`project-077` final closeout 当前不存在额外 delivery-registry blocker。
+- [x] CR-007 project-077-session-main-command-model-rollout final delegated review loop round 7
+  - 2026-04-10：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-10：fresh reviewer 子 agent `Wegener` 对 `project-077` 当前 closeout surface 返回 `CLEAN` verdict；主 agent spot-check 后未发现需要修复的 project-owned actionable finding，本轮直接以 clean round 收口为 `resolved`。

@@ -1,9 +1,12 @@
 import type {
   SESSION_MAIN_CAPABILITY_ANSWER_KIND,
   SESSION_MAIN_CAPABILITY_AVAILABILITY_STATUS,
+  SESSION_MAIN_CAPABILITY_BACKING_EXECUTION,
   SESSION_MAIN_CAPABILITY_CATALOG_OWNER_MODULE_ID,
   SESSION_MAIN_CAPABILITY_DESCRIPTOR_VERSION,
   SESSION_MAIN_CAPABILITY_ID,
+  SESSION_MAIN_CAPABILITY_INTERACTION_MODEL,
+  SESSION_MAIN_CAPABILITY_PRIMARY_ENTRY,
 } from '../../constants/index.js';
 
 export type SessionMainCapabilityCatalogOwnerModuleId =
@@ -14,6 +17,15 @@ export type SessionMainCapabilityDescriptorVersion =
 
 export type SessionMainCapabilityId =
   (typeof SESSION_MAIN_CAPABILITY_ID)[keyof typeof SESSION_MAIN_CAPABILITY_ID];
+
+export type SessionMainCapabilityInteractionModel =
+  (typeof SESSION_MAIN_CAPABILITY_INTERACTION_MODEL)[keyof typeof SESSION_MAIN_CAPABILITY_INTERACTION_MODEL];
+
+export type SessionMainCapabilityPrimaryEntry =
+  (typeof SESSION_MAIN_CAPABILITY_PRIMARY_ENTRY)[keyof typeof SESSION_MAIN_CAPABILITY_PRIMARY_ENTRY];
+
+export type SessionMainCapabilityBackingExecution =
+  (typeof SESSION_MAIN_CAPABILITY_BACKING_EXECUTION)[keyof typeof SESSION_MAIN_CAPABILITY_BACKING_EXECUTION];
 
 export type SessionMainCapabilityAnswerKind =
   (typeof SESSION_MAIN_CAPABILITY_ANSWER_KIND)[keyof typeof SESSION_MAIN_CAPABILITY_ANSWER_KIND];

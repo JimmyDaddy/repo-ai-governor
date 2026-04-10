@@ -216,7 +216,7 @@ async function main() {
       GATE_NAME,
       `validated local VSIX archive and packaged extension root. report=${options.outputPath}`,
     );
-    console.log(JSON.stringify(report, null, 2));
+    console.info(JSON.stringify(report, null, 2));
   } catch (error) {
     gateFail(GATE_NAME, error instanceof Error ? error.message : String(error));
     process.exitCode = 1;

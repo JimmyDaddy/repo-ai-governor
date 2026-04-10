@@ -237,11 +237,13 @@ export class SessionMainProviderContinuationRuntime {
         ? options.roleId
         : SESSION_MAIN_PROVIDER_CONTINUATION_LANE_LABEL;
     const providerId =
-      options.toolConfig?.remoteApi?.provider ??
-      (options.transportKind === AgentStageContinuationTransportKind.CLI_EXEC
-        ? options.selectedSurface
-        : options.selectedSurface);
-    const model = options.toolConfig?.remoteApi?.model ?? null;
+      options.transportKind === AgentStageContinuationTransportKind.REMOTE_API
+        ? (options.toolConfig?.remoteApi?.provider ?? options.selectedSurface)
+        : options.selectedSurface;
+    const model =
+      options.transportKind === AgentStageContinuationTransportKind.REMOTE_API
+        ? (options.toolConfig?.remoteApi?.model ?? null)
+        : null;
 
     return {
       laneKey: [
@@ -273,7 +275,13 @@ export class SessionMainProviderContinuationRuntime {
     ) {
       return null;
     }
-    if (toolConfig?.remoteApi || toolConfig?.transport === AdapterTransportKind.REMOTE_API) {
+    if (toolConfig?.transport === AdapterTransportKind.REMOTE_API) {
+      return AgentStageContinuationTransportKind.REMOTE_API;
+    }
+    if (toolConfig?.transport === AdapterTransportKind.CLI_EXEC) {
+      return AgentStageContinuationTransportKind.CLI_EXEC;
+    }
+    if (toolConfig?.remoteApi) {
       return AgentStageContinuationTransportKind.REMOTE_API;
     }
     return AgentStageContinuationTransportKind.CLI_EXEC;

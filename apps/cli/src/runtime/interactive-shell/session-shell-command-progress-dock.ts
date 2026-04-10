@@ -173,7 +173,7 @@ export class CliSessionShellCommandProgressDock {
       return null;
     }
 
-    return CLI_COMMAND_NAMES.includes(rawCommandName as CliCommandName)
+    return (CLI_COMMAND_NAMES as readonly string[]).includes(rawCommandName)
       ? (rawCommandName as CliCommandName)
       : null;
   }

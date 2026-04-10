@@ -40,6 +40,7 @@
 ## 6. Exported Contracts
 
 1. `contract.runtime.graph-execution.v1`
+2. `contract.runtime.session-main.capability-interaction-model.v1`
 
 ## 7. Loading Guidance
 
@@ -53,16 +54,19 @@
 3. vendor checkpoint / thread state 只作为 runtime owner 的恢复机制，不得升格为替代 `DSL / IR / policy / audit / ledger` 的 canonical source。
 4. `runtime.memory-provider-loading` 与 `runtime.memory-semantics` 仍通过 contract 引入，不允许 runtime 模块直接耦合 provider 实现包或 recall policy internals。
 5. 截至 `2026-03-31`，`v2` formal direction 已接受“service-owned session.main supervisor + role subagents / handoffs”作为前台自然语言入口的目标架构；该方向要求 runtime 在 answer / follow-up / command handoff / role collaboration 之间做正式 turn routing，但当前代码仍只完成 path-A productization，supervisor productization follow-up 由 `project-035-session-main-supervisor-and-role-subagent-productization` 承接。
-6. 截至 `2026-04-01`，在既有 `session.main supervisor` formal direction 基础上，runtime 现进一步接受“conversation-first chatability + risk-tiered skill handoff”补充方向；shared session truth 必须同时承载 `preview_confirm` 与 `direct_execute` continuity，并由 service-owned risk/policy gate 决定 `help`、`doctor`、`verify` 与 scope-resolved `review` 等低风险 skill 是否允许直接执行。
+6. 截至 `2026-04-01`，在既有 `session.main supervisor` formal direction 基础上，runtime 现进一步接受“conversation-first chatability + risk-tiered skill handoff”补充方向；shared session truth 必须同时承载 `preview_confirm` 与 `direct_execute` continuity，并由 service-owned risk/policy gate 决定 `help`、`doctor`、post-connect readiness follow-up 与 scope-resolved `review` 等低风险 skill 是否允许直接执行。
 7. 截至 `2026-04-02`，在既有 `session.main supervisor` formal direction 基础上，runtime 现进一步接受“service-owned capability explainer + contextual command guidance”补充方向；`runtime.orchestration` 必须拥有 locale-neutral governed capability catalog、availability overlay、capability explanation route 与 explanation-to-governed-execution bridge boundary，并将 capability answer metadata 投影到 shared session truth 供 CLI/desktop 统一消费。
 8. 截至 `2026-04-04`，在既有 shared-session continuity 基础上，runtime 现进一步接受“lane-scoped provider-native continuation under shared-session truth”补充方向；`runtime.orchestration` 必须拥有 provider continuation slot lifecycle、turn-level continuation summaries 与 invalidation policy，但 raw provider handle 语义仍由 adapter/projection seam 持有。
 9. 截至 `2026-04-06`，本模块进一步接受“standards-native review engine + provenance-aware governed CR”补充方向：`runtime.orchestration` 必须拥有 review-rule projection 的执行顺序、`deterministic -> delegated` 混合评审流水线、finding dedupe、same-round verify 与 fresh recheck 分叉语义，但 canonical `CR-xxx` / review artifact 真值仍由既有治理链路承载。
+10. 截至 `2026-04-10`，本模块进一步接受“session.main prompt-first command model and deterministic workflow split”补充方向：`runtime.orchestration` 现正式拥有 capability interaction model truth，用于区分 `raw role entry / AI fixed workflow / deterministic utility / pending existence review / explain only`，并要求 public `/verify` 从 command model 中移除，同时把 `run` 收窄为 reusable governed execution flow。
 
 ## 9. Detail Docs
 
 1. Contract:
    - `contracts/runtime-graph-execution-contract.md`
+   - `contracts/session-main-capability-interaction-model-contract.md`
 2. ADR:
    - `adrs/graph-first-runtime-and-service-backed-execution-cutover.md`
    - `adrs/session-main-supervisor-and-role-subagent-collaboration.md`
+   - `adrs/session-main-prompt-first-command-model-and-deterministic-workflow-split.md`
    - `adrs/standards-native-review-engine-and-provenance-aware-cr.md`

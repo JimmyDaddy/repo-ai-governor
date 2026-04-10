@@ -1,0 +1,31 @@
+# checklist
+
+- [x] TK-735 retain `run` as reusable governed execution flow only
+  - 2026-04-10：任务创建，状态初始化为 `planned`。
+  - 2026-04-10：`TK-745 / DA-745` 已完成 sprint-003 closeout 与 sprint-004 activation handoff，`TK-735` 状态切换为 `in_progress`，并接管为当前 active implementation boundary。
+  - 2026-04-10：收窄 `run` 的 public wording，把 capability summary/detail、CLI command description、README 与 triad docs 对齐到 reusable governed workflow / task-driven execution flow。
+  - 2026-04-10：保留 `run` 的 public surface 与 `pending_existence_review` metadata，同时补齐 capability-catalog regression，固定 `confirmationRequired / interactionModel / backingExecution` 的 contract truth。
+  - 2026-04-10：完成 `pnpm run build` 与 sprint-004 targeted session-main regressions，确认 run semantics 收窄后没有破坏 shell/discoverability 基线。
+- [x] TK-736 cut generic implementation asks away from default `/run` handoff
+  - 2026-04-10：任务创建，状态初始化为 `planned`。
+  - 2026-04-10：将 generic implementation asks 从 `/run` 默认抢占中移除，不再让 `implement/实现/帮我做` 一类开放式请求直接桥接到 governed run flow。
+  - 2026-04-10：为 `run` 增加更明确的 reusable workflow / task-driven execution intent 识别，同时保留显式 “run the next governed workflow” 这类请求继续落到 `/run`。
+  - 2026-04-10：补齐 skill-registry 与 dispatcher regressions，确认 generic implementation asks 会回落到 direct answer / planner-style follow-up，而不是被 `/run` 抢占。
+- [x] TK-737 align run presenter CLI wording and architecture wording
+  - 2026-04-10：任务创建，状态初始化为 `planned`。
+  - 2026-04-10：同步 `apps/cli/README.md`、`product-requirements(.md/.brief.md)`、overall/architecture triad 与 run-related i18n wording，避免 presenter copy 与 north-star 文档继续漂移。
+  - 2026-04-10：完成 `node ./scripts/governance/check-docs-triad-sync.js`，修复 triad date metadata mismatch，并确认 module-impact sync 保持通过。
+  - 2026-04-10：完成 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1`，确认 run wording / routing / shell discoverability 变更没有引入回归。
+- [x] CR-001 sprint-004-run-scope-resolution-and-routing-cutover delegated review loop round 1
+  - 2026-04-10：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-10：fresh reviewer round 返回 1 条 accepted finding：verify migrated fallback 仍会用裸 `validate/验证/校验` 抢占 generic asks 进入 `/doctor`。
+  - 2026-04-10：主 agent 收窄 `skill-registry` 的 verify migration 匹配条件，要求同时具备 verify action 与 readiness context，并补充 generic validation / explicit readiness validation regressions。
+  - 2026-04-10：完成 `pnpm exec vitest run packages/core-orchestration-service/test/local-orchestration-service-session-main-skill-registry.unit.test.ts`、sprint-004 targeted regressions 与 `pnpm run build`，本轮 `CR-001` 推进到 `resolved`。
+- [x] CR-002 sprint-004-run-scope-resolution-and-routing-cutover delegated recheck loop round 2
+  - 2026-04-10：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-10：fresh post-fix reviewer recheck 返回 clean pass，未发现新的 actionable finding。
+  - 2026-04-10：本轮 `CR-002` 收口为 `resolved`，sprint-004 run-scope boundary 获得 clean recheck 结论。
+- [x] TK-746 sprint-004 closeout and sprint-005 activation handoff
+  - 2026-04-10：`sprint-004` 的 `TK-735 ~ TK-737`、`CR-001`、`CR-002` 已全部进入终态，开始执行 sprint closeout 与下一 sprint activation handoff。
+  - 2026-04-10：已将 `sprint-004` 写回 `completed`，激活 `sprint-005` 为新的 primary execution surface，并把 `stream-project-077-sprint-004` 迁入 completed stream history。
+  - 2026-04-10：已将 `TK-738` 切换为 `in_progress`，作为 sprint-005 的当前 active implementation boundary；治理检查通过，任务完成。

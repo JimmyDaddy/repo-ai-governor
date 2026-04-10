@@ -109,7 +109,7 @@ describe('CliOutputPresenter pretty success readability', () => {
               category: ExecutionInteractionCategory.ENVIRONMENT_PRECONDITION,
               stage: ExecutionProgressStage.CONNECT,
               title: 'Adapter route attention',
-              action: 'Install missing local commands before connect/verify: codex.',
+              action: 'Install missing local commands before connect/doctor: codex.',
               blocking: false,
             },
           ],
@@ -127,7 +127,7 @@ describe('CliOutputPresenter pretty success readability', () => {
     expect(renderedOutput).toContain('Context');
     expect(renderedOutput).toContain('Adapter tool codex');
     expect(renderedOutput).toContain(
-      '1. Adapter route attention: Install missing local commands before connect/verify: codex.',
+      '1. Adapter route attention: Install missing local commands before connect/doctor: codex.',
     );
     expect(renderedOutput).not.toContain('operation_summary:');
     expect(renderedOutput).not.toContain('log_summary:');
@@ -219,7 +219,7 @@ describe('CliOutputPresenter pretty success readability', () => {
               category: ExecutionInteractionCategory.ENVIRONMENT_PRECONDITION,
               stage: ExecutionProgressStage.CONNECT,
               title: 'Adapter route attention',
-              action: 'Install missing local commands before connect/verify: codex.',
+              action: 'Install missing local commands before connect/doctor: codex.',
               blocking: false,
             },
           ],

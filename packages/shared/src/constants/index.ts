@@ -1,12 +1,14 @@
 export { ErrorOutputEnvironment, ErrorScenario } from './error.constant.js';
 export {
   AdapterAvailability,
+  AdapterCapabilitySnapshotSource,
   AdapterCredentialSource,
   AdapterEndpointSource,
   AdapterProviderKind,
   AdapterRequestCancellationMode,
   AdapterSurface,
   AdapterTransportKind,
+  AdapterTransportSelectionSource,
   AdapterVendorBindingKind,
 } from './adapter-runtime.constant.js';
 export {

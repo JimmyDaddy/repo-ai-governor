@@ -18,6 +18,7 @@ import {
   type MemoryStoreProvider,
 } from '@repo-ai-governor/memory-store-adapter';
 import {
+  ORCHESTRATION_SESSION_DISPLAY_USER_MESSAGE_METADATA_KEY,
   type OrchestrationAppendSessionMessageRequest,
   type OrchestrationAppendSessionMessageResponse,
   type OrchestrationArchiveSessionRequest,
@@ -188,6 +189,11 @@ export class LocalOrchestrationServiceSessionRuntime {
     const turnId = request.turnId ?? `turn-${randomUUID().replace(/-/gu, '')}`;
     const turnIndex = this.resolveNextTurnIndex(existingSession);
     const turnStartedAtMs = this.currentTimeMs();
+    const displayUserMessage =
+      this.readOptionalMetadataString(
+        request.metadata,
+        ORCHESTRATION_SESSION_DISPLAY_USER_MESSAGE_METADATA_KEY,
+      ) ?? request.userMessage;
     const sessionProjectionContextPatch: Record<string, unknown> = {
       [SESSION_CONTEXT_CURRENT_ROUTE_KEY]: currentRouteId,
       [SESSION_CONTEXT_LATEST_TURN_ID_KEY]: turnId,
@@ -255,7 +261,7 @@ export class LocalOrchestrationServiceSessionRuntime {
         routeId: currentRouteId,
         turnId,
         turnIndex,
-        content: request.userMessage,
+        content: displayUserMessage,
         ...(request.metadata ? { metadata: { ...request.metadata } } : {}),
       },
     });
@@ -346,7 +352,7 @@ export class LocalOrchestrationServiceSessionRuntime {
           turnId,
           turnIndex,
           responseMode: dispatchResult.responseMode,
-          latestUserMessage: request.userMessage,
+          latestUserMessage: displayUserMessage,
           ...(dispatchResult.assistantMessage
             ? { assistantMessage: dispatchResult.assistantMessage }
             : {}),
@@ -449,14 +455,14 @@ export class LocalOrchestrationServiceSessionRuntime {
       });
       sessionProjectionContextPatch[SESSION_CONTEXT_PREVIEW_SUMMARY_KEY] =
         this.buildSessionPreviewSummary({
-          latestUserMessage: request.userMessage,
+          latestUserMessage: displayUserMessage,
           assistantMessage: dispatchResult.assistantMessage,
           followUpQuestion: dispatchResult.followUpQuestion,
           suggestedSlashCommand: dispatchResult.suggestedSlashCommand,
         });
       sessionProjectionContextPatch[SESSION_CONTEXT_LATEST_NOTE_SUMMARY_KEY] =
         this.buildTurnNoteSummary({
-          latestUserMessage: request.userMessage,
+          latestUserMessage: displayUserMessage,
           assistantMessage: dispatchResult.assistantMessage,
           followUpQuestion: dispatchResult.followUpQuestion,
           suggestedSlashCommand: dispatchResult.suggestedSlashCommand,
@@ -494,11 +500,10 @@ export class LocalOrchestrationServiceSessionRuntime {
             : {}),
         },
       });
-      sessionProjectionContextPatch[SESSION_CONTEXT_PREVIEW_SUMMARY_KEY] = this.toSingleLineSummary(
-        request.userMessage,
-      );
+      sessionProjectionContextPatch[SESSION_CONTEXT_PREVIEW_SUMMARY_KEY] =
+        this.toSingleLineSummary(displayUserMessage);
       sessionProjectionContextPatch[SESSION_CONTEXT_LATEST_NOTE_SUMMARY_KEY] = [
-        `goal=${this.toSingleLineSummary(request.userMessage)}`,
+        `goal=${this.toSingleLineSummary(displayUserMessage)}`,
         `last_status=failed:${this.toSingleLineSummary(formattedFailure.message)}`,
       ].join(' | ');
     }

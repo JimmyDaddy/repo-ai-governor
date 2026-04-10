@@ -40,6 +40,7 @@ import type {
 import type { CliPlanCommandOptions } from './cli-plan-command.interface.js';
 import type {
   CliConnectRoleBindingOverride,
+  CliConnectToolTransportOverride,
   CliRuntimeDebugOptions,
 } from './cli-runtime-debug.interface.js';
 import type { CliUpgradeCommandOptions } from './cli-upgrade-command.interface.js';
@@ -136,6 +137,7 @@ export interface CliNormalizedRuntimeDebugOptions {
   connectWriteMode: CliConnectWriteMode | null;
   presetId: CliAgentOnboardingPreset;
   requestedTools: AdapterSurface[];
+  toolTransportOverrides?: CliConnectToolTransportOverride[];
   overwrite: boolean;
   singleToolAllRoles: boolean;
   roleBindingOverrides: CliConnectRoleBindingOverride[];

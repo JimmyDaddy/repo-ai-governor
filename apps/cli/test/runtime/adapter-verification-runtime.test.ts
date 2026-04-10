@@ -22,7 +22,10 @@ import {
   RuntimeError,
   standardizeError,
 } from '@repo-ai-governor/shared';
-import { CliGovernanceCheckStatus } from '../../src/constants/cli-governance-runtime.constant.js';
+import {
+  CliAdapterRoleSelectionSource,
+  CliGovernanceCheckStatus,
+} from '../../src/constants/cli-governance-runtime.constant.js';
 import { CliAdapterRoutingRuntime } from '../../src/runtime/adapter-routing-runtime.js';
 import { CliAdapterVerificationRuntime } from '../../src/runtime/adapter-verification-runtime.js';
 import { CliLocalModelProbeRuntime } from '../../src/runtime/local-model-probe-runtime.js';
@@ -407,10 +410,10 @@ describe('Cli adapter verification runtime', () => {
     const verification = await runtime.resolveAdapterVerification();
 
     expect(verification.nextActions).toContain(
-      'Set or export the required remote-api credential environment variables before connect/verify: codex:OPENAI_API_KEY.',
+      'Set or export the required remote-api credential environment variables before connect/doctor: codex:OPENAI_API_KEY.',
     );
     expect(verification.nextActions).not.toContain(
-      'Authenticate or refresh login for remote adapters before connect/verify: codex:OPENAI_API_KEY.',
+      'Authenticate or refresh login for remote adapters before connect/doctor: codex:OPENAI_API_KEY.',
     );
   });
 
@@ -594,6 +597,167 @@ describe('Cli adapter verification runtime', () => {
     );
     expect(verification.nextActions).toContain(
       'Remote-api credential references cannot be materialized automatically; resolve them manually for: codex:secret://openai/api-key.',
+    );
+  });
+
+  it('keeps explicit remote_api failures fail-closed instead of silently reusing same-surface cli_exec truth', async () => {
+    const i18nRuntime = new I18nRuntime();
+    await i18nRuntime.initialize(DEFAULT_I18N_RUNTIME_CONFIG, 'en-US');
+    const adaptersConfig: AdaptersConfig = {
+      roles: [
+        {
+          roleId: 'coder',
+          roleProfileId: DefaultRoleProfileId.CODER,
+          requiredCapabilities: [AgentCapability.TOOL_CALLING],
+          required: true,
+        },
+      ],
+      routing: {
+        roleBindings: {
+          coder: {
+            primarySurface: AdapterSurface.CODEX,
+            fallbackSurfaces: [AdapterSurface.CLAUDE_CODE],
+          },
+        },
+      },
+      tools: [
+        {
+          toolId: AdapterSurface.CODEX,
+          enabled: true,
+          availability: AdapterAvailability.AVAILABLE,
+          transport: AdapterTransportKind.REMOTE_API,
+          remoteApi: {
+            provider: AdapterProviderKind.OPENAI,
+            vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+            model: 'gpt-5',
+          },
+        },
+        {
+          toolId: AdapterSurface.CLAUDE_CODE,
+          enabled: true,
+          availability: AdapterAvailability.AVAILABLE,
+        },
+      ],
+    };
+    const toolConfigBySurface = new Map(
+      (adaptersConfig.tools ?? []).map((tool) => [tool.toolId, tool]),
+    );
+    const localProbeRuntime = new CliLocalModelProbeRuntime(
+      undefined,
+      async () => undefined,
+      (error) => standardizeError(error).message,
+    );
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      adaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createToolConfigBySurfaceMap: () => typeof toolConfigBySurface;
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+      resolveRoleBindingCandidateSurfaces: (
+        roleBinding: AdaptersConfig['routing']['roleBindings'][string],
+      ) => AdapterSurface[];
+      resolveTrackedAdapterSurfaces: (
+        trackedToolConfigBySurface?: typeof toolConfigBySurface,
+      ) => AdapterSurface[];
+    };
+    adapterRoutingRuntime.createToolConfigBySurfaceMap = () => toolConfigBySurface;
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: {
+        probe: async () => ({
+          ...createProbeResult(
+            AdapterSurface.CODEX,
+            AgentCapability.TOOL_CALLING,
+            AgentCapabilitySupportLevel.SUPPORTED,
+          ),
+          availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+          unavailableReasons: ['credential_missing:codex:OPENAI_API_KEY'],
+          healthCheck: buildLayeredHealthCheckResult({
+            adapterId: 'codex-agent',
+            surfaceId: AdapterSurface.CODEX,
+            availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+            selectedEntrypoint: AdapterSurface.CODEX,
+            routeKey: 'cli.adapter.probe.codex',
+            unavailableReasons: ['credential_missing:codex:OPENAI_API_KEY'],
+            transportKind: AdapterTransportKind.REMOTE_API,
+            providerKind: AdapterProviderKind.OPENAI,
+            vendorBindingKind: AdapterVendorBindingKind.OPENAI_RESPONSES,
+            model: 'gpt-5',
+            credentialSource: AdapterCredentialSource.ENV_DEFAULT,
+            endpointSource: AdapterEndpointSource.VENDOR_DEFAULT,
+          }),
+        }),
+        invokeStage: async () => {
+          throw new RuntimeError(GovernorErrorCode.UNKNOWN, 'unused in verification test');
+        },
+        streamEvents: async function* () {},
+        requestConfirmation: async () => {
+          throw new RuntimeError(GovernorErrorCode.UNKNOWN, 'unused in verification test');
+        },
+        cancel: async () => {
+          throw new RuntimeError(GovernorErrorCode.UNKNOWN, 'unused in verification test');
+        },
+      },
+      [AdapterSurface.CLAUDE_CODE]: {
+        probe: async () => ({
+          ...createProbeResult(
+            AdapterSurface.CLAUDE_CODE,
+            AgentCapability.TOOL_CALLING,
+            AgentCapabilitySupportLevel.SUPPORTED,
+          ),
+          availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+          unavailableReasons: [],
+          healthCheck: buildLayeredHealthCheckResult({
+            adapterId: 'claude-code-agent',
+            surfaceId: AdapterSurface.CLAUDE_CODE,
+            availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+            selectedEntrypoint: AdapterSurface.CLAUDE_CODE,
+            routeKey: 'cli.adapter.probe.claude-code',
+            unavailableReasons: [],
+            transportKind: AdapterTransportKind.CLI_EXEC,
+          }),
+        }),
+        invokeStage: async () => {
+          throw new RuntimeError(GovernorErrorCode.UNKNOWN, 'unused in verification test');
+        },
+        streamEvents: async function* () {},
+        requestConfirmation: async () => {
+          throw new RuntimeError(GovernorErrorCode.UNKNOWN, 'unused in verification test');
+        },
+        cancel: async () => {
+          throw new RuntimeError(GovernorErrorCode.UNKNOWN, 'unused in verification test');
+        },
+      },
+    });
+    adapterRoutingRuntime.resolveRoleBindingCandidateSurfaces = (roleBinding) => [
+      roleBinding.primarySurface,
+      ...(roleBinding.fallbackSurfaces ?? []),
+    ];
+    adapterRoutingRuntime.resolveTrackedAdapterSurfaces = (trackedToolConfigBySurface) =>
+      Array.from((trackedToolConfigBySurface ?? new Map()).keys());
+    const runtime = new CliAdapterVerificationRuntime(
+      adaptersConfig,
+      (key, interpolation) => i18nRuntime.t(key, interpolation),
+      (error) => standardizeError(error).message,
+      adapterRoutingRuntime,
+      localProbeRuntime,
+    );
+
+    const verification = await runtime.resolveAdapterVerification();
+    const coderRole = verification.roleEvaluations[0];
+    const codexTool = verification.tools.find((tool) => tool.toolId === AdapterSurface.CODEX);
+
+    expect(coderRole).toMatchObject({
+      selectedSurface: AdapterSurface.CLAUDE_CODE,
+      selectedBy: CliAdapterRoleSelectionSource.FALLBACK,
+      status: CliGovernanceCheckStatus.WARN,
+    });
+    expect(coderRole.unavailableReasons).toContain(
+      'surface_unavailable:codex:credential_missing:codex:OPENAI_API_KEY',
+    );
+    expect(coderRole.healthCheck?.transportKind).toBe(AdapterTransportKind.CLI_EXEC);
+    expect(codexTool?.healthCheck?.transportKind).toBe(AdapterTransportKind.REMOTE_API);
+    expect(codexTool?.availabilityStatus).toBe(AgentAvailabilityStatus.UNAVAILABLE);
+    expect(verification.nextActions).toContain(
+      'Set or export the required remote-api credential environment variables before connect/doctor: codex:OPENAI_API_KEY.',
     );
   });
 });

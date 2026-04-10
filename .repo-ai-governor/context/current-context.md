@@ -2,21 +2,21 @@
 
 ## Primary Stream
 
-- Status: idle
-- Project: `none`
-- Sprint: `none`
-- Docs root: `none`
-- Task records: `none`
-- Review records: `none`
-- Note: `2026-04-09` `project-061-adoption-pack-installer-and-self-host-bootstrap-rollout / sprint-006-clean-room-rehearsals-and-docs-truthfulness` 与 `2026-04-08` `project-073 / sprint-001` 均已完成最终 closeout 并迁入 completed stream history；当前 worktree 不再保留 active primary stream。
+- Status: active
+- Project: `project-077-session-main-command-model-rollout`
+- Sprint: `sprint-005-regression-migration-cleanup-and-project-closeout`
+- Docs root: `.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout`
+- Task records: `.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-005-regression-migration-cleanup-and-project-closeout/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-005-regression-migration-cleanup-and-project-closeout/review/`
+- Note: `2026-04-10` latest project-final clean round `CR-007` 已确认 `project-077` closeout surface 无新增 actionable finding；`TK-740 / DA-740` 的 final closeout write-back 保持 `completed` 真值，但在下一条 primary stream 显式激活前，当前 worktree 继续临时保留该 stream 作为 active closeout surface。
 
 ## Active Streams
 
-- None currently registered.
+- `primary`: project=`project-077-session-main-command-model-rollout`, sprint=`sprint-005-regression-migration-cleanup-and-project-closeout`, docs=`.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout`, plan=`.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-005-regression-migration-cleanup-and-project-closeout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-005-regression-migration-cleanup-and-project-closeout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-005-regression-migration-cleanup-and-project-closeout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-005-regression-migration-cleanup-and-project-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-005-regression-migration-cleanup-and-project-closeout/review/`, status=`active`, note=`project-077 / sprint-005` truth 已 completed；latest project-final clean round `CR-007` 已 clean resolved，当前条目仅作为默认 active closeout surface 保留，待下一条 primary stream 激活后再迁入 completed stream history`
 
 ## Planned Follow-Up Streams
 
-- None currently registered.
+- 当前无已登记的 planned follow-up stream。
 
 ## Completed Stream History
 

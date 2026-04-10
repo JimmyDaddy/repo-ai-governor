@@ -1,7 +1,7 @@
 # Repo AI Governor 工具级总技术方案
 
 - Status: active
-- Date: 2026-04-08
+- Date: 2026-04-10
 - Scope: whole product (tool-level)
 - Basis:
   - `.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md`
@@ -57,7 +57,7 @@
 1. `Stage 9` 是对 Stage 0-8 的投产与自治收口 overlay，不新增独立架构层，也不改变产品仍以“目标仓库本地治理工具”为主的边界。
 2. 当前技术收口重点固定为 6 类：
    - `真实 provider 调用与适配器运维契约`：至少覆盖 1 条远端 provider 路径和 1 条本地模型路径，并补齐凭据、health、timeout/retry、限流、脱敏与 degrade path 契约。
-   - `任务驱动动态编排`：`run` 需按任务目标、依赖产物、角色能力与策略结果装配可执行 DAG，而不是停留在固定模板。
+   - `任务驱动动态编排`：`run` 需按任务目标、依赖产物、角色能力与策略结果装配可执行 DAG，而不是停留在固定模板；其 public 语义固定为 reusable governed workflow / task-driven execution flow，不再默认承接泛化“帮我实现”意图。
    - `review 子链内联`：`review -> review-verify -> ledger backfill` 应可作为自动主链中的受控子链推进，而不是仅依赖外部排队消费。
    - `HITL 决策回灌`：`confirm/escalate` 返回的人工决策必须作为可审计事件重新注入运行时，支持 `resume/terminate/degrade`。
    - `受控交付演练`：`commit` / `PR draft` 只能在策略允许下作为 Delivery & Operations Layer 的受控扩展运行，并纳入 audit/replay。
@@ -83,7 +83,7 @@
 5. `Notification & Escalation Layer`
    - HITL 通知分发、升级策略与渠道回退。
 6. `Agent Runtime & Adapter Layer`
-   - 多角色 Agent 运行时（默认角色 + 用户自定义角色）与 Skill 能力装配，结合跨工具适配、能力矩阵、multi-tool onboarding、role-agent projection 与 host-native asset lifecycle；其中 `runtime.agent-projection` 负责把 `connect / doctor / verify` 的 onboarding 结果与 agent descriptor 投影收敛为正式 runtime seam，而 target-specific host assets 负责承接 adopter-facing `export / apply / verify / upgrade` 契约。
+   - 多角色 Agent 运行时（默认角色 + 用户自定义角色）与 Skill 能力装配，结合跨工具适配、能力矩阵、multi-tool onboarding、role-agent projection 与 host-native asset lifecycle；其中 `runtime.agent-projection` 负责把 `connect / doctor + readiness verification` 的 onboarding 结果与 agent descriptor 投影收敛为正式 runtime seam，而 target-specific host assets 负责承接 adopter-facing `export / apply / verify / upgrade` 契约。
 7. `Standards & Slot Layer`
    - 官方规范包、团队扩展包、声明式/脚本插槽机制。
 8. `Audit & Reporting Layer`
@@ -105,7 +105,7 @@
 4. `Policy Gate Engine`
    - 决策 `allow/confirm/block/escalate`。
 5. `Agent Coordinator`
-   - 路由角色 Agent 与 surface，处理降级和接管；在 `connect / doctor / verify` 等入口上与 `runtime.agent-projection` 协同消费 onboarding / projection contract。
+   - 路由角色 Agent 与 surface，处理降级和接管；在 `connect / doctor / readiness gate` 等入口上与 `runtime.agent-projection` 协同消费 onboarding / projection contract。
 6. `Role Registry`
    - 管理默认角色与用户自定义角色定义、约束与版本。
 7. `Agent Projection Service`

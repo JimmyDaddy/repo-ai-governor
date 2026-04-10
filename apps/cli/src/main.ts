@@ -25,6 +25,7 @@ import {
 import {
   AdapterAvailability,
   AdapterSurface,
+  AdapterTransportKind,
   DEFAULT_I18N_RUNTIME_CONFIG,
   DEFAULT_MEMORY_RUNTIME_CONFIG,
   DefaultRoleProfileId,
@@ -144,6 +145,7 @@ import type {
   CliCommandDiagnostics,
   CliCommandExecutionResultPayload,
   CliConnectRoleBindingOverride,
+  CliConnectToolTransportOverride,
   CliErrorOutputPayload,
   CliGovernanceCommandExecutionOptions,
   CliHostCommandOptions,
@@ -346,6 +348,8 @@ interface CliEntrypointDependencies {
 }
 
 const ADAPTER_SURFACE_VALUES = new Set<string>(Object.values(AdapterSurface));
+const ADAPTER_TRANSPORT_KIND_VALUES = new Set<string>(Object.values(AdapterTransportKind));
+const REMOVED_PUBLIC_VERIFY_COMMAND_NAME = 'verify';
 
 /**
  * Runs the Stage-6 CLI output-contract baseline with TTY-aware fallback semantics.
@@ -415,6 +419,7 @@ export async function runCli(
     const runtimeDebugOptions = resolveRuntimeDebugOptions(
       rawArgs,
       io.cwd(),
+      requestedLocale ?? null,
       outputContext,
       io,
       runtimeContext.uiTheme,
@@ -591,6 +596,7 @@ export async function runCli(
     program.option('--fix', runtimeI18n.t('cli.options.fix'));
     program.option('--preset <presetId>', runtimeI18n.t('cli.options.preset'));
     program.option('--tools <tools>', runtimeI18n.t('cli.options.tools'));
+    program.option('--tool-transport <binding>', runtimeI18n.t('cli.options.toolTransport'));
     program.option('--overwrite', runtimeI18n.t('cli.options.overwrite'));
     program.option('--latest', runtimeI18n.t('cli.options.latest'));
     program.option('--force', runtimeI18n.t('cli.options.force'));
@@ -1102,6 +1108,10 @@ export async function runCli(
       return 0;
     }
 
+    if (commandName === REMOVED_PUBLIC_VERIFY_COMMAND_NAME) {
+      throw createRemovedVerifyCommandError(runtimeI18n);
+    }
+
     await program.parseAsync(argv, { from: 'node' });
     return 0;
   } catch (error) {
@@ -1395,8 +1405,6 @@ function resolveGovernedCapabilityIdForCommand(
       return SESSION_MAIN_CAPABILITY_ID.REVIEW;
     case CliCommandName.REVIEW_VERIFY:
       return SESSION_MAIN_CAPABILITY_ID.REVIEW_VERIFY;
-    case CliCommandName.VERIFY:
-      return SESSION_MAIN_CAPABILITY_ID.VERIFY;
     case CliCommandName.PLAN:
       return SESSION_MAIN_CAPABILITY_ID.PLAN;
     case CliCommandName.WORKFLOW:
@@ -1868,6 +1876,7 @@ function resolveVerbosityOption(args: string[]): CliVerbosity {
 function resolveRuntimeDebugOptions(
   args: string[],
   currentWorkingDirectory: string,
+  requestedLocale: string | null,
   outputContext: CliResolvedOutputContext,
   io: CliIoAdapters,
   defaultUiTheme: CliReactThemePreset,
@@ -1925,6 +1934,7 @@ function resolveRuntimeDebugOptions(
     );
   }
   const requestedTools = resolveAdapterSurfaceListOption(toolsOption.value ?? null, '--tools');
+  const toolTransportOverrides = resolveToolTransportOverrides(args, requestedLocale);
 
   const singleToolAllRolesOption = readOptionInput(args, '--single-tool-all-roles');
   if (singleToolAllRolesOption.isPresent && !singleToolAllRolesOption.value) {
@@ -2144,6 +2154,7 @@ function resolveRuntimeDebugOptions(
       (presetId as CliAgentOnboardingPreset | null) ?? CliAgentOnboardingPreset.MULTI_TOOL_DEFAULT,
     requestedTools:
       singleToolAllRolesSurface !== null ? [singleToolAllRolesSurface] : requestedTools,
+    toolTransportOverrides,
     overwrite: hasFlag(args, '--overwrite'),
     singleToolAllRoles: singleToolAllRolesSurface !== null,
     roleBindingOverrides,
@@ -2206,6 +2217,140 @@ function resolveSingleAdapterSurfaceOption(
 
   const [surface] = resolveAdapterSurfaceListOption(rawValue, flag);
   return surface ?? null;
+}
+
+function resolveSingleAdapterTransportOption(
+  rawValue: string | null,
+  flag: string,
+  requestedLocale: string | null,
+): AdapterTransportKind | null {
+  if (!rawValue) {
+    return null;
+  }
+
+  const normalizedValue = rawValue.trim().toLowerCase();
+  if (!normalizedValue) {
+    throw new RuntimeError(
+      GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+      localizeCliText(
+        requestedLocale,
+        `Option ${flag} requires one non-empty transport value.`,
+        `选项 ${flag} 需要一个非空的 transport 值。`,
+      ),
+      { option: flag },
+    );
+  }
+
+  if (!ADAPTER_TRANSPORT_KIND_VALUES.has(normalizedValue)) {
+    throw new RuntimeError(
+      GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+      localizeCliText(
+        requestedLocale,
+        `Option ${flag} contains unsupported transport '${normalizedValue}'.`,
+        `选项 ${flag} 包含不支持的 transport '${normalizedValue}'。`,
+      ),
+      {
+        option: flag,
+        value: normalizedValue,
+      },
+    );
+  }
+
+  return normalizedValue as AdapterTransportKind;
+}
+
+function resolveToolTransportOverrides(
+  args: string[],
+  requestedLocale: string | null,
+): CliConnectToolTransportOverride[] {
+  const rawOverrides = readRepeatedOptionValues(args, '--tool-transport');
+  if (rawOverrides.length === 0) {
+    return [];
+  }
+
+  const seenToolIds = new Set<AdapterSurface>();
+  return rawOverrides.map((rawOverride) => {
+    const separatorIndex = rawOverride.indexOf('=');
+    if (separatorIndex <= 0 || separatorIndex === rawOverride.length - 1) {
+      throw new RuntimeError(
+        GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+        localizeCliText(
+          requestedLocale,
+          'Option --tool-transport must use toolId=transport syntax.',
+          '选项 --tool-transport 必须使用 toolId=transport 语法。',
+        ),
+        {
+          option: '--tool-transport',
+          value: rawOverride,
+        },
+      );
+    }
+
+    const toolToken = rawOverride.slice(0, separatorIndex).trim();
+    const transportToken = rawOverride.slice(separatorIndex + 1).trim();
+    const toolIds = resolveAdapterSurfaceListOption(toolToken, '--tool-transport');
+    if (toolIds.length !== 1) {
+      throw new RuntimeError(
+        GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+        localizeCliText(
+          requestedLocale,
+          'Option --tool-transport must target exactly one tool id per override.',
+          '选项 --tool-transport 的每条覆盖必须只指定一个 tool id。',
+        ),
+        {
+          option: '--tool-transport',
+          value: rawOverride,
+        },
+      );
+    }
+    const toolId = toolIds[0] ?? null;
+    const transport = resolveSingleAdapterTransportOption(
+      transportToken,
+      '--tool-transport',
+      requestedLocale,
+    );
+
+    if (!toolId || !transport) {
+      throw new RuntimeError(
+        GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+        localizeCliText(
+          requestedLocale,
+          'Option --tool-transport requires both one tool id and one transport value.',
+          '选项 --tool-transport 需要同时提供一个 tool id 和一个 transport 值。',
+        ),
+        {
+          option: '--tool-transport',
+          value: rawOverride,
+        },
+      );
+    }
+
+    if (seenToolIds.has(toolId)) {
+      throw new RuntimeError(
+        GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+        localizeCliText(
+          requestedLocale,
+          `Option --tool-transport cannot repeat the same tool '${toolId}'.`,
+          `选项 --tool-transport 不能重复指定同一个工具 '${toolId}'。`,
+        ),
+        {
+          option: '--tool-transport',
+          value: rawOverride,
+          toolId,
+        },
+      );
+    }
+    seenToolIds.add(toolId);
+
+    return {
+      toolId,
+      transport,
+    };
+  });
+}
+
+function localizeCliText(locale: string | null, english: string, chinese: string): string {
+  return locale?.trim().toLowerCase().startsWith('zh') ? chinese : english;
 }
 
 function resolveRoleBindingOverrides(
@@ -2481,6 +2626,17 @@ function resolveCliFailure(error: unknown): CliFailureResolution {
     standardizedError: standardizeError(error),
     exitCode: 1,
   };
+}
+
+function createRemovedVerifyCommandError(runtimeI18n: Pick<I18nRuntime, 't'>): RuntimeError {
+  return new RuntimeError(
+    GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+    runtimeI18n.t('cli.commands.verify.removed'),
+    {
+      command: REMOVED_PUBLIC_VERIFY_COMMAND_NAME,
+      replacementCommands: ['/doctor', '/connect'],
+    },
+  );
 }
 
 /**

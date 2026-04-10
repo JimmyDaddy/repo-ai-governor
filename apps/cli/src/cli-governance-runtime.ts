@@ -88,7 +88,6 @@ import { CliReviewCommand } from './commands/review-command.js';
 import { CliReviewVerifyCommand } from './commands/review-verify-command.js';
 import { CliRunCommand } from './commands/run-command.js';
 import { CliUpgradeCommand } from './commands/upgrade-command.js';
-import { CliVerifyCommand } from './commands/verify-command.js';
 import { CliWorkflowCommand } from './commands/workflow-command.js';
 import { CliWorkspaceCommand } from './commands/workspace-command.js';
 import { CliAgentOnboardingPreset } from './constants/cli-agent-onboarding.constant.js';
@@ -163,7 +162,7 @@ interface CliLangGraphCheckpointState {
  * Implements Stage-9 CLI command semantics with a minimal governance execution chain.
  *
  * Why this exists:
- * command runtime behavior must be centralized so `init/connect/doctor/check/run/review/review-verify/verify/plan/upgrade/workspace/workflow`
+ * command runtime behavior must be centralized so `init/connect/doctor/check/run/review/review-verify/plan/upgrade/workspace/workflow`
  * stay deterministic across CLI entrypoints and output modes.
  */
 export class CliGovernanceRuntime {
@@ -258,7 +257,6 @@ export class CliGovernanceRuntime {
       new CliDoctorCommand(),
       new CliCheckCommand(),
       new CliAdoptCommand(),
-      new CliVerifyCommand(),
       new CliPlanCommand(),
       new CliHostCommand(),
       new CliRunCommand(),
@@ -1772,6 +1770,21 @@ export class CliGovernanceRuntime {
               typeof surface === 'string' && surface.trim().length > 0,
           )
         : [],
+      toolTransportOverrides: Array.isArray(
+        this.options.runtimeDebugOptions?.toolTransportOverrides,
+      )
+        ? this.options.runtimeDebugOptions.toolTransportOverrides.filter(
+            (
+              override,
+            ): override is NonNullable<
+              CliNormalizedRuntimeDebugOptions['toolTransportOverrides']
+            >[number] =>
+              typeof override?.toolId === 'string' &&
+              override.toolId.trim().length > 0 &&
+              typeof override.transport === 'string' &&
+              override.transport.trim().length > 0,
+          )
+        : [],
       overwrite: this.options.runtimeDebugOptions?.overwrite === true,
       singleToolAllRoles: this.options.runtimeDebugOptions?.singleToolAllRoles === true,
       roleBindingOverrides: Array.isArray(this.options.runtimeDebugOptions?.roleBindingOverrides)
@@ -2500,7 +2513,8 @@ export class CliGovernanceRuntime {
   }
 
   /**
-   * Resolves adapters/routing verification summary used by connect/doctor/verify commands.
+   * Resolves adapters/routing verification summary used by connect/doctor and internal readiness
+   * gates.
    * @returns Adapter verification resolution.
    */
   private async resolveAdapterVerification(

@@ -547,8 +547,12 @@ export class CliSessionShellRunner {
     options: CliSessionShellRunOptions,
     runtimeState: CliSessionShellRuntimeState,
     turnProgressDock: CliSessionShellTurnProgressDock,
+    historyEntry: string | null = inputLine,
+    displayUserMessage: string | null = null,
   ): Promise<void> {
-    this.recordHistory(inputLine, runtimeState);
+    if (historyEntry !== null) {
+      this.recordHistory(historyEntry, runtimeState);
+    }
     let recoveryAttempts = 0;
     while (recoveryAttempts <= SESSION_MAIN_MISSING_SESSION_RECOVERY_MAX_ATTEMPTS) {
       try {
@@ -559,6 +563,7 @@ export class CliSessionShellRunner {
           options,
           runtimeState,
           turnProgressDock,
+          displayUserMessage,
         );
         if (turnHandled) {
           return;
@@ -612,11 +617,14 @@ export class CliSessionShellRunner {
     options: CliSessionShellRunOptions,
     runtimeState: CliSessionShellRuntimeState,
     turnProgressDock: CliSessionShellTurnProgressDock,
+    displayUserMessage: string | null = null,
   ): Promise<boolean> {
     let turnError: unknown;
     let turnCompleted = false;
     const pendingTurn = options.sessionClient
-      .sendMainTurn(viewModel.sessionId, inputLine)
+      .sendMainTurn(viewModel.sessionId, inputLine, {
+        ...(displayUserMessage ? { displayUserMessage } : {}),
+      })
       .catch((error) => {
         turnError = error;
       })
@@ -973,6 +981,20 @@ export class CliSessionShellRunner {
     }
 
     if (!exactCommand.bridgeArgv) {
+      if (exactCommand.kind === 'ai_workflow' && exactCommand.aiWorkflowPrompt) {
+        await this.handlePlainTextTurn(
+          exactCommand.aiWorkflowPrompt,
+          viewModel,
+          transcriptStore,
+          options,
+          runtimeState,
+          turnProgressDock,
+          null,
+          query,
+        );
+        this.resetPromptState(viewModel, options, runtimeState);
+        return null;
+      }
       await this.appendServiceTranscriptItem(
         viewModel,
         transcriptStore,
@@ -1039,6 +1061,22 @@ export class CliSessionShellRunner {
     options: CliSessionShellRunOptions,
     runtimeState: CliSessionShellRuntimeState,
   ): Promise<void> {
+    if (query.trim().toLowerCase().startsWith('/verify')) {
+      await this.appendServiceTranscriptItem(
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+        OrchestrationSessionTranscriptRole.ASSISTANT,
+        [
+          options.translate('cli.sessionShell.responses.verifyRemoved'),
+          options.translate('cli.sessionShell.responses.verifyRemovedNextAction'),
+        ],
+      );
+      this.resetPromptState(viewModel, options, runtimeState);
+      return;
+    }
+
     const suggestions = this.slashCommandRegistry.suggest(query, options.translate);
     if (suggestions.length > 0) {
       await this.appendServiceTranscriptItem(

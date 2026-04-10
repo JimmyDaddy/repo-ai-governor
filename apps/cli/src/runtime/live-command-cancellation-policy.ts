@@ -3,7 +3,6 @@ import { CliCommandName } from '../constants/cli-command.constant.js';
 const LIVE_COMMAND_CANCELLATION_ENABLED_COMMANDS = new Set<CliCommandName>([
   CliCommandName.CONNECT,
   CliCommandName.DOCTOR,
-  CliCommandName.VERIFY,
 ]);
 
 /**

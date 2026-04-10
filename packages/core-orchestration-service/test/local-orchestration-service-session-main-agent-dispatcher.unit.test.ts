@@ -220,7 +220,7 @@ describe('LocalOrchestrationServiceSessionMainAgentDispatcher', () => {
     expect(result.assistantMessage).toContain('/review verify');
   });
 
-  it('projects low-risk natural-language verify intents into direct-execute command batches', async () => {
+  it('migrates low-risk natural-language verify intents into direct-execute doctor command batches', async () => {
     const resolveTurn = vi.fn();
     const dispatcher = new LocalOrchestrationServiceSessionMainAgentDispatcher({
       resolveTurn,
@@ -241,15 +241,131 @@ describe('LocalOrchestrationServiceSessionMainAgentDispatcher', () => {
     expect(resolveTurn).not.toHaveBeenCalled();
     expect(result.responseMode).toBe('command_handoff_preview');
     expect(result.requiresConfirmation).toBe(false);
-    expect(result.skillId).toBe('skill.verify.adapters');
+    expect(result.skillId).toBe('skill.doctor.environment');
     expect(result.handoffExecutionMode).toBe('direct_execute');
     expect(result.commandBatches).toEqual([
       {
-        slashQuery: '/verify',
-        bridgeArgv: ['verify', '--adapters', '--output', 'pretty'],
-        previewCommandLine: 'repo-ai-governor verify --adapters --output pretty',
+        slashQuery: '/doctor',
+        bridgeArgv: ['doctor', '--adapters', '--output', 'pretty'],
+        previewCommandLine: 'repo-ai-governor doctor --adapters --output pretty',
       },
     ]);
+  });
+
+  it('keeps the official review-verify examples on the governed review-verify workflow instead of migrating them to doctor', async () => {
+    const resolveTurn = vi.fn();
+    const dispatcher = new LocalOrchestrationServiceSessionMainAgentDispatcher({
+      resolveTurn,
+      resolveMentionedRoleId: () => null,
+    });
+
+    const result = await dispatcher.dispatch({
+      sessionId: 'session-skill-review-verify-001',
+      routeId: 'session.main',
+      turnId: 'turn-skill-review-verify-001',
+      turnIndex: 5,
+      userMessage: 'Verify that the review findings are fixed.',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+    });
+
+    expect(resolveTurn).not.toHaveBeenCalled();
+    expect(result).toEqual(
+      expect.objectContaining({
+        responseMode: 'command_handoff_preview',
+        requiresConfirmation: false,
+        skillId: 'skill.review.verify',
+        handoffExecutionMode: 'direct_execute',
+        executionIntent: 'review.verify',
+        suggestedSlashCommand: '/review verify',
+      }),
+    );
+    expect(result.commandBatches).toEqual([
+      {
+        slashQuery: '/review verify',
+        bridgeArgv: ['review-verify'],
+        previewCommandLine: 'repo-ai-governor review-verify',
+      },
+    ]);
+  });
+
+  it('preserves explicit @reviewer verify-style turns for raw-role collaboration', async () => {
+    const resolveTurn = vi.fn(async () => ({
+      responseMode: 'answer' as const,
+      interactionMode: 'direct_answer' as const,
+      assistantDelta: '@reviewer verify raw-role path',
+      assistantMessage: '@reviewer verify raw-role path',
+      requiresConfirmation: false,
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+      invokedRoleIds: ['reviewer'],
+      subagentCount: 1,
+    }));
+    const dispatcher = new LocalOrchestrationServiceSessionMainAgentDispatcher({
+      resolveTurn,
+      resolveMentionedRoleId: (message) => (message.includes('@reviewer') ? 'reviewer' : null),
+    });
+
+    const result = await dispatcher.dispatch({
+      sessionId: 'session-skill-reviewer-verify-001',
+      routeId: 'session.main',
+      turnId: 'turn-skill-reviewer-verify-001',
+      turnIndex: 6,
+      userMessage: '@reviewer verify that the review findings are fixed.',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+    });
+
+    expect(resolveTurn).toHaveBeenCalledTimes(1);
+    expect(result).toEqual(
+      expect.objectContaining({
+        responseMode: 'answer',
+        assistantMessage: '@reviewer verify raw-role path',
+        invokedRoleIds: ['reviewer'],
+      }),
+    );
+  });
+
+  it('lets generic implementation asks fall through to the supervisor instead of defaulting to /run', async () => {
+    const resolveTurn = vi.fn(async () => ({
+      responseMode: 'answer' as const,
+      interactionMode: 'direct_answer' as const,
+      assistantDelta: 'Let us clarify scope first.',
+      assistantMessage: 'Let us clarify scope first.',
+      requiresConfirmation: false,
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+      invokedRoleIds: [],
+      subagentCount: 0,
+    }));
+    const dispatcher = new LocalOrchestrationServiceSessionMainAgentDispatcher({
+      resolveTurn,
+      resolveMentionedRoleId: () => null,
+    });
+
+    const result = await dispatcher.dispatch({
+      sessionId: 'session-generic-implementation-001',
+      routeId: 'session.main',
+      turnId: 'turn-generic-implementation-001',
+      turnIndex: 7,
+      userMessage: 'please implement the new settings page',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+    });
+
+    expect(resolveTurn).toHaveBeenCalledTimes(1);
+    expect(result).toEqual(
+      expect.objectContaining({
+        responseMode: 'answer',
+        interactionMode: 'direct_answer',
+        assistantMessage: 'Let us clarify scope first.',
+      }),
+    );
   });
 
   it('projects branch-switch requests into preview-confirm command batches', async () => {
@@ -328,14 +444,14 @@ describe('LocalOrchestrationServiceSessionMainAgentDispatcher', () => {
     ]);
   });
 
-  it('bridges same-turn explain-plus-execute verify requests into direct-execute governed handoff', async () => {
+  it('bridges same-turn explain-plus-execute verify requests into the migrated doctor handoff', async () => {
     const resolveTurn = vi.fn();
     const dispatcher = new LocalOrchestrationServiceSessionMainAgentDispatcher({
       resolveTurn,
       resolveMentionedRoleId: () => null,
       resolveCapabilityAvailability: async () => [
         {
-          capabilityId: SESSION_MAIN_CAPABILITY_ID.VERIFY,
+          capabilityId: SESSION_MAIN_CAPABILITY_ID.DOCTOR,
           status: 'available',
         },
       ],
@@ -357,17 +473,16 @@ describe('LocalOrchestrationServiceSessionMainAgentDispatcher', () => {
       expect.objectContaining({
         responseMode: 'command_handoff_preview',
         handoffExecutionMode: 'direct_execute',
-        skillId: 'skill.verify.adapters',
+        skillId: 'skill.doctor.environment',
         requiresConfirmation: false,
-        executionIntent: 'verify.adapters',
+        executionIntent: 'doctor.adapters',
       }),
     );
-    expect(result.assistantMessage).toContain('## Verify');
     expect(result.commandBatches).toEqual([
       {
-        slashQuery: '/verify',
-        bridgeArgv: ['verify', '--adapters', '--output', 'pretty'],
-        previewCommandLine: 'repo-ai-governor verify --adapters --output pretty',
+        slashQuery: '/doctor',
+        bridgeArgv: ['doctor', '--adapters', '--output', 'pretty'],
+        previewCommandLine: 'repo-ai-governor doctor --adapters --output pretty',
       },
     ]);
   });
@@ -418,20 +533,32 @@ describe('LocalOrchestrationServiceSessionMainAgentDispatcher', () => {
     );
   });
 
-  it('reuses the implicit reviewer delegate seam for same-turn review bridge requests', async () => {
-    const resolveTurn = vi.fn(async () => ({
-      responseMode: 'role_collaboration' as const,
-      interactionMode: 'single_role_delegate' as const,
-      assistantDelta: '## Reviewer perspective',
-      assistantMessage: '## Reviewer perspective\n\n- one actionable finding',
-      executionIntent: 'session.role_delegate.reviewer',
-      requiresConfirmation: false,
+  it('removes verify from the direct-answer fallback guidance copy', async () => {
+    const dispatcher = new LocalOrchestrationServiceSessionMainAgentDispatcher();
+
+    const result = await dispatcher.dispatch({
+      sessionId: 'session-fallback-001',
+      routeId: 'session.main',
+      turnId: 'turn-fallback-001',
+      turnIndex: 6,
+      userMessage: 'please help with this repository',
       selectedSurface: AdapterSurface.CODEX,
-      selectedBy: 'session.main.router.single_role_delegate.implicit_role',
+      selectedBy: 'session.main.default',
       sessionRoutingPreferenceApplied: false,
-      invokedRoleIds: ['reviewer'],
-      subagentCount: 1,
-    }));
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        responseMode: 'answer',
+        routerDecisionReason: 'session.main.router.direct_answer.fallback',
+      }),
+    );
+    expect(result.assistantMessage).toContain('connect, doctor, plan, review, workflow, or run');
+    expect(result.assistantMessage).not.toContain('connect, doctor, verify, review, or run');
+  });
+
+  it('keeps same-turn review bridge requests on the governed /review workflow instead of implicit reviewer delegation', async () => {
+    const resolveTurn = vi.fn();
     const dispatcher = new LocalOrchestrationServiceSessionMainAgentDispatcher({
       resolveTurn,
       resolveMentionedRoleId: () => null,
@@ -456,16 +583,16 @@ describe('LocalOrchestrationServiceSessionMainAgentDispatcher', () => {
       sessionRoutingPreferenceApplied: false,
     });
 
-    expect(resolveTurn).toHaveBeenCalledTimes(1);
-    expect(resolveTurn).toHaveBeenCalledWith(
+    expect(resolveTurn).not.toHaveBeenCalled();
+    expect(result).toEqual(
       expect.objectContaining({
-        metadata: {
-          [SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY]: 'reviewer',
-        },
+        responseMode: 'command_handoff_preview',
+        suggestedSlashCommand: '/review',
+        executionIntent: 'review.start',
+        handoffExecutionMode: 'direct_execute',
+        requiresConfirmation: false,
       }),
     );
-    expect(result.responseMode).toBe('role_collaboration');
-    expect(result.executionIntent).toBe('session.role_delegate.reviewer');
   });
 
   it('routes current-project diagnosis requests into direct-execute doctor command batches', async () => {
@@ -500,8 +627,20 @@ describe('LocalOrchestrationServiceSessionMainAgentDispatcher', () => {
     ]);
   });
 
-  it('routes natural-language planning requests into direct-execute plan command batches', async () => {
-    const resolveTurn = vi.fn();
+  it('routes natural-language planning requests into the supervisor with an implicit planner delegate', async () => {
+    const resolveTurn = vi.fn(async () => ({
+      responseMode: 'role_collaboration' as const,
+      interactionMode: 'single_role_delegate' as const,
+      assistantDelta: '## Planner perspective',
+      assistantMessage: '## Planner perspective\n\n- structured plan ready',
+      executionIntent: 'session.role_delegate.planner',
+      requiresConfirmation: false,
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.router.single_role_delegate.implicit_role',
+      sessionRoutingPreferenceApplied: false,
+      invokedRoleIds: ['planner'],
+      subagentCount: 1,
+    }));
     const dispatcher = new LocalOrchestrationServiceSessionMainAgentDispatcher({
       resolveTurn,
       resolveMentionedRoleId: () => null,
@@ -518,34 +657,21 @@ describe('LocalOrchestrationServiceSessionMainAgentDispatcher', () => {
       sessionRoutingPreferenceApplied: false,
     });
 
-    expect(resolveTurn).not.toHaveBeenCalled();
-    expect(result.responseMode).toBe('command_handoff_preview');
+    expect(resolveTurn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userMessage: '帮我拆一下任务计划',
+        metadata: expect.objectContaining({
+          [SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY]: 'planner',
+        }),
+      }),
+    );
+    expect(result.responseMode).toBe('role_collaboration');
     expect(result.requiresConfirmation).toBe(false);
-    expect(result.skillId).toBe('skill.plan.task');
-    expect(result.handoffExecutionMode).toBe('direct_execute');
-    expect(result.commandBatches).toEqual([
-      {
-        slashQuery: '/plan',
-        bridgeArgv: ['plan', '--output', 'pretty'],
-        previewCommandLine: 'repo-ai-governor plan --output pretty',
-      },
-    ]);
+    expect(result.executionIntent).toBe('session.role_delegate.planner');
   });
 
-  it('routes natural-language code-review requests into the supervisor with an implicit reviewer delegate', async () => {
-    const resolveTurn = vi.fn(async () => ({
-      responseMode: 'role_collaboration' as const,
-      interactionMode: 'single_role_delegate' as const,
-      assistantDelta: '## Reviewer perspective',
-      assistantMessage: '## Reviewer perspective\n\n- one actionable finding',
-      executionIntent: 'session.role_delegate.reviewer',
-      requiresConfirmation: false,
-      selectedSurface: AdapterSurface.CODEX,
-      selectedBy: 'session.main.router.single_role_delegate.implicit_role',
-      sessionRoutingPreferenceApplied: false,
-      invokedRoleIds: ['reviewer'],
-      subagentCount: 1,
-    }));
+  it('routes natural-language code-review requests into the governed /review workflow', async () => {
+    const resolveTurn = vi.fn();
     const dispatcher = new LocalOrchestrationServiceSessionMainAgentDispatcher({
       resolveTurn,
       resolveMentionedRoleId: () => null,
@@ -562,17 +688,16 @@ describe('LocalOrchestrationServiceSessionMainAgentDispatcher', () => {
       sessionRoutingPreferenceApplied: false,
     });
 
-    expect(resolveTurn).toHaveBeenCalledTimes(1);
-    expect(resolveTurn).toHaveBeenCalledWith(
+    expect(resolveTurn).not.toHaveBeenCalled();
+    expect(result).toEqual(
       expect.objectContaining({
-        userMessage: '很好,帮我 review 一下代码',
-        metadata: {
-          [SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY]: 'reviewer',
-        },
+        responseMode: 'command_handoff_preview',
+        suggestedSlashCommand: '/review',
+        executionIntent: 'review.start',
+        handoffExecutionMode: 'direct_execute',
+        requiresConfirmation: false,
       }),
     );
-    expect(result.responseMode).toBe('role_collaboration');
-    expect(result.executionIntent).toBe('session.role_delegate.reviewer');
   });
 
   it('projects bundle onboarding intents into preview-confirm command batches', async () => {
@@ -605,9 +730,9 @@ describe('LocalOrchestrationServiceSessionMainAgentDispatcher', () => {
         previewCommandLine: 'repo-ai-governor connect --preset multi-tool-default --output pretty',
       },
       {
-        slashQuery: '/verify',
-        bridgeArgv: ['verify', '--adapters', '--output', 'pretty'],
-        previewCommandLine: 'repo-ai-governor verify --adapters --output pretty',
+        slashQuery: '/doctor',
+        bridgeArgv: ['doctor', '--adapters', '--output', 'pretty'],
+        previewCommandLine: 'repo-ai-governor doctor --adapters --output pretty',
       },
     ]);
   });

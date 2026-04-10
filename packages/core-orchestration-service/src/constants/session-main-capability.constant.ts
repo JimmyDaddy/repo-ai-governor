@@ -17,6 +17,50 @@ export const SESSION_MAIN_CAPABILITY_CATALOG_OWNER_MODULE_ID = 'runtime.orchestr
 export const SESSION_MAIN_CAPABILITY_DESCRIPTOR_VERSION = '2026-04-08' as const;
 
 /**
+ * Declares the governed interaction-model taxonomy for public `session.main` capability surfaces.
+ *
+ * Why this exists:
+ * orchestration-owned capability truth now needs to distinguish raw role entry, productized AI
+ * workflows, deterministic utilities, and unstable public commands without reintroducing ad-hoc
+ * UI-only command semantics.
+ */
+export const SESSION_MAIN_CAPABILITY_INTERACTION_MODEL = {
+  RAW_ROLE_ENTRY: 'raw_role_entry',
+  AI_FIXED_WORKFLOW: 'ai_fixed_workflow',
+  DETERMINISTIC_UTILITY: 'deterministic_utility',
+  PENDING_EXISTENCE_REVIEW: 'pending_existence_review',
+  EXPLAIN_ONLY: 'explain_only',
+} as const;
+
+/**
+ * Declares the public primary-entry vocabulary for governed `session.main` capabilities.
+ *
+ * Why this exists:
+ * discoverability and help consumers need one canonical way to explain whether a capability is
+ * primarily reached by role mention, slash command, CLI command, or a conversational answer.
+ */
+export const SESSION_MAIN_CAPABILITY_PRIMARY_ENTRY = {
+  ROLE_MENTION: 'role_mention',
+  SLASH_COMMAND: 'slash_command',
+  CLI_COMMAND: 'cli_command',
+  CONVERSATIONAL_ANSWER: 'conversational_answer',
+} as const;
+
+/**
+ * Declares the backing execution model for governed `session.main` capabilities.
+ *
+ * Why this exists:
+ * downstream consumers need to tell apart raw role delegation, templated AI workflows, and pure
+ * command bridges while still reusing the same orchestration-owned capability descriptor surface.
+ */
+export const SESSION_MAIN_CAPABILITY_BACKING_EXECUTION = {
+  RAW_ROLE_DELEGATE: 'raw_role_delegate',
+  TEMPLATED_AI_WORKFLOW: 'templated_ai_workflow',
+  PURE_COMMAND: 'pure_command',
+  UNDECIDED: 'undecided',
+} as const;
+
+/**
  * Declares the finite governed capability ids owned by the canonical `session.main` catalog.
  *
  * Why this exists:

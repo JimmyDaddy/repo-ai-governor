@@ -19,7 +19,9 @@ export const EN_US_TRANSLATIONS = {
       fix: 'Apply safe_local fixes (directories/config templates/writable checks) only.',
       preset:
         'Connect preset id for agent onboarding: single-tool-minimal|multi-tool-default|single-tool-all-roles|restricted-network-safe.',
-      tools: 'Comma-separated adapter tool ids used by connect/doctor/verify onboarding views.',
+      tools: 'Comma-separated adapter tool ids used by connect/doctor onboarding views.',
+      toolTransport:
+        'Repeatable per-tool transport override in toolId=transport form. Supported surfaces are transport-aware only.',
       overwrite:
         'Allow connect candidate config to replace existing role/routing fragments instead of merge-only output.',
       latest: 'Use the latest generated connect candidate artifact for diff/apply.',
@@ -132,10 +134,13 @@ export const EN_US_TRANSLATIONS = {
         upgradeCompleted: 'Adoption pack {{packId}} upgrade completed.',
         removeCompleted: 'Adoption pack {{packId}} removal completed.',
       },
-      run: { description: 'Execute process runtime baseline.' },
+      run: { description: 'Execute reusable governed workflow or task-driven flow.' },
       review: { description: 'Generate code review baseline output.' },
       reviewVerify: { description: 'Verify code review baseline output.' },
-      verify: { description: 'Verify adapter routing pass/warn/fail baseline.' },
+      verify: {
+        removed:
+          'The public `verify` command has been removed. Use `doctor` for readiness diagnostics or `connect` when you need onboarding changes plus follow-up checks.',
+      },
       plan: {
         description: 'Preview or commit structured sprint planning output.',
         actionArgument: 'Optional plan action: preview|commit.',
@@ -276,17 +281,17 @@ export const EN_US_TRANSLATIONS = {
       checkRoleBindings:
         'Check adapters.routing.roleBindings primary/fallback surfaces and ensure required roles have at least one available surface.',
       probeUnavailable: 'Probe/login dependencies are unavailable for: {{toolIds}}.',
-      installMissingCommands: 'Install missing local commands before connect/verify: {{commands}}.',
+      installMissingCommands: 'Install missing local commands before connect/doctor: {{commands}}.',
       probeFailedCommands:
         'Some commands exist but probe failed ({{commands}}). Run them manually to verify login/extension status.',
       setRemoteApiCredentialEnvVars:
-        'Set or export the required remote-api credential environment variables before connect/verify: {{credentials}}.',
+        'Set or export the required remote-api credential environment variables before connect/doctor: {{credentials}}.',
       verifyProviderLocalCredentialState:
         'Remote-api credential discovery stays read-only here; verify provider-local login state manually for: {{credentials}}.',
       resolveCredentialReferencesManually:
         'Remote-api credential references cannot be materialized automatically; resolve them manually for: {{credentials}}.',
       authenticateAdapters:
-        'Authenticate or refresh login for remote adapters before connect/verify: {{credentials}}.',
+        'Authenticate or refresh login for remote adapters before connect/doctor: {{credentials}}.',
       investigateHealthChecks:
         'Investigate remote adapter health checks before unattended execution: {{healthChecks}}.',
       pullLocalModels:
@@ -413,6 +418,9 @@ export const EN_US_TRANSLATIONS = {
         multiline: {
           summary: 'Capture one multi-line user message before sending it as a single turn.',
         },
+        planSync: {
+          summary: 'Preview or commit deterministic sprint-ledger projection for an existing plan.',
+        },
         status: {
           summary: 'Show session-shell status and hidden runtime details.',
         },
@@ -433,6 +441,10 @@ export const EN_US_TRANSLATIONS = {
         unknownSlashCommand:
           'Unknown slash command "{{command}}". The session shell only exposes the documented command surface.',
         trySlashHelp: 'Use /help to inspect the currently exposed slash command set.',
+        verifyRemoved:
+          'The public `/verify` slash command has been removed from the session shell.',
+        verifyRemovedNextAction:
+          'Use `/doctor` for readiness diagnostics, or `/connect` if you need onboarding changes plus follow-up checks.',
         commandPreview: 'Ready: {{command}}',
         commandHandoffPending: 'Command handoff preview is ready for {{command}}.',
         commandConfirmHint:
@@ -1263,9 +1275,9 @@ export const EN_US_TRANSLATIONS = {
       },
       plan: {
         title: 'Plan',
-        summary: 'Generate or refine a task breakdown for the current goal.',
+        summary: 'Run the productized planning workflow for the current goal.',
         detail:
-          'Plan is the low-risk execution-prep path when you want a structured task package before implementation.',
+          'Plan is the productized planner workflow entry for generating a structured execution plan. Use `/plan sync` when you want to project an existing task package into the sprint ledger, and use `@planner` for expert raw-role discussion.',
         examples: {
           0: 'Break this work into tasks.',
           1: 'Create an execution plan for the next sprint.',
@@ -1273,9 +1285,9 @@ export const EN_US_TRANSLATIONS = {
       },
       review: {
         title: 'Review',
-        summary: 'Run the governed code-review path for the current scope.',
+        summary: 'Run the productized governed review workflow for the current scope.',
         detail:
-          'Review is the primary read-only inspection path when you want findings, risks, or change assessment for current work.',
+          'Review is the productized AI workflow for structured code-review findings on the current scope. Use `@reviewer` only when you want open-ended expert discussion instead of the standard governed review workflow.',
         examples: {
           0: 'Review the current changes.',
           1: 'Help me do a code review on this branch.',
@@ -1284,9 +1296,9 @@ export const EN_US_TRANSLATIONS = {
       review_verify: {
         title: 'Review Verify',
         summary:
-          'Recheck a review report and confirm whether accepted findings are actually fixed.',
+          'Run the productized review-verification workflow for an existing review artifact or fix result.',
         detail:
-          'Review verify is the formal verification path for existing review findings, so it keeps preview-confirm governance.',
+          'Review verify is the fixed workflow for rechecking an existing review report or fix result and deciding whether accepted findings are actually resolved. Use `@reviewer` when you need open-ended reviewer discussion instead of the standard verification path.',
         examples: {
           0: 'Verify that the review findings are fixed.',
           1: 'Recheck the current CR report and validate the fixes.',
@@ -1294,12 +1306,12 @@ export const EN_US_TRANSLATIONS = {
       },
       run: {
         title: 'Run',
-        summary: 'Start a governed execution flow for implementation or workflow work.',
+        summary: 'Start a reusable governed workflow or task-driven execution flow.',
         detail:
-          'Run is the higher-impact execution path for task delivery, so it keeps preview-confirm continuity instead of silent execution.',
+          'Run is the preview-confirm path for executing a reusable governed workflow or task-driven delivery flow after the target work is already defined. Use direct chat or `/plan` first when the implementation request is still open-ended.',
         examples: {
-          0: 'Start implementing this task.',
-          1: 'Run the next governed workflow for this repo.',
+          0: 'Run the next reusable governed workflow for this repo.',
+          1: 'Execute the task-driven delivery flow for TK-123.',
         },
       },
     },

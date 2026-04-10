@@ -5,6 +5,13 @@ import {
   type AgentSessionProjection,
 } from '@repo-ai-governor/core-agent-projection';
 import type { ProcessIrNode } from '@repo-ai-governor/core-process';
+import {
+  AdapterCapabilitySnapshotSource,
+  AdapterProviderKind,
+  AdapterSurface,
+  AdapterTransportKind,
+  AdapterVendorBindingKind,
+} from '@repo-ai-governor/shared';
 import type { CliAdapterVerificationResolution } from '../types/interfaces/index.js';
 
 /**
@@ -29,6 +36,17 @@ export class CliAgentProjectionRuntime {
         if (!role) {
           return null;
         }
+        const selectedToolConfig =
+          roleEvaluation.selectedSurface === null
+            ? null
+            : ((options.adaptersConfig.tools ?? []).find(
+                (tool) => tool.toolId === roleEvaluation.selectedSurface,
+              ) ?? null);
+        const selectedTransport = this.resolveSelectedTransport(
+          roleEvaluation.selectedSurface,
+          selectedToolConfig,
+          roleEvaluation.healthCheck?.transportKind ?? null,
+        );
 
         return this.projectionService.project({
           roleId: role.roleId,
@@ -47,6 +65,28 @@ export class CliAgentProjectionRuntime {
           failureReasons: [...roleEvaluation.unavailableReasons],
           unsupportedCapabilities: [...roleEvaluation.unsupportedCapabilities],
           degradedCapabilities: [...roleEvaluation.degradedCapabilities],
+          selectedTransport,
+          selectedProviderKind: this.resolveSelectedProviderKind({
+            selectedToolConfig,
+            healthCheck: roleEvaluation.healthCheck,
+            selectedTransport,
+          }),
+          selectedVendorBindingKind: this.resolveSelectedVendorBindingKind({
+            selectedSurface: roleEvaluation.selectedSurface,
+            selectedToolConfig,
+            healthCheck: roleEvaluation.healthCheck,
+            selectedTransport,
+          }),
+          selectedModel: this.resolveSelectedModel({
+            selectedToolConfig,
+            healthCheck: roleEvaluation.healthCheck,
+            selectedTransport,
+          }),
+          capabilitySnapshotSource: this.resolveCapabilitySnapshotSource(
+            roleEvaluation.selectedSurface,
+            selectedToolConfig,
+            roleEvaluation.healthCheck?.transportKind ?? null,
+          ),
         });
       })
       .filter((descriptor): descriptor is AgentDescriptor => descriptor !== null);
@@ -135,5 +175,133 @@ export class CliAgentProjectionRuntime {
       descriptors: options.descriptors,
       sessionProjection: options.sessionProjection ?? null,
     };
+  }
+
+  private resolveSelectedTransport(
+    selectedSurface: AdapterSurface | null,
+    selectedToolConfig: NonNullable<AdaptersConfig['tools']>[number] | null,
+    healthCheckTransportKind: string | null,
+  ): AdapterTransportKind | null {
+    if (
+      healthCheckTransportKind === AdapterTransportKind.BASELINE ||
+      healthCheckTransportKind === AdapterTransportKind.CLI_EXEC ||
+      healthCheckTransportKind === AdapterTransportKind.REMOTE_API
+    ) {
+      return healthCheckTransportKind;
+    }
+    if (selectedToolConfig?.transport) {
+      return selectedToolConfig.transport;
+    }
+    if (selectedToolConfig?.remoteApi) {
+      return AdapterTransportKind.REMOTE_API;
+    }
+    if (selectedToolConfig?.localModel) {
+      return AdapterTransportKind.BASELINE;
+    }
+    if (selectedSurface === AdapterSurface.OLLAMA) {
+      return AdapterTransportKind.BASELINE;
+    }
+    if (
+      selectedSurface === AdapterSurface.CODEX ||
+      selectedSurface === AdapterSurface.CLAUDE_CODE ||
+      selectedSurface === AdapterSurface.GITHUB_COPILOT
+    ) {
+      return AdapterTransportKind.CLI_EXEC;
+    }
+    return null;
+  }
+
+  private resolveConfiguredVendorBindingKind(
+    selectedSurface: AdapterSurface | null,
+    providerKind: AdapterProviderKind | null,
+    configuredVendorBindingKind: AdapterVendorBindingKind | null,
+  ): AdapterVendorBindingKind | null {
+    if (configuredVendorBindingKind) {
+      return configuredVendorBindingKind;
+    }
+    if (selectedSurface === AdapterSurface.CODEX || providerKind === AdapterProviderKind.OPENAI) {
+      return AdapterVendorBindingKind.OPENAI_RESPONSES;
+    }
+    if (
+      selectedSurface === AdapterSurface.CLAUDE_CODE ||
+      providerKind === AdapterProviderKind.ANTHROPIC
+    ) {
+      return AdapterVendorBindingKind.ANTHROPIC_MESSAGES;
+    }
+    if (providerKind === AdapterProviderKind.GITHUB_MODELS) {
+      return AdapterVendorBindingKind.GITHUB_MODELS_INFERENCE;
+    }
+    return null;
+  }
+
+  private resolveSelectedProviderKind(options: {
+    selectedToolConfig: NonNullable<AdaptersConfig['tools']>[number] | null;
+    healthCheck: CliAdapterVerificationResolution['roleEvaluations'][number]['healthCheck'];
+    selectedTransport: AdapterTransportKind | null;
+  }): AdapterProviderKind | null {
+    if (options.healthCheck?.providerKind) {
+      return options.healthCheck.providerKind;
+    }
+    if (options.selectedTransport === AdapterTransportKind.REMOTE_API) {
+      return options.selectedToolConfig?.remoteApi?.provider ?? null;
+    }
+    return null;
+  }
+
+  private resolveSelectedVendorBindingKind(options: {
+    selectedSurface: AdapterSurface | null;
+    selectedToolConfig: NonNullable<AdaptersConfig['tools']>[number] | null;
+    healthCheck: CliAdapterVerificationResolution['roleEvaluations'][number]['healthCheck'];
+    selectedTransport: AdapterTransportKind | null;
+  }): AdapterVendorBindingKind | null {
+    if (options.healthCheck?.vendorBindingKind) {
+      return options.healthCheck.vendorBindingKind;
+    }
+    if (options.selectedTransport !== AdapterTransportKind.REMOTE_API) {
+      return null;
+    }
+    return this.resolveConfiguredVendorBindingKind(
+      options.selectedSurface,
+      options.selectedToolConfig?.remoteApi?.provider ?? null,
+      options.selectedToolConfig?.remoteApi?.vendorBinding ?? null,
+    );
+  }
+
+  private resolveSelectedModel(options: {
+    selectedToolConfig: NonNullable<AdaptersConfig['tools']>[number] | null;
+    healthCheck: CliAdapterVerificationResolution['roleEvaluations'][number]['healthCheck'];
+    selectedTransport: AdapterTransportKind | null;
+  }): string | null {
+    if (options.healthCheck?.model) {
+      return options.healthCheck.model;
+    }
+    if (options.selectedTransport === AdapterTransportKind.REMOTE_API) {
+      return options.selectedToolConfig?.remoteApi?.model ?? null;
+    }
+    if (options.selectedTransport === AdapterTransportKind.BASELINE) {
+      return options.selectedToolConfig?.localModel?.model ?? null;
+    }
+    return null;
+  }
+
+  private resolveCapabilitySnapshotSource(
+    selectedSurface: AdapterSurface | null,
+    selectedToolConfig: NonNullable<AdaptersConfig['tools']>[number] | null,
+    healthCheckTransportKind: string | null,
+  ): AdapterCapabilitySnapshotSource | null {
+    if (selectedSurface === null) {
+      return null;
+    }
+    if (
+      healthCheckTransportKind === AdapterTransportKind.BASELINE ||
+      healthCheckTransportKind === AdapterTransportKind.CLI_EXEC ||
+      healthCheckTransportKind === AdapterTransportKind.REMOTE_API
+    ) {
+      return AdapterCapabilitySnapshotSource.HEALTH_CHECK;
+    }
+    if (selectedToolConfig) {
+      return AdapterCapabilitySnapshotSource.CONFIG;
+    }
+    return AdapterCapabilitySnapshotSource.SURFACE_DEFAULT;
   }
 }

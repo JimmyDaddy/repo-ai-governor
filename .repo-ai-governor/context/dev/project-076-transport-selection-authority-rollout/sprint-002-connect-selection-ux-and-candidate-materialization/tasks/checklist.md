@@ -1,0 +1,29 @@
+# checklist
+
+- [x] TK-729 add per-tool transport selection flags to connect
+  - 2026-04-09：任务创建，状态初始化为 `planned`。
+  - 2026-04-09：`TK-735 / DA-735` 完成 `sprint-001` closeout 与 activation handoff 后，当前任务切换为 `in_progress`，开始梳理 `connect` authoring surface 与 candidate materialization 入口。
+  - 2026-04-10：已为 `connect` 增加 repeatable `--tool-transport <tool>=<transport>` authoring surface，并补齐 CLI 入口解析、选项说明与 candidate config 集成测试。
+- [x] TK-730 materialize explicit transport in candidate config and validate unsupported combinations
+  - 2026-04-09：任务创建，状态初始化为 `planned`。
+  - 2026-04-10：已让 schema validator 保留 `remoteApi`-only 兼容写法，不再静默补写 `transport=remote_api`；connect candidate 现在会为 transport-aware surface 显式 materialize transport，并对 unsupported / missing-remoteApi override 直接 fail-closed。
+- [x] TK-731 project transport selection source and lock state across connect-doctor-verify outputs
+  - 2026-04-09：任务创建，状态初始化为 `planned`。
+  - 2026-04-10：已将 onboarding / verify / projection 输出改成按 selected transport 投影 provider/model/binding truth，同时保留 `configured_remote_api` 作为独立 nested truth，避免显式 `cli_exec` 行误投 remote_api provider 信息。
+- [x] CR-001 sprint-002-connect-selection-ux-and-candidate-materialization delegated review loop round 1
+  - 2026-04-10：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-10：delegated reviewer 返回 `tool selection drift` 与 `i18n bypass` findings；主 agent 复核时补充识别 `session.main continuation transport truth drift`，并统一纳入本轮 accepted findings。
+  - 2026-04-10：accepted findings 已修复并通过 build + 定向回归，本轮 `CR-001` 已收口为 `resolved`；下一步需为 sprint-002 发起新的 fresh reviewer recheck。
+- [x] CR-002 sprint-002-connect-selection-ux-and-candidate-materialization delegated recheck loop round 2
+  - 2026-04-10：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-10：fresh delegated reviewer `CR-002` 已 bootstrap，并作为 sprint-002 的 post-fix clean round 进入 `review_pending`。
+  - 2026-04-10：主 agent 一度按 reviewer timeout 执行 fallback clean recheck，但 delayed reviewer 结果随后返回，指出 `[P1]` 显式 `cli_exec` connect candidate 仍会被 schema validator 拒绝；该 clean 结论被撤销，本轮重新按真实 finding 收口。
+  - 2026-04-10：主 agent 复核该 finding 后判定为 `accepted`，并修复 `SchemaValidator` 对 `transport=cli_exec + remoteApi` 组合的错误拒绝。
+  - 2026-04-10：已补充 config unit 与 `connect generate -> apply` integration regression，配合同窗口 `pnpm run build` 与定向 vitest 验证通过；本轮作为 finding-fix round 收口为 `resolved`，下一 fresh clean recheck 由后续 `CR-003` 承接。
+- [x] CR-003 sprint-002-connect-selection-ux-and-candidate-materialization delegated recheck loop round 3
+  - 2026-04-10：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-10：fresh delegated reviewer `Maxwell` 已对当前 sprint-002 review surface 完成 recheck，并明确返回 clean verdict：未发现新的 actionable finding。
+  - 2026-04-10：主 agent 结合同窗口 `pnpm run build` 与定向 vitest 证据复核 delegated verdict 后，将本轮 `CR-003` 收口为 `resolved`；当前 sprint-002 已满足 closeout 前置条件。
+- [x] TK-736 sprint-002 exit acceptance and sprint-003 activation handoff
+  - 2026-04-10：任务创建并直接执行 sprint-002 closeout、context/history 写回与 sprint-003 activation handoff。
+  - 2026-04-10：已完成 `DA-736`、project/sprint/context/history 写回，并激活 `sprint-003` 与 `TK-732`。

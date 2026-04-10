@@ -1,5 +1,12 @@
 import { type AdaptersConfig, WorkspaceMode } from '@repo-ai-governor/config';
-import { AdapterSurface, GovernorErrorCode } from '@repo-ai-governor/shared';
+import {
+  AdapterCapabilitySnapshotSource,
+  AdapterProviderKind,
+  AdapterSurface,
+  AdapterTransportKind,
+  AdapterVendorBindingKind,
+  GovernorErrorCode,
+} from '@repo-ai-governor/shared';
 import { AgentProjectionService } from '../src/index.js';
 
 function createAdaptersConfigFixture(): AdaptersConfig {
@@ -59,6 +66,11 @@ describe('AgentProjectionService', () => {
       selectedBy: 'fallback',
       projectionStatus: 'planned',
       failureReasons: ['remote_quota'],
+      selectedTransport: AdapterTransportKind.REMOTE_API,
+      selectedProviderKind: AdapterProviderKind.OPENAI,
+      selectedVendorBindingKind: AdapterVendorBindingKind.OPENAI_RESPONSES,
+      selectedModel: 'gpt-5',
+      capabilitySnapshotSource: AdapterCapabilitySnapshotSource.HEALTH_CHECK,
     });
 
     expect(descriptor).toEqual(
@@ -73,6 +85,11 @@ describe('AgentProjectionService', () => {
         selectedBy: 'fallback',
         projectionStatus: 'planned',
         failureReasons: ['remote_quota'],
+        selectedTransport: AdapterTransportKind.REMOTE_API,
+        selectedProviderKind: AdapterProviderKind.OPENAI,
+        selectedVendorBindingKind: AdapterVendorBindingKind.OPENAI_RESPONSES,
+        selectedModel: 'gpt-5',
+        capabilitySnapshotSource: AdapterCapabilitySnapshotSource.HEALTH_CHECK,
         workspaceId: 'workspace-001',
         executionId: 'exec-001',
         sessionId: 'shared-exec-001',

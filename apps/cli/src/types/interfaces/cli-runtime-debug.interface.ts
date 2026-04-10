@@ -1,4 +1,4 @@
-import type { AdapterSurface } from '@repo-ai-governor/shared';
+import type { AdapterSurface, AdapterTransportKind } from '@repo-ai-governor/shared';
 import type { CliAgentOnboardingPreset } from '../../constants/cli-agent-onboarding.constant.js';
 import type {
   CliConnectAction,
@@ -14,6 +14,14 @@ export interface CliConnectRoleBindingOverride {
   roleId: string;
   primarySurface: AdapterSurface;
   fallbackSurfaces: AdapterSurface[];
+}
+
+/**
+ * Defines one connect-time per-tool transport override.
+ */
+export interface CliConnectToolTransportOverride {
+  toolId: AdapterSurface;
+  transport: AdapterTransportKind;
 }
 
 /**
@@ -41,6 +49,7 @@ export interface CliRuntimeDebugOptions {
   connectWriteMode?: CliConnectWriteMode | null;
   presetId?: CliAgentOnboardingPreset | null;
   requestedTools?: AdapterSurface[];
+  toolTransportOverrides?: CliConnectToolTransportOverride[];
   overwrite?: boolean;
   singleToolAllRoles?: boolean;
   roleBindingOverrides?: CliConnectRoleBindingOverride[];

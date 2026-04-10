@@ -659,12 +659,12 @@ describe('CliSessionShellTranscriptStore', () => {
             turnIndex: 1,
             responseMode: 'command_handoff_preview',
             assistantMessage:
-              '## Verify\n\nThis capability is ready now, and I already prepared the governed execution handoff.',
-            suggestedSlashCommand: '/verify',
-            executionIntent: 'verify.adapters',
+              '## Doctor\n\nThis capability is ready now, and I already prepared the governed execution handoff.',
+            suggestedSlashCommand: '/doctor',
+            executionIntent: 'doctor.adapters',
             handoffExecutionMode: 'direct_execute',
             requiresConfirmation: false,
-            handoffCommandPreview: 'repo-ai-governor verify --adapters --output pretty',
+            handoffCommandPreview: 'repo-ai-governor doctor --adapters --output pretty',
           },
         },
       ],
@@ -687,11 +687,11 @@ describe('CliSessionShellTranscriptStore', () => {
 
     expect(items).toHaveLength(1);
     expect(items[0]?.renderKind).toBe('command_recap');
-    expect(items[0]?.markdownSource).toContain('## Verify');
+    expect(items[0]?.markdownSource).toContain('## Doctor');
     expect(items[0]?.lines).toEqual([
-      'Auto-running: /verify',
-      'Running: repo-ai-governor verify --adapters --output pretty',
-      'Intent: verify.adapters',
+      'Auto-running: /doctor',
+      'Running: repo-ai-governor doctor --adapters --output pretty',
+      'Intent: doctor.adapters',
     ]);
   });
 

@@ -26,13 +26,15 @@ describe('LocalOrchestrationServiceSessionMainCapabilityCatalog', () => {
         capabilityId: SESSION_MAIN_CAPABILITY_ID.DOCTOR,
       }),
       expect.objectContaining({
-        capabilityId: SESSION_MAIN_CAPABILITY_ID.VERIFY,
-      }),
-      expect.objectContaining({
         capabilityId: SESSION_MAIN_CAPABILITY_ID.WORKFLOW,
       }),
       expect.objectContaining({
         capabilityId: SESSION_MAIN_CAPABILITY_ID.PLAN,
+        interactionModel: 'ai_fixed_workflow',
+        primaryEntry: 'slash_command',
+        backingExecution: 'templated_ai_workflow',
+        deterministicActionName: 'plan sync',
+        roleAliasTarget: 'planner',
       }),
       expect.objectContaining({
         capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW,
@@ -42,6 +44,10 @@ describe('LocalOrchestrationServiceSessionMainCapabilityCatalog', () => {
       }),
       expect.objectContaining({
         capabilityId: SESSION_MAIN_CAPABILITY_ID.RUN,
+        interactionModel: 'pending_existence_review',
+        primaryEntry: 'slash_command',
+        backingExecution: 'pure_command',
+        confirmationRequired: true,
       }),
     ]);
   });
@@ -61,6 +67,10 @@ describe('LocalOrchestrationServiceSessionMainCapabilityCatalog', () => {
         title: 'Review',
         suggestedSlashCommand: '/review',
         handoffExecutionMode: 'direct_execute',
+        interactionModel: 'ai_fixed_workflow',
+        primaryEntry: 'slash_command',
+        backingExecution: 'templated_ai_workflow',
+        roleAliasTarget: 'reviewer',
         confirmationRequired: false,
         examplePrompts: ['Review the current changes.', 'Help me do a code review on this branch.'],
       }),

@@ -97,7 +97,6 @@ describe('CliSessionShellInkController', () => {
       '/workspace',
       '/workspace switch-branch',
       '/doctor',
-      '/verify',
       '/connect',
       '/review',
       '/plan',

@@ -1,6 +1,13 @@
 import type { AdaptersConfig, WorkspaceMode } from '@repo-ai-governor/config';
 import type { SessionStatus } from '@repo-ai-governor/core-session';
-import type { AdapterSurface, RoleSource } from '@repo-ai-governor/shared';
+import type {
+  AdapterCapabilitySnapshotSource,
+  AdapterProviderKind,
+  AdapterSurface,
+  AdapterTransportKind,
+  AdapterVendorBindingKind,
+  RoleSource,
+} from '@repo-ai-governor/shared';
 
 export interface AgentProjectionInput {
   roleId: string;
@@ -20,6 +27,11 @@ export interface AgentProjectionInput {
   failureReasons?: string[];
   unsupportedCapabilities?: string[];
   degradedCapabilities?: string[];
+  selectedTransport?: AdapterTransportKind | null;
+  selectedProviderKind?: AdapterProviderKind | null;
+  selectedVendorBindingKind?: AdapterVendorBindingKind | null;
+  selectedModel?: string | null;
+  capabilitySnapshotSource?: AdapterCapabilitySnapshotSource | null;
   inputSchemaRef?: string | null;
   outputSchemaRef?: string | null;
   errorContractRef?: string | null;
@@ -63,6 +75,11 @@ export interface AgentDescriptor {
   failureReasons: string[];
   unsupportedCapabilities: string[];
   degradedCapabilities: string[];
+  selectedTransport?: AdapterTransportKind | null;
+  selectedProviderKind?: AdapterProviderKind | null;
+  selectedVendorBindingKind?: AdapterVendorBindingKind | null;
+  selectedModel?: string | null;
+  capabilitySnapshotSource?: AdapterCapabilitySnapshotSource | null;
 }
 
 export interface AgentSessionProjectionEntry {

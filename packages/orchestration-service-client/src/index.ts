@@ -1,4 +1,5 @@
 export {
+  ORCHESTRATION_SESSION_DISPLAY_USER_MESSAGE_METADATA_KEY,
   OrchestrationGovernanceAttentionLevel,
   OrchestrationClientSurface,
   OrchestrationExecutionKind,

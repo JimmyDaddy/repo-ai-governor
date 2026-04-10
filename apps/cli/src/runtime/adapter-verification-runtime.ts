@@ -39,7 +39,8 @@ export class CliAdapterVerificationRuntime {
   ) {}
 
   /**
-   * Resolves adapters/routing verification summary used by connect/doctor/verify commands.
+   * Resolves adapters/routing verification summary used by connect/doctor and internal readiness
+   * gates.
    * @returns Adapter verification resolution.
    */
   public async resolveAdapterVerification(

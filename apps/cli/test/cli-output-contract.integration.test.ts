@@ -841,7 +841,7 @@ describe('CLI output contract integration', () => {
     }
   });
 
-  it('emits verify nested progress relays in json no-interactive mode', async () => {
+  it('returns a structured migration error when the removed verify command is invoked in json mode', async () => {
     const fixtureRepositoryRoot = await createProfileOnlyAdaptersFixtureRepo();
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, fixtureRepositoryRoot, {
       PATH: '',
@@ -875,24 +875,18 @@ describe('CLI output contract integration', () => {
           },
         },
       );
-      const payload = JSON.parse(stdoutBuffer.join(''));
+      const payload = JSON.parse(stderrBuffer.join(''));
 
-      expect(exitCode).toBe(0);
-      expect(stderrBuffer.join('')).toBe('');
+      expect(exitCode).toBe(1);
+      expect(stdoutBuffer.join('')).toBe('');
       expect(payload.command).toBe('verify');
-      expect(progressEvents[0]).toEqual(
-        expect.objectContaining({
-          commandName: 'verify',
-          runState: 'running',
-        }),
-      );
-      expect(progressEvents.some((event) => event.row?.id === 'adapter-verification')).toBe(true);
-      expect(progressEvents.at(-1)).toEqual(
-        expect.objectContaining({
-          commandName: 'verify',
-          runState: 'success',
-        }),
-      );
+      expect(payload.status).toBe('error');
+      expect(payload.output_mode).toBe('json');
+      expect(payload.error_code).toBe('ENTRYPOINT_COMMAND_WRAPPER_INVALID');
+      expect(payload.message).toContain('public `verify` command has been removed');
+      expect(payload.message).toContain('doctor');
+      expect(payload.message).toContain('connect');
+      expect(progressEvents).toEqual([]);
     } finally {
       await rm(fixtureRepositoryRoot, { recursive: true, force: true });
     }
@@ -1060,7 +1054,7 @@ describe('CLI output contract integration', () => {
     expect(stdout).toContain('Help me connect Codex and Claude Code.');
     expect(stdout).toContain('Related capabilities:');
     expect(stdout).toContain('/doctor');
-    expect(stdout).toContain('/verify');
+    expect(stdout).not.toContain('/verify');
   });
 
   it('renders top-level set-ui-theme help with direct examples', async () => {
@@ -2327,7 +2321,7 @@ describe('CLI output contract integration', () => {
     expect(payload.command).toBe('run');
   });
 
-  it('keeps default adapter baseline when profile only overrides tools', async () => {
+  it('keeps default adapter baseline when profile only overrides tools for doctor', async () => {
     const fixtureRepositoryRoot = await createProfileOnlyAdaptersFixtureRepo();
     try {
       const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, fixtureRepositoryRoot, {
@@ -2342,7 +2336,7 @@ describe('CLI output contract integration', () => {
           'json',
           '--profile',
           'tool-only',
-          'verify',
+          'doctor',
           '--adapters',
         ],
         io,
@@ -2355,8 +2349,10 @@ describe('CLI output contract integration', () => {
       expect(stdout).not.toBe('');
       const payload = JSON.parse(stdout);
       expect(payload.status).toBe('success');
-      expect(payload.command_result.operation).toBe('adapter_verify');
-      expect(payload.command_result.details.required_roles).toBeGreaterThan(0);
+      expect(payload.command).toBe('doctor');
+      expect(payload.command_result.operation).toBe('env_doctor');
+      expect(payload.command_result.details.profile).toBe('tool-only');
+      expect(payload.command_result.agentView.descriptors.length).toBeGreaterThan(0);
     } finally {
       await rm(fixtureRepositoryRoot, { recursive: true, force: true });
     }

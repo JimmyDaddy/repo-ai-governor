@@ -19,7 +19,9 @@ export const ZH_CN_TRANSLATIONS = {
       fix: '仅执行 safe_local 自动修复（目录/模板配置/本地可写性）。',
       preset:
         '指定 connect 的 onboarding 模板：single-tool-minimal|multi-tool-default|single-tool-all-roles|restricted-network-safe。',
-      tools: '指定 connect/doctor/verify onboarding 视图使用的逗号分隔工具列表。',
+      tools: '指定 connect/doctor onboarding 视图使用的逗号分隔工具列表。',
+      toolTransport:
+        '可重复传入的单工具 transport 覆盖，格式为 toolId=transport；仅支持 transport-aware surface。',
       overwrite: '允许 connect 候选配置覆盖现有角色/路由片段，而不是只做合并输出。',
       latest: '在 diff/apply 中直接使用最近一次生成的 connect 候选产物。',
       force: '在 connect diff/apply 中绕过 source fingerprint 漂移或 apply-ready blocker 等保护。',
@@ -106,10 +108,13 @@ export const ZH_CN_TRANSLATIONS = {
         upgradeCompleted: 'adoption pack {{packId}} 升级已完成。',
         removeCompleted: 'adoption pack {{packId}} 移除已完成。',
       },
-      run: { description: '执行流程运行时基线。' },
+      run: { description: '执行可复用的受治理工作流或任务驱动执行流。' },
       review: { description: '生成代码评审基线输出。' },
       reviewVerify: { description: '验证代码评审基线输出。' },
-      verify: { description: '校验适配器路由 pass/warn/fail 基线。' },
+      verify: {
+        removed:
+          '公开 `verify` 命令已删除。若你要做 readiness 诊断，请使用 `doctor`；若你需要接入变更并串上后续检查，请使用 `connect`。',
+      },
       plan: {
         description: '预览或提交结构化 sprint planning 产物。',
         actionArgument: '可选 plan 动作：preview|commit。',
@@ -233,17 +238,17 @@ export const ZH_CN_TRANSLATIONS = {
       checkRoleBindings:
         '请检查 adapters.routing.roleBindings 的主备 surface，确保必需角色至少有一个可用 surface。',
       probeUnavailable: '以下工具的探测或登录依赖不可用：{{toolIds}}。',
-      installMissingCommands: '请先安装缺失的本地命令后再执行 connect/verify：{{commands}}。',
+      installMissingCommands: '请先安装缺失的本地命令后再执行 connect/doctor：{{commands}}。',
       probeFailedCommands:
         '部分命令可执行但探测失败（{{commands}}），请手动执行命令确认登录/扩展状态。',
       setRemoteApiCredentialEnvVars:
-        '请先设置或导出以下 remote-api 凭据环境变量，再执行 connect/verify：{{credentials}}。',
+        '请先设置或导出以下 remote-api 凭据环境变量，再执行 connect/doctor：{{credentials}}。',
       verifyProviderLocalCredentialState:
         '当前只做只读发现；请手动确认以下 provider-local 登录状态：{{credentials}}。',
       resolveCredentialReferencesManually:
         '当前不会自动物化 remote-api credentialRef；请手动解析以下引用：{{credentials}}。',
       authenticateAdapters:
-        '请先为以下远端 adapter 完成认证或刷新登录状态，再执行 connect/verify：{{credentials}}。',
+        '请先为以下远端 adapter 完成认证或刷新登录状态，再执行 connect/doctor：{{credentials}}。',
       investigateHealthChecks:
         '请先排查以下远端 adapter 的健康检查结果，再进行无人值守执行：{{healthChecks}}。',
       pullLocalModels: '请先拉取或修正以下缺失的本地模型，再进行无人值守执行：{{models}}。',
@@ -364,6 +369,9 @@ export const ZH_CN_TRANSLATIONS = {
         multiline: {
           summary: '先采集一段多行消息，再作为单个 user turn 发送。',
         },
+        planSync: {
+          summary: '预览或提交一个既有计划到 sprint ledger 的确定性投影动作。',
+        },
         status: {
           summary: '查看当前 session shell 状态与隐藏运行时详情。',
         },
@@ -383,6 +391,9 @@ export const ZH_CN_TRANSLATIONS = {
         unknownSlashCommand:
           '未知 slash command "{{command}}"。当前 session shell 只暴露文档化命令面。',
         trySlashHelp: '可输入 /help 查看当前已暴露的 slash command 集合。',
+        verifyRemoved: '公开 `/verify` slash command 已从 session shell 删除。',
+        verifyRemovedNextAction:
+          '若你要做 readiness 诊断，请改用 `/doctor`；若你需要接入变更并串上后续检查，请改用 `/connect`。',
         commandPreview: '就绪：{{command}}',
         commandHandoffPending: '{{command}} 的 command handoff 预览已经就绪。',
         commandConfirmHint: '输入 /confirm 执行当前 handoff，或输入 /cancel 放弃本次预览。',
@@ -1172,8 +1183,9 @@ export const ZH_CN_TRANSLATIONS = {
       },
       plan: {
         title: '计划',
-        summary: '为当前目标生成或细化任务拆解。',
-        detail: '当你想在开始实现前先把工作拆成结构化任务包，并冻结执行顺序时，应该使用 plan。',
+        summary: '对当前目标运行产品化 planning workflow。',
+        detail:
+          '当你想直接生成一份标准化执行计划时，应当使用 plan。若你要把既有 task package 同步进 sprint ledger，请改用 `/plan sync`；若你想做开放式专家讨论，则使用 `@planner`。',
         examples: {
           0: '帮我拆一下这项工作的任务。',
           1: '给下一个 sprint 做一份执行计划。',
@@ -1181,8 +1193,9 @@ export const ZH_CN_TRANSLATIONS = {
       },
       review: {
         title: '评审',
-        summary: '对当前范围执行受治理的代码评审路径。',
-        detail: '当你需要对当前改动做只读检查、识别风险或输出 findings 时，review 是主路径。',
+        summary: '对当前范围运行产品化的受治理代码评审工作流。',
+        detail:
+          '当你需要对当前改动做结构化 code review、识别风险并输出 findings 时，应当使用 review。若你想做开放式专家讨论，而不是标准受治理评审工作流，请改用 `@reviewer`。',
         examples: {
           0: '帮我 review 当前改动。',
           1: '帮我对这个分支做一轮 code review。',
@@ -1190,9 +1203,9 @@ export const ZH_CN_TRANSLATIONS = {
       },
       review_verify: {
         title: '评审复核',
-        summary: '复查已有评审报告，并确认已接受的问题是否真的修好。',
+        summary: '对既有评审报告或修复结果运行产品化的复核工作流。',
         detail:
-          'review verify 属于正式的评审验证动作，因此默认保留 preview-confirm 治理，而不是静默直接执行。',
+          '当你要复核既有评审报告、修复结果，并判断已接受问题是否真的 resolved 时，应当使用 review verify。若你想做开放式 reviewer 协作而不是标准复核流程，请改用 `@reviewer`。',
         examples: {
           0: '帮我验证 review findings 是否都修好了。',
           1: '复核当前 CR 报告并确认修复结果。',
@@ -1200,12 +1213,12 @@ export const ZH_CN_TRANSLATIONS = {
       },
       run: {
         title: '执行',
-        summary: '启动实现或 workflow 的受治理执行流。',
+        summary: '启动可复用的受治理工作流或任务驱动执行流。',
         detail:
-          '当你要真正进入任务交付或运行 workflow 时，run 是高影响路径，因此保留 preview-confirm continuity。',
+          '当目标工作已经明确、你要真正执行一个可复用的受治理工作流或任务驱动交付流时，应当使用 run。若请求仍是开放式“帮我实现/帮我做”，请先直接对话或改用 `/plan` 收敛范围。',
         examples: {
-          0: '开始做这个任务。',
-          1: '运行这个仓库接下来的 governed workflow。',
+          0: '运行这个仓库下一个可复用的受治理工作流。',
+          1: '执行 TK-123 的任务驱动交付流。',
         },
       },
     },

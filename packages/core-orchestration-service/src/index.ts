@@ -1,4 +1,5 @@
 export {
+  SESSION_MAIN_CAPABILITY_BACKING_EXECUTION,
   LOCAL_ORCHESTRATION_SERVICE_EXECUTION_BOARD_DEFAULT_LIMIT,
   LOCAL_ORCHESTRATION_SERVICE_FOLLOW_UP_DUE_SOON_THRESHOLD_MINUTES,
   LOCAL_ORCHESTRATION_SERVICE_FOLLOW_UP_SLA_MINUTES,
@@ -10,6 +11,8 @@ export {
   SESSION_MAIN_CAPABILITY_CATALOG_OWNER_MODULE_ID,
   SESSION_MAIN_CAPABILITY_DESCRIPTOR_VERSION,
   SESSION_MAIN_CAPABILITY_ID,
+  SESSION_MAIN_CAPABILITY_INTERACTION_MODEL,
+  SESSION_MAIN_CAPABILITY_PRIMARY_ENTRY,
   LOCAL_ORCHESTRATION_SERVICE_SIDECAR_PROTOCOL_VERSION,
   LocalOrchestrationServiceSidecarOperation,
   LOCAL_ORCHESTRATION_SERVICE_WORKSPACE_SUMMARY_DEFAULT_LIMIT,
@@ -26,6 +29,7 @@ export { LocalOrchestrationServiceShell } from './local-orchestration-service-sh
 export { LocalOrchestrationServiceSidecarClient } from './local-orchestration-service-sidecar-client.js';
 export { LocalOrchestrationServiceSidecarHost } from './local-orchestration-service-sidecar-host.js';
 export type {
+  SessionMainCapabilityBackingExecution,
   SessionMainCapabilityAnswer,
   SessionMainCapabilityAvailability,
   LocalOrchestrationServicePublishEventRequest,
@@ -48,6 +52,8 @@ export type {
   SessionMainCapabilityDescriptorVersion,
   SessionMainCapabilityDescriptorView,
   SessionMainCapabilityId,
+  SessionMainCapabilityInteractionModel,
+  SessionMainCapabilityPrimaryEntry,
   SessionMainCapabilitySuggestedAction,
   SessionMainHandoffExecutionMode,
   SessionMainInteractionMode,

@@ -85,7 +85,7 @@ interface TaskLedgerCanonicalSourceRow {
 }
 
 /**
- * Owns CLI-local durable-storage inspection so `doctor` and `verify` can surface
+ * Owns CLI-local durable-storage inspection so `doctor` and internal readiness gates can surface
  * sqlite cutover health without duplicating sqlite/fs probing logic.
  */
 export class CliDurableStorageDiagnosticsRuntime {
@@ -117,7 +117,7 @@ export class CliDurableStorageDiagnosticsRuntime {
   /**
    * Converts one durable-storage snapshot into normalized command checks.
    * @param snapshot Durable-storage snapshot.
-   * @returns Flat command checks for doctor/verify outputs.
+   * @returns Flat command checks for doctor/readiness-gate outputs.
    */
   public createChecks(snapshot: CliDurableStorageDiagnosticsSnapshot): CliCommandResultCheck[] {
     return [

@@ -11,6 +11,7 @@ import {
   AdapterRequestCancellationMode,
   AdapterSurface,
   AdapterTransportKind,
+  AdapterTransportSelectionSource,
   AdapterVendorBindingKind,
   GovernorErrorCode,
   LocalModelProvider,
@@ -110,6 +111,7 @@ describe('CliAgentOnboardingRuntime', () => {
       sourceConfig: createGovernorConfigFixture(),
       presetId: CliAgentOnboardingPreset.SINGLE_TOOL_MINIMAL,
       requestedTools: [AdapterSurface.CODEX],
+      toolTransportOverrides: [],
       overwrite: false,
       singleToolAllRoles: false,
       roleBindingOverrides: [],
@@ -150,6 +152,7 @@ describe('CliAgentOnboardingRuntime', () => {
         },
         presetId: CliAgentOnboardingPreset.MULTI_TOOL_DEFAULT,
         requestedTools: [],
+        toolTransportOverrides: [],
         overwrite: false,
         singleToolAllRoles: false,
         roleBindingOverrides: [],
@@ -212,12 +215,12 @@ describe('CliAgentOnboardingRuntime', () => {
       requiredRoleFailedCount: 1,
       degradedRoleCount: 0,
       fallbackRoleCount: 0,
-      nextActions: ['Set OPENAI_API_KEY before verify.'],
+      nextActions: ['Set OPENAI_API_KEY before doctor.'],
     };
 
     const onboardingPayload = runtime.createOnboardingContractPayload({
-      commandName: 'verify',
-      executionId: 'verify-123',
+      commandName: 'doctor',
+      executionId: 'doctor-123',
       workspaceId: 'workspace-1',
       verificationStatus: CliGovernanceCheckStatus.WARN,
       nextActions: verification.nextActions,
@@ -230,18 +233,41 @@ describe('CliAgentOnboardingRuntime', () => {
       diagnosticSummary: 'status=warn',
     });
     const verifyPayload = runtime.createVerifyMatrixPayload({
-      executionId: 'verify-123',
+      executionId: 'doctor-123',
       verification,
       adaptersConfig: sourceConfig.adapters,
     });
 
+    expect(onboardingPayload.enabled_tools).toEqual([
+      expect.objectContaining({
+        tool_id: AdapterSurface.CODEX,
+        transport_kind: AdapterTransportKind.REMOTE_API,
+        provider_kind: AdapterProviderKind.OPENAI,
+        vendor_binding_kind: AdapterVendorBindingKind.OPENAI_RESPONSES,
+        transport_selection_source: AdapterTransportSelectionSource.CONFIG_EXPLICIT,
+        transport_selection_locked: true,
+        configured_remote_api: expect.objectContaining({
+          provider_kind: AdapterProviderKind.OPENAI,
+          vendor_binding_kind: AdapterVendorBindingKind.OPENAI_RESPONSES,
+          credential_mode: AdapterCredentialSource.ENV_EXPLICIT,
+          endpoint_source: AdapterEndpointSource.PROVIDER_LOCAL,
+        }),
+      }),
+    ]);
     expect(onboardingPayload.tool_transport_matrix).toEqual([
       expect.objectContaining({
         tool_id: AdapterSurface.CODEX,
         transport: AdapterTransportKind.REMOTE_API,
+        transport_kind: AdapterTransportKind.REMOTE_API,
+        transport_selection_source: AdapterTransportSelectionSource.CONFIG_EXPLICIT,
+        transport_selection_locked: true,
+        configured_remote_api: expect.objectContaining({
+          provider_kind: AdapterProviderKind.OPENAI,
+          vendor_binding_kind: AdapterVendorBindingKind.OPENAI_RESPONSES,
+        }),
         remote_api_candidate: expect.objectContaining({
-          provider: AdapterProviderKind.OPENAI,
-          vendor_binding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+          provider_kind: AdapterProviderKind.OPENAI,
+          vendor_binding_kind: AdapterVendorBindingKind.OPENAI_RESPONSES,
           model: 'gpt-5',
           credential_env_var: 'OPENAI_API_KEY',
           allow_provider_local_config: true,
@@ -270,6 +296,115 @@ describe('CliAgentOnboardingRuntime', () => {
     ]);
     expect(verifyPayload.tool_transport_matrix).toEqual(onboardingPayload.tool_transport_matrix);
     expect(verifyPayload.role_binding_matrix).toEqual([]);
+  });
+
+  it('distinguishes inferred remote_api selection from an explicit transport lock', () => {
+    const runtime = new CliAgentOnboardingRuntime();
+    const sourceConfig = createGovernorConfigFixture();
+    sourceConfig.adapters.tools = [
+      {
+        toolId: AdapterSurface.CODEX,
+        enabled: true,
+        availability: AdapterAvailability.AVAILABLE,
+        remoteApi: {
+          provider: AdapterProviderKind.OPENAI,
+          model: 'gpt-5',
+        },
+      },
+    ];
+
+    const onboardingPayload = runtime.createOnboardingContractPayload({
+      commandName: 'connect',
+      executionId: 'connect-inferred-transport',
+      workspaceId: 'workspace-1',
+      verificationStatus: CliGovernanceCheckStatus.PASS,
+      nextActions: [],
+      enabledTools: [AdapterSurface.CODEX],
+      adaptersConfig: sourceConfig.adapters,
+      dryRun: true,
+      overwrite: false,
+      singleToolAllRoles: false,
+      diagnosticSummary: 'status=pass',
+    });
+
+    expect(onboardingPayload.enabled_tools).toEqual([
+      expect.objectContaining({
+        tool_id: AdapterSurface.CODEX,
+        transport_kind: AdapterTransportKind.REMOTE_API,
+        transport_selection_source: AdapterTransportSelectionSource.INFERRED_FROM_REMOTE_API,
+        transport_selection_locked: false,
+        configured_remote_api: expect.objectContaining({
+          provider_kind: AdapterProviderKind.OPENAI,
+          vendor_binding_kind: AdapterVendorBindingKind.OPENAI_RESPONSES,
+          credential_mode: AdapterCredentialSource.ENV_DEFAULT,
+          endpoint_source: AdapterEndpointSource.VENDOR_DEFAULT,
+        }),
+        invoke_liveness_diagnostics: expect.objectContaining({
+          transport_kind: AdapterTransportKind.REMOTE_API,
+          provider_kind: AdapterProviderKind.OPENAI,
+          vendor_binding_kind: AdapterVendorBindingKind.OPENAI_RESPONSES,
+        }),
+      }),
+    ]);
+  });
+
+  it('does not project configured remote_api fields as selected cli_exec truth', () => {
+    const runtime = new CliAgentOnboardingRuntime();
+    const sourceConfig = createGovernorConfigFixture();
+    sourceConfig.adapters.tools = [
+      {
+        toolId: AdapterSurface.CODEX,
+        enabled: true,
+        availability: AdapterAvailability.AVAILABLE,
+        transport: AdapterTransportKind.CLI_EXEC,
+        remoteApi: {
+          provider: AdapterProviderKind.OPENAI,
+          model: 'gpt-5',
+          credentialEnvVar: 'OPENAI_API_KEY',
+        },
+      },
+    ];
+
+    const onboardingPayload = runtime.createOnboardingContractPayload({
+      commandName: 'connect',
+      executionId: 'connect-explicit-cli-exec',
+      workspaceId: 'workspace-1',
+      verificationStatus: CliGovernanceCheckStatus.PASS,
+      nextActions: [],
+      enabledTools: [AdapterSurface.CODEX],
+      adaptersConfig: sourceConfig.adapters,
+      dryRun: true,
+      overwrite: false,
+      singleToolAllRoles: false,
+      diagnosticSummary: 'status=pass',
+    });
+
+    expect(onboardingPayload.enabled_tools).toEqual([
+      expect.objectContaining({
+        tool_id: AdapterSurface.CODEX,
+        transport_kind: AdapterTransportKind.CLI_EXEC,
+        provider_kind: null,
+        vendor_binding_kind: null,
+        model: null,
+        credential_mode: null,
+        endpoint_source: null,
+        transport_selection_source: AdapterTransportSelectionSource.CONFIG_EXPLICIT,
+        transport_selection_locked: true,
+        configured_remote_api: expect.objectContaining({
+          provider_kind: AdapterProviderKind.OPENAI,
+          vendor_binding_kind: AdapterVendorBindingKind.OPENAI_RESPONSES,
+          credential_mode: AdapterCredentialSource.ENV_EXPLICIT,
+        }),
+        invoke_liveness_diagnostics: expect.objectContaining({
+          transport_kind: AdapterTransportKind.CLI_EXEC,
+          provider_kind: null,
+          vendor_binding_kind: null,
+          model: null,
+          request_timeout_ms: 30000,
+          max_retries: 2,
+        }),
+      }),
+    ]);
   });
 
   it('projects invoke-liveness diagnostics into verify role binding rows', () => {
@@ -490,6 +625,7 @@ describe('CliAgentOnboardingRuntime', () => {
       sourceConfig,
       presetId: CliAgentOnboardingPreset.MULTI_TOOL_DEFAULT,
       requestedTools: [AdapterSurface.CODEX],
+      toolTransportOverrides: [],
       overwrite: true,
       singleToolAllRoles: false,
       roleBindingOverrides: [],
@@ -508,6 +644,208 @@ describe('CliAgentOnboardingRuntime', () => {
         }),
       }),
     ]);
+  });
+
+  it('materializes inferred remote_api transport for transport-aware connect candidates', () => {
+    const runtime = new CliAgentOnboardingRuntime();
+    const sourceConfig = createGovernorConfigFixture();
+    sourceConfig.adapters.tools = [
+      {
+        toolId: AdapterSurface.CODEX,
+        enabled: true,
+        availability: AdapterAvailability.AVAILABLE,
+        remoteApi: {
+          provider: AdapterProviderKind.OPENAI,
+          vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+          model: 'gpt-5',
+          credentialEnvVar: 'OPENAI_API_KEY',
+        },
+      },
+    ];
+
+    const resolution = runtime.buildConnectCandidateConfig({
+      sourceConfig,
+      presetId: CliAgentOnboardingPreset.MULTI_TOOL_DEFAULT,
+      requestedTools: [AdapterSurface.CODEX],
+      toolTransportOverrides: [],
+      overwrite: true,
+      singleToolAllRoles: false,
+      roleBindingOverrides: [],
+    });
+
+    expect(resolution.candidateAdaptersConfig.tools).toEqual([
+      expect.objectContaining({
+        toolId: AdapterSurface.CODEX,
+        transport: AdapterTransportKind.REMOTE_API,
+        remoteApi: expect.objectContaining({
+          provider: AdapterProviderKind.OPENAI,
+          model: 'gpt-5',
+        }),
+      }),
+    ]);
+  });
+
+  it('applies per-tool transport overrides while preserving configured remote_api truth', () => {
+    const runtime = new CliAgentOnboardingRuntime();
+    const sourceConfig = createGovernorConfigFixture();
+    sourceConfig.adapters.tools = [
+      {
+        toolId: AdapterSurface.CODEX,
+        enabled: true,
+        availability: AdapterAvailability.AVAILABLE,
+        remoteApi: {
+          provider: AdapterProviderKind.OPENAI,
+          vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+          model: 'gpt-5',
+          credentialEnvVar: 'OPENAI_API_KEY',
+        },
+      },
+    ];
+
+    const resolution = runtime.buildConnectCandidateConfig({
+      sourceConfig,
+      presetId: CliAgentOnboardingPreset.MULTI_TOOL_DEFAULT,
+      requestedTools: [AdapterSurface.CODEX],
+      toolTransportOverrides: [
+        {
+          toolId: AdapterSurface.CODEX,
+          transport: AdapterTransportKind.CLI_EXEC,
+        },
+      ],
+      overwrite: true,
+      singleToolAllRoles: false,
+      roleBindingOverrides: [],
+    });
+
+    expect(resolution.candidateAdaptersConfig.tools).toEqual([
+      expect.objectContaining({
+        toolId: AdapterSurface.CODEX,
+        transport: AdapterTransportKind.CLI_EXEC,
+        remoteApi: expect.objectContaining({
+          provider: AdapterProviderKind.OPENAI,
+          model: 'gpt-5',
+        }),
+      }),
+    ]);
+  });
+
+  it('keeps the default multi-tool selection stable when one tool gets a transport override', () => {
+    const runtime = new CliAgentOnboardingRuntime();
+    const sourceConfig = createGovernorConfigFixture();
+
+    const resolution = runtime.buildConnectCandidateConfig({
+      sourceConfig,
+      presetId: CliAgentOnboardingPreset.MULTI_TOOL_DEFAULT,
+      requestedTools: [],
+      toolTransportOverrides: [
+        {
+          toolId: AdapterSurface.CODEX,
+          transport: AdapterTransportKind.CLI_EXEC,
+        },
+      ],
+      overwrite: true,
+      singleToolAllRoles: false,
+      roleBindingOverrides: [],
+    });
+
+    expect(resolution.selectedTools).toEqual([
+      AdapterSurface.CODEX,
+      AdapterSurface.CLAUDE_CODE,
+      AdapterSurface.GITHUB_COPILOT,
+    ]);
+    expect(resolution.candidateAdaptersConfig.routing.roleBindings.reviewer).toEqual({
+      primarySurface: AdapterSurface.CLAUDE_CODE,
+      fallbackSurfaces: [AdapterSurface.CODEX, AdapterSurface.GITHUB_COPILOT],
+    });
+    expect(resolution.candidateAdaptersConfig.tools).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          toolId: AdapterSurface.CODEX,
+          transport: AdapterTransportKind.CLI_EXEC,
+        }),
+        expect.objectContaining({
+          toolId: AdapterSurface.CLAUDE_CODE,
+        }),
+        expect.objectContaining({
+          toolId: AdapterSurface.GITHUB_COPILOT,
+        }),
+      ]),
+    );
+  });
+
+  it('rejects transport overrides for tools outside the explicit selected tool scope', () => {
+    const runtime = new CliAgentOnboardingRuntime();
+
+    expect(() =>
+      runtime.buildConnectCandidateConfig({
+        sourceConfig: createGovernorConfigFixture(),
+        presetId: CliAgentOnboardingPreset.MULTI_TOOL_DEFAULT,
+        requestedTools: [AdapterSurface.CLAUDE_CODE],
+        toolTransportOverrides: [
+          {
+            toolId: AdapterSurface.CODEX,
+            transport: AdapterTransportKind.CLI_EXEC,
+          },
+        ],
+        overwrite: true,
+        singleToolAllRoles: false,
+        roleBindingOverrides: [],
+      }),
+    ).toThrowError(
+      expect.objectContaining({
+        code: GovernorErrorCode.ADAPTER_ROUTE_CONFIG_INVALID,
+      }),
+    );
+  });
+
+  it('rejects remote_api transport overrides when the tool lacks remoteApi config', () => {
+    const runtime = new CliAgentOnboardingRuntime();
+
+    expect(() =>
+      runtime.buildConnectCandidateConfig({
+        sourceConfig: createGovernorConfigFixture(),
+        presetId: CliAgentOnboardingPreset.MULTI_TOOL_DEFAULT,
+        requestedTools: [AdapterSurface.CODEX],
+        toolTransportOverrides: [
+          {
+            toolId: AdapterSurface.CODEX,
+            transport: AdapterTransportKind.REMOTE_API,
+          },
+        ],
+        overwrite: true,
+        singleToolAllRoles: false,
+        roleBindingOverrides: [],
+      }),
+    ).toThrowError(
+      expect.objectContaining({
+        code: GovernorErrorCode.ADAPTER_ROUTE_CONFIG_INVALID,
+      }),
+    );
+  });
+
+  it('rejects unsupported connect transport overrides for github-copilot', () => {
+    const runtime = new CliAgentOnboardingRuntime();
+
+    expect(() =>
+      runtime.buildConnectCandidateConfig({
+        sourceConfig: createGovernorConfigFixture(),
+        presetId: CliAgentOnboardingPreset.MULTI_TOOL_DEFAULT,
+        requestedTools: [AdapterSurface.GITHUB_COPILOT],
+        toolTransportOverrides: [
+          {
+            toolId: AdapterSurface.GITHUB_COPILOT,
+            transport: AdapterTransportKind.REMOTE_API,
+          },
+        ],
+        overwrite: true,
+        singleToolAllRoles: false,
+        roleBindingOverrides: [],
+      }),
+    ).toThrowError(
+      expect.objectContaining({
+        code: GovernorErrorCode.ADAPTER_ROUTE_CONFIG_INVALID,
+      }),
+    );
   });
 
   it('preserves selected tool local-model config when building connect candidate config', () => {
@@ -535,6 +873,7 @@ describe('CliAgentOnboardingRuntime', () => {
       sourceConfig,
       presetId: CliAgentOnboardingPreset.MULTI_TOOL_DEFAULT,
       requestedTools: [AdapterSurface.OLLAMA],
+      toolTransportOverrides: [],
       overwrite: true,
       singleToolAllRoles: false,
       roleBindingOverrides: [],
@@ -598,6 +937,9 @@ describe('CliAgentOnboardingRuntime', () => {
         expect.objectContaining({
           tool_id: AdapterSurface.CODEX,
           transport: AdapterTransportKind.CLI_EXEC,
+          transport_kind: AdapterTransportKind.CLI_EXEC,
+          transport_selection_source: AdapterTransportSelectionSource.SURFACE_DEFAULT,
+          transport_selection_locked: false,
           invoke_liveness_diagnostics: expect.objectContaining({
             transport_kind: AdapterTransportKind.CLI_EXEC,
             request_timeout_ms: 30000,
@@ -631,10 +973,63 @@ describe('CliAgentOnboardingRuntime', () => {
       expect.objectContaining({
         tool_id: AdapterSurface.CLAUDE_CODE,
         transport: AdapterTransportKind.CLI_EXEC,
+        transport_kind: AdapterTransportKind.CLI_EXEC,
+        transport_selection_source: AdapterTransportSelectionSource.SURFACE_DEFAULT,
+        transport_selection_locked: false,
         invoke_liveness_diagnostics: expect.objectContaining({
           transport_kind: AdapterTransportKind.CLI_EXEC,
           request_timeout_ms: 30000,
           max_retries: 2,
+        }),
+      }),
+    ]);
+  });
+
+  it('keeps configured_remote_api nested while explicit cli_exec rows stay provider-null', () => {
+    const runtime = new CliAgentOnboardingRuntime();
+    const sourceConfig = createGovernorConfigFixture();
+    sourceConfig.adapters.tools = [
+      {
+        toolId: AdapterSurface.CODEX,
+        enabled: true,
+        availability: AdapterAvailability.AVAILABLE,
+        transport: AdapterTransportKind.CLI_EXEC,
+        remoteApi: {
+          provider: AdapterProviderKind.OPENAI,
+          vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+          model: 'gpt-5',
+          credentialEnvVar: 'OPENAI_API_KEY',
+        },
+      },
+    ];
+
+    const onboardingPayload = runtime.createOnboardingContractPayload({
+      commandName: 'connect',
+      executionId: 'connect-explicit-cli-exec',
+      workspaceId: 'workspace-1',
+      verificationStatus: CliGovernanceCheckStatus.PASS,
+      nextActions: [],
+      enabledTools: [AdapterSurface.CODEX],
+      adaptersConfig: sourceConfig.adapters,
+      dryRun: true,
+      overwrite: false,
+      singleToolAllRoles: false,
+      diagnosticSummary: 'status=pass',
+    });
+
+    expect(onboardingPayload.enabled_tools).toEqual([
+      expect.objectContaining({
+        tool_id: AdapterSurface.CODEX,
+        transport_kind: AdapterTransportKind.CLI_EXEC,
+        provider_kind: null,
+        vendor_binding_kind: null,
+        model: null,
+        credential_mode: null,
+        endpoint_source: null,
+        configured_remote_api: expect.objectContaining({
+          provider_kind: AdapterProviderKind.OPENAI,
+          vendor_binding_kind: AdapterVendorBindingKind.OPENAI_RESPONSES,
+          model: 'gpt-5',
         }),
       }),
     ]);

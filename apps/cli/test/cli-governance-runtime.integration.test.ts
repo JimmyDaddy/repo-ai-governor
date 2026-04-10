@@ -56,7 +56,6 @@ import {
 } from '@repo-ai-governor/shared';
 import { CliGovernanceRuntime } from '../src/cli-governance-runtime.js';
 import { CliCommandName } from '../src/constants/cli-command.constant.js';
-import { CliGovernanceCheckStatus } from '../src/constants/cli-governance-runtime.constant.js';
 import type {
   CliCommandProgressEvent,
   CliOrchestrationServiceRuntimeDependencies,
@@ -3502,7 +3501,7 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
     );
   });
 
-  it('projects github copilot cli_exec transport truth into verify role details', async () => {
+  it('projects github copilot cli_exec transport truth into doctor role details', async () => {
     const adaptersConfig = createAdaptersConfigFixture();
     adaptersConfig.roles.push({
       roleId: 'tester',
@@ -3517,14 +3516,33 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
 
     await withRuntimeFixture(
       async (fixture) => {
-        const verifyResult = await fixture.runtime.execute(CliCommandName.VERIFY);
-        const testerCheck = verifyResult.commandResult.checks?.find(
-          (check) => check.id === 'role_tester',
+        const doctorResult = await fixture.runtime.execute(CliCommandName.DOCTOR);
+        const diagnosticsArtifactPath = doctorResult.commandResult.artifacts?.find(
+          (artifact) => artifact.id === 'doctor_diagnostics',
+        )?.path;
+        expect(typeof diagnosticsArtifactPath).toBe('string');
+
+        const diagnosticsPayload = JSON.parse(
+          await readFile(String(diagnosticsArtifactPath), 'utf8'),
+        ) as {
+          verification?: {
+            roles?: Array<{
+              roleId?: string;
+              status?: string;
+              selectedSurface?: string | null;
+              healthCheck?: {
+                transportKind?: string | null;
+              };
+            }>;
+          };
+        };
+        const testerRole = diagnosticsPayload.verification?.roles?.find(
+          (role) => role.roleId === 'tester',
         );
 
-        expect(testerCheck?.status).toBe('pass');
-        expect(testerCheck?.detail).toContain('selected=github-copilot');
-        expect(testerCheck?.detail).toContain('transport=cli_exec');
+        expect(testerRole?.status).toBe('pass');
+        expect(testerRole?.selectedSurface).toBe('github-copilot');
+        expect(testerRole?.healthCheck?.transportKind).toBe('cli_exec');
       },
       {
         adaptersConfig,
@@ -3981,7 +3999,7 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
         const nextActions = diagnosticsPayload.nextActions ?? [];
         expect(
           nextActions.some((action) =>
-            action.includes('Install missing local commands before connect/verify'),
+            action.includes('Install missing local commands before connect/doctor'),
           ),
         ).toBe(true);
         expect(
@@ -4011,282 +4029,6 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
             unavailableReasons: [],
           },
         },
-      },
-    );
-  });
-
-  it('fails verify when required role routing has no available tool', async () => {
-    const failingAdaptersConfig: AdaptersConfig = {
-      roles: [
-        {
-          roleId: 'coder',
-          roleProfileId: DefaultRoleProfileId.CODER,
-          requiredCapabilities: [AgentCapability.TOOL_CALLING],
-          required: true,
-        },
-      ],
-      routing: {
-        roleBindings: {
-          coder: {
-            primarySurface: AdapterSurface.CODEX,
-          },
-        },
-      },
-      tools: [
-        {
-          toolId: AdapterSurface.CODEX,
-          enabled: true,
-          availability: AdapterAvailability.UNAVAILABLE,
-          unavailableReasons: ['login_required'],
-        },
-      ],
-    };
-
-    await withRuntimeFixture(
-      async (fixture) => {
-        await expect(fixture.runtime.execute(CliCommandName.VERIFY)).rejects.toMatchObject({
-          code: GovernorErrorCode.ADAPTER_ROUTE_NO_AVAILABLE_SURFACE,
-        });
-      },
-      {
-        runtimeDebugOptions: {
-          dryRun: false,
-          trace: false,
-          replayPath: null,
-          adapters: true,
-        },
-        adaptersConfig: failingAdaptersConfig,
-      },
-    );
-  });
-
-  it('returns adapter_verify operation when verify passes', async () => {
-    await withRuntimeFixture(
-      async (fixture) => {
-        const verifyResult = await fixture.runtime.execute(CliCommandName.VERIFY);
-
-        expect(verifyResult.commandResult.operation).toBe('adapter_verify');
-        expect(verifyResult.commandResult.details?.adapters_status).toBe('pass');
-        expect(verifyResult.commandResult.details?.durable_storage_status).toBe('warn');
-        expect(
-          verifyResult.commandResult.checks?.some(
-            (check) => check.id === 'artifact_registry_canonical_truth',
-          ),
-        ).toBe(true);
-        expect(
-          verifyResult.commandResult.checks?.some(
-            (check) => check.id === 'task_ledger_canonical_truth',
-          ),
-        ).toBe(true);
-        expect(
-          verifyResult.commandResult.experience?.roleProgress.some(
-            (row) =>
-              row.stage === ExecutionProgressStage.VERIFY &&
-              row.status === ExecutionProgressStatus.COMPLETED,
-          ),
-        ).toBe(true);
-      },
-      {
-        runtimeDebugOptions: {
-          dryRun: false,
-          trace: false,
-          replayPath: null,
-          adapters: true,
-        },
-      },
-    );
-  });
-
-  it('persists durable-storage diagnostics into verify artifacts', async () => {
-    await withRuntimeFixture(
-      async (fixture) => {
-        const verifyResult = await fixture.runtime.execute(CliCommandName.VERIFY);
-        const diagnosticsArtifactPath = verifyResult.commandResult.artifacts?.find(
-          (artifact) => artifact.id === 'verify_diagnostics',
-        )?.path;
-        expect(typeof diagnosticsArtifactPath).toBe('string');
-
-        const diagnosticsPayload = JSON.parse(
-          await readFile(String(diagnosticsArtifactPath), 'utf8'),
-        ) as {
-          durableStorage?: {
-            sessionDurableTruth?: {
-              state?: string;
-            };
-            artifactRegistryRenderedViews?: {
-              state?: string;
-            };
-            taskLedgerCanonicalTruth?: {
-              state?: string;
-            };
-          };
-        };
-
-        expect(diagnosticsPayload.durableStorage?.sessionDurableTruth?.state).toBe(
-          'provider_override',
-        );
-        expect(diagnosticsPayload.durableStorage?.artifactRegistryRenderedViews?.state).toBe(
-          'uninitialized',
-        );
-        expect(diagnosticsPayload.durableStorage?.taskLedgerCanonicalTruth?.state).toBe(
-          'no_sources',
-        );
-      },
-      {
-        runtimeDebugOptions: {
-          dryRun: false,
-          trace: false,
-          replayPath: null,
-          adapters: true,
-        },
-      },
-    );
-  });
-
-  it('keeps verify tool-matrix probe availability separate from fallback binding status', async () => {
-    await withRuntimeFixture(
-      async (fixture) => {
-        const verifyResult = await fixture.runtime.execute(CliCommandName.VERIFY);
-        const diagnosticsArtifactPath = verifyResult.commandResult.artifacts?.find(
-          (artifact) => artifact.id === 'verify_diagnostics',
-        )?.path;
-        expect(typeof diagnosticsArtifactPath).toBe('string');
-
-        const diagnosticsPayload = JSON.parse(
-          await readFile(String(diagnosticsArtifactPath), 'utf8'),
-        ) as {
-          matrix?: {
-            tool_matrix?: Array<{
-              role_profile_id?: string;
-              tool?: string;
-              availability_status?: string | null;
-              binding_status?: string | null;
-              binding_unavailable_reasons?: string[];
-              invoke_liveness_diagnostics?: {
-                unavailable_reasons?: string[];
-              };
-            }>;
-          };
-        };
-
-        const plannerToolRow = diagnosticsPayload.matrix?.tool_matrix?.find(
-          (row) => row.role_profile_id === DefaultRoleProfileId.PLANNER,
-        );
-
-        expect(plannerToolRow).toMatchObject({
-          tool: AdapterSurface.CLAUDE_CODE,
-          availability_status: AgentAvailabilityStatus.AVAILABLE,
-          binding_status: CliGovernanceCheckStatus.WARN,
-          binding_unavailable_reasons: ['surface_unavailable:codex:command_missing:codex:codex'],
-          invoke_liveness_diagnostics: {
-            unavailable_reasons: [],
-          },
-        });
-      },
-      {
-        runtimeDebugOptions: {
-          dryRun: false,
-          trace: false,
-          replayPath: null,
-          adapters: true,
-        },
-        adapterLocalProbeOverrides: {
-          [AdapterSurface.CODEX]: {
-            availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
-            unavailableReasons: ['command_missing:codex:codex'],
-          },
-          [AdapterSurface.CLAUDE_CODE]: {
-            availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
-            unavailableReasons: [],
-          },
-          [AdapterSurface.GITHUB_COPILOT]: {
-            availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
-            unavailableReasons: [],
-          },
-        },
-      },
-    );
-  });
-
-  it('fails verify with a deterministic durable-storage error code when canonical artifact-registry sqlite is unreadable', async () => {
-    await withRuntimeFixture(
-      async (fixture) => {
-        const artifactRegistryRoot = resolve(
-          fixture.workspaceRoot,
-          'context',
-          'artifact-registry',
-          'sqlite',
-        );
-        await mkdir(artifactRegistryRoot, { recursive: true });
-        const databaseFilePath = resolve(artifactRegistryRoot, 'artifact-registry.sqlite');
-        const database = new DatabaseSync(databaseFilePath);
-        database.close();
-
-        await expect(fixture.runtime.execute(CliCommandName.VERIFY)).rejects.toMatchObject({
-          code: GovernorErrorCode.DURABLE_STORAGE_VERIFY_FAILED,
-        });
-      },
-      {
-        runtimeDebugOptions: {
-          dryRun: false,
-          trace: false,
-          replayPath: null,
-          adapters: true,
-        },
-      },
-    );
-  });
-
-  it('fails verify when only local-model fallback is available for unsupported required roles', async () => {
-    const fetchMock = vi.fn(
-      async () =>
-        new Response(
-          JSON.stringify({
-            models: [
-              {
-                name: 'qwen2.5-coder:7b',
-              },
-            ],
-          }),
-          {
-            status: 200,
-            headers: {
-              'content-type': 'application/json',
-            },
-          },
-        ),
-    );
-    vi.stubGlobal('fetch', fetchMock);
-
-    await withRuntimeFixture(
-      async (fixture) => {
-        await expect(fixture.runtime.execute(CliCommandName.VERIFY)).rejects.toMatchObject({
-          code: GovernorErrorCode.ADAPTER_ROUTE_NO_AVAILABLE_SURFACE,
-        });
-      },
-      {
-        adaptersConfig: createLocalFallbackAdaptersConfig(),
-        runtimeDebugOptions: {
-          dryRun: false,
-          trace: false,
-          replayPath: null,
-          adapters: true,
-        },
-        adapterLocalProbeOverrides: {
-          [AdapterSurface.CODEX]: {
-            availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
-            unavailableReasons: [],
-          },
-          [AdapterSurface.CLAUDE_CODE]: {
-            availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
-            unavailableReasons: [],
-          },
-          [AdapterSurface.GITHUB_COPILOT]: {
-            availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
-            unavailableReasons: [],
-          },
-        },
-        commandProbeExecutor: async () => undefined,
       },
     );
   });

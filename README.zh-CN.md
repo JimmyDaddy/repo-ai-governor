@@ -109,6 +109,7 @@ node <governor-repo>/dist/bin/repo-ai-governor.js <command>
 2. 在本地 TTY + `pretty` 模式下，无子命令入口会打开 session-first shell，并渲染到 `stderr`。
 3. `resume [session-id]` 可恢复最近一次或指定的持久化会话。
 4. 全新的外部仓库仍可能出现 `baseline_docs missing=5/5`、`script_not_found` 之类 self-host 相关 warning；除非你本来就要 vendoring 本仓库自己的治理文档和脚本，否则应把它们视为提示而不是失败。
+5. 人类可读的 help 与状态文案支持本地化；如果你想固定语言，可以显式传 `--locale en-US` 或 `--locale zh-CN`。
 
 ### 2.4 应用受管 adoption baseline
 
@@ -162,15 +163,19 @@ pnpm exec repo-ai-governor review-verify --output json
 
 适合第一次体验完整的 plan -> run -> review -> verify 闭环，并查看 workspace 下的审计产物。
 
-### 3.4 切换 workspace 模式
+### 3.4 切换 workspace 模式或壳层主题
 
 ```bash
 pnpm exec repo-ai-governor workspace dry-run --workspace-mode repo_local --output json
 pnpm exec repo-ai-governor workspace execute --workspace-mode repo_local --output json
 pnpm exec repo-ai-governor workspace rollback <plan-path> --output json
+pnpm exec repo-ai-governor workspace set-ui-theme --output pretty
+pnpm exec repo-ai-governor set-ui-theme calm --theme-scope workspace --output pretty
 ```
 
 请保留命令输出中的 `plan-path`，它就是这次迁移的 rollback 参考。
+
+`workspace` 还支持直接短写 `clear-config` 与 `switch-branch`。在交互式 TTY + `pretty` 模式下，`workspace set-ui-theme` 或顶层 `set-ui-theme` 如果省略 `[theme]`，会直接打开主题 selector。
 
 ### 3.5 预览、应用与回滚 Upgrade
 
@@ -182,18 +187,22 @@ pnpm exec repo-ai-governor upgrade rollback <apply-receipt-or-rollback-snapshot>
 
 先跑 `upgrade` preview。保留 preview 输出里的 `report_path`，以及 apply 输出里的 `apply_receipt_path`；这两类产物就是 adopter-facing apply/rollback 路径的正式 hand-off 参考。
 
-### 3.6 刷新可选的 Codex / Claude Code 宿主资产
+### 3.6 刷新可选的源码仓宿主 follow-up 资产
 
 ```bash
 pnpm exec repo-ai-governor host export --host codex --mode project-local --output-dir .repo-ai-governor/generated/hosts/codex --apply-to-repo /absolute/path/to/<target-repo>
 pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/codex/host-export.manifest.json
+pnpm exec repo-ai-governor host export --host github-copilot --mode project-local --copilot-target repo-local --output-dir .repo-ai-governor/generated/hosts/github-copilot --apply-to-repo /absolute/path/to/<target-repo>
+pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/github-copilot/host-export.manifest.json
 pnpm exec repo-ai-governor host pack --host claude-code --mode plugin-bundle --output-dir .repo-ai-governor/generated/hosts/claude-code-plugin --bundle-dir .repo-ai-governor/generated/bundles/claude-code
 pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/claude-code-plugin/host-export.manifest.json
 ```
 
 这些命令应从 `<governor-repo>` 执行，且 `--apply-to-repo` 必须显式指向真正接收生成文件的 adopter 仓库根目录。
 
-只有当你在已构建的 governor 源码仓上，需要在常规 CLI bootstrap 之外再生成可选的 Codex / Claude Code 宿主原生资产时，才使用这条路径。
+只有当你在已构建的 governor 源码仓上，需要在常规 CLI bootstrap 之外再生成可选的宿主原生 follow-up 资产时，才使用这条路径。
+
+当前公开 host family 已包含 Codex、Claude Code 与 GitHub Copilot。对于 GitHub Copilot，请把 adopter-facing 流程限制在 `repo-local` 等公开 target 上；`github-com-agent` 仍保持 reserved 且 fail-closed，除非支持矩阵另有更新。
 
 正式刷新路径固定为：更新 governor 源码 checkout 或 vendored 的宿主侧 skills，然后重新执行 `host export` 或 `host pack`，最后重新执行 `host verify`。这属于源码仓 follow-up surface，不属于 packaged-install baseline，也不是一条独立的 host installer contract。
 
@@ -207,7 +216,7 @@ pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/ho
 6. 可选的 VS Code companion surface 现在支持两条路径：从已构建的 governor 源码仓通过 `apps/vscode-extension` 启动 extension-development host，或从同一源码仓本地生成 VSIX / packaged extension root。已发布的 npm/tgz 安装面即便仍带有内部 `dist/apps/vscode-extension/**` 产物，也不会交付正式支持的可安装扩展 bundle，Marketplace 仍不在支持范围内。
 7. 可选 desktop surface 继续保持 desktop foundation-only，并且只在已构建的 governor 源码仓上正式支持。当前没有正式支持的独立桌面安装器、已发布桌面 bundle 或 packaged desktop product claim。
 8. 内置 `adopt apply` 不要求目标仓库预先存在 source-local `.codex/skills/**`；仓库内的 Codex 本地工作流辅助能力位于 `.codex/skills/`，主要服务 self-host 与维护者流程，外部 adopter 只有在希望复用同样的本地 skill 体验时才需要一并 vendoring。
-9. 可选的 Codex / Claude Code 宿主原生资产（`host export` / `host verify` / `host pack`）只在源码仓 follow-up surface 上正式支持。只要 governor 或技能资产有刷新，就要重新执行对应 host 命令并重新 `host verify`；不要把这条路径当成 packaged-install 证明或独立的 host upgrader。
+9. 可选的宿主原生 follow-up 资产（`host export` / `host verify` / `host pack`）只在源码仓 follow-up surface 上正式支持。公开 host family 已包含 Codex、Claude Code 与 GitHub Copilot，但不同 target 的支持边界仍有差异；请保留 manifest/verification summary，在 governor 或技能资产刷新后重新执行对应 host 命令并重新 `host verify`，同时继续把 `github-com-agent` 视为 `docs/support-matrix.zh-CN.md` 明确放行前的 reserved/blocked target。
 10. 若要在 clean-room 或 desktop-sidecar 场景下启动本地 service host，只支持通过根包公开导出 `@cjhdev/repo-ai-governor/service-host` 引入；不要深导入内部 `dist/**` host 文件。
 
 ## 5. 继续阅读

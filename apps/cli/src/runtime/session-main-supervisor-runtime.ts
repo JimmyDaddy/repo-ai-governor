@@ -646,7 +646,6 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     if (
       capabilityId === SESSION_MAIN_CAPABILITY_ID.HELP ||
       capabilityId === SESSION_MAIN_CAPABILITY_ID.DOCTOR ||
-      capabilityId === SESSION_MAIN_CAPABILITY_ID.VERIFY ||
       capabilityId === SESSION_MAIN_CAPABILITY_ID.WORKFLOW
     ) {
       return {
@@ -2187,14 +2186,14 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
   ): string {
     if (descriptor.roleId === 'reviewer') {
       return this.localizeText(
-        'You are the reviewer role subagent for Repo AI Governor. When the user asks for a code review of the current worktree, diff, or repository changes, inspect the repository in a read-only manner and produce findings-first concise markdown with concrete file references when possible. Do not modify files, do not run governed CLI commands, and do not claim that commands already ran. If the user is really asking to run connect, doctor, verify, or run, keep the response advisory and tell the supervisor to use governed handoff instead.',
-        '你现在是 Repo AI Governor 的 reviewer 角色子代理。当用户请求审查当前 worktree、diff 或仓库改动时，请以只读方式检查仓库，并优先输出 findings-first 的简洁 Markdown；在可能时给出具体文件引用。不要修改文件，不要执行受治理的 CLI 命令，也不要声称命令已经执行完成。如果用户真正想运行 connect、doctor、verify 或 run，请仅给出建议，并明确需要由 supervisor 走受治理交接。',
+        'You are the reviewer role subagent for Repo AI Governor. When the user asks for a code review of the current worktree, diff, or repository changes, inspect the repository in a read-only manner and produce findings-first concise markdown with concrete file references when possible. Do not modify files, do not run governed CLI commands, and do not claim that commands already ran. If the user is really asking to run connect, doctor, review, review verify, or run, keep the response advisory and tell the supervisor to use governed handoff instead.',
+        '你现在是 Repo AI Governor 的 reviewer 角色子代理。当用户请求审查当前 worktree、diff 或仓库改动时，请以只读方式检查仓库，并优先输出 findings-first 的简洁 Markdown；在可能时给出具体文件引用。不要修改文件，不要执行受治理的 CLI 命令，也不要声称命令已经执行完成。如果用户真正想运行 connect、doctor、review、review verify 或 run，请仅给出建议，并明确需要由 supervisor 走受治理交接。',
       );
     }
 
     return this.localizeText(
-      `You are the ${descriptor.roleId} role subagent for Repo AI Governor. Respond from this role's perspective in concise markdown. Do not execute commands, modify files, or claim that governed commands already ran. If the user is really asking to run connect, doctor, verify, review, or run, keep the response advisory and tell the supervisor to use preview plus confirm handoff instead.`,
-      `你现在是 Repo AI Governor 的 ${descriptor.roleId} 角色子代理。请用这个角色的视角输出简洁的 Markdown。不要执行命令、不要修改文件，也不要声称受治理命令已经执行。如果用户真正想运行 connect、doctor、verify、review 或 run，请仅给出建议，并明确需要由 supervisor 走 preview + confirm 交接。`,
+      `You are the ${descriptor.roleId} role subagent for Repo AI Governor. Respond from this role's perspective in concise markdown. Do not execute commands, modify files, or claim that governed commands already ran. If the user is really asking to run connect, doctor, review, review verify, or run, keep the response advisory and tell the supervisor to use preview plus confirm handoff instead.`,
+      `你现在是 Repo AI Governor 的 ${descriptor.roleId} 角色子代理。请用这个角色的视角输出简洁的 Markdown。不要执行命令、不要修改文件，也不要声称受治理命令已经执行。如果用户真正想运行 connect、doctor、review、review verify 或 run，请仅给出建议，并明确需要由 supervisor 走 preview + confirm 交接。`,
     );
   }
 
@@ -2397,8 +2396,8 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       ),
       '',
       this.localizeText(
-        'Reconnect or verify an eligible surface, then retry the free-form answer or switch to a governed command such as `/connect`, `/doctor`, `/verify`, `/review`, or `/run`.',
-        '请先恢复或校验可用 surface，然后再重试自由对话回答，或者改用 `/connect`、`/doctor`、`/verify`、`/review`、`/run` 等受治理命令。',
+        'Reconnect an eligible surface, then retry the free-form answer or switch to a governed command such as `/connect`, `/doctor`, `/review`, or `/run`.',
+        '请先恢复可用 surface，然后再重试自由对话回答，或者改用 `/connect`、`/doctor`、`/review`、`/run` 等受治理命令。',
       ),
     ].join('\n');
     return {

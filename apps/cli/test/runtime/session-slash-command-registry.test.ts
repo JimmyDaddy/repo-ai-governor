@@ -14,6 +14,8 @@ const TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.commands.history.summary': 'Show recent shell input history.',
   'cli.sessionShell.commands.search.summary': 'Search transcript and history.',
   'cli.sessionShell.commands.multiline.summary': 'Capture one multi-line turn.',
+  'cli.sessionShell.commands.planSync.summary':
+    'Preview or commit deterministic sprint-ledger projection for an existing plan.',
   'cli.sessionShell.commands.status.summary':
     'Show session-shell status and hidden runtime details.',
   'cli.sessionShell.commands.theme.summary': 'Inspect or update the theme.',
@@ -26,12 +28,10 @@ const TRANSLATIONS: Record<string, string> = {
     'Prepare and apply adapter onboarding changes for this workspace.',
   'sessionMainCapabilities.catalog.doctor.summary':
     'Diagnose adapter health, environment readiness, and route blockers.',
-  'sessionMainCapabilities.catalog.verify.summary':
-    'Verify routing, projection, and adapter readiness truth.',
   'sessionMainCapabilities.catalog.workflow.summary':
     'Preview or enter the governed workflow definition surface.',
   'sessionMainCapabilities.catalog.run.summary':
-    'Start a governed execution flow for implementation or workflow work.',
+    'Start a reusable governed workflow or task-driven execution flow.',
   'sessionMainCapabilities.catalog.plan.summary':
     'Generate or refine a task breakdown for the current goal.',
   'sessionMainCapabilities.catalog.review.summary':
@@ -54,7 +54,6 @@ describe('CliSessionSlashCommandRegistry', () => {
       '/workspace',
       '/workspace switch-branch',
       '/doctor',
-      '/verify',
       '/connect',
       '/review',
       '/plan',
@@ -93,6 +92,7 @@ describe('CliSessionSlashCommandRegistry', () => {
     expect(suggestions.map((suggestion) => suggestion.command)).toContain('/archive');
     expect(suggestions.map((suggestion) => suggestion.command)).toContain('/unarchive');
     expect(suggestions.map((suggestion) => suggestion.command)).toContain('/workflow');
+    expect(suggestions.map((suggestion) => suggestion.command)).toContain('/plan sync');
     expect(suggestions.map((suggestion) => suggestion.command)).toContain(
       '/workspace switch-branch',
     );
@@ -133,18 +133,82 @@ describe('CliSessionSlashCommandRegistry', () => {
       summaryKey: 'cli.sessionShell.commands.agent.summary',
     });
     expect(registry.resolveAction('/review verify latest')).toEqual({
-      bridgeArgv: ['review-verify', 'latest'],
+      aiWorkflowPrompt: [
+        'Run the standard review-verification workflow for the following target.',
+        'Recheck the existing review artifact or fix result and determine whether accepted findings are actually resolved.',
+        'Return a structured verification result rather than an open-ended expert discussion.',
+        '',
+        'Verification target: latest',
+      ].join('\n'),
       command: '/review verify',
-      executionMode: 'confirm',
-      kind: 'bridge',
+      executionMode: 'direct',
+      kind: 'ai_workflow',
       summaryKey: 'sessionMainCapabilities.catalog.review_verify.summary',
     });
     expect(registry.resolveAction('/plan')).toEqual({
-      bridgeArgv: ['plan'],
+      aiWorkflowPrompt:
+        'Use the standard planning template to create an execution plan for the current goal. Do not sync anything to the sprint ledger yet.',
       command: '/plan',
       executionMode: 'direct',
-      kind: 'bridge',
+      kind: 'ai_workflow',
       summaryKey: 'sessionMainCapabilities.catalog.plan.summary',
+    });
+    expect(registry.resolveAction('/plan ship a tetris clone')).toEqual({
+      aiWorkflowPrompt: [
+        'Use the standard planning template to create an execution plan for the following goal.',
+        'Do not sync anything to the sprint ledger yet.',
+        '',
+        'Goal: ship a tetris clone',
+      ].join('\n'),
+      command: '/plan',
+      executionMode: 'direct',
+      kind: 'ai_workflow',
+      summaryKey: 'sessionMainCapabilities.catalog.plan.summary',
+    });
+    expect(registry.resolveAction('/PLAN Fix API naming in README.md')).toEqual({
+      aiWorkflowPrompt: [
+        'Use the standard planning template to create an execution plan for the following goal.',
+        'Do not sync anything to the sprint ledger yet.',
+        '',
+        'Goal: Fix API naming in README.md',
+      ].join('\n'),
+      command: '/plan',
+      executionMode: 'direct',
+      kind: 'ai_workflow',
+      summaryKey: 'sessionMainCapabilities.catalog.plan.summary',
+    });
+    expect(registry.resolveAction('/plan sync')).toEqual({
+      bridgeArgv: ['plan'],
+      command: '/plan sync',
+      executionMode: 'direct',
+      kind: 'bridge',
+      summaryKey: 'cli.sessionShell.commands.planSync.summary',
+    });
+    expect(registry.resolveAction('/plan sync commit preview.json --confirm-plan approve')).toEqual(
+      {
+        bridgeArgv: ['plan', 'commit', 'preview.json', '--confirm-plan', 'approve'],
+        command: '/plan sync',
+        executionMode: 'confirm',
+        kind: 'bridge',
+        summaryKey: 'cli.sessionShell.commands.planSync.summary',
+      },
+    );
+    expect(
+      registry.resolveAction(
+        '/PLAN SYNC commit ./Context/Plan/MyPreview.preview.json --confirm-plan approve',
+      ),
+    ).toEqual({
+      bridgeArgv: [
+        'plan',
+        'commit',
+        './Context/Plan/MyPreview.preview.json',
+        '--confirm-plan',
+        'approve',
+      ],
+      command: '/plan sync',
+      executionMode: 'confirm',
+      kind: 'bridge',
+      summaryKey: 'cli.sessionShell.commands.planSync.summary',
     });
     expect(registry.resolveAction('/workflow')).toEqual({
       bridgeArgv: ['workflow', 'preview'],
@@ -188,12 +252,48 @@ describe('CliSessionSlashCommandRegistry', () => {
       kind: 'bridge',
       summaryKey: 'sessionMainCapabilities.catalog.doctor.summary',
     });
-    expect(registry.resolveAction('/verify')).toEqual({
-      bridgeArgv: ['verify'],
-      command: '/verify',
+  });
+
+  it('keeps /review on the AI fixed workflow path and /run on the governed bridge path', () => {
+    const registry = new CliSessionSlashCommandRegistry();
+
+    expect(registry.resolveAction('/review')).toEqual({
+      aiWorkflowPrompt: [
+        'Run the standard governed code-review workflow for the current working scope.',
+        'Focus on user-visible regressions, behavior risk, and missing tests.',
+        'Return a structured review-style result instead of a free-form expert brainstorm.',
+      ].join('\n'),
+      command: '/review',
       executionMode: 'direct',
+      kind: 'ai_workflow',
+      summaryKey: 'sessionMainCapabilities.catalog.review.summary',
+    });
+    expect(registry.resolveAction('/review current diff')).toEqual({
+      aiWorkflowPrompt: [
+        'Run the standard governed code-review workflow for the following scope.',
+        'Focus on user-visible regressions, behavior risk, and missing tests.',
+        'Return a structured review-style result instead of a free-form expert brainstorm.',
+        '',
+        'Review scope: current diff',
+      ].join('\n'),
+      command: '/review',
+      executionMode: 'direct',
+      kind: 'ai_workflow',
+      summaryKey: 'sessionMainCapabilities.catalog.review.summary',
+    });
+    expect(registry.resolveAction('/run')).toEqual({
+      bridgeArgv: ['run'],
+      command: '/run',
+      executionMode: 'confirm',
       kind: 'bridge',
-      summaryKey: 'sessionMainCapabilities.catalog.verify.summary',
+      summaryKey: 'sessionMainCapabilities.catalog.run.summary',
+    });
+    expect(registry.resolveAction('/run reusable-rollout')).toEqual({
+      bridgeArgv: ['run', 'reusable-rollout'],
+      command: '/run',
+      executionMode: 'confirm',
+      kind: 'bridge',
+      summaryKey: 'sessionMainCapabilities.catalog.run.summary',
     });
   });
 });

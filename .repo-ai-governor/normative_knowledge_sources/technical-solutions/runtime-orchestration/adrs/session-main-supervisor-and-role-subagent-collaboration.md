@@ -40,7 +40,7 @@
    - `repo question`
 3. connected roles 不再只被视为静态 onboarding 结果；它们应被映射为 `session.main` 可调度的 role subagents / handoff targets，但该映射只能消费 projection truth，不能反向改写 projection truth。
 4. natural-language skill routing 必须先经过 service-owned risk/policy gate，而不是默认一刀切 `preview + confirm` 或无限制自动执行：
-   - `help`、`doctor`、`verify` 与 scope-resolved `review.code` 等低风险只读 skill 可以被判定为 `direct_execute`
+   - `help`、`doctor`、post-connect readiness follow-up 与 scope-resolved `review.code` 等低风险只读 skill 可以被判定为 `direct_execute`
    - `connect`、`run`、`review verify`、多步 bundle，以及高成本/高歧义场景继续走 `preview + confirm`
    - `session.main` 的自由对话不是可选 fallback；普通闲聊、寒暄、轻量问答与未成形需求默认都应先走 `direct answer`
    - 当用户在自由对话里自然表达出可执行意图时，`session.main` 应在同一对话面里把该输入升级为 `skill handoff`、`command handoff` 或 `role delegate`，而不是要求用户先离开自由对话模式
@@ -56,7 +56,7 @@
    - 它必须先回答“能做什么 / 何时使用 / 有什么区别”，再决定是否桥接到 governed execution
    - capability explanation 是插入现有 taxonomy 的正式分支，不替换 `greeting/social chat`、`repo question`、`skill intent` 或 `slash-command-adjacent command handoff`
 8. governed capability catalog 的单一事实来源只覆盖可解释的 governed bridge capabilities，不覆盖全部 shell-local builtins：
-   - `help`、`connect`、`doctor`、`verify`、`plan`、`review`、`review verify`、`run`、`workflow` 等可以进入 capability catalog
+   - `help`、`connect`、`doctor`、`plan`、`review`、`review verify`、`run`、`workflow` 等可以进入 capability catalog
    - `/confirm`、`/cancel`、`/clear`、`/exit`、`/resume`、`/history`、`/search`、`/multiline`、`/status`、`/theme`、`/agent` 等 CLI-only builtin 继续由 `runtime.cli-interactive-shell` slash registry 本地自治
    - CLI presenter 可以把两类 discoverability 合并展示，但 orchestration 不得拥有 shell-local builtin 的 canonical truth
 9. 纯 capability explanation turn 仍属于 `answer` 路径；若同一句话同时包含 explanation 与 executable ask，runtime 必须先命中 capability explanation，再仅在 scope-resolved 且 policy 允许时桥接到既有 `direct_execute` 或 `command_handoff_preview` outcome，而不是发明一条新的 hybrid pending-state contract。
@@ -84,7 +84,7 @@
 
 ### 4.1 `connect/apply` 激活的是配置真值，不等于前台 supervisor 已直接使用这些 role
 
-`runtime.agent-projection` 的 `connect -> diff -> apply -> verify` 链路负责的是：
+`runtime.agent-projection` 的 `connect -> diff -> apply -> readiness verification` 链路负责的是：
 
 1. 发现 candidate role/surface 绑定。
 2. 审阅并写回活动 `governor.yaml`。
@@ -92,7 +92,7 @@
 
 因此：
 
-1. `connect apply` 之后，真实 agent binding 已经对 `run / doctor / verify` 等显式命令生效。
+1. `connect apply` 之后，真实 agent binding 已经对 `run / doctor / connect follow-up readiness checks` 等显式命令生效。
 2. 但前台 `session.main` 何时把这些 role 当成 subagents 调用，仍由 `project-035` 的 supervisor productization 决定。
 3. 换句话说，`apply` 激活的是配置层与后台执行层；`session.main` 的前台协作激活，要等 bootstrap / collaboration sprint 落地。
 
@@ -139,7 +139,7 @@ flowchart TD
   M --> R["reviewer role subagent"]
   M --> V["verifier role subagent"]
   M --> H["command handoff preview"]
-  H --> W["workflow / run / review / verify backend flow"]
+  H --> W["workflow / run / review backend flow"]
   W --> N["workflow planner node"]
 ```
 

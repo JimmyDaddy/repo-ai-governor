@@ -1,7 +1,7 @@
 # Repo AI Governor 可扩展架构图与仓库分层结构
 
 - Status: active
-- Date: 2026-04-08
+- Date: 2026-04-10
 - Role: implementation blueprint
 - Basis:
   - `.repo-ai-governor/normative_knowledge_sources/repo-ai-governor-overall-technical-solution.md`
@@ -254,7 +254,7 @@ sequenceDiagram
 
 ## 3.1 Stage 9 Follow-Up 架构补充
 
-1. `run` 主链的目标形态是任务驱动 DAG，并可内联 `review -> review-verify -> ledger backfill` 受控子链。
+1. `run` 主链的目标形态是任务驱动 DAG，并可内联 `review -> review-verify -> ledger backfill` 受控子链；public `/run` 只表示 reusable governed workflow / task-driven execution flow，不再作为泛化“帮我实现”入口。
 2. `confirm/escalate` 返回的人工决策不是一次性终态，而是可回灌的恢复事件；runtime 必须支持 `resume/terminate/degrade`。
 3. `commit/PR draft` rehearsal 属于 Delivery & Operations Layer 的受控扩展，必须与 audit/replay 保持同链回放。
 
@@ -309,7 +309,7 @@ sequenceDiagram
 20. `Interactive CLI Shell`
    - 负责 `runtime.cli-interactive-shell` 这类 human-first shell 的模式解析、状态机、stderr 渲染与 classic fallback，但不拥有业务真相或 runtime 主状态。
 21. `Agent Onboarding & Projection`
-   - 由 `runtime.agent-projection` 正式承接，把 `connect / doctor / verify` 的 onboarding 结果与 `AgentDescriptor` 投影统一收敛到同一条 runtime seam，避免 CLI、report、diagnostics 各自维护一套工具绑定语义。
+   - 由 `runtime.agent-projection` 正式承接，把 `connect / doctor + readiness verification` 的 onboarding 结果与 `AgentDescriptor` 投影统一收敛到同一条 runtime seam，避免 CLI、report、diagnostics 各自维护一套工具绑定语义。
 22. `Host Asset Lifecycle Service`
    - 管理 Codex / Claude Code / GitHub Copilot 等入口的 project-local assets、plugin bundles、skills/agents、hooks/subagents、`.mcp.json` 等 host-native artifacts。
    - 负责 `export / apply / verify / upgrade` 流程、support-truth 表达与 adopter-facing packaging evidence，但不持有 runtime canonical truth。

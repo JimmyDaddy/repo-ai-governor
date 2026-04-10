@@ -138,10 +138,10 @@ async function createConnectFixtureRepo(): Promise<string> {
   return temporaryRepositoryRoot;
 }
 
-async function runJsonCli(currentWorkingDirectory: string, args: string[]) {
+async function runJsonCli(currentWorkingDirectory: string, args: string[], locale = 'en-US') {
   const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(currentWorkingDirectory);
   const exitCode = await runCli(
-    ['node', 'repo-ai-governor', '--locale', 'en-US', '--output', 'json', ...args],
+    ['node', 'repo-ai-governor', '--locale', locale, '--output', 'json', ...args],
     io,
   );
   const stdoutText = stdoutBuffer.join('');
@@ -219,6 +219,271 @@ describe('connect phase-2 integration', () => {
       expect(
         existsSync(String(applyResult.payload.command_result?.details.rollback_artifact_path)),
       ).toBe(true);
+    } finally {
+      await rm(fixtureRepositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('materializes explicit remote_api transport when connect receives --tool-transport', async () => {
+    const fixtureRepositoryRoot = await createConnectFixtureRepo();
+    const persistedConfigPath = resolve(
+      fixtureRepositoryRoot,
+      '.repo-ai-governor',
+      'governor.yaml',
+    );
+
+    await writeFile(
+      persistedConfigPath,
+      [
+        'schemaVersion: "1.1"',
+        'workspace:',
+        '  mode: repo_local',
+        '  migrationPolicy: copy_verify_switch_rollback',
+        'i18n:',
+        '  runtimeEngine: i18next',
+        '  defaultLocale: en-US',
+        '  fallbackLocale: zh-CN',
+        '  supportedLocales:',
+        '    - en-US',
+        '    - zh-CN',
+        'adapters:',
+        '  roles:',
+        '    - roleId: planner',
+        '      roleProfileId: planner-default',
+        '      requiredCapabilities:',
+        '        - structured_output',
+        '      required: true',
+        '    - roleId: coder',
+        '      roleProfileId: coder-default',
+        '      requiredCapabilities:',
+        '        - tool_calling',
+        '      required: true',
+        '    - roleId: reviewer',
+        '      roleProfileId: reviewer-default',
+        '      requiredCapabilities:',
+        '        - structured_output',
+        '      required: true',
+        '  routing:',
+        '    roleBindings:',
+        '      planner:',
+        '        primarySurface: codex',
+        '        fallbackSurfaces:',
+        '          - claude-code',
+        '      coder:',
+        '        primarySurface: codex',
+        '        fallbackSurfaces:',
+        '          - github-copilot',
+        '      reviewer:',
+        '        primarySurface: claude-code',
+        '        fallbackSurfaces:',
+        '          - codex',
+        '  tools:',
+        '    - toolId: codex',
+        '      enabled: true',
+        '      availability: available',
+        '      remoteApi:',
+        '        provider: openai',
+        '        vendorBinding: openai_responses',
+        '        model: gpt-5',
+        '        credentialEnvVar: OPENAI_API_KEY',
+        '    - toolId: claude-code',
+        '      enabled: true',
+        '      availability: available',
+        '    - toolId: github-copilot',
+        '      enabled: true',
+        '      availability: available',
+        '',
+      ].join('\n'),
+      'utf8',
+    );
+
+    try {
+      const generateResult = await runJsonCli(fixtureRepositoryRoot, [
+        'connect',
+        '--tools',
+        'codex',
+        '--tool-transport',
+        'codex=remote_api',
+      ]);
+      const candidatePath = String(
+        generateResult.payload.command_result?.details.candidate_config_path,
+      );
+      const candidateContent = await readFile(candidatePath, 'utf8');
+
+      expect(generateResult.exitCode).toBe(0);
+      expect(generateResult.payload.status).toBe('success');
+      expect(candidateContent).toContain('transport: remote_api');
+      expect(candidateContent).toContain('provider: openai');
+      expect(candidateContent).toContain('credentialEnvVar: OPENAI_API_KEY');
+    } finally {
+      await rm(fixtureRepositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('does not shrink the default multi-tool candidate when only one tool gets a transport override', async () => {
+    const fixtureRepositoryRoot = await createConnectFixtureRepo();
+
+    try {
+      const generateResult = await runJsonCli(fixtureRepositoryRoot, [
+        'connect',
+        '--tool-transport',
+        'codex=cli_exec',
+      ]);
+      const candidatePath = String(
+        generateResult.payload.command_result?.details.candidate_config_path,
+      );
+      const candidateContent = await readFile(candidatePath, 'utf8');
+
+      expect(generateResult.exitCode).toBe(0);
+      expect(generateResult.payload.status).toBe('success');
+      expect(candidateContent).toContain('toolId: codex');
+      expect(candidateContent).toContain('toolId: claude-code');
+      expect(candidateContent).toContain('toolId: github-copilot');
+      expect(candidateContent).toContain('reviewer:');
+      expect(candidateContent).toContain('primarySurface: claude-code');
+      expect(candidateContent).toContain('fallbackSurfaces:');
+    } finally {
+      await rm(fixtureRepositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('applies an explicit cli_exec candidate while preserving configured remote_api truth', async () => {
+    const fixtureRepositoryRoot = await createConnectFixtureRepo();
+    const persistedConfigPath = resolve(
+      fixtureRepositoryRoot,
+      '.repo-ai-governor',
+      'governor.yaml',
+    );
+
+    await writeFile(
+      persistedConfigPath,
+      [
+        'schemaVersion: "1.1"',
+        'workspace:',
+        '  mode: repo_local',
+        '  migrationPolicy: copy_verify_switch_rollback',
+        'i18n:',
+        '  runtimeEngine: i18next',
+        '  defaultLocale: en-US',
+        '  fallbackLocale: zh-CN',
+        '  supportedLocales:',
+        '    - en-US',
+        '    - zh-CN',
+        'adapters:',
+        '  roles:',
+        '    - roleId: planner',
+        '      roleProfileId: planner-default',
+        '      requiredCapabilities:',
+        '        - structured_output',
+        '      required: true',
+        '    - roleId: coder',
+        '      roleProfileId: coder-default',
+        '      requiredCapabilities:',
+        '        - tool_calling',
+        '      required: true',
+        '    - roleId: reviewer',
+        '      roleProfileId: reviewer-default',
+        '      requiredCapabilities:',
+        '        - structured_output',
+        '      required: true',
+        '  routing:',
+        '    roleBindings:',
+        '      planner:',
+        '        primarySurface: codex',
+        '        fallbackSurfaces:',
+        '          - claude-code',
+        '      coder:',
+        '        primarySurface: codex',
+        '        fallbackSurfaces:',
+        '          - github-copilot',
+        '      reviewer:',
+        '        primarySurface: claude-code',
+        '        fallbackSurfaces:',
+        '          - codex',
+        '  tools:',
+        '    - toolId: codex',
+        '      enabled: true',
+        '      availability: available',
+        '      remoteApi:',
+        '        provider: openai',
+        '        vendorBinding: openai_responses',
+        '        model: gpt-5',
+        '        credentialEnvVar: OPENAI_API_KEY',
+        '    - toolId: claude-code',
+        '      enabled: true',
+        '      availability: available',
+        '    - toolId: github-copilot',
+        '      enabled: true',
+        '      availability: available',
+        '',
+      ].join('\n'),
+      'utf8',
+    );
+
+    try {
+      const generateResult = await runJsonCli(fixtureRepositoryRoot, [
+        'connect',
+        '--tools',
+        'codex',
+        '--tool-transport',
+        'codex=cli_exec',
+      ]);
+      const candidatePath = String(
+        generateResult.payload.command_result?.details.candidate_config_path,
+      );
+      const candidateContent = await readFile(candidatePath, 'utf8');
+      const applyResult = await runJsonCli(fixtureRepositoryRoot, ['connect', 'apply', '--latest']);
+      const persistedConfigContent = await readFile(persistedConfigPath, 'utf8');
+
+      expect(generateResult.exitCode).toBe(0);
+      expect(generateResult.payload.status).toBe('success');
+      expect(candidateContent).toContain('transport: cli_exec');
+      expect(candidateContent).toContain('provider: openai');
+      expect(applyResult.exitCode).toBe(0);
+      expect(applyResult.payload.status).toBe('success');
+      expect(persistedConfigContent).toContain('transport: cli_exec');
+      expect(persistedConfigContent).toContain('provider: openai');
+      expect(persistedConfigContent).toContain('credentialEnvVar: OPENAI_API_KEY');
+    } finally {
+      await rm(fixtureRepositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('localizes malformed --tool-transport parser errors for zh-CN output', async () => {
+    const fixtureRepositoryRoot = await createConnectFixtureRepo();
+
+    try {
+      const result = await runJsonCli(
+        fixtureRepositoryRoot,
+        ['connect', '--tool-transport', 'codex'],
+        'zh-CN',
+      );
+
+      expect(result.exitCode).toBe(1);
+      expect(result.payload.status).toBe('error');
+      expect(result.payload.message).toContain(
+        '选项 --tool-transport 必须使用 toolId=transport 语法。',
+      );
+    } finally {
+      await rm(fixtureRepositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('localizes unsupported runtime transport override errors for zh-CN output', async () => {
+    const fixtureRepositoryRoot = await createConnectFixtureRepo();
+
+    try {
+      const result = await runJsonCli(
+        fixtureRepositoryRoot,
+        ['connect', '--tools', 'github-copilot', '--tool-transport', 'github-copilot=remote_api'],
+        'zh-CN',
+      );
+
+      expect(result.exitCode).toBe(1);
+      expect(result.payload.status).toBe('error');
+      expect(result.payload.message).toContain(
+        'connect transport 覆盖不支持 github-copilot=remote_api。',
+      );
     } finally {
       await rm(fixtureRepositoryRoot, { recursive: true, force: true });
     }

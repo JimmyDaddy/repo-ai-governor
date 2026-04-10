@@ -1,5 +1,5 @@
 schema_version: 1
-generated_at: 2026-04-06
+generated_at: 2026-04-10
 status: active
 owner: architecture
 
@@ -355,6 +355,34 @@ solutions:
     approved_by: User
     supersedes: []
 
+  - solution_id: technical-solution.session-main-prompt-first-command-model
+    title: Session main prompt-first command mental model and deterministic workflow split
+    status: active
+    owner: runtime
+    version: v1
+    scope: cross-cutting
+    draft_paths:
+      - .repo-ai-governor/draft/session-main-prompt-first-command-mental-model-and-deterministic-workflow-split-technical-solution.md
+    review_paths:
+      - .repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-001-solution-review-promotion-and-rollout-decomposition/review/approved_solution_review_session-main-prompt-first-command-model.md
+    final_paths:
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/contracts/session-main-capability-interaction-model-contract.md
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/adrs/session-main-prompt-first-command-model-and-deterministic-workflow-split.md
+    target_module_ids:
+      - runtime.orchestration
+      - runtime.cli-interactive-shell
+      - runtime.agent-projection
+      - runtime.durable-storage
+    north_star_refs:
+      - prd.multi-agent-orchestration
+      - overall.graph-first-runtime
+      - architecture.runtime-boundary
+      - architecture.governance-boundary
+    approved_at: 2026-04-10
+    approved_by: AI-Agent
+    activated_at: 2026-04-10
+    supersedes: []
+
   - solution_id: technical-solution.run-live-react-session-shell
     title: Run live React session shell technical solution
     status: draft
@@ -588,3 +616,27 @@ solutions:
     approved_at: 2026-04-09
     approved_by: User
     activated_at: 2026-04-09
+
+  - solution_id: technical-solution.transport-selection-authority-and-strict-routing
+    title: Transport selection authority and strict routing follow-up technical solution
+    status: active
+    owner: runtime
+    version: v1
+    scope: cross-cutting
+    draft_paths:
+      - .repo-ai-governor/draft/transport-selection-authority-and-strict-routing-follow-up-technical-solution.md
+    review_paths:
+      - .repo-ai-governor/context/dev/project-074-transport-selection-authority-solution-review/sprint-001-draft-review-and-lifecycle-writeback/review/solution_review_transport-selection-authority-and-strict-routing-followup.md
+    final_paths:
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/transport-selection-authority-and-strict-transport-routing.md
+    target_module_ids:
+      - runtime.agent-projection
+    north_star_refs:
+      - prd.multi-agent-orchestration
+      - overall.graph-first-runtime
+      - architecture.runtime-boundary
+      - architecture.governance-boundary
+    approved_at: 2026-04-09
+    approved_by: User
+    activated_at: 2026-04-09
+    supersedes: []

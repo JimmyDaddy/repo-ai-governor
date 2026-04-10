@@ -1,7 +1,10 @@
 import {
+  SESSION_MAIN_CAPABILITY_BACKING_EXECUTION,
   SESSION_MAIN_CAPABILITY_CATALOG_OWNER_MODULE_ID,
   SESSION_MAIN_CAPABILITY_DESCRIPTOR_VERSION,
   SESSION_MAIN_CAPABILITY_ID,
+  SESSION_MAIN_CAPABILITY_INTERACTION_MODEL,
+  SESSION_MAIN_CAPABILITY_PRIMARY_ENTRY,
   SESSION_MAIN_HANDOFF_EXECUTION_MODE,
 } from './constants/index.js';
 import type {
@@ -29,11 +32,14 @@ export class LocalOrchestrationServiceSessionMainCapabilityCatalog {
         executionIntent: 'help.overview',
         suggestedSlashCommand: '/help',
         handoffExecutionMode: SESSION_MAIN_HANDOFF_EXECUTION_MODE.DIRECT_EXECUTE,
+        interactionModel: SESSION_MAIN_CAPABILITY_INTERACTION_MODEL.EXPLAIN_ONLY,
+        primaryEntry: SESSION_MAIN_CAPABILITY_PRIMARY_ENTRY.CONVERSATIONAL_ANSWER,
+        backingExecution: SESSION_MAIN_CAPABILITY_BACKING_EXECUTION.PURE_COMMAND,
         confirmationRequired: false,
         relatedCapabilityIds: [
           SESSION_MAIN_CAPABILITY_ID.CONNECT,
           SESSION_MAIN_CAPABILITY_ID.DOCTOR,
-          SESSION_MAIN_CAPABILITY_ID.VERIFY,
+          SESSION_MAIN_CAPABILITY_ID.PLAN,
         ],
       }),
       this.createDescriptorSeed({
@@ -42,11 +48,11 @@ export class LocalOrchestrationServiceSessionMainCapabilityCatalog {
         executionIntent: 'connect.adapters.bootstrap',
         suggestedSlashCommand: '/connect',
         handoffExecutionMode: SESSION_MAIN_HANDOFF_EXECUTION_MODE.PREVIEW_CONFIRM,
+        interactionModel: SESSION_MAIN_CAPABILITY_INTERACTION_MODEL.DETERMINISTIC_UTILITY,
+        primaryEntry: SESSION_MAIN_CAPABILITY_PRIMARY_ENTRY.SLASH_COMMAND,
+        backingExecution: SESSION_MAIN_CAPABILITY_BACKING_EXECUTION.PURE_COMMAND,
         confirmationRequired: true,
-        relatedCapabilityIds: [
-          SESSION_MAIN_CAPABILITY_ID.DOCTOR,
-          SESSION_MAIN_CAPABILITY_ID.VERIFY,
-        ],
+        relatedCapabilityIds: [SESSION_MAIN_CAPABILITY_ID.DOCTOR],
       }),
       this.createDescriptorSeed({
         capabilityId: SESSION_MAIN_CAPABILITY_ID.BRANCH_SWITCH,
@@ -54,6 +60,9 @@ export class LocalOrchestrationServiceSessionMainCapabilityCatalog {
         executionIntent: 'workspace.branch_switch',
         suggestedSlashCommand: '/workspace switch-branch',
         handoffExecutionMode: SESSION_MAIN_HANDOFF_EXECUTION_MODE.PREVIEW_CONFIRM,
+        interactionModel: SESSION_MAIN_CAPABILITY_INTERACTION_MODEL.DETERMINISTIC_UTILITY,
+        primaryEntry: SESSION_MAIN_CAPABILITY_PRIMARY_ENTRY.SLASH_COMMAND,
+        backingExecution: SESSION_MAIN_CAPABILITY_BACKING_EXECUTION.PURE_COMMAND,
         confirmationRequired: true,
         relatedCapabilityIds: [SESSION_MAIN_CAPABILITY_ID.DOCTOR, SESSION_MAIN_CAPABILITY_ID.RUN],
       }),
@@ -63,23 +72,11 @@ export class LocalOrchestrationServiceSessionMainCapabilityCatalog {
         executionIntent: 'doctor.adapters',
         suggestedSlashCommand: '/doctor',
         handoffExecutionMode: SESSION_MAIN_HANDOFF_EXECUTION_MODE.DIRECT_EXECUTE,
+        interactionModel: SESSION_MAIN_CAPABILITY_INTERACTION_MODEL.DETERMINISTIC_UTILITY,
+        primaryEntry: SESSION_MAIN_CAPABILITY_PRIMARY_ENTRY.SLASH_COMMAND,
+        backingExecution: SESSION_MAIN_CAPABILITY_BACKING_EXECUTION.PURE_COMMAND,
         confirmationRequired: false,
-        relatedCapabilityIds: [
-          SESSION_MAIN_CAPABILITY_ID.CONNECT,
-          SESSION_MAIN_CAPABILITY_ID.VERIFY,
-        ],
-      }),
-      this.createDescriptorSeed({
-        capabilityId: SESSION_MAIN_CAPABILITY_ID.VERIFY,
-        skillId: 'skill.verify.adapters',
-        executionIntent: 'verify.adapters',
-        suggestedSlashCommand: '/verify',
-        handoffExecutionMode: SESSION_MAIN_HANDOFF_EXECUTION_MODE.DIRECT_EXECUTE,
-        confirmationRequired: false,
-        relatedCapabilityIds: [
-          SESSION_MAIN_CAPABILITY_ID.CONNECT,
-          SESSION_MAIN_CAPABILITY_ID.DOCTOR,
-        ],
+        relatedCapabilityIds: [SESSION_MAIN_CAPABILITY_ID.CONNECT],
       }),
       this.createDescriptorSeed({
         capabilityId: SESSION_MAIN_CAPABILITY_ID.WORKFLOW,
@@ -87,6 +84,9 @@ export class LocalOrchestrationServiceSessionMainCapabilityCatalog {
         executionIntent: 'workflow.preview',
         suggestedSlashCommand: '/workflow',
         handoffExecutionMode: SESSION_MAIN_HANDOFF_EXECUTION_MODE.DIRECT_EXECUTE,
+        interactionModel: SESSION_MAIN_CAPABILITY_INTERACTION_MODEL.DETERMINISTIC_UTILITY,
+        primaryEntry: SESSION_MAIN_CAPABILITY_PRIMARY_ENTRY.SLASH_COMMAND,
+        backingExecution: SESSION_MAIN_CAPABILITY_BACKING_EXECUTION.PURE_COMMAND,
         confirmationRequired: false,
         relatedCapabilityIds: [SESSION_MAIN_CAPABILITY_ID.PLAN, SESSION_MAIN_CAPABILITY_ID.RUN],
       }),
@@ -96,8 +96,14 @@ export class LocalOrchestrationServiceSessionMainCapabilityCatalog {
         executionIntent: 'plan.generate',
         suggestedSlashCommand: '/plan',
         handoffExecutionMode: SESSION_MAIN_HANDOFF_EXECUTION_MODE.DIRECT_EXECUTE,
+        interactionModel: SESSION_MAIN_CAPABILITY_INTERACTION_MODEL.AI_FIXED_WORKFLOW,
+        primaryEntry: SESSION_MAIN_CAPABILITY_PRIMARY_ENTRY.SLASH_COMMAND,
+        backingExecution: SESSION_MAIN_CAPABILITY_BACKING_EXECUTION.TEMPLATED_AI_WORKFLOW,
         confirmationRequired: false,
         relatedCapabilityIds: [SESSION_MAIN_CAPABILITY_ID.REVIEW, SESSION_MAIN_CAPABILITY_ID.RUN],
+        deterministicActionName: 'plan sync',
+        roleAliasTarget: 'planner',
+        legacyCommandAlias: 'repo-ai-governor plan --output pretty',
       }),
       this.createDescriptorSeed({
         capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW,
@@ -105,23 +111,28 @@ export class LocalOrchestrationServiceSessionMainCapabilityCatalog {
         executionIntent: 'review.start',
         suggestedSlashCommand: '/review',
         handoffExecutionMode: SESSION_MAIN_HANDOFF_EXECUTION_MODE.DIRECT_EXECUTE,
+        interactionModel: SESSION_MAIN_CAPABILITY_INTERACTION_MODEL.AI_FIXED_WORKFLOW,
+        primaryEntry: SESSION_MAIN_CAPABILITY_PRIMARY_ENTRY.SLASH_COMMAND,
+        backingExecution: SESSION_MAIN_CAPABILITY_BACKING_EXECUTION.TEMPLATED_AI_WORKFLOW,
         confirmationRequired: false,
         relatedCapabilityIds: [
           SESSION_MAIN_CAPABILITY_ID.PLAN,
           SESSION_MAIN_CAPABILITY_ID.REVIEW_VERIFY,
         ],
+        roleAliasTarget: 'reviewer',
       }),
       this.createDescriptorSeed({
         capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW_VERIFY,
         skillId: 'skill.review.verify',
         executionIntent: 'review.verify',
         suggestedSlashCommand: '/review verify',
-        handoffExecutionMode: SESSION_MAIN_HANDOFF_EXECUTION_MODE.PREVIEW_CONFIRM,
-        confirmationRequired: true,
-        relatedCapabilityIds: [
-          SESSION_MAIN_CAPABILITY_ID.REVIEW,
-          SESSION_MAIN_CAPABILITY_ID.VERIFY,
-        ],
+        handoffExecutionMode: SESSION_MAIN_HANDOFF_EXECUTION_MODE.DIRECT_EXECUTE,
+        interactionModel: SESSION_MAIN_CAPABILITY_INTERACTION_MODEL.AI_FIXED_WORKFLOW,
+        primaryEntry: SESSION_MAIN_CAPABILITY_PRIMARY_ENTRY.SLASH_COMMAND,
+        backingExecution: SESSION_MAIN_CAPABILITY_BACKING_EXECUTION.TEMPLATED_AI_WORKFLOW,
+        confirmationRequired: false,
+        relatedCapabilityIds: [SESSION_MAIN_CAPABILITY_ID.REVIEW],
+        roleAliasTarget: 'reviewer',
       }),
       this.createDescriptorSeed({
         capabilityId: SESSION_MAIN_CAPABILITY_ID.RUN,
@@ -129,8 +140,15 @@ export class LocalOrchestrationServiceSessionMainCapabilityCatalog {
         executionIntent: 'run.task',
         suggestedSlashCommand: '/run',
         handoffExecutionMode: SESSION_MAIN_HANDOFF_EXECUTION_MODE.PREVIEW_CONFIRM,
+        interactionModel: SESSION_MAIN_CAPABILITY_INTERACTION_MODEL.PENDING_EXISTENCE_REVIEW,
+        primaryEntry: SESSION_MAIN_CAPABILITY_PRIMARY_ENTRY.SLASH_COMMAND,
+        backingExecution: SESSION_MAIN_CAPABILITY_BACKING_EXECUTION.PURE_COMMAND,
         confirmationRequired: true,
-        relatedCapabilityIds: [SESSION_MAIN_CAPABILITY_ID.PLAN, SESSION_MAIN_CAPABILITY_ID.REVIEW],
+        relatedCapabilityIds: [
+          SESSION_MAIN_CAPABILITY_ID.PLAN,
+          SESSION_MAIN_CAPABILITY_ID.REVIEW,
+          SESSION_MAIN_CAPABILITY_ID.WORKFLOW,
+        ],
       }),
     ].map((descriptorSeed) => this.freezeDescriptorSeed(descriptorSeed)),
   );
@@ -194,8 +212,14 @@ export class LocalOrchestrationServiceSessionMainCapabilityCatalog {
     executionIntent: string;
     suggestedSlashCommand: string;
     handoffExecutionMode: SessionMainCapabilityDescriptorSeed['handoffExecutionMode'];
+    interactionModel: SessionMainCapabilityDescriptorSeed['interactionModel'];
+    primaryEntry: SessionMainCapabilityDescriptorSeed['primaryEntry'];
+    backingExecution: SessionMainCapabilityDescriptorSeed['backingExecution'];
     confirmationRequired: boolean;
     relatedCapabilityIds: SessionMainCapabilityId[];
+    deterministicActionName?: string;
+    roleAliasTarget?: string;
+    legacyCommandAlias?: string;
   }): SessionMainCapabilityDescriptorSeed {
     const translationPrefix = `${SESSION_MAIN_CAPABILITY_TRANSLATION_KEY_PREFIX}.${options.capabilityId}`;
     return {
@@ -207,7 +231,15 @@ export class LocalOrchestrationServiceSessionMainCapabilityCatalog {
       executionIntent: options.executionIntent,
       suggestedSlashCommand: options.suggestedSlashCommand,
       handoffExecutionMode: options.handoffExecutionMode,
+      interactionModel: options.interactionModel,
+      primaryEntry: options.primaryEntry,
+      backingExecution: options.backingExecution,
       confirmationRequired: options.confirmationRequired,
+      ...(options.deterministicActionName
+        ? { deterministicActionName: options.deterministicActionName }
+        : {}),
+      ...(options.roleAliasTarget ? { roleAliasTarget: options.roleAliasTarget } : {}),
+      ...(options.legacyCommandAlias ? { legacyCommandAlias: options.legacyCommandAlias } : {}),
       titleKey: `${translationPrefix}.title`,
       summaryKey: `${translationPrefix}.summary`,
       detailKey: `${translationPrefix}.detail`,
@@ -249,7 +281,19 @@ export class LocalOrchestrationServiceSessionMainCapabilityCatalog {
       executionIntent: descriptorSeed.executionIntent,
       suggestedSlashCommand: descriptorSeed.suggestedSlashCommand,
       handoffExecutionMode: descriptorSeed.handoffExecutionMode,
+      interactionModel: descriptorSeed.interactionModel,
+      primaryEntry: descriptorSeed.primaryEntry,
+      backingExecution: descriptorSeed.backingExecution,
       confirmationRequired: descriptorSeed.confirmationRequired,
+      ...(descriptorSeed.deterministicActionName
+        ? { deterministicActionName: descriptorSeed.deterministicActionName }
+        : {}),
+      ...(descriptorSeed.roleAliasTarget
+        ? { roleAliasTarget: descriptorSeed.roleAliasTarget }
+        : {}),
+      ...(descriptorSeed.legacyCommandAlias
+        ? { legacyCommandAlias: descriptorSeed.legacyCommandAlias }
+        : {}),
       title: translate(descriptorSeed.titleKey),
       summary: translate(descriptorSeed.summaryKey),
       detail: translate(descriptorSeed.detailKey),

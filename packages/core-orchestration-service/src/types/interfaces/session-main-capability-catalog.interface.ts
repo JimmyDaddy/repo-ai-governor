@@ -1,7 +1,10 @@
 import type {
+  SessionMainCapabilityBackingExecution,
   SessionMainCapabilityCatalogOwnerModuleId,
   SessionMainCapabilityDescriptorVersion,
   SessionMainCapabilityId,
+  SessionMainCapabilityInteractionModel,
+  SessionMainCapabilityPrimaryEntry,
 } from '../aliases/session-main-capability.type.js';
 import type { SessionMainHandoffExecutionMode } from '../aliases/session-main-supervisor.type.js';
 
@@ -17,7 +20,13 @@ export interface SessionMainCapabilityDescriptorSeed {
   readonly executionIntent: string;
   readonly suggestedSlashCommand: string;
   readonly handoffExecutionMode: SessionMainHandoffExecutionMode;
+  readonly interactionModel: SessionMainCapabilityInteractionModel;
+  readonly primaryEntry: SessionMainCapabilityPrimaryEntry;
+  readonly backingExecution: SessionMainCapabilityBackingExecution;
   readonly confirmationRequired: boolean;
+  readonly deterministicActionName?: string;
+  readonly roleAliasTarget?: string;
+  readonly legacyCommandAlias?: string;
   readonly titleKey: string;
   readonly summaryKey: string;
   readonly detailKey: string;
@@ -37,7 +46,13 @@ export interface SessionMainCapabilityDescriptorView {
   readonly executionIntent: string;
   readonly suggestedSlashCommand: string;
   readonly handoffExecutionMode: SessionMainHandoffExecutionMode;
+  readonly interactionModel: SessionMainCapabilityInteractionModel;
+  readonly primaryEntry: SessionMainCapabilityPrimaryEntry;
+  readonly backingExecution: SessionMainCapabilityBackingExecution;
   readonly confirmationRequired: boolean;
+  readonly deterministicActionName?: string;
+  readonly roleAliasTarget?: string;
+  readonly legacyCommandAlias?: string;
   readonly title: string;
   readonly summary: string;
   readonly detail: string;

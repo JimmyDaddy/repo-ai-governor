@@ -62,6 +62,15 @@ const SESSION_MAIN_COMPARISON_PATTERNS = [
   /对比/u,
 ] as const;
 
+const SESSION_MAIN_REMOVED_VERIFY_PATTERNS = [
+  /\/verify/iu,
+  /\bverify\b/iu,
+  /\bvalidation\b/iu,
+  /\bvalidate\b/iu,
+  /验证/u,
+  /校验/u,
+] as const;
+
 const SESSION_MAIN_CAPABILITY_REFERENCE_RULES = [
   {
     capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW_VERIFY,
@@ -91,10 +100,6 @@ const SESSION_MAIN_CAPABILITY_REFERENCE_RULES = [
     patterns: [/\bdoctor\b/iu, /\bdiagnose\b/iu, /诊断/u, /体检/u],
   },
   {
-    capabilityId: SESSION_MAIN_CAPABILITY_ID.VERIFY,
-    patterns: [/\bverify\b/iu, /\bvalidate\b/iu, /验证/u, /校验/u],
-  },
-  {
     capabilityId: SESSION_MAIN_CAPABILITY_ID.WORKFLOW,
     patterns: [/\bworkflow\b/iu, /流程/u],
   },
@@ -104,7 +109,13 @@ const SESSION_MAIN_CAPABILITY_REFERENCE_RULES = [
   },
   {
     capabilityId: SESSION_MAIN_CAPABILITY_ID.RUN,
-    patterns: [/\brun\b/iu, /\bexecute\b/iu, /执行/u, /开始做/u, /实现/u],
+    patterns: [
+      /\brun\b/iu,
+      /\bgoverned workflow\b/iu,
+      /\btask-driven execution flow\b/iu,
+      /执行流/u,
+      /任务驱动执行/u,
+    ],
   },
   {
     capabilityId: SESSION_MAIN_CAPABILITY_ID.HELP,
@@ -116,7 +127,6 @@ const SESSION_MAIN_OVERVIEW_LIST_CAPABILITY_IDS = [
   SESSION_MAIN_CAPABILITY_ID.CONNECT,
   SESSION_MAIN_CAPABILITY_ID.BRANCH_SWITCH,
   SESSION_MAIN_CAPABILITY_ID.DOCTOR,
-  SESSION_MAIN_CAPABILITY_ID.VERIFY,
   SESSION_MAIN_CAPABILITY_ID.WORKFLOW,
   SESSION_MAIN_CAPABILITY_ID.PLAN,
   SESSION_MAIN_CAPABILITY_ID.REVIEW,
@@ -163,6 +173,9 @@ export class LocalOrchestrationServiceSessionMainCapabilityExplainer {
     }
 
     const translate = await this.resolveTranslate(options?.locale);
+    const referencesRemovedVerify =
+      this.matchesAnyPattern(normalizedMessage, SESSION_MAIN_REMOVED_VERIFY_PATTERNS) &&
+      !/review[- ]verify|\/review verify|复核|cr verify/iu.test(normalizedMessage);
     const referencedCapabilityIds = this.resolveReferencedCapabilityIds(normalizedMessage);
     const availabilityByCapabilityId = new Map(
       (options?.availabilityOverlay ?? []).map((availability) => [
@@ -170,6 +183,16 @@ export class LocalOrchestrationServiceSessionMainCapabilityExplainer {
         availability,
       ]),
     );
+
+    if (
+      referencesRemovedVerify &&
+      (this.matchesAnyPattern(normalizedMessage, SESSION_MAIN_DETAIL_PATTERNS) ||
+        this.matchesAnyPattern(normalizedMessage, SESSION_MAIN_EXAMPLE_PATTERNS) ||
+        this.matchesAnyPattern(normalizedMessage, SESSION_MAIN_OVERVIEW_PATTERNS) ||
+        normalizedMessage.trim().startsWith('/verify'))
+    ) {
+      return this.createRemovedVerifyAnswer(translate);
+    }
 
     if (
       referencedCapabilityIds.length === 0 &&
@@ -286,6 +309,52 @@ export class LocalOrchestrationServiceSessionMainCapabilityExplainer {
     };
   }
 
+  private createRemovedVerifyAnswer(
+    translate: (
+      translationKey: string,
+      fallbackEnglish?: string,
+      fallbackChinese?: string,
+    ) => string,
+  ): SessionMainCapabilityAnswer {
+    const doctorView = this.requireDescriptorView(SESSION_MAIN_CAPABILITY_ID.DOCTOR, translate);
+    const connectView = this.requireDescriptorView(SESSION_MAIN_CAPABILITY_ID.CONNECT, translate);
+    const assistantMessage = [
+      translate('__internal.heading.verifyRemoved', '## Verify Removed', '## Verify 已删除'),
+      '',
+      translate(
+        '__internal.verifyRemoved.lead',
+        'The public `/verify` command is no longer part of the session.main or CLI public surface.',
+        '`/verify` 已不再属于 session.main 或 CLI 的公开命令面。',
+      ),
+      '',
+      translate(
+        '__internal.verifyRemoved.next',
+        'Use `/doctor` for readiness diagnostics, `/connect` when you need onboarding changes plus follow-up checks, and keep the lower-level verification runtime as an internal gate only.',
+        '若你要做 readiness 诊断，请改用 `/doctor`；若你需要接入变更并串上后续检查，请改用 `/connect`；更底层的 verification runtime 现在只作为内部 gate 保留。',
+      ),
+    ].join('\n');
+
+    return {
+      answerKind: SESSION_MAIN_CAPABILITY_ANSWER_KIND.DETAIL,
+      assistantDelta: this.createAssistantDelta(assistantMessage),
+      assistantMessage,
+      referencedCapabilityIds: [],
+      suggestedActions: [
+        {
+          label: doctorView.title,
+          target: doctorView.suggestedSlashCommand,
+          suggestedSlashCommand: doctorView.suggestedSlashCommand,
+        },
+        {
+          label: connectView.title,
+          target: connectView.suggestedSlashCommand,
+          suggestedSlashCommand: connectView.suggestedSlashCommand,
+        },
+      ],
+      routerDecisionReason: 'session.main.router.capability_explainer.verify_removed',
+    };
+  }
+
   private createDetailAnswer(
     capabilityId: SessionMainCapabilityId,
     translate: (
@@ -308,17 +377,24 @@ export class LocalOrchestrationServiceSessionMainCapabilityExplainer {
       translate,
     );
     const executionPathSummary =
-      capabilityView.handoffExecutionMode === SESSION_MAIN_HANDOFF_EXECUTION_MODE.DIRECT_EXECUTE
+      capabilityView.backingExecution === 'templated_ai_workflow'
         ? translate(
-            '__internal.execution.direct',
-            'direct execute (no extra confirmation)',
-            '直接执行（无需额外确认）',
+            '__internal.execution.aiWorkflow',
+            'productized AI workflow',
+            '产品化 AI 工作流',
           )
-        : translate(
-            '__internal.execution.confirm',
-            'preview first, then confirm',
-            '先预览，再确认执行',
-          );
+        : capabilityView.handoffExecutionMode === SESSION_MAIN_HANDOFF_EXECUTION_MODE.DIRECT_EXECUTE
+          ? translate(
+              '__internal.execution.direct',
+              'direct execute (no extra confirmation)',
+              '直接执行（无需额外确认）',
+            )
+          : translate(
+              '__internal.execution.confirm',
+              'preview first, then confirm',
+              '先预览，再确认执行',
+            );
+    const interactionLines = this.buildInteractionModelLines(capabilityView, translate);
     const assistantMessage = [
       `## ${capabilityView.title}`,
       '',
@@ -332,6 +408,7 @@ export class LocalOrchestrationServiceSessionMainCapabilityExplainer {
         '建议的 slash command：',
       )} \`${capabilityView.suggestedSlashCommand}\``,
       `${translate('__internal.label.execution', 'Execution path:', '执行路径：')} ${executionPathSummary}`,
+      ...(interactionLines.length > 0 ? interactionLines : []),
       ...(availabilityLines.length > 0 ? ['', ...availabilityLines] : []),
       '',
       translate('__internal.label.examples', 'Example prompts:', '示例提示词：'),
@@ -444,17 +521,24 @@ export class LocalOrchestrationServiceSessionMainCapabilityExplainer {
           '建议的 slash command：',
         )} \`${capabilityView.suggestedSlashCommand}\``,
         `${translate('__internal.label.execution', 'Execution path:', '执行路径：')} ${
-          capabilityView.handoffExecutionMode === SESSION_MAIN_HANDOFF_EXECUTION_MODE.DIRECT_EXECUTE
+          capabilityView.backingExecution === 'templated_ai_workflow'
             ? translate(
-                '__internal.execution.direct',
-                'direct execute (no extra confirmation)',
-                '直接执行（无需额外确认）',
+                '__internal.execution.aiWorkflow',
+                'productized AI workflow',
+                '产品化 AI 工作流',
               )
-            : translate(
-                '__internal.execution.confirm',
-                'preview first, then confirm',
-                '先预览，再确认执行',
-              )
+            : capabilityView.handoffExecutionMode ===
+                SESSION_MAIN_HANDOFF_EXECUTION_MODE.DIRECT_EXECUTE
+              ? translate(
+                  '__internal.execution.direct',
+                  'direct execute (no extra confirmation)',
+                  '直接执行（无需额外确认）',
+                )
+              : translate(
+                  '__internal.execution.confirm',
+                  'preview first, then confirm',
+                  '先预览，再确认执行',
+                )
         }`,
         ...this.buildAvailabilityLines(
           capabilityView.capabilityId,
@@ -572,6 +656,42 @@ export class LocalOrchestrationServiceSessionMainCapabilityExplainer {
       );
     }
     return translate('__internal.availability.availableSuffix', '(ready now)', '（现在可执行）');
+  }
+
+  private buildInteractionModelLines(
+    capabilityView: {
+      deterministicActionName?: string;
+      roleAliasTarget?: string;
+    },
+    translate: (
+      translationKey: string,
+      fallbackEnglish?: string,
+      fallbackChinese?: string,
+    ) => string,
+  ): string[] {
+    const lines: string[] = [];
+
+    if (capabilityView.deterministicActionName) {
+      lines.push(
+        `${translate(
+          '__internal.label.deterministicFollowUp',
+          'Deterministic follow-up:',
+          '确定性后续动作：',
+        )} \`/${capabilityView.deterministicActionName}\``,
+      );
+    }
+
+    if (capabilityView.roleAliasTarget) {
+      lines.push(
+        `${translate(
+          '__internal.label.rawRoleEntry',
+          'Expert raw-role entry:',
+          '专家 raw-role 入口：',
+        )} \`@${capabilityView.roleAliasTarget}\``,
+      );
+    }
+
+    return lines;
   }
 
   private buildAvailabilityLines(
