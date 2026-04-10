@@ -7,7 +7,6 @@ describe('CliLiveCommandCancellationPolicy', () => {
 
     expect(policy.supportsLiveCancellation(CliCommandName.CONNECT)).toBe(true);
     expect(policy.supportsLiveCancellation(CliCommandName.DOCTOR)).toBe(true);
-    expect(policy.supportsLiveCancellation(CliCommandName.VERIFY)).toBe(true);
     expect(policy.supportsLiveCancellation(CliCommandName.RUN)).toBe(false);
     expect(policy.supportsLiveCancellation(CliCommandName.CHECK)).toBe(false);
     expect(policy.supportsLiveCancellation(CliCommandName.REVIEW)).toBe(false);

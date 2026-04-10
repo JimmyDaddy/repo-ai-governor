@@ -12,7 +12,6 @@ export enum CliCommandName {
   RUN = 'run',
   REVIEW = 'review',
   REVIEW_VERIFY = 'review-verify',
-  VERIFY = 'verify',
   PLAN = 'plan',
   HOST = 'host',
   RESUME = 'resume',

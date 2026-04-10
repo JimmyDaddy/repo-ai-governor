@@ -256,15 +256,15 @@ export class LocalOrchestrationServiceSessionRuntime {
       sessionId: request.sessionId,
       type: OrchestrationSessionEventType.TURN_SUBMITTED,
       createdAt: acceptedAt,
-        payload: {
-          role: OrchestrationSessionTranscriptRole.USER,
-          routeId: currentRouteId,
-          turnId,
-          turnIndex,
-          content: displayUserMessage,
-          ...(request.metadata ? { metadata: { ...request.metadata } } : {}),
-        },
-      });
+      payload: {
+        role: OrchestrationSessionTranscriptRole.USER,
+        routeId: currentRouteId,
+        turnId,
+        turnIndex,
+        content: displayUserMessage,
+        ...(request.metadata ? { metadata: { ...request.metadata } } : {}),
+      },
+    });
     try {
       const dispatchStartedAtMs = this.currentTimeMs();
       const dispatchResult = await this.mainAgentDispatcher.dispatch({

@@ -446,7 +446,7 @@ export class CliConnectCommand implements CliCommandExecutor {
         diagnosticsArtifactPath,
         candidateConfigArtifactPath,
         attribution: {
-          chain: 'connect->doctor->verify',
+          chain: 'connect->doctor->internal-readiness-gate',
           chainStep: 'connect',
         },
       });
@@ -895,8 +895,7 @@ export class CliConnectCommand implements CliCommandExecutor {
           category: ExecutionInteractionCategory.NONE,
           stage: ExecutionProgressStage.CONNECT,
           title: context.localizeText('Follow-up', '后续动作'),
-          action:
-            'repo-ai-governor doctor --adapters && repo-ai-governor verify --adapters && repo-ai-governor run --dry-run --trace',
+          action: 'repo-ai-governor doctor --adapters && repo-ai-governor run --dry-run --trace',
           blocking: false,
         },
       ],

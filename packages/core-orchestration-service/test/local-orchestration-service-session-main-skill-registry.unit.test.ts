@@ -312,7 +312,14 @@ describe('LocalOrchestrationServiceSessionMainSkillRegistry', () => {
         commandBatches: [
           expect.objectContaining({
             slashQuery: '/doctor',
-            bridgeArgv: ['doctor', '--adapters', '--output', 'pretty', '--single-tool-all-roles', 'codex'],
+            bridgeArgv: [
+              'doctor',
+              '--adapters',
+              '--output',
+              'pretty',
+              '--single-tool-all-roles',
+              'codex',
+            ],
           }),
         ],
       }),

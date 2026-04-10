@@ -1998,6 +1998,65 @@ describe('Cli session-main supervisor runtime', () => {
     expect(outcome.subagentCount).toBe(1);
   });
 
+  it('delegates explicit @reviewer turns through one governed single-role path instead of collapsing into /review', async () => {
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      adaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createAvailableProtocol(
+        AdapterSurface.CODEX,
+        'unsafe reviewer answer',
+      ),
+      [AdapterSurface.CLAUDE_CODE]: createAvailableProtocol(
+        AdapterSurface.CLAUDE_CODE,
+        'unsafe fallback answer',
+      ),
+      [AdapterSurface.OLLAMA]: createAvailableProtocol(
+        AdapterSurface.OLLAMA,
+        '## Reviewer perspective\n\n- inspect the current diff for regression risk',
+        {
+          toolCallingSupportLevel: AgentCapabilitySupportLevel.UNSUPPORTED,
+        },
+      ),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'en-US',
+      adaptersConfig,
+      adapterRoutingRuntime,
+    });
+    const outcome = await runtime.resolveTurn({
+      sessionId: 'session-004-reviewer',
+      routeId: 'session.main',
+      turnId: 'turn-004-reviewer',
+      turnIndex: 4,
+      userMessage: '@reviewer check the current diff for regression risk',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+    });
+
+    expect(outcome.responseMode).toBe('role_collaboration');
+    expect(outcome.interactionMode).toBe('single_role_delegate');
+    expect(outcome.executionIntent).toBe('session.role_delegate.reviewer');
+    expect(outcome.assistantMessage).toBe('unsafe reviewer answer');
+    expect(outcome.selectedSurface).toBe(AdapterSurface.CODEX);
+    expect(outcome.selectedBy).toBe('session.main.role_delegate.primary');
+    expect(outcome.invokedRoleIds).toEqual(['reviewer']);
+    expect(outcome.invokedRoles).toEqual([
+      expect.objectContaining({
+        roleId: 'reviewer',
+        roleProfileId: 'reviewer-default',
+      }),
+    ]);
+    expect(outcome.subagentCount).toBe(1);
+  });
+
   it('routes explicit @planner @reviewer turns through one serial collaboration path', async () => {
     const serialInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
       if (request.stageId === 'stage-session-main-role-planner') {

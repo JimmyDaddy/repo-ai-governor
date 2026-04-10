@@ -3,9 +3,9 @@ import {
   SESSION_MAIN_CAPABILITY_CATALOG_OWNER_MODULE_ID,
   SESSION_MAIN_CAPABILITY_DESCRIPTOR_VERSION,
   SESSION_MAIN_CAPABILITY_ID,
-  SESSION_MAIN_HANDOFF_EXECUTION_MODE,
   SESSION_MAIN_CAPABILITY_INTERACTION_MODEL,
   SESSION_MAIN_CAPABILITY_PRIMARY_ENTRY,
+  SESSION_MAIN_HANDOFF_EXECUTION_MODE,
 } from './constants/index.js';
 import type {
   SessionMainCapabilityDescriptorSeed,
@@ -288,7 +288,9 @@ export class LocalOrchestrationServiceSessionMainCapabilityCatalog {
       ...(descriptorSeed.deterministicActionName
         ? { deterministicActionName: descriptorSeed.deterministicActionName }
         : {}),
-      ...(descriptorSeed.roleAliasTarget ? { roleAliasTarget: descriptorSeed.roleAliasTarget } : {}),
+      ...(descriptorSeed.roleAliasTarget
+        ? { roleAliasTarget: descriptorSeed.roleAliasTarget }
+        : {}),
       ...(descriptorSeed.legacyCommandAlias
         ? { legacyCommandAlias: descriptorSeed.legacyCommandAlias }
         : {}),

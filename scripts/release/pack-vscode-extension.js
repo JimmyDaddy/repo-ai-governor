@@ -319,7 +319,7 @@ async function main() {
       `packaged ${report.publisher}.${report.packageName}@${report.version} -> ${report.vsixPath}`,
     );
     gatePass(GATE_NAME, `packaged local VSIX at ${report.vsixPath}`);
-    console.log(JSON.stringify(report, null, 2));
+    console.info(JSON.stringify(report, null, 2));
   } catch (error) {
     gateFail(GATE_NAME, error instanceof Error ? error.message : String(error));
     process.exitCode = 1;

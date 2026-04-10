@@ -34,7 +34,7 @@ const MINIMAL_ROLE_IDS = new Set(['planner', 'coder', 'reviewer']);
 const CLI_EXEC_DEFAULT_REQUEST_TIMEOUT_MS = 30000;
 
 /**
- * Owns connect/doctor/verify onboarding template shaping and report-friendly matrix payloads.
+ * Owns connect/doctor onboarding template shaping and report-friendly matrix payloads.
  */
 export class CliAgentOnboardingRuntime {
   public resolveSelectedTools(options: {
@@ -108,7 +108,7 @@ export class CliAgentOnboardingRuntime {
   }
 
   public createOnboardingContractPayload(options: {
-    commandName: 'connect' | 'doctor' | 'verify';
+    commandName: 'connect' | 'doctor';
     executionId: string;
     workspaceId: string;
     verificationStatus: CliGovernanceCheckStatus;

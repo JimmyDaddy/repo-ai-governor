@@ -256,12 +256,12 @@ export class CliSessionSlashCommandRegistry {
       this.listAllDefinitions()
         .filter((definition) => definition.discoverable !== false)
         .map((definition) => [
-        definition.command,
-        {
-          command: definition.command,
-          summary: translate(definition.summaryKey),
-        } satisfies CliSessionSlashCommandMetadata,
-      ]),
+          definition.command,
+          {
+            command: definition.command,
+            summary: translate(definition.summaryKey),
+          } satisfies CliSessionSlashCommandMetadata,
+        ]),
     );
 
     return orderedCommands
@@ -287,7 +287,7 @@ export class CliSessionSlashCommandRegistry {
               : ('bridge' as const),
           executionMode:
             descriptorSeed.backingExecution ===
-              SESSION_MAIN_CAPABILITY_BACKING_EXECUTION.TEMPLATED_AI_WORKFLOW
+            SESSION_MAIN_CAPABILITY_BACKING_EXECUTION.TEMPLATED_AI_WORKFLOW
               ? ('direct' as const)
               : descriptorSeed.handoffExecutionMode ===
                   SESSION_MAIN_HANDOFF_EXECUTION_MODE.DIRECT_EXECUTE
@@ -327,9 +327,8 @@ export class CliSessionSlashCommandRegistry {
     );
 
     return (
-      definitions.find((definition) =>
-        this.matchesSlashCommandTokens(queryTokens, definition),
-      ) ?? null
+      definitions.find((definition) => this.matchesSlashCommandTokens(queryTokens, definition)) ??
+      null
     );
   }
 

@@ -19,7 +19,7 @@ export const EN_US_TRANSLATIONS = {
       fix: 'Apply safe_local fixes (directories/config templates/writable checks) only.',
       preset:
         'Connect preset id for agent onboarding: single-tool-minimal|multi-tool-default|single-tool-all-roles|restricted-network-safe.',
-      tools: 'Comma-separated adapter tool ids used by connect/doctor/verify onboarding views.',
+      tools: 'Comma-separated adapter tool ids used by connect/doctor onboarding views.',
       toolTransport:
         'Repeatable per-tool transport override in toolId=transport form. Supported surfaces are transport-aware only.',
       overwrite:
@@ -138,7 +138,6 @@ export const EN_US_TRANSLATIONS = {
       review: { description: 'Generate code review baseline output.' },
       reviewVerify: { description: 'Verify code review baseline output.' },
       verify: {
-        description: 'Verify adapter routing pass/warn/fail baseline.',
         removed:
           'The public `verify` command has been removed. Use `doctor` for readiness diagnostics or `connect` when you need onboarding changes plus follow-up checks.',
       },
@@ -282,17 +281,17 @@ export const EN_US_TRANSLATIONS = {
       checkRoleBindings:
         'Check adapters.routing.roleBindings primary/fallback surfaces and ensure required roles have at least one available surface.',
       probeUnavailable: 'Probe/login dependencies are unavailable for: {{toolIds}}.',
-      installMissingCommands: 'Install missing local commands before connect/verify: {{commands}}.',
+      installMissingCommands: 'Install missing local commands before connect/doctor: {{commands}}.',
       probeFailedCommands:
         'Some commands exist but probe failed ({{commands}}). Run them manually to verify login/extension status.',
       setRemoteApiCredentialEnvVars:
-        'Set or export the required remote-api credential environment variables before connect/verify: {{credentials}}.',
+        'Set or export the required remote-api credential environment variables before connect/doctor: {{credentials}}.',
       verifyProviderLocalCredentialState:
         'Remote-api credential discovery stays read-only here; verify provider-local login state manually for: {{credentials}}.',
       resolveCredentialReferencesManually:
         'Remote-api credential references cannot be materialized automatically; resolve them manually for: {{credentials}}.',
       authenticateAdapters:
-        'Authenticate or refresh login for remote adapters before connect/verify: {{credentials}}.',
+        'Authenticate or refresh login for remote adapters before connect/doctor: {{credentials}}.',
       investigateHealthChecks:
         'Investigate remote adapter health checks before unattended execution: {{healthChecks}}.',
       pullLocalModels:

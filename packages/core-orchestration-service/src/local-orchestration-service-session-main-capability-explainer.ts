@@ -109,7 +109,13 @@ const SESSION_MAIN_CAPABILITY_REFERENCE_RULES = [
   },
   {
     capabilityId: SESSION_MAIN_CAPABILITY_ID.RUN,
-    patterns: [/\brun\b/iu, /\bgoverned workflow\b/iu, /\btask-driven execution flow\b/iu, /执行流/u, /任务驱动执行/u],
+    patterns: [
+      /\brun\b/iu,
+      /\bgoverned workflow\b/iu,
+      /\btask-driven execution flow\b/iu,
+      /执行流/u,
+      /任务驱动执行/u,
+    ],
   },
   {
     capabilityId: SESSION_MAIN_CAPABILITY_ID.HELP,
@@ -523,16 +529,16 @@ export class LocalOrchestrationServiceSessionMainCapabilityExplainer {
               )
             : capabilityView.handoffExecutionMode ===
                 SESSION_MAIN_HANDOFF_EXECUTION_MODE.DIRECT_EXECUTE
-            ? translate(
-                '__internal.execution.direct',
-                'direct execute (no extra confirmation)',
-                '直接执行（无需额外确认）',
-              )
-            : translate(
-                '__internal.execution.confirm',
-                'preview first, then confirm',
-                '先预览，再确认执行',
-              )
+              ? translate(
+                  '__internal.execution.direct',
+                  'direct execute (no extra confirmation)',
+                  '直接执行（无需额外确认）',
+                )
+              : translate(
+                  '__internal.execution.confirm',
+                  'preview first, then confirm',
+                  '先预览，再确认执行',
+                )
         }`,
         ...this.buildAvailabilityLines(
           capabilityView.capabilityId,

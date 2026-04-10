@@ -194,7 +194,9 @@ describe('CliSessionSlashCommandRegistry', () => {
       },
     );
     expect(
-      registry.resolveAction('/PLAN SYNC commit ./Context/Plan/MyPreview.preview.json --confirm-plan approve'),
+      registry.resolveAction(
+        '/PLAN SYNC commit ./Context/Plan/MyPreview.preview.json --confirm-plan approve',
+      ),
     ).toEqual({
       bridgeArgv: [
         'plan',
@@ -249,6 +251,49 @@ describe('CliSessionSlashCommandRegistry', () => {
       executionMode: 'direct',
       kind: 'bridge',
       summaryKey: 'sessionMainCapabilities.catalog.doctor.summary',
+    });
+  });
+
+  it('keeps /review on the AI fixed workflow path and /run on the governed bridge path', () => {
+    const registry = new CliSessionSlashCommandRegistry();
+
+    expect(registry.resolveAction('/review')).toEqual({
+      aiWorkflowPrompt: [
+        'Run the standard governed code-review workflow for the current working scope.',
+        'Focus on user-visible regressions, behavior risk, and missing tests.',
+        'Return a structured review-style result instead of a free-form expert brainstorm.',
+      ].join('\n'),
+      command: '/review',
+      executionMode: 'direct',
+      kind: 'ai_workflow',
+      summaryKey: 'sessionMainCapabilities.catalog.review.summary',
+    });
+    expect(registry.resolveAction('/review current diff')).toEqual({
+      aiWorkflowPrompt: [
+        'Run the standard governed code-review workflow for the following scope.',
+        'Focus on user-visible regressions, behavior risk, and missing tests.',
+        'Return a structured review-style result instead of a free-form expert brainstorm.',
+        '',
+        'Review scope: current diff',
+      ].join('\n'),
+      command: '/review',
+      executionMode: 'direct',
+      kind: 'ai_workflow',
+      summaryKey: 'sessionMainCapabilities.catalog.review.summary',
+    });
+    expect(registry.resolveAction('/run')).toEqual({
+      bridgeArgv: ['run'],
+      command: '/run',
+      executionMode: 'confirm',
+      kind: 'bridge',
+      summaryKey: 'sessionMainCapabilities.catalog.run.summary',
+    });
+    expect(registry.resolveAction('/run reusable-rollout')).toEqual({
+      bridgeArgv: ['run', 'reusable-rollout'],
+      command: '/run',
+      executionMode: 'confirm',
+      kind: 'bridge',
+      summaryKey: 'sessionMainCapabilities.catalog.run.summary',
     });
   });
 });

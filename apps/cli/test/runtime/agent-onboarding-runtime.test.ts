@@ -215,12 +215,12 @@ describe('CliAgentOnboardingRuntime', () => {
       requiredRoleFailedCount: 1,
       degradedRoleCount: 0,
       fallbackRoleCount: 0,
-      nextActions: ['Set OPENAI_API_KEY before verify.'],
+      nextActions: ['Set OPENAI_API_KEY before doctor.'],
     };
 
     const onboardingPayload = runtime.createOnboardingContractPayload({
-      commandName: 'verify',
-      executionId: 'verify-123',
+      commandName: 'doctor',
+      executionId: 'doctor-123',
       workspaceId: 'workspace-1',
       verificationStatus: CliGovernanceCheckStatus.WARN,
       nextActions: verification.nextActions,
@@ -233,7 +233,7 @@ describe('CliAgentOnboardingRuntime', () => {
       diagnosticSummary: 'status=warn',
     });
     const verifyPayload = runtime.createVerifyMatrixPayload({
-      executionId: 'verify-123',
+      executionId: 'doctor-123',
       verification,
       adaptersConfig: sourceConfig.adapters,
     });

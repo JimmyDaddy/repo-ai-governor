@@ -349,6 +349,7 @@ interface CliEntrypointDependencies {
 
 const ADAPTER_SURFACE_VALUES = new Set<string>(Object.values(AdapterSurface));
 const ADAPTER_TRANSPORT_KIND_VALUES = new Set<string>(Object.values(AdapterTransportKind));
+const REMOVED_PUBLIC_VERIFY_COMMAND_NAME = 'verify';
 
 /**
  * Runs the Stage-6 CLI output-contract baseline with TTY-aware fallback semantics.
@@ -843,20 +844,6 @@ export async function runCli(
         await executeCliCommand(CliCommandName.PLAN);
       });
 
-    program
-      .command(CliCommandName.VERIFY, { hidden: true })
-      .description(runtimeI18n.t('cli.commands.verify.description'))
-      .action(async () => {
-        throw new RuntimeError(
-          GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
-          runtimeI18n.t('cli.commands.verify.removed'),
-          {
-            command: CliCommandName.VERIFY,
-            replacementCommands: ['/doctor', '/connect'],
-          },
-        );
-      });
-
     const adoptCommand = program
       .command(CliCommandName.ADOPT)
       .description(runtimeI18n.t('cli.commands.adopt.description'))
@@ -1119,6 +1106,10 @@ export async function runCli(
     if (hasOnlyKnownTopLevelOptions(rawArgs)) {
       program.outputHelp();
       return 0;
+    }
+
+    if (commandName === REMOVED_PUBLIC_VERIFY_COMMAND_NAME) {
+      throw createRemovedVerifyCommandError(runtimeI18n);
     }
 
     await program.parseAsync(argv, { from: 'node' });
@@ -2635,6 +2626,17 @@ function resolveCliFailure(error: unknown): CliFailureResolution {
     standardizedError: standardizeError(error),
     exitCode: 1,
   };
+}
+
+function createRemovedVerifyCommandError(runtimeI18n: Pick<I18nRuntime, 't'>): RuntimeError {
+  return new RuntimeError(
+    GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+    runtimeI18n.t('cli.commands.verify.removed'),
+    {
+      command: REMOVED_PUBLIC_VERIFY_COMMAND_NAME,
+      replacementCommands: ['/doctor', '/connect'],
+    },
+  );
 }
 
 /**

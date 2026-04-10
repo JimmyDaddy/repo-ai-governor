@@ -1,6 +1,6 @@
 # project-077-session-main-command-model-rollout 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-10
 - Stage Mapping: technical solution review / promotion / command-model rollout
 - Phase Mapping: solution review and promotion / capability model cutover / review workflow and verify removal / run scope resolution / regression migration and closeout
@@ -49,7 +49,7 @@
 
 ## 2.5 sprint-005-regression-migration-cleanup-and-project-closeout
 
-- Status: active
+- Status: completed
 - Sprint Goal: 清除 `/verify` 残余引用、补齐回归矩阵，并完成 `project-077` closeout。
 - Task Package: `TK-738`、`TK-739`、`TK-740`
 
@@ -72,9 +72,9 @@
 | TK-736 | sprint-004 | cut generic implementation asks away from default `/run` handoff | routing / explainer / help | TK-735 | completed |
 | TK-737 | sprint-004 | align run presenter CLI wording and architecture wording | presenter / help / docs sync | TK-736 | completed |
 | TK-746 | sprint-004 | sprint-004 closeout and sprint-005 activation handoff | governance / handoff / context routing | CR-002 | completed |
-| TK-738 | sprint-005 | remove remaining hidden `/verify` shims and docs residue | cleanup / docs / i18n | TK-737 | in_progress |
-| TK-739 | sprint-005 | add end-to-end regressions for plan review run and verify removal paths | regression coverage / integration tests | TK-738 | planned |
-| TK-740 | sprint-005 | finalize delivery rollout closeout and project completion audit | closeout / delivery registry / audit | TK-739 | planned |
+| TK-738 | sprint-005 | remove remaining hidden `/verify` shims and docs residue | cleanup / docs / i18n | TK-737 | completed |
+| TK-739 | sprint-005 | add end-to-end regressions for plan review run and verify removal paths | regression coverage / integration tests | TK-738 | completed |
+| TK-740 | sprint-005 | finalize delivery rollout closeout and project completion audit | closeout / delivery registry / audit | TK-739 | completed |
 
 ## 4. 依赖产物策略
 
@@ -102,3 +102,7 @@
 5. 2026-04-10：`sprint-002` 已在 `CR-001` resolved 后完成，`TK-744 / DA-744` 将 primary execution surface 切换到 `project-077 / sprint-003`。
 6. 2026-04-10：`sprint-003` 已在 `CR-006` resolved 后完成，`TK-745 / DA-745` 将 primary execution surface 切换到 `project-077 / sprint-004`。
 7. 2026-04-10：`sprint-004` 已在 `CR-002` clean recheck 后完成，`TK-746 / DA-746` 将 primary execution surface 切换到 `project-077 / sprint-005`，并将 `TK-738` 激活为新的 implementation boundary。
+8. 2026-04-10：`TK-738`、`TK-739` 已完成，`CR-001` 在 fresh reviewer 子 agent clean verdict 后 resolved，`sprint-005` 的 implementation / review boundary 全部收口。
+9. 2026-04-10：`TK-740 / DA-740` 已完成 final delivery closeout package 组装并回链 [project-077 completion audit summary](./project-077-session-main-command-model-rollout-completion-audit-summary.md)；当前由 latest project-final clean recheck round 承担 fresh reviewer gate，project 继续保持 `active` 直到最后一轮 reviewer clean resolved。
+10. 2026-04-10：`CR-006` clean recheck 已 `resolved`，并修复 final round metadata drift；`project-077 / sprint-005 / TK-740 / delivery` 已同步恢复最终 `completed` 真值，`current-context` 临时保留该 stream 作为 active closeout surface。
+11. 2026-04-10：fresh project-final clean round `CR-007` 返回 `CLEAN` verdict，`project-077` completion audit、delivery registry 与 task ledger 已追加 latest clean evidence，项目正式结项。

@@ -162,8 +162,7 @@ export enum OrchestrationSessionRouteId {
  * Defines the metadata key used when a client needs transcript/history surfaces to preserve the
  * operator-authored turn text while routing a different internal prompt through the same turn.
  */
-export const ORCHESTRATION_SESSION_DISPLAY_USER_MESSAGE_METADATA_KEY =
-  'sessionDisplayUserMessage';
+export const ORCHESTRATION_SESSION_DISPLAY_USER_MESSAGE_METADATA_KEY = 'sessionDisplayUserMessage';
 
 /**
  * Defines transport-neutral session event kinds emitted by the orchestration service.

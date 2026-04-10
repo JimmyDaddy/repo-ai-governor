@@ -5,7 +5,6 @@ import { dirname, resolve } from 'node:path';
 import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 
 import { CliDoctorCommand } from '../../src/commands/doctor-command.js';
-import { CliVerifyCommand } from '../../src/commands/verify-command.js';
 import { CliGovernanceCheckStatus } from '../../src/constants/cli-governance-runtime.constant.js';
 import { CliInteractiveUiMode } from '../../src/constants/cli-interactive-shell.constant.js';
 import { CliReactThemePreset } from '../../src/constants/cli-react-theme.constant.js';
@@ -198,19 +197,6 @@ describe('live command abort support', () => {
 
     try {
       await new CliDoctorCommand().execute(fixture.context);
-
-      expect(fixture.resolveAdapterVerification).toHaveBeenCalledWith(abortController.signal);
-    } finally {
-      await rm(fixture.tempRoot, { recursive: true, force: true });
-    }
-  });
-
-  it('passes the live abort signal into verify adapter verification', async () => {
-    const abortController = new AbortController();
-    const fixture = await createCommandFixture(abortController.signal);
-
-    try {
-      await new CliVerifyCommand().execute(fixture.context);
 
       expect(fixture.resolveAdapterVerification).toHaveBeenCalledWith(abortController.signal);
     } finally {

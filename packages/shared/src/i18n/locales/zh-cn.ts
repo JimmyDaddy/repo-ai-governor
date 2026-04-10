@@ -19,7 +19,7 @@ export const ZH_CN_TRANSLATIONS = {
       fix: '仅执行 safe_local 自动修复（目录/模板配置/本地可写性）。',
       preset:
         '指定 connect 的 onboarding 模板：single-tool-minimal|multi-tool-default|single-tool-all-roles|restricted-network-safe。',
-      tools: '指定 connect/doctor/verify onboarding 视图使用的逗号分隔工具列表。',
+      tools: '指定 connect/doctor onboarding 视图使用的逗号分隔工具列表。',
       toolTransport:
         '可重复传入的单工具 transport 覆盖，格式为 toolId=transport；仅支持 transport-aware surface。',
       overwrite: '允许 connect 候选配置覆盖现有角色/路由片段，而不是只做合并输出。',
@@ -112,7 +112,6 @@ export const ZH_CN_TRANSLATIONS = {
       review: { description: '生成代码评审基线输出。' },
       reviewVerify: { description: '验证代码评审基线输出。' },
       verify: {
-        description: '校验适配器路由 pass/warn/fail 基线。',
         removed:
           '公开 `verify` 命令已删除。若你要做 readiness 诊断，请使用 `doctor`；若你需要接入变更并串上后续检查，请使用 `connect`。',
       },
@@ -239,17 +238,17 @@ export const ZH_CN_TRANSLATIONS = {
       checkRoleBindings:
         '请检查 adapters.routing.roleBindings 的主备 surface，确保必需角色至少有一个可用 surface。',
       probeUnavailable: '以下工具的探测或登录依赖不可用：{{toolIds}}。',
-      installMissingCommands: '请先安装缺失的本地命令后再执行 connect/verify：{{commands}}。',
+      installMissingCommands: '请先安装缺失的本地命令后再执行 connect/doctor：{{commands}}。',
       probeFailedCommands:
         '部分命令可执行但探测失败（{{commands}}），请手动执行命令确认登录/扩展状态。',
       setRemoteApiCredentialEnvVars:
-        '请先设置或导出以下 remote-api 凭据环境变量，再执行 connect/verify：{{credentials}}。',
+        '请先设置或导出以下 remote-api 凭据环境变量，再执行 connect/doctor：{{credentials}}。',
       verifyProviderLocalCredentialState:
         '当前只做只读发现；请手动确认以下 provider-local 登录状态：{{credentials}}。',
       resolveCredentialReferencesManually:
         '当前不会自动物化 remote-api credentialRef；请手动解析以下引用：{{credentials}}。',
       authenticateAdapters:
-        '请先为以下远端 adapter 完成认证或刷新登录状态，再执行 connect/verify：{{credentials}}。',
+        '请先为以下远端 adapter 完成认证或刷新登录状态，再执行 connect/doctor：{{credentials}}。',
       investigateHealthChecks:
         '请先排查以下远端 adapter 的健康检查结果，再进行无人值守执行：{{healthChecks}}。',
       pullLocalModels: '请先拉取或修正以下缺失的本地模型，再进行无人值守执行：{{models}}。',

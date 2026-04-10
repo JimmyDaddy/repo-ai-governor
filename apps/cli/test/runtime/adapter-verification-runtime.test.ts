@@ -410,10 +410,10 @@ describe('Cli adapter verification runtime', () => {
     const verification = await runtime.resolveAdapterVerification();
 
     expect(verification.nextActions).toContain(
-      'Set or export the required remote-api credential environment variables before connect/verify: codex:OPENAI_API_KEY.',
+      'Set or export the required remote-api credential environment variables before connect/doctor: codex:OPENAI_API_KEY.',
     );
     expect(verification.nextActions).not.toContain(
-      'Authenticate or refresh login for remote adapters before connect/verify: codex:OPENAI_API_KEY.',
+      'Authenticate or refresh login for remote adapters before connect/doctor: codex:OPENAI_API_KEY.',
     );
   });
 
@@ -757,7 +757,7 @@ describe('Cli adapter verification runtime', () => {
     expect(codexTool?.healthCheck?.transportKind).toBe(AdapterTransportKind.REMOTE_API);
     expect(codexTool?.availabilityStatus).toBe(AgentAvailabilityStatus.UNAVAILABLE);
     expect(verification.nextActions).toContain(
-      'Set or export the required remote-api credential environment variables before connect/verify: codex:OPENAI_API_KEY.',
+      'Set or export the required remote-api credential environment variables before connect/doctor: codex:OPENAI_API_KEY.',
     );
   });
 });

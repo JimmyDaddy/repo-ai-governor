@@ -1,6 +1,6 @@
 # TK-739 add end-to-end regressions for plan review run and verify removal paths
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-10
 - Owner: AI-Agent
 - Priority: P0
@@ -55,8 +55,11 @@
 ## 9. 执行记录
 
 1. 2026-04-10：任务创建，状态初始化为 `planned`。
+2. 2026-04-10：开始补齐 `/review`、`/run` slash surface 与 `@reviewer` raw-role bypass 回归覆盖，任务状态切换为 `in_progress`。
+3. 2026-04-10：已新增 slash registry regression 断言，明确 `/review` 仍是 AI fixed workflow、`/run` 仍是 governed bridge，并补齐 explicit `@reviewer` single-role delegate raw-role bypass 回归；定向 vitest 与 `pnpm run build` 均通过，任务完成。
 
 ## 10. 产出
 
-1. 待执行：end-to-end regression matrix
-2. 待执行：clean command-model behavior proof
+1. `apps/cli/test/runtime/session-slash-command-registry.test.ts`
+2. `apps/cli/test/runtime/session-main-supervisor-runtime.test.ts`
+3. 定向 regression evidence：`/review` vs `/run` slash surface 与 `@reviewer` raw-role bypass

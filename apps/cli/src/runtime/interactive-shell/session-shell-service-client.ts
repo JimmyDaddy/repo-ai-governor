@@ -80,8 +80,7 @@ export class CliSessionShellServiceClient {
         locale: this.locale,
         ...(options?.displayUserMessage
           ? {
-              [ORCHESTRATION_SESSION_DISPLAY_USER_MESSAGE_METADATA_KEY]:
-                options.displayUserMessage,
+              [ORCHESTRATION_SESSION_DISPLAY_USER_MESSAGE_METADATA_KEY]: options.displayUserMessage,
             }
           : {}),
       },

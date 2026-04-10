@@ -1822,7 +1822,9 @@ describe('core-orchestration-service local shell', () => {
       expect(completedEvent?.payload.requiresConfirmation).toBe(false);
       expect(completedEvent?.payload.executionIntent).toBe('session.role_delegate.planner');
       expect(completedEvent?.payload.invokedRoleIds).toEqual(['planner']);
-      expect(completedEvent?.payload.assistantMessage).toContain('user_message: 帮我拆一下任务计划');
+      expect(completedEvent?.payload.assistantMessage).toContain(
+        'user_message: 帮我拆一下任务计划',
+      );
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }
@@ -1863,8 +1865,7 @@ describe('core-orchestration-service local shell', () => {
           'Goal: ship a tetris clone',
         ].join('\n'),
         metadata: {
-          [ORCHESTRATION_SESSION_DISPLAY_USER_MESSAGE_METADATA_KEY]:
-            '/plan ship a tetris clone',
+          [ORCHESTRATION_SESSION_DISPLAY_USER_MESSAGE_METADATA_KEY]: '/plan ship a tetris clone',
         },
       });
       const subscription = await orchestrationService.subscribeSession({

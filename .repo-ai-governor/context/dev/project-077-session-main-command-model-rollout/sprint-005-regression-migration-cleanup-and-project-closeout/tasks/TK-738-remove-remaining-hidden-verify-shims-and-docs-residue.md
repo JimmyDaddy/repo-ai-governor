@@ -1,6 +1,6 @@
 # TK-738 remove remaining hidden `/verify` shims and docs residue
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-04-10
 - Owner: AI-Agent
 - Priority: P0
@@ -55,8 +55,17 @@
 
 1. 2026-04-10：任务创建，状态初始化为 `planned`。
 2. 2026-04-10：`TK-746 / DA-746` 已完成 sprint-004 closeout 与 sprint-005 activation handoff，`TK-738` 切换为 `in_progress`，并接管为 sprint-005 的当前 active implementation boundary。
+3. 2026-04-10：已删除 hidden public `verify` wrapper 与 runtime registration，移除 `CliCommandName.VERIFY` / `CliVerifyCommand` public command entry，并把 direct CLI `verify` invocation 收口为显式 migration error。
+4. 2026-04-10：已同步清理 `connect` follow-up、adapter/onboarding i18n、cancellation policy、相关 tests 与 public wording residue；完成 targeted vitest 回归、`pnpm run build` 与 residue scan，任务完成。
 
 ## 10. 产出
 
-1. 待执行：removed remaining verify residue
-2. 待执行：public surface consistency
+1. `apps/cli/src/main.ts`
+2. `apps/cli/src/cli-governance-runtime.ts`
+3. `apps/cli/src/constants/cli-command.constant.ts`
+4. `apps/cli/src/constants/cli-governance-runtime.constant.ts`
+5. `apps/cli/src/commands/connect-command.ts`
+6. `packages/shared/src/i18n/locales/en-us.ts`
+7. `packages/shared/src/i18n/locales/zh-cn.ts`
+8. `apps/cli/src/commands/verify-command.ts`（deleted）
+9. `apps/cli/test/commands/verify-command.test.ts`（deleted）
