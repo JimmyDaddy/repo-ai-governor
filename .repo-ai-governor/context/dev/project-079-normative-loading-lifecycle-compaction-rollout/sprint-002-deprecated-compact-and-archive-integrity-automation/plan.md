@@ -1,6 +1,6 @@
 # sprint-002-deprecated-compact-and-archive-integrity-automation 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-11
 - Project: `project-079-normative-loading-lifecycle-compaction-rollout`
 - Sprint Goal: 打通 deprecated grace-window compaction、archive integrity gate 与 monthly audit enforcement。
@@ -21,3 +21,5 @@
 
 1. 2026-04-11：创建 `sprint-002-deprecated-compact-and-archive-integrity-automation` 作为 sprint-001 之后的 follow-through phase。
 2. 2026-04-11：`TK-757 / DA-757` 已完成 sprint-001 handoff，`sprint-002` 切换为 active primary implementation stream。
+3. 2026-04-11：`TK-753 / TK-754` 已完成 compaction tooling、archive integrity gate、monthly audit docs 与验证，当前进入 fresh delegated CR loop。
+4. 2026-04-11：`CR-001` 已 clean 收口，`TK-758 / DA-758` 已完成 sprint exit acceptance 与 sprint-003 handoff，sprint-002 收口为 `completed`。

@@ -1,6 +1,6 @@
 # TK-758 sprint-002 exit acceptance and sprint-003 handoff readiness
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-11
 - Owner: AI-Agent
 - Priority: P1
@@ -49,7 +49,9 @@
 ## 9. 执行记录
 
 1. 2026-04-11：任务创建，状态初始化为 `planned`。
+2. 2026-04-11：已汇总 sprint-002 的 compaction / archive-integrity / monthly-audit evidence，并确认 `CR-001` 已 clean 收口。
+3. 2026-04-11：已产出 `DA-758` handoff artifact，供 sprint-003 激活时直接复用。
 
 ## 10. 产出
 
-1. 待执行：sprint-002 exit acceptance evidence
+1. `.repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout/sprint-002-deprecated-compact-and-archive-integrity-automation/tasks/DA-758-sprint-002-compaction-and-archive-integrity-acceptance-and-sprint-003-handoff.md`

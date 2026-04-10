@@ -8,7 +8,10 @@ import { gateFail, gateInfo } from './gate-output.js';
 
 const GATE_NAME = 'normative-loading-gate-runner';
 const DEFAULT_CONFIG_PATH = 'scripts/governance/normative-loading-gate.config.json';
-const CHECK_SCRIPT_PATH = 'scripts/governance/check-normative-loading-manifest.js';
+const CHECK_SCRIPT_PATHS = [
+  'scripts/governance/check-normative-loading-manifest.js',
+  'scripts/governance/check-normative-loading-manifest-archive.js',
+];
 const SUPPORTED_MODES = new Set(['warn', 'block']);
 
 /**
@@ -137,10 +140,13 @@ try {
   const argv = process.argv.slice(2);
   const configCandidate = readFlagValue(argv, '--config') ?? DEFAULT_CONFIG_PATH;
   const configPath = resolve(process.cwd(), configCandidate);
-  const checkScriptPath = resolve(process.cwd(), CHECK_SCRIPT_PATH);
-
-  if (!existsSync(checkScriptPath)) {
-    throw new Error(`Gate script not found: ${checkScriptPath}`);
+  const checkScriptPaths = CHECK_SCRIPT_PATHS.map((scriptPath) =>
+    resolve(process.cwd(), scriptPath),
+  );
+  for (const checkScriptPath of checkScriptPaths) {
+    if (!existsSync(checkScriptPath)) {
+      throw new Error(`Gate script not found: ${checkScriptPath}`);
+    }
   }
 
   const config = loadRunnerConfig(configPath);
@@ -151,19 +157,21 @@ try {
     `effective_mode=${effective.mode} reason="${effective.reason}" switch_conditions=${config.switchConditions.length}`,
   );
 
-  const child = spawnSync(process.execPath, [checkScriptPath, '--mode', effective.mode], {
-    stdio: 'inherit',
-  });
+  for (const checkScriptPath of checkScriptPaths) {
+    const child = spawnSync(process.execPath, [checkScriptPath, '--mode', effective.mode], {
+      stdio: 'inherit',
+    });
 
-  if (typeof child.status === 'number') {
-    process.exit(child.status);
+    if (typeof child.status === 'number' && child.status !== 0) {
+      process.exit(child.status);
+    }
+
+    if (child.error) {
+      throw child.error;
+    }
   }
 
-  if (child.error) {
-    throw child.error;
-  }
-
-  process.exit(1);
+  process.exit(0);
 } catch (error) {
   const errorMessage = error instanceof Error ? error.message : String(error);
   gateFail(GATE_NAME, errorMessage);

@@ -26,13 +26,13 @@
 
 ## 2.2 sprint-002-deprecated-compact-and-archive-integrity-automation
 
-- Status: active
+- Status: completed
 - Sprint Goal: 打通 deprecated grace-window compaction、archive integrity gate 与 monthly audit enforcement。
 - Task Package: `TK-753`、`TK-754`、`TK-758`。
 
 ## 2.3 sprint-003-parser-compatibility-and-project-closeout
 
-- Status: planned
+- Status: active
 - Sprint Goal: 收口 parser/gate compatibility、rollback guidance、migration evidence 与 project-final closeout。
 - Task Package: `TK-755`、`TK-756`、`TK-759`、`TK-760`。
 
@@ -42,12 +42,12 @@
 |---|---|---|---|---|---|
 | TK-751 | sprint-001 | freeze archive manifest schema and lifecycle governance surface | contract/foundation | formal module docs | completed |
 | TK-752 | sprint-001 | implement archive split and root manifest archived-entry compaction baseline | governance/implementation | TK-751 | completed |
-| TK-753 | sprint-002 | implement deprecated grace-window compaction command and dry-run report | automation/implementation | TK-752 | active |
-| TK-754 | sprint-002 | add archive integrity gate and monthly audit enforcement | gate/automation | TK-753 | planned |
-| TK-755 | sprint-003 | finalize parser and gate compatibility plus rollback guidance | compatibility/governance | TK-754 | planned |
+| TK-753 | sprint-002 | implement deprecated grace-window compaction command and dry-run report | automation/implementation | TK-752 | completed |
+| TK-754 | sprint-002 | add archive integrity gate and monthly audit enforcement | gate/automation | TK-753 | completed |
+| TK-755 | sprint-003 | finalize parser and gate compatibility plus rollback guidance | compatibility/governance | TK-754 | active |
 | TK-756 | sprint-003 | run governance closeout and migration evidence refresh | verification/closeout | TK-755 | planned |
 | TK-757 | sprint-001 | sprint-001 exit acceptance and sprint-002 handoff readiness | closeout/handoff | TK-751、TK-752 | completed |
-| TK-758 | sprint-002 | sprint-002 exit acceptance and sprint-003 handoff readiness | closeout/handoff | TK-753、TK-754 | planned |
+| TK-758 | sprint-002 | sprint-002 exit acceptance and sprint-003 handoff readiness | closeout/handoff | TK-753、TK-754 | completed |
 | TK-759 | sprint-003 | sprint-003 exit acceptance and project-final closeout readiness | closeout/handoff | TK-755、TK-756 | planned |
 | TK-760 | sprint-003 | finalize project-079 closeout and completion audit | closeout/final-audit | TK-759 | planned |
 
@@ -73,3 +73,5 @@
 3. 2026-04-11：`project-079 / sprint-001` 已切换为 active primary stream，开始执行 archive split + bootstrap truth preservation baseline。
 4. 2026-04-11：sprint-001 已完成 archive split baseline、双轮 delegated CR 与 exit acceptance，下一步进入 sprint-002 implementation。
 5. 2026-04-11：`TK-757 / DA-757` 已完成 sprint-001 closeout handoff，`sprint-002` 接管为新的 primary implementation stream。
+6. 2026-04-11：`TK-753 / TK-754` 已完成 normative-loading compaction tooling、archive integrity audit、runner/package/docs 接线与测试，进入 sprint-002 fresh delegated CR loop。
+7. 2026-04-11：`CR-001` 已在 sprint-002 收口为 `resolved`，`TK-758 / DA-758` 已完成 closeout handoff，`sprint-003` 现已激活为新的 primary implementation stream。

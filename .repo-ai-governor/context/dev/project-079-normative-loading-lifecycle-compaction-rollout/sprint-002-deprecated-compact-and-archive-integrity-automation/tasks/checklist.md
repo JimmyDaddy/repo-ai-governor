@@ -1,10 +1,21 @@
 # checklist
 
-- [ ] TK-753 implement deprecated grace-window compaction command and dry-run report
+- [x] TK-753 implement deprecated grace-window compaction command and dry-run report
   - 2026-04-11：任务创建，状态初始化为 `planned`。
   - 2026-04-11：sprint-001 clean closeout 已完成，`TK-753` 切换为 `active`，开始实现 deprecated compact command 与 dry-run report baseline。
-  - 2026-04-11：sprint-001 clean closeout 已完成，current-context 已切换到 sprint-002，TK-753 进入 active implementation boundary。
-- [ ] TK-754 add archive integrity gate and monthly audit enforcement
+  - 2026-04-11：已新增 `normative-loading-manifest-canonical.js` 与 `compact-normative-loading-manifest.js`，实现 archive backlog / overdue deprecated entry 的 dry-run 和 apply compaction 规划逻辑。
+  - 2026-04-11：已新增 `test/normative-loading-manifest-lifecycle.integration.test.ts`，覆盖 archive-check fail path 与 compaction apply path，并通过 `pnpm run build`、Vitest 与 normative-loading gate 验证。
+- [x] TK-754 add archive integrity gate and monthly audit enforcement
   - 2026-04-11：任务创建，状态初始化为 `planned`。
-- [ ] TK-758 sprint-002 exit acceptance and sprint-003 handoff readiness
+  - 2026-04-11：已新增 `check-normative-loading-manifest-archive.js`，覆盖 root/archive non-overlap、root archived leakage、overdue deprecated backlog 与 archive status purity。
+  - 2026-04-11：已将 archive integrity audit 接入 `run-normative-loading-manifest-gate.js`、`package.json` scripts、`code_standards.md`、`long-term-maintenance-guide.md` 与 lifecycle governance doc，形成 monthly audit 常规入口。
+  - 2026-04-11：已通过 `node ./scripts/governance/check-code-standards.js --standards .repo-ai-governor/normative_knowledge_sources/governance/code_standards.md`、`node ./scripts/governance/run-normative-loading-manifest-gate.js` 与 `pnpm run build` 验证接线结果。
+- [x] TK-758 sprint-002 exit acceptance and sprint-003 handoff readiness
   - 2026-04-11：任务创建，状态初始化为 `planned`。
+  - 2026-04-11：已汇总 sprint-002 的 compaction / archive-integrity / monthly-audit evidence，并确认 `CR-001` 已 clean 收口。
+  - 2026-04-11：已产出 `DA-758` handoff artifact，供 sprint-003 激活时直接复用。
+  - 2026-04-11：已完成 sprint-002 exit acceptance，并生成 `DA-758` handoff artifact。
+- [x] CR-001 sprint-002-deprecated-compact-and-archive-integrity-automation delegated review loop round 1
+  - 2026-04-11：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-11：fresh delegated reviewer 返回 1 条 P2 finding；主 agent 已复核认可 `--today` 非法输入会污染 compaction/audit 时间真值，`CR-001` 进入 `verified` 并准备修复。
+  - 2026-04-11：accepted finding 已修复并复验通过，strict date parsing / CLI entrypoint hardening 已落地，`CR-001` 收口为 `resolved`。

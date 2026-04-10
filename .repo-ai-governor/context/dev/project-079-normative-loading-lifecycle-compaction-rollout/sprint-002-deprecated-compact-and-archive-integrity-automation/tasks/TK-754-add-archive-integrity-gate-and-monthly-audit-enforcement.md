@@ -1,6 +1,6 @@
 # TK-754 add archive integrity gate and monthly audit enforcement
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-11
 - Owner: AI-Agent
 - Priority: P0
@@ -50,8 +50,15 @@
 ## 9. 执行记录
 
 1. 2026-04-11：任务创建，状态初始化为 `planned`。
+2. 2026-04-11：已新增 `check-normative-loading-manifest-archive.js`，覆盖 root/archive non-overlap、root archived leakage、overdue deprecated backlog 与 archive status purity。
+3. 2026-04-11：已将 archive integrity audit 接入 `run-normative-loading-manifest-gate.js`、`package.json` scripts、`code_standards.md`、`long-term-maintenance-guide.md` 与 lifecycle governance doc，形成 monthly audit 常规入口。
+4. 2026-04-11：已通过 `node ./scripts/governance/check-code-standards.js --standards .repo-ai-governor/normative_knowledge_sources/governance/code_standards.md`、`node ./scripts/governance/run-normative-loading-manifest-gate.js` 与 `pnpm run build` 验证接线结果。
 
 ## 10. 产出
 
-1. 待执行：archive integrity gate
-2. 待执行：monthly audit enforcement delta
+1. `scripts/governance/check-normative-loading-manifest-archive.js`
+2. `scripts/governance/run-normative-loading-manifest-gate.js`
+3. `package.json`
+4. `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md`
+5. `.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md`
+6. `.repo-ai-governor/normative_knowledge_sources/governance/normative-loading-manifest-lifecycle-governance.md`

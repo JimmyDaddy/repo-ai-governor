@@ -68,14 +68,14 @@
    - merged active catalog parser
    - sqlite canonical truth cutover
 
-## 6. Planned Operational Entry Points
+## 6. Operational Entry Points
 
 1. archive integrity gate 的实现目标入口固定为：
    - `node ./scripts/governance/check-normative-loading-manifest-archive.js`
 2. deprecated compaction 的实现目标入口固定为：
    - `node ./scripts/governance/compact-normative-loading-manifest.js`
-3. 上述命令的落地责任属于 `project-079 / sprint-002`；当前 sprint-001 只冻结 contract，不宣称这些入口已在仓库中可执行。
-4. `dry-run` 是 compaction 默认建议模式；真正 write-back 只在显式关闭 dry-run 后执行。
+3. `node ./scripts/governance/run-normative-loading-manifest-gate.js` 与 `pnpm run check:normative-loading-manifest` 现在同时覆盖 root manifest baseline 与 archive integrity audit。
+4. `dry-run` 是 compaction 默认执行模式；真正 write-back 只在显式 `--apply` 后执行。
 5. monthly audit 必须覆盖：
    - root manifest 是否残留 archived entries
    - archive manifest status purity

@@ -1,6 +1,6 @@
 # TK-753 implement deprecated grace-window compaction command and dry-run report
 
-- Status: active
+- Status: completed
 - Date: 2026-04-11
 - Owner: AI-Agent
 - Priority: P0
@@ -51,8 +51,11 @@
 
 1. 2026-04-11：任务创建，状态初始化为 `planned`。
 2. 2026-04-11：sprint-001 clean closeout 已完成，`TK-753` 切换为 `active`，开始实现 deprecated compact command 与 dry-run report baseline。
+3. 2026-04-11：已新增 `normative-loading-manifest-canonical.js` 与 `compact-normative-loading-manifest.js`，实现 archive backlog / overdue deprecated entry 的 dry-run 和 apply compaction 规划逻辑。
+4. 2026-04-11：已新增 `test/normative-loading-manifest-lifecycle.integration.test.ts`，覆盖 archive-check fail path 与 compaction apply path，并通过 `pnpm run build`、Vitest 与 normative-loading gate 验证。
 
 ## 10. 产出
 
-1. 待执行：compact command
-2. 待执行：dry-run report shape
+1. `scripts/governance/normative-loading-manifest-canonical.js`
+2. `scripts/governance/compact-normative-loading-manifest.js`
+3. `test/normative-loading-manifest-lifecycle.integration.test.ts`

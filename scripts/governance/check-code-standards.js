@@ -31,6 +31,7 @@ const REQUIRED_MARKERS = [
   'node ./scripts/governance/check-worktree-review-target.js',
   'node ./scripts/governance/check-i18n-parity-fallback.js',
   'node ./scripts/governance/run-normative-loading-manifest-gate.js',
+  'node ./scripts/governance/check-normative-loading-manifest-archive.js',
   'pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1',
   'pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1',
 ];

@@ -1,5 +1,5 @@
 schema_version: 1
-generated_at: 2026-04-10
+generated_at: 2026-04-11
 status: active
 owner: architecture
 
@@ -704,3 +704,25 @@ deliveries:
       - .repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-005-regression-migration-cleanup-and-project-closeout/tasks/DA-740-final-delivery-rollout-closeout-and-project-completion-audit-handoff.md
       - .repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/project-077-session-main-command-model-rollout-completion-audit-summary.md
     accepted_at: 2026-04-10
+
+  - solution_id: technical-solution.normative-loading-manifest-lifecycle-compaction-and-staged-sharding
+    delivery_mode: followup_required
+    consumer_surfaces:
+      - internal_governance
+    user_impact_level: none
+    execution_status: in_progress
+    rollout_status: not_required
+    owner: architecture
+    project_ref: project-079-normative-loading-lifecycle-compaction-rollout
+    sprint_ref: sprint-003-parser-compatibility-and-project-closeout
+    task_ids:
+      - TK-755
+      - TK-756
+      - TK-759
+      - TK-760
+    project_plan_path: .repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout/plan.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout/sprint-003-parser-compatibility-and-project-closeout/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout/sprint-003-parser-compatibility-and-project-closeout/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout/sprint-002-deprecated-compact-and-archive-integrity-automation/tasks/DA-758-sprint-002-compaction-and-archive-integrity-acceptance-and-sprint-003-handoff.md
+    rollout_artifacts: []
+    accepted_at: 2026-04-11

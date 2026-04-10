@@ -78,6 +78,7 @@ For command-level enforcement, always use `.repo-ai-governor/normative_knowledge
    - triad 文档状态保持 `active/frozen` 且一致。
 2. 默认执行入口：
    - `node ./scripts/governance/run-normative-loading-manifest-gate.js`
+   - `node ./scripts/governance/check-normative-loading-manifest-archive.js`
 3. 回滚开关（应急）：
    - 配置开关：`scripts/governance/normative-loading-gate.config.json -> rollbackSwitch.enabled=true`
    - 环境开关：`NORMATIVE_LOADING_GATE_ROLLBACK=1`
@@ -164,6 +165,7 @@ Any non-empty entry must include task-level traceability in `tasks/checklist.md`
 3. Re-check stability/coverage baselines if test topology changed.
 4. Review `execution_notes.md` for util reuse records and unresolved debt.
 5. Run `node ./scripts/governance/reconcile-artifact-dependencies.js --dry-run` then `node ./scripts/governance/compact-artifact-registry.js --dry-run`, and clear stale artifact lifecycle backlog.
+6. Run `node ./scripts/governance/check-normative-loading-manifest-archive.js` then `node ./scripts/governance/compact-normative-loading-manifest.js --dry-run`, and clear overdue normative-loading deprecated backlog before it leaks into root manifest long-term.
 
 ## Ownership
 
