@@ -1,6 +1,6 @@
 # TK-759 sprint-003 exit acceptance and project-final closeout readiness
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-11
 - Owner: AI-Agent
 - Priority: P1
@@ -41,15 +41,20 @@
 ## 7. Development Verification
 
 1. `node ./scripts/governance/check-task-ledger-sync.js`
+2. `node ./scripts/governance/check-code-review-status-sync.js`
 
 ## 8. Delivery Verification
 
 1. `node ./scripts/governance/check-sprint-plan-status-sync.js`
+2. `node ./scripts/governance/check-worktree-review-target.js`
 
 ## 9. 执行记录
 
 1. 2026-04-11：任务创建，状态初始化为 `planned`。
+2. 2026-04-11：`CR-001` 已 clean 收口为 `resolved`，sprint-003 当前实现边界已不存在阻止 exit acceptance 的 actionable finding。
+3. 2026-04-11：已产出 `DA-759` handoff artifact，确认 `TK-760` 是下一条 project-final closeout boundary，且当前 sprint surface 继续保持 active closeout role。
 
 ## 10. 产出
 
-1. 待执行：project-final closeout readiness evidence
+1. `.repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout/sprint-003-parser-compatibility-and-project-closeout/tasks/DA-759-sprint-003-exit-acceptance-and-project-final-closeout-handoff.md`
+2. `.repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout/sprint-003-parser-compatibility-and-project-closeout/review/resolved_code_review_working-tree-20260411-0255.md`

@@ -1,6 +1,6 @@
 # TK-756 run governance closeout and migration evidence refresh
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-11
 - Owner: AI-Agent
 - Priority: P0
@@ -40,17 +40,21 @@
 ## 7. Development Verification
 
 1. `node ./scripts/governance/check-task-ledger-sync.js`
+2. `node ./scripts/governance/run-normative-loading-manifest-gate.js`
 
 ## 8. Delivery Verification
 
 1. `node ./scripts/governance/check-sprint-plan-status-sync.js`
 2. `node ./scripts/governance/check-artifact-registry-lifecycle.js`
+3. `node ./scripts/governance/check-docs-triad-sync.js`
 
 ## 9. 执行记录
 
 1. 2026-04-11：任务创建，状态初始化为 `planned`。
+2. 2026-04-11：在 `TK-755` 完成 parser/gate compatibility 与 rollback guidance 后，开始汇总 project-079 的 migration / audit evidence 链路。
+3. 2026-04-11：已将 sprint-001 archive split、sprint-002 compaction/archive-integrity、sprint-003 compatibility/rollback evidence 收敛为 `DA-756`，并固定 `TK-759 / TK-760` 所需输入面。
+4. 2026-04-11：governance closeout evidence refresh 已通过 same-window build、manifest gate、docs triad 与 artifact lifecycle 校验。
 
 ## 10. 产出
 
-1. 待执行：migration evidence package
-2. 待执行：final audit input set
+1. `.repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout/sprint-003-parser-compatibility-and-project-closeout/tasks/DA-756-governance-closeout-and-migration-evidence-refresh-packet.md`

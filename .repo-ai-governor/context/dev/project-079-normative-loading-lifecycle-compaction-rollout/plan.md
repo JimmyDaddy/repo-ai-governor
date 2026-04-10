@@ -44,11 +44,11 @@
 | TK-752 | sprint-001 | implement archive split and root manifest archived-entry compaction baseline | governance/implementation | TK-751 | completed |
 | TK-753 | sprint-002 | implement deprecated grace-window compaction command and dry-run report | automation/implementation | TK-752 | completed |
 | TK-754 | sprint-002 | add archive integrity gate and monthly audit enforcement | gate/automation | TK-753 | completed |
-| TK-755 | sprint-003 | finalize parser and gate compatibility plus rollback guidance | compatibility/governance | TK-754 | active |
-| TK-756 | sprint-003 | run governance closeout and migration evidence refresh | verification/closeout | TK-755 | planned |
+| TK-755 | sprint-003 | finalize parser and gate compatibility plus rollback guidance | compatibility/governance | TK-754 | completed |
+| TK-756 | sprint-003 | run governance closeout and migration evidence refresh | verification/closeout | TK-755 | completed |
 | TK-757 | sprint-001 | sprint-001 exit acceptance and sprint-002 handoff readiness | closeout/handoff | TK-751、TK-752 | completed |
 | TK-758 | sprint-002 | sprint-002 exit acceptance and sprint-003 handoff readiness | closeout/handoff | TK-753、TK-754 | completed |
-| TK-759 | sprint-003 | sprint-003 exit acceptance and project-final closeout readiness | closeout/handoff | TK-755、TK-756 | planned |
+| TK-759 | sprint-003 | sprint-003 exit acceptance and project-final closeout readiness | closeout/handoff | TK-755、TK-756 | completed |
 | TK-760 | sprint-003 | finalize project-079 closeout and completion audit | closeout/final-audit | TK-759 | planned |
 
 ## 4. 依赖产物策略
@@ -75,3 +75,5 @@
 5. 2026-04-11：`TK-757 / DA-757` 已完成 sprint-001 closeout handoff，`sprint-002` 接管为新的 primary implementation stream。
 6. 2026-04-11：`TK-753 / TK-754` 已完成 normative-loading compaction tooling、archive integrity audit、runner/package/docs 接线与测试，进入 sprint-002 fresh delegated CR loop。
 7. 2026-04-11：`CR-001` 已在 sprint-002 收口为 `resolved`，`TK-758 / DA-758` 已完成 closeout handoff，`sprint-003` 现已激活为新的 primary implementation stream。
+8. 2026-04-11：`TK-755 / TK-756` 已完成 archive-sidecar parser/gate compatibility、rollback playbook 固化与 migration evidence refresh，sprint-003 implementation boundary 已准备进入 fresh delegated CR loop。
+9. 2026-04-11：sprint-003 fresh delegated CR round `CR-001` 已 clean 收口，`TK-759 / DA-759` 已完成 sprint exit acceptance；下一边界进入 `TK-760` project-final closeout。

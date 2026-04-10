@@ -1,12 +1,25 @@
 # checklist
 
-- [ ] TK-755 finalize parser and gate compatibility plus rollback guidance
+- [x] TK-755 finalize parser and gate compatibility plus rollback guidance
   - 2026-04-11：任务创建，状态初始化为 `planned`。
   - 2026-04-11：sprint-002 clean closeout 已完成，`TK-755` 切换为 `active`，开始收口 parser/gate compatibility 与 rollback guidance。
-  - 2026-04-11：sprint-002 clean closeout 完成后，`TK-755` 切换为 `active`。
-- [ ] TK-756 run governance closeout and migration evidence refresh
+  - 2026-04-11：已修复 archive integrity checker / compaction apply 在绝对路径 CLI 输入下的 canonical `root_manifest_path` 兼容性缺口，使 repo 内与 external cwd 两种 operator 路径都保持稳定。
+  - 2026-04-11：已补充 archive sidecar parser compatibility、missing `deprecated_at`、root/archive overlap 与 archive status purity 回归测试，并把 rollback operator sequence 写入正式治理文档。
+  - 2026-04-11：已产出 `DA-755` compatibility/rollback evidence，并通过同窗口 `pnpm run build`、Vitest 与 normative-loading gate 验证。
+- [x] TK-756 run governance closeout and migration evidence refresh
   - 2026-04-11：任务创建，状态初始化为 `planned`。
-- [ ] TK-759 sprint-003 exit acceptance and project-final closeout readiness
+  - 2026-04-11：在 `TK-755` 完成 parser/gate compatibility 与 rollback guidance 后，开始汇总 project-079 的 migration / audit evidence 链路。
+  - 2026-04-11：已将 sprint-001 archive split、sprint-002 compaction/archive-integrity、sprint-003 compatibility/rollback evidence 收敛为 `DA-756`，并固定 `TK-759 / TK-760` 所需输入面。
+  - 2026-04-11：governance closeout evidence refresh 已通过 same-window build、manifest gate、docs triad 与 artifact lifecycle 校验。
+- [x] TK-759 sprint-003 exit acceptance and project-final closeout readiness
   - 2026-04-11：任务创建，状态初始化为 `planned`。
+  - 2026-04-11：`CR-001` 已 clean 收口为 `resolved`，sprint-003 当前实现边界已不存在阻止 exit acceptance 的 actionable finding。
+  - 2026-04-11：已产出 `DA-759` handoff artifact，确认 `TK-760` 是下一条 project-final closeout boundary，且当前 sprint surface 继续保持 active closeout role。
+  - 2026-04-11：已完成 sprint-003 exit acceptance，并产出 DA-759 作为 project-final closeout handoff。
 - [ ] TK-760 finalize project-079 closeout and completion audit
   - 2026-04-11：任务创建，状态初始化为 `planned`。
+- [x] CR-001 sprint-003-parser-compatibility-and-project-closeout delegated review loop round 1
+  - 2026-04-11：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-11：已创建 `code_review_working-tree-20260411-0255.md`，记录 2 条 actionable findings，等待主 agent 复核并修复。
+  - 2026-04-11：已复核两条 findings，均判定为 `accepted`，并纳入同窗口修复闭环。
+  - 2026-04-11：已完成 `CR-001` ledger sync 与 absolute-path archive compatibility 修复，review lifecycle 进入 `resolved`。

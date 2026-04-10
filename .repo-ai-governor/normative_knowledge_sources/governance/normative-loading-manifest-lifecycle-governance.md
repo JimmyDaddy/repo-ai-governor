@@ -86,7 +86,14 @@
 
 1. rollback 语义保持简单：把目标 entry 从 archive manifest 回写 root manifest 即可。
 2. rollback 不改变 root manifest schema，也不引入新的 bootstrap indirection。
-3. 若 rollback 发生在同一窗口内，必须同步刷新 `generated_at` 并保留原因记录。
+3. operator 执行顺序固定为：
+   - 先运行 `node ./scripts/governance/compact-normative-loading-manifest.js --dry-run`
+   - 如需临时放宽 gate，只允许应急使用 `NORMATIVE_LOADING_GATE_ROLLBACK=1` 或 `NORMATIVE_LOADING_GATE_FORCE_MODE=warn`
+   - 同窗口把目标 entry 从 archive manifest 回写 root manifest，并同步刷新两个 manifest 的 `generated_at`
+4. rollback write-back 后必须立即重跑：
+   - `node ./scripts/governance/run-normative-loading-manifest-gate.js`
+   - `node ./scripts/governance/check-normative-loading-manifest-archive.js --mode block`
+5. rollback 结束前必须恢复默认 `block` 模式，并在同一 change window 保留原因记录。
 
 ## 8. Audit Notes
 

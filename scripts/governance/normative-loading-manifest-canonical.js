@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 
 import { stringify } from 'yaml';
@@ -51,6 +51,41 @@ function normalizePath(value) {
   return String(value ?? '')
     .trim()
     .replace(/\\/gu, '/');
+}
+
+/**
+ * Resolves one filesystem path into a stable comparable absolute path.
+ * @param {string} pathValue Path candidate.
+ * @returns {string}
+ */
+function resolveComparablePath(pathValue) {
+  const resolvedPath = resolve(pathValue);
+
+  try {
+    return realpathSync.native?.(resolvedPath) ?? realpathSync(resolvedPath);
+  } catch {
+    return resolvedPath;
+  }
+}
+
+/**
+ * Resolves the canonical root_manifest_path value stored inside archive manifests.
+ * @param {string} rootManifestPath Absolute root manifest path.
+ * @returns {string}
+ */
+function resolveExpectedRootManifestPathValue(rootManifestPath) {
+  const comparableRootManifestPath = normalizePath(resolveComparablePath(rootManifestPath));
+  const canonicalRootManifestPath = normalizePath(ROOT_NORMATIVE_LOADING_MANIFEST_PATH);
+
+  if (
+    comparableRootManifestPath === canonicalRootManifestPath ||
+    comparableRootManifestPath.endsWith(`/${canonicalRootManifestPath}`)
+  ) {
+    return canonicalRootManifestPath;
+  }
+
+  const comparableCwdPath = resolveComparablePath(process.cwd());
+  return normalizePath(relative(comparableCwdPath, resolveComparablePath(rootManifestPath)));
 }
 
 /**
@@ -304,7 +339,7 @@ export function readNormativeLoadingManifestState(options = {}) {
   return {
     rootManifestPath,
     archiveManifestPath,
-    expectedRootManifestPathValue: normalizePath(relative(process.cwd(), rootManifestPath)),
+    expectedRootManifestPathValue: resolveExpectedRootManifestPathValue(rootManifestPath),
     rootManifest,
     archiveManifest,
     rootDocuments: normalizeDocumentEntries(rootManifest.documents, rootManifestPath),

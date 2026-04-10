@@ -22,3 +22,5 @@
 
 1. 2026-04-11：创建 `sprint-003-parser-compatibility-and-project-closeout` 作为 project-079 的 final closeout phase。
 2. 2026-04-11：`TK-758 / DA-758` 已完成 sprint-002 closeout handoff，`sprint-003` 接管为 active primary implementation stream。
+3. 2026-04-11：`TK-755 / TK-756` 已完成 parser/gate compatibility、rollback guidance 与 migration evidence refresh，下一边界进入 sprint-level delegated CR loop。
+4. 2026-04-11：`CR-001` 已 clean 收口为 `resolved`，`TK-759 / DA-759` 已完成 sprint exit acceptance，当前 sprint 继续作为 project-final closeout surface。
