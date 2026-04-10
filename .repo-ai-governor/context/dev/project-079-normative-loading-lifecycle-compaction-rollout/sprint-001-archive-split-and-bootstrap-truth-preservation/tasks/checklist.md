@@ -1,0 +1,21 @@
+# checklist
+
+- [x] TK-751 freeze archive manifest schema and lifecycle governance surface
+  - 2026-04-11：任务创建，状态初始化为 `planned`。
+  - 2026-04-11：已新增 `normative-loading-manifest-lifecycle-governance.md`，固定 root/bootstrap truth、archive sidecar schema、same-window mutation 与 rollback 边界。
+  - 2026-04-11：已将 archive manifest 作为 active sidecar governance surface 注册到 root manifest，但未引入新的 startup truth 或 active shard indirection。
+- [x] TK-752 implement archive split and root manifest archived-entry compaction baseline
+  - 2026-04-11：任务创建，状态初始化为 `planned`。
+  - 2026-04-11：已创建 archive manifest sidecar，并把 root manifest 中既有 archived catalog 完整迁入 sidecar。
+  - 2026-04-11：root manifest 已回到 archived-entry zero-baseline，single-file bootstrap truth 保持不变。
+- [x] TK-757 sprint-001 exit acceptance and sprint-002 handoff readiness
+  - 2026-04-11：任务创建，状态初始化为 `planned`。
+  - 2026-04-11：已汇总 sprint-001 的 archive split、review closure 与 ledger evidence，确认 sprint-002 输入边界稳定。
+  - 2026-04-11：已产出 `DA-757` handoff artifact，供 sprint-002 激活时直接复用。
+- [x] CR-001 sprint-001-archive-split-and-bootstrap-truth-preservation delegated review loop round 1
+  - 2026-04-11：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-11：delegated reviewer 返回 1 条 truthfulness finding；主 agent 复核后予以认可，并完成 project plan 状态同步修复。
+  - 2026-04-11：accepted finding 已修复并复验通过，`CR-001` 收口为 `resolved`。
+- [x] CR-002 sprint-001-archive-split-and-bootstrap-truth-preservation delegated recheck loop round 2
+  - 2026-04-11：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-11：fresh delegated post-fix recheck 返回 clean 结论，未发现新的 actionable finding。

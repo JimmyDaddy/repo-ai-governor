@@ -3,20 +3,20 @@
 ## Primary Stream
 
 - Status: active
-- Project: `project-077-session-main-command-model-rollout`
-- Sprint: `sprint-005-regression-migration-cleanup-and-project-closeout`
-- Docs root: `.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout`
-- Task records: `.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-005-regression-migration-cleanup-and-project-closeout/tasks/`
-- Review records: `.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-005-regression-migration-cleanup-and-project-closeout/review/`
-- Note: `2026-04-10` latest project-final clean round `CR-007` 已确认 `project-077` closeout surface 无新增 actionable finding；`TK-740 / DA-740` 的 final closeout write-back 保持 `completed` 真值，但在下一条 primary stream 显式激活前，当前 worktree 继续临时保留该 stream 作为 active closeout surface。
+- Project: `project-079-normative-loading-lifecycle-compaction-rollout`
+- Sprint: `sprint-002-deprecated-compact-and-archive-integrity-automation`
+- Docs root: `.repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout`
+- Task records: `.repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout/sprint-002-deprecated-compact-and-archive-integrity-automation/tasks/`
+- Review records: `.repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout/sprint-002-deprecated-compact-and-archive-integrity-automation/review/`
+- Note: `2026-04-11` `project-079 / sprint-001` 已完成 clean closeout 并移入 completed history；当前由 `project-079 / sprint-002` 接管 primary implementation stream，收口 deprecated compact、archive integrity gate 与 monthly audit enforcement。
 
 ## Active Streams
 
-- `primary`: project=`project-077-session-main-command-model-rollout`, sprint=`sprint-005-regression-migration-cleanup-and-project-closeout`, docs=`.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout`, plan=`.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-005-regression-migration-cleanup-and-project-closeout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-005-regression-migration-cleanup-and-project-closeout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-005-regression-migration-cleanup-and-project-closeout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-005-regression-migration-cleanup-and-project-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-077-session-main-command-model-rollout/sprint-005-regression-migration-cleanup-and-project-closeout/review/`, status=`active`, note=`project-077 / sprint-005` truth 已 completed；latest project-final clean round `CR-007` 已 clean resolved，当前条目仅作为默认 active closeout surface 保留，待下一条 primary stream 激活后再迁入 completed stream history`
+- `primary`: project=`project-079-normative-loading-lifecycle-compaction-rollout`, sprint=`sprint-002-deprecated-compact-and-archive-integrity-automation`, docs=`.repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout`, plan=`.repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout/sprint-002-deprecated-compact-and-archive-integrity-automation/plan.md`, tasks=`.repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout/sprint-002-deprecated-compact-and-archive-integrity-automation/tasks/`, checklist=`.repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout/sprint-002-deprecated-compact-and-archive-integrity-automation/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout/sprint-002-deprecated-compact-and-archive-integrity-automation/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout/sprint-002-deprecated-compact-and-archive-integrity-automation/review/`, status=`active`, note=`project-079 / sprint-002` is the active implementation boundary for deprecated compaction, archive integrity gate, and monthly audit enforcement`
 
 ## Planned Follow-Up Streams
 
-- 当前无已登记的 planned follow-up stream。
+- `planned-project-079-sprint-003`: project=`project-079-normative-loading-lifecycle-compaction-rollout`, sprint=`sprint-003-parser-compatibility-and-project-closeout`, docs=`.repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout`, plan=`.repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout/sprint-003-parser-compatibility-and-project-closeout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout/sprint-003-parser-compatibility-and-project-closeout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout/sprint-003-parser-compatibility-and-project-closeout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout/sprint-003-parser-compatibility-and-project-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-079-normative-loading-lifecycle-compaction-rollout/sprint-003-parser-compatibility-and-project-closeout/review/`, status=`planned`, note=`sprint-003` remains reserved for parser/gate compatibility, migration evidence, and final project closeout after sprint-002 is clean`
 
 ## Completed Stream History
 
