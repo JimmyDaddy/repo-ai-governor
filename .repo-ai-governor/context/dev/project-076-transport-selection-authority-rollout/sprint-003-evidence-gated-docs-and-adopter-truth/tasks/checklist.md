@@ -7,9 +7,16 @@
 - [x] TK-733 uplift adopter-facing support wording only when evidence gate passes
   - 2026-04-09：任务创建，状态初始化为 `planned`。
   - 2026-04-10：`TK-732 / DA-732` 判定 evidence gate 通过后，已完成 `docs/support-matrix*` 与 `docs/local-adoption-playbook*` 的保守 wording uplift，明确 Codex / Claude Code 显式 `remote_api` 路径具备证据支撑、仍保持 environment-gated，且 warning 语义不代表静默 `cli_exec` fallback 成功。
-- [ ] TK-734 finalize rollout closeout and delivery evidence handoff
+- [x] TK-734 finalize rollout closeout and delivery evidence handoff
   - 2026-04-09：任务创建，状态初始化为 `planned`。
+  - 2026-04-10：`CR-001` resolved 后，当前任务切换为 `in_progress`，开始汇总 rollout closeout evidence、completion audit baseline 与 project-final CR 输入。
+  - 2026-04-10：已产出 `DA-734` 与 project-level completion audit summary（当前结论为 `blocked by project-final delegated CR`），并冻结下一步为 project-final delegated review loop。
+  - 2026-04-10：`CR-002` 已修复并收口，当前任务同步完成 `project / sprint / current-context / history / delivery registry` 的最终 completed write-back，并推进到 `completed`。
 - [x] CR-001 sprint-003-evidence-gated-docs-and-adopter-truth delegated review loop round 1
   - 2026-04-10：任务创建，状态初始化为 `review_pending`。
   - 2026-04-10：fresh delegated reviewer 返回 2 条 actionable finding；主 agent 已认可并修复 `current-context` primary closeout routing 漂移，以及 `support-matrix*` 过早写入 `TK-734` 的支持口径漂移，当前推进到 `verified` 等待 fresh post-fix recheck。
   - 2026-04-10：fresh post-fix reviewer `Euclid` 返回 clean verdict，确认 scoped sprint-003 surface 不存在新的 actionable finding；当前 CR 已推进到 `resolved`。
+- [x] CR-002 project-076-transport-selection-authority-rollout final delegated review loop round 2
+  - 2026-04-10：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-10：fresh delegated reviewer 返回 2 条 actionable finding，分别指向 final completed truth 仍未写回，以及 `DA-734` / completion audit 对 `current-context` 路由的陈述已经过时。
+  - 2026-04-10：已接受两条 finding，并在同一窗口完成 `CR-002`、`TK-734`、project/sprint plan、completion audit、delivery registry、`current-context.md` 与 completed history 的同步修复；本任务推进到 `resolved`。

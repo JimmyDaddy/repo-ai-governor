@@ -1,6 +1,6 @@
 # sprint-003-evidence-gated-docs-and-adopter-truth 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-09
 - Project: `project-076-transport-selection-authority-rollout`
 - Sprint Goal: 产出 clean-room / verify evidence，并仅在 gate 通过时升级 public support wording 与 delivery closeout。
@@ -23,3 +23,5 @@
 2. 2026-04-10：`TK-736 / DA-736` 完成 sprint-002 closeout 与 activation handoff 后，`sprint-003` 被激活为当前 primary sprint，`TK-732` 已切换为 `in_progress`。
 3. 2026-04-10：`TK-732 / DA-732` 已完成 Codex / Claude Code 显式 `remote_api` 的 verify、packaged distribution 与 clean-room 证据汇总，gate verdict 为 `passed`。
 4. 2026-04-10：`TK-733` 已据此完成 adopter-facing docs wording uplift；当前 sprint 的下一边界固定为 scoped CR loop。
+5. 2026-04-10：`CR-001` 已 resolved，`TK-734` 当前处于 `in_progress`，并已产出 `DA-734` 与 project completion audit baseline；下一边界为 project-final delegated CR。
+6. 2026-04-10：`CR-002` 已修复并收口，`TK-734 / DA-734` 已完成 final closeout write-back；当前 sprint 恢复为最终 `completed` 真值。

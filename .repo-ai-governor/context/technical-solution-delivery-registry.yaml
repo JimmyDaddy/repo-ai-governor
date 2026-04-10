@@ -1,5 +1,5 @@
 schema_version: 1
-generated_at: 2026-04-09
+generated_at: 2026-04-10
 status: active
 owner: architecture
 
@@ -642,24 +642,30 @@ deliveries:
       - runtime_service
       - docs_playbook
     user_impact_level: medium
-    execution_status: in_progress
-    rollout_status: in_progress
+    execution_status: completed
+    rollout_status: completed
     owner: runtime
     project_ref: project-076-transport-selection-authority-rollout
-    sprint_ref: sprint-002-connect-selection-ux-and-candidate-materialization
+    sprint_ref: sprint-003-evidence-gated-docs-and-adopter-truth
     task_ids:
-      - TK-729
-      - TK-730
-      - TK-731
+      - TK-732
+      - TK-733
+      - TK-734
     project_plan_path: .repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/plan.md
-    sprint_plan_path: .repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-002-connect-selection-ux-and-candidate-materialization/plan.md
-    task_csv_path: .repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-002-connect-selection-ux-and-candidate-materialization/tasks/tasks.csv
-    handoff_artifact_path: .repo-ai-governor/context/dev/project-075-transport-selection-authority-promotion-and-decomposition/sprint-001-promotion-and-followup-decomposition/tasks/DA-718-transport-selection-authority-promotion-and-rollout-decomposition-handoff.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-003-evidence-gated-docs-and-adopter-truth/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-003-evidence-gated-docs-and-adopter-truth/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-003-evidence-gated-docs-and-adopter-truth/tasks/DA-734-rollout-closeout-and-delivery-evidence-handoff.md
     rollout_artifacts:
       - .repo-ai-governor/context/dev/project-075-transport-selection-authority-promotion-and-decomposition/sprint-001-promotion-and-followup-decomposition/tasks/DA-718-transport-selection-authority-promotion-and-rollout-decomposition-handoff.md
       - .repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/plan.md
       - .repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-001-contract-and-routing-truth-cutover/plan.md
       - .repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-001-contract-and-routing-truth-cutover/tasks/DA-735-sprint-001-closeout-and-sprint-002-activation-handoff.md
       - .repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-002-connect-selection-ux-and-candidate-materialization/plan.md
+      - .repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-002-connect-selection-ux-and-candidate-materialization/tasks/DA-736-sprint-002-closeout-and-sprint-003-activation-handoff.md
       - .repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-003-evidence-gated-docs-and-adopter-truth/plan.md
+      - .repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-003-evidence-gated-docs-and-adopter-truth/tasks/DA-732-remote-api-clean-room-and-verify-evidence-summary.md
+      - .repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-003-evidence-gated-docs-and-adopter-truth/review/resolved_code_review_working-tree-20260410-0315.md
+      - .repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-003-evidence-gated-docs-and-adopter-truth/review/resolved_code_review_working-tree-20260410-0423.md
+      - .repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-003-evidence-gated-docs-and-adopter-truth/tasks/DA-734-rollout-closeout-and-delivery-evidence-handoff.md
+      - .repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/project-076-transport-selection-authority-rollout-completion-audit-summary.md
     accepted_at: 2026-04-09

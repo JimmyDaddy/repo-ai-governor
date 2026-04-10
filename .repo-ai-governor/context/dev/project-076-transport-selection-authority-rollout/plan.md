@@ -1,6 +1,6 @@
 # project-076-transport-selection-authority-rollout 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-09
 - Stage Mapping: runtime.agent-projection follow-up rollout
 - Phase Mapping: contract and routing truth / connect UX / evidence-gated docs uplift
@@ -36,7 +36,7 @@
 
 ## 2.3 sprint-003-evidence-gated-docs-and-adopter-truth
 
-- Status: active
+- Status: completed
 - Sprint Goal: 产出 clean-room / verify evidence，并仅在 gate 通过时升级 public support wording 与 delivery closeout。
 - Task Package: `TK-732`、`TK-733`、`TK-734`
 
@@ -54,7 +54,7 @@
 | TK-736 | sprint-002 | sprint-002 exit acceptance and sprint-003 activation handoff | sprint/closeout | TK-729、TK-730、TK-731、CR-001、CR-002、CR-003 | completed |
 | TK-732 | sprint-003 | produce clean-room and verify evidence for codex and claude-code remote_api paths | evidence/verification | TK-731 | completed |
 | TK-733 | sprint-003 | uplift adopter-facing support wording only when evidence gate passes | docs/evidence-gated uplift | TK-732 | completed |
-| TK-734 | sprint-003 | finalize rollout closeout and delivery evidence handoff | closeout/delivery | TK-733 | planned |
+| TK-734 | sprint-003 | finalize rollout closeout and delivery evidence handoff | closeout/delivery | TK-733 | completed |
 
 ## 4. 依赖产物策略
 
@@ -80,3 +80,5 @@
 7. 2026-04-10：`CR-002` 的迟到 reviewer finding 已完成修复，`CR-003` fresh delegated recheck 返回 clean verdict；`TK-736 / DA-736` 已完成 sprint-002 closeout，并将 primary execution surface 激活到 `sprint-003`。
 8. 2026-04-10：`TK-732 / DA-732` 已完成 Codex / Claude Code 显式 `remote_api` 的 targeted adapter、packaged distribution 与 clean-room 证据汇总，evidence gate 判定为 `passed`。
 9. 2026-04-10：`TK-733` 已基于 `TK-732` 的 gate verdict 受控升级 `docs/support-matrix*` 与 `docs/local-adoption-playbook*` wording；下一边界为 `sprint-003` scoped CR loop。
+10. 2026-04-10：`CR-001` 已 resolved，当前已产出 `DA-734` 与 [project-076 completion audit summary](./project-076-transport-selection-authority-rollout-completion-audit-summary.md) 作为 final closeout baseline；`CR-002` 已 bootstrapped 为 project-final delegated review loop round 2 并保持 `review_pending`。
+11. 2026-04-10：`CR-002` 已修复并收口，`TK-734 / DA-734` 完成 final closeout write-back；[project-076 completion audit summary](./project-076-transport-selection-authority-rollout-completion-audit-summary.md) 已切换为 `completed`，`stream-project-076-sprint-003` 已迁入 completed history。
