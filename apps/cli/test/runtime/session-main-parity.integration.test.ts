@@ -156,11 +156,11 @@ describe('session.main parity integration', () => {
         executionIntent: 'connect.adapters.bootstrap',
         skillId: 'skill.connect.adapters',
         skillVersion: '2026-04-08',
-        handoffExecutionMode: 'preview_confirm',
+        handoffExecutionMode: 'direct_execute',
         selectedSurface: 'claude-code',
         selectedBy: 'session.main.preference',
         sessionRoutingPreferenceApplied: true,
-        requiresConfirmation: true,
+        requiresConfirmation: false,
       });
       expect(completedEvent?.payload.handoffCommandPreview).toBe(
         'repo-ai-governor connect --preset multi-tool-default --output pretty --single-tool-all-roles claude-code',
@@ -229,8 +229,8 @@ describe('session.main parity integration', () => {
       expect(firstRecap).toEqual(
         expect.objectContaining({
           lines: [
-            'Suggested next step: /connect',
-            'Preview: repo-ai-governor connect --preset multi-tool-default --output pretty',
+            'Auto-running: /connect',
+            'Running: repo-ai-governor connect --preset multi-tool-default --output pretty',
             'Intent: connect.adapters.bootstrap',
             'Routing: surface=codex selected_by=session.main.intent_router',
           ],
@@ -624,7 +624,7 @@ describe('session.main parity integration', () => {
     }
   });
 
-  it('restores pending onboarding bundle previews across resume before /confirm executes each step in order', async () => {
+  it('auto-executes onboarding bundles without restoring /confirm preview state on resume', async () => {
     const temporaryRoot = await mkdtemp(resolve(tmpdir(), 'session-main-parity-bundle-'));
     const workspaceRoot = resolve(temporaryRoot, '.repo-ai-governor');
     await mkdir(workspaceRoot, { recursive: true });
@@ -641,40 +641,14 @@ describe('session.main parity integration', () => {
     try {
       const firstRenderer = new RecordingSessionShellRenderer();
       const firstRunner = createRunner(firstRenderer, ['把 adapter onboarding 全走一遍', '/exit']);
-      const firstResult = await firstRunner.run(createRunOptions(sessionClient));
+      const firstResult = await firstRunner.run(
+        createRunOptions(sessionClient, {
+          commandExecutor,
+        }),
+      );
       const firstSessionId = firstRenderer.frames[0]?.sessionId;
 
       expect(firstResult.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
-      expect(
-        firstResult.transcriptItems.some(
-          (item) =>
-            item.lines.includes('Suggested next step: adapter onboarding bundle') &&
-            item.lines.includes(
-              'Preview: 1. repo-ai-governor connect --preset multi-tool-default --output pretty\n2. repo-ai-governor doctor --adapters --output pretty',
-            ),
-        ),
-      ).toBe(true);
-
-      const resumedRenderer = new RecordingSessionShellRenderer();
-      const resumedRunner = createRunner(resumedRenderer, ['/confirm', '/exit']);
-      const resumedResult = await resumedRunner.run(
-        createRunOptions(sessionClient, {
-          commandExecutor,
-          resumeOnStartup: true,
-        }),
-      );
-
-      expect(resumedRenderer.frames[0]?.sessionId).toBe(firstSessionId);
-      expect(
-        resumedRenderer.frames.some(
-          (frame) =>
-            frame.commandPreview?.includes(
-              'repo-ai-governor connect --preset multi-tool-default --output pretty',
-            ) &&
-            frame.commandPreview?.includes('repo-ai-governor doctor --adapters --output pretty') &&
-            frame.promptBarLines.some((line) => line.includes('/confirm · /cancel · Esc')),
-        ),
-      ).toBe(true);
       expect(commandExecutor).toHaveBeenNthCalledWith(
         1,
         ['connect', '--preset', 'multi-tool-default', '--output', 'pretty'],
@@ -694,21 +668,49 @@ describe('session.main parity integration', () => {
         }),
       );
       expect(
-        resumedResult.transcriptItems.filter((item) =>
-          item.lines.some((line) => line.startsWith('Summary:')),
+        firstRenderer.frames.some((frame) =>
+          frame.promptBarLines.includes('/confirm · /cancel · Esc'),
         ),
-      ).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            lines: expect.arrayContaining([
-              'Summary: connect --preset multi-tool-default --output pretty completed',
-            ]),
-          }),
-          expect.objectContaining({
-            lines: expect.arrayContaining(['Summary: doctor --adapters --output pretty completed']),
-          }),
-        ]),
+      ).toBe(false);
+      expect(
+        firstResult.transcriptItems.some((item) =>
+          item.lines.includes(
+            'Summary: connect --preset multi-tool-default --output pretty completed',
+          ),
+        ),
+      ).toBe(true);
+      expect(
+        firstResult.transcriptItems.some((item) =>
+          item.lines.includes('Summary: doctor --adapters --output pretty completed'),
+        ),
+      ).toBe(true);
+
+      const resumedRenderer = new RecordingSessionShellRenderer();
+      const resumedRunner = createRunner(resumedRenderer, ['/exit']);
+      const resumedResult = await resumedRunner.run(
+        createRunOptions(sessionClient, {
+          commandExecutor,
+          resumeOnStartup: true,
+        }),
       );
+
+      expect(resumedRenderer.frames[0]?.sessionId).toBe(firstSessionId);
+      expect(commandExecutor).toHaveBeenCalledTimes(2);
+      expect(
+        resumedRenderer.frames.some((frame) =>
+          frame.promptBarLines.includes('/confirm · /cancel · Esc'),
+        ),
+      ).toBe(false);
+      expect(
+        resumedResult.transcriptItems.some(
+          (item) =>
+            item.renderKind === 'command_recap' &&
+            item.lines.includes('Auto-running: adapter onboarding bundle') &&
+            item.lines.includes(
+              'Running: 1. repo-ai-governor connect --preset multi-tool-default --output pretty\n2. repo-ai-governor doctor --adapters --output pretty',
+            ),
+        ),
+      ).toBe(true);
     } finally {
       await runtime.dispose();
       await rm(temporaryRoot, { recursive: true, force: true });

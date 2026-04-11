@@ -386,6 +386,50 @@ describe('CliSessionShellEntrypointRuntime', () => {
       summaryLines: ['command failed'],
     });
   });
+
+  it('parses repeated JSON error payload lines and renders actionable connect recovery guidance', async () => {
+    const duplicatedErrorPayload = JSON.stringify({
+      schema_version: 'cli_output_v1',
+      status: 'error',
+      output_mode: 'json',
+      verbosity: 'normal',
+      command: 'connect',
+      message:
+        'CLI execution failed [ADAPTER_ROUTE_CONFIG_INVALID]: connect requires adapters baseline in source config.',
+      error_code: 'ADAPTER_ROUTE_CONFIG_INVALID',
+      hint: 'Adapter routing or capability verification failed.',
+      next_action: 'inspect_governor_config',
+      runtime: {
+        is_tty: false,
+        color_enabled: false,
+        compact: false,
+        downgraded_from: null,
+      },
+    });
+    const commandExecutor = CliSessionShellEntrypointRuntime.createNestedCommandExecutor({
+      locale: 'en-US',
+      currentWorkingDirectory: '/workspace',
+      environment: {},
+      translate: translateSessionShellResponse,
+      executeCli: async (_argv, io) => {
+        io.stdout(`${duplicatedErrorPayload}\n${duplicatedErrorPayload}`);
+        return 1;
+      },
+    });
+
+    await expect(commandExecutor(['connect'])).resolves.toEqual({
+      artifactPaths: [],
+      commandLine: 'connect',
+      message:
+        'CLI execution failed [ADAPTER_ROUTE_CONFIG_INVALID]: connect requires adapters baseline in source config.',
+      status: 'error',
+      summaryLines: [
+        'Hint: Adapter routing or capability verification failed.',
+        'Next step: Inspect the active governor config.',
+        'Recovery: the active governor config is missing the adapters baseline. If this is first-time setup, run /init first. If the config already exists but is broken, run /workspace clear-config, then /init, or repair governor.yaml before retrying /connect.',
+      ],
+    });
+  });
 });
 
 function createRuntime(
@@ -409,6 +453,20 @@ const SESSION_SHELL_RESPONSE_TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.responses.commandAttentionSummary': 'Attention: {{summary}}',
   'cli.sessionShell.responses.commandErrorHint': 'Hint: {{hint}}',
   'cli.sessionShell.responses.commandErrorNextAction': 'Next step: {{nextAction}}',
+  'cli.sessionShell.responses.commandErrorNextActionCheckCommandUsage':
+    'Check the command usage and required flags.',
+  'cli.sessionShell.responses.commandErrorNextActionInspectGovernorConfig':
+    'Inspect the active governor config.',
+  'cli.sessionShell.responses.commandErrorNextActionInspectPolicyDiagnostics':
+    'Inspect the policy diagnostics and blocked decision details.',
+  'cli.sessionShell.responses.commandErrorNextActionCheckReplaySource':
+    'Inspect the replay source and verify the referenced artifact paths.',
+  'cli.sessionShell.responses.commandErrorNextActionRetryWithVerbose':
+    'Retry the command with verbose diagnostics enabled.',
+  'cli.sessionShell.responses.commandErrorNextActionReportIssue':
+    'Capture the diagnostics and report the issue with the failing command context.',
+  'cli.sessionShell.responses.commandErrorConnectMissingAdaptersBaseline':
+    'Recovery: the active governor config is missing the adapters baseline. If this is first-time setup, run /init first. If the config already exists but is broken, run /workspace clear-config, then /init, or repair governor.yaml before retrying /connect.',
 };
 
 function translateSessionShellResponse(

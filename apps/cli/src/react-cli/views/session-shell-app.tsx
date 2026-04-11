@@ -42,9 +42,7 @@ export function ReactCliSessionShellApp({
               shellPalette={shellPalette}
             />
             <Box marginTop={1}>
-              <Text color={shellPalette.borderColor} dimColor>
-                {'─'.repeat(23)}
-              </Text>
+              <Text color={shellPalette.footerColor}>{'─'.repeat(23)}</Text>
             </Box>
           </>
         ) : null}
@@ -73,7 +71,9 @@ export function ReactCliSessionShellApp({
         ) : null}
         {viewModel.commandPreview && !viewModel.slashPaletteVisible ? (
           <Box marginTop={1}>
-            <Text color={shellPalette.subtitleColor}>{viewModel.commandPreview}</Text>
+            <Text bold color={shellPalette.sectionTitleColor}>
+              {viewModel.commandPreview}
+            </Text>
           </Box>
         ) : null}
         <ReactCliPromptBar

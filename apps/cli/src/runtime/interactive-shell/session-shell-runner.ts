@@ -37,6 +37,7 @@ import {
   CliSessionShellPersistenceOwner,
   CliSessionTranscriptRole,
 } from '../../constants/cli-session-shell.constant.js';
+import { CliWorkspaceAction } from '../../constants/cli-workspace.constant.js';
 import type {
   CliSessionShellCommandExecutionResult,
   CliSessionShellPassthroughResult,
@@ -1699,6 +1700,10 @@ export class CliSessionShellRunner {
       );
       progressDock.clear();
 
+      if (executionResult.status === 'success') {
+        this.applySuccessfulCommandThemeMutation(viewModel, pendingStep.argv);
+      }
+
       const isLastStep = index === pendingCommand.steps.length - 1;
       const shouldResolve =
         executionResult.status !== 'success' || isLastStep || pendingCommand.steps.length === 1;
@@ -1786,6 +1791,46 @@ export class CliSessionShellRunner {
       exitReason,
       transcriptItems: [...viewModel.transcriptItems],
     };
+  }
+
+  private applySuccessfulCommandThemeMutation(
+    viewModel: CliSessionShellViewModel,
+    argv: string[],
+  ): void {
+    const nextThemePreset = this.resolveThemePresetFromSuccessfulCommandArgv(argv);
+    if (!nextThemePreset) {
+      return;
+    }
+
+    viewModel.themePreset = nextThemePreset;
+  }
+
+  private resolveThemePresetFromSuccessfulCommandArgv(argv: string[]): CliReactThemePreset | null {
+    if (argv.length === 0) {
+      return null;
+    }
+
+    if (
+      argv[0] === 'workspace' &&
+      argv[1] === CliWorkspaceAction.SET_UI_THEME &&
+      typeof argv[2] === 'string' &&
+      CLI_REACT_THEME_VALUES.has(argv[2].toLowerCase())
+    ) {
+      return argv[2].toLowerCase() as CliReactThemePreset;
+    }
+
+    if (argv[0] !== CliWorkspaceAction.SET_UI_THEME) {
+      return null;
+    }
+
+    const matchingThemeToken = argv
+      .slice(1)
+      .find((token) => CLI_REACT_THEME_VALUES.has(token.toLowerCase()));
+    if (!matchingThemeToken) {
+      return null;
+    }
+
+    return matchingThemeToken.toLowerCase() as CliReactThemePreset;
   }
 
   private createInitialViewModel(

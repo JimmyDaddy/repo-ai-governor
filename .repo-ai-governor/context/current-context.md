@@ -5,16 +5,18 @@
 - Status: idle
 - Project: `none`
 - Sprint: `none`
-- Docs root: `n/a`
-- Task records: `n/a`
-- Review records: `n/a`
-- Note: `2026-04-11` `project-079 / sprint-003` 已在 `CR-002` 修复窗口内完成最终 closeout，并移入 completed history；当前 worktree 不再保留 active primary stream。新的执行流激活前，不应从 `Primary Stream` 推断默认写入路径。
+- Docs root: `none`
+- Task records: `none`
+- Review records: `none`
+- Note: `2026-04-11` `project-084 / sprint-001` 已完成 closeout，当前未激活新的 primary stream。
 
 ## Active Streams
 
-- None. Active stream queue is currently empty.
+- none currently registered.
 
 ## Planned Follow-Up Streams
+
+- none currently registered.
 
 ## Completed Stream History
 

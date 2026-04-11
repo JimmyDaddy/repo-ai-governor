@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { CliSessionShellInputActionType } from '../../constants/cli-session-shell.constant.js';
 import type { CliSessionShellInputAction, CliSessionShellViewModel } from '../../types/index.js';
 import { ReactCliSessionShellApp } from './session-shell-app.js';
+import { MAX_VISIBLE_SLASH_SUGGESTIONS } from './slash-command-palette.js';
 
 export interface ReactCliSessionShellInteractionHandlers {
   onAction: (action: CliSessionShellInputAction) => void;
@@ -78,7 +79,7 @@ export function resolveLiveActivityViewportCapacity(options: {
 }): number {
   const terminalRows = options.terminalRows ?? 24;
   const slashPaletteRows = options.slashPaletteVisible
-    ? Math.min(options.slashSuggestionCount, 6) + 3
+    ? Math.min(options.slashSuggestionCount, MAX_VISIBLE_SLASH_SUGGESTIONS) + 3
     : 0;
   const commandPreviewRows = options.commandPreviewPresent ? 1 : 0;
   const commandProgressRows = options.commandProgressPanelPresent ? 8 : 0;
@@ -280,26 +281,32 @@ function shouldNavigatePalette(context: ReactCliSessionShellKeypressContext): bo
 function shouldAcceptHighlightedCommandOnEnter(
   context: ReactCliSessionShellKeypressContext,
 ): boolean {
-  if (!context.highlightedCommand) {
+  if (!context.highlightedCommand || !context.slashPaletteVisible) {
     return false;
   }
 
-  const trimmedComposerValue = context.composerValue.trim();
-  if (trimmedComposerValue === '?') {
+  const normalizedComposerValue = normalizeSlashComposerValue(context.composerValue);
+  const normalizedHighlightedCommand = normalizeSlashComposerValue(context.highlightedCommand);
+  if (normalizedComposerValue === '?') {
     return true;
   }
 
-  if (!trimmedComposerValue.startsWith('/')) {
+  if (!normalizedComposerValue.startsWith('/')) {
     return false;
   }
 
-  const commandToken = trimmedComposerValue.split(/\s+/u)[0] ?? '';
-  const hasArgumentTokens = trimmedComposerValue.includes(' ');
-  if (hasArgumentTokens) {
-    return false;
-  }
+  return (
+    normalizedHighlightedCommand !== normalizedComposerValue &&
+    normalizedHighlightedCommand.startsWith(normalizedComposerValue)
+  );
+}
 
-  return commandToken !== context.highlightedCommand;
+function normalizeSlashComposerValue(value: string): string {
+  return value
+    .trim()
+    .split(/\s+/u)
+    .filter((token) => token.length > 0)
+    .join(' ');
 }
 
 /**

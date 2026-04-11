@@ -3,6 +3,7 @@ import {
   SESSION_MAIN_HANDOFF_EXECUTION_MODE,
 } from '@repo-ai-governor/core-orchestration-service/constants';
 import { CliCommandName } from '../../constants/cli-command.constant.js';
+import { CLI_REACT_THEME_PRESET_ORDER } from '../../constants/cli-react-theme.constant.js';
 import type {
   CliSessionSlashCommandHighlightSegment,
   CliSessionSlashCommandMetadata,
@@ -36,8 +37,18 @@ interface SessionSlashCommandSuggestOptions {
 
 const SESSION_SLASH_BUILTIN_DEFINITIONS: SessionSlashCommandDefinition[] = [
   { command: '/help', summaryKey: 'cli.sessionShell.commands.help.summary', kind: 'builtin' },
-  { command: '/confirm', summaryKey: 'cli.sessionShell.commands.confirm.summary', kind: 'builtin' },
-  { command: '/cancel', summaryKey: 'cli.sessionShell.commands.cancel.summary', kind: 'builtin' },
+  {
+    command: '/confirm',
+    summaryKey: 'cli.sessionShell.commands.confirm.summary',
+    kind: 'builtin',
+    discoverable: false,
+  },
+  {
+    command: '/cancel',
+    summaryKey: 'cli.sessionShell.commands.cancel.summary',
+    kind: 'builtin',
+    discoverable: false,
+  },
   { command: '/clear', summaryKey: 'cli.sessionShell.commands.clear.summary', kind: 'builtin' },
   { command: '/exit', summaryKey: 'cli.sessionShell.commands.exit.summary', kind: 'builtin' },
   { command: '/resume', summaryKey: 'cli.sessionShell.commands.resume.summary', kind: 'builtin' },
@@ -90,7 +101,37 @@ const SESSION_SLASH_LOCAL_BRIDGE_DEFINITIONS: SessionSlashCommandDefinition[] = 
     command: '/workspace',
     summaryKey: 'cli.commands.workspace.description',
     kind: 'bridge',
-    executionMode: 'confirm',
+    executionMode: 'direct',
+  },
+  {
+    command: '/workspace dry-run',
+    summaryKey: 'cli.commands.workspace.actionGuideDryRun',
+    kind: 'bridge',
+    executionMode: 'direct',
+  },
+  {
+    command: '/workspace execute',
+    summaryKey: 'cli.commands.workspace.actionGuideExecute',
+    kind: 'bridge',
+    executionMode: 'direct',
+  },
+  {
+    command: '/workspace rollback',
+    summaryKey: 'cli.commands.workspace.actionGuideRollback',
+    kind: 'bridge',
+    executionMode: 'direct',
+  },
+  {
+    command: '/workspace clear-config',
+    summaryKey: 'cli.commands.workspace.actionGuideClearConfig',
+    kind: 'bridge',
+    executionMode: 'direct',
+  },
+  {
+    command: '/workspace set-ui-theme',
+    summaryKey: 'cli.commands.workspace.actionGuideSetUiTheme',
+    kind: 'bridge',
+    executionMode: 'direct',
   },
 ];
 
@@ -121,7 +162,12 @@ const SESSION_SLASH_COMMAND_FULL_ORDER = [
   '/doctor',
   '/plan sync',
   '/workspace',
+  '/workspace dry-run',
+  '/workspace execute',
+  '/workspace rollback',
+  '/workspace clear-config',
   '/workspace switch-branch',
+  '/workspace set-ui-theme',
   '/workflow',
   '/plan',
   '/review',
@@ -226,7 +272,16 @@ export class CliSessionSlashCommandRegistry {
     translate: (key: string, interpolation?: Record<string, string>) => string,
     options: SessionSlashCommandSuggestOptions = {},
   ): CliSessionSlashCommandSuggestion[] {
-    const normalizedPrefix = this.normalizePrefix(this.normalizeAliasedQuery(query));
+    const normalizedQuery = this.normalizeAliasedQuery(query);
+    const workspaceThemePresetSuggestions = this.buildWorkspaceThemePresetSuggestions(
+      normalizedQuery,
+      translate,
+    );
+    if (workspaceThemePresetSuggestions) {
+      return workspaceThemePresetSuggestions;
+    }
+
+    const normalizedPrefix = this.normalizePrefix(normalizedQuery);
     const commandList =
       normalizedPrefix.length === 0 && options.surface !== 'full'
         ? this.listLocalizedCommandMetadata(translate, 'launcher')
@@ -242,6 +297,42 @@ export class CliSessionSlashCommandRegistry {
         summary: definition.summary,
         highlightSegments: this.buildHighlightSegments(definition.command, normalizedPrefix),
       }));
+  }
+
+  private buildWorkspaceThemePresetSuggestions(
+    normalizedQuery: string,
+    translate: (key: string, interpolation?: Record<string, string>) => string,
+  ): CliSessionSlashCommandSuggestion[] | null {
+    const queryTokens = this.resolveQueryTokens(normalizedQuery);
+    if (queryTokens.length < 2 || queryTokens.length > 3) {
+      return null;
+    }
+
+    const [rawCommandToken, actionToken, themePrefixToken = ''] = queryTokens;
+    if (
+      this.normalizeSlashCommandToken(rawCommandToken ?? '') !== '/workspace' ||
+      actionToken?.toLowerCase() !== 'set-ui-theme'
+    ) {
+      return null;
+    }
+
+    const themePrefix = themePrefixToken.toLowerCase();
+    const normalizedPrefix = this.normalizePrefix(normalizedQuery);
+    const matchingThemePresets = CLI_REACT_THEME_PRESET_ORDER.filter(
+      (themePreset) => themePrefix.length === 0 || themePreset.startsWith(themePrefix),
+    );
+    if (matchingThemePresets.length === 0) {
+      return null;
+    }
+
+    return matchingThemePresets.map((themePreset) => {
+      const command = `/workspace set-ui-theme ${themePreset}`;
+      return {
+        command,
+        summary: translate(`cli.reactShell.themePresets.${themePreset}.description`),
+        highlightSegments: this.buildHighlightSegments(command, normalizedPrefix),
+      };
+    });
   }
 
   private listLocalizedCommandMetadata(
@@ -299,17 +390,27 @@ export class CliSessionSlashCommandRegistry {
 
   private resolveExecutionMode(
     command: string,
-    argumentTokens: string[],
+    _argumentTokens: string[],
     defaultMode: SessionSlashCommandExecutionMode,
   ): SessionSlashCommandExecutionMode {
     if (command === '/workflow') {
-      const workflowAction = argumentTokens[0]?.toLowerCase() ?? 'preview';
-      return workflowAction === 'preview' ? 'direct' : 'confirm';
+      return 'direct';
     }
 
     if (command === '/plan sync') {
-      const planAction = argumentTokens[0]?.toLowerCase() ?? 'preview';
-      return planAction === 'commit' ? 'confirm' : 'direct';
+      return 'direct';
+    }
+
+    if (command === '/connect') {
+      return 'direct';
+    }
+
+    if (command === '/workspace switch-branch') {
+      return 'direct';
+    }
+
+    if (command === '/run') {
+      return 'direct';
     }
 
     return defaultMode;

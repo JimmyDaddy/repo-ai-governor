@@ -205,6 +205,41 @@ describe('mapSessionShellKeypressToAction', () => {
 
     expect(
       mapSessionShellKeypressToAction({
+        input: '\r',
+        key: {
+          return: true,
+        } as never,
+        composerValue: '/workspace set-ui-theme',
+        highlightedCommand: '/workspace set-ui-theme calm',
+        slashPaletteVisible: true,
+      }),
+    ).toEqual({
+      kind: 'action',
+      action: {
+        type: CliSessionShellInputActionType.PALETTE_ACCEPT_HIGHLIGHTED,
+      },
+      nextComposerValue: '/workspace set-ui-theme calm',
+    });
+
+    expect(
+      mapSessionShellKeypressToAction({
+        input: '\r',
+        key: {
+          return: true,
+        } as never,
+        composerValue: '/workspace set-ui-theme calm',
+        highlightedCommand: '/workspace set-ui-theme calm',
+        slashPaletteVisible: true,
+      }),
+    ).toEqual({
+      kind: 'action',
+      action: {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+    });
+
+    expect(
+      mapSessionShellKeypressToAction({
         input: '\u0003',
         key: {
           ctrl: true,

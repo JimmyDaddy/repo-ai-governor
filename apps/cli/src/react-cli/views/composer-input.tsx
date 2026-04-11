@@ -51,11 +51,7 @@ export function ReactCliComposerInput({
             </>
           ) : null}
         </Box>
-        {value.length === 0 ? (
-          <Text dimColor color={shellPalette.helpColor}>
-            {placeholder}
-          </Text>
-        ) : null}
+        {value.length === 0 ? <Text color={shellPalette.helpColor}>{placeholder}</Text> : null}
       </Box>
     </Box>
   );

@@ -21,7 +21,7 @@ export function ReactCliTranscriptPane({
 }: ReactCliTranscriptPaneProps): React.JSX.Element {
   return (
     <Box flexDirection='column' marginTop={1}>
-      <Text color={shellPalette.helpColor} dimColor>
+      <Text bold color={shellPalette.sectionTitleColor}>
         {title}
       </Text>
       {items.map((item) => {
@@ -150,8 +150,7 @@ function ReactCliCommandRecapTranscriptItem({
             </Text>
           ) : null}
           <Text
-            color={transcriptLabelHidden ? shellPalette.titleColor : shellPalette.helpColor}
-            dimColor={!transcriptLabelHidden}
+            color={transcriptLabelHidden ? shellPalette.titleColor : shellPalette.sectionTitleColor}
           >
             command recap
           </Text>
@@ -250,8 +249,7 @@ function ReactCliCollaborationRecapTranscriptItem({
             </Text>
           ) : null}
           <Text
-            color={transcriptLabelHidden ? shellPalette.titleColor : shellPalette.helpColor}
-            dimColor={!transcriptLabelHidden}
+            color={transcriptLabelHidden ? shellPalette.titleColor : shellPalette.sectionTitleColor}
           >
             role collaboration
           </Text>

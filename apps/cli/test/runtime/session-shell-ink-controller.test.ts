@@ -106,6 +106,54 @@ describe('CliSessionShellInkController', () => {
     expect(viewModel.highlightedCommand).toBe('/workspace');
   });
 
+  it('surfaces nested workspace actions after the /workspace prefix without changing the launcher shortlist', () => {
+    const controller = new CliSessionShellInkController();
+    const viewModel = createViewModel();
+
+    controller.primeViewModel(viewModel);
+    controller.applyAction(
+      viewModel,
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/workspace ',
+      },
+      (key) => key,
+    );
+
+    expect(viewModel.slashSuggestions.map((suggestion) => suggestion.command)).toEqual([
+      '/workspace',
+      '/workspace dry-run',
+      '/workspace execute',
+      '/workspace rollback',
+      '/workspace clear-config',
+      '/workspace switch-branch',
+      '/workspace set-ui-theme',
+    ]);
+    expect(viewModel.highlightedCommand).toBe('/workspace');
+  });
+
+  it('surfaces theme preset choices after the /workspace set-ui-theme prefix', () => {
+    const controller = new CliSessionShellInkController();
+    const viewModel = createViewModel();
+
+    controller.primeViewModel(viewModel);
+    controller.applyAction(
+      viewModel,
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/workspace set-ui-theme ',
+      },
+      (key) => key,
+    );
+
+    expect(viewModel.slashSuggestions.map((suggestion) => suggestion.command)).toEqual([
+      '/workspace set-ui-theme governor',
+      '/workspace set-ui-theme catppuccin',
+      '/workspace set-ui-theme calm',
+    ]);
+    expect(viewModel.highlightedCommand).toBe('/workspace set-ui-theme governor');
+  });
+
   it('treats bare question mark as a shortcuts alias and opens the full help palette', () => {
     const controller = new CliSessionShellInkController();
     const viewModel = createViewModel();
@@ -126,7 +174,7 @@ describe('CliSessionShellInkController', () => {
     expect(viewModel.slashPaletteVisible).toBe(true);
     expect(viewModel.highlightedCommand).toBe('/help');
     expect(viewModel.slashSuggestions.some((suggestion) => suggestion.command === '/confirm')).toBe(
-      true,
+      false,
     );
     expect(
       viewModel.slashSuggestions.some((suggestion) => suggestion.command === '/workflow'),

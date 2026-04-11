@@ -1,7 +1,7 @@
 # Runtime CLI Interactive Shell Module Overview
 
 - Status: active
-- Date: 2026-04-06
+- Date: 2026-04-11
 - Module ID: `runtime.cli-interactive-shell`
 - Owner: runtime
 - Layer: `runtime-core`
@@ -20,10 +20,12 @@
 6. 为 `repo-ai-governor` 无子命令默认进入的本地 session shell 定义入口 contract 与 resume baseline。
 7. 为命令执行期的 progress sink、AbortSignal cancel seam 与 React shell running panel 定义统一产品边界，但不让命令 executor 直接持有 Ink/React 实例。
 8. 为 session-shell transcript 的 render-kind、command recap / collaboration recap / system notice 分层、assistant Markdown 内容块，以及 `session.main` live draft / thinking / tool-use 的 transcript-native 呈现定义正式 presenter 方向，但不把真正的命令 running dock 退化为 append-only transcript 日志。
-9. 为 service-owned `session.main` supervisor 的 answer / follow-up / command handoff / low-risk direct-execute skill / role-collaboration 结果提供统一 transcript 与 recap presenter seam，并在 `preview_confirm` 与 `direct_execute` continuity 之间保持一致的 shell surface，但不在 CLI 侧重新拥有 supervisor runtime 决策逻辑。
+9. 为 service-owned `session.main` supervisor 的 answer / follow-up / command handoff / direct-execute skill / role-collaboration 结果提供统一 transcript 与 recap presenter seam，并兼容遗留 `preview_confirm` continuity，但不在 CLI 侧重新拥有 supervisor runtime 决策逻辑。
 10. 消费 service-owned `session.main` capability explanation turn metadata，包括 capability answer kind、referenced capability ids 与 suggested follow-up actions，并把它们渲染为 transcript-native affordance；但不得把这些 affordance 升级为本地自动执行器，也不得把 shell-local builtin commands 误建模成 orchestration-owned capability truth。
 11. 当 shared session truth 后续暴露 presenter-safe continuation summaries 时，CLI 只能把它们用作 transcript / resume / diagnostics affordance；不得直接消费 raw provider handle、slot map 或 provider-private continuation semantics。
 12. 为 interactive CLI command surface 的 maturity layering、thin-baseline enhancement priority 与 companion contract linked-input policy 提供正式 planning ADR，但不得把优先级分析误当作 command runtime truth。
+13. 对 nested governed command 的结构化错误输出承担 presenter 级恢复引导职责：shell 必须把 machine-readable `error_code / hint / next_action` 转译成用户可执行的 shell-native 提示，而不是把原始 JSON 载荷直接暴露给 transcript。
+14. 对 session shell 默认可读性与 nested discoverability 的增强只允许停留在 presenter 层：可以调节 dim/强调样式、对比度、palette row budget、摘要截断与 nested action hints，但不得把这类增强升级成宿主字体设置、额外 public command family 或第二套命令语义真值。
 
 ## 3. 非目标
 
@@ -68,13 +70,16 @@
 8. 截至 `2026-03-31`，`v4` formal direction 已接受“structured session shell + markdown content blocks”；该方向正式要求把 running progress 与历史 transcript 分层，并允许 assistant 完成态消息、帮助文本和 command recap 进入 Markdown 呈现，但真实 renderer / batching rollout 仍由 `project-032` follow-up sprint 承接。
 9. 截至 `2026-03-31`，`v5` formal direction 已接受“service-owned session.main supervisor + role subagents / handoffs”；CLI shell 继续只消费 service-backed turn outcome，并负责把 direct answer、follow-up、command handoff preview 与 collaboration recap 渲染为统一 transcript/presenter 语义，真实 supervisor runtime productization follow-up 由 `project-035-session-main-supervisor-and-role-subagent-productization` 承接。
 10. 截至 `2026-03-31`，`v5.1` presenter semantics 已补充 `collaboration_recap` render-kind；role-based parallel/serial collaboration 的 recap、worker summary 与 handoff context 必须通过独立 transcript kind 呈现，避免继续挤占通用 `markdown` 或 `command_recap` 语义槽位。
-11. 截至 `2026-04-01`，在既有 `v5` supervisor formal direction 基础上，已进一步接受“conversation-first chatability + risk-tiered natural-language skill handoff”；session shell 现需同时消费 `preview_confirm` 与 `direct_execute` 两类受治理 continuity，并以同一份 shared session truth 呈现 `help`、`doctor`、post-connect readiness follow-up 与 scope-resolved `review` 等低风险 skill 的执行/回放语义。
+11. 截至 `2026-04-01`，在既有 `v5` supervisor formal direction 基础上，已进一步接受“conversation-first chatability + risk-tiered natural-language skill handoff”；session shell 现以 `direct_execute` 作为 governed handoff 默认路径，同时继续兼容遗留 `preview_confirm` continuity，并以同一份 shared session truth 呈现 `help`、`doctor`、post-connect readiness follow-up、`connect`、`workspace switch-branch`、`run` 与 scope-resolved `review` 等能力的执行/回放语义。
 12. 截至 `2026-04-01`，`session.main` streaming presenter 已接受“transcript-first live conversation”补充方向：对话流的 draft/thinking/tool-use 应优先进入 transcript 主画布，只有真正的命令执行进度继续停留在 progress panel / running dock。
 13. 截至 `2026-04-02`，`v6` formal direction 已接受“service-owned capability explainer + contextual command guidance”补充方向：session shell 必须消费 capability explanation turn metadata 与 suggested-action affordance，但 governed capability catalog 只拥有可解释的 bridge capabilities，`/confirm`、`/cancel`、`/clear`、`/exit`、`/resume` 等 shell-local builtins 继续留在 CLI registry 本地治理。
 14. 截至 `2026-04-04`，在既有 session truth consumer 方向基础上，CLI shell 现进一步接受“presenter-safe provider continuation summary consumer”补充边界：shell 可以展示 continuation reuse / invalidation 的摘要结果，但 raw provider handle 与 slot lifecycle 仍属于 runtime/service seam。
 15. 截至 `2026-04-04`，本模块进一步接受“CLI command capability maturity layering + thin-baseline enhancement priority”补充方向：`plan / review / review-verify / upgrade` 现被正式视为 linked thin-baseline command set；后续立项默认需联读成熟度 ADR 与各自 companion contract draft，但该优先级分析不进入 command runtime truth。
 16. 截至 `2026-04-06`，本模块进一步接受“standards-native review engine presentation”补充方向：`review / review-verify` 的 CLI surface 应显式区分 deterministic rule findings、standards-guided findings 与 residual risk observations，并把 provenance-aware closure 结果呈现为 review artifact / transcript affordance，但不得在 CLI 本地重算 review engine 语义。
 17. 截至 `2026-04-10`，本模块进一步接受“session.main prompt-first command model split”补充方向：session shell 的 discoverability/presenter 现需显式区分 raw `@role` expert surface、AI fixed workflow slash command、deterministic utility slash command 与 explain-only affordance；`/verify` 不再作为 public discoverable command 保留，而 `/run` 继续保留但只能以 reusable governed execution flow 的 narrowed wording 对用户展示。
+18. 截至 `2026-04-11`，本模块进一步接受“structured nested-command error recovery guidance”补充方向：当 nested CLI command 返回 `cli_output_v1` 错误或 stdout 中出现重复 JSON payload 时，session shell 仍需优先恢复结构化错误、输出用户可执行的恢复建议，并避免把原始 JSON 错误块直接回显到 transcript 主画布。
+19. 截至 `2026-04-11`，本模块进一步接受“session-shell readability tuning and workspace nested discoverability”补充方向：默认可读性增强只允许调节 presenter emphasis/density/contrast，不新增真实字体缩放或宿主字号偏好；`/workspace` slash palette 需显式暴露 `dry-run|execute|rollback|clear-config|switch-branch|set-ui-theme`，但 bare `/` launcher shortlist 仍保持受控。
+20. 截至 `2026-04-11`，本模块进一步接受“session-shell theme preset choice follow-up”补充方向：`/workspace set-ui-theme` 在 session shell 中需直接暴露 `governor|catppuccin|calm` preset-choice 提示，并允许带空格前缀的 `Enter/Tab` 优先接受更具体子命令，避免无 preset 父命令先失败再回退的交互。
 
 ## 9. Detail Docs
 

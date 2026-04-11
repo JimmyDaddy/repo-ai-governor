@@ -1,0 +1,21 @@
+# checklist
+
+- [x] TK-768 strengthen session-shell readability emphasis without claiming host font scaling
+  - 2026-04-11：任务创建并直接进入 `in_progress`，范围锁定为“presenter-level readability follow-up，不新增宿主级字号控制能力”。
+  - 2026-04-11：完成 session shell readability follow-up，进一步提亮 prompt bar、command preview、divider 与 slash palette 摘要，使关键 chrome 不再依赖 dim 呈现。
+  - 2026-04-11：同步 CLI README、本地采用手册与 session-shell contract/module docs，明确“真实字体大小仍由宿主终端/IDE 控制，本次只做 presenter-level 强调/对比度增强”。
+  - 2026-04-11：执行指定 vitest 回归集与 `pnpm run build`，验证通过。
+- [x] TK-769 add preset-choice slash discoverability for workspace set-ui-theme
+  - 2026-04-11：任务创建并直接进入 `in_progress`，范围锁定为“theme preset 选项化 discoverability + 带空格 slash 前缀的 Enter 接受修正”。
+  - 2026-04-11：完成 `/workspace set-ui-theme` preset-choice discoverability，session shell 现在会直接提示 `governor / catppuccin / calm`，继续复用既有 `workspace set-ui-theme <preset>` 执行语义。
+  - 2026-04-11：修正带空格 slash 前缀下的 Enter 接受行为，使高亮的更具体子命令优先被接受，而不是直接提交缺 preset 的父命令。
+  - 2026-04-11：执行指定 vitest 回归集与 `pnpm run build`，验证通过。
+- [x] TK-770 finalize project-083 closeout after delegated CR loop
+  - 2026-04-11：任务创建，状态初始化为 `planned`；将在 delegated CR loop clean 后推进为最终 closeout write-back。
+  - 2026-04-11：`CR-001` 已以 clean verdict 收口为 `resolved`，并写入 `resolved_code_review_working-tree-20260411-1134.md`。
+  - 2026-04-11：已创建 project-level completion audit summary，切回 project/sprint `completed` 真值，并把 `project-083 / sprint-001` 从 `current-context.md` active primary stream 迁入 completed history。
+  - 2026-04-11：已执行最终 ledger/status gate 核验，确认 closeout 后的 sqlite/checklist/tasks.csv、review lifecycle 与 idle context 同步无漂移。
+- [x] CR-001 sprint-001-theme-preset-choice-and-readability-followup delegated review loop round 1
+  - 2026-04-11：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-11：fresh reviewer `Helmholtz` 对当前 scope 返回 clean verdict，未提出 actionable findings。
+  - 2026-04-11：主 agent 已复核 clean verdict，并以同窗口已通过的 scoped vitest + `pnpm run build` 证据将本轮 CR 收口到 `resolved_code_review_working-tree-20260411-1134.md`。

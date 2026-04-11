@@ -172,7 +172,7 @@ describe('LocalOrchestrationServiceSessionMainSkillRegistry', () => {
         skillId: 'skill.workspace.switch_branch',
         executionIntent: 'workspace.branch_switch',
         suggestedSlashCommand: '/workspace switch-branch',
-        handoffExecutionMode: 'preview_confirm',
+        handoffExecutionMode: 'direct_execute',
         commandBatches: [
           expect.objectContaining({
             slashQuery: '/workspace switch-branch main',
@@ -196,7 +196,7 @@ describe('LocalOrchestrationServiceSessionMainSkillRegistry', () => {
         skillId: 'skill.workspace.switch_branch',
         executionIntent: 'workspace.branch_switch',
         suggestedSlashCommand: '/workspace switch-branch',
-        handoffExecutionMode: 'preview_confirm',
+        handoffExecutionMode: 'direct_execute',
         commandBatches: [
           expect.objectContaining({
             slashQuery: '/workspace switch-branch feature+foo',
@@ -226,7 +226,7 @@ describe('LocalOrchestrationServiceSessionMainSkillRegistry', () => {
         skillId: 'skill.workspace.switch_branch',
         executionIntent: 'workspace.branch_switch',
         suggestedSlashCommand: '/workspace switch-branch',
-        handoffExecutionMode: 'preview_confirm',
+        handoffExecutionMode: 'direct_execute',
         commandBatches: [
           expect.objectContaining({
             slashQuery: '/workspace switch-branch 修复-分支',
@@ -256,7 +256,7 @@ describe('LocalOrchestrationServiceSessionMainSkillRegistry', () => {
         skillId: 'skill.workspace.switch_branch',
         executionIntent: 'workspace.branch_switch',
         suggestedSlashCommand: '/workspace switch-branch',
-        handoffExecutionMode: 'preview_confirm',
+        handoffExecutionMode: 'direct_execute',
         commandBatches: [
           expect.objectContaining({
             slashQuery: '/workspace switch-branch release/1.2.3',
@@ -339,7 +339,7 @@ describe('LocalOrchestrationServiceSessionMainSkillRegistry', () => {
         skillId: 'skill.run.task',
         executionIntent: 'run.task',
         suggestedSlashCommand: '/run',
-        handoffExecutionMode: 'preview_confirm',
+        handoffExecutionMode: 'direct_execute',
         commandBatches: [
           expect.objectContaining({
             slashQuery: '/run',

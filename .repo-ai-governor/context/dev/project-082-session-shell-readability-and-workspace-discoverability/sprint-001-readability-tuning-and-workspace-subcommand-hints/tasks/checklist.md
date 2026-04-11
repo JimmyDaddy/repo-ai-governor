@@ -1,0 +1,22 @@
+# checklist
+
+- [x] TK-765 improve default session-shell readability without host-level font scaling
+  - 2026-04-11：任务创建并直接进入 `in_progress`，范围锁定为“presenter-level 可读性增强，不新增 host-level font-size 控制能力”。
+  - 2026-04-11：完成 session shell presenter-level readability tuning，减少 transcript title、recap label 与 composer placeholder 的 dim 依赖，并把 slash palette 默认可见条目提升到 8、摘要截断宽度放宽到 36 列。
+  - 2026-04-11：同步 CLI README、本地采用手册与 session-shell contract/module docs，明确“真实字体大小仍由宿主终端/IDE 控制，本次只做 presenter-level 可读性增强”。
+  - 2026-04-11：执行指定 vitest 回归集与 `pnpm run build`，验证通过。
+- [x] TK-766 add workspace nested slash-command discoverability and palette coverage
+  - 2026-04-11：任务创建并直接进入 `in_progress`，范围锁定为“`/workspace` nested slash discoverability + palette coverage”，不改 workspace command runtime 语义。
+  - 2026-04-11：完成 `/workspace` nested slash discoverability registry 扩展，显式补齐 `dry-run / execute / rollback / clear-config / switch-branch / set-ui-theme`，并继续复用既有 workspace bridge argv 语义。
+  - 2026-04-11：补齐 registry/controller/runner/render 回归覆盖，确认 bare `/` launcher shortlist 保持不变，而 `/workspace` 前缀可直接展示 nested action hints。
+  - 2026-04-11：执行指定 vitest 回归集与 `pnpm run build`，验证通过。
+- [x] TK-767 finalize project-082 closeout after delegated CR loop
+  - 2026-04-11：任务创建，状态初始化为 `planned`；将在 delegated CR loop clean 后推进为最终 closeout write-back。
+  - 2026-04-11：`CR-001` 已 clean 收口为 `resolved`，本任务随即接手 project/sprint plan、completion audit、current-context 与 completed history 的最终 write-back。
+  - 2026-04-11：已完成 `project-082` completion audit summary、project/sprint completed status、completed-stream history 回写与 idle context 恢复。
+  - 2026-04-11：已通过 closeout 所需的 task-ledger / sprint-plan / code-review / worktree-review-target 治理门禁。
+  - 2026-04-11: Completed project-082 closeout, completion audit, history archival, and idle-context restoration.
+- [x] CR-001 sprint-001-readability-tuning-and-workspace-subcommand-hints delegated review loop round 1
+  - 2026-04-11：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-11：已对 session-shell runtime/views/tests/docs 的 scoped surface 完成 fresh review，未发现需要 same-window 修复的 actionable finding。
+  - 2026-04-11：clean review 结果已直接写入 `resolved_code_review_working-tree-20260411-1029.md`，并将本轮 `CR-001` 收口为 `resolved`。

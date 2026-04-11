@@ -322,7 +322,7 @@ export const ZH_CN_TRANSLATIONS = {
         routeLine: 'route={{routeId}} theme={{theme}} history={{historyCount}}',
         workspaceLine: 'cwd={{cwd}} workspace={{workspace}}',
         shortcuts:
-          '快捷键：/help、/confirm、/cancel、/history、/search、/multiline、!command、Ctrl+C 退出、Ctrl+D 关闭。',
+          '快捷键：/help、/history、/search、/multiline、!command、Ctrl+C 退出、Ctrl+D 关闭。',
         idleShortcuts: '? 快捷帮助 · /status · Ctrl+D',
         paletteShortcuts: '↑↓ · Tab/Enter · Esc',
         previewShortcuts: '/confirm · /cancel · Esc',
@@ -411,6 +411,14 @@ export const ZH_CN_TRANSLATIONS = {
         commandAttentionSummary: '关注项：{{summary}}',
         commandErrorHint: '提示：{{hint}}',
         commandErrorNextAction: '下一步：{{nextAction}}',
+        commandErrorNextActionCheckCommandUsage: '检查命令用法与必填参数。',
+        commandErrorNextActionInspectGovernorConfig: '检查当前活动 governor 配置。',
+        commandErrorNextActionInspectPolicyDiagnostics: '检查 policy diagnostics 与阻塞决策详情。',
+        commandErrorNextActionCheckReplaySource: '检查 replay 来源与引用产物路径是否有效。',
+        commandErrorNextActionRetryWithVerbose: '开启 verbose 诊断后重试该命令。',
+        commandErrorNextActionReportIssue: '保留诊断产物并连同失败命令上下文一起报告问题。',
+        commandErrorConnectMissingAdaptersBaseline:
+          '恢复建议：当前活动 governor 配置缺少 adapters 基线。若这是首次接入，请先运行 /init；若配置文件已存在但可能损坏，请先运行 /workspace clear-config，再运行 /init，或手动修复 governor.yaml 后再重试 /connect。',
         commandCancelled: '待执行的 command preview 已取消。',
         cancelWithoutPendingCommand: '当前没有待取消的 command preview。',
         confirmWithoutPendingCommand:
@@ -1143,9 +1151,9 @@ export const ZH_CN_TRANSLATIONS = {
       },
       branch_switch: {
         title: '切换分支',
-        summary: '通过受治理的 preview-confirm 路径把当前仓库切换到一个已存在的本地 git 分支。',
+        summary: '通过受治理的 workspace 流程把当前仓库切换到一个已存在的本地 git 分支。',
         detail:
-          '当你提出“切到 main”这类请求时，应当使用切换分支能力。它会先校验工作树是否干净，拒绝隐式 fetch/create 副作用，然后在确认后执行分支切换。',
+          '当你提出“切到 main”这类请求时，应当使用切换分支能力。它会先校验工作树是否干净，拒绝隐式 fetch/create 副作用，然后直接执行分支切换。',
         examples: {
           0: '帮我把当前分支切到 main。',
           1: '切到 release 分支。',

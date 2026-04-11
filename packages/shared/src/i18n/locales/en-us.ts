@@ -371,7 +371,7 @@ export const EN_US_TRANSLATIONS = {
         routeLine: 'route={{routeId}} theme={{theme}} history={{historyCount}}',
         workspaceLine: 'cwd={{cwd}} workspace={{workspace}}',
         shortcuts:
-          'Shortcuts: /help, /confirm, /cancel, /history, /search, /multiline, !command, Ctrl+C exit, Ctrl+D close.',
+          'Shortcuts: /help, /history, /search, /multiline, !command, Ctrl+C exit, Ctrl+D close.',
         idleShortcuts: '? shortcuts · /status · Ctrl+D',
         paletteShortcuts: '↑↓ · Tab/Enter · Esc',
         previewShortcuts: '/confirm · /cancel · Esc',
@@ -465,6 +465,18 @@ export const EN_US_TRANSLATIONS = {
         commandAttentionSummary: 'Attention: {{summary}}',
         commandErrorHint: 'Hint: {{hint}}',
         commandErrorNextAction: 'Next step: {{nextAction}}',
+        commandErrorNextActionCheckCommandUsage: 'Check the command usage and required flags.',
+        commandErrorNextActionInspectGovernorConfig: 'Inspect the active governor config.',
+        commandErrorNextActionInspectPolicyDiagnostics:
+          'Inspect the policy diagnostics and blocked decision details.',
+        commandErrorNextActionCheckReplaySource:
+          'Inspect the replay source and verify the referenced artifact paths.',
+        commandErrorNextActionRetryWithVerbose:
+          'Retry the command with verbose diagnostics enabled.',
+        commandErrorNextActionReportIssue:
+          'Capture the diagnostics and report the issue with the failing command context.',
+        commandErrorConnectMissingAdaptersBaseline:
+          'Recovery: the active governor config is missing the adapters baseline. If this is first-time setup, run /init first. If the config already exists but is broken, run /workspace clear-config, then /init, or repair governor.yaml before retrying /connect.',
         commandCancelled: 'The pending command preview was cancelled.',
         cancelWithoutPendingCommand:
           'There is no pending command preview to cancel in the current shell.',
@@ -1235,9 +1247,9 @@ export const EN_US_TRANSLATIONS = {
       branch_switch: {
         title: 'Branch Switch',
         summary:
-          'Switch the current repository to an existing local git branch through a governed preview-confirm path.',
+          'Switch the current repository to an existing local git branch through the governed workspace flow.',
         detail:
-          'Branch Switch is the governed workspace action for requests like "switch to main"; it checks that the worktree is clean, refuses silent fetch/create side effects, and then executes the branch switch after confirmation.',
+          'Branch Switch is the governed workspace action for requests like "switch to main"; it checks that the worktree is clean, refuses silent fetch/create side effects, and then executes the branch switch directly.',
         examples: {
           0: 'Switch the current branch to main.',
           1: 'Help me checkout the release branch.',
@@ -1308,7 +1320,7 @@ export const EN_US_TRANSLATIONS = {
         title: 'Run',
         summary: 'Start a reusable governed workflow or task-driven execution flow.',
         detail:
-          'Run is the preview-confirm path for executing a reusable governed workflow or task-driven delivery flow after the target work is already defined. Use direct chat or `/plan` first when the implementation request is still open-ended.',
+          'Run executes a reusable governed workflow or task-driven delivery flow directly after the target work is already defined. Use direct chat or `/plan` first when the implementation request is still open-ended.',
         examples: {
           0: 'Run the next reusable governed workflow for this repo.',
           1: 'Execute the task-driven delivery flow for TK-123.',

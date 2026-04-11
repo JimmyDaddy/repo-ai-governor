@@ -3,8 +3,8 @@ import type React from 'react';
 import type { ReactCliShellPalette } from '../../types/index.js';
 import type { CliSessionSlashCommandSuggestion } from '../../types/index.js';
 
-const MAX_VISIBLE_SLASH_SUGGESTIONS = 6;
-const SLASH_SUMMARY_MAX_COLUMNS = 24;
+export const MAX_VISIBLE_SLASH_SUGGESTIONS = 8;
+const SLASH_SUMMARY_MAX_COLUMNS = 36;
 
 export interface ReactCliSlashCommandPaletteProps {
   title: string;
@@ -32,7 +32,7 @@ export function ReactCliSlashCommandPalette({
     <Box
       flexDirection='column'
       marginTop={1}
-      marginLeft={2}
+      marginLeft={1}
       borderStyle='round'
       borderColor={shellPalette.promptTitleColor}
       paddingX={1}
@@ -49,14 +49,16 @@ export function ReactCliSlashCommandPalette({
                 color={
                   suggestion.command === highlightedCommand
                     ? shellPalette.promptTitleColor
-                    : shellPalette.helpColor
+                    : shellPalette.footerColor
                 }
               >
                 {suggestion.command === highlightedCommand ? '› ' : '  '}
               </Text>
               <Text
                 color={
-                  suggestion.command === highlightedCommand ? shellPalette.titleColor : undefined
+                  suggestion.command === highlightedCommand
+                    ? shellPalette.titleColor
+                    : shellPalette.sectionTitleColor
                 }
               >
                 {suggestion.highlightSegments.map((segment, index) => (
@@ -69,7 +71,13 @@ export function ReactCliSlashCommandPalette({
                   </Text>
                 ))}
               </Text>
-              <Text color={shellPalette.helpColor}>
+              <Text
+                color={
+                  suggestion.command === highlightedCommand
+                    ? shellPalette.footerColor
+                    : shellPalette.subtitleColor
+                }
+              >
                 {`  ${truncateSlashSummary(suggestion.summary)}`}
               </Text>
             </Box>

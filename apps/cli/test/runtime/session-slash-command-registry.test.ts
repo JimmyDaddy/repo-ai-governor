@@ -22,8 +22,23 @@ const TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.commands.agent.summary': 'Inspect the current foreground route.',
   'cli.commands.init.description': 'Initialize governor workspace baseline.',
   'cli.commands.workspace.description': 'Plan or execute workspace migration baseline.',
+  'cli.commands.workspace.actionGuideDryRun':
+    'Preview the workspace migration plan; requires --workspace-mode <repo_local|tool_managed>.',
+  'cli.commands.workspace.actionGuideExecute':
+    'Apply the workspace migration plan for the selected workspace mode.',
+  'cli.commands.workspace.actionGuideRollback':
+    'Restore the previous workspace surface from a saved --workspace-plan artifact.',
+  'cli.commands.workspace.actionGuideClearConfig':
+    'Remove the current governor workspace config so init can rebuild a clean baseline.',
+  'cli.commands.workspace.actionGuideSetUiTheme':
+    'Open the session-shell theme selector or persist one explicit workspace/global theme.',
+  'cli.reactShell.themePresets.governor.description':
+    'Cool blue-gray default palette with higher contrast for governance-focused information.',
+  'cli.reactShell.themePresets.catppuccin.description':
+    'Vivid pastel palette for a more expressive shell surface.',
+  'cli.reactShell.themePresets.calm.description': 'Soft low-contrast palette for longer sessions.',
   'sessionMainCapabilities.catalog.branch_switch.summary':
-    'Switch the current repository to an existing local git branch through a governed preview-confirm path.',
+    'Switch the current repository to an existing local git branch through the governed workspace flow.',
   'sessionMainCapabilities.catalog.connect.summary':
     'Prepare and apply adapter onboarding changes for this workspace.',
   'sessionMainCapabilities.catalog.doctor.summary':
@@ -69,7 +84,12 @@ describe('CliSessionSlashCommandRegistry', () => {
 
     expect(suggestions.map((suggestion) => suggestion.command)).toEqual([
       '/workspace',
+      '/workspace dry-run',
+      '/workspace execute',
+      '/workspace rollback',
+      '/workspace clear-config',
       '/workspace switch-branch',
+      '/workspace set-ui-theme',
       '/workflow',
     ]);
     expect(suggestions[0]?.highlightSegments).toEqual([
@@ -86,18 +106,95 @@ describe('CliSessionSlashCommandRegistry', () => {
       surface: 'full',
     });
 
-    expect(suggestions.map((suggestion) => suggestion.command)).toContain('/confirm');
+    expect(suggestions.map((suggestion) => suggestion.command)).not.toContain('/confirm');
+    expect(suggestions.map((suggestion) => suggestion.command)).not.toContain('/cancel');
     expect(suggestions.map((suggestion) => suggestion.command)).toContain('/sessions');
     expect(suggestions.map((suggestion) => suggestion.command)).toContain('/fork');
     expect(suggestions.map((suggestion) => suggestion.command)).toContain('/archive');
     expect(suggestions.map((suggestion) => suggestion.command)).toContain('/unarchive');
     expect(suggestions.map((suggestion) => suggestion.command)).toContain('/workflow');
     expect(suggestions.map((suggestion) => suggestion.command)).toContain('/plan sync');
+    expect(suggestions.map((suggestion) => suggestion.command)).toContain('/workspace dry-run');
+    expect(suggestions.map((suggestion) => suggestion.command)).toContain('/workspace execute');
+    expect(suggestions.map((suggestion) => suggestion.command)).toContain('/workspace rollback');
+    expect(suggestions.map((suggestion) => suggestion.command)).toContain(
+      '/workspace clear-config',
+    );
     expect(suggestions.map((suggestion) => suggestion.command)).toContain(
       '/workspace switch-branch',
     );
+    expect(suggestions.map((suggestion) => suggestion.command)).toContain(
+      '/workspace set-ui-theme',
+    );
     expect(suggestions.map((suggestion) => suggestion.command)).toContain('/review verify');
     expect(suggestions[0]?.command).toBe('/help');
+  });
+
+  it('surfaces nested workspace actions when the query narrows under /workspace', () => {
+    const registry = new CliSessionSlashCommandRegistry();
+
+    const suggestions = registry.suggest('/workspace s', translate);
+
+    expect(suggestions.map((suggestion) => suggestion.command)).toEqual([
+      '/workspace switch-branch',
+      '/workspace set-ui-theme',
+    ]);
+  });
+
+  it('surfaces theme preset choices when the query narrows under /workspace set-ui-theme', () => {
+    const registry = new CliSessionSlashCommandRegistry();
+
+    expect(registry.suggest('/workspace set-ui-theme', translate)).toEqual([
+      {
+        command: '/workspace set-ui-theme governor',
+        summary:
+          'Cool blue-gray default palette with higher contrast for governance-focused information.',
+        highlightSegments: [
+          { text: '/', highlighted: false },
+          { text: 'workspace set-ui-theme', highlighted: true },
+          { text: ' governor', highlighted: false },
+        ],
+      },
+      {
+        command: '/workspace set-ui-theme catppuccin',
+        summary: 'Vivid pastel palette for a more expressive shell surface.',
+        highlightSegments: [
+          { text: '/', highlighted: false },
+          { text: 'workspace set-ui-theme', highlighted: true },
+          { text: ' catppuccin', highlighted: false },
+        ],
+      },
+      {
+        command: '/workspace set-ui-theme calm',
+        summary: 'Soft low-contrast palette for longer sessions.',
+        highlightSegments: [
+          { text: '/', highlighted: false },
+          { text: 'workspace set-ui-theme', highlighted: true },
+          { text: ' calm', highlighted: false },
+        ],
+      },
+    ]);
+
+    expect(registry.suggest('/workspace set-ui-theme c', translate)).toEqual([
+      {
+        command: '/workspace set-ui-theme catppuccin',
+        summary: 'Vivid pastel palette for a more expressive shell surface.',
+        highlightSegments: [
+          { text: '/', highlighted: false },
+          { text: 'workspace set-ui-theme c', highlighted: true },
+          { text: 'atppuccin', highlighted: false },
+        ],
+      },
+      {
+        command: '/workspace set-ui-theme calm',
+        summary: 'Soft low-contrast palette for longer sessions.',
+        highlightSegments: [
+          { text: '/', highlighted: false },
+          { text: 'workspace set-ui-theme c', highlighted: true },
+          { text: 'alm', highlighted: false },
+        ],
+      },
+    ]);
   });
 
   it('resolves one exact slash command with localized summary text', () => {
@@ -114,7 +211,14 @@ describe('CliSessionSlashCommandRegistry', () => {
     expect(registry.findByCommand('/workspace switch-branch main', translate)).toEqual({
       command: '/workspace switch-branch',
       summary:
-        'Switch the current repository to an existing local git branch through a governed preview-confirm path.',
+        'Switch the current repository to an existing local git branch through the governed workspace flow.',
+    });
+    expect(
+      registry.findByCommand('/workspace dry-run --workspace-mode repo_local', translate),
+    ).toEqual({
+      command: '/workspace dry-run',
+      summary:
+        'Preview the workspace migration plan; requires --workspace-mode <repo_local|tool_managed>.',
     });
     expect(registry.findByCommand('/missing', translate)).toBeNull();
   });
@@ -188,7 +292,7 @@ describe('CliSessionSlashCommandRegistry', () => {
       {
         bridgeArgv: ['plan', 'commit', 'preview.json', '--confirm-plan', 'approve'],
         command: '/plan sync',
-        executionMode: 'confirm',
+        executionMode: 'direct',
         kind: 'bridge',
         summaryKey: 'cli.sessionShell.commands.planSync.summary',
       },
@@ -206,7 +310,7 @@ describe('CliSessionSlashCommandRegistry', () => {
         'approve',
       ],
       command: '/plan sync',
-      executionMode: 'confirm',
+      executionMode: 'direct',
       kind: 'bridge',
       summaryKey: 'cli.sessionShell.commands.planSync.summary',
     });
@@ -227,21 +331,35 @@ describe('CliSessionSlashCommandRegistry', () => {
     expect(registry.resolveAction('/workflow create')).toEqual({
       bridgeArgv: ['workflow', 'create'],
       command: '/workflow',
-      executionMode: 'confirm',
+      executionMode: 'direct',
       kind: 'bridge',
       summaryKey: 'sessionMainCapabilities.catalog.workflow.summary',
     });
     expect(registry.resolveAction('/workspace switch-branch main')).toEqual({
       bridgeArgv: ['workspace', 'switch-branch', 'main'],
       command: '/workspace switch-branch',
-      executionMode: 'confirm',
+      executionMode: 'direct',
       kind: 'bridge',
       summaryKey: 'sessionMainCapabilities.catalog.branch_switch.summary',
+    });
+    expect(registry.resolveAction('/workspace dry-run --workspace-mode repo_local')).toEqual({
+      bridgeArgv: ['workspace', 'dry-run', '--workspace-mode', 'repo_local'],
+      command: '/workspace dry-run',
+      executionMode: 'direct',
+      kind: 'bridge',
+      summaryKey: 'cli.commands.workspace.actionGuideDryRun',
+    });
+    expect(registry.resolveAction('/workspace set-ui-theme calm --theme-scope workspace')).toEqual({
+      bridgeArgv: ['workspace', 'set-ui-theme', 'calm', '--theme-scope', 'workspace'],
+      command: '/workspace set-ui-theme',
+      executionMode: 'direct',
+      kind: 'bridge',
+      summaryKey: 'cli.commands.workspace.actionGuideSetUiTheme',
     });
     expect(registry.resolveAction('/connect')).toEqual({
       bridgeArgv: ['connect'],
       command: '/connect',
-      executionMode: 'confirm',
+      executionMode: 'direct',
       kind: 'bridge',
       summaryKey: 'sessionMainCapabilities.catalog.connect.summary',
     });
@@ -284,14 +402,14 @@ describe('CliSessionSlashCommandRegistry', () => {
     expect(registry.resolveAction('/run')).toEqual({
       bridgeArgv: ['run'],
       command: '/run',
-      executionMode: 'confirm',
+      executionMode: 'direct',
       kind: 'bridge',
       summaryKey: 'sessionMainCapabilities.catalog.run.summary',
     });
     expect(registry.resolveAction('/run reusable-rollout')).toEqual({
       bridgeArgv: ['run', 'reusable-rollout'],
       command: '/run',
-      executionMode: 'confirm',
+      executionMode: 'direct',
       kind: 'bridge',
       summaryKey: 'sessionMainCapabilities.catalog.run.summary',
     });

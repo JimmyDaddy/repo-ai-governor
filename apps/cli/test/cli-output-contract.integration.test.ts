@@ -1049,7 +1049,7 @@ describe('CLI output contract integration', () => {
     expect(stdout).toContain('Usage: repo-ai-governor connect [options] [action] [candidate]');
     expect(stdout).toContain('Session.main governed capability: Connect');
     expect(stdout).toContain('Suggested slash command: /connect');
-    expect(stdout).toContain('Execution path: preview first, then confirm');
+    expect(stdout).toContain('Execution path: direct execute (no extra confirmation)');
     expect(stdout).toContain('Example prompts:');
     expect(stdout).toContain('Help me connect Codex and Claude Code.');
     expect(stdout).toContain('Related capabilities:');

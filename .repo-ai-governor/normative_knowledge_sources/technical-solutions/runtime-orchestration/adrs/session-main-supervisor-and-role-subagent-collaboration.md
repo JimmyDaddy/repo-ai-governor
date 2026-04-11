@@ -41,7 +41,7 @@
 3. connected roles 不再只被视为静态 onboarding 结果；它们应被映射为 `session.main` 可调度的 role subagents / handoff targets，但该映射只能消费 projection truth，不能反向改写 projection truth。
 4. natural-language skill routing 必须先经过 service-owned risk/policy gate，而不是默认一刀切 `preview + confirm` 或无限制自动执行：
    - `help`、`doctor`、post-connect readiness follow-up 与 scope-resolved `review.code` 等低风险只读 skill 可以被判定为 `direct_execute`
-   - `connect`、`run`、`review verify`、多步 bundle，以及高成本/高歧义场景继续走 `preview + confirm`
+   - `connect`、`run`、`review verify`、`workspace.switch_branch` 与多步 bundle 等受治理命令默认也可走 `direct_execute`；真正需要人工确认的高风险写操作应下沉到具体命令契约（如显式 `--confirm-*` 参数或 policy/HITL gate），而不是由 shell 额外再套一层 preview gate
    - `session.main` 的自由对话不是可选 fallback；普通闲聊、寒暄、轻量问答与未成形需求默认都应先走 `direct answer`
    - 当用户在自由对话里自然表达出可执行意图时，`session.main` 应在同一对话面里把该输入升级为 `skill handoff`、`command handoff` 或 `role delegate`，而不是要求用户先离开自由对话模式
    - `direct answer` 可以落到 tool-capable surface，但前提是 runtime 必须向 adapter 下发正式的 `chat-only / tool-forbidden` 执行策略，并由 adapter 在宿主层真正收紧到 no-tool 或 read-only 行为
@@ -150,7 +150,7 @@ flowchart TD
    - 当 scope 已明确，且只需单轮/轻量 profile 时，可以被 risk gate 判为 `direct_execute`。
 2. `review verify`
    - 属于正式 CR 生命周期动作。
-   - 默认仍保留 `preview + confirm`。
+   - 默认走 `direct_execute`，并继续由 review workflow / verify gate 自身承接真正的确认与验证边界。
 3. `help`
    - 属于零副作用能力发现动作。
    - 可被判为 `answer` 或 `direct_execute`，不应强制额外确认。

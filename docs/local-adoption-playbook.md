@@ -132,6 +132,9 @@ Quick checks:
 2. `/help`, `/history`, `/search <term>`, `/multiline`, and `!<shell-command>` should be available from the shell.
 3. `resume` should reattach the latest or named persisted session.
 4. `--no-interactive`, non-TTY, `plain`, and `json` should not enter the interactive shell.
+5. Typing `/workspace` or `/workspace ` in the slash palette should surface `dry-run`, `execute`, `rollback`, `clear-config`, `switch-branch`, and `set-ui-theme`, while bare `/` still stays on the shorter launcher shortlist.
+6. Typing `/workspace set-ui-theme` or `/workspace set-ui-theme ` in the session shell should surface `governor`, `catppuccin`, and `calm` preset choices instead of forcing a failed no-preset submission path.
+7. Current readability tuning only changes presenter emphasis, contrast, and palette density; actual font size remains controlled by the host terminal or IDE.
 
 ## 5. Multi-tool Onboarding
 
@@ -156,6 +159,7 @@ What to pay attention to:
 8. In the current validated `codex` baseline, `run --dry-run --trace` can complete the baseline `prepare -> execute -> report` chain through real `cli_exec` routing without performing governed file edits or dependency mutations; it still persists audit artifacts under the active governor workspace, so treat that as the preferred success signal before enabling a non-dry-run run.
 9. `github-copilot` now follows the same CLI-backed truth model for tester-route verification, while `local-model` should still be read as a constrained fallback surface only for restricted-network or operator-selected local fallback flows whose route requirements stay capability-compatible.
 10. Do not treat `local-model` as a promoted primary substitute for repository-review reviewer delegation or for roles that require `tool_calling`, `structured_output`, or `confirmation_gate`; those paths remain unsupported or explicitly guarded.
+11. If `connect` fails with `ADAPTER_ROUTE_CONFIG_INVALID` and says it requires an adapters baseline in source config, repair the active `governor.yaml` first: for first-time setup run `init`; if an existing config looks stale or broken, run `workspace clear-config`, then `init`, and retry `connect`.
 
 Helpful artifact paths:
 
@@ -205,6 +209,8 @@ Recommended habits:
 1. Keep the printed `plan-path` from `workspace dry-run` or `workspace execute`.
 2. Re-run `doctor` after migration or rollback so you can confirm the active `workspaceRoot`.
 3. If migration fails, inspect the reported failure-summary artifact before retrying.
+4. In the session shell, `/workspace` discoverability is only a hint layer over the same `workspace` command family; it does not introduce a second parser or a separate public command namespace.
+5. `set-ui-theme` preset choices shown under `/workspace set-ui-theme` are the same existing `workspace set-ui-theme <preset>` command semantics, just exposed as palette hints.
 
 ## 8. Advanced User Capabilities
 
@@ -257,9 +263,10 @@ pnpm exec repo-ai-governor workspace set-ui-theme --output pretty
 Use these when you want to:
 
 1. Remove the current selector/config file without deleting diagnostics, workflow, or review artifacts.
-2. Switch to an existing local Git branch through the governed preview-confirm path.
+2. Switch to an existing local Git branch through the governed workspace flow.
 3. Persist the default React shell theme globally or per workspace.
 4. Open the interactive theme selector by running `set-ui-theme` or `workspace set-ui-theme` without `[theme]` in an interactive TTY + `pretty` shell.
+5. Inside the session shell, `/workspace set-ui-theme` now surfaces `governor`, `catppuccin`, and `calm` as direct preset choices so you can accept one from the palette before execution.
 
 Notes:
 

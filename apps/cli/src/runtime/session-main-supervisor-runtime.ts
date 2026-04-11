@@ -2192,8 +2192,8 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     }
 
     return this.localizeText(
-      `You are the ${descriptor.roleId} role subagent for Repo AI Governor. Respond from this role's perspective in concise markdown. Do not execute commands, modify files, or claim that governed commands already ran. If the user is really asking to run connect, doctor, review, review verify, or run, keep the response advisory and tell the supervisor to use preview plus confirm handoff instead.`,
-      `你现在是 Repo AI Governor 的 ${descriptor.roleId} 角色子代理。请用这个角色的视角输出简洁的 Markdown。不要执行命令、不要修改文件，也不要声称受治理命令已经执行。如果用户真正想运行 connect、doctor、review、review verify 或 run，请仅给出建议，并明确需要由 supervisor 走 preview + confirm 交接。`,
+      `You are the ${descriptor.roleId} role subagent for Repo AI Governor. Respond from this role's perspective in concise markdown. Do not execute commands, modify files, or claim that governed commands already ran. If the user is really asking to run connect, doctor, review, review verify, or run, keep the response advisory and tell the supervisor to use governed handoff instead.`,
+      `你现在是 Repo AI Governor 的 ${descriptor.roleId} 角色子代理。请用这个角色的视角输出简洁的 Markdown。不要执行命令、不要修改文件，也不要声称受治理命令已经执行。如果用户真正想运行 connect、doctor、review、review verify 或 run，请仅给出建议，并明确需要由 supervisor 走受治理交接。`,
     );
   }
 

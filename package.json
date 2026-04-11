@@ -59,6 +59,7 @@
     "check:oop-structure": "node ./scripts/governance/check-oop-structure.js",
     "check:dependency-boundary:warn": "node ./scripts/governance/check-package-dependency-boundary.js --mode warn",
     "check:dependency-boundary:block": "node ./scripts/governance/check-package-dependency-boundary.js --mode block",
+    "task:reserve-id": "node ./scripts/governance/reserve-task-id.js",
     "check:task-ledger-sync": "node ./scripts/governance/check-task-ledger-sync.js",
     "check:sprint-plan-status-sync": "node ./scripts/governance/check-sprint-plan-status-sync.js",
     "check:code-review-status-sync": "node ./scripts/governance/check-code-review-status-sync.js",

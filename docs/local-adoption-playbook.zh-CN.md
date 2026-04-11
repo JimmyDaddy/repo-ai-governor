@@ -132,6 +132,9 @@ pnpm exec repo-ai-governor resume [session-id]
 2. `/help`、`/history`、`/search <term>`、`/multiline`、`!<shell-command>` 应可用。
 3. `resume` 应能恢复最近一次或指定的持久化会话。
 4. `--no-interactive`、非 TTY、`plain`、`json` 不应进入交互壳层。
+5. 在 slash palette 中输入 `/workspace` 或 `/workspace ` 时，应能看到 `dry-run`、`execute`、`rollback`、`clear-config`、`switch-branch`、`set-ui-theme` 提示；而 bare `/` 仍保持较短的 launcher shortlist。
+6. 在 session shell 中输入 `/workspace set-ui-theme` 或 `/workspace set-ui-theme ` 时，应直接看到 `governor`、`catppuccin`、`calm` preset 选项，而不是先提交一个缺 preset 的失败命令。
+7. 当前可读性增强只调整 presenter 的强调样式、对比度和 palette 密度；实际字体大小仍由宿主终端或 IDE 控制。
 
 ## 5. 多工具接入
 
@@ -156,6 +159,7 @@ pnpm exec repo-ai-governor run --output json --dry-run --trace
 8. 在当前已验证的 `codex` 基线中，`run --dry-run --trace` 已可通过真实 `cli_exec` 路由完成基线 `prepare -> execute -> report` 链路，且不会执行受治理文件改动或依赖变更；但它仍会在活动 governor workspace 下持久化审计产物，因此在放开非 dry-run 之前，应优先把它视为成功信号。
 9. `github-copilot` 现在在 tester-route verify 上也遵循同样的 CLI-backed truth；而 `local-model` 仍应被理解为受能力约束的 fallback surface，并且只适用于 restricted-network 或 operator 明确选择的本地 fallback、且 route requirement 仍保持 capability-compatible 的场景。
 10. 不要把 `local-model` 当成 repository-review reviewer delegation 的 promoted primary substitute，也不要把它扩张成 `tool_calling`、`structured_output` 或 `confirmation_gate` 必需角色的等价替代；这些路径当前仍保持 unsupported 或显式 guard。
+11. 如果 `connect` 失败并报 `ADAPTER_ROUTE_CONFIG_INVALID`，且提示 source config 缺少 adapters baseline，应先修复活动 `governor.yaml`：首次接入先跑 `init`；若现有配置看起来陈旧或损坏，则先跑 `workspace clear-config`，再跑 `init`，然后重试 `connect`。
 
 常用产物路径：
 
@@ -205,6 +209,8 @@ pnpm exec repo-ai-governor workspace rollback <plan-path> --output json
 1. 保留 `workspace dry-run` 或 `workspace execute` 输出里的 `plan-path`。
 2. 迁移或回滚后重新执行 `doctor`，确认活动 `workspaceRoot`。
 3. 如果迁移失败，先看 failure-summary 产物，再决定是否重试。
+4. 在 session shell 中，`/workspace` discoverability 只是同一套 `workspace` 命令的提示层，不代表新增了一套解析器或独立 public command namespace。
+5. `/workspace set-ui-theme` 下显示的 preset 选项仍然对应同一套既有 `workspace set-ui-theme <preset>` 执行语义，只是以 palette hint 的方式暴露出来。
 
 ## 8. 进阶能力
 
@@ -257,9 +263,10 @@ pnpm exec repo-ai-governor workspace set-ui-theme --output pretty
 这些命令适合：
 
 1. 只清除当前 selector/config 文件，而不删除 diagnostics、workflow 或 review 产物。
-2. 通过受治理的 preview-confirm 路径切换到一个已存在的本地 Git 分支。
+2. 通过受治理的 workspace 流程切换到一个已存在的本地 Git 分支。
 3. 在 global 或 workspace 作用域持久化默认 React shell 主题。
 4. 在交互式 TTY + `pretty` 壳层里，省略 `[theme]` 直接打开主题 selector。
+5. 在 session shell 中，`/workspace set-ui-theme` 现在会直接给出 `governor`、`catppuccin`、`calm` 作为可选 preset。
 
 说明：
 

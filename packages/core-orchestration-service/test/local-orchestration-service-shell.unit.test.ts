@@ -1166,7 +1166,7 @@ describe('core-orchestration-service local shell', () => {
         'repo-ai-governor connect --preset multi-tool-default --output pretty',
       );
       expect(completedEvent?.payload.selectedBy).toBe('session.main.intent_router');
-      expect(completedEvent?.payload.requiresConfirmation).toBe(true);
+      expect(completedEvent?.payload.requiresConfirmation).toBe(false);
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }
@@ -1698,7 +1698,7 @@ describe('core-orchestration-service local shell', () => {
     }
   });
 
-  it('projects branch-switch requests into preview-confirm turn metadata', async () => {
+  it('projects branch-switch requests into direct-execute turn metadata', async () => {
     const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
     const orchestrationService = new LocalOrchestrationServiceShell({
       workspaceRoot: temporaryRoot,
@@ -1722,9 +1722,9 @@ describe('core-orchestration-service local shell', () => {
 
       expect(completedEvent?.payload.responseMode).toBe('command_handoff_preview');
       expect(completedEvent?.payload.suggestedSlashCommand).toBe('/workspace switch-branch');
-      expect(completedEvent?.payload.requiresConfirmation).toBe(true);
+      expect(completedEvent?.payload.requiresConfirmation).toBe(false);
       expect(completedEvent?.payload.skillId).toBe('skill.workspace.switch_branch');
-      expect(completedEvent?.payload.handoffExecutionMode).toBe('preview_confirm');
+      expect(completedEvent?.payload.handoffExecutionMode).toBe('direct_execute');
       expect(completedEvent?.payload.commandBatches).toEqual([
         {
           slashQuery: '/workspace switch-branch main',
@@ -1737,7 +1737,7 @@ describe('core-orchestration-service local shell', () => {
     }
   });
 
-  it('projects onboarding bundle previews into shared command-batch truth', async () => {
+  it('projects onboarding bundles into shared command-batch truth', async () => {
     const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
     const orchestrationService = new LocalOrchestrationServiceShell({
       workspaceRoot: temporaryRoot,
@@ -1760,9 +1760,9 @@ describe('core-orchestration-service local shell', () => {
       );
 
       expect(completedEvent?.payload.responseMode).toBe('command_handoff_preview');
-      expect(completedEvent?.payload.requiresConfirmation).toBe(true);
+      expect(completedEvent?.payload.requiresConfirmation).toBe(false);
       expect(completedEvent?.payload.skillId).toBe('skill.onboard.adapters');
-      expect(completedEvent?.payload.handoffExecutionMode).toBe('preview_confirm');
+      expect(completedEvent?.payload.handoffExecutionMode).toBe('direct_execute');
       expect(completedEvent?.payload.commandBatches).toEqual([
         {
           slashQuery: '/connect',
@@ -2352,7 +2352,7 @@ describe('core-orchestration-service local shell', () => {
       expect(resolveTurn).not.toHaveBeenCalled();
       expect(completedEvent?.payload.responseMode).toBe('command_handoff_preview');
       expect(completedEvent?.payload.suggestedSlashCommand).toBe('/connect');
-      expect(completedEvent?.payload.requiresConfirmation).toBe(true);
+      expect(completedEvent?.payload.requiresConfirmation).toBe(false);
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }

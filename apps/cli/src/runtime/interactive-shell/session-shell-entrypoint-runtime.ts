@@ -1,8 +1,12 @@
 import { RuntimeExecutionStatus } from '@repo-ai-governor/core-runtime';
-import { type ErrorOutputEnvironment, ExecutionProgressStatus } from '@repo-ai-governor/shared';
+import {
+  type ErrorOutputEnvironment,
+  ExecutionProgressStatus,
+  GovernorErrorCode,
+} from '@repo-ai-governor/shared';
 import { CLI_COMMAND_NAMES, CLI_PROGRAM_NAME } from '../../constants/cli-command.constant.js';
 import { CliInteractiveUiMode } from '../../constants/cli-interactive-shell.constant.js';
-import { CLI_OPTIONS_REQUIRING_VALUE } from '../../constants/cli-output.constant.js';
+import { CLI_OPTIONS_REQUIRING_VALUE, CliNextAction } from '../../constants/cli-output.constant.js';
 import type { CliReactThemePreset } from '../../constants/cli-react-theme.constant.js';
 import { CliWorkspaceAction } from '../../constants/cli-workspace.constant.js';
 import type {
@@ -308,20 +312,31 @@ export class CliSessionShellEntrypointRuntime {
         parsedPayload.error_details?.report_path,
         parsedPayload.error_details?.replay_path,
       ].filter((value): value is string => typeof value === 'string' && value.length > 0);
+      const readableNextAction =
+        CliSessionShellEntrypointRuntime.resolveReadableNextActionDescription(
+          parsedPayload.next_action,
+          options.translate,
+        );
       return {
         artifactPaths,
         commandLine: options.commandLine,
         message: parsedPayload.message,
         status: 'error',
-        summaryLines: [
-          parsedPayload.message,
+        summaryLines: CliSessionShellEntrypointRuntime.dedupeSummaryLines([
           options.translate('cli.sessionShell.responses.commandErrorHint', {
             hint: parsedPayload.hint,
           }),
           options.translate('cli.sessionShell.responses.commandErrorNextAction', {
-            nextAction: parsedPayload.next_action,
+            nextAction: readableNextAction,
           }),
-        ].filter((line) => line.length > 0),
+          ...CliSessionShellEntrypointRuntime.resolveStructuredErrorRecoveryLines({
+            commandLine: options.commandLine,
+            commandName: parsedPayload.command,
+            errorCode: parsedPayload.error_code,
+            message: parsedPayload.message,
+            translate: options.translate,
+          }),
+        ]),
       };
     }
 
@@ -562,14 +577,85 @@ export class CliSessionShellEntrypointRuntime {
   private static parseCliJsonOutput(
     stdoutText: string,
   ): CliSuccessOutputPayload | CliErrorOutputPayload | null {
-    if (stdoutText.length === 0) {
+    const normalizedText = stdoutText.trim();
+    if (normalizedText.length === 0) {
       return null;
     }
 
+    const directPayload =
+      CliSessionShellEntrypointRuntime.tryParseCliJsonOutputCandidate(normalizedText);
+    if (directPayload) {
+      return directPayload;
+    }
+
+    const lineCandidates = normalizedText
+      .split(/\r?\n/u)
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+    for (let index = lineCandidates.length - 1; index >= 0; index -= 1) {
+      const parsedPayload = CliSessionShellEntrypointRuntime.tryParseCliJsonOutputCandidate(
+        lineCandidates[index] ?? '',
+      );
+      if (parsedPayload) {
+        return parsedPayload;
+      }
+    }
+
+    return null;
+  }
+
+  private static tryParseCliJsonOutputCandidate(
+    candidate: string,
+  ): CliSuccessOutputPayload | CliErrorOutputPayload | null {
     try {
-      return JSON.parse(stdoutText) as CliSuccessOutputPayload | CliErrorOutputPayload;
+      return JSON.parse(candidate) as CliSuccessOutputPayload | CliErrorOutputPayload;
     } catch {
       return null;
     }
+  }
+
+  private static resolveReadableNextActionDescription(
+    nextAction: CliNextAction,
+    translate: (key: string, interpolation?: Record<string, string>) => string,
+  ): string {
+    switch (nextAction) {
+      case CliNextAction.CHECK_COMMAND_USAGE:
+        return translate('cli.sessionShell.responses.commandErrorNextActionCheckCommandUsage');
+      case CliNextAction.INSPECT_GOVERNOR_CONFIG:
+        return translate('cli.sessionShell.responses.commandErrorNextActionInspectGovernorConfig');
+      case CliNextAction.INSPECT_POLICY_DIAGNOSTICS:
+        return translate(
+          'cli.sessionShell.responses.commandErrorNextActionInspectPolicyDiagnostics',
+        );
+      case CliNextAction.CHECK_REPLAY_SOURCE:
+        return translate('cli.sessionShell.responses.commandErrorNextActionCheckReplaySource');
+      case CliNextAction.RETRY_WITH_VERBOSE:
+        return translate('cli.sessionShell.responses.commandErrorNextActionRetryWithVerbose');
+      case CliNextAction.REPORT_ISSUE:
+        return translate('cli.sessionShell.responses.commandErrorNextActionReportIssue');
+      default:
+        return nextAction;
+    }
+  }
+
+  private static resolveStructuredErrorRecoveryLines(options: {
+    commandLine: string;
+    commandName: string;
+    errorCode: GovernorErrorCode;
+    message: string;
+    translate: (key: string, interpolation?: Record<string, string>) => string;
+  }): string[] {
+    const commandToken = options.commandLine.trim().split(/\s+/u)[0] ?? options.commandName;
+    const isConnectMissingAdaptersBaseline =
+      options.errorCode === GovernorErrorCode.ADAPTER_ROUTE_CONFIG_INVALID &&
+      commandToken === 'connect' &&
+      options.message.includes('requires adapters baseline in source config');
+    if (!isConnectMissingAdaptersBaseline) {
+      return [];
+    }
+
+    return [
+      options.translate('cli.sessionShell.responses.commandErrorConnectMissingAdaptersBaseline'),
+    ];
   }
 }

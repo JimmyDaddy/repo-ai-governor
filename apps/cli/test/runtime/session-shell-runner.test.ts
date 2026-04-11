@@ -900,6 +900,16 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.commands.agent.summary': 'Inspect the current foreground route.',
   'cli.commands.init.description': 'Initialize governor workspace baseline.',
   'cli.commands.workspace.description': 'Plan or execute workspace migration baseline.',
+  'cli.commands.workspace.actionGuideDryRun':
+    'Preview the workspace migration plan; requires --workspace-mode <repo_local|tool_managed>.',
+  'cli.commands.workspace.actionGuideExecute':
+    'Apply the workspace migration plan for the selected workspace mode.',
+  'cli.commands.workspace.actionGuideRollback':
+    'Restore the previous workspace surface from a saved --workspace-plan artifact.',
+  'cli.commands.workspace.actionGuideClearConfig':
+    'Remove the current governor workspace config so init can rebuild a clean baseline.',
+  'cli.commands.workspace.actionGuideSetUiTheme':
+    'Open the session-shell theme selector or persist one explicit workspace/global theme.',
   'sessionMainCapabilities.catalog.connect.summary':
     'Prepare and apply adapter onboarding changes for this workspace.',
   'sessionMainCapabilities.catalog.doctor.summary':
@@ -1074,7 +1084,7 @@ const DEFAULT_RUN_OPTIONS = (
 });
 
 describe('CliSessionShellRunner', () => {
-  it('renders service-backed transcript, preview metadata, executes confirm, and exits through /exit', async () => {
+  it('renders service-backed transcript, auto-executes direct bridge commands, and exits through /exit', async () => {
     const renderer = new RecordingSessionShellRenderer();
     const commandExecutor = vi.fn<
       (argv: string[]) => Promise<CliSessionShellCommandExecutionResult>
@@ -1125,17 +1135,20 @@ describe('CliSessionShellRunner', () => {
       ),
     ).toBe(true);
     expect(
-      renderer.frames.some(
-        (frame) =>
-          frame.commandPreview === 'Ready: workspace dry-run' &&
-          frame.promptBarLines.includes('/confirm · /cancel · Esc'),
-      ),
-    ).toBe(true);
+      renderer.frames.some((frame) => frame.promptBarLines.includes('/confirm · /cancel · Esc')),
+    ).toBe(false);
     expect(
       result.transcriptItems.some(
         (item) =>
           item.renderKind === 'command_recap' &&
           item.lines.includes('Summary: workspace migration preview'),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes(
+          'There is no pending command preview to confirm. Direct slash commands such as /review may already have executed.',
+        ),
       ),
     ).toBe(true);
     expect(
@@ -1222,7 +1235,6 @@ describe('CliSessionShellRunner', () => {
         (frame) =>
           frame.shellMode === CliSessionShellMode.COMMAND_PALETTE &&
           frame.slashPaletteVisible &&
-          frame.slashSuggestions.some((suggestion) => suggestion.command === '/confirm') &&
           frame.slashSuggestions.some((suggestion) => suggestion.command === '/workflow') &&
           frame.promptBarLines.includes('↑↓ · Tab/Enter · Esc'),
       ),
@@ -1251,7 +1263,6 @@ describe('CliSessionShellRunner', () => {
           frame.shellMode === CliSessionShellMode.COMMAND_PALETTE &&
           frame.slashPaletteVisible &&
           frame.composerValue === '?' &&
-          frame.slashSuggestions.some((suggestion) => suggestion.command === '/confirm') &&
           frame.slashSuggestions.some((suggestion) => suggestion.command === '/workflow') &&
           frame.promptBarLines.includes('↑↓ · Tab/Enter · Esc'),
       ),
@@ -1866,7 +1877,7 @@ describe('CliSessionShellRunner', () => {
     ]);
   });
 
-  it('clears pending preview state when /exit closes the shell before confirmation', async () => {
+  it('keeps direct bridge execution immediate even when /exit follows right away', async () => {
     const renderer = new RecordingSessionShellRenderer();
     const commandExecutor = vi.fn<
       (argv: string[]) => Promise<CliSessionShellCommandExecutionResult>
@@ -1893,14 +1904,66 @@ describe('CliSessionShellRunner', () => {
       }),
     );
 
-    expect(commandExecutor).not.toHaveBeenCalled();
+    expect(commandExecutor).toHaveBeenCalledWith(
+      ['workspace', 'dry-run'],
+      expect.objectContaining({
+        progressSink: expect.objectContaining({
+          publish: expect.any(Function),
+        }),
+      }),
+    );
     expect(renderer.frames.at(-1)?.shellMode).toBe(CliSessionShellMode.SESSION_SHELL);
     expect(renderer.frames.at(-1)?.handoffState).toBe(CliSessionShellHandoffState.IDLE);
     expect(renderer.frames.at(-1)?.commandPreview).toBeNull();
     expect(result.transcriptItems.at(-1)?.lines[0]).toBe('Closed after /exit.');
   });
 
-  it('keeps a pending preview visible across /clear until /confirm executes it', async () => {
+  it('applies the new theme to the current session shell immediately after workspace set-ui-theme succeeds', async () => {
+    const renderer = new RecordingSessionShellRenderer();
+    const commandExecutor = vi.fn<
+      (argv: string[]) => Promise<CliSessionShellCommandExecutionResult>
+    >(async (argv) => ({
+      artifactPaths: [],
+      commandLine: argv.join(' '),
+      message: 'workspace set-ui-theme calm completed',
+      status: 'success',
+      summaryLines: ['Summary: workspace set-ui-theme calm completed'],
+    }));
+    const runner = new CliSessionShellRunner(
+      undefined,
+      renderer as never,
+      () => new StubSessionShellPromptAdapter(['/workspace set-ui-theme calm', '/status', '/exit']),
+      undefined,
+      undefined,
+      () => false,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(
+      DEFAULT_RUN_OPTIONS({
+        commandExecutor,
+      }),
+    );
+
+    expect(commandExecutor).toHaveBeenCalledWith(
+      ['workspace', 'set-ui-theme', 'calm'],
+      expect.objectContaining({
+        progressSink: expect.objectContaining({
+          publish: expect.any(Function),
+        }),
+      }),
+    );
+    expect(renderer.frames.some((frame) => frame.themePreset === 'calm')).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes(
+          'Resume=latest persistence=local_orchestration_service theme=calm output=pretty.',
+        ),
+      ),
+    ).toBe(true);
+  });
+
+  it('clears the local viewport after direct workspace execution and reports stray /confirm usage', async () => {
     const renderer = new RecordingSessionShellRenderer();
     const commandExecutor = vi.fn<
       (argv: string[]) => Promise<CliSessionShellCommandExecutionResult>
@@ -1940,13 +2003,15 @@ describe('CliSessionShellRunner', () => {
       renderer.frames.some(
         (frame) =>
           frame.transcriptItems.at(-1)?.lines[0] === 'Local transcript viewport cleared.' &&
-          frame.commandPreview === 'Ready: workspace dry-run' &&
-          frame.promptBarLines.includes('/confirm · /cancel · Esc'),
+          frame.commandPreview === null &&
+          frame.promptBarLines.includes('? shortcuts · /status · Ctrl+D'),
       ),
     ).toBe(true);
     expect(
       result.transcriptItems.some((item) =>
-        item.lines.includes('Summary: workspace dry-run completed'),
+        item.lines.includes(
+          'There is no pending command preview to confirm. Direct slash commands such as /review may already have executed.',
+        ),
       ),
     ).toBe(true);
   });
@@ -2160,6 +2225,47 @@ describe('CliSessionShellRunner', () => {
     ).toBe(true);
     expect(inkRunner.closeCount).toBe(1);
     expect(result.transcriptItems.at(-1)?.lines[0]).toBe('Closed after /exit.');
+  });
+
+  it('surfaces nested workspace suggestions in the live slash palette once /workspace is typed', async () => {
+    const renderer = new RecordingSessionShellRenderer();
+    const inkRunner = new StubSessionShellInkRunner([
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/workspace ',
+      },
+      {
+        type: CliSessionShellInputActionType.PALETTE_CLOSED,
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/exit',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+    ]);
+    const runner = new CliSessionShellRunner(
+      undefined,
+      renderer as never,
+      () => new StubSessionShellPromptAdapter([]),
+      () => new CliSessionShellInkController(),
+      () => inkRunner as never,
+      () => true,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(DEFAULT_RUN_OPTIONS());
+
+    expect(result.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
+    expect(
+      inkRunner.snapshots.some(
+        (frame) =>
+          frame.composerValue === '/workspace ' &&
+          frame.slashSuggestions.map((suggestion) => suggestion.command).join(',') ===
+            '/workspace,/workspace dry-run,/workspace execute,/workspace rollback,/workspace clear-config,/workspace switch-branch,/workspace set-ui-theme',
+      ),
+    ).toBe(true);
   });
 
   it('renders session.main stream deltas inside the transcript surface before the turn completes', async () => {
@@ -2658,7 +2764,7 @@ describe('CliSessionShellRunner', () => {
     ).toBe(true);
   });
 
-  it('keeps a pending preview visible across Ctrl+L until /confirm executes it', async () => {
+  it('clears the Ink viewport after direct workspace execution and reports stray /confirm usage', async () => {
     const renderer = new RecordingSessionShellRenderer();
     const inkRunner = new StubSessionShellInkRunner([
       {
@@ -2724,13 +2830,15 @@ describe('CliSessionShellRunner', () => {
       inkRunner.snapshots.some(
         (frame) =>
           frame.transcriptItems.at(-1)?.lines[0] === 'Local transcript viewport cleared.' &&
-          frame.commandPreview === 'Ready: workspace dry-run' &&
-          frame.promptBarLines.includes('/confirm · /cancel · Esc'),
+          frame.commandPreview === null &&
+          frame.promptBarLines.includes('? shortcuts · /status · Ctrl+D'),
       ),
     ).toBe(true);
     expect(
       result.transcriptItems.some((item) =>
-        item.lines.includes('Summary: workspace dry-run completed'),
+        item.lines.includes(
+          'There is no pending command preview to confirm. Direct slash commands such as /review may already have executed.',
+        ),
       ),
     ).toBe(true);
   });

@@ -1,7 +1,7 @@
 # CLI Session Shell Contract
 
 - Status: active
-- Date: 2026-04-02
+- Date: 2026-04-11
 - Contract ID: `contract.cli.session-shell.v1`
 - Producer Module: `runtime.cli-interactive-shell`
 
@@ -127,7 +127,7 @@
 7. CLI 只允许持有 presenter 级本地 view state；canonical session state、resume pointer、transcript 与 command handoff summary 必须由 local orchestration service 托管。
 8. `/exit` 只退出当前前台会话界面，不删除已保存 transcript；`/resume [session-id]` 负责恢复最近一次或指定 session。
 9. 会话外允许提供 `repo-ai-governor resume [session-id]` 入口；不建议提供顶层 `repo-ai-governor exit`。
-10. `cli_handoff` 类型的高副作用命令必须先展示规范化命令预览并得到显式确认，再进入执行。
+10. `cli_handoff` 类型命令默认应直接执行；真正的高风险确认必须由具体命令契约或 service-owned policy/HITL gate 承接，shell 不得再发明一层额外 preview-confirm 门。
 11. CLI 与 future desktop 必须共享同一套 session DTO 语义；差异只能存在于 presenter 层，不得复制第二套 session state owner。
 12. `transcript_items` 必须允许 presenter 区分至少 `plain_text / markdown / live_markdown / live_activity / system_notice / command_recap / collaboration_recap` 七类 render-kind；不得再假设所有消息都只能退化成单一 `label + lines[]` 视觉模型。
 13. `session.main` 对话流的 live draft、thinking 与 tool-use 可以通过 `live_markdown / live_activity` 进入 transcript 主画布；但真正的命令执行 progress、heartbeat、elapsed 与 cancel affordance 仍必须停留在 session-shell running dock 或等价动态区域，不能把长时命令运行态退化成无限追加 transcript。
@@ -139,7 +139,7 @@
 19. role collaboration 的最终 recap 可以进入 `command_recap` 或等价结构化 transcript presenter path，但运行中的 progress、heartbeat、elapsed 与 cancel affordance 仍必须停留在 running dock，而不是无限追加 transcript。
 20. 自然语言 skill turn 必须先经过 service-owned risk/policy gate；CLI 必须只消费 `turn_skill_*`、`turn_confirmation_mode` 与 `turn_execution_path` 字段，不得在 presenter 层本地重算“是否需要确认”。
 21. 当 `turn_execution_path=direct_execute` 且 `turn_confirmation_mode=not_required` 时，shell 必须允许受治理执行直接继续，不得额外插入 synthetic preview；但 transcript / resume / audit continuity 仍必须保留“这是 skill execution 而不是普通闲聊回答”的事实。
-22. 当 `turn_execution_path=preview_confirm` 时，shell 必须继续保持现有 preview + explicit confirmation 行为，并保证 `/clear` 与 `resume` 后仍可恢复 pending handoff。
+22. 当 `turn_execution_path=preview_confirm` 时，shell 仍需兼容既有 preview + explicit confirmation 行为，并保证 `/clear` 与 `resume` 后仍可恢复 pending handoff；但该路径不再是 default governed handoff baseline。
 23. 零副作用能力发现 turn（例如 `help`）可根据 service-owned outcome 走 `answer` 或 `direct_execute`；两条路径都不得强制多余确认，也不得绕过 shared session truth。
 24. 当 `turn_response_mode=answer` 且该 turn 实际属于 capability explanation 时，`turn_capability_answer_kind`、`turn_referenced_capability_ids` 与 `turn_suggested_actions` 必须来自 shared session payload；CLI shell 不得在 presenter 层自行猜测“这是不是 overview/detail answer”。
 25. `turn_suggested_actions` 只能表示用户可点击/可追问的 follow-up affordance；shell 可以渲染，但不得自动执行、不得绕过既有 risk/policy gate，也不得把它们写成新的 pending handoff truth。
@@ -149,6 +149,10 @@
 29. governed slash entries 至少必须区分 `ai_fixed_workflow` 与 `deterministic_utility`：`/plan`、`/review`、`/review verify` 不能再呈现成 plain CLI bridge，而 `/plan sync`、`/workflow`、`/connect`、`/doctor`、`/workspace switch-branch` 继续属于 deterministic utility。
 30. `/verify` 在 public command model 删除后，不得继续出现在 session-shell slash palette、launcher shortlist 或 help appendix 中；相关 readiness guidance 必须改写到 `connect`、`doctor` 或 workflow-local preflight 文案。
 31. `/run` 可以继续出现在 discoverability surface 中，但 presenter copy 必须把它限制为 reusable governed execution flow，不得让 generic implementation ask 看起来默认等价于 `/run`。
+32. 当 nested governed command 返回 `cli_output_v1` 结构化错误时，shell 必须优先解码 `message / hint / next_action` 并渲染成用户可执行的恢复提示；若 stdout 中出现重复 JSON 行或其他可恢复噪音，也不得把原始 JSON payload 直接当作 transcript 正文回显。
+33. session shell 的默认可读性增强只允许调整 presenter 级 emphasis/dim usage、palette visible-row budget 与摘要截断宽度；实际字体大小仍由宿主终端/IDE 控制，不得新增 shell-local font-size flag、宿主字号集成或持久化字体偏好。
+34. `/workspace` discoverability 可以在 slash palette 中显式暴露 `dry-run / execute / rollback / clear-config / switch-branch / set-ui-theme` 等 nested action，但这仍属于既有 `workspace` command family 的 presenter-level hint，不得引入新的 public command family；bare `/` launcher shortlist 也不得因此被 nested action 刷屏。
+35. 当用户把 slash 前缀收窄到 `/workspace set-ui-theme` 时，palette 必须直接暴露现有 `workspace set-ui-theme <preset>` 的 preset-choice 子提示（至少 `governor / catppuccin / calm`），并允许 `Enter/Tab` 优先接受高亮的更具体子命令，而不是把缺 preset 的父命令直接提交为失败执行。
 
 ## 5. Consumers
 
@@ -164,6 +168,7 @@
 4. `v1` 允许 session shell 从 `readline` foreground input 迁移到 Ink-owned input，只要上述字段与治理边界保持稳定。
 5. `v1` 现正式接受“结构化壳层 + Markdown 内容块”方向，但这只定义 presenter/contract 边界，不等于 renderer 已在代码面全面交付；真实 rollout follow-up 由 `project-032-command-live-progress-react-shell-productization` 的 output-presentation sprint 承接。
 6. `v1` 现正式接受“service-owned session.main supervisor + role subagents / handoffs”方向；第一阶段 rollout 允许只交付 direct answer、command handoff preview 与 `1` 条 role-subagent bootstrap path，再逐步扩展 richer collaboration/streaming/sidecar parity。
-7. `v1` 现进一步接受“conversation-first chatability + risk-tiered natural-language skill handoff”补充方向；低风险、只读、scope-resolved skill 可走 governed `direct_execute`，但 state-mutating、高成本或高歧义 skill 仍保留 `preview_confirm`。
+7. `v1` 现进一步接受“conversation-first chatability + risk-tiered natural-language skill handoff”补充方向；governed skill handoff 默认走 `direct_execute`，而真正的高风险确认改由具体命令契约或 service-owned policy/HITL gate 暴露；`preview_confirm` 仅保留为兼容旧 session continuity 或未来被 service 明确要求的特例路径。
 8. `v1` 现进一步接受“service-owned capability explainer + contextual command guidance”补充方向；capability explanation turn 仍属于 `answer` path，但 shell 需要额外消费 capability metadata 与 suggested-action affordance，同时保持 shell-local builtins 不被误并入 service-owned governed capability catalog。
 9. `v1` 现进一步接受“prompt-first command model split”补充方向；`/plan`、`/review`、`/review verify` 作为 AI fixed workflow 呈现，`/plan sync` 与其他 utility slash command 继续保持 deterministic bridge，而 public `/verify` 被删除。
+10. `v1` 现进一步接受“session-shell theme preset choice discoverability”补充方向；`/workspace set-ui-theme` 在 session shell 中需要暴露 preset-choice palette path，但这仍是既有 `workspace set-ui-theme <preset>` 语义的 presenter-level discoverability 增强。

@@ -19,7 +19,7 @@ export function ReactCliPromptBar({
   return (
     <Box flexDirection='column' marginTop={1}>
       {lines.map((line) => (
-        <Text key={line} dimColor color={shellPalette.footerColor}>
+        <Text key={line} bold color={shellPalette.footerColor}>
           {line}
         </Text>
       ))}

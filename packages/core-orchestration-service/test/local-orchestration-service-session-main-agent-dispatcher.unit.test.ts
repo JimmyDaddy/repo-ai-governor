@@ -368,7 +368,7 @@ describe('LocalOrchestrationServiceSessionMainAgentDispatcher', () => {
     );
   });
 
-  it('projects branch-switch requests into preview-confirm command batches', async () => {
+  it('projects branch-switch requests into direct-execute command batches', async () => {
     const resolveTurn = vi.fn();
     const dispatcher = new LocalOrchestrationServiceSessionMainAgentDispatcher({
       resolveTurn,
@@ -392,9 +392,9 @@ describe('LocalOrchestrationServiceSessionMainAgentDispatcher', () => {
         responseMode: 'command_handoff_preview',
         suggestedSlashCommand: '/workspace switch-branch',
         executionIntent: 'workspace.branch_switch',
-        requiresConfirmation: true,
+        requiresConfirmation: false,
         skillId: 'skill.workspace.switch_branch',
-        handoffExecutionMode: 'preview_confirm',
+        handoffExecutionMode: 'direct_execute',
       }),
     );
     expect(result.commandBatches).toEqual([
@@ -406,7 +406,7 @@ describe('LocalOrchestrationServiceSessionMainAgentDispatcher', () => {
     ]);
   });
 
-  it('projects Git-valid branch targets such as bugfix@bar into preview-confirm command batches', async () => {
+  it('projects Git-valid branch targets such as bugfix@bar into direct-execute command batches', async () => {
     const resolveTurn = vi.fn();
     const dispatcher = new LocalOrchestrationServiceSessionMainAgentDispatcher({
       resolveTurn,
@@ -430,9 +430,9 @@ describe('LocalOrchestrationServiceSessionMainAgentDispatcher', () => {
         responseMode: 'command_handoff_preview',
         suggestedSlashCommand: '/workspace switch-branch',
         executionIntent: 'workspace.branch_switch',
-        requiresConfirmation: true,
+        requiresConfirmation: false,
         skillId: 'skill.workspace.switch_branch',
-        handoffExecutionMode: 'preview_confirm',
+        handoffExecutionMode: 'direct_execute',
       }),
     );
     expect(result.commandBatches).toEqual([
@@ -700,7 +700,7 @@ describe('LocalOrchestrationServiceSessionMainAgentDispatcher', () => {
     );
   });
 
-  it('projects bundle onboarding intents into preview-confirm command batches', async () => {
+  it('projects bundle onboarding intents into direct-execute command batches', async () => {
     const resolveTurn = vi.fn();
     const dispatcher = new LocalOrchestrationServiceSessionMainAgentDispatcher({
       resolveTurn,
@@ -720,9 +720,9 @@ describe('LocalOrchestrationServiceSessionMainAgentDispatcher', () => {
 
     expect(resolveTurn).not.toHaveBeenCalled();
     expect(result.responseMode).toBe('command_handoff_preview');
-    expect(result.requiresConfirmation).toBe(true);
+    expect(result.requiresConfirmation).toBe(false);
     expect(result.skillId).toBe('skill.onboard.adapters');
-    expect(result.handoffExecutionMode).toBe('preview_confirm');
+    expect(result.handoffExecutionMode).toBe('direct_execute');
     expect(result.commandBatches).toEqual([
       {
         slashQuery: '/connect',

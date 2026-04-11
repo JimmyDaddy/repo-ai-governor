@@ -174,7 +174,7 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
         executionIntent: 'skill.onboard.adapters',
         suggestedSlashCommand: 'adapter onboarding bundle',
         routerDecisionReason: 'session.main.router.command_bundle.onboard_adapters',
-        handoffExecutionMode: SESSION_MAIN_HANDOFF_EXECUTION_MODE.PREVIEW_CONFIRM,
+        handoffExecutionMode: SESSION_MAIN_HANDOFF_EXECUTION_MODE.DIRECT_EXECUTE,
         commandBatches: [
           this.createCommandBatch(
             '/connect',

@@ -589,6 +589,89 @@ describe('ReactCliRunner', () => {
     expect(output).not.toContain('Slash palette');
     expect(output).toContain('/wo');
   });
+
+  it('renders enough slash-palette rows to keep the full /workspace nested action set on one page', () => {
+    const runner = new ReactCliRunner();
+    const output = runner.renderSessionShellFrame({
+      sessionId: 'session-shell-workspace-palette',
+      shellMode: CliSessionShellMode.COMMAND_PALETTE,
+      inputMode: CliSessionShellInputMode.SLASH_COMMAND,
+      transcriptItems: [],
+      transcriptTitle: 'History',
+      composerTitle: 'Current input',
+      composerValue: '/workspace',
+      composerPlaceholder: 'Type a message, / for commands, or ? for shortcuts.',
+      slashQuery: '/workspace',
+      slashPaletteVisible: true,
+      slashSuggestions: [
+        {
+          command: '/workspace',
+          summary: 'Plan or execute workspace migration baseline.',
+          highlightSegments: [{ text: '/workspace', highlighted: false }],
+        },
+        {
+          command: '/workspace dry-run',
+          summary: 'Preview the workspace migration plan.',
+          highlightSegments: [{ text: '/workspace dry-run', highlighted: false }],
+        },
+        {
+          command: '/workspace execute',
+          summary: 'Apply the workspace migration plan.',
+          highlightSegments: [{ text: '/workspace execute', highlighted: false }],
+        },
+        {
+          command: '/workspace rollback',
+          summary: 'Restore the previous workspace surface.',
+          highlightSegments: [{ text: '/workspace rollback', highlighted: false }],
+        },
+        {
+          command: '/workspace clear-config',
+          summary: 'Remove the current governor workspace config.',
+          highlightSegments: [{ text: '/workspace clear-config', highlighted: false }],
+        },
+        {
+          command: '/workspace switch-branch',
+          summary: 'Switch the current repository branch.',
+          highlightSegments: [{ text: '/workspace switch-branch', highlighted: false }],
+        },
+        {
+          command: '/workspace set-ui-theme',
+          summary: 'Open the selector or persist one theme.',
+          highlightSegments: [{ text: '/workspace set-ui-theme', highlighted: false }],
+        },
+        {
+          command: '/workflow',
+          summary: 'Preview or enter the governed workflow definition surface.',
+          highlightSegments: [{ text: '/workflow', highlighted: false }],
+        },
+      ],
+      highlightedCommand: '/workspace',
+      slashPaletteTitle: 'Slash palette',
+      slashPaletteEmptyState: 'No slash commands matched.',
+      commandPreview: null,
+      handoffState: CliSessionShellHandoffState.IDLE,
+      cwd: '/workspace/repo',
+      workspaceSummary: 'workspace_id=repo mode=repo_local',
+      outputContract: ErrorOutputEnvironment.PRETTY,
+      persistenceOwner: CliSessionShellPersistenceOwner.LOCAL_ORCHESTRATION_SERVICE,
+      resumeSelector: 'latest',
+      foregroundInputOwner: CliSessionShellForegroundInputOwner.INK,
+      foregroundFocusTarget: CliSessionShellForegroundFocusTarget.PALETTE,
+      inputActionContract: [...CLI_SESSION_SHELL_INPUT_ACTION_CONTRACT],
+      title: 'Repo AI Governor session shell',
+      subtitle: 'Session-first preview baseline.',
+      promptBarTitle: 'Prompt bar',
+      promptBarLines: ['↑↓ · Tab/Enter · Esc'],
+    });
+
+    expect(output).toContain('/workspace dry-run');
+    expect(output).toContain('/workspace execute');
+    expect(output).toContain('/workspace rollback');
+    expect(output).toContain('/workspace clear-config');
+    expect(output).toContain('/workspace switch-branch');
+    expect(output).toContain('/workspace set-ui-theme');
+    expect(output).toContain('/workflow');
+  });
 });
 
 describe('ReactCliStderrFramePresenter', () => {

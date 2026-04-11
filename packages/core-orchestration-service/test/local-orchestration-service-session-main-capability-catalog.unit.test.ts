@@ -47,7 +47,8 @@ describe('LocalOrchestrationServiceSessionMainCapabilityCatalog', () => {
         interactionModel: 'pending_existence_review',
         primaryEntry: 'slash_command',
         backingExecution: 'pure_command',
-        confirmationRequired: true,
+        handoffExecutionMode: 'direct_execute',
+        confirmationRequired: false,
       }),
     ]);
   });

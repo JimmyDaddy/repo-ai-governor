@@ -17,7 +17,7 @@
 
 1. `runtime.cli-interactive-shell` 从“命令内 React shell 模块”升级为“命令内 shell + session-first shell”的统一模块。
 2. 无子命令默认入口仅在 `TTY + pretty + interactive + no subcommand` 条件下进入 session shell，其余路径继续保持原有 Commander 语义。
-3. session shell 采用“普通文本对话 + slash command 控制面 + command handoff preview/confirm”三段式交互，而不是把所有控制能力留在外层子命令树。
+3. session shell 采用“普通文本对话 + slash command 控制面 + governed command handoff 执行/回放”交互模型，而不是把所有控制能力留在外层子命令树。
 4. canonical session state 必须 service-owned，由 local orchestration service 托管；CLI 只做第一个 presenter/client。
 5. future desktop 必须消费同一份 service-backed session DTO，而不是实现第二套独立 session state。
 6. 顶层恢复入口允许 `resume`，但退出能力保留为会话内 `/exit` 与快捷键语义。
