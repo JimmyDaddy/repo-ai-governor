@@ -10,7 +10,12 @@ import {
   RuntimeError,
 } from '@repo-ai-governor/shared';
 import { CliDoctorCommand } from '../../src/commands/doctor-command.js';
-import type { CliCommandExecutorContext, CliCommandProgressEvent } from '../../src/types/index.js';
+import { CliGovernanceCheckStatus } from '../../src/constants/cli-governance-runtime.constant.js';
+import type {
+  CliAdapterVerificationResolution,
+  CliCommandExecutorContext,
+  CliCommandProgressEvent,
+} from '../../src/types/index.js';
 
 async function createDoctorCommandFixture(): Promise<{
   tempRoot: string;
@@ -56,6 +61,138 @@ function translateDoctorProgress(key: string, interpolation?: Record<string, str
   return key;
 }
 
+function createDoctorCommandContext(options: {
+  fixture: Awaited<ReturnType<typeof createDoctorCommandFixture>>;
+  progressEvents: CliCommandProgressEvent[];
+  adapterVerification?: CliAdapterVerificationResolution | null;
+  runtimeDebugOptions?: {
+    adapters: boolean;
+    fix: boolean;
+    dryRun: boolean;
+    overwrite: boolean;
+    singleToolAllRoles: boolean;
+    requestedTools: string[];
+    presetId: string;
+  };
+}): CliCommandExecutorContext {
+  const runtimeDebugOptions = options.runtimeDebugOptions ?? {
+    adapters: false,
+    fix: false,
+    dryRun: false,
+    overwrite: false,
+    singleToolAllRoles: false,
+    requestedTools: [],
+    presetId: 'multi_tool_default',
+  };
+
+  return {
+    options: {
+      currentWorkingDirectory: options.fixture.tempRoot,
+      workspace: {
+        workspaceId: 'workspace-doctor',
+        workspaceRoot: options.fixture.workspaceRoot,
+        configPath: options.fixture.configPath,
+        mode: 'repo_local',
+      },
+      configSource: 'default',
+      profileId: null,
+      memoryStoreProviderName: 'fs_csv',
+      memoryStoreRoot: options.fixture.memoryStoreRoot,
+      adaptersConfig: {
+        roles: [],
+        routing: {
+          roleBindings: {},
+        },
+        tools: [],
+      },
+      outputMode: ErrorOutputEnvironment.PRETTY,
+    },
+    progressSink: {
+      publish: (event: CliCommandProgressEvent) => {
+        options.progressEvents.push(event);
+      },
+    },
+    artifactWriter: {
+      writeTextArtifact: async (filePath: string, content: string) => {
+        await mkdir(dirname(filePath), { recursive: true });
+        await writeFile(filePath, content, 'utf8');
+      },
+      writeJsonArtifact: async (filePath: string, payload: unknown) => {
+        await mkdir(dirname(filePath), { recursive: true });
+        await writeFile(filePath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+      },
+      safeReadJson: async () => null,
+    },
+    onboardingRuntime: {
+      createOnboardingContractPayload: () => ({
+        commandName: 'doctor',
+      }),
+      resolveSelectedTools: () => [],
+    } as CliCommandExecutorContext['onboardingRuntime'],
+    agentProjectionRuntime: {
+      createCliAgentView: () => ({
+        descriptors: [],
+      }),
+      createDescriptorsFromRoleEvaluations: () => [],
+    } as CliCommandExecutorContext['agentProjectionRuntime'],
+    adapterDiagnosticsRuntime: {
+      createSafeLocalBoundaryArtifactPayload: () => ({
+        safeLocal: false,
+      }),
+      resolveToolProbeCheckStatus: () => CliGovernanceCheckStatus.PASS,
+      resolveToolProbeCheckDetail: () => 'tool-check',
+      createAdapterVerificationArtifactPayload: (verification: CliAdapterVerificationResolution) =>
+        verification,
+      createAdapterRoleProgressRows: () => [],
+      createAdapterInteractionPrompts: () => [],
+    } as CliCommandExecutorContext['adapterDiagnosticsRuntime'],
+    reviewQueueRuntime: {} as CliCommandExecutorContext['reviewQueueRuntime'],
+    orchestrationServiceRuntime: {} as CliCommandExecutorContext['orchestrationServiceRuntime'],
+    commandExperienceBuilder: {
+      buildExperiencePayload: (payload: unknown) => payload,
+    },
+    executeRunCommand: async () => {
+      throw new RuntimeError(
+        GovernorErrorCode.UNKNOWN,
+        'executeRunCommand is not used in doctor-command tests.',
+      );
+    },
+    calculateCheckTotals: (checks: Array<{ status: string }>) => ({
+      pass: checks.filter((check) => check.status === 'pass').length,
+      warn: checks.filter((check) => check.status === 'warn').length,
+      fail: checks.filter((check) => check.status === 'fail').length,
+    }),
+    buildDefaultConfigContent: () => 'schemaVersion: "1.1"\n',
+    toRfc3339SecondsTimestamp: (value: Date) => value.toISOString().replace(/\.\d{3}Z$/u, 'Z'),
+    formatExecFailureDetail: (error: unknown) => String(error),
+    resolveRuntimeDebugOptions: () => runtimeDebugOptions as never,
+    resolveExecutionStreamMetadata: async () => ({}),
+    resolveAdapterVerification: async () => {
+      if (!options.adapterVerification) {
+        throw new RuntimeError(
+          GovernorErrorCode.UNKNOWN,
+          'resolveAdapterVerification is not used in doctor-command tests.',
+        );
+      }
+      return options.adapterVerification;
+    },
+    resolveAdapterVerificationForConfig: async () => {
+      throw new RuntimeError(
+        GovernorErrorCode.UNKNOWN,
+        'resolveAdapterVerificationForConfig is not used in doctor-command tests.',
+      );
+    },
+    validateGovernorConfig: (candidate: unknown) => candidate as never,
+    canWritePath: async () => true,
+    localizeText: (english: string) => english,
+    translate: translateDoctorProgress,
+    runNodeScript: async () => ({
+      stdout: '',
+      stderr: '',
+    }),
+  } as unknown as CliCommandExecutorContext;
+}
+
 describe('CliDoctorCommand', () => {
   it('emits workspace and diagnostics progress events before completing', async () => {
     const fixture = await createDoctorCommandFixture();
@@ -63,102 +200,10 @@ describe('CliDoctorCommand', () => {
     const command = new CliDoctorCommand();
 
     try {
-      const context = {
-        options: {
-          currentWorkingDirectory: fixture.tempRoot,
-          workspace: {
-            workspaceId: 'workspace-doctor',
-            workspaceRoot: fixture.workspaceRoot,
-            configPath: fixture.configPath,
-            mode: 'repo_local',
-          },
-          configSource: 'default',
-          profileId: null,
-          memoryStoreProviderName: 'fs_csv',
-          memoryStoreRoot: fixture.memoryStoreRoot,
-          adaptersConfig: {
-            roles: [],
-            routing: {
-              roleBindings: {},
-            },
-            tools: [],
-          },
-          outputMode: ErrorOutputEnvironment.PRETTY,
-        },
-        progressSink: {
-          publish: (event: CliCommandProgressEvent) => {
-            progressEvents.push(event);
-          },
-        },
-        artifactWriter: {
-          writeTextArtifact: async (filePath: string, content: string) => {
-            await mkdir(dirname(filePath), { recursive: true });
-            await writeFile(filePath, content, 'utf8');
-          },
-          writeJsonArtifact: async (filePath: string, payload: unknown) => {
-            await mkdir(dirname(filePath), { recursive: true });
-            await writeFile(filePath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
-          },
-          safeReadJson: async () => null,
-        },
-        onboardingRuntime: {} as CliCommandExecutorContext['onboardingRuntime'],
-        agentProjectionRuntime: {} as CliCommandExecutorContext['agentProjectionRuntime'],
-        adapterDiagnosticsRuntime: {
-          createSafeLocalBoundaryArtifactPayload: () => ({
-            safeLocal: false,
-          }),
-        } as CliCommandExecutorContext['adapterDiagnosticsRuntime'],
-        reviewQueueRuntime: {} as CliCommandExecutorContext['reviewQueueRuntime'],
-        orchestrationServiceRuntime: {} as CliCommandExecutorContext['orchestrationServiceRuntime'],
-        commandExperienceBuilder: {
-          buildExperiencePayload: (payload: unknown) => payload,
-        },
-        executeRunCommand: async () => {
-          throw new RuntimeError(
-            GovernorErrorCode.UNKNOWN,
-            'executeRunCommand is not used in doctor-command tests.',
-          );
-        },
-        calculateCheckTotals: (checks: Array<{ status: string }>) => ({
-          pass: checks.filter((check) => check.status === 'pass').length,
-          warn: checks.filter((check) => check.status === 'warn').length,
-          fail: checks.filter((check) => check.status === 'fail').length,
-        }),
-        buildDefaultConfigContent: () => 'schemaVersion: "1.1"\n',
-        toRfc3339SecondsTimestamp: (value: Date) => value.toISOString().replace(/\.\d{3}Z$/u, 'Z'),
-        formatExecFailureDetail: (error: unknown) => String(error),
-        resolveRuntimeDebugOptions: () =>
-          ({
-            adapters: false,
-            fix: false,
-            dryRun: false,
-            overwrite: false,
-            singleToolAllRoles: false,
-            requestedTools: [],
-            presetId: 'multi_tool_default',
-          }) as never,
-        resolveExecutionStreamMetadata: async () => ({}),
-        resolveAdapterVerification: async () => {
-          throw new RuntimeError(
-            GovernorErrorCode.UNKNOWN,
-            'resolveAdapterVerification is not used in doctor-command tests.',
-          );
-        },
-        resolveAdapterVerificationForConfig: async () => {
-          throw new RuntimeError(
-            GovernorErrorCode.UNKNOWN,
-            'resolveAdapterVerificationForConfig is not used in doctor-command tests.',
-          );
-        },
-        validateGovernorConfig: (candidate: unknown) => candidate as never,
-        canWritePath: async () => true,
-        localizeText: (english: string) => english,
-        translate: translateDoctorProgress,
-        runNodeScript: async () => ({
-          stdout: '',
-          stderr: '',
-        }),
-      } as unknown as CliCommandExecutorContext;
+      const context = createDoctorCommandContext({
+        fixture,
+        progressEvents,
+      });
 
       const result = await command.execute(context);
 
@@ -183,6 +228,83 @@ describe('CliDoctorCommand', () => {
           id: 'doctor-diagnostics',
         },
       });
+    } finally {
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('downgrades warning-bearing default secret backends in doctor output and preserves warning text', async () => {
+    const fixture = await createDoctorCommandFixture();
+    const progressEvents: CliCommandProgressEvent[] = [];
+    const command = new CliDoctorCommand();
+    const verification: CliAdapterVerificationResolution = {
+      overallStatus: CliGovernanceCheckStatus.WARN,
+      tools: [],
+      roleEvaluations: [],
+      requiredRoleCount: 0,
+      requiredRoleFailedCount: 0,
+      degradedRoleCount: 0,
+      fallbackRoleCount: 0,
+      nextActions: [
+        'No default secret backend is available for these credential references: codex:secret://openai/api-key. Run `secret status` to inspect backend support, or opt into `--backend unsafe-local-file` only if you accept the local-only plaintext fallback.',
+      ],
+      secretBackends: {
+        selectedBackendId: 'unsafe-local-file',
+        defaultBackendId: 'unsafe-local-file',
+        indexPath: '/tmp/test-secret-index.json',
+        backends: [
+          {
+            backendId: 'unsafe-local-file',
+            available: true,
+            detail: '/tmp/test-secrets.json',
+            warning: 'plaintext fallback',
+          },
+        ],
+      },
+      credentialReferences: [],
+    };
+
+    try {
+      const context = createDoctorCommandContext({
+        fixture,
+        progressEvents,
+        adapterVerification: verification,
+        runtimeDebugOptions: {
+          adapters: true,
+          fix: false,
+          dryRun: false,
+          overwrite: false,
+          singleToolAllRoles: false,
+          requestedTools: [],
+          presetId: 'multi_tool_default',
+        },
+      });
+
+      const result = await command.execute(context);
+      const defaultBackendCheck = result.commandResult.checks.find(
+        (check) => check.id === 'secret_backend_default',
+      );
+      const unsafeBackendCheck = result.commandResult.checks.find(
+        (check) => check.id === 'secret_backend_unsafe-local-file',
+      );
+
+      expect(defaultBackendCheck).toMatchObject({
+        status: CliGovernanceCheckStatus.WARN,
+      });
+      expect(defaultBackendCheck?.detail).toContain('unsafe-local-file');
+      expect(defaultBackendCheck?.detail).toContain('plaintext fallback');
+      expect(unsafeBackendCheck).toMatchObject({
+        status: CliGovernanceCheckStatus.WARN,
+      });
+      expect(unsafeBackendCheck?.detail).toContain('/tmp/test-secrets.json');
+      expect(unsafeBackendCheck?.detail).toContain('warning=plaintext fallback');
+      expect(
+        progressEvents.some(
+          (event) =>
+            event.row?.id === 'adapter-verification' &&
+            event.row.status === ExecutionProgressStatus.WARNING,
+        ),
+      ).toBe(true);
     } finally {
       await rm(fixture.tempRoot, { recursive: true, force: true });
     }

@@ -1,7 +1,7 @@
 # Runtime Governance Clients Module Overview
 
 - Status: active
-- Date: 2026-04-09
+- Date: 2026-04-11
 - Module ID: `runtime.governance-clients`
 - Owner: runtime
 - Layer: `runtime-core`
@@ -24,6 +24,7 @@
 10. 为 multi-workspace overview、parallel execution lane、background queue、notification ownership 与 host-native rollout phase map 提供正式方向，但不宣称这些方向已在代码面全部交付。
 11. 为 adopter truthfulness、real adapter invocation、secondary surface sequencing、GA evidence consolidation、standards runtime productization 与 adoption-pack installer rollout 提供 planning-side formal direction，但不把路线图判断误报为已完成交付。
 12. 为 current surface baseline classification、host-native lifecycle carry slot 与 follow-up decomposition 提供 planning-side formal direction，但不把路线图判断误报为已完成交付。
+13. 正式拥有 `config` / `secret` command family、session shell `/config` / `/secret` discoverability 与 `~/.repo-ai-governor/user-config.yaml` authoring UX 的 host-facing boundary；这些 surface 只能写入 user-private defaults、`credentialRef` selector 与 secret backend mutation request，不得把 raw secret value 或 user-config path 冒充为 runtime canonical truth。
 
 ## 3. 非目标
 
@@ -34,6 +35,7 @@
 5. 不把 GitHub-only cloud console 当作当前产品主线。
 6. 不把 exported host assets 当作 workflow canonical source。
 7. 不再以 GitHub App Copilot Extensions 作为 GitHub Copilot 的正式分发路径。
+8. 不让 `config` / `secret` command surface 默认改写共享 `governor.yaml` 或在宿主 UI 内长期维护第二份配置状态；共享治理真值仍由 canonical workspace surfaces 承担。
 
 ## 4. North Star References
 
@@ -53,12 +55,14 @@
 1. `contract.runtime.governance-surface-client.v1`
 2. `contract.runtime.governance-host-distribution.v1`
 3. `contract.runtime.adoption-pack-install.v1`
+4. `contract.runtime.governance-local-config-and-secret-command.v1`
 
 ## 7. Loading Guidance
 
 1. 命中 `technical_solution_module_change`、`technical_solution_promotion_change`、`desktop_surface_change`、`ide_surface_change`、`command_surface_change` 或 `runtime_contract_change` 时加载。
 2. 默认只加载 overview 与 direct contract/ADR，不递归展开 desktop、IDE 或 host renderer 具体实现文件。
 3. 当问题涉及 desktop / VS Code / CLI 的职责拆分、surface handoff、multi-surface continuity、service-owned client boundary、host target matrix、staged/apply/pack/verify 语义时，优先补载本模块。
+4. 当问题涉及 `config` / `secret` command family、`user-config.yaml` authoring UX、session shell discoverability 或本机 secret 管理 guidance 时，也应优先补载本模块。
 
 ## 8. Cutover Notes
 
@@ -81,11 +85,17 @@
    - 当前 follow-up order 固定重置为 `project-062 -> project-063 -> project-067 -> project-064 -> project-065 -> project-066`。
    - adopter-facing distribution truth lane 由 `project-063 + project-067` 共同承接。
    - `project-068` 专门承接 `local-model` 与 `github-com-agent` 的 `P2 deferred` follow-up。
+9. 截至 `2026-04-11`，`v4` 进一步接受 local user config / secret-backed command configuration direction：
+   - `config` 成为用户级私有默认值的正式 command family，canonical path 固定为 `~/.repo-ai-governor/user-config.yaml`。
+   - `secret` 成为本机 secret backend mutation surface，真实 secret 只允许进入 OS keychain / helper 或显式 opt-in 的 unsafe fallback backend。
+   - session shell `/config`、`/secret` 只承担 discoverability 与 handoff affordance，不形成新的 runtime truth。
+   - `runtime.governance-clients` 负责 authoring UX 与 host-facing copy，`runtime.agent-projection` 继续负责 canonical normalization 与 read-only consumption。
 
 ## 9. Detail Docs
 
 1. Contract:
    - `contracts/governance-surface-client-contract.md`
+   - `contracts/local-user-config-and-secret-command-contract.md`
    - `contracts/governance-host-distribution-contract.md`
    - `contracts/governance-adoption-pack-install-contract.md`
 2. ADR:

@@ -21,6 +21,8 @@ const TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.commands.theme.summary': 'Inspect or update the theme.',
   'cli.sessionShell.commands.agent.summary': 'Inspect the current foreground route.',
   'cli.commands.init.description': 'Initialize governor workspace baseline.',
+  'cli.commands.config.description': 'Inspect or update user-level default configuration.',
+  'cli.commands.secret.description': 'Manage secret entries through configured local backends.',
   'cli.commands.workspace.description': 'Plan or execute workspace migration baseline.',
   'cli.commands.workspace.actionGuideDryRun':
     'Preview the workspace migration plan; requires --workspace-mode <repo_local|tool_managed>.',
@@ -114,6 +116,8 @@ describe('CliSessionSlashCommandRegistry', () => {
     expect(suggestions.map((suggestion) => suggestion.command)).toContain('/unarchive');
     expect(suggestions.map((suggestion) => suggestion.command)).toContain('/workflow');
     expect(suggestions.map((suggestion) => suggestion.command)).toContain('/plan sync');
+    expect(suggestions.map((suggestion) => suggestion.command)).toContain('/config');
+    expect(suggestions.map((suggestion) => suggestion.command)).toContain('/secret');
     expect(suggestions.map((suggestion) => suggestion.command)).toContain('/workspace dry-run');
     expect(suggestions.map((suggestion) => suggestion.command)).toContain('/workspace execute');
     expect(suggestions.map((suggestion) => suggestion.command)).toContain('/workspace rollback');
@@ -213,6 +217,14 @@ describe('CliSessionSlashCommandRegistry', () => {
       summary:
         'Switch the current repository to an existing local git branch through the governed workspace flow.',
     });
+    expect(registry.findByCommand('/config set ui.react.theme calm', translate)).toEqual({
+      command: '/config',
+      summary: 'Inspect or update user-level default configuration.',
+    });
+    expect(registry.findByCommand('/secret set api.token abc', translate)).toEqual({
+      command: '/secret',
+      summary: 'Manage secret entries through configured local backends.',
+    });
     expect(
       registry.findByCommand('/workspace dry-run --workspace-mode repo_local', translate),
     ).toEqual({
@@ -297,6 +309,20 @@ describe('CliSessionSlashCommandRegistry', () => {
         summaryKey: 'cli.sessionShell.commands.planSync.summary',
       },
     );
+    expect(registry.resolveAction('/config set ui.react.theme calm')).toEqual({
+      bridgeArgv: ['config', 'set', 'ui.react.theme', 'calm'],
+      command: '/config',
+      executionMode: 'direct',
+      kind: 'bridge',
+      summaryKey: 'cli.commands.config.description',
+    });
+    expect(registry.resolveAction('/SECRET list')).toEqual({
+      bridgeArgv: ['secret', 'list'],
+      command: '/secret',
+      executionMode: 'direct',
+      kind: 'bridge',
+      summaryKey: 'cli.commands.secret.description',
+    });
     expect(
       registry.resolveAction(
         '/PLAN SYNC commit ./Context/Plan/MyPreview.preview.json --confirm-plan approve',

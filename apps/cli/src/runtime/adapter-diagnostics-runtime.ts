@@ -110,6 +110,8 @@ export class CliAdapterDiagnosticsRuntime {
       fallbackRoleCount: verification.fallbackRoleCount,
       failureAttributionSummary: this.createFailureAttributionSummary(verification),
       nextActions: [...verification.nextActions],
+      secretBackends: verification.secretBackends,
+      credentialReferences: verification.credentialReferences,
       tools: verification.tools.map((tool) => ({
         toolId: tool.toolId,
         enabled: tool.enabled,

@@ -702,7 +702,7 @@ documents:
       - technical_solution_module_change
       - technical_solution_promotion_change
     owner: runtime
-    last_reviewed_at: 2026-04-04
+    last_reviewed_at: 2026-04-11
 
   - doc_id: technical_solution_runtime_agent_projection_onboarding_contract
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/contracts/agent-onboarding-contract.md
@@ -717,7 +717,7 @@ documents:
       - technical_solution_module_change
       - technical_solution_promotion_change
     owner: runtime
-    last_reviewed_at: 2026-04-02
+    last_reviewed_at: 2026-04-11
 
   - doc_id: technical_solution_runtime_agent_projection_projection_contract
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/contracts/agent-projection-contract.md
@@ -732,7 +732,7 @@ documents:
       - technical_solution_module_change
       - technical_solution_promotion_change
     owner: runtime
-    last_reviewed_at: 2026-04-04
+    last_reviewed_at: 2026-04-11
 
   - doc_id: technical_solution_runtime_agent_projection_health_check_contract
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/contracts/adapter-health-and-route-probe-contract.md
@@ -838,6 +838,20 @@ documents:
       - technical_solution_promotion_change
     owner: runtime
     last_reviewed_at: 2026-04-02
+
+  - doc_id: technical_solution_runtime_agent_projection_local_user_config_secret_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/local-user-config-defaults-and-secret-backed-credential-resolution.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - runtime_contract_change
+      - adapter_change
+      - command_surface_change
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+    owner: runtime
+    last_reviewed_at: 2026-04-11
 
   - doc_id: technical_solution_runtime_agent_projection_transport_selection_authority_adr
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/transport-selection-authority-and-strict-transport-routing.md
@@ -986,7 +1000,7 @@ documents:
       - ide_surface_change
       - command_surface_change
     owner: runtime
-    last_reviewed_at: 2026-04-08
+    last_reviewed_at: 2026-04-11
 
   - doc_id: runtime_governance_surface_client_contract
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/governance-surface-client-contract.md
@@ -1002,6 +1016,21 @@ documents:
       - command_surface_change
     owner: runtime
     last_reviewed_at: 2026-04-05
+
+  - doc_id: runtime_governance_local_user_config_secret_command_contract
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/local-user-config-and-secret-command-contract.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - runtime_contract_change
+      - command_surface_change
+      - desktop_surface_change
+      - ide_surface_change
+    owner: runtime
+    last_reviewed_at: 2026-04-11
 
   - doc_id: runtime_governance_host_distribution_contract
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/governance-host-distribution-contract.md

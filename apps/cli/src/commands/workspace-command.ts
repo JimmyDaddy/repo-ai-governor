@@ -71,7 +71,7 @@ interface CliWorkspaceCommandDependencies {
   viewModelBuilder?: ReactCliCommandViewModelBuilder;
   globalThemePreferenceService?: Pick<
     GlobalCliThemePreferenceService,
-    'loadThemePreference' | 'renderPreferenceContent' | 'resolvePreferencePath'
+    'loadThemePreference' | 'renderMergedPreferenceContent' | 'resolvePreferencePath'
   >;
   themeSelectRunner?: Pick<CliThemeSelectReactShellRunner, 'run'>;
 }
@@ -96,7 +96,7 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
   private readonly viewModelBuilder: ReactCliCommandViewModelBuilder;
   private readonly globalThemePreferenceService: Pick<
     GlobalCliThemePreferenceService,
-    'loadThemePreference' | 'renderPreferenceContent' | 'resolvePreferencePath'
+    'loadThemePreference' | 'renderMergedPreferenceContent' | 'resolvePreferencePath'
   >;
   private readonly themeSelectRunner: Pick<CliThemeSelectReactShellRunner, 'run'>;
 
@@ -2310,7 +2310,11 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
       this.globalThemePreferenceService.resolvePreferencePath();
     await context.artifactWriter.writeTextArtifact(
       preferencePath,
-      this.globalThemePreferenceService.renderPreferenceContent(themePreset),
+      this.globalThemePreferenceService.renderMergedPreferenceContent({
+        themePreset,
+        environment: context.options.environment,
+        preferencePath,
+      }),
     );
     return [preferencePath];
   }

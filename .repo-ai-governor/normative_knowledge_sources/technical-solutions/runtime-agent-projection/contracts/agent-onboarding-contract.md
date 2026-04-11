@@ -1,7 +1,7 @@
 # Agent Onboarding Contract
 
 - Status: active
-- Date: 2026-04-09
+- Date: 2026-04-11
 - Contract ID: `contract.runtime.agent-onboarding.v1`
 - Producer Module: `runtime.agent-projection`
 
@@ -60,10 +60,12 @@
 8. `enabled_tools[]` row 必须显式带出 `transport_kind`；只有 `baseline / cli_exec` row 才允许 `provider_kind` 与 `vendor_binding_kind` 为 `null`。
 9. 当 tool row 显式声明 `transport` 时，`enabled_tools[]` 必须把该 `transport_kind` 作为 authoritative selection 原样投影；同一 surface 的其他 transport 不得被投影为本次成功结果的等价替身。
 10. 当 `connect` 生成 `remote_api` candidate config 时，必须 materialize `transport`、`remoteApi.provider`、`remoteApi.vendorBinding`、`remoteApi.model` 以及 credential / endpoint selector。
-11. `enabled_tools[]` 应允许稳定带出 `transport_selection_source`、`transport_selection_locked` 与 `configured_remote_api`；其中 `transport_selection_locked=true` 仅表示当前 row 已显式声明 `transport`。
-12. 若兼容期仍输出 `tool_transport_matrix`，它必须完全由 `enabled_tools[]` 机械派生，不得承载额外 canonical truth；`remote_api_candidate` 只允许作为 `configured_remote_api` 的 compatibility alias。
-13. `connect / doctor / verify` 可以做 repo config、env、`credentialRef`、provider-local config 与官方 auth path 的 read-only discovery，但不得静默写入 keychain、credential manager 或 provider-owned config。
-14. 认证修复、secret 创建更新、provider login 与 transport 切换必须通过显式 `next_action` / `next_actions[]` 暴露，而不是在 analyze-first 路径中隐式完成。
+11. 当默认值来自 `~/.repo-ai-governor/user-config.yaml` 时，CLI 显式参数与活动 workspace `governor.yaml` 仍保持更高优先级；`user-config.yaml` 只能补齐缺失默认值，不得覆盖 repo / workspace 已显式声明的治理真值。
+12. `user-config.yaml` 可以使用 authoring-friendly path（例如 `workspace.mode_preference`、`tools.<surface>.remoteApi.*`），但 contract payload 只能暴露已归一化的 canonical truth：`enabled_tools[]`、`configured_remote_api` 与兼容期 derived alias；不得把 raw authoring path 升格为第二事实源。
+13. `enabled_tools[]` 应允许稳定带出 `transport_selection_source`、`transport_selection_locked` 与 `configured_remote_api`；其中 `transport_selection_locked=true` 仅表示当前 row 已显式声明 `transport`。
+14. 若兼容期仍输出 `tool_transport_matrix`，它必须完全由 `enabled_tools[]` 机械派生，不得承载额外 canonical truth；`remote_api_candidate` 只允许作为 `configured_remote_api` 的 compatibility alias。
+15. `connect / doctor / verify` 可以做 repo config、env、`credentialRef`、provider-local config 与官方 auth path 的 read-only discovery，但不得静默写入 keychain、credential manager 或 provider-owned config。
+16. 认证修复、secret 创建更新、provider login 与 transport 切换必须通过显式 `next_action` / `next_actions[]` 暴露，而不是在 analyze-first 路径中隐式完成。
 
 ## 5. Output Semantics
 
@@ -74,6 +76,8 @@
 5. `enabled_tools[]` 应允许稳定表达 `transport_kind`、`provider_kind`、`vendor_binding_kind`、`model`、`credential_mode`、`endpoint_source`、`transport_selection_source`、`transport_selection_locked` 与 `configured_remote_api`，供 presenter 与 routing consumer 共享同一真值。
 6. 当 `remote_api.vendorBinding` 在用户配置中省略时，onboarding runtime 必须先把其解析为确定的 `vendor_binding_kind` 再输出；无法唯一解析时必须 fail-closed。
 7. 当显式选择的 transport 不可用时，contract payload 必须保留失败的 `transport_kind` 真值，并通过 `next_actions[]` 给出显式切换建议，而不是在 payload 内回写同 surface 的替代 transport。
+8. 当 `credentialRef` 来自 `user-config.yaml` 或 workspace config 但 secret backend 中尚不存在对应 secret 时，payload 必须保留 `credential_mode=credential_ref` 的 candidate truth，并通过 `create_credential_ref` 或等价 `secret set/import` guidance 暴露修复方向，而不是在 onboarding 流程里隐式创建 secret。
+9. `workspace.mode_preference` 只允许在 repo / workspace 未显式声明 `workspace.mode` 时参与 candidate 生成；一旦上层已有显式 mode，onboarding payload 不得把 user-local preference 反向投影为 canonical workspace truth。
 
 ## 6. Compatibility
 

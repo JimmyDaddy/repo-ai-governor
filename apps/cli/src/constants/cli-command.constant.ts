@@ -5,6 +5,8 @@ export const CLI_PROGRAM_NAME = 'repo-ai-governor';
 
 export enum CliCommandName {
   INIT = 'init',
+  CONFIG = 'config',
+  SECRET = 'secret',
   CONNECT = 'connect',
   DOCTOR = 'doctor',
   CHECK = 'check',
@@ -22,6 +24,8 @@ export enum CliCommandName {
 
 export const CLI_COMMAND_DEFINITIONS = [
   { name: CliCommandName.INIT, descriptionKey: 'cli.commands.init.description' },
+  { name: CliCommandName.CONFIG, descriptionKey: 'cli.commands.config.description' },
+  { name: CliCommandName.SECRET, descriptionKey: 'cli.commands.secret.description' },
   { name: CliCommandName.CONNECT, descriptionKey: 'cli.commands.connect.description' },
   { name: CliCommandName.DOCTOR, descriptionKey: 'cli.commands.doctor.description' },
   { name: CliCommandName.CHECK, descriptionKey: 'cli.commands.check.description' },
@@ -42,6 +46,8 @@ export const CLI_COMMAND_DEFINITIONS = [
  */
 export const CLI_COMMAND_NAMES = [
   CliCommandName.INIT,
+  CliCommandName.CONFIG,
+  CliCommandName.SECRET,
   CliCommandName.CONNECT,
   CliCommandName.DOCTOR,
   CliCommandName.CHECK,

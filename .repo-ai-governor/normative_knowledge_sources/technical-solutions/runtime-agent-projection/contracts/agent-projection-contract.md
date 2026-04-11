@@ -1,7 +1,7 @@
 # Agent Projection Contract
 
 - Status: active
-- Date: 2026-04-09
+- Date: 2026-04-11
 - Contract ID: `contract.runtime.agent-projection.v1`
 - Producer Module: `runtime.agent-projection`
 
@@ -71,6 +71,8 @@
 8. fallback 决策必须能区分“surface 不可用”和“同 surface 的 remote_api binding 不可用”。
 9. 当 `selected_transport` 来自显式 tool config 或 candidate config 时，projection / replay truth 必须把该 transport 视为 locked selection；同一 surface 内失败不得被自动重写为另一种 transport 的成功执行。
 10. 如果 consumer 想建议 `switch_to_cli_exec` 或其他替代 route，只能通过 descriptor companion diagnostics / next-action surface 暴露，不得篡改当前 `AgentDescriptor` 的 canonical transport truth。
+11. `selected_transport / selected_provider_kind / selected_vendor_binding_kind / selected_model` 可以来自 CLI 参数、workspace config 或 `user-config` 默认值，但前提是这些输入已先被 onboarding runtime 归一化为 canonical tool rows；raw `user-config` path 不得直接进入 `AgentDescriptor`。
+12. `workspace_mode=repo_local` 只允许在 repo / workspace 未显式声明 `workspace.mode` 时由 `workspace.mode_preference` 派生；user-local preference 不得覆盖共享 workspace truth。
 
 ## 5. Provider Continuation Extension
 

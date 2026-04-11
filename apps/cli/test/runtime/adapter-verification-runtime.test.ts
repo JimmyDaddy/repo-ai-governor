@@ -29,6 +29,7 @@ import {
 import { CliAdapterRoutingRuntime } from '../../src/runtime/adapter-routing-runtime.js';
 import { CliAdapterVerificationRuntime } from '../../src/runtime/adapter-verification-runtime.js';
 import { CliLocalModelProbeRuntime } from '../../src/runtime/local-model-probe-runtime.js';
+import type { CliSecretService } from '../../src/runtime/secrets/cli-secret-service.js';
 
 function createProbeResult(
   surface: AdapterSurface,
@@ -70,6 +71,51 @@ function createProbeResult(
     },
     unavailableReasons: [],
   };
+}
+
+function createMockSecretService(
+  options: {
+    defaultBackendId?: string | null;
+    selectedBackendId?: string | null;
+    backends?: Array<{
+      backendId: string;
+      available: boolean;
+      detail: string;
+      warning?: string | null;
+    }>;
+    resolvedSecrets?: Record<
+      string,
+      {
+        backendId: string;
+        value: string;
+      }
+    >;
+  } = {},
+): CliSecretService {
+  const resolvedSecrets = options.resolvedSecrets ?? {};
+  const backends = options.backends ?? [];
+
+  return {
+    setLocalizeText: vi.fn(),
+    getStatus: vi.fn(async () => ({
+      selectedBackendId: options.selectedBackendId ?? options.defaultBackendId ?? null,
+      defaultBackendId: options.defaultBackendId ?? null,
+      indexPath: '/tmp/test-secret-index.json',
+      backends,
+    })),
+    resolveSecretValue: vi.fn(async ({ selector }: { selector: string }) => {
+      const resolvedSecret = resolvedSecrets[selector];
+      if (!resolvedSecret) {
+        return null;
+      }
+      return {
+        keyName: selector.replace(/^secret:\/\//u, ''),
+        backendId: resolvedSecret.backendId,
+        value: resolvedSecret.value,
+      };
+    }),
+    parseSelector: vi.fn((selector: string) => selector.replace(/^secret:\/\//u, '')),
+  } as unknown as CliSecretService;
 }
 
 describe('Cli adapter verification runtime', () => {
@@ -276,6 +322,9 @@ describe('Cli adapter verification runtime', () => {
       (error) => standardizeError(error).message,
       adapterRoutingRuntime,
       localProbeRuntime,
+      createMockSecretService(),
+      (english: string) => english,
+      {},
     );
 
     const verification = await runtime.resolveAdapterVerification();
@@ -588,6 +637,9 @@ describe('Cli adapter verification runtime', () => {
       (error) => standardizeError(error).message,
       adapterRoutingRuntime,
       localProbeRuntime,
+      createMockSecretService(),
+      (english: string) => english,
+      {},
     );
 
     const verification = await runtime.resolveAdapterVerification();
@@ -595,9 +647,454 @@ describe('Cli adapter verification runtime', () => {
     expect(verification.nextActions).toContain(
       'Remote-api credential discovery stays read-only here; verify provider-local login state manually for: claude-code:provider-local.',
     );
-    expect(verification.nextActions).toContain(
-      'Remote-api credential references cannot be materialized automatically; resolve them manually for: codex:secret://openai/api-key.',
+    expect(
+      verification.nextActions.some(
+        (action) =>
+          action.includes('secret://openai/api-key') && action.includes('unsafe-local-file'),
+      ),
+    ).toBe(true);
+  });
+
+  it('prefers create/import guidance when a default secret backend is available', async () => {
+    const i18nRuntime = new I18nRuntime();
+    await i18nRuntime.initialize(DEFAULT_I18N_RUNTIME_CONFIG, 'en-US');
+    const adaptersConfig: AdaptersConfig = {
+      roles: [
+        {
+          roleId: 'coder',
+          roleProfileId: DefaultRoleProfileId.CODER,
+          requiredCapabilities: [AgentCapability.TOOL_CALLING],
+          required: true,
+        },
+      ],
+      routing: {
+        roleBindings: {
+          coder: {
+            primarySurface: AdapterSurface.CODEX,
+          },
+        },
+      },
+      tools: [
+        {
+          toolId: AdapterSurface.CODEX,
+          enabled: true,
+          availability: AdapterAvailability.AVAILABLE,
+          transport: AdapterTransportKind.REMOTE_API,
+          remoteApi: {
+            provider: AdapterProviderKind.OPENAI,
+            vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+            model: 'gpt-5',
+            credentialRef: 'secret://openai/api-key',
+          },
+        },
+      ],
+    };
+    const codexToolConfig = adaptersConfig.tools?.[0];
+    expect(codexToolConfig).toBeDefined();
+    const toolConfigBySurface = new Map([
+      [AdapterSurface.CODEX, codexToolConfig as NonNullable<AdaptersConfig['tools']>[number]],
+    ]);
+    const localProbeRuntime = new CliLocalModelProbeRuntime(
+      undefined,
+      async () => undefined,
+      (error) => standardizeError(error).message,
     );
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      adaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createToolConfigBySurfaceMap: () => typeof toolConfigBySurface;
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+      resolveRoleBindingCandidateSurfaces: (
+        roleBinding: AdaptersConfig['routing']['roleBindings'][string],
+      ) => AdapterSurface[];
+      resolveTrackedAdapterSurfaces: (
+        trackedToolConfigBySurface?: typeof toolConfigBySurface,
+      ) => AdapterSurface[];
+    };
+    adapterRoutingRuntime.createToolConfigBySurfaceMap = () => toolConfigBySurface;
+    adapterRoutingRuntime.createProtocolBySurface = () => protocolBySurface;
+    adapterRoutingRuntime.resolveRoleBindingCandidateSurfaces = (roleBinding) => [
+      roleBinding.primarySurface,
+    ];
+    adapterRoutingRuntime.resolveTrackedAdapterSurfaces = (trackedToolConfigBySurface) =>
+      Array.from((trackedToolConfigBySurface ?? new Map()).keys());
+    const protocolBySurface: Record<string, AgentProtocolContract> = {
+      [AdapterSurface.CODEX]: {
+        probe: async () => ({
+          ...createProbeResult(
+            AdapterSurface.CODEX,
+            AgentCapability.TOOL_CALLING,
+            AgentCapabilitySupportLevel.SUPPORTED,
+          ),
+          availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+          unavailableReasons: ['credential_missing:codex:secret://openai/api-key'],
+          healthCheck: buildLayeredHealthCheckResult({
+            adapterId: 'codex-agent',
+            surfaceId: AdapterSurface.CODEX,
+            availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+            selectedEntrypoint: AdapterSurface.CODEX,
+            routeKey: 'cli.adapter.probe.codex',
+            unavailableReasons: ['credential_missing:codex:secret://openai/api-key'],
+            transportKind: AdapterTransportKind.REMOTE_API,
+            providerKind: AdapterProviderKind.OPENAI,
+            vendorBindingKind: AdapterVendorBindingKind.OPENAI_RESPONSES,
+            model: 'gpt-5',
+            credentialSource: AdapterCredentialSource.CREDENTIAL_REF,
+            endpointSource: AdapterEndpointSource.VENDOR_DEFAULT,
+          }),
+        }),
+        invokeStage: async () => {
+          throw new RuntimeError(
+            GovernorErrorCode.UNKNOWN,
+            'invokeStage not used in verification unit test',
+          );
+        },
+        streamEvents: async function* () {},
+        requestConfirmation: async () => {
+          throw new RuntimeError(
+            GovernorErrorCode.UNKNOWN,
+            'requestConfirmation not used in verification unit test',
+          );
+        },
+        cancel: async () => {
+          throw new RuntimeError(
+            GovernorErrorCode.UNKNOWN,
+            'cancel not used in verification unit test',
+          );
+        },
+      },
+    };
+    const runtime = new CliAdapterVerificationRuntime(
+      adaptersConfig,
+      (key, interpolation) => i18nRuntime.t(key, interpolation),
+      (error) => standardizeError(error).message,
+      adapterRoutingRuntime,
+      localProbeRuntime,
+      createMockSecretService({
+        defaultBackendId: 'macos-keychain',
+        backends: [
+          {
+            backendId: 'macos-keychain',
+            available: true,
+            detail: 'ready',
+          },
+        ],
+      }),
+      (english: string) => english,
+      {},
+    );
+
+    const verification = await runtime.resolveAdapterVerification();
+
+    expect(verification.nextActions).toContain(
+      'Create or import the missing secret-backed remote-api credentials before connect/doctor: codex:secret://openai/api-key. Use `secret set` or `secret import` to populate the backend.',
+    );
+    expect(verification.credentialReferences).toEqual([
+      {
+        toolId: AdapterSurface.CODEX,
+        selector: 'secret://openai/api-key',
+        keyName: 'openai/api-key',
+        resolved: false,
+        backendId: null,
+      },
+    ]);
+  });
+
+  it('keeps warning-bearing default secret backends on the unsafe opt-in guidance path', async () => {
+    const i18nRuntime = new I18nRuntime();
+    await i18nRuntime.initialize(DEFAULT_I18N_RUNTIME_CONFIG, 'en-US');
+    const adaptersConfig: AdaptersConfig = {
+      roles: [
+        {
+          roleId: 'coder',
+          roleProfileId: DefaultRoleProfileId.CODER,
+          requiredCapabilities: [AgentCapability.TOOL_CALLING],
+          required: true,
+        },
+      ],
+      routing: {
+        roleBindings: {
+          coder: {
+            primarySurface: AdapterSurface.CODEX,
+          },
+        },
+      },
+      tools: [
+        {
+          toolId: AdapterSurface.CODEX,
+          enabled: true,
+          availability: AdapterAvailability.AVAILABLE,
+          transport: AdapterTransportKind.REMOTE_API,
+          remoteApi: {
+            provider: AdapterProviderKind.OPENAI,
+            vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+            model: 'gpt-5',
+            credentialRef: 'secret://openai/api-key',
+          },
+        },
+      ],
+    };
+    const codexToolConfig = adaptersConfig.tools?.[0];
+    expect(codexToolConfig).toBeDefined();
+    const toolConfigBySurface = new Map([
+      [AdapterSurface.CODEX, codexToolConfig as NonNullable<AdaptersConfig['tools']>[number]],
+    ]);
+    const localProbeRuntime = new CliLocalModelProbeRuntime(
+      undefined,
+      async () => undefined,
+      (error) => standardizeError(error).message,
+    );
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      adaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createToolConfigBySurfaceMap: () => typeof toolConfigBySurface;
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+      resolveRoleBindingCandidateSurfaces: (
+        roleBinding: AdaptersConfig['routing']['roleBindings'][string],
+      ) => AdapterSurface[];
+      resolveTrackedAdapterSurfaces: (
+        trackedToolConfigBySurface?: typeof toolConfigBySurface,
+      ) => AdapterSurface[];
+    };
+    adapterRoutingRuntime.createToolConfigBySurfaceMap = () => toolConfigBySurface;
+    adapterRoutingRuntime.createProtocolBySurface = () => protocolBySurface;
+    adapterRoutingRuntime.resolveRoleBindingCandidateSurfaces = (roleBinding) => [
+      roleBinding.primarySurface,
+    ];
+    adapterRoutingRuntime.resolveTrackedAdapterSurfaces = (trackedToolConfigBySurface) =>
+      Array.from((trackedToolConfigBySurface ?? new Map()).keys());
+    const protocolBySurface: Record<string, AgentProtocolContract> = {
+      [AdapterSurface.CODEX]: {
+        probe: async () => ({
+          ...createProbeResult(
+            AdapterSurface.CODEX,
+            AgentCapability.TOOL_CALLING,
+            AgentCapabilitySupportLevel.SUPPORTED,
+          ),
+          availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+          unavailableReasons: ['credential_missing:codex:secret://openai/api-key'],
+          healthCheck: buildLayeredHealthCheckResult({
+            adapterId: 'codex-agent',
+            surfaceId: AdapterSurface.CODEX,
+            availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+            selectedEntrypoint: AdapterSurface.CODEX,
+            routeKey: 'cli.adapter.probe.codex',
+            unavailableReasons: ['credential_missing:codex:secret://openai/api-key'],
+            transportKind: AdapterTransportKind.REMOTE_API,
+            providerKind: AdapterProviderKind.OPENAI,
+            vendorBindingKind: AdapterVendorBindingKind.OPENAI_RESPONSES,
+            model: 'gpt-5',
+            credentialSource: AdapterCredentialSource.CREDENTIAL_REF,
+            endpointSource: AdapterEndpointSource.VENDOR_DEFAULT,
+          }),
+        }),
+        invokeStage: async () => {
+          throw new RuntimeError(
+            GovernorErrorCode.UNKNOWN,
+            'invokeStage not used in verification unit test',
+          );
+        },
+        streamEvents: async function* () {},
+        requestConfirmation: async () => {
+          throw new RuntimeError(
+            GovernorErrorCode.UNKNOWN,
+            'requestConfirmation not used in verification unit test',
+          );
+        },
+        cancel: async () => {
+          throw new RuntimeError(
+            GovernorErrorCode.UNKNOWN,
+            'cancel not used in verification unit test',
+          );
+        },
+      },
+    };
+    const runtime = new CliAdapterVerificationRuntime(
+      adaptersConfig,
+      (key, interpolation) => i18nRuntime.t(key, interpolation),
+      (error) => standardizeError(error).message,
+      adapterRoutingRuntime,
+      localProbeRuntime,
+      createMockSecretService({
+        defaultBackendId: 'unsafe-local-file',
+        selectedBackendId: 'unsafe-local-file',
+        backends: [
+          {
+            backendId: 'unsafe-local-file',
+            available: true,
+            detail: '/tmp/secrets.json',
+            warning: 'plaintext fallback',
+          },
+        ],
+      }),
+      (english: string) => english,
+      {},
+    );
+
+    const verification = await runtime.resolveAdapterVerification();
+
+    expect(verification.nextActions).toContain(
+      'No default secret backend is available for these credential references: codex:secret://openai/api-key. Run `secret status` to inspect backend support, or opt into `--backend unsafe-local-file` only if you accept the local-only plaintext fallback.',
+    );
+    expect(verification.nextActions).not.toContain(
+      'Create or import the missing secret-backed remote-api credentials before connect/doctor: codex:secret://openai/api-key. Use `secret set` or `secret import` to populate the backend.',
+    );
+  });
+
+  it('preserves successful credentialRef selector details for downstream diagnostics', async () => {
+    const i18nRuntime = new I18nRuntime();
+    await i18nRuntime.initialize(DEFAULT_I18N_RUNTIME_CONFIG, 'en-US');
+    const adaptersConfig: AdaptersConfig = {
+      roles: [
+        {
+          roleId: 'coder',
+          roleProfileId: DefaultRoleProfileId.CODER,
+          requiredCapabilities: [AgentCapability.TOOL_CALLING],
+          required: true,
+        },
+      ],
+      routing: {
+        roleBindings: {
+          coder: {
+            primarySurface: AdapterSurface.CODEX,
+          },
+        },
+      },
+      tools: [
+        {
+          toolId: AdapterSurface.CODEX,
+          enabled: true,
+          availability: AdapterAvailability.AVAILABLE,
+          transport: AdapterTransportKind.REMOTE_API,
+          remoteApi: {
+            provider: AdapterProviderKind.OPENAI,
+            vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+            model: 'gpt-5',
+            credentialRef: 'secret://openai/api-key',
+          },
+        },
+      ],
+    };
+    const codexToolConfig = adaptersConfig.tools?.[0];
+    expect(codexToolConfig).toBeDefined();
+    const toolConfigBySurface = new Map([
+      [AdapterSurface.CODEX, codexToolConfig as NonNullable<AdaptersConfig['tools']>[number]],
+    ]);
+    const localProbeRuntime = new CliLocalModelProbeRuntime(
+      undefined,
+      async () => undefined,
+      (error) => standardizeError(error).message,
+    );
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      adaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createToolConfigBySurfaceMap: () => typeof toolConfigBySurface;
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+      resolveRoleBindingCandidateSurfaces: (
+        roleBinding: AdaptersConfig['routing']['roleBindings'][string],
+      ) => AdapterSurface[];
+      resolveTrackedAdapterSurfaces: (
+        trackedToolConfigBySurface?: typeof toolConfigBySurface,
+      ) => AdapterSurface[];
+    };
+    adapterRoutingRuntime.createToolConfigBySurfaceMap = () => toolConfigBySurface;
+    adapterRoutingRuntime.createProtocolBySurface = () => protocolBySurface;
+    adapterRoutingRuntime.resolveRoleBindingCandidateSurfaces = (roleBinding) => [
+      roleBinding.primarySurface,
+    ];
+    adapterRoutingRuntime.resolveTrackedAdapterSurfaces = (trackedToolConfigBySurface) =>
+      Array.from((trackedToolConfigBySurface ?? new Map()).keys());
+    const protocolBySurface: Record<string, AgentProtocolContract> = {
+      [AdapterSurface.CODEX]: {
+        probe: async () => ({
+          ...createProbeResult(
+            AdapterSurface.CODEX,
+            AgentCapability.TOOL_CALLING,
+            AgentCapabilitySupportLevel.SUPPORTED,
+          ),
+          availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+          unavailableReasons: [],
+          healthCheck: buildLayeredHealthCheckResult({
+            adapterId: 'codex-agent',
+            surfaceId: AdapterSurface.CODEX,
+            availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+            selectedEntrypoint: AdapterSurface.CODEX,
+            routeKey: 'cli.adapter.probe.codex',
+            unavailableReasons: [],
+            diagnostics: [
+              {
+                layer: 'auth',
+                status: 'pass',
+                code: 'auth.credential_reference_resolved',
+                detail: 'codex:secret://openai/api-key',
+              },
+            ],
+            transportKind: AdapterTransportKind.REMOTE_API,
+            providerKind: AdapterProviderKind.OPENAI,
+            vendorBindingKind: AdapterVendorBindingKind.OPENAI_RESPONSES,
+            model: 'gpt-5',
+            credentialSource: AdapterCredentialSource.CREDENTIAL_REF,
+            endpointSource: AdapterEndpointSource.VENDOR_DEFAULT,
+          }),
+        }),
+        invokeStage: async () => {
+          throw new RuntimeError(
+            GovernorErrorCode.UNKNOWN,
+            'invokeStage not used in verification unit test',
+          );
+        },
+        streamEvents: async function* () {},
+        requestConfirmation: async () => {
+          throw new RuntimeError(
+            GovernorErrorCode.UNKNOWN,
+            'requestConfirmation not used in verification unit test',
+          );
+        },
+        cancel: async () => {
+          throw new RuntimeError(
+            GovernorErrorCode.UNKNOWN,
+            'cancel not used in verification unit test',
+          );
+        },
+      },
+    };
+    const runtime = new CliAdapterVerificationRuntime(
+      adaptersConfig,
+      (key, interpolation) => i18nRuntime.t(key, interpolation),
+      (error) => standardizeError(error).message,
+      adapterRoutingRuntime,
+      localProbeRuntime,
+      createMockSecretService({
+        defaultBackendId: 'macos-keychain',
+        backends: [
+          {
+            backendId: 'macos-keychain',
+            available: true,
+            detail: 'ready',
+          },
+        ],
+        resolvedSecrets: {
+          'secret://openai/api-key': {
+            backendId: 'macos-keychain',
+            value: 'secret-key',
+          },
+        },
+      }),
+      (english: string) => english,
+      {},
+    );
+
+    const verification = await runtime.resolveAdapterVerification();
+
+    expect(verification.credentialReferences).toEqual([
+      {
+        toolId: AdapterSurface.CODEX,
+        selector: 'secret://openai/api-key',
+        keyName: 'openai/api-key',
+        resolved: true,
+        backendId: 'macos-keychain',
+      },
+    ]);
   });
 
   it('keeps explicit remote_api failures fail-closed instead of silently reusing same-surface cli_exec truth', async () => {

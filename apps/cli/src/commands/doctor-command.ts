@@ -22,6 +22,7 @@ import {
   CliGovernanceCheckStatus,
 } from '../constants/cli-governance-runtime.constant.js';
 import type {
+  CliAdapterSecretBackendStatus,
   CliAdapterVerificationResolution,
   CliCommandProgressEvent,
   CliCommandResultArtifact,
@@ -220,6 +221,19 @@ export class CliDoctorCommand implements CliCommandExecutor {
           id: `${CLI_ADAPTER_TOOL_CHECK_ID_PREFIX}${toolSnapshot.toolId}`,
           status: context.adapterDiagnosticsRuntime.resolveToolProbeCheckStatus(toolSnapshot),
           detail: context.adapterDiagnosticsRuntime.resolveToolProbeCheckDetail(toolSnapshot),
+        });
+      }
+      checks.push({
+        id: 'secret_backend_default',
+        status: this.resolveSecretBackendDefaultCheckStatus(adapterVerification),
+        detail: this.formatSecretBackendDefaultCheckDetail(adapterVerification),
+      });
+      for (const backendStatus of this.resolveSecretBackendDiagnostics(adapterVerification)
+        .backends) {
+        checks.push({
+          id: `secret_backend_${backendStatus.backendId}`,
+          status: this.resolveSecretBackendCheckStatus(backendStatus),
+          detail: this.formatSecretBackendCheckDetail(backendStatus),
         });
       }
       if (adapterVerification.nextActions.length > 0) {
@@ -427,6 +441,10 @@ export class CliDoctorCommand implements CliCommandExecutor {
       },
     });
     const message = `Doctor completed with attach_mode=${attachMode}.`;
+    const secretBackendDiagnostics = adapterVerificationSnapshot
+      ? this.resolveSecretBackendDiagnostics(adapterVerificationSnapshot)
+      : null;
+    const credentialReferences = adapterVerificationSnapshot?.credentialReferences ?? [];
     return {
       message,
       commandResult: {
@@ -446,6 +464,14 @@ export class CliDoctorCommand implements CliCommandExecutor {
           safe_local_fix_applied: safeLocalFixCount,
           repair_scope: runtimeDebugOptions.fix ? 'safe_local' : 'manual_only',
           adapter_status: adapterStatus,
+          secret_backend_default: secretBackendDiagnostics?.defaultBackendId ?? null,
+          secret_backend_selected: secretBackendDiagnostics?.selectedBackendId ?? null,
+          secret_backend_available_count:
+            secretBackendDiagnostics?.backends.filter((backendStatus) => backendStatus.available)
+              .length ?? 0,
+          unresolved_credential_ref_count: credentialReferences.filter(
+            (credentialReference) => !credentialReference.resolved,
+          ).length,
           durable_storage_status:
             durableStorageDiagnosticsRuntime.resolveOverallStatus(durableStorageDiagnostics),
           artifact_registry_status: durableStorageDiagnostics.artifactRegistryCanonicalTruth.status,
@@ -510,6 +536,68 @@ export class CliDoctorCommand implements CliCommandExecutor {
     }
 
     return ExecutionProgressStatus.WARNING;
+  }
+
+  private resolveSecretBackendDefaultCheckStatus(
+    verification: CliAdapterVerificationResolution,
+  ): CliGovernanceCheckStatus {
+    const secretBackends = this.resolveSecretBackendDiagnostics(verification);
+    const defaultBackendId = secretBackends.defaultBackendId;
+    if (!defaultBackendId) {
+      return CliGovernanceCheckStatus.WARN;
+    }
+
+    const defaultBackendStatus = secretBackends.backends.find(
+      (backendStatus) => backendStatus.backendId === defaultBackendId,
+    );
+    return this.resolveSecretBackendCheckStatus(defaultBackendStatus);
+  }
+
+  private resolveSecretBackendCheckStatus(
+    backendStatus?: CliAdapterSecretBackendStatus,
+  ): CliGovernanceCheckStatus {
+    return backendStatus?.available && !backendStatus.warning?.trim().length
+      ? CliGovernanceCheckStatus.PASS
+      : CliGovernanceCheckStatus.WARN;
+  }
+
+  private formatSecretBackendDefaultCheckDetail(
+    verification: CliAdapterVerificationResolution,
+  ): string {
+    const secretBackends = this.resolveSecretBackendDiagnostics(verification);
+    const defaultBackendId = secretBackends.defaultBackendId;
+    if (!defaultBackendId) {
+      return secretBackends.selectedBackendId ?? 'none';
+    }
+
+    const defaultBackendStatus = secretBackends.backends.find(
+      (backendStatus) => backendStatus.backendId === defaultBackendId,
+    );
+    if (!defaultBackendStatus) {
+      return defaultBackendId;
+    }
+
+    return `${defaultBackendId}: ${this.formatSecretBackendCheckDetail(defaultBackendStatus)}`;
+  }
+
+  private formatSecretBackendCheckDetail(backendStatus: CliAdapterSecretBackendStatus): string {
+    if (!backendStatus.warning?.trim().length) {
+      return backendStatus.detail;
+    }
+
+    return `${backendStatus.detail}; warning=${backendStatus.warning}`;
+  }
+
+  private resolveSecretBackendDiagnostics(verification: CliAdapterVerificationResolution): {
+    selectedBackendId: string | null;
+    defaultBackendId: string | null;
+    backends: CliAdapterSecretBackendStatus[];
+  } {
+    return {
+      selectedBackendId: verification.secretBackends?.selectedBackendId ?? null,
+      defaultBackendId: verification.secretBackends?.defaultBackendId ?? null,
+      backends: verification.secretBackends?.backends ?? [],
+    };
   }
 
   private throwIfAborted(

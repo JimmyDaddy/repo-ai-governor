@@ -8,6 +8,7 @@ import {
   AdapterCredentialSource,
   AdapterEndpointSource,
   AdapterProviderKind,
+  type AdapterRemoteApiConfig,
   AdapterSurface,
   AdapterTransportKind,
   AdapterTransportSelectionSource,
@@ -25,10 +26,12 @@ import {
 } from '../constants/cli-connect.constant.js';
 import { CliGovernanceCheckStatus } from '../constants/cli-governance-runtime.constant.js';
 import type {
+  CliConnectRemoteApiOverride,
   CliConnectRoleBindingOverride,
   CliConnectToolTransportOverride,
 } from '../types/interfaces/cli-runtime-debug.interface.js';
 import type { CliAdapterVerificationResolution } from '../types/interfaces/index.js';
+import { CliRemoteApiAuthoringDefaultsService } from './cli-remote-api-authoring-defaults-service.js';
 
 const MINIMAL_ROLE_IDS = new Set(['planner', 'coder', 'reviewer']);
 const CLI_EXEC_DEFAULT_REQUEST_TIMEOUT_MS = 30000;
@@ -37,6 +40,8 @@ const CLI_EXEC_DEFAULT_REQUEST_TIMEOUT_MS = 30000;
  * Owns connect/doctor onboarding template shaping and report-friendly matrix payloads.
  */
 export class CliAgentOnboardingRuntime {
+  private readonly remoteApiAuthoringDefaultsService = new CliRemoteApiAuthoringDefaultsService();
+
   public resolveSelectedTools(options: {
     requestedTools: AdapterSurface[];
     currentAdaptersConfig: AdaptersConfig;
@@ -61,6 +66,7 @@ export class CliAgentOnboardingRuntime {
     presetId: CliAgentOnboardingPreset;
     requestedTools: AdapterSurface[];
     toolTransportOverrides: CliConnectToolTransportOverride[];
+    remoteApiOverrides: CliConnectRemoteApiOverride[];
     localizeText?: (english: string, chinese: string) => string;
     overwrite: boolean;
     singleToolAllRoles: boolean;
@@ -88,11 +94,17 @@ export class CliAgentOnboardingRuntime {
       toolTransportOverrides: options.toolTransportOverrides,
       localizeText: options.localizeText,
     });
+    this.assertSelectedToolsContainRemoteApiOverrides({
+      selectedTools,
+      remoteApiOverrides: options.remoteApiOverrides,
+      localizeText: options.localizeText,
+    });
     const candidateAdaptersConfig = this.buildCandidateAdaptersConfig({
       currentAdaptersConfig,
       presetId: options.presetId,
       selectedTools,
       toolTransportOverrides: options.toolTransportOverrides,
+      remoteApiOverrides: options.remoteApiOverrides,
       localizeText: options.localizeText,
       overwrite: options.overwrite,
       singleToolAllRoles: options.singleToolAllRoles,
@@ -637,6 +649,7 @@ export class CliAgentOnboardingRuntime {
     presetId: CliAgentOnboardingPreset;
     selectedTools: AdapterSurface[];
     toolTransportOverrides: CliConnectToolTransportOverride[];
+    remoteApiOverrides: CliConnectRemoteApiOverride[];
     localizeText?: (english: string, chinese: string) => string;
     overwrite: boolean;
     singleToolAllRoles: boolean;
@@ -670,6 +683,9 @@ export class CliAgentOnboardingRuntime {
     const toolTransportOverrideById = new Map(
       options.toolTransportOverrides.map((override) => [override.toolId, override.transport]),
     );
+    const remoteApiOverrideById = new Map(
+      options.remoteApiOverrides.map((override) => [override.toolId, override]),
+    );
     const tools = options.selectedTools.map((toolId) => {
       const currentTool =
         options.currentAdaptersConfig.tools?.find((tool) => tool.toolId === toolId) ?? null;
@@ -677,6 +693,7 @@ export class CliAgentOnboardingRuntime {
         toolId,
         currentTool,
         transportOverride: toolTransportOverrideById.get(toolId) ?? null,
+        remoteApiOverride: remoteApiOverrideById.get(toolId) ?? null,
         localizeText: options.localizeText,
       });
     });
@@ -704,6 +721,7 @@ export class CliAgentOnboardingRuntime {
     toolId: AdapterSurface;
     currentTool: NonNullable<AdaptersConfig['tools']>[number] | null;
     transportOverride: AdapterTransportKind | null;
+    remoteApiOverride: CliConnectRemoteApiOverride | null;
     localizeText?: (english: string, chinese: string) => string;
   }): NonNullable<AdaptersConfig['tools']>[number] {
     if (options.transportOverride) {
@@ -711,14 +729,13 @@ export class CliAgentOnboardingRuntime {
     }
 
     const candidateTransport = this.resolveCandidateToolTransport(options);
+    const candidateRemoteApi = this.resolveCandidateToolRemoteApi(options);
     return {
       toolId: options.toolId,
       enabled: true,
       availability: options.currentTool?.availability ?? AdapterAvailability.AVAILABLE,
       ...(candidateTransport ? { transport: candidateTransport } : {}),
-      ...(options.currentTool?.remoteApi
-        ? { remoteApi: { ...options.currentTool.remoteApi } }
-        : {}),
+      ...(candidateRemoteApi ? { remoteApi: candidateRemoteApi } : {}),
       ...(options.currentTool?.localModel
         ? { localModel: { ...options.currentTool.localModel } }
         : {}),
@@ -732,6 +749,7 @@ export class CliAgentOnboardingRuntime {
     toolId: AdapterSurface;
     currentTool: NonNullable<AdaptersConfig['tools']>[number] | null;
     transportOverride: AdapterTransportKind | null;
+    remoteApiOverride: CliConnectRemoteApiOverride | null;
   }): AdapterTransportKind | null {
     if (options.transportOverride) {
       return options.transportOverride;
@@ -740,7 +758,7 @@ export class CliAgentOnboardingRuntime {
       return options.currentTool.transport;
     }
     if (CLI_CONNECT_TRANSPORT_AUTHORING_SURFACES.has(options.toolId)) {
-      return options.currentTool?.remoteApi
+      return options.currentTool?.remoteApi || options.remoteApiOverride
         ? AdapterTransportKind.REMOTE_API
         : AdapterTransportKind.CLI_EXEC;
     }
@@ -751,6 +769,7 @@ export class CliAgentOnboardingRuntime {
     toolId: AdapterSurface;
     currentTool: NonNullable<AdaptersConfig['tools']>[number] | null;
     transportOverride: AdapterTransportKind | null;
+    remoteApiOverride: CliConnectRemoteApiOverride | null;
     localizeText?: (english: string, chinese: string) => string;
   }): void {
     if (!options.transportOverride) {
@@ -774,7 +793,8 @@ export class CliAgentOnboardingRuntime {
 
     if (
       options.transportOverride === AdapterTransportKind.REMOTE_API &&
-      !options.currentTool?.remoteApi
+      !options.currentTool?.remoteApi &&
+      !options.remoteApiOverride
     ) {
       throw new RuntimeError(
         GovernorErrorCode.ADAPTER_ROUTE_CONFIG_INVALID,
@@ -789,6 +809,79 @@ export class CliAgentOnboardingRuntime {
         },
       );
     }
+  }
+
+  private resolveCandidateToolRemoteApi(options: {
+    toolId: AdapterSurface;
+    currentTool: NonNullable<AdaptersConfig['tools']>[number] | null;
+    transportOverride: AdapterTransportKind | null;
+    remoteApiOverride: CliConnectRemoteApiOverride | null;
+    localizeText?: (english: string, chinese: string) => string;
+  }): AdapterRemoteApiConfig | null {
+    const existingRemoteApi = options.currentTool?.remoteApi
+      ? { ...options.currentTool.remoteApi }
+      : null;
+    const override = options.remoteApiOverride;
+    if (!override) {
+      return existingRemoteApi;
+    }
+
+    if (!CLI_CONNECT_TRANSPORT_AUTHORING_SURFACES.has(options.toolId)) {
+      throw new RuntimeError(
+        GovernorErrorCode.ADAPTER_ROUTE_CONFIG_INVALID,
+        this.localizeText(
+          options.localizeText,
+          `connect remote_api authoring does not support ${options.toolId}.`,
+          `connect remote_api 配置不支持 ${options.toolId}。`,
+        ),
+        {
+          toolId: options.toolId,
+        },
+      );
+    }
+
+    const candidateModel = override.model ?? existingRemoteApi?.model ?? null;
+    if (!candidateModel) {
+      throw new RuntimeError(
+        GovernorErrorCode.ADAPTER_ROUTE_CONFIG_INVALID,
+        this.localizeText(
+          options.localizeText,
+          `connect remote_api authoring requires --remote-api-model ${options.toolId}=<model> before ${options.toolId} can use remote_api.`,
+          `connect remote_api 配置要求先提供 --remote-api-model ${options.toolId}=<model>，然后 ${options.toolId} 才能使用 remote_api。`,
+        ),
+        {
+          toolId: options.toolId,
+          option: '--remote-api-model',
+        },
+      );
+    }
+
+    return {
+      provider: this.remoteApiAuthoringDefaultsService.resolveProviderForTool(options.toolId),
+      vendorBinding: this.remoteApiAuthoringDefaultsService.resolveVendorBindingForTool(
+        options.toolId,
+      ),
+      model: candidateModel,
+      credentialEnvVar:
+        override.credentialEnvVar ??
+        existingRemoteApi?.credentialEnvVar ??
+        this.remoteApiAuthoringDefaultsService.resolveCredentialEnvVarForTool(options.toolId),
+      ...(existingRemoteApi?.credentialRef
+        ? { credentialRef: existingRemoteApi.credentialRef }
+        : {}),
+      ...(existingRemoteApi?.allowProviderLocalConfig !== undefined
+        ? { allowProviderLocalConfig: existingRemoteApi.allowProviderLocalConfig }
+        : {}),
+      ...((override.endpoint ?? existingRemoteApi?.endpoint)
+        ? { endpoint: override.endpoint ?? existingRemoteApi?.endpoint }
+        : {}),
+      ...(existingRemoteApi?.requestTimeoutMs !== undefined
+        ? { requestTimeoutMs: existingRemoteApi.requestTimeoutMs }
+        : {}),
+      ...(existingRemoteApi?.maxRetries !== undefined
+        ? { maxRetries: existingRemoteApi.maxRetries }
+        : {}),
+    };
   }
 
   private assertSelectedToolsContainTransportOverrides(options: {
@@ -811,6 +904,31 @@ export class CliAgentOnboardingRuntime {
         {
           toolId: override.toolId,
           transport: override.transport,
+          selectedTools: options.selectedTools,
+        },
+      );
+    }
+  }
+
+  private assertSelectedToolsContainRemoteApiOverrides(options: {
+    selectedTools: AdapterSurface[];
+    remoteApiOverrides: CliConnectRemoteApiOverride[];
+    localizeText?: (english: string, chinese: string) => string;
+  }): void {
+    const selectedToolSet = new Set(options.selectedTools);
+    for (const override of options.remoteApiOverrides) {
+      if (selectedToolSet.has(override.toolId)) {
+        continue;
+      }
+      throw new RuntimeError(
+        GovernorErrorCode.ADAPTER_ROUTE_CONFIG_INVALID,
+        this.localizeText(
+          options.localizeText,
+          `connect remote_api authoring requires ${override.toolId} to already be included in the selected tool set.`,
+          `connect remote_api 配置要求 ${override.toolId} 已经包含在当前选中的工具集合中。`,
+        ),
+        {
+          toolId: override.toolId,
           selectedTools: options.selectedTools,
         },
       );

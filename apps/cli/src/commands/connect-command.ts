@@ -154,6 +154,7 @@ export class CliConnectCommand implements CliCommandExecutor {
       presetId: runtimeDebugOptions.presetId,
       requestedTools: runtimeDebugOptions.requestedTools,
       toolTransportOverrides: runtimeDebugOptions.toolTransportOverrides ?? [],
+      remoteApiOverrides: runtimeDebugOptions.remoteApiOverrides ?? [],
       localizeText: (english, chinese) => context.localizeText(english, chinese),
       overwrite: runtimeDebugOptions.overwrite,
       singleToolAllRoles: runtimeDebugOptions.singleToolAllRoles,

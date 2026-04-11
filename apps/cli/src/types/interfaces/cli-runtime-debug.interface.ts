@@ -25,6 +25,16 @@ export interface CliConnectToolTransportOverride {
 }
 
 /**
+ * Defines one connect-time per-tool remote_api authoring override.
+ */
+export interface CliConnectRemoteApiOverride {
+  toolId: AdapterSurface;
+  model?: string;
+  credentialEnvVar?: string;
+  endpoint?: string;
+}
+
+/**
  * Defines normalized runtime flags consumed by command execution paths.
  */
 export interface CliRuntimeDebugOptions {
@@ -50,6 +60,7 @@ export interface CliRuntimeDebugOptions {
   presetId?: CliAgentOnboardingPreset | null;
   requestedTools?: AdapterSurface[];
   toolTransportOverrides?: CliConnectToolTransportOverride[];
+  remoteApiOverrides?: CliConnectRemoteApiOverride[];
   overwrite?: boolean;
   singleToolAllRoles?: boolean;
   roleBindingOverrides?: CliConnectRoleBindingOverride[];

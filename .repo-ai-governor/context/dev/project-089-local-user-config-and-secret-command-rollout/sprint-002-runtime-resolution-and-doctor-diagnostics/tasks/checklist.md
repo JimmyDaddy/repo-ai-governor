@@ -1,0 +1,28 @@
+# checklist
+
+- [x] TK-792 resolve credentialRef through secret backends and preserve env precedence
+  - 2026-04-11：任务通过 `DA-786` 创建，当前保持 `planned`，等待 sprint-002 激活。
+  - 2026-04-12：随着 `TK-791 / DA-791` 完成 sprint-001 closeout 与 activation handoff，当前任务切换为 `in_progress`，开始接通 `credentialRef` runtime resolution seam。
+  - 2026-04-12：已完成 codex / claude remote-api `credentialRef` read-only resolution seam、env precedence 保持与 verification artifact credential-reference tracking，并通过 `pnpm run build`、sprint-002 focused verification suite 与 `CR-003` clean recheck。
+- [x] TK-793 normalize user-config authoring into enabled-tools and projection canonical truth
+  - 2026-04-11：任务通过 `DA-786` 创建，当前保持 `planned`，等待 `TK-792` 完成后执行。
+  - 2026-04-12：已完成 `user-config.yaml` authoring 到 canonical onboarding / projection truth 的归一化补强，包括 supported remote-api default `credentialEnvVar` materialization、session-main / governance runtime projection 接线，以及 global theme merge 写回不再 clobber canonical user-config。
+- [x] TK-794 add doctor secret-backend availability and missing-secret guidance across supported platforms
+  - 2026-04-11：任务通过 `DA-786` 创建，当前保持 `planned`，等待 `TK-793` 完成后执行。
+  - 2026-04-12：已完成 doctor secret-backend availability / missing-secret diagnostics、warning-bearing default backend truthfulness、unsafe fallback guidance 与 successful `credentialRef` selector/back-end evidence 保留，并通过 focused doctor/adapter regression coverage 与 `CR-003` clean recheck。
+- [x] TK-795 sprint-002 exit acceptance and sprint-003 activation handoff
+  - 2026-04-11：任务通过 `DA-786` 创建，当前保持 `planned`，等待 sprint-002 implementation clean 收口后执行。
+  - 2026-04-12：`TK-792 ~ TK-794` 与 `CR-001 ~ CR-003` 已全部进入终态，开始执行 sprint-002 closeout、delivery-registry write-back 与 sprint-003 activation handoff。
+  - 2026-04-12：已完成 `DA-795`、current-context/history/project-plan/sprint-plan/delivery-registry 写回，并激活 `sprint-003` 与 `TK-796`。
+- [x] CR-001 sprint-002-runtime-resolution-and-doctor-diagnostics delegated review loop round 1
+  - 2026-04-12：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-12：fresh reviewer round 返回 2 条 actionable finding；主 agent 复核后均判定为 `accepted`，分别修复 global theme persistence 会覆盖 canonical `user-config.yaml`，以及 user-config remote-api projection 未补齐 canonical `credentialEnvVar` default 的归一化漂移。
+  - 2026-04-12：修复后已重新通过 `pnpm run build` 与 sprint-002 focused verification suite，本任务推进为 `resolved`，并准备进入 fresh clean recheck round。
+- [x] CR-002 sprint-002-runtime-resolution-and-doctor-diagnostics delegated recheck loop round 2
+  - 2026-04-12：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-12：fresh reviewer round 返回 2 条 actionable finding；主 agent 复核后均判定为 `accepted`，分别修复 warning-bearing default backend 被 doctor 误判为 healthy，以及成功解析的 `credentialRef` selector detail 在 verification diagnostics 中丢失的问题。
+  - 2026-04-12：修复后已重新通过 `pnpm run build` 与 sprint-002 focused verification suite，本任务推进为 `resolved`，并准备进入 fresh clean recheck round。
+- [x] CR-003 sprint-002-runtime-resolution-and-doctor-diagnostics delegated review loop round 3
+  - 2026-04-12：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-12：fresh delegated reviewer `Hubble` 对当前 sprint-002 边界做 clean recheck，返回 `No actionable findings.`。
+  - 2026-04-12：主 agent 已复核同一 review surface，并确认 build、focused vitest suite、task-ledger sync 与 review lifecycle gate 全部通过；本任务推进为 `resolved`。

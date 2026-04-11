@@ -1,0 +1,38 @@
+# checklist
+
+- [x] TK-788 establish canonical user-config schema, migration, and config command storage semantics
+  - 2026-04-11：任务通过 `DA-786` 创建，当前保持 `planned`，等待 sprint-001 激活。
+  - 2026-04-11：随着 `project-089 / sprint-001` 激活切换为 `in_progress`，先落 canonical `user-config.yaml` path、legacy `cli-preferences.yaml` migration seam 与 `config` command storage semantics。
+  - 2026-04-11：已完成 canonical `~/.repo-ai-governor/user-config.yaml` path、`config get|set|unset|list|status` command、`workspace.mode_preference` / `tools.<surface>.remoteApi.*` authoring schema 与 legacy theme read-compat；`set-ui-theme` 现统一写回 canonical user-config path。
+  - 2026-04-11：验证已执行 `pnpm run build`、`pnpm vitest run apps/cli/test/cli-skeleton.integration.test.ts apps/cli/test/cli-output-contract.integration.test.ts apps/cli/test/commands/workspace-command.test.ts apps/cli/test/runtime/cli-user-config-service.test.ts`，进入 sprint-001 reviewer boundary。
+- [x] TK-789 implement secret-backend abstraction and secure secret command mutation flow
+  - 2026-04-11：任务通过 `DA-786` 创建，当前保持 `planned`，等待 `TK-788` 完成后执行。
+  - 2026-04-11：已完成 `CliSecretService`、managed secret index、`macos-keychain` / `unsafe-local-file` backend abstraction，以及 `secret set|import|delete|list|status` command family 的 secure mutation flow。
+  - 2026-04-11：`secret set` 现仅接受 `--stdin` 或 no-echo prompt，`secret import` 仅接受 `--from-env`，selector truth 固定为 `secret://<namespaced-key>`，明文 secret 不进入 `user-config.yaml` / `governor.yaml`。
+  - 2026-04-11：验证已执行 `pnpm run build`、`pnpm vitest run apps/cli/test/cli-skeleton.integration.test.ts apps/cli/test/cli-output-contract.integration.test.ts apps/cli/test/commands/workspace-command.test.ts apps/cli/test/runtime/cli-user-config-service.test.ts`，进入 sprint-001 reviewer boundary。
+- [x] TK-790 land macOS keychain baseline, shared i18n/error wiring, and unsafe-fallback warnings
+  - 2026-04-11：任务通过 `DA-786` 创建，当前保持 `planned`，等待 `TK-789` 完成后执行。
+  - 2026-04-11：已完成 macOS default backend baseline、CLI runtime wiring、shared i18n 文案接入，以及 `unsafe-local-file` backend 的高噪声 warning / status surface。
+  - 2026-04-11：`config` / `secret` command 已接入 main/runtime command registry、output operation constants 与 shared locale keys，foundation 行为可通过 pretty/plain/json output contract 消费。
+  - 2026-04-11：验证已执行 `pnpm run build`、`pnpm vitest run apps/cli/test/cli-skeleton.integration.test.ts apps/cli/test/cli-output-contract.integration.test.ts apps/cli/test/commands/workspace-command.test.ts apps/cli/test/runtime/cli-user-config-service.test.ts`，进入 sprint-001 reviewer boundary。
+- [x] TK-791 sprint-001 exit acceptance and sprint-002 activation handoff
+  - 2026-04-11：任务通过 `DA-786` 创建，当前保持 `planned`，等待 sprint-001 implementation clean 收口后执行。
+  - 2026-04-12：`TK-788 ~ TK-790` 与 `CR-001 ~ CR-004` 已全部进入终态，开始执行 sprint-001 closeout、context/history 写回与 sprint-002 activation handoff。
+  - 2026-04-12：已完成 `DA-791`、project/sprint/context/history/delivery-registry 写回，并激活 `sprint-002` 与 `TK-792`。
+  - 2026-04-12：已完成 sprint-001 closeout、history/context 切换与 sprint-002 activation handoff，本任务推进为 completed。
+- [x] CR-001 sprint-001-user-config-command-and-secret-foundation delegated review loop round 1
+  - 2026-04-12：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-12：delegated reviewer 已返回 3 条 actionable findings；主 agent 复核后全部判定为 `accepted`，评审状态推进为 `verified`。
+  - 2026-04-12：3 条 accepted findings 已完成修复并通过 `pnpm run build`、定向 CLI tests 与 review/ledger sync checks，本任务推进为 `resolved`。
+- [x] CR-002 sprint-001-user-config-command-and-secret-foundation delegated review loop round 2
+  - 2026-04-12：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-12：fresh reviewer round 返回 2 条 risk-based actionable findings；主 agent 复核后全部判定为 `accepted`，并完成权限 hardening 与 secret fidelity 修复。
+  - 2026-04-12：修复后已重新通过 `pnpm run build`、定向 CLI regression suite 与 review/ledger sync checks，本任务推进为 `resolved`。
+- [x] CR-003 sprint-001-user-config-command-and-secret-foundation delegated review loop round 3
+  - 2026-04-12：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-12：fresh reviewer round 返回 2 条 P1 actionable findings；主 agent 复核后全部判定为 `accepted`，并完成 canonical config write/read seam 与 secret backend resolution ordering 修复。
+  - 2026-04-12：修复后已重新通过 `pnpm run build`、定向 CLI regression suite 与 review/ledger sync checks，本任务推进为 `resolved`。
+- [x] CR-004 sprint-001-user-config-command-and-secret-foundation delegated review loop round 4
+  - 2026-04-12：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-12：fresh reviewer round 返回 1 条 P2 actionable finding；主 agent 复核后判定为 `accepted`，并修复 user-local `config` / `secret` command 仍会隐式 bootstrap workspace 的副作用。
+  - 2026-04-12：修复后已重新通过 `pnpm run build`、定向 CLI regression suite 与 review/ledger sync checks，本任务推进为 `resolved`。

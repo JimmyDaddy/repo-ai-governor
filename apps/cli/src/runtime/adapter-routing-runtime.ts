@@ -59,6 +59,7 @@ export class CliAdapterRoutingRuntime {
       claudeCodeExecRunner?: ClaudeCodeExecRunner;
       codexExecRunner?: CodexExecRunner;
       githubCopilotExecRunner?: GithubCopilotExecRunner;
+      resolveCredentialRef?: (selector: string) => Promise<string | null>;
       sharedProtocolCacheNamespace?: string;
     } = {},
   ) {}
@@ -330,6 +331,11 @@ export class CliAdapterRoutingRuntime {
               remoteApi: toolConfig.remoteApi,
             }
           : {}),
+        ...(this.options.resolveCredentialRef
+          ? {
+              resolveCredentialRef: this.options.resolveCredentialRef,
+            }
+          : {}),
         ...(this.options.codexExecRunner
           ? {
               execRunner: this.options.codexExecRunner,
@@ -360,6 +366,11 @@ export class CliAdapterRoutingRuntime {
         ...(toolConfig?.remoteApi
           ? {
               remoteApi: toolConfig.remoteApi,
+            }
+          : {}),
+        ...(this.options.resolveCredentialRef
+          ? {
+              resolveCredentialRef: this.options.resolveCredentialRef,
             }
           : {}),
         ...(this.options.claudeCodeExecRunner

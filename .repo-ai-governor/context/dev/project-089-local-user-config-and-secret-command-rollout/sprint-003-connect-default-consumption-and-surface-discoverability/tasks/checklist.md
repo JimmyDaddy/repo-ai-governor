@@ -1,0 +1,24 @@
+# checklist
+
+- [x] TK-796 consume user-config remote-api defaults in connect with analyze-first candidate materialization
+  - 2026-04-11：任务通过 `DA-786` 创建，当前保持 `planned`，等待 sprint-003 激活。
+  - 2026-04-12：随着 `TK-795 / DA-795` 完成 sprint-002 closeout 与 activation handoff，当前任务切换为 `in_progress`，开始收口 `connect` 对 user-local remote-api defaults 的消费边界。
+  - 2026-04-12：已完成 `connect` consume `user-config.yaml` remote-api defaults、analyze-first candidate materialization 与 CLI override precedence 保持，并通过 `pnpm run build` 与 sprint-003 focused verification suite。
+- [x] TK-797 add session shell config and secret discoverability plus command guidance
+  - 2026-04-11：任务通过 `DA-786` 创建，当前保持 `planned`，等待 `TK-796` 完成后执行。
+  - 2026-04-12：已完成 session shell `/config` 与 `/secret` discoverability、CLI command guidance 对齐与 slash-command handoff routing，并通过 `pnpm run build` 与 sprint-003 focused verification suite。
+- [x] TK-798 uplift adopter docs and playbook wording only when evidence gate passes
+  - 2026-04-11：任务通过 `DA-786` 创建，当前保持 `planned`，等待 `TK-797` 完成后执行。
+  - 2026-04-12：evidence gate 已由 `pnpm run build` 与 sprint-003 focused verification suite 通过，当前已完成 CLI README 与 adopter playbook 的受控 wording uplift，并保持 `secret status` / `unsafe-local-file` 的平台 truthfulness。
+- [x] TK-799 finalize project-089 rollout closeout and delivery evidence handoff
+  - 2026-04-11：任务通过 `DA-786` 创建，当前保持 `planned`，等待 sprint-003 与 evidence gate clean 收口后执行。
+  - 2026-04-12：`CR-001` 与 `CR-002` 已全部 clean `resolved`，开始执行 project-final closeout、delivery registry completed write-back 与 idle primary-stream handoff。
+  - 2026-04-12：已完成 `DA-799`、project completion audit summary、project/sprint completed truth、current-context idle 切换与 completed history / delivery registry 收口。
+- [x] CR-001 sprint-003-connect-default-consumption-and-surface-discoverability delegated review loop round 1
+  - 2026-04-12：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-12：fresh delegated reviewer `Kepler` 对当前 sprint-003 边界做 clean recheck，返回 `No actionable findings.`。
+  - 2026-04-12：主 agent 已复核同一 review surface，并确认 build、focused verification suite 与 implementation ledger write-back 全部通过；本任务推进为 `resolved`。
+- [x] CR-002 project-089-local-user-config-and-secret-command-rollout final delegated review loop round 2
+  - 2026-04-12：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-12：fresh delegated reviewer `Jason` 对 `project-089` 当前 closeout-ready state 做 clean recheck，返回 `No actionable findings.`。
+  - 2026-04-12：主 agent 已复核 project-final review surface，并确认 build、focused verification suite 与前序 sprint CR lifecycle 全部通过；本任务推进为 `resolved`。

@@ -517,6 +517,376 @@ describe('CLI output contract integration', () => {
     expect(payload.command_result.operation).toBe('workspace_init');
   });
 
+  it('writes canonical user-local defaults through config set in JSON mode', async () => {
+    const temporaryRepositoryRoot = await createFirstTimeInitFixtureRepo();
+    const temporaryHomeRoot = await mkdtemp(resolve(tmpdir(), 'cli-output-config-home-'));
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, temporaryRepositoryRoot, {
+      HOME: temporaryHomeRoot,
+    });
+    const userConfigPath = resolve(temporaryHomeRoot, '.repo-ai-governor', 'user-config.yaml');
+
+    try {
+      const exitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'en-US',
+          '--output',
+          'json',
+          'config',
+          'set',
+          'ui.react.theme',
+          'calm',
+        ],
+        io,
+      );
+      const payload = JSON.parse(stdoutBuffer.join(''));
+      const userConfigContent = await readFile(userConfigPath, 'utf8');
+
+      expect(exitCode).toBe(0);
+      expect(stderrBuffer.join('')).toBe('');
+      expect(payload.command).toBe('config');
+      expect(payload.command_result.operation).toBe('user_config_set');
+      expect(payload.command_result.details.key_path).toBe('ui.react.theme');
+      expect(payload.command_result.details.value).toBe('calm');
+      expect(userConfigContent).toContain('theme: calm');
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+      await rm(temporaryHomeRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('reads legacy cli-preferences theme through config get before canonical migration writes occur', async () => {
+    const temporaryRepositoryRoot = await createFirstTimeInitFixtureRepo();
+    const temporaryHomeRoot = await createGlobalThemePreferenceHome('catppuccin');
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, temporaryRepositoryRoot, {
+      HOME: temporaryHomeRoot,
+    });
+
+    try {
+      const exitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'en-US',
+          '--output',
+          'json',
+          'config',
+          'get',
+          'ui.react.theme',
+        ],
+        io,
+      );
+      const payload = JSON.parse(stdoutBuffer.join(''));
+
+      expect(exitCode).toBe(0);
+      expect(stderrBuffer.join('')).toBe('');
+      expect(payload.command_result.operation).toBe('user_config_get');
+      expect(payload.command_result.details.value).toBe('catppuccin');
+      expect(payload.command_result.details.legacy_preference_exists).toBe(true);
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+      await rm(temporaryHomeRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps a cleared global theme unset even when a legacy preference file still exists', async () => {
+    const temporaryRepositoryRoot = await createFirstTimeInitFixtureRepo();
+    const temporaryHomeRoot = await createGlobalThemePreferenceHome('catppuccin');
+    const firstRun = createBufferedIo(false, temporaryRepositoryRoot, {
+      HOME: temporaryHomeRoot,
+    });
+    const secondRun = createBufferedIo(false, temporaryRepositoryRoot, {
+      HOME: temporaryHomeRoot,
+    });
+    const userConfigPath = resolve(temporaryHomeRoot, '.repo-ai-governor', 'user-config.yaml');
+
+    try {
+      const unsetExitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'en-US',
+          '--output',
+          'json',
+          'config',
+          'unset',
+          'ui.react.theme',
+        ],
+        firstRun.io,
+      );
+      const unsetPayload = JSON.parse(firstRun.stdoutBuffer.join(''));
+
+      expect(unsetExitCode).toBe(0);
+      expect(firstRun.stderrBuffer.join('')).toBe('');
+      expect(unsetPayload.command_result.operation).toBe('user_config_unset');
+      expect(await readFile(userConfigPath, 'utf8')).toContain('theme: null');
+
+      const getExitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'en-US',
+          '--output',
+          'json',
+          'config',
+          'get',
+          'ui.react.theme',
+        ],
+        secondRun.io,
+      );
+      const getPayload = JSON.parse(secondRun.stdoutBuffer.join(''));
+
+      expect(getExitCode).toBe(0);
+      expect(secondRun.stderrBuffer.join('')).toBe('');
+      expect(getPayload.command_result.details.value).toBeNull();
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+      await rm(temporaryHomeRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('does not persist the legacy theme when another canonical config key is updated', async () => {
+    const temporaryRepositoryRoot = await createFirstTimeInitFixtureRepo();
+    const temporaryHomeRoot = await createGlobalThemePreferenceHome('catppuccin');
+    const firstRun = createBufferedIo(false, temporaryRepositoryRoot, {
+      HOME: temporaryHomeRoot,
+    });
+    const secondRun = createBufferedIo(false, temporaryRepositoryRoot, {
+      HOME: temporaryHomeRoot,
+    });
+    const userConfigPath = resolve(temporaryHomeRoot, '.repo-ai-governor', 'user-config.yaml');
+
+    try {
+      const setExitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'en-US',
+          '--output',
+          'json',
+          'config',
+          'set',
+          'workspace.mode_preference',
+          'tool_managed',
+        ],
+        firstRun.io,
+      );
+      const setPayload = JSON.parse(firstRun.stdoutBuffer.join(''));
+
+      expect(setExitCode).toBe(0);
+      expect(firstRun.stderrBuffer.join('')).toBe('');
+      expect(setPayload.command_result.operation).toBe('user_config_set');
+      expect(await readFile(userConfigPath, 'utf8')).not.toContain('theme:');
+
+      const getExitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'en-US',
+          '--output',
+          'json',
+          'config',
+          'get',
+          'ui.react.theme',
+        ],
+        secondRun.io,
+      );
+      const getPayload = JSON.parse(secondRun.stdoutBuffer.join(''));
+
+      expect(getExitCode).toBe(0);
+      expect(secondRun.stderrBuffer.join('')).toBe('');
+      expect(getPayload.command_result.details.value).toBe('catppuccin');
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+      await rm(temporaryHomeRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('does not auto-bootstrap a workspace for user-local config and secret status commands', async () => {
+    const temporaryRepositoryRoot = await createFirstTimeInitFixtureRepo();
+    const temporaryHomeRoot = await mkdtemp(resolve(tmpdir(), 'cli-output-user-local-home-'));
+    const configRun = createBufferedIo(false, temporaryRepositoryRoot, {
+      HOME: temporaryHomeRoot,
+    });
+    const secretRun = createBufferedIo(false, temporaryRepositoryRoot, {
+      HOME: temporaryHomeRoot,
+    });
+    const workspaceBootstrapRoot = resolve(temporaryHomeRoot, '.repo-ai-governor', 'workspaces');
+
+    try {
+      const configExitCode = await runCli(
+        ['node', 'repo-ai-governor', '--locale', 'en-US', '--output', 'json', 'config', 'status'],
+        configRun.io,
+      );
+      const configPayload = JSON.parse(configRun.stdoutBuffer.join(''));
+
+      expect(configExitCode).toBe(0);
+      expect(configRun.stderrBuffer.join('')).toBe('');
+      expect(configPayload.command_result.operation).toBe('user_config_status');
+      expect(existsSync(workspaceBootstrapRoot)).toBe(false);
+
+      const secretExitCode = await runCli(
+        ['node', 'repo-ai-governor', '--locale', 'en-US', '--output', 'json', 'secret', 'status'],
+        secretRun.io,
+      );
+      const secretPayload = JSON.parse(secretRun.stdoutBuffer.join(''));
+
+      expect(secretExitCode).toBe(0);
+      expect(secretRun.stderrBuffer.join('')).toBe('');
+      expect(secretPayload.command_result.operation).toBe('secret_status');
+      expect(existsSync(workspaceBootstrapRoot)).toBe(false);
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+      await rm(temporaryHomeRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('imports secrets through the unsafe fallback backend and lists managed records in JSON mode', async () => {
+    const temporaryRepositoryRoot = await createFirstTimeInitFixtureRepo();
+    const temporaryHomeRoot = await mkdtemp(resolve(tmpdir(), 'cli-output-secret-home-'));
+    const environmentOverrides = {
+      HOME: temporaryHomeRoot,
+      OPENAI_API_KEY: '  sk-test-unsafe-local-file  ',
+    };
+    const firstRun = createBufferedIo(false, temporaryRepositoryRoot, environmentOverrides);
+    const secondRun = createBufferedIo(false, temporaryRepositoryRoot, environmentOverrides);
+    const secretFilePath = resolve(temporaryHomeRoot, '.repo-ai-governor', 'secrets.json');
+    const secretIndexPath = resolve(temporaryHomeRoot, '.repo-ai-governor', 'secret-index.json');
+
+    try {
+      const importExitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'en-US',
+          '--output',
+          'json',
+          'secret',
+          'import',
+          'openai/api-key',
+          '--backend',
+          'unsafe-local-file',
+          '--from-env',
+          'OPENAI_API_KEY',
+        ],
+        firstRun.io,
+      );
+      const importPayload = JSON.parse(firstRun.stdoutBuffer.join(''));
+      const secretFileContent = await readFile(secretFilePath, 'utf8');
+      const secretIndexContent = await readFile(secretIndexPath, 'utf8');
+      const parsedSecretFileContent = JSON.parse(secretFileContent) as {
+        secrets: Record<string, string>;
+      };
+
+      expect(importExitCode).toBe(0);
+      expect(firstRun.stderrBuffer.join('')).toBe('');
+      expect(importPayload.command).toBe('secret');
+      expect(importPayload.command_result.operation).toBe('secret_import');
+      expect(importPayload.command_result.details.backend).toBe('unsafe-local-file');
+      expect(parsedSecretFileContent.secrets['openai/api-key']).toBe(
+        '  sk-test-unsafe-local-file  ',
+      );
+      expect(secretIndexContent).toContain('openai/api-key');
+
+      const listExitCode = await runCli(
+        ['node', 'repo-ai-governor', '--locale', 'en-US', '--output', 'json', 'secret', 'list'],
+        secondRun.io,
+      );
+      const listPayload = JSON.parse(secondRun.stdoutBuffer.join(''));
+
+      expect(listExitCode).toBe(0);
+      expect(secondRun.stderrBuffer.join('')).toBe('');
+      expect(listPayload.command_result.operation).toBe('secret_list');
+      expect(listPayload.command_result.details.records).toContain(
+        'openai/api-key@unsafe-local-file:present',
+      );
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+      await rm(temporaryHomeRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('localizes config validation errors and guidance in zh-CN JSON mode', async () => {
+    const temporaryRepositoryRoot = await createFirstTimeInitFixtureRepo();
+    const temporaryHomeRoot = await mkdtemp(resolve(tmpdir(), 'cli-output-config-error-home-'));
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, temporaryRepositoryRoot, {
+      HOME: temporaryHomeRoot,
+    });
+
+    try {
+      const exitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'zh-CN',
+          '--output',
+          'json',
+          'config',
+          'set',
+          'workspace.mode_preference',
+          'invalid-mode',
+        ],
+        io,
+      );
+      const payload = JSON.parse(stderrBuffer.join(''));
+
+      expect(exitCode).toBe(1);
+      expect(stdoutBuffer.join('')).toBe('');
+      expect(payload.error_code).toBe('USER_CONFIG_VALUE_INVALID');
+      expect(payload.message).toContain('workspace.mode_preference 必须是');
+      expect(payload.hint).toContain('用户本地配置或 secret 输入无效');
+      expect(payload.next_action).toBe('check_command_usage');
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+      await rm(temporaryHomeRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('localizes secret input errors and guidance in zh-CN JSON mode', async () => {
+    const temporaryRepositoryRoot = await createFirstTimeInitFixtureRepo();
+    const temporaryHomeRoot = await mkdtemp(resolve(tmpdir(), 'cli-output-secret-error-home-'));
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, temporaryRepositoryRoot, {
+      HOME: temporaryHomeRoot,
+    });
+
+    try {
+      const exitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--locale',
+          'zh-CN',
+          '--output',
+          'json',
+          'secret',
+          'set',
+          'openai/api-key',
+        ],
+        io,
+      );
+      const payload = JSON.parse(stderrBuffer.join(''));
+
+      expect(exitCode).toBe(1);
+      expect(stdoutBuffer.join('')).toBe('');
+      expect(payload.error_code).toBe('SECRET_INPUT_INVALID');
+      expect(payload.message).toContain('secret set 在非交互模式下必须使用 --stdin');
+      expect(payload.hint).toContain('用户本地配置或 secret 输入无效');
+      expect(payload.next_action).toBe('check_command_usage');
+    } finally {
+      await rm(temporaryRepositoryRoot, { recursive: true, force: true });
+      await rm(temporaryHomeRoot, { recursive: true, force: true });
+    }
+  });
+
   it('surfaces configured codex exec fixture mode in JSON diagnostics', async () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false, process.cwd(), {
       [CliCodexExecFixtureEnvironmentKey.ENABLE_FIXTURES]: '1',
@@ -1047,11 +1417,17 @@ describe('CLI output contract integration', () => {
     expect(exitCode).toBe(0);
     expect(stderrBuffer.join('')).toBe('');
     expect(stdout).toContain('Usage: repo-ai-governor connect [options] [action] [candidate]');
+    expect(stdout).toContain('--remote-api-model <binding>');
+    expect(stdout).toContain('--remote-api-credential-env-var <binding>');
+    expect(stdout).toContain('--remote-api-endpoint <binding>');
     expect(stdout).toContain('Session.main governed capability: Connect');
     expect(stdout).toContain('Suggested slash command: /connect');
     expect(stdout).toContain('Execution path: direct execute (no extra confirmation)');
     expect(stdout).toContain('Example prompts:');
     expect(stdout).toContain('Help me connect Codex and Claude Code.');
+    expect(stdout).toContain(
+      'repo-ai-governor connect --tools codex --remote-api-model codex=gpt-5 --output pretty',
+    );
     expect(stdout).toContain('Related capabilities:');
     expect(stdout).toContain('/doctor');
     expect(stdout).not.toContain('/verify');
@@ -1442,7 +1818,7 @@ describe('CLI output contract integration', () => {
     const globalPreferencePath = resolve(
       temporaryHomeRoot,
       '.repo-ai-governor',
-      'cli-preferences.yaml',
+      'user-config.yaml',
     );
     const originalConfigContent = await readFile(configPath, 'utf8');
 
@@ -1489,7 +1865,7 @@ describe('CLI output contract integration', () => {
     const globalPreferencePath = resolve(
       temporaryHomeRoot,
       '.repo-ai-governor',
-      'cli-preferences.yaml',
+      'user-config.yaml',
     );
 
     try {
@@ -1539,7 +1915,7 @@ describe('CLI output contract integration', () => {
     const globalPreferencePath = resolve(
       temporaryHomeRoot,
       '.repo-ai-governor',
-      'cli-preferences.yaml',
+      'user-config.yaml',
     );
 
     try {
@@ -2062,7 +2438,7 @@ describe('CLI output contract integration', () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false);
 
     const exitCode = await runCli(
-      ['node', 'repo-ai-governor', '--output', 'json', 'unknown-command'],
+      ['node', 'repo-ai-governor', '--locale', 'en-US', '--output', 'json', 'unknown-command'],
       io,
     );
 

@@ -2,7 +2,7 @@
 
 - Status: baseline
 - Date: 2026-04-11
-- Scope: `project-009-production-readiness / TK-075,TK-076`; `project-061-adoption-pack-installer-and-self-host-bootstrap-rollout / TK-656~TK-667`; `project-082-session-shell-readability-and-workspace-discoverability / TK-765~TK-767`; `project-083-session-shell-theme-choice-and-readability-followup / TK-768~TK-770`
+- Scope: `project-009-production-readiness / TK-075,TK-076`; `project-061-adoption-pack-installer-and-self-host-bootstrap-rollout / TK-656~TK-667`; `project-082-session-shell-readability-and-workspace-discoverability / TK-765~TK-767`; `project-083-session-shell-theme-choice-and-readability-followup / TK-768~TK-770`; `project-085-command-based-remote-api-configuration / TK-773~TK-774`; `project-089-local-user-config-and-secret-command-rollout / TK-788~TK-799`
 
 ## Purpose
 
@@ -16,7 +16,7 @@
 4. 会话入口：无子命令 session shell、`resume`
 5. adopter 安装生命周期：`adopt list`、`adopt apply`、`adopt diff`、`adopt verify`、`adopt upgrade`、`adopt remove`
 6. 流程与生命周期：`workflow`、`upgrade`
-7. workspace 与壳层偏好：`workspace`、`set-ui-theme`
+7. 用户本地默认值、secret 与壳层偏好：`config`、`secret`、`workspace`、`set-ui-theme`
 8. 宿主分发：`host export`、`host verify`、`host pack`
 
 ## Notes
@@ -34,3 +34,6 @@
 11. `adopt list/apply/diff/verify/upgrade/remove` 负责 built-in 或 override adoption pack 的解析、受管安装、差异检查、验证与移除；`self-host-complete` profile 只在显式选择时才会 materialize `repo_local` governance bootstrap surface。
 12. `host export/verify/pack` 负责 staged host assets、verification summary 与 pack receipt；公开 host family 已覆盖 `codex`、`claude-code` 与 `github-copilot`，其中 `github-com-agent` 仍保持 reserved/fail-closed；公开的 service-host 根包入口固定为 `@cjhdev/repo-ai-governor/service-host`。
 13. session shell 的默认可读性增强只调整 presenter 层的强调样式、关键 chrome 对比度、palette 可见条目数与摘要截断宽度；实际字体大小仍由宿主终端或 IDE 控制，不新增 shell-side font/theme preference。
+14. `config` / `secret` 负责用户私有 authoring：canonical `user-config.yaml` 路径固定为 `~/.repo-ai-governor/user-config.yaml`；显式 CLI 参数与 workspace `governor.yaml` 的优先级始终高于 user-local defaults；真实 secret value 只允许进入 backend，配置里只保留 `credentialRef` selector。
+15. `connect` 现在既支持通过 `--remote-api-model`、`--remote-api-credential-env-var` 与 `--remote-api-endpoint` 直接 author 首次 `remote_api` candidate，也会在没有更高优先级覆盖时消费 `user-config.yaml` 中的 remote-api defaults；命令只会写入模型、endpoint、env-var 引用或 `credentialRef` selector，不会把真实 API key 明文落进 `governor.yaml`。
+16. session shell 中的 `/config` 与 `/secret` 只是对同一命令族的 discoverability shortcut，不会形成第二份 config / secret truth。

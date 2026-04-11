@@ -54,6 +54,7 @@ import {
 } from './constants/cli-command.constant.js';
 import {
   CLI_CONNECT_ACTION_VALUES,
+  CLI_CONNECT_TRANSPORT_AUTHORING_SURFACES,
   CliConnectAction,
   CliConnectWriteMode,
 } from './constants/cli-connect.constant.js';
@@ -98,6 +99,8 @@ import {
   ReactCliStderrFramePresenter,
 } from './react-cli/index.js';
 import { CliClaudeCodeExecFixtureRuntime } from './runtime/claude-code-exec-fixture-runtime.js';
+import { CliUserConfigProjectionService } from './runtime/cli-user-config-projection-service.js';
+import { CliUserConfigService } from './runtime/cli-user-config-service.js';
 import { CliCodexExecFixtureRuntime } from './runtime/codex-exec-fixture-runtime.js';
 import { CliGithubCopilotExecFixtureRuntime } from './runtime/github-copilot-exec-fixture-runtime.js';
 import { GlobalCliThemePreferenceService } from './runtime/global-cli-theme-preference-service.js';
@@ -112,6 +115,7 @@ import { CliLiveCommandCancelController } from './runtime/live-command-cancel-co
 import { CliLiveCommandCancellationPolicy } from './runtime/live-command-cancellation-policy.js';
 import { CliNotificationProviderRegistryRuntime } from './runtime/notification-provider-registry-runtime.js';
 import { CliOrchestrationServiceRuntime } from './runtime/orchestration-service-runtime.js';
+import { CliSecretService } from './runtime/secrets/cli-secret-service.js';
 import { CliSessionMainCapabilityDiscoverabilityRuntime } from './runtime/session-main-capability-discoverability-runtime.js';
 import { CliSessionMainSupervisorRuntime } from './runtime/session-main-supervisor-runtime.js';
 export {
@@ -144,6 +148,8 @@ import type {
   CliAdoptCommandOptions,
   CliCommandDiagnostics,
   CliCommandExecutionResultPayload,
+  CliConfigCommandOptions,
+  CliConnectRemoteApiOverride,
   CliConnectRoleBindingOverride,
   CliConnectToolTransportOverride,
   CliErrorOutputPayload,
@@ -154,6 +160,7 @@ import type {
   CliPlanCommandOptions,
   CliResolvedOutputContext,
   CliRuntimeDebugOptions,
+  CliSecretCommandOptions,
   CliSuccessOutputPayload,
   CliUpgradeCommandOptions,
   CliWorkflowCommandOptions,
@@ -184,6 +191,7 @@ const CLI_TOP_LEVEL_BOOLEAN_OPTIONS = new Set<string>([
   '--trace',
   '--restricted-network',
   '--no-local-fallback',
+  '--stdin',
   '--help',
   '-h',
 ]);
@@ -364,6 +372,7 @@ export async function runCli(
 ): Promise<number> {
   const rawArgs = argv.slice(2);
   const commandName = resolveRequestedCommandName(rawArgs);
+  const requestedLocale = readOptionValue(rawArgs, '--locale');
   const environment = io.env?.() ?? process.env;
   const outputPresenter = new CliOutputPresenter({
     stdout: io.stdout,
@@ -375,6 +384,7 @@ export async function runCli(
   let i18nRuntime: I18nRuntime | undefined;
   let memoryStoreComposition: MemoryProviderRegistryLoadResult | undefined;
   let sessionShellOrchestrationServiceRuntime: CliOrchestrationServiceRuntime | undefined;
+  let activeLocaleForMessages = requestedLocale;
 
   try {
     outputContext = resolveOutputModeContext(rawArgs, io);
@@ -383,7 +393,6 @@ export async function runCli(
       verbosity: resolveVerbosityOption(rawArgs),
     };
 
-    const requestedLocale = readOptionValue(rawArgs, '--locale');
     const requestedProfileId =
       commandName === CliCommandName.ADOPT && !readOptionValue(rawArgs, '--adoption-profile')
         ? null
@@ -395,7 +404,17 @@ export async function runCli(
     const claudeCodeExecRunner = claudeCodeExecFixtureRuntime.resolveExecRunner(environment);
     const githubCopilotExecFixtureRuntime = new CliGithubCopilotExecFixtureRuntime();
     const githubCopilotExecRunner = githubCopilotExecFixtureRuntime.resolveExecRunner(environment);
-    const globalCliThemePreferenceService = new GlobalCliThemePreferenceService();
+    const cliUserConfigService = new CliUserConfigService({
+      localizeText: (english, chinese) =>
+        localizeTextForLocale(activeLocaleForMessages, english, chinese),
+    });
+    const cliSecretService = new CliSecretService({
+      localizeText: (english, chinese) =>
+        localizeTextForLocale(activeLocaleForMessages, english, chinese),
+    });
+    const globalCliThemePreferenceService = new GlobalCliThemePreferenceService(
+      cliUserConfigService,
+    );
     const notificationProviderRegistryRuntime = new CliNotificationProviderRegistryRuntime();
     const notificationProviders = notificationProviderRegistryRuntime.resolveProviders(environment);
     const sessionShellRunner =
@@ -411,7 +430,10 @@ export async function runCli(
       requestedProfileId ?? undefined,
       environment,
       globalCliThemePreferenceService,
+      cliUserConfigService,
     );
+    const configCommandOptions = resolveConfigCommandOptions(rawArgs);
+    const secretCommandOptions = resolveSecretCommandOptions(rawArgs);
     const workspaceCommandOptions = resolveWorkspaceCommandOptions(
       rawArgs,
       globalCliThemePreferenceService.resolvePreferencePath(environment),
@@ -435,6 +457,7 @@ export async function runCli(
     i18nRuntime = new I18nRuntime();
     const runtimeI18n = i18nRuntime;
     const resolvedLocale = await runtimeI18n.initialize(runtimeContext.i18n, requestedLocale);
+    activeLocaleForMessages = resolvedLocale;
     const profileLabel = runtimeContext.profileId ?? runtimeI18n.t('cli.skeleton.noProfile');
     sessionShellOrchestrationServiceRuntime = new CliOrchestrationServiceRuntime(
       runtimeContext.workspace.workspaceRoot,
@@ -448,6 +471,13 @@ export async function runCli(
             locale: resolvedLocale,
             adaptersConfig: runtimeContext.adapters,
             adapterRoutingRuntimeCacheNamespace: `session-main:${runtimeContext.workspace.workspaceRoot}`,
+            resolveCredentialRef: async (selector: string) =>
+              (
+                await cliSecretService.resolveSecretValue({
+                  selector,
+                  environment,
+                })
+              )?.value ?? null,
             ...(codexExecRunner
               ? {
                   codexExecRunner,
@@ -527,6 +557,7 @@ export async function runCli(
       const activeMemoryStoreComposition = await resolveMemoryStoreComposition();
       governanceRuntime = new CliGovernanceRuntime({
         currentWorkingDirectory: io.cwd(),
+        environment,
         workspace: runtimeContext.workspace,
         config: runtimeContext.config,
         configSource: runtimeContext.configSource,
@@ -540,6 +571,8 @@ export async function runCli(
         memoryStoreRoot: activeMemoryStoreComposition.memoryStoreRoot,
         memoryStoreProviderName: activeMemoryStoreComposition.providerName,
         memoryStoreProvider: activeMemoryStoreComposition.provider,
+        configCommandOptions,
+        secretCommandOptions,
         workspaceCommandOptions,
         workflowCommandOptions,
         planCommandOptions,
@@ -597,6 +630,15 @@ export async function runCli(
     program.option('--preset <presetId>', runtimeI18n.t('cli.options.preset'));
     program.option('--tools <tools>', runtimeI18n.t('cli.options.tools'));
     program.option('--tool-transport <binding>', runtimeI18n.t('cli.options.toolTransport'));
+    program.option('--remote-api-model <binding>', runtimeI18n.t('cli.options.remoteApiModel'));
+    program.option(
+      '--remote-api-credential-env-var <binding>',
+      runtimeI18n.t('cli.options.remoteApiCredentialEnvVar'),
+    );
+    program.option(
+      '--remote-api-endpoint <binding>',
+      runtimeI18n.t('cli.options.remoteApiEndpoint'),
+    );
     program.option('--overwrite', runtimeI18n.t('cli.options.overwrite'));
     program.option('--latest', runtimeI18n.t('cli.options.latest'));
     program.option('--force', runtimeI18n.t('cli.options.force'));
@@ -779,6 +821,8 @@ export async function runCli(
 
     for (const commandDefinition of CLI_COMMAND_DEFINITIONS) {
       if (
+        commandDefinition.name === CliCommandName.CONFIG ||
+        commandDefinition.name === CliCommandName.SECRET ||
         commandDefinition.name === CliCommandName.CONNECT ||
         commandDefinition.name === CliCommandName.PLAN ||
         commandDefinition.name === CliCommandName.ADOPT ||
@@ -812,11 +856,122 @@ export async function runCli(
       });
     }
 
+    const configCommand = program
+      .command(CliCommandName.CONFIG)
+      .description(runtimeI18n.t('cli.commands.config.description'))
+      .addHelpText('after', buildConfigHelpText(runtimeI18n))
+      .action(async () => {
+        throw new RuntimeError(
+          GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+          runtimeI18n.t('cli.commands.config.subcommandRequired'),
+          {
+            command: CliCommandName.CONFIG,
+          },
+        );
+      });
+    configCommand
+      .command('get')
+      .description(runtimeI18n.t('cli.commands.config.getDescription'))
+      .argument('<keyPath>', runtimeI18n.t('cli.commands.config.keyPathArgument'))
+      .action(async () => {
+        await executeCliCommand(CliCommandName.CONFIG);
+      });
+    configCommand
+      .command('set')
+      .description(runtimeI18n.t('cli.commands.config.setDescription'))
+      .argument('<keyPath>', runtimeI18n.t('cli.commands.config.keyPathArgument'))
+      .argument('<value>', runtimeI18n.t('cli.commands.config.valueArgument'))
+      .action(async () => {
+        await executeCliCommand(CliCommandName.CONFIG);
+      });
+    configCommand
+      .command('unset')
+      .description(runtimeI18n.t('cli.commands.config.unsetDescription'))
+      .argument('<keyPath>', runtimeI18n.t('cli.commands.config.keyPathArgument'))
+      .action(async () => {
+        await executeCliCommand(CliCommandName.CONFIG);
+      });
+    configCommand
+      .command('list')
+      .description(runtimeI18n.t('cli.commands.config.listDescription'))
+      .action(async () => {
+        await executeCliCommand(CliCommandName.CONFIG);
+      });
+    configCommand
+      .command('status')
+      .description(runtimeI18n.t('cli.commands.config.statusDescription'))
+      .action(async () => {
+        await executeCliCommand(CliCommandName.CONFIG);
+      });
+
+    const secretCommand = program
+      .command(CliCommandName.SECRET)
+      .description(runtimeI18n.t('cli.commands.secret.description'))
+      .addHelpText('after', buildSecretHelpText(runtimeI18n))
+      .action(async () => {
+        throw new RuntimeError(
+          GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+          runtimeI18n.t('cli.commands.secret.subcommandRequired'),
+          {
+            command: CliCommandName.SECRET,
+          },
+        );
+      });
+    secretCommand
+      .command('set')
+      .description(runtimeI18n.t('cli.commands.secret.setDescription'))
+      .argument('<keyName>', runtimeI18n.t('cli.commands.secret.keyNameArgument'))
+      .option('--backend <backend>', runtimeI18n.t('cli.options.backend'))
+      .option('--stdin', runtimeI18n.t('cli.options.stdin'))
+      .action(async () => {
+        await executeCliCommand(CliCommandName.SECRET);
+      });
+    secretCommand
+      .command('import')
+      .description(runtimeI18n.t('cli.commands.secret.importDescription'))
+      .argument('<keyName>', runtimeI18n.t('cli.commands.secret.keyNameArgument'))
+      .option('--backend <backend>', runtimeI18n.t('cli.options.backend'))
+      .option('--from-env <ENV_VAR>', runtimeI18n.t('cli.options.fromEnv'))
+      .action(async () => {
+        await executeCliCommand(CliCommandName.SECRET);
+      });
+    secretCommand
+      .command('delete')
+      .description(runtimeI18n.t('cli.commands.secret.deleteDescription'))
+      .argument('<keyName>', runtimeI18n.t('cli.commands.secret.keyNameArgument'))
+      .option('--backend <backend>', runtimeI18n.t('cli.options.backend'))
+      .action(async () => {
+        await executeCliCommand(CliCommandName.SECRET);
+      });
+    secretCommand
+      .command('list')
+      .description(runtimeI18n.t('cli.commands.secret.listDescription'))
+      .action(async () => {
+        await executeCliCommand(CliCommandName.SECRET);
+      });
+    secretCommand
+      .command('status')
+      .description(runtimeI18n.t('cli.commands.secret.statusDescription'))
+      .option('--backend <backend>', runtimeI18n.t('cli.options.backend'))
+      .action(async () => {
+        await executeCliCommand(CliCommandName.SECRET);
+      });
+
     program
       .command(CliCommandName.CONNECT)
       .description(runtimeI18n.t('cli.commands.connect.description'))
       .argument('[action]', runtimeI18n.t('cli.commands.connect.actionArgument'))
       .argument('[candidate]', runtimeI18n.t('cli.commands.connect.candidateArgument'))
+      .option('--preset <presetId>', runtimeI18n.t('cli.options.preset'))
+      .option('--tools <tools>', runtimeI18n.t('cli.options.tools'))
+      .option('--tool-transport <binding>', runtimeI18n.t('cli.options.toolTransport'))
+      .option('--remote-api-model <binding>', runtimeI18n.t('cli.options.remoteApiModel'))
+      .option(
+        '--remote-api-credential-env-var <binding>',
+        runtimeI18n.t('cli.options.remoteApiCredentialEnvVar'),
+      )
+      .option('--remote-api-endpoint <binding>', runtimeI18n.t('cli.options.remoteApiEndpoint'))
+      .option('--overwrite', runtimeI18n.t('cli.options.overwrite'))
       .option('--latest', runtimeI18n.t('cli.options.latest'))
       .option('--force', runtimeI18n.t('cli.options.force'))
       .option('--no-rollback', runtimeI18n.t('cli.options.noRollback'))
@@ -1128,7 +1283,13 @@ export async function runCli(
       : `CLI execution failed [${standardizedError.code}]: ${standardizedError.message}`;
 
     outputPresenter.writeError(
-      buildErrorOutputPayload(commandName, message, standardizedError, outputContext),
+      buildErrorOutputPayload(
+        commandName,
+        message,
+        standardizedError,
+        outputContext,
+        (english, chinese) => localizeTextForLocale(activeLocaleForMessages, english, chinese),
+      ),
     );
     return exitCode;
   } finally {
@@ -1198,6 +1359,26 @@ function buildSetUiThemeHelpText(i18n: I18nRuntime): string {
   ].join('\n');
 }
 
+function buildConfigHelpText(i18n: I18nRuntime): string {
+  return [
+    i18n.t('cli.commands.config.examplesTitle'),
+    `  ${CLI_PROGRAM_NAME} config status`,
+    `  ${CLI_PROGRAM_NAME} config get workspace.mode_preference`,
+    `  ${CLI_PROGRAM_NAME} config set ui.react.theme calm`,
+    `  ${CLI_PROGRAM_NAME} config unset tools.codex.remoteApi.endpoint`,
+  ].join('\n');
+}
+
+function buildSecretHelpText(i18n: I18nRuntime): string {
+  return [
+    i18n.t('cli.commands.secret.examplesTitle'),
+    `  printf '%s' \"$OPENAI_API_KEY\" | ${CLI_PROGRAM_NAME} secret set openai/api-key --stdin`,
+    `  ${CLI_PROGRAM_NAME} secret import openai/api-key --from-env OPENAI_API_KEY`,
+    `  ${CLI_PROGRAM_NAME} secret delete openai/api-key`,
+    `  ${CLI_PROGRAM_NAME} secret status`,
+  ].join('\n');
+}
+
 /**
  * Builds one localized connect-command help appendix covering generate/diff/apply flows.
  * @param i18n Initialized CLI i18n runtime.
@@ -1213,6 +1394,8 @@ function buildConnectHelpText(i18n: I18nRuntime): string {
     '',
     i18n.t('cli.commands.connect.examplesTitle'),
     `  ${CLI_PROGRAM_NAME} connect --preset multi-tool-default --output pretty`,
+    `  ${CLI_PROGRAM_NAME} connect --tools codex --remote-api-model codex=gpt-5 --output pretty`,
+    `  ${CLI_PROGRAM_NAME} connect --tools codex --tool-transport codex=remote_api --remote-api-model codex=gpt-5 --remote-api-credential-env-var codex=OPENAI_API_KEY --output json`,
     `  ${CLI_PROGRAM_NAME} connect diff --latest --output json`,
     `  ${CLI_PROGRAM_NAME} connect apply --latest --output pretty`,
     `  ${CLI_PROGRAM_NAME} connect apply ./context/diagnostics/connect/connect-1234567890.governor.yaml --force`,
@@ -1443,11 +1626,18 @@ function resolveRuntimeContext(
   requestedProfileId?: string,
   environment: NodeJS.ProcessEnv = process.env,
   globalCliThemePreferenceService = new GlobalCliThemePreferenceService(),
+  cliUserConfigService = new CliUserConfigService(),
+  cliUserConfigProjectionService = new CliUserConfigProjectionService({
+    userConfigService: cliUserConfigService,
+  }),
 ): ResolvedCliRuntimeContext {
   const configLoader = new ConfigLoader();
   const profileResolver = new ProfileResolver();
   const workspaceResolver = new WorkspaceResolver();
   const defaultWorkspace = workspaceResolver.resolve({ currentWorkingDirectory });
+  const preferredWorkspaceMode = cliUserConfigService.loadWorkspaceModePreference({
+    environment,
+  });
   const globalThemePreference = globalCliThemePreferenceService.loadThemePreference({
     environment,
   });
@@ -1463,9 +1653,13 @@ function resolveRuntimeContext(
 
     const loadedConfig = configLoader.loadFromFile(configPath);
     const resolvedConfig = profileResolver.resolve(loadedConfig, requestedProfileId);
+    const effectiveConfig = cliUserConfigProjectionService.applyUserLocalDefaults({
+      config: resolvedConfig.config,
+      environment,
+    });
     const resolvedWorkspace = workspaceResolver.resolve({
       currentWorkingDirectory,
-      config: resolvedConfig.config,
+      config: effectiveConfig,
     });
     const workspaceThemePreference = resolveWorkspaceThemePreference({
       configLoader,
@@ -1477,10 +1671,10 @@ function resolveRuntimeContext(
     });
 
     return {
-      config: resolvedConfig.config,
-      i18n: resolvedConfig.config.i18n,
-      memory: resolveMemoryRuntimeConfig(resolvedConfig.config.memory),
-      adapters: resolveAdaptersRuntimeConfig(resolvedConfig.config.adapters),
+      config: effectiveConfig,
+      i18n: effectiveConfig.i18n,
+      memory: resolveMemoryRuntimeConfig(effectiveConfig.memory),
+      adapters: resolveAdaptersRuntimeConfig(effectiveConfig.adapters),
       uiTheme: resolveCliThemePreset(
         workspaceThemePreference ?? globalThemePreference ?? undefined,
       ),
@@ -1490,15 +1684,31 @@ function resolveRuntimeContext(
     };
   }
 
+  const fallbackWorkspace = workspaceResolver.resolve({
+    currentWorkingDirectory,
+    ...(preferredWorkspaceMode
+      ? {
+          runtimeOverrides: {
+            mode: preferredWorkspaceMode,
+          },
+        }
+      : {}),
+  });
+
+  const defaultConfig = cliUserConfigProjectionService.applyUserLocalDefaults({
+    config: buildDefaultGovernorConfig(fallbackWorkspace.mode),
+    environment,
+  });
+
   return {
-    config: buildDefaultGovernorConfig(defaultWorkspace.mode),
+    config: defaultConfig,
     i18n: DEFAULT_I18N_CONFIG,
     memory: DEFAULT_MEMORY_CONFIG,
-    adapters: resolveAdaptersRuntimeConfig(undefined),
+    adapters: resolveAdaptersRuntimeConfig(defaultConfig.adapters),
     uiTheme: resolveCliThemePreset(globalThemePreference ?? undefined),
     profileId: null,
     configSource: 'default',
-    workspace: defaultWorkspace,
+    workspace: fallbackWorkspace,
   };
 }
 
@@ -1935,6 +2145,7 @@ function resolveRuntimeDebugOptions(
   }
   const requestedTools = resolveAdapterSurfaceListOption(toolsOption.value ?? null, '--tools');
   const toolTransportOverrides = resolveToolTransportOverrides(args, requestedLocale);
+  const remoteApiOverrides = resolveRemoteApiOverrides(args, requestedLocale);
 
   const singleToolAllRolesOption = readOptionInput(args, '--single-tool-all-roles');
   if (singleToolAllRolesOption.isPresent && !singleToolAllRolesOption.value) {
@@ -2155,6 +2366,7 @@ function resolveRuntimeDebugOptions(
     requestedTools:
       singleToolAllRolesSurface !== null ? [singleToolAllRolesSurface] : requestedTools,
     toolTransportOverrides,
+    remoteApiOverrides,
     overwrite: hasFlag(args, '--overwrite'),
     singleToolAllRoles: singleToolAllRolesSurface !== null,
     roleBindingOverrides,
@@ -2349,6 +2561,156 @@ function resolveToolTransportOverrides(
   });
 }
 
+function resolveRemoteApiOverrides(
+  args: string[],
+  requestedLocale: string | null,
+): CliConnectRemoteApiOverride[] {
+  const overrideByToolId = new Map<AdapterSurface, CliConnectRemoteApiOverride>();
+  const modelBindings = resolveSingleToolStringBindings(
+    args,
+    '--remote-api-model',
+    requestedLocale,
+  );
+  const credentialEnvBindings = resolveSingleToolStringBindings(
+    args,
+    '--remote-api-credential-env-var',
+    requestedLocale,
+  );
+  const endpointBindings = resolveSingleToolStringBindings(
+    args,
+    '--remote-api-endpoint',
+    requestedLocale,
+  );
+
+  for (const binding of [...modelBindings, ...credentialEnvBindings, ...endpointBindings]) {
+    if (!CLI_CONNECT_TRANSPORT_AUTHORING_SURFACES.has(binding.toolId)) {
+      throw new RuntimeError(
+        GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+        localizeCliText(
+          requestedLocale,
+          `Option ${binding.flag} does not support tool '${binding.toolId}'.`,
+          `选项 ${binding.flag} 不支持工具 '${binding.toolId}'。`,
+        ),
+        {
+          option: binding.flag,
+          toolId: binding.toolId,
+        },
+      );
+    }
+
+    const currentOverride = overrideByToolId.get(binding.toolId) ?? { toolId: binding.toolId };
+    if (binding.flag === '--remote-api-model') {
+      currentOverride.model = binding.value;
+    }
+    if (binding.flag === '--remote-api-credential-env-var') {
+      currentOverride.credentialEnvVar = binding.value;
+    }
+    if (binding.flag === '--remote-api-endpoint') {
+      currentOverride.endpoint = binding.value;
+    }
+    overrideByToolId.set(binding.toolId, currentOverride);
+  }
+
+  return Array.from(overrideByToolId.values());
+}
+
+const CLI_CONNECT_REMOTE_API_AUTHORING_FLAGS = [
+  '--remote-api-model',
+  '--remote-api-credential-env-var',
+  '--remote-api-endpoint',
+] as const;
+
+function resolveSingleToolStringBindings(
+  args: string[],
+  flag: (typeof CLI_CONNECT_REMOTE_API_AUTHORING_FLAGS)[number],
+  requestedLocale: string | null,
+): Array<{
+  toolId: AdapterSurface;
+  value: string;
+  flag: (typeof CLI_CONNECT_REMOTE_API_AUTHORING_FLAGS)[number];
+}> {
+  const rawBindings = readRepeatedOptionValues(args, flag);
+  if (rawBindings.length === 0) {
+    return [];
+  }
+
+  const seenToolIds = new Set<AdapterSurface>();
+  return rawBindings.map((rawBinding) => {
+    const separatorIndex = rawBinding.indexOf('=');
+    if (separatorIndex <= 0 || separatorIndex === rawBinding.length - 1) {
+      throw new RuntimeError(
+        GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+        localizeCliText(
+          requestedLocale,
+          `Option ${flag} must use toolId=value syntax.`,
+          `选项 ${flag} 必须使用 toolId=value 语法。`,
+        ),
+        {
+          option: flag,
+          value: rawBinding,
+        },
+      );
+    }
+
+    const toolToken = rawBinding.slice(0, separatorIndex).trim();
+    const valueToken = rawBinding.slice(separatorIndex + 1).trim();
+    const toolIds = resolveAdapterSurfaceListOption(toolToken, flag);
+    if (toolIds.length !== 1) {
+      throw new RuntimeError(
+        GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+        localizeCliText(
+          requestedLocale,
+          `Option ${flag} must target exactly one tool id per override.`,
+          `选项 ${flag} 的每条覆盖必须只指定一个 tool id。`,
+        ),
+        {
+          option: flag,
+          value: rawBinding,
+        },
+      );
+    }
+
+    const toolId = toolIds[0] ?? null;
+    if (!toolId || valueToken.length === 0) {
+      throw new RuntimeError(
+        GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+        localizeCliText(
+          requestedLocale,
+          `Option ${flag} requires both one tool id and one value.`,
+          `选项 ${flag} 需要同时提供一个 tool id 和一个值。`,
+        ),
+        {
+          option: flag,
+          value: rawBinding,
+        },
+      );
+    }
+
+    if (seenToolIds.has(toolId)) {
+      throw new RuntimeError(
+        GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+        localizeCliText(
+          requestedLocale,
+          `Option ${flag} cannot repeat the same tool '${toolId}'.`,
+          `选项 ${flag} 不能重复指定同一个工具 '${toolId}'。`,
+        ),
+        {
+          option: flag,
+          value: rawBinding,
+          toolId,
+        },
+      );
+    }
+    seenToolIds.add(toolId);
+
+    return {
+      toolId,
+      value: valueToken,
+      flag,
+    };
+  });
+}
+
 function localizeCliText(locale: string | null, english: string, chinese: string): string {
   return locale?.trim().toLowerCase().startsWith('zh') ? chinese : english;
 }
@@ -2488,8 +2850,9 @@ function buildErrorOutputPayload(
   message: string,
   standardizedError: StandardizedError,
   outputContext: CliResolvedOutputContext,
+  localizeText: (english: string, chinese: string) => string,
 ): CliErrorOutputPayload {
-  const guidance = resolveErrorGuidance(standardizedError.code);
+  const guidance = resolveErrorGuidance(standardizedError.code, localizeText);
   const errorDetails = resolveCliErrorDetails(standardizedError.details);
 
   return {
@@ -2513,38 +2876,61 @@ function buildErrorOutputPayload(
 }
 
 /**
- * Resolves hint and next action from standardized error code.
+ * Resolves hint and next action from standardized error code using locale-aware copy.
  * @param code Standardized error code.
+ * @param localizeText Locale-aware English/Chinese text resolver.
  * @returns User/action guidance tuple.
  */
-function resolveErrorGuidance(code: GovernorErrorCode): {
+function resolveErrorGuidance(
+  code: GovernorErrorCode,
+  localizeText: (english: string, chinese: string) => string,
+): {
   hint: string;
   nextAction: CliNextAction;
 } {
   if (code === GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID) {
     return {
-      hint: 'Command name or option values are invalid.',
+      hint: localizeText('Command name or option values are invalid.', '命令名称或选项值无效。'),
+      nextAction: CliNextAction.CHECK_COMMAND_USAGE,
+    };
+  }
+
+  if (code.startsWith('USER_CONFIG_') || code.startsWith('SECRET_')) {
+    return {
+      hint: localizeText(
+        'User-local config or secret input is invalid, unavailable, or requires an explicit backend choice.',
+        '用户本地配置或 secret 输入无效、不可用，或者需要显式指定 backend。',
+      ),
       nextAction: CliNextAction.CHECK_COMMAND_USAGE,
     };
   }
 
   if (code.startsWith('CONFIG_')) {
     return {
-      hint: 'governor.yaml might be invalid or incompatible.',
+      hint: localizeText(
+        'governor.yaml might be invalid or incompatible.',
+        'governor.yaml 可能无效或与当前运行时不兼容。',
+      ),
       nextAction: CliNextAction.INSPECT_GOVERNOR_CONFIG,
     };
   }
 
   if (code.startsWith('I18N_')) {
     return {
-      hint: 'Locale setup is invalid or unsupported by current runtime.',
+      hint: localizeText(
+        'Locale setup is invalid or unsupported by current runtime.',
+        '当前运行时的语言设置无效，或不受支持。',
+      ),
       nextAction: CliNextAction.RETRY_WITH_VERBOSE,
     };
   }
 
   if (code.startsWith('ADAPTER_')) {
     return {
-      hint: 'Adapter routing or capability verification failed.',
+      hint: localizeText(
+        'Adapter routing or capability verification failed.',
+        'Adapter 路由或能力校验失败。',
+      ),
       nextAction: CliNextAction.INSPECT_GOVERNOR_CONFIG,
     };
   }
@@ -2554,22 +2940,43 @@ function resolveErrorGuidance(code: GovernorErrorCode): {
     code === GovernorErrorCode.POLICY_GATE_HITL_FEEDBACK_INVALID
   ) {
     return {
-      hint: 'Policy gate did not allow this run; inspect report/replay diagnostics artifacts.',
+      hint: localizeText(
+        'Policy gate did not allow this run; inspect report/replay diagnostics artifacts.',
+        'Policy gate 不允许本次执行；请检查 report/replay 诊断产物。',
+      ),
       nextAction: CliNextAction.INSPECT_POLICY_DIAGNOSTICS,
     };
   }
 
   if (code === GovernorErrorCode.REPORT_REPLAY_INPUT_INVALID) {
     return {
-      hint: 'Replay source path or payload is invalid for diagnostics replay.',
+      hint: localizeText(
+        'Replay source path or payload is invalid for diagnostics replay.',
+        '用于诊断回放的 replay 来源路径或 payload 无效。',
+      ),
       nextAction: CliNextAction.CHECK_REPLAY_SOURCE,
     };
   }
 
   return {
-    hint: 'Unexpected runtime failure occurred.',
+    hint: localizeText('Unexpected runtime failure occurred.', '发生了未预期的运行时失败。'),
     nextAction: CliNextAction.REPORT_ISSUE,
   };
+}
+
+/**
+ * Resolves English/Chinese inline copy using the currently effective locale hint.
+ * @param locale Locale candidate from CLI flag or initialized runtime.
+ * @param english English fallback text.
+ * @param chinese Simplified Chinese variant.
+ * @returns Locale-aware text.
+ */
+function localizeTextForLocale(
+  locale: string | undefined,
+  english: string,
+  chinese: string,
+): string {
+  return locale?.trim().toLowerCase().startsWith('zh') ? chinese : english;
 }
 
 /**
@@ -2762,6 +3169,24 @@ function resolveWorkspaceCommandOptions(
     themeScope:
       explicitThemeScope ?? (topLevelSetUiThemeRequested ? CliWorkspaceThemeScope.GLOBAL : null),
     themePreferencePath,
+  };
+}
+
+function resolveConfigCommandOptions(args: string[]): CliConfigCommandOptions {
+  return {
+    action: resolveNestedSubcommandToken(args, CliCommandName.CONFIG),
+    keyPath: resolvePositionalTokenAfterCommand(args, CliCommandName.CONFIG, 1),
+    value: resolvePositionalTokenAfterCommand(args, CliCommandName.CONFIG, 2),
+  };
+}
+
+function resolveSecretCommandOptions(args: string[]): CliSecretCommandOptions {
+  return {
+    action: resolveNestedSubcommandToken(args, CliCommandName.SECRET),
+    keyName: resolvePositionalTokenAfterCommand(args, CliCommandName.SECRET, 1),
+    backend: readOptionValue(args, '--backend') ?? null,
+    stdin: hasFlag(args, '--stdin'),
+    fromEnv: readOptionValue(args, '--from-env') ?? null,
   };
 }
 

@@ -41,6 +41,16 @@ export enum CliDoctorAttachMode {
  */
 export enum CliRuntimeOperation {
   WORKSPACE_INIT = 'workspace_init',
+  USER_CONFIG_GET = 'user_config_get',
+  USER_CONFIG_SET = 'user_config_set',
+  USER_CONFIG_UNSET = 'user_config_unset',
+  USER_CONFIG_LIST = 'user_config_list',
+  USER_CONFIG_STATUS = 'user_config_status',
+  SECRET_SET = 'secret_set',
+  SECRET_IMPORT = 'secret_import',
+  SECRET_DELETE = 'secret_delete',
+  SECRET_LIST = 'secret_list',
+  SECRET_STATUS = 'secret_status',
   ADAPTER_CONNECT = 'adapter_connect',
   ADAPTER_CONNECT_DIFF = 'adapter_connect_diff',
   ADAPTER_CONNECT_APPLY = 'adapter_connect_apply',

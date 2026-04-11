@@ -528,6 +528,32 @@ solutions:
     activated_at: 2026-04-02
     supersedes: []
 
+  - solution_id: technical-solution.local-user-config-and-secret-backed-command-configuration
+    title: Local user config and secret-backed command configuration
+    status: active
+    owner: runtime
+    version: v1
+    scope: cross-cutting
+    draft_paths:
+      - .repo-ai-governor/draft/local-user-config-and-secret-backed-command-configuration-technical-solution.md
+    review_paths:
+      - .repo-ai-governor/context/dev/project-087-local-user-config-and-secret-command-solution-review/sprint-001-draft-review-and-lifecycle-writeback/review/solution_review_local-user-config-and-secret-backed-command-configuration.md
+      - .repo-ai-governor/context/dev/project-088-local-user-config-and-secret-command-promotion-and-decomposition/sprint-001-promotion-and-followup-decomposition/review/resolved_code_review_tk-784-787-local-user-config-promotion-and-decomposition.md
+    final_paths:
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/local-user-config-defaults-and-secret-backed-credential-resolution.md
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/local-user-config-and-secret-command-contract.md
+    target_module_ids:
+      - runtime.agent-projection
+      - runtime.governance-clients
+    north_star_refs:
+      - prd.multi-tool-adapters
+      - architecture.runtime-boundary
+      - architecture.governance-boundary
+    approved_at: 2026-04-11
+    approved_by: AI-Agent
+    activated_at: 2026-04-11
+    supersedes: []
+
   - solution_id: technical-solution.provider-session-reuse-and-backend-conversation-continuity
     title: Provider session reuse and backend conversation continuity
     status: active

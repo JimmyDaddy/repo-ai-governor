@@ -12,6 +12,9 @@ export const EN_US_TRANSLATIONS = {
         'One-off React shell theme override: governor|catppuccin|calm. Default precedence is --ui-theme > workspace config > global CLI preference.',
       themeScope:
         'Theme persistence scope for set-ui-theme: workspace|global. Top-level set-ui-theme defaults to global; workspace set-ui-theme defaults to workspace.',
+      backend: 'Secret backend override: macos-keychain|unsafe-local-file.',
+      stdin: 'Read the secret value from stdin without accepting it as a positional argument.',
+      fromEnv: 'Import the secret value from one environment variable name.',
       verbosity: 'Output verbosity: quiet|normal|verbose.',
       compact: 'Compact pretty output for human-first quick scanning.',
       noColor: 'Disable ANSI color decorations in pretty mode.',
@@ -22,6 +25,12 @@ export const EN_US_TRANSLATIONS = {
       tools: 'Comma-separated adapter tool ids used by connect/doctor onboarding views.',
       toolTransport:
         'Repeatable per-tool transport override in toolId=transport form. Supported surfaces are transport-aware only.',
+      remoteApiModel:
+        'Repeatable per-tool remote_api model authoring in toolId=model form for connect candidate generation.',
+      remoteApiCredentialEnvVar:
+        'Repeatable per-tool remote_api credential env-var authoring in toolId=ENV_VAR form.',
+      remoteApiEndpoint:
+        'Repeatable per-tool remote_api endpoint authoring in toolId=https://... form.',
       overwrite:
         'Allow connect candidate config to replace existing role/routing fragments instead of merge-only output.',
       latest: 'Use the latest generated connect candidate artifact for diff/apply.',
@@ -79,6 +88,36 @@ export const EN_US_TRANSLATIONS = {
     },
     commands: {
       init: { description: 'Initialize governor workspace baseline.' },
+      config: {
+        description: 'Read and mutate user-local defaults stored in user-config.yaml.',
+        getDescription: 'Read one supported user-local default value.',
+        setDescription: 'Persist one supported user-local default value.',
+        unsetDescription: 'Remove one supported user-local default value.',
+        listDescription: 'List the currently populated user-local default values.',
+        statusDescription: 'Show canonical path, migration compatibility, and active defaults.',
+        keyPathArgument: 'Supported user-local config key path.',
+        valueArgument: 'User-local config value written to the canonical file.',
+        examplesTitle: 'Examples:',
+        subcommandRequired:
+          'config requires an explicit subcommand; use `config get`, `config set`, `config unset`, `config list`, or `config status`.',
+      },
+      secret: {
+        description:
+          'Write and inspect secret-backed credential values without storing plaintext in config files.',
+        setDescription:
+          'Write one secret value through stdin or a secure prompt into the selected backend.',
+        importDescription:
+          'Import one secret value from an environment variable into the selected backend.',
+        deleteDescription: 'Delete one managed secret key from the selected or indexed backend(s).',
+        listDescription:
+          'List managed secret keys plus backend/existence metadata without revealing values.',
+        statusDescription:
+          'Show backend availability, default selection, and unsafe fallback warnings.',
+        keyNameArgument: 'Stable namespaced secret key such as openai/api-key.',
+        examplesTitle: 'Examples:',
+        subcommandRequired:
+          'secret requires an explicit subcommand; use `secret set`, `secret import`, `secret delete`, `secret list`, or `secret status`.',
+      },
       connect: {
         description: 'Generate adapter onboarding diagnostics baseline.',
         actionArgument: 'Optional connect action: generate|diff|apply.',
@@ -288,6 +327,10 @@ export const EN_US_TRANSLATIONS = {
         'Set or export the required remote-api credential environment variables before connect/doctor: {{credentials}}.',
       verifyProviderLocalCredentialState:
         'Remote-api credential discovery stays read-only here; verify provider-local login state manually for: {{credentials}}.',
+      createCredentialReferences:
+        'Create or import the missing secret-backed remote-api credentials before connect/doctor: {{credentials}}. Use `secret set` or `secret import` to populate the backend.',
+      optIntoSecretFallback:
+        'No default secret backend is available for these credential references: {{credentials}}. Run `secret status` to inspect backend support, or opt into `--backend unsafe-local-file` only if you accept the local-only plaintext fallback.',
       resolveCredentialReferencesManually:
         'Remote-api credential references cannot be materialized automatically; resolve them manually for: {{credentials}}.',
       authenticateAdapters:
@@ -619,6 +662,28 @@ export const EN_US_TRANSLATIONS = {
       multilinePrompt: 'multiline> finish with {{terminator}} on its own line',
     },
     commandMessages: {
+      config: {
+        nextStepTitle: 'Next step',
+        precedenceHint:
+          'Remember the precedence boundary: explicit CLI args and workspace governor.yaml stay above user-config.yaml defaults.',
+        getCompleted: 'Resolved user-local default {{keyPath}}={{value}}.',
+        getMissing: 'User-local default {{keyPath}} is currently unset.',
+        setCompleted: 'Persisted user-local default {{keyPath}}={{value}}.',
+        unsetCompleted: 'Removed user-local default {{keyPath}} from the canonical config.',
+        listCompleted: 'Listed {{count}} populated user-local default entries.',
+        statusCompleted: 'User-local config status loaded from {{configPath}}.',
+      },
+      secret: {
+        nextStepTitle: 'Next step',
+        precedenceHint:
+          'Store only selectors like secret://... in config; keep real secret values in the backend.',
+        noneLabel: 'none',
+        setCompleted: 'Stored managed secret {{keyName}} in backend {{backend}}.',
+        importCompleted: 'Imported managed secret {{keyName}} into backend {{backend}}.',
+        deleteCompleted: 'Secret cleanup completed for {{keyName}}; deleted_backends={{count}}.',
+        listCompleted: 'Listed {{count}} managed secret records.',
+        statusCompleted: 'Secret backend status loaded for {{backend}}.',
+      },
       connect: {
         consumeLedgerBackfill: 'Consume ledger backfill',
         resolveLedgerBackfill:

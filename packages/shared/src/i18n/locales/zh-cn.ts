@@ -12,6 +12,9 @@ export const ZH_CN_TRANSLATIONS = {
         '指定当前命令的一次性 React shell 主题覆盖：governor|catppuccin|calm。默认优先级为 --ui-theme > workspace config > 全局 CLI 偏好。',
       themeScope:
         '指定 set-ui-theme 的主题持久化范围：workspace|global。顶层 set-ui-theme 默认 global，workspace set-ui-theme 默认 workspace。',
+      backend: '指定 secret backend 覆盖：macos-keychain|unsafe-local-file。',
+      stdin: '通过 stdin 读取 secret 值，而不是把它作为位置参数传入。',
+      fromEnv: '从一个环境变量名导入 secret 值。',
       verbosity: '指定输出详细级别：quiet|normal|verbose。',
       compact: '启用更紧凑的 pretty 输出，优先人类快速阅读。',
       noColor: '在 pretty 模式下禁用 ANSI 颜色。',
@@ -22,6 +25,11 @@ export const ZH_CN_TRANSLATIONS = {
       tools: '指定 connect/doctor onboarding 视图使用的逗号分隔工具列表。',
       toolTransport:
         '可重复传入的单工具 transport 覆盖，格式为 toolId=transport；仅支持 transport-aware surface。',
+      remoteApiModel:
+        '可重复传入的单工具 remote_api model 配置，格式为 toolId=model，用于 connect 候选配置生成。',
+      remoteApiCredentialEnvVar:
+        '可重复传入的单工具 remote_api 凭据环境变量名配置，格式为 toolId=ENV_VAR。',
+      remoteApiEndpoint: '可重复传入的单工具 remote_api endpoint 配置，格式为 toolId=https://...。',
       overwrite: '允许 connect 候选配置覆盖现有角色/路由片段，而不是只做合并输出。',
       latest: '在 diff/apply 中直接使用最近一次生成的 connect 候选产物。',
       force: '在 connect diff/apply 中绕过 source fingerprint 漂移或 apply-ready blocker 等保护。',
@@ -66,6 +74,31 @@ export const ZH_CN_TRANSLATIONS = {
     },
     commands: {
       init: { description: '初始化治理工作区基线。' },
+      config: {
+        description: '读取并修改保存在 user-config.yaml 中的用户本地默认值。',
+        getDescription: '读取一个受支持的用户本地默认值。',
+        setDescription: '持久化一个受支持的用户本地默认值。',
+        unsetDescription: '移除一个受支持的用户本地默认值。',
+        listDescription: '列出当前已填充的用户本地默认值。',
+        statusDescription: '显示 canonical path、迁移兼容状态与当前默认值。',
+        keyPathArgument: '受支持的 user-local config key path。',
+        valueArgument: '要写入 canonical 文件的用户本地默认值。',
+        examplesTitle: '示例：',
+        subcommandRequired:
+          'config 需要显式子命令；请使用 `config get`、`config set`、`config unset`、`config list` 或 `config status`。',
+      },
+      secret: {
+        description: '写入并查看 secret-backed 凭据值，同时避免把明文存进配置文件。',
+        setDescription: '通过 stdin 或安全提示，把一个 secret 值写入选定 backend。',
+        importDescription: '从环境变量导入一个 secret 值到选定 backend。',
+        deleteDescription: '从选定 backend 或索引记录的 backend 中删除一个受管 secret key。',
+        listDescription: '列出受管 secret key 及其 backend/存在性元数据，不回显真实值。',
+        statusDescription: '显示 backend 可用性、默认选择与 unsafe fallback warning。',
+        keyNameArgument: '稳定的 namespaced secret key，例如 openai/api-key。',
+        examplesTitle: '示例：',
+        subcommandRequired:
+          'secret 需要显式子命令；请使用 `secret set`、`secret import`、`secret delete`、`secret list` 或 `secret status`。',
+      },
       connect: {
         description: '生成适配器接入诊断基线。',
         actionArgument: '可选 connect 动作：generate|diff|apply。',
@@ -245,6 +278,10 @@ export const ZH_CN_TRANSLATIONS = {
         '请先设置或导出以下 remote-api 凭据环境变量，再执行 connect/doctor：{{credentials}}。',
       verifyProviderLocalCredentialState:
         '当前只做只读发现；请手动确认以下 provider-local 登录状态：{{credentials}}。',
+      createCredentialReferences:
+        '请先为以下 secret-backed remote-api 引用创建或导入真实凭据，再执行 connect/doctor：{{credentials}}。可使用 `secret set` 或 `secret import` 写入 backend。',
+      optIntoSecretFallback:
+        '以下 credentialRef 当前没有默认 secret backend 可用：{{credentials}}。请先运行 `secret status` 查看 backend 支持情况；只有在接受 local-only 明文 fallback 风险时，才显式使用 `--backend unsafe-local-file`。',
       resolveCredentialReferencesManually:
         '当前不会自动物化 remote-api credentialRef；请手动解析以下引用：{{credentials}}。',
       authenticateAdapters:
@@ -552,6 +589,28 @@ export const ZH_CN_TRANSLATIONS = {
       multilinePrompt: 'multiline> 以单独一行 {{terminator}} 结束输入',
     },
     commandMessages: {
+      config: {
+        nextStepTitle: '下一步',
+        precedenceHint:
+          '请记住优先级边界：显式 CLI 参数和 workspace governor.yaml 始终高于 user-config.yaml 默认值。',
+        getCompleted: '已解析用户本地默认值 {{keyPath}}={{value}}。',
+        getMissing: '用户本地默认值 {{keyPath}} 当前未设置。',
+        setCompleted: '已持久化用户本地默认值 {{keyPath}}={{value}}。',
+        unsetCompleted: '已从 canonical config 中移除用户本地默认值 {{keyPath}}。',
+        listCompleted: '已列出 {{count}} 条已填充的用户本地默认值。',
+        statusCompleted: '已从 {{configPath}} 载入用户本地配置状态。',
+      },
+      secret: {
+        nextStepTitle: '下一步',
+        precedenceHint:
+          '配置中只保存 secret://... 这样的 selector；真实 secret 值始终保留在 backend 中。',
+        noneLabel: '无',
+        setCompleted: '已将受管 secret {{keyName}} 写入 backend {{backend}}。',
+        importCompleted: '已将受管 secret {{keyName}} 导入 backend {{backend}}。',
+        deleteCompleted: '已完成 {{keyName}} 的 secret 清理；deleted_backends={{count}}。',
+        listCompleted: '已列出 {{count}} 条受管 secret 记录。',
+        statusCompleted: '已载入 {{backend}} 的 secret backend 状态。',
+      },
       connect: {
         consumeLedgerBackfill: '处理台账回填产物',
         resolveLedgerBackfill:

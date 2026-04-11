@@ -49,6 +49,28 @@ export interface CliAdapterRoleEvaluation {
   status: CliGovernanceCheckStatus;
 }
 
+export interface CliAdapterSecretBackendStatus {
+  backendId: string;
+  available: boolean;
+  detail: string;
+  warning?: string | null;
+}
+
+export interface CliAdapterSecretBackendDiagnostics {
+  selectedBackendId: string | null;
+  defaultBackendId: string | null;
+  indexPath: string;
+  backends: CliAdapterSecretBackendStatus[];
+}
+
+export interface CliAdapterCredentialReferenceDiagnostic {
+  toolId: AdapterSurface;
+  selector: string;
+  keyName: string;
+  resolved: boolean;
+  backendId: string | null;
+}
+
 /**
  * Defines the aggregated adapter verification resolution consumed by CLI commands.
  */
@@ -61,6 +83,8 @@ export interface CliAdapterVerificationResolution {
   degradedRoleCount: number;
   fallbackRoleCount: number;
   nextActions: string[];
+  secretBackends: CliAdapterSecretBackendDiagnostics;
+  credentialReferences: CliAdapterCredentialReferenceDiagnostic[];
 }
 
 /**

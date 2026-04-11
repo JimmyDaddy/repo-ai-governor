@@ -28,7 +28,7 @@ import {
   DEFAULT_AGENT_CLI_EXEC_MAX_RETRY_ATTEMPTS,
   DEFAULT_AGENT_CLI_EXEC_RETRY_BACKOFF_MS,
   type ProviderContinuationHandle,
-  createLayeredHealthCheckFromLegacyReasons,
+  buildLayeredHealthCheckResult,
   resolveAgentStageExecutionPolicy,
 } from '@repo-ai-governor/adapter-sdk';
 import {
@@ -211,6 +211,7 @@ interface ResolvedCodexAgentAdapterOptions {
   maxRetryAttempts: number;
   retryBackoffMs: number;
   remoteApi?: AdapterRemoteApiConfig;
+  resolveCredentialRef?: (selector: string) => Promise<string | null>;
   fetchImplementation: typeof fetch;
 }
 
@@ -311,6 +312,11 @@ export class CodexAgentAdapter extends AgentProtocol {
             remoteApi: options.remoteApi,
           }
         : {}),
+      ...(options.resolveCredentialRef
+        ? {
+            resolveCredentialRef: options.resolveCredentialRef,
+          }
+        : {}),
       fetchImplementation: options.fetchImplementation ?? fetch,
     };
     this.cliExecOperationsRuntime = new AgentCliExecOperationsRuntime(
@@ -346,7 +352,7 @@ export class CodexAgentAdapter extends AgentProtocol {
     const runtimeProbe = await this.resolveProbeResolution(request.signal);
     const remoteApiOptions = this.resolveRemoteApiOptions();
     const remoteApiCredentialResolution = remoteApiOptions
-      ? this.resolveRemoteApiCredentialResolution(remoteApiOptions)
+      ? await this.resolveRemoteApiCredentialResolution(remoteApiOptions)
       : null;
     const capabilityMatrix = this.createCapabilityMatrix();
     const availabilityStatus = this.mergeAvailabilityStatus(
@@ -380,7 +386,7 @@ export class CodexAgentAdapter extends AgentProtocol {
       availabilityStatus,
       capabilityMatrix,
       unavailableReasons,
-      healthCheck: createLayeredHealthCheckFromLegacyReasons({
+      healthCheck: buildLayeredHealthCheckResult({
         adapterId: this.options.agentId,
         surfaceId: CODEX_SURFACE,
         availabilityStatus,
@@ -402,6 +408,19 @@ export class CodexAgentAdapter extends AgentProtocol {
         model: remoteApiOptions?.model ?? null,
         credentialSource: remoteApiCredentialResolution?.source ?? null,
         endpointSource: remoteApiOptions?.endpointSource ?? null,
+        diagnostics:
+          remoteApiCredentialResolution?.source === AdapterCredentialSource.CREDENTIAL_REF &&
+          remoteApiCredentialResolution.value &&
+          remoteApiCredentialResolution.detail.length > 0
+            ? [
+                {
+                  layer: 'auth',
+                  status: 'pass',
+                  code: 'auth.credential_reference_resolved',
+                  detail: remoteApiCredentialResolution.detail,
+                },
+              ]
+            : [],
         requestCancellationMode:
           this.options.executionMode === CodexAgentAdapterExecutionMode.REMOTE_API
             ? AdapterRequestCancellationMode.LOCAL_ABORT_ONLY
@@ -863,7 +882,13 @@ export class CodexAgentAdapter extends AgentProtocol {
 
   private resolveRemoteApiCredentialResolution(
     remoteApiOptions: ResolvedCodexRemoteApiOptions,
-  ): CodexRemoteApiCredentialResolution {
+  ): Promise<CodexRemoteApiCredentialResolution> {
+    return this.resolveRemoteApiCredentialResolutionAsync(remoteApiOptions);
+  }
+
+  private async resolveRemoteApiCredentialResolutionAsync(
+    remoteApiOptions: ResolvedCodexRemoteApiOptions,
+  ): Promise<CodexRemoteApiCredentialResolution> {
     const environment = this.resolveEnvironment();
     const credentialValue = environment[remoteApiOptions.credentialEnvVar];
     if (typeof credentialValue === 'string' && credentialValue.trim().length > 0) {
@@ -877,9 +902,14 @@ export class CodexAgentAdapter extends AgentProtocol {
     }
 
     if (remoteApiOptions.credentialRef) {
+      const resolvedCredentialValue =
+        (await this.options.resolveCredentialRef?.(remoteApiOptions.credentialRef)) ?? null;
       return {
         source: AdapterCredentialSource.CREDENTIAL_REF,
-        value: null,
+        value:
+          typeof resolvedCredentialValue === 'string' && resolvedCredentialValue.trim().length > 0
+            ? resolvedCredentialValue.trim()
+            : null,
         detail: `${CODEX_SURFACE}:${remoteApiOptions.credentialRef}`,
       };
     }
@@ -902,7 +932,7 @@ export class CodexAgentAdapter extends AgentProtocol {
       };
     }
 
-    const credentialResolution = this.resolveRemoteApiCredentialResolution(remoteApiOptions);
+    const credentialResolution = await this.resolveRemoteApiCredentialResolution(remoteApiOptions);
     if (!credentialResolution.value) {
       return {
         availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
@@ -1408,7 +1438,7 @@ export class CodexAgentAdapter extends AgentProtocol {
     elapsedMs: number;
   }> {
     const remoteApiOptions = this.requireRemoteApiOptions();
-    const credentialResolution = this.resolveRemoteApiCredentialResolution(remoteApiOptions);
+    const credentialResolution = await this.resolveRemoteApiCredentialResolution(remoteApiOptions);
     if (!credentialResolution.value) {
       throw new RuntimeError(
         GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED,
@@ -1511,7 +1541,7 @@ export class CodexAgentAdapter extends AgentProtocol {
     signal?: AbortSignal;
   }): AsyncIterable<AgentStreamEvent> {
     const remoteApiOptions = this.requireRemoteApiOptions();
-    const credentialResolution = this.resolveRemoteApiCredentialResolution(remoteApiOptions);
+    const credentialResolution = await this.resolveRemoteApiCredentialResolution(remoteApiOptions);
     if (!credentialResolution.value) {
       throw new RuntimeError(
         GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED,

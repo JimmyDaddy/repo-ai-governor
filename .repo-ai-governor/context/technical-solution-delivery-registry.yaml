@@ -477,6 +477,43 @@ deliveries:
       - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/remote-api-transport-and-provider-binding-seam.md
     accepted_at: 2026-04-02
 
+  - solution_id: technical-solution.local-user-config-and-secret-backed-command-configuration
+    delivery_mode: followup_required
+    consumer_surfaces:
+      - adopter_cli
+      - runtime_service
+      - docs_playbook
+    user_impact_level: medium
+    execution_status: completed
+    rollout_status: completed
+    owner: runtime
+    project_ref: project-089-local-user-config-and-secret-command-rollout
+    sprint_ref: sprint-003-connect-default-consumption-and-surface-discoverability
+    task_ids:
+      - TK-796
+      - TK-797
+      - TK-798
+      - TK-799
+    project_plan_path: .repo-ai-governor/context/dev/project-089-local-user-config-and-secret-command-rollout/plan.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-089-local-user-config-and-secret-command-rollout/sprint-003-connect-default-consumption-and-surface-discoverability/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-089-local-user-config-and-secret-command-rollout/sprint-003-connect-default-consumption-and-surface-discoverability/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-089-local-user-config-and-secret-command-rollout/sprint-003-connect-default-consumption-and-surface-discoverability/tasks/DA-799-project-089-final-closeout-and-idle-primary-stream-handoff.md
+    rollout_artifacts:
+      - .repo-ai-governor/context/dev/project-088-local-user-config-and-secret-command-promotion-and-decomposition/plan.md
+      - .repo-ai-governor/context/dev/project-088-local-user-config-and-secret-command-promotion-and-decomposition/sprint-001-promotion-and-followup-decomposition/review/resolved_code_review_tk-784-787-local-user-config-promotion-and-decomposition.md
+      - .repo-ai-governor/context/dev/project-088-local-user-config-and-secret-command-promotion-and-decomposition/sprint-001-promotion-and-followup-decomposition/tasks/DA-786-local-user-config-promotion-and-rollout-decomposition-handoff.md
+      - .repo-ai-governor/context/dev/project-089-local-user-config-and-secret-command-rollout/plan.md
+      - .repo-ai-governor/context/dev/project-089-local-user-config-and-secret-command-rollout/sprint-001-user-config-command-and-secret-foundation/plan.md
+      - .repo-ai-governor/context/dev/project-089-local-user-config-and-secret-command-rollout/sprint-001-user-config-command-and-secret-foundation/tasks/DA-791-sprint-001-closeout-and-sprint-002-activation-handoff.md
+      - .repo-ai-governor/context/dev/project-089-local-user-config-and-secret-command-rollout/sprint-002-runtime-resolution-and-doctor-diagnostics/plan.md
+      - .repo-ai-governor/context/dev/project-089-local-user-config-and-secret-command-rollout/sprint-002-runtime-resolution-and-doctor-diagnostics/tasks/DA-795-sprint-002-closeout-and-sprint-003-activation-handoff.md
+      - .repo-ai-governor/context/dev/project-089-local-user-config-and-secret-command-rollout/sprint-003-connect-default-consumption-and-surface-discoverability/plan.md
+      - .repo-ai-governor/context/dev/project-089-local-user-config-and-secret-command-rollout/sprint-003-connect-default-consumption-and-surface-discoverability/review/resolved_code_review_working-tree-20260412-0441.md
+      - .repo-ai-governor/context/dev/project-089-local-user-config-and-secret-command-rollout/sprint-003-connect-default-consumption-and-surface-discoverability/review/resolved_code_review_working-tree-20260412-0444.md
+      - .repo-ai-governor/context/dev/project-089-local-user-config-and-secret-command-rollout/sprint-003-connect-default-consumption-and-surface-discoverability/tasks/DA-799-project-089-final-closeout-and-idle-primary-stream-handoff.md
+      - .repo-ai-governor/context/dev/project-089-local-user-config-and-secret-command-rollout/project-089-local-user-config-and-secret-command-rollout-completion-audit-summary.md
+    accepted_at: 2026-04-11
+
   - solution_id: technical-solution.provider-session-reuse-and-backend-conversation-continuity
     delivery_mode: followup_required
     consumer_surfaces:

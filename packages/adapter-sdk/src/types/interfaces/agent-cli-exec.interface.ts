@@ -59,6 +59,7 @@ export interface AgentCliAdapterOptions<TExecRunner = AgentCliExecRunner> {
   maxRetryAttempts?: number;
   retryBackoffMs?: number;
   remoteApi?: AdapterRemoteApiConfig;
+  resolveCredentialRef?: (selector: string) => Promise<string | null>;
   fetchImplementation?: typeof fetch;
   execRunner?: TExecRunner;
 }

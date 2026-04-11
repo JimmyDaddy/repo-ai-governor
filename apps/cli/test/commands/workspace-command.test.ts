@@ -663,7 +663,7 @@ describe('CliWorkspaceCommand', () => {
     }
   });
 
-  it('persists the requested React shell theme into the global CLI preference file when theme-scope=global', async () => {
+  it('persists the requested React shell theme into the canonical user-config file when theme-scope=global', async () => {
     const fixture = await createWorkspaceCommandFixture({
       action: 'set-ui-theme',
       targetMode: null,
@@ -677,7 +677,23 @@ describe('CliWorkspaceCommand', () => {
         fixture.tempRoot,
         'home',
         '.repo-ai-governor',
-        'cli-preferences.yaml',
+        'user-config.yaml',
+      );
+      await mkdir(dirname(globalPreferencePath), { recursive: true });
+      await writeFile(
+        globalPreferencePath,
+        [
+          'workspace:',
+          '  mode_preference: tool_managed',
+          'tools:',
+          '  codex:',
+          '    transport: remote_api',
+          '    remoteApi:',
+          '      model: gpt-5-user-default',
+          '      credentialRef: secret://openai/api-key',
+          '',
+        ].join('\n'),
+        'utf8',
       );
       await rm(fixture.configPath, { force: true });
       fixture.context.options.workspaceCommandOptions = {
@@ -723,6 +739,9 @@ describe('CliWorkspaceCommand', () => {
       expect(result.commandResult.details?.persisted_path_count).toBe(1);
       expect(result.commandResult.details?.persisted_config_paths).toBe(globalPreferencePath);
       expect(globalPreferenceContent).toContain('theme: calm');
+      expect(globalPreferenceContent).toContain('mode_preference: tool_managed');
+      expect(globalPreferenceContent).toContain('model: gpt-5-user-default');
+      expect(globalPreferenceContent).toContain('credentialRef: secret://openai/api-key');
       expect(existsSync(fixture.configPath)).toBe(false);
     } finally {
       await rm(fixture.tempRoot, { recursive: true, force: true });

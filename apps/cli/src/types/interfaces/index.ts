@@ -22,6 +22,7 @@ export type {
   CliSuccessOutputPayload,
 } from './cli-output.interface.js';
 export type {
+  CliConnectRemoteApiOverride,
   CliConnectRoleBindingOverride,
   CliConnectToolTransportOverride,
   CliRuntimeDebugOptions,
@@ -62,6 +63,15 @@ export type { CliWorkflowCommandOptions } from './cli-workflow-command.interface
 export type { CliPlanCommandOptions } from './cli-plan-command.interface.js';
 export type { CliAdoptCommandOptions } from './cli-adopt-command.interface.js';
 export type { CliHostCommandOptions } from './cli-host-command.interface.js';
+export type { CliConfigCommandOptions } from './cli-config-command.interface.js';
+export type { CliSecretCommandOptions } from './cli-secret-command.interface.js';
+export type {
+  CliUserConfigDocument,
+  CliUserConfigRemoteApiAuthoringRecord,
+  CliUserConfigToolRecord,
+  CliUserConfigUiRecord,
+  CliUserConfigWorkspaceRecord,
+} from './cli-user-config.interface.js';
 export type {
   CliDelegatedReviewRequest,
   CliHybridReviewContext,
@@ -129,7 +139,10 @@ export type {
   CliOrchestrationServiceRuntimeDependencies,
 } from './cli-orchestration-service-runtime.interface.js';
 export type {
+  CliAdapterCredentialReferenceDiagnostic,
   CliAdapterRoleEvaluation,
+  CliAdapterSecretBackendDiagnostics,
+  CliAdapterSecretBackendStatus,
   CliAdapterToolProbeSnapshot,
   CliAdapterVerificationResolution,
   CliLocalAdapterProbeOverride,

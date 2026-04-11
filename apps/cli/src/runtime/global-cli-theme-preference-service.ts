@@ -1,40 +1,27 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { resolve } from 'node:path';
-
-import { parse, stringify } from 'yaml';
-import {
-  CLI_REACT_THEME_VALUES,
-  type CliReactThemePreset,
-} from '../constants/cli-react-theme.constant.js';
-
-interface GlobalCliThemePreferencePayload {
-  ui?: {
-    react?: {
-      theme?: string;
-    };
-  };
-}
+import type { CliReactThemePreset } from '../constants/cli-react-theme.constant.js';
+import { CliUserConfigService } from './cli-user-config-service.js';
 
 /**
- * Resolves and renders the lightweight global React-shell theme preference file.
+ * Resolves and updates the canonical global React-shell theme preference inside user-config.
  *
  * Why this exists:
  * the CLI needs one small cross-workspace preference layer without promoting a second
  * full governor config surface.
  */
 export class GlobalCliThemePreferenceService {
+  private readonly userConfigService: CliUserConfigService;
+
+  public constructor(userConfigService = new CliUserConfigService()) {
+    this.userConfigService = userConfigService;
+  }
+
   /**
    * Resolves the canonical global preference file path for the current user.
    * @param environment Optional environment map used to honor isolated HOME overrides.
    * @returns Absolute global preference file path.
    */
   public resolvePreferencePath(environment: NodeJS.ProcessEnv = process.env): string {
-    return resolve(
-      this.resolveHomeDirectory(environment),
-      '.repo-ai-governor',
-      'cli-preferences.yaml',
-    );
+    return this.userConfigService.resolveConfigPath(environment);
   }
 
   /**
@@ -48,51 +35,32 @@ export class GlobalCliThemePreferenceService {
       preferencePath?: string;
     } = {},
   ): CliReactThemePreset | null {
-    const preferencePath =
-      options.preferencePath ?? this.resolvePreferencePath(options.environment);
-    if (!existsSync(preferencePath)) {
-      return null;
-    }
-
-    try {
-      const parsedPayload = parse(
-        readFileSync(preferencePath, 'utf8'),
-      ) as GlobalCliThemePreferencePayload | null;
-      const rawThemePreset = parsedPayload?.ui?.react?.theme?.trim().toLowerCase();
-      if (!rawThemePreset || !CLI_REACT_THEME_VALUES.has(rawThemePreset)) {
-        return null;
-      }
-
-      return rawThemePreset as CliReactThemePreset;
-    } catch {
-      return null;
-    }
+    return this.userConfigService.loadThemePreference({
+      environment: options.environment,
+      configPath: options.preferencePath ?? undefined,
+    });
   }
 
   /**
-   * Renders one minimal YAML payload that stores only the global theme preference.
-   * @param themePreset Supported theme preset that should become the new global default.
+   * Renders one merged YAML payload that updates only the global theme preference while
+   * preserving the rest of canonical user-config state.
+   * @param options Theme preset plus optional environment/path overrides.
    * @returns Serialized YAML content with trailing newline.
    */
-  public renderPreferenceContent(themePreset: CliReactThemePreset): string {
-    return `${stringify({
-      ui: {
-        react: {
-          theme: themePreset,
-        },
-      },
-    }).trimEnd()}\n`;
-  }
-
-  /**
-   * Resolves the user home directory while honoring explicit HOME overrides in tests.
-   * @param environment Environment map used by the current runtime.
-   * @returns Absolute home directory path.
-   */
-  private resolveHomeDirectory(environment: NodeJS.ProcessEnv): string {
-    const homeDirectoryCandidate = environment.HOME?.trim();
-    return homeDirectoryCandidate && homeDirectoryCandidate.length > 0
-      ? resolve(homeDirectoryCandidate)
-      : homedir();
+  public renderMergedPreferenceContent(options: {
+    themePreset: CliReactThemePreset;
+    environment?: NodeJS.ProcessEnv;
+    preferencePath?: string;
+  }): string {
+    const existingDocument = this.userConfigService.loadCanonicalConfig({
+      environment: options.environment,
+      configPath: options.preferencePath,
+    });
+    const nextDocument = this.userConfigService.setValue(
+      existingDocument,
+      'ui.react.theme',
+      options.themePreset,
+    );
+    return this.userConfigService.renderConfigContent(nextDocument);
   }
 }

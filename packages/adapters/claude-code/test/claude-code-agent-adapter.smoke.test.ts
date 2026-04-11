@@ -654,6 +654,135 @@ describe('claude-code-agent-adapter smoke', () => {
     expect(probeResult.healthCheck?.credentialSource).toBe(AdapterCredentialSource.CREDENTIAL_REF);
   });
 
+  it('resolves remote_api credentialRef through the injected secret seam when env is absent', async () => {
+    const fetchImplementation = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: async () =>
+          JSON.stringify({
+            id: 'msg-probe',
+            content: [
+              {
+                type: 'text',
+                text: 'OK',
+              },
+            ],
+            usage: {
+              input_tokens: 4,
+              output_tokens: 1,
+            },
+          }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: async () =>
+          JSON.stringify({
+            id: 'msg-invoke',
+            content: [
+              {
+                type: 'text',
+                text: 'remote claude response',
+              },
+            ],
+            usage: {
+              input_tokens: 7,
+              output_tokens: 5,
+            },
+          }),
+      } as Response);
+    const resolveCredentialRef = vi.fn(async () => 'secret-key');
+    const adapter = new ClaudeCodeAgentAdapter({
+      executionMode: ClaudeCodeAgentAdapterExecutionMode.REMOTE_API,
+      fetchImplementation,
+      environment: {},
+      resolveCredentialRef,
+      remoteApi: {
+        provider: AdapterProviderKind.ANTHROPIC,
+        vendorBinding: AdapterVendorBindingKind.ANTHROPIC_MESSAGES,
+        model: 'claude-sonnet-4-5',
+        credentialRef: 'secret://anthropic/api-key',
+      },
+    });
+
+    const probeResult = await adapter.probe({
+      routeKey: 'cli.adapter.probe.claude-code',
+    });
+    const invokeResult = await adapter.invokeStage({
+      processId: 'process-1',
+      executionId: 'execution-1',
+      stageId: 'stage-1',
+      routeKey: 'codegen',
+      input: {
+        prompt: 'implement feature',
+      },
+    });
+
+    expect(probeResult.availabilityStatus).toBe('available');
+    expect(probeResult.healthCheck?.diagnostics).toContainEqual({
+      layer: 'auth',
+      status: 'pass',
+      code: 'auth.credential_reference_resolved',
+      detail: 'claude-code:secret://anthropic/api-key',
+    });
+    expect(invokeResult.output.responseText).toBe('remote claude response');
+    expect(resolveCredentialRef.mock.calls.length).toBeGreaterThanOrEqual(2);
+    expect(
+      resolveCredentialRef.mock.calls.every(
+        ([selector]) => selector === 'secret://anthropic/api-key',
+      ),
+    ).toBe(true);
+  });
+
+  it('prefers remote_api credential env vars over credentialRef when both are configured', async () => {
+    const fetchImplementation = vi.fn<typeof fetch>().mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () =>
+        JSON.stringify({
+          id: 'msg-probe',
+          content: [
+            {
+              type: 'text',
+              text: 'OK',
+            },
+          ],
+          usage: {
+            input_tokens: 4,
+            output_tokens: 1,
+          },
+        }),
+    } as Response);
+    const resolveCredentialRef = vi.fn(async () => 'secret-key');
+    const adapter = new ClaudeCodeAgentAdapter({
+      executionMode: ClaudeCodeAgentAdapterExecutionMode.REMOTE_API,
+      fetchImplementation,
+      environment: {
+        ANTHROPIC_API_KEY: 'env-key',
+      },
+      resolveCredentialRef,
+      remoteApi: {
+        provider: AdapterProviderKind.ANTHROPIC,
+        vendorBinding: AdapterVendorBindingKind.ANTHROPIC_MESSAGES,
+        model: 'claude-sonnet-4-5',
+        credentialRef: 'secret://anthropic/api-key',
+      },
+    });
+
+    const probeResult = await adapter.probe({
+      routeKey: 'cli.adapter.probe.claude-code',
+    });
+    const requestInit = fetchImplementation.mock.calls[0]?.[1] as RequestInit | undefined;
+
+    expect(probeResult.availabilityStatus).toBe('available');
+    expect(resolveCredentialRef).not.toHaveBeenCalled();
+    expect(requestInit?.headers).toMatchObject({
+      'x-api-key': 'env-key',
+    });
+  });
+
   it('reads provider-local Claude settings in read-only mode when explicitly enabled', async () => {
     const tempRoot = mkdtempSync(join(tmpdir(), 'claude-provider-local-'));
     const projectRoot = join(tempRoot, 'workspace');

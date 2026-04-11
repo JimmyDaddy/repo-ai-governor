@@ -79,6 +79,7 @@ import {
 import { CliAdoptCommand } from './commands/adopt-command.js';
 import { CliCheckCommand } from './commands/check-command.js';
 import { CliCommandRegistry } from './commands/cli-command-registry.js';
+import { CliConfigCommand } from './commands/config-command.js';
 import { CliConnectCommand } from './commands/connect-command.js';
 import { CliDoctorCommand } from './commands/doctor-command.js';
 import { CliHostCommand } from './commands/host-command.js';
@@ -87,6 +88,7 @@ import { CliPlanCommand } from './commands/plan-command.js';
 import { CliReviewCommand } from './commands/review-command.js';
 import { CliReviewVerifyCommand } from './commands/review-verify-command.js';
 import { CliRunCommand } from './commands/run-command.js';
+import { CliSecretCommand } from './commands/secret-command.js';
 import { CliUpgradeCommand } from './commands/upgrade-command.js';
 import { CliWorkflowCommand } from './commands/workflow-command.js';
 import { CliWorkspaceCommand } from './commands/workspace-command.js';
@@ -125,6 +127,7 @@ import { CliLocalModelProbeRuntime } from './runtime/local-model-probe-runtime.j
 import { CliOrchestrationServiceRuntime } from './runtime/orchestration-service-runtime.js';
 import { CliCommandExperienceBuilder } from './runtime/presentation/command-experience-builder.js';
 import { CliReplayExplainBuilder } from './runtime/presentation/replay-explain-builder.js';
+import { CliSecretService } from './runtime/secrets/cli-secret-service.js';
 import { CliTaskDrivenRunRuntime } from './runtime/task-driven-run-runtime.js';
 import type {
   CliAdapterVerificationResolution,
@@ -175,6 +178,7 @@ export class CliGovernanceRuntime {
   private readonly agentProjectionRuntime: CliAgentProjectionRuntime;
   private readonly agentSessionRegistry: AgentSessionRegistry;
   private readonly langGraphAgentDescriptorSupervisor: LangGraphAgentDescriptorSupervisor;
+  private readonly secretService: CliSecretService;
   private readonly adapterRoutingRuntime: CliAdapterRoutingRuntime;
   private readonly adapterVerificationRuntime: CliAdapterVerificationRuntime;
   private readonly adapterDiagnosticsRuntime: CliAdapterDiagnosticsRuntime;
@@ -197,6 +201,9 @@ export class CliGovernanceRuntime {
     this.agentProjectionRuntime = new CliAgentProjectionRuntime();
     this.agentSessionRegistry = new AgentSessionRegistry(this.sharedSessionManager);
     this.langGraphAgentDescriptorSupervisor = new LangGraphAgentDescriptorSupervisor();
+    this.secretService = new CliSecretService({
+      localizeText: (english: string, chinese: string) => this.localizeText(english, chinese),
+    });
     this.localModelProbeRuntime = new CliLocalModelProbeRuntime(
       this.options.adapterLocalProbeOverrides,
       this.options.commandProbeExecutor,
@@ -206,6 +213,7 @@ export class CliGovernanceRuntime {
       claudeCodeExecRunner: this.options.claudeCodeExecRunner,
       codexExecRunner: this.options.codexExecRunner,
       githubCopilotExecRunner: this.options.githubCopilotExecRunner,
+      resolveCredentialRef: async (selector: string) => await this.resolveCredentialRef(selector),
       sharedProtocolCacheNamespace: `cli-governance:${this.options.workspace.workspaceRoot}`,
     });
     this.adapterVerificationRuntime = new CliAdapterVerificationRuntime(
@@ -214,6 +222,9 @@ export class CliGovernanceRuntime {
       (error) => this.formatExecFailureDetail(error),
       this.adapterRoutingRuntime,
       this.localModelProbeRuntime,
+      this.secretService,
+      (english: string, chinese: string) => this.localizeText(english, chinese),
+      this.options.environment ?? process.env,
     );
     this.adapterDiagnosticsRuntime = new CliAdapterDiagnosticsRuntime(
       (key, interpolation) => this.options.translate?.(key, interpolation) ?? key,
@@ -253,6 +264,8 @@ export class CliGovernanceRuntime {
     );
     this.commandRegistry = new CliCommandRegistry([
       new CliInitCommand(),
+      new CliConfigCommand(),
+      new CliSecretCommand(),
       new CliConnectCommand(),
       new CliDoctorCommand(),
       new CliCheckCommand(),
@@ -303,6 +316,10 @@ export class CliGovernanceRuntime {
    * @returns True when baseline workspace files should be auto-created before execution.
    */
   private shouldEnsureWorkspaceBootstrap(commandName: CliCommandName): boolean {
+    if (commandName === CliCommandName.CONFIG || commandName === CliCommandName.SECRET) {
+      return false;
+    }
+
     if (commandName !== CliCommandName.WORKSPACE) {
       return true;
     }
@@ -1785,6 +1802,20 @@ export class CliGovernanceRuntime {
               override.transport.trim().length > 0,
           )
         : [],
+      remoteApiOverrides: Array.isArray(this.options.runtimeDebugOptions?.remoteApiOverrides)
+        ? this.options.runtimeDebugOptions.remoteApiOverrides.filter(
+            (
+              override,
+            ): override is NonNullable<
+              CliNormalizedRuntimeDebugOptions['remoteApiOverrides']
+            >[number] =>
+              typeof override?.toolId === 'string' &&
+              override.toolId.trim().length > 0 &&
+              (typeof override.model === 'string' ||
+                typeof override.credentialEnvVar === 'string' ||
+                typeof override.endpoint === 'string'),
+          )
+        : [],
       overwrite: this.options.runtimeDebugOptions?.overwrite === true,
       singleToolAllRoles: this.options.runtimeDebugOptions?.singleToolAllRoles === true,
       roleBindingOverrides: Array.isArray(this.options.runtimeDebugOptions?.roleBindingOverrides)
@@ -2531,6 +2562,7 @@ export class CliGovernanceRuntime {
       claudeCodeExecRunner: this.options.claudeCodeExecRunner,
       codexExecRunner: this.options.codexExecRunner,
       githubCopilotExecRunner: this.options.githubCopilotExecRunner,
+      resolveCredentialRef: async (selector: string) => await this.resolveCredentialRef(selector),
       sharedProtocolCacheNamespace: `cli-governance:${this.options.workspace.workspaceRoot}`,
     });
     const adapterVerificationRuntime = new CliAdapterVerificationRuntime(
@@ -2539,9 +2571,20 @@ export class CliGovernanceRuntime {
       (error) => this.formatExecFailureDetail(error),
       adapterRoutingRuntime,
       this.localModelProbeRuntime,
+      this.secretService,
+      (english: string, chinese: string) => this.localizeText(english, chinese),
+      this.options.environment ?? process.env,
     );
 
     return adapterVerificationRuntime.resolveAdapterVerification(abortSignal);
+  }
+
+  private async resolveCredentialRef(selector: string): Promise<string | null> {
+    const resolution = await this.secretService.resolveSecretValue({
+      selector,
+      environment: this.options.environment ?? process.env,
+    });
+    return resolution?.value ?? null;
   }
 
   /**

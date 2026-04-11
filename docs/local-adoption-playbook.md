@@ -132,9 +132,10 @@ Quick checks:
 2. `/help`, `/history`, `/search <term>`, `/multiline`, and `!<shell-command>` should be available from the shell.
 3. `resume` should reattach the latest or named persisted session.
 4. `--no-interactive`, non-TTY, `plain`, and `json` should not enter the interactive shell.
-5. Typing `/workspace` or `/workspace ` in the slash palette should surface `dry-run`, `execute`, `rollback`, `clear-config`, `switch-branch`, and `set-ui-theme`, while bare `/` still stays on the shorter launcher shortlist.
-6. Typing `/workspace set-ui-theme` or `/workspace set-ui-theme ` in the session shell should surface `governor`, `catppuccin`, and `calm` preset choices instead of forcing a failed no-preset submission path.
-7. Current readability tuning only changes presenter emphasis, contrast, and palette density; actual font size remains controlled by the host terminal or IDE.
+5. Typing `/config` or `/secret` in the slash palette should surface the same command family as the CLI; these are discoverability shortcuts only, not a second config or secret state.
+6. Typing `/workspace` or `/workspace ` in the slash palette should surface `dry-run`, `execute`, `rollback`, `clear-config`, `switch-branch`, and `set-ui-theme`, while bare `/` still stays on the shorter launcher shortlist.
+7. Typing `/workspace set-ui-theme` or `/workspace set-ui-theme ` in the session shell should surface `governor`, `catppuccin`, and `calm` preset choices instead of forcing a failed no-preset submission path.
+8. Current readability tuning only changes presenter emphasis, contrast, and palette density; actual font size remains controlled by the host terminal or IDE.
 
 ## 5. Multi-tool Onboarding
 
@@ -160,6 +161,40 @@ What to pay attention to:
 9. `github-copilot` now follows the same CLI-backed truth model for tester-route verification, while `local-model` should still be read as a constrained fallback surface only for restricted-network or operator-selected local fallback flows whose route requirements stay capability-compatible.
 10. Do not treat `local-model` as a promoted primary substitute for repository-review reviewer delegation or for roles that require `tool_calling`, `structured_output`, or `confirmation_gate`; those paths remain unsupported or explicitly guarded.
 11. If `connect` fails with `ADAPTER_ROUTE_CONFIG_INVALID` and says it requires an adapters baseline in source config, repair the active `governor.yaml` first: for first-time setup run `init`; if an existing config looks stale or broken, run `workspace clear-config`, then `init`, and retry `connect`.
+
+When you want `connect` to author first-time `remote_api` config without hand-editing `governor.yaml`, use:
+
+```bash
+pnpm exec repo-ai-governor connect --tools codex --remote-api-model codex=gpt-5 --output pretty
+pnpm exec repo-ai-governor connect --tools claude-code --remote-api-model claude-code=<model> --remote-api-credential-env-var claude-code=ANTHROPIC_API_KEY --remote-api-endpoint claude-code=https://api.anthropic.com/v1/messages --output pretty
+```
+
+Notes:
+
+1. `--remote-api-model` is the required authoring input for first-time `remote_api`; `--remote-api-credential-env-var` and `--remote-api-endpoint` are optional per-tool overrides.
+2. These flags only write model, endpoint, and env-var references into the candidate config. The actual API key value should still come from your shell environment, `direnv`, CI secret store, or another external secret source.
+3. If you already keep personal defaults in `~/.repo-ai-governor/user-config.yaml`, `connect --tools <tool>` will consume them only when no higher-precedence CLI override or workspace `governor.yaml` value already exists.
+
+### 5.1 User-local defaults and secret-backed selectors
+
+Use this path when a model, endpoint, or auth selector should stay personal to one machine instead of being committed into workspace `governor.yaml`:
+
+```bash
+pnpm exec repo-ai-governor config set tools.codex.transport remote_api
+pnpm exec repo-ai-governor config set tools.codex.remoteApi.model gpt-5
+pnpm exec repo-ai-governor config set tools.codex.remoteApi.credentialRef secret://openai/api-key
+printf '%s' "$OPENAI_API_KEY" | pnpm exec repo-ai-governor secret set openai/api-key --stdin
+pnpm exec repo-ai-governor secret status
+pnpm exec repo-ai-governor connect --tools codex --output pretty
+```
+
+What this path means:
+
+1. `config` writes user-local defaults to the canonical `~/.repo-ai-governor/user-config.yaml` path instead of mutating the shared workspace `governor.yaml`.
+2. Precedence remains strict: explicit CLI args win first, workspace `governor.yaml` stays second, and `user-config.yaml` only fills defaults underneath them.
+3. `credentialRef` is only a selector such as `secret://openai/api-key`; the real API key value lives in the secret backend, not in `user-config.yaml` or `governor.yaml`.
+4. On macOS, the validated default backend path is the keychain-backed baseline. On other platforms, run `secret status` first to inspect what secure backend support is actually available in your environment.
+5. `--backend unsafe-local-file` is an explicit fallback for local-only/plaintext risk acceptance; do not treat it as the default or recommended storage mode.
 
 Helpful artifact paths:
 

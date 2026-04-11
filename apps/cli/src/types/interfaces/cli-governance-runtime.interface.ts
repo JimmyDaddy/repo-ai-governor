@@ -31,6 +31,7 @@ import type { CliLocalAdapterProbeOverride } from './cli-adapter-verification.in
 import type { CliAdapterVerificationResolution } from './cli-adapter-verification.interface.js';
 import type { CliAdoptCommandOptions } from './cli-adopt-command.interface.js';
 import type { CliCommandProgressSink } from './cli-command-progress.interface.js';
+import type { CliConfigCommandOptions } from './cli-config-command.interface.js';
 import type { CliHostCommandOptions } from './cli-host-command.interface.js';
 import type { CliOrchestrationServiceRuntimeDependencies } from './cli-orchestration-service-runtime.interface.js';
 import type {
@@ -39,10 +40,12 @@ import type {
 } from './cli-output.interface.js';
 import type { CliPlanCommandOptions } from './cli-plan-command.interface.js';
 import type {
+  CliConnectRemoteApiOverride,
   CliConnectRoleBindingOverride,
   CliConnectToolTransportOverride,
   CliRuntimeDebugOptions,
 } from './cli-runtime-debug.interface.js';
+import type { CliSecretCommandOptions } from './cli-secret-command.interface.js';
 import type { CliUpgradeCommandOptions } from './cli-upgrade-command.interface.js';
 import type { CliWorkflowCommandOptions } from './cli-workflow-command.interface.js';
 import type { CliWorkspaceCommandOptions } from './cli-workspace-command.interface.js';
@@ -52,6 +55,7 @@ import type { CliWorkspaceCommandOptions } from './cli-workspace-command.interfa
  */
 export interface CliGovernanceRuntimeOptions {
   currentWorkingDirectory: string;
+  environment?: NodeJS.ProcessEnv;
   workspace: ResolvedWorkspace;
   config: GovernorConfig;
   configSource: 'default' | 'file';
@@ -65,6 +69,8 @@ export interface CliGovernanceRuntimeOptions {
   memoryStoreProviderName: string;
   memoryStoreProvider: MemoryStoreProvider;
   adaptersConfig: AdaptersConfig;
+  configCommandOptions?: CliConfigCommandOptions;
+  secretCommandOptions?: CliSecretCommandOptions;
   workspaceCommandOptions?: CliWorkspaceCommandOptions;
   workflowCommandOptions?: CliWorkflowCommandOptions;
   planCommandOptions?: CliPlanCommandOptions;
@@ -138,6 +144,7 @@ export interface CliNormalizedRuntimeDebugOptions {
   presetId: CliAgentOnboardingPreset;
   requestedTools: AdapterSurface[];
   toolTransportOverrides?: CliConnectToolTransportOverride[];
+  remoteApiOverrides?: CliConnectRemoteApiOverride[];
   overwrite: boolean;
   singleToolAllRoles: boolean;
   roleBindingOverrides: CliConnectRoleBindingOverride[];

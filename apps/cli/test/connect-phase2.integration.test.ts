@@ -138,8 +138,16 @@ async function createConnectFixtureRepo(): Promise<string> {
   return temporaryRepositoryRoot;
 }
 
-async function runJsonCli(currentWorkingDirectory: string, args: string[], locale = 'en-US') {
-  const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(currentWorkingDirectory);
+async function runJsonCli(
+  currentWorkingDirectory: string,
+  args: string[],
+  locale = 'en-US',
+  environmentOverrides: NodeJS.ProcessEnv = {},
+) {
+  const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(
+    currentWorkingDirectory,
+    environmentOverrides,
+  );
   const exitCode = await runCli(
     ['node', 'repo-ai-governor', '--locale', locale, '--output', 'json', ...args],
     io,
@@ -320,6 +328,137 @@ describe('connect phase-2 integration', () => {
     }
   });
 
+  it('synthesizes first-time remote_api config when connect receives --remote-api-model', async () => {
+    const fixtureRepositoryRoot = await createConnectFixtureRepo();
+
+    try {
+      const generateResult = await runJsonCli(fixtureRepositoryRoot, [
+        'connect',
+        '--tools',
+        'codex',
+        '--remote-api-model',
+        'codex=gpt-5',
+      ]);
+      const candidatePath = String(
+        generateResult.payload.command_result?.details.candidate_config_path,
+      );
+      const candidateContent = await readFile(candidatePath, 'utf8');
+
+      expect(generateResult.exitCode).toBe(0);
+      expect(generateResult.payload.status).toBe('success');
+      expect(candidateContent).toContain('toolId: codex');
+      expect(candidateContent).toContain('transport: remote_api');
+      expect(candidateContent).toContain('provider: openai');
+      expect(candidateContent).toContain('vendorBinding: openai_responses');
+      expect(candidateContent).toContain('model: gpt-5');
+      expect(candidateContent).toContain('credentialEnvVar: OPENAI_API_KEY');
+    } finally {
+      await rm(fixtureRepositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('supports remote_api authoring overrides for custom credential env vars and endpoints', async () => {
+    const fixtureRepositoryRoot = await createConnectFixtureRepo();
+
+    try {
+      const generateResult = await runJsonCli(fixtureRepositoryRoot, [
+        'connect',
+        '--tools',
+        'claude-code',
+        '--remote-api-model',
+        'claude-code=claude-test-model',
+        '--remote-api-credential-env-var',
+        'claude-code=CLAUDE_CODE_API_KEY',
+        '--remote-api-endpoint',
+        'claude-code=https://example.invalid/v1/messages',
+      ]);
+      const candidatePath = String(
+        generateResult.payload.command_result?.details.candidate_config_path,
+      );
+      const candidateContent = await readFile(candidatePath, 'utf8');
+
+      expect(generateResult.exitCode).toBe(0);
+      expect(generateResult.payload.status).toBe('success');
+      expect(candidateContent).toContain('toolId: claude-code');
+      expect(candidateContent).toContain('transport: remote_api');
+      expect(candidateContent).toContain('provider: anthropic');
+      expect(candidateContent).toContain('vendorBinding: anthropic_messages');
+      expect(candidateContent).toContain('model: claude-test-model');
+      expect(candidateContent).toContain('credentialEnvVar: CLAUDE_CODE_API_KEY');
+      expect(candidateContent).toContain('endpoint: https://example.invalid/v1/messages');
+    } finally {
+      await rm(fixtureRepositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('consumes user-config remote_api defaults and still lets explicit CLI overrides win', async () => {
+    const fixtureRepositoryRoot = await createConnectFixtureRepo();
+    const temporaryHomeRoot = await mkdtemp(resolve(tmpdir(), 'connect-user-config-home-'));
+    const userConfigRoot = resolve(temporaryHomeRoot, '.repo-ai-governor');
+    const userConfigPath = resolve(userConfigRoot, 'user-config.yaml');
+
+    await mkdir(userConfigRoot, { recursive: true });
+    await writeFile(
+      userConfigPath,
+      [
+        'tools:',
+        '  codex:',
+        '    transport: remote_api',
+        '    remoteApi:',
+        '      model: gpt-5-from-user-config',
+        '      credentialRef: secret://openai/api-key',
+        '      endpoint: https://example.invalid/v1/responses',
+        '',
+      ].join('\n'),
+      'utf8',
+    );
+
+    try {
+      const defaultsResult = await runJsonCli(
+        fixtureRepositoryRoot,
+        ['connect', '--tools', 'codex'],
+        'en-US',
+        {
+          HOME: temporaryHomeRoot,
+        },
+      );
+      const defaultsCandidatePath = String(
+        defaultsResult.payload.command_result?.details.candidate_config_path,
+      );
+      const defaultsCandidateContent = await readFile(defaultsCandidatePath, 'utf8');
+      const overrideResult = await runJsonCli(
+        fixtureRepositoryRoot,
+        ['connect', '--tools', 'codex', '--remote-api-model', 'codex=gpt-5-override'],
+        'en-US',
+        {
+          HOME: temporaryHomeRoot,
+        },
+      );
+      const overrideCandidatePath = String(
+        overrideResult.payload.command_result?.details.candidate_config_path,
+      );
+      const overrideCandidateContent = await readFile(overrideCandidatePath, 'utf8');
+
+      expect(defaultsResult.exitCode).toBe(0);
+      expect(defaultsResult.payload.status).toBe('success');
+      expect(defaultsCandidateContent).toContain('transport: remote_api');
+      expect(defaultsCandidateContent).toContain('model: gpt-5-from-user-config');
+      expect(defaultsCandidateContent).toContain('credentialEnvVar: OPENAI_API_KEY');
+      expect(defaultsCandidateContent).toContain('credentialRef: secret://openai/api-key');
+      expect(defaultsCandidateContent).toContain('endpoint: https://example.invalid/v1/responses');
+
+      expect(overrideResult.exitCode).toBe(0);
+      expect(overrideResult.payload.status).toBe('success');
+      expect(overrideCandidateContent).toContain('model: gpt-5-override');
+      expect(overrideCandidateContent).toContain('credentialEnvVar: OPENAI_API_KEY');
+      expect(overrideCandidateContent).toContain('credentialRef: secret://openai/api-key');
+      expect(overrideCandidateContent).toContain('endpoint: https://example.invalid/v1/responses');
+    } finally {
+      await rm(fixtureRepositoryRoot, { recursive: true, force: true });
+      await rm(temporaryHomeRoot, { recursive: true, force: true });
+    }
+  });
+
   it('does not shrink the default multi-tool candidate when only one tool gets a transport override', async () => {
     const fixtureRepositoryRoot = await createConnectFixtureRepo();
 
@@ -463,6 +602,26 @@ describe('connect phase-2 integration', () => {
       expect(result.payload.status).toBe('error');
       expect(result.payload.message).toContain(
         '选项 --tool-transport 必须使用 toolId=transport 语法。',
+      );
+    } finally {
+      await rm(fixtureRepositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('localizes malformed --remote-api-model parser errors for zh-CN output', async () => {
+    const fixtureRepositoryRoot = await createConnectFixtureRepo();
+
+    try {
+      const result = await runJsonCli(
+        fixtureRepositoryRoot,
+        ['connect', '--remote-api-model', 'codex'],
+        'zh-CN',
+      );
+
+      expect(result.exitCode).toBe(1);
+      expect(result.payload.status).toBe('error');
+      expect(result.payload.message).toContain(
+        '选项 --remote-api-model 必须使用 toolId=value 语法。',
       );
     } finally {
       await rm(fixtureRepositoryRoot, { recursive: true, force: true });

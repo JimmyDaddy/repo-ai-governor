@@ -173,6 +173,7 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       claudeCodeExecRunner?: ClaudeCodeExecRunner;
       codexExecRunner?: CodexExecRunner;
       githubCopilotExecRunner?: GithubCopilotExecRunner;
+      resolveCredentialRef?: (selector: string) => Promise<string | null>;
     },
   ) {
     this.adapterRoutingRuntime =
@@ -181,6 +182,11 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
         claudeCodeExecRunner: options.claudeCodeExecRunner,
         codexExecRunner: options.codexExecRunner,
         githubCopilotExecRunner: options.githubCopilotExecRunner,
+        ...(options.resolveCredentialRef
+          ? {
+              resolveCredentialRef: options.resolveCredentialRef,
+            }
+          : {}),
         sharedProtocolCacheNamespace: options.adapterRoutingRuntimeCacheNamespace,
       });
     this.subagentRegistry =

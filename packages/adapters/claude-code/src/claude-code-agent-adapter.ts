@@ -25,7 +25,7 @@ import {
   type AgentStreamEventsRequest,
   DEFAULT_AGENT_CLI_EXEC_MAX_RETRY_ATTEMPTS,
   DEFAULT_AGENT_CLI_EXEC_RETRY_BACKOFF_MS,
-  createLayeredHealthCheckFromLegacyReasons,
+  buildLayeredHealthCheckResult,
   resolveAgentStageExecutionPolicy,
 } from '@repo-ai-governor/adapter-sdk';
 import {
@@ -183,6 +183,7 @@ interface ResolvedClaudeCodeAgentAdapterOptions {
   maxRetryAttempts: number;
   retryBackoffMs: number;
   remoteApi?: AdapterRemoteApiConfig;
+  resolveCredentialRef?: (selector: string) => Promise<string | null>;
   fetchImplementation: typeof fetch;
 }
 
@@ -278,6 +279,11 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
             remoteApi: options.remoteApi,
           }
         : {}),
+      ...(options.resolveCredentialRef
+        ? {
+            resolveCredentialRef: options.resolveCredentialRef,
+          }
+        : {}),
       fetchImplementation: options.fetchImplementation ?? fetch,
     };
     this.cliExecOperationsRuntime = new AgentCliExecOperationsRuntime(
@@ -313,7 +319,7 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
     const runtimeProbe = await this.resolveProbeResolution(request.signal);
     const remoteApiOptions = this.resolveRemoteApiOptions();
     const remoteApiCredentialResolution = remoteApiOptions
-      ? this.resolveRemoteApiCredentialResolution(remoteApiOptions)
+      ? await this.resolveRemoteApiCredentialResolution(remoteApiOptions)
       : null;
     const capabilityMatrix = this.createCapabilityMatrix();
     const availabilityStatus = this.mergeAvailabilityStatus(
@@ -347,7 +353,7 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
       availabilityStatus,
       capabilityMatrix,
       unavailableReasons,
-      healthCheck: createLayeredHealthCheckFromLegacyReasons({
+      healthCheck: buildLayeredHealthCheckResult({
         adapterId: this.options.agentId,
         surfaceId: CLAUDE_CODE_SURFACE,
         availabilityStatus,
@@ -369,6 +375,19 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
         model: remoteApiOptions?.model ?? null,
         credentialSource: remoteApiCredentialResolution?.source ?? null,
         endpointSource: remoteApiOptions?.endpointSource ?? null,
+        diagnostics:
+          remoteApiCredentialResolution?.source === AdapterCredentialSource.CREDENTIAL_REF &&
+          remoteApiCredentialResolution.value &&
+          remoteApiCredentialResolution.detail.length > 0
+            ? [
+                {
+                  layer: 'auth',
+                  status: 'pass',
+                  code: 'auth.credential_reference_resolved',
+                  detail: remoteApiCredentialResolution.detail,
+                },
+              ]
+            : [],
         requestCancellationMode:
           this.options.executionMode === ClaudeCodeAgentAdapterExecutionMode.REMOTE_API
             ? AdapterRequestCancellationMode.LOCAL_ABORT_ONLY
@@ -1494,7 +1513,13 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
 
   private resolveRemoteApiCredentialResolution(
     remoteApiOptions: ResolvedClaudeCodeRemoteApiOptions,
-  ): ClaudeCodeRemoteApiCredentialResolution {
+  ): Promise<ClaudeCodeRemoteApiCredentialResolution> {
+    return this.resolveRemoteApiCredentialResolutionAsync(remoteApiOptions);
+  }
+
+  private async resolveRemoteApiCredentialResolutionAsync(
+    remoteApiOptions: ResolvedClaudeCodeRemoteApiOptions,
+  ): Promise<ClaudeCodeRemoteApiCredentialResolution> {
     const environment = this.resolveEnvironment();
     const credentialValue = environment[remoteApiOptions.credentialEnvVar];
     if (typeof credentialValue === 'string' && credentialValue.trim().length > 0) {
@@ -1508,9 +1533,14 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
     }
 
     if (remoteApiOptions.credentialRef) {
+      const resolvedCredentialValue =
+        (await this.options.resolveCredentialRef?.(remoteApiOptions.credentialRef)) ?? null;
       return {
         source: AdapterCredentialSource.CREDENTIAL_REF,
-        value: null,
+        value:
+          typeof resolvedCredentialValue === 'string' && resolvedCredentialValue.trim().length > 0
+            ? resolvedCredentialValue.trim()
+            : null,
         detail: `${CLAUDE_CODE_SURFACE}:${remoteApiOptions.credentialRef}`,
       };
     }
@@ -1551,7 +1581,7 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
       };
     }
 
-    const credentialResolution = this.resolveRemoteApiCredentialResolution(remoteApiOptions);
+    const credentialResolution = await this.resolveRemoteApiCredentialResolution(remoteApiOptions);
     if (!credentialResolution.value) {
       return {
         availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
@@ -1866,7 +1896,7 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
     elapsedMs: number;
   }> {
     const remoteApiOptions = this.requireRemoteApiOptions();
-    const credentialResolution = this.resolveRemoteApiCredentialResolution(remoteApiOptions);
+    const credentialResolution = await this.resolveRemoteApiCredentialResolution(remoteApiOptions);
     if (!credentialResolution.value) {
       throw new RuntimeError(
         GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED,
@@ -1974,7 +2004,7 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
     signal?: AbortSignal;
   }): AsyncIterable<AgentStreamEvent> {
     const remoteApiOptions = this.requireRemoteApiOptions();
-    const credentialResolution = this.resolveRemoteApiCredentialResolution(remoteApiOptions);
+    const credentialResolution = await this.resolveRemoteApiCredentialResolution(remoteApiOptions);
     if (!credentialResolution.value) {
       throw new RuntimeError(
         GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED,

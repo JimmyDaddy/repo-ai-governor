@@ -112,6 +112,7 @@ describe('CliAgentOnboardingRuntime', () => {
       presetId: CliAgentOnboardingPreset.SINGLE_TOOL_MINIMAL,
       requestedTools: [AdapterSurface.CODEX],
       toolTransportOverrides: [],
+      remoteApiOverrides: [],
       overwrite: false,
       singleToolAllRoles: false,
       roleBindingOverrides: [],
@@ -153,6 +154,7 @@ describe('CliAgentOnboardingRuntime', () => {
         presetId: CliAgentOnboardingPreset.MULTI_TOOL_DEFAULT,
         requestedTools: [],
         toolTransportOverrides: [],
+        remoteApiOverrides: [],
         overwrite: false,
         singleToolAllRoles: false,
         roleBindingOverrides: [],
@@ -626,6 +628,7 @@ describe('CliAgentOnboardingRuntime', () => {
       presetId: CliAgentOnboardingPreset.MULTI_TOOL_DEFAULT,
       requestedTools: [AdapterSurface.CODEX],
       toolTransportOverrides: [],
+      remoteApiOverrides: [],
       overwrite: true,
       singleToolAllRoles: false,
       roleBindingOverrides: [],
@@ -668,6 +671,7 @@ describe('CliAgentOnboardingRuntime', () => {
       presetId: CliAgentOnboardingPreset.MULTI_TOOL_DEFAULT,
       requestedTools: [AdapterSurface.CODEX],
       toolTransportOverrides: [],
+      remoteApiOverrides: [],
       overwrite: true,
       singleToolAllRoles: false,
       roleBindingOverrides: [],
@@ -680,6 +684,39 @@ describe('CliAgentOnboardingRuntime', () => {
         remoteApi: expect.objectContaining({
           provider: AdapterProviderKind.OPENAI,
           model: 'gpt-5',
+        }),
+      }),
+    ]);
+  });
+
+  it('synthesizes first-time remote_api config from connect authoring overrides', () => {
+    const runtime = new CliAgentOnboardingRuntime();
+
+    const resolution = runtime.buildConnectCandidateConfig({
+      sourceConfig: createGovernorConfigFixture(),
+      presetId: CliAgentOnboardingPreset.MULTI_TOOL_DEFAULT,
+      requestedTools: [AdapterSurface.CODEX],
+      toolTransportOverrides: [],
+      remoteApiOverrides: [
+        {
+          toolId: AdapterSurface.CODEX,
+          model: 'gpt-5',
+        },
+      ],
+      overwrite: true,
+      singleToolAllRoles: false,
+      roleBindingOverrides: [],
+    });
+
+    expect(resolution.candidateAdaptersConfig.tools).toEqual([
+      expect.objectContaining({
+        toolId: AdapterSurface.CODEX,
+        transport: AdapterTransportKind.REMOTE_API,
+        remoteApi: expect.objectContaining({
+          provider: AdapterProviderKind.OPENAI,
+          vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+          model: 'gpt-5',
+          credentialEnvVar: 'OPENAI_API_KEY',
         }),
       }),
     ]);
@@ -712,6 +749,7 @@ describe('CliAgentOnboardingRuntime', () => {
           transport: AdapterTransportKind.CLI_EXEC,
         },
       ],
+      remoteApiOverrides: [],
       overwrite: true,
       singleToolAllRoles: false,
       roleBindingOverrides: [],
@@ -743,6 +781,7 @@ describe('CliAgentOnboardingRuntime', () => {
           transport: AdapterTransportKind.CLI_EXEC,
         },
       ],
+      remoteApiOverrides: [],
       overwrite: true,
       singleToolAllRoles: false,
       roleBindingOverrides: [],
@@ -787,6 +826,59 @@ describe('CliAgentOnboardingRuntime', () => {
             transport: AdapterTransportKind.CLI_EXEC,
           },
         ],
+        remoteApiOverrides: [],
+        overwrite: true,
+        singleToolAllRoles: false,
+        roleBindingOverrides: [],
+      }),
+    ).toThrowError(
+      expect.objectContaining({
+        code: GovernorErrorCode.ADAPTER_ROUTE_CONFIG_INVALID,
+      }),
+    );
+  });
+
+  it('rejects remote_api authoring overrides for tools outside the explicit selected tool scope', () => {
+    const runtime = new CliAgentOnboardingRuntime();
+
+    expect(() =>
+      runtime.buildConnectCandidateConfig({
+        sourceConfig: createGovernorConfigFixture(),
+        presetId: CliAgentOnboardingPreset.MULTI_TOOL_DEFAULT,
+        requestedTools: [AdapterSurface.CLAUDE_CODE],
+        toolTransportOverrides: [],
+        remoteApiOverrides: [
+          {
+            toolId: AdapterSurface.CODEX,
+            model: 'gpt-5',
+          },
+        ],
+        overwrite: true,
+        singleToolAllRoles: false,
+        roleBindingOverrides: [],
+      }),
+    ).toThrowError(
+      expect.objectContaining({
+        code: GovernorErrorCode.ADAPTER_ROUTE_CONFIG_INVALID,
+      }),
+    );
+  });
+
+  it('requires a model when first-time remote_api authoring starts from an empty config', () => {
+    const runtime = new CliAgentOnboardingRuntime();
+
+    expect(() =>
+      runtime.buildConnectCandidateConfig({
+        sourceConfig: createGovernorConfigFixture(),
+        presetId: CliAgentOnboardingPreset.MULTI_TOOL_DEFAULT,
+        requestedTools: [AdapterSurface.CODEX],
+        toolTransportOverrides: [],
+        remoteApiOverrides: [
+          {
+            toolId: AdapterSurface.CODEX,
+            credentialEnvVar: 'OPENAI_API_KEY',
+          },
+        ],
         overwrite: true,
         singleToolAllRoles: false,
         roleBindingOverrides: [],
@@ -812,6 +904,7 @@ describe('CliAgentOnboardingRuntime', () => {
             transport: AdapterTransportKind.REMOTE_API,
           },
         ],
+        remoteApiOverrides: [],
         overwrite: true,
         singleToolAllRoles: false,
         roleBindingOverrides: [],
@@ -837,6 +930,7 @@ describe('CliAgentOnboardingRuntime', () => {
             transport: AdapterTransportKind.REMOTE_API,
           },
         ],
+        remoteApiOverrides: [],
         overwrite: true,
         singleToolAllRoles: false,
         roleBindingOverrides: [],
@@ -874,6 +968,7 @@ describe('CliAgentOnboardingRuntime', () => {
       presetId: CliAgentOnboardingPreset.MULTI_TOOL_DEFAULT,
       requestedTools: [AdapterSurface.OLLAMA],
       toolTransportOverrides: [],
+      remoteApiOverrides: [],
       overwrite: true,
       singleToolAllRoles: false,
       roleBindingOverrides: [],

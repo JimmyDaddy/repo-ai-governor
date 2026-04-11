@@ -98,6 +98,18 @@ const SESSION_SLASH_LOCAL_BRIDGE_DEFINITIONS: SessionSlashCommandDefinition[] = 
     executionMode: 'direct',
   },
   {
+    command: '/config',
+    summaryKey: 'cli.commands.config.description',
+    kind: 'bridge',
+    executionMode: 'direct',
+  },
+  {
+    command: '/secret',
+    summaryKey: 'cli.commands.secret.description',
+    kind: 'bridge',
+    executionMode: 'direct',
+  },
+  {
     command: '/workspace',
     summaryKey: 'cli.commands.workspace.description',
     kind: 'bridge',
@@ -161,6 +173,8 @@ const SESSION_SLASH_COMMAND_FULL_ORDER = [
   '/connect',
   '/doctor',
   '/plan sync',
+  '/config',
+  '/secret',
   '/workspace',
   '/workspace dry-run',
   '/workspace execute',

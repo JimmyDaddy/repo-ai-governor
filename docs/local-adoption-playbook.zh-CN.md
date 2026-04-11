@@ -132,9 +132,10 @@ pnpm exec repo-ai-governor resume [session-id]
 2. `/help`、`/history`、`/search <term>`、`/multiline`、`!<shell-command>` 应可用。
 3. `resume` 应能恢复最近一次或指定的持久化会话。
 4. `--no-interactive`、非 TTY、`plain`、`json` 不应进入交互壳层。
-5. 在 slash palette 中输入 `/workspace` 或 `/workspace ` 时，应能看到 `dry-run`、`execute`、`rollback`、`clear-config`、`switch-branch`、`set-ui-theme` 提示；而 bare `/` 仍保持较短的 launcher shortlist。
-6. 在 session shell 中输入 `/workspace set-ui-theme` 或 `/workspace set-ui-theme ` 时，应直接看到 `governor`、`catppuccin`、`calm` preset 选项，而不是先提交一个缺 preset 的失败命令。
-7. 当前可读性增强只调整 presenter 的强调样式、对比度和 palette 密度；实际字体大小仍由宿主终端或 IDE 控制。
+5. 在 slash palette 中输入 `/config` 或 `/secret` 时，应能看到和 CLI 同一套命令族；它们只是 discoverability shortcut，不代表第二份 config 或 secret 状态。
+6. 在 slash palette 中输入 `/workspace` 或 `/workspace ` 时，应能看到 `dry-run`、`execute`、`rollback`、`clear-config`、`switch-branch`、`set-ui-theme` 提示；而 bare `/` 仍保持较短的 launcher shortlist。
+7. 在 session shell 中输入 `/workspace set-ui-theme` 或 `/workspace set-ui-theme ` 时，应直接看到 `governor`、`catppuccin`、`calm` preset 选项，而不是先提交一个缺 preset 的失败命令。
+8. 当前可读性增强只调整 presenter 的强调样式、对比度和 palette 密度；实际字体大小仍由宿主终端或 IDE 控制。
 
 ## 5. 多工具接入
 
@@ -160,6 +161,40 @@ pnpm exec repo-ai-governor run --output json --dry-run --trace
 9. `github-copilot` 现在在 tester-route verify 上也遵循同样的 CLI-backed truth；而 `local-model` 仍应被理解为受能力约束的 fallback surface，并且只适用于 restricted-network 或 operator 明确选择的本地 fallback、且 route requirement 仍保持 capability-compatible 的场景。
 10. 不要把 `local-model` 当成 repository-review reviewer delegation 的 promoted primary substitute，也不要把它扩张成 `tool_calling`、`structured_output` 或 `confirmation_gate` 必需角色的等价替代；这些路径当前仍保持 unsupported 或显式 guard。
 11. 如果 `connect` 失败并报 `ADAPTER_ROUTE_CONFIG_INVALID`，且提示 source config 缺少 adapters baseline，应先修复活动 `governor.yaml`：首次接入先跑 `init`；若现有配置看起来陈旧或损坏，则先跑 `workspace clear-config`，再跑 `init`，然后重试 `connect`。
+
+如果你想让 `connect` 直接生成首次 `remote_api` 配置，而不是手改 `governor.yaml`，可使用：
+
+```bash
+pnpm exec repo-ai-governor connect --tools codex --remote-api-model codex=gpt-5 --output pretty
+pnpm exec repo-ai-governor connect --tools claude-code --remote-api-model claude-code=<model> --remote-api-credential-env-var claude-code=ANTHROPIC_API_KEY --remote-api-endpoint claude-code=https://api.anthropic.com/v1/messages --output pretty
+```
+
+说明：
+
+1. 首次配置 `remote_api` 时，`--remote-api-model` 是必填 authoring 输入；`--remote-api-credential-env-var` 和 `--remote-api-endpoint` 是可选的按工具覆盖项。
+2. 这些命令只会把 model、endpoint 和 env var 引用写进 candidate 配置；真实 API key 仍应来自 shell 环境变量、`direnv`、CI secret store 或其他外部 secret 来源。
+3. 如果你已经把个人默认值放进 `~/.repo-ai-governor/user-config.yaml`，那么 `connect --tools <tool>` 会在没有更高优先级 CLI 覆盖或 workspace `governor.yaml` 显式值时消费这些默认值。
+
+### 5.1 user-local defaults 与 secret-backed selector
+
+当 model、endpoint 或 auth selector 应只属于当前机器，而不应提交进 workspace `governor.yaml` 时，使用这条路径：
+
+```bash
+pnpm exec repo-ai-governor config set tools.codex.transport remote_api
+pnpm exec repo-ai-governor config set tools.codex.remoteApi.model gpt-5
+pnpm exec repo-ai-governor config set tools.codex.remoteApi.credentialRef secret://openai/api-key
+printf '%s' "$OPENAI_API_KEY" | pnpm exec repo-ai-governor secret set openai/api-key --stdin
+pnpm exec repo-ai-governor secret status
+pnpm exec repo-ai-governor connect --tools codex --output pretty
+```
+
+这条路径的含义：
+
+1. `config` 会把用户本地默认值写入 canonical `~/.repo-ai-governor/user-config.yaml`，而不是改写共享的 workspace `governor.yaml`。
+2. 优先级保持严格不变：显式 CLI 参数最高，workspace `governor.yaml` 第二，`user-config.yaml` 只负责在更下层补默认值。
+3. `credentialRef` 只是 `secret://openai/api-key` 这类 selector；真实 API key 只存放在 secret backend，不会写进 `user-config.yaml` 或 `governor.yaml`。
+4. 在 macOS 上，当前已验证的默认 secure backend 路径是 keychain baseline。其他平台请先运行 `secret status`，再判断当前环境实际支持哪些 secure backend。
+5. `--backend unsafe-local-file` 只是显式 opt-in 的 local-only / 明文风险 fallback；不要把它当成默认或推荐存储方式。
 
 常用产物路径：
 

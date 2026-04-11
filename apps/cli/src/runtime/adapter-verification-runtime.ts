@@ -20,23 +20,37 @@ import {
   CliGovernanceCheckStatus,
 } from '../constants/cli-governance-runtime.constant.js';
 import type {
+  CliAdapterCredentialReferenceDiagnostic,
+  CliAdapterSecretBackendDiagnostics,
   CliAdapterToolProbeSnapshot,
   CliAdapterVerificationResolution,
 } from '../types/index.js';
 import type { CliAdapterRoutingRuntime } from './adapter-routing-runtime.js';
 import type { CliLocalModelProbeRuntime } from './local-model-probe-runtime.js';
+import { CliSecretService } from './secrets/cli-secret-service.js';
 
 /**
  * Aggregates adapter probe snapshots into role-level verification and next-action diagnostics.
  */
 export class CliAdapterVerificationRuntime {
+  private readonly secretService: CliSecretService;
+  private readonly environment: NodeJS.ProcessEnv;
+
   public constructor(
     private readonly adaptersConfig: AdaptersConfig,
     private readonly translate: (key: string, interpolation?: Record<string, string>) => string,
     private readonly formatExecFailureDetail: (error: unknown) => string,
     private readonly adapterRoutingRuntime: CliAdapterRoutingRuntime,
     private readonly localModelProbeRuntime: CliLocalModelProbeRuntime,
-  ) {}
+    secretService = new CliSecretService(),
+    private readonly localizeText: (english: string, chinese: string) => string = (english) =>
+      english,
+    environment: NodeJS.ProcessEnv = process.env,
+  ) {
+    this.secretService = secretService;
+    this.secretService.setLocalizeText(this.localizeText);
+    this.environment = environment;
+  }
 
   /**
    * Resolves adapters/routing verification summary used by connect/doctor and internal readiness
@@ -51,6 +65,8 @@ export class CliAdapterVerificationRuntime {
       toolConfigBySurface,
       abortSignal,
     );
+    const secretBackends = await this.resolveSecretBackendDiagnostics();
+    const credentialReferences = await this.collectCredentialReferenceDiagnostics(toolSnapshots);
     const toolSnapshotBySurface = new Map<AdapterSurface, CliAdapterToolProbeSnapshot>(
       toolSnapshots.map((snapshot) => [snapshot.toolId, snapshot]),
     );
@@ -295,15 +311,16 @@ export class CliAdapterVerificationRuntime {
         this.collectRemoteApiCredentialDetailsFromToolSnapshots(toolSnapshots, [
           AdapterCredentialSource.PROVIDER_LOCAL,
         ]);
-      const remoteApiCredentialRefs = this.collectRemoteApiCredentialDetailsFromToolSnapshots(
-        toolSnapshots,
-        [AdapterCredentialSource.CREDENTIAL_REF],
-      );
+      const unresolvedCredentialReferences = credentialReferences
+        .filter((credentialReference) => !credentialReference.resolved)
+        .map(
+          (credentialReference) => `${credentialReference.toolId}:${credentialReference.selector}`,
+        );
       const genericCredentialHints = missingCredentials.filter(
         (credential) =>
           !remoteApiEnvCredentials.includes(credential) &&
           !remoteApiProviderLocalCredentials.includes(credential) &&
-          !remoteApiCredentialRefs.includes(credential),
+          !unresolvedCredentialReferences.includes(credential),
       );
       if (remoteApiEnvCredentials.length > 0) {
         nextActions.push(
@@ -319,11 +336,16 @@ export class CliAdapterVerificationRuntime {
           }),
         );
       }
-      if (remoteApiCredentialRefs.length > 0) {
+      if (unresolvedCredentialReferences.length > 0) {
         nextActions.push(
-          this.translate('cli.adapterVerification.resolveCredentialReferencesManually', {
-            credentials: remoteApiCredentialRefs.join(', '),
-          }),
+          this.translate(
+            this.hasDefaultSecretBackend(secretBackends)
+              ? 'cli.adapterVerification.createCredentialReferences'
+              : 'cli.adapterVerification.optIntoSecretFallback',
+            {
+              credentials: unresolvedCredentialReferences.join(', '),
+            },
+          ),
         );
       }
       if (genericCredentialHints.length > 0) {
@@ -379,7 +401,72 @@ export class CliAdapterVerificationRuntime {
       degradedRoleCount,
       fallbackRoleCount,
       nextActions,
+      secretBackends,
+      credentialReferences,
     };
+  }
+
+  private async resolveSecretBackendDiagnostics(): Promise<CliAdapterSecretBackendDiagnostics> {
+    const status = await this.secretService.getStatus({
+      environment: this.environment,
+    });
+    return {
+      selectedBackendId: status.selectedBackendId,
+      defaultBackendId: status.defaultBackendId,
+      indexPath: status.indexPath,
+      backends: status.backends.map((backendStatus) => ({
+        backendId: backendStatus.backendId,
+        available: backendStatus.available,
+        detail: backendStatus.detail,
+        warning: backendStatus.warning ?? null,
+      })),
+    };
+  }
+
+  private async collectCredentialReferenceDiagnostics(
+    toolSnapshots: CliAdapterToolProbeSnapshot[],
+  ): Promise<CliAdapterCredentialReferenceDiagnostic[]> {
+    const credentialReferenceDetails = this.collectRemoteApiCredentialDetailsFromToolSnapshots(
+      toolSnapshots,
+      [AdapterCredentialSource.CREDENTIAL_REF],
+    );
+    const diagnostics: CliAdapterCredentialReferenceDiagnostic[] = [];
+
+    for (const detail of credentialReferenceDetails) {
+      const separatorIndex = detail.indexOf(':');
+      if (separatorIndex <= 0 || separatorIndex === detail.length - 1) {
+        continue;
+      }
+      const toolId = detail.slice(0, separatorIndex) as AdapterSurface;
+      const selector = detail.slice(separatorIndex + 1);
+      if (!selector.startsWith('secret://')) {
+        continue;
+      }
+
+      const resolution = await this.secretService.resolveSecretValue({
+        selector,
+        environment: this.environment,
+      });
+      diagnostics.push({
+        toolId,
+        selector,
+        keyName: this.secretService.parseSelector(selector),
+        resolved: resolution !== null,
+        backendId: resolution?.backendId ?? null,
+      });
+    }
+
+    return diagnostics;
+  }
+
+  private hasDefaultSecretBackend(secretBackends: CliAdapterSecretBackendDiagnostics): boolean {
+    if (!secretBackends.defaultBackendId) {
+      return false;
+    }
+    const defaultBackendStatus = secretBackends.backends.find(
+      (backendStatus) => backendStatus.backendId === secretBackends.defaultBackendId,
+    );
+    return defaultBackendStatus?.available === true && !defaultBackendStatus.warning?.trim().length;
   }
 
   /**
@@ -478,6 +565,7 @@ export class CliAdapterVerificationRuntime {
             routeRequirements: probeResult.healthCheck?.routeRequirements ?? [],
             fallbackAllowed: probeResult.healthCheck?.fallbackAllowed ?? true,
             unavailableReasons,
+            diagnostics: probeResult.healthCheck?.diagnostics ?? [],
             transportKind: probeResult.healthCheck?.transportKind ?? null,
             providerKind: probeResult.healthCheck?.providerKind ?? null,
             vendorBindingKind: probeResult.healthCheck?.vendorBindingKind ?? null,
@@ -730,6 +818,7 @@ export class CliAdapterVerificationRuntime {
       }
       const authDiagnostic = snapshot.healthCheck.diagnostics.find((diagnostic) =>
         [
+          'auth.credential_reference_resolved',
           'auth.credential_missing',
           'auth.login_required',
           'auth.unauthorized',
