@@ -1,6 +1,6 @@
 # TK-808 wire secure secret mutation seam and fallback/error guidance
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-12
 - Owner: AI-Agent
 - Priority: P0
@@ -61,7 +61,14 @@
 
 1. 2026-04-12：任务创建，状态初始化为 `planned`。
 2. 2026-04-12：拆解细化后，secure mutation seam 已固定为 Phase A 最后一个实现收口点；只有在 `TK-806` 与 `TK-807` 清零 presenter leakage 后才进入执行。
+3. 2026-04-12：`TK-807` 已通过 clean CR loop 并以 commit `d4b7399d` 收口；本任务切换为 `active`，当前聚焦 redacted failure/fallback guidance 与 direct secret-command/service regression coverage。
+4. 2026-04-12：已将 secure capture failure path 改为输出分级 redacted guidance，不再直接回显 backend 原始错误；同时补齐 `session-shell-runner`、`secret-command` 与 `cli-secret-service` 的 focused regression tests，并重新通过 TK-808 focused vitest 与 `pnpm run build`。
+5. 2026-04-12：`CR-005` delegated review 额外指出 invalid-input / generic operation 两条 failure branch 缺 regression coverage；主 agent 已接受并补齐相应 tests，下一步进入 fresh clean recheck。
+6. 2026-04-12：`CR-006` post-fix clean recheck 未发现新的 actionable findings；focused vitest 与 `pnpm run build` 已重新通过，本任务切换为 `completed`。
 
 ## 10. 产出
 
-1. 待执行：secure secret mutation seam wiring and redacted guidance implementation
+1. local secure mutation seam handoff remains on the shell-local path without nested JSON CLI fallback
+2. redacted backend-unavailable / invalid-input / generic-operation guidance for secure capture failures
+3. direct secret-command / secret-service warning-boundary regression coverage
+4. focused runner failure-branch tests plus same-window vitest/build evidence

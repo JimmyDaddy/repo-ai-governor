@@ -983,6 +983,18 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.responses.secureSecretCaptureBackendWarning': 'Backend warning: {{warning}}',
   'cli.sessionShell.responses.secureSecretCaptureFailed':
     'Secure local secret mutation failed for {{command}}. reason={{reason}}',
+  'cli.sessionShell.responses.secureSecretCaptureFailedBackendUnavailable':
+    'Secure local secret mutation could not reach a writable backend for {{command}}.',
+  'cli.sessionShell.responses.secureSecretCaptureFailedBackendUnavailableNextStep':
+    'Run /secret status to inspect backend availability, or use the standalone CLI with --backend unsafe-local-file --stdin only if you explicitly want the local-only fallback.',
+  'cli.sessionShell.responses.secureSecretCaptureFailedInvalidInput':
+    'Secure local secret mutation rejected the captured input for {{command}}.',
+  'cli.sessionShell.responses.secureSecretCaptureFailedInvalidInputNextStep':
+    'Re-run {{command}} and enter the secret again in secure local capture.',
+  'cli.sessionShell.responses.secureSecretCaptureFailedOperation':
+    'Secure local secret mutation failed while writing the captured secret for {{command}}.',
+  'cli.sessionShell.responses.secureSecretCaptureFailedOperationNextStep':
+    'Run /secret status to inspect backend availability, then retry {{command}} in secure local capture.',
   'cli.sessionShell.responses.secureSecretCaptureCaptured':
     'Secure input was captured locally for {{command}}. Direct mutation handoff is not wired in this attachment yet.',
   'cli.sessionShell.responses.secureSecretSlashSuffixRejected':
@@ -1987,6 +1999,298 @@ describe('CliSessionShellRunner', () => {
       item.lines.filter((line) => /^1\. \[[^\]]+\] \/secret set openai\/api-key$/u.test(line)),
     );
     expect(historyMatches).toHaveLength(1);
+  });
+
+  it('surfaces backend warning metadata on secure local mutation without leaking the captured secret', async () => {
+    const backendWarning =
+      'unsafe-local-file stores plaintext secrets on disk; use it only with explicit local-only opt-in.';
+    const inkRunner = new StubSessionShellInkRunner([
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/secret set openai/api-key',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+      {
+        type: CliSessionShellInputActionType.SECURE_CAPTURE_APPEND,
+        value: 'sk-warning-secret',
+      },
+      {
+        type: CliSessionShellInputActionType.SECURE_CAPTURE_SUBMITTED,
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/exit',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+    ]);
+    const runner = new CliSessionShellRunner(
+      undefined,
+      new RecordingSessionShellRenderer() as never,
+      () => new StubSessionShellPromptAdapter([]),
+      () => new CliSessionShellInkController(),
+      () => inkRunner as never,
+      () => true,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(
+      DEFAULT_RUN_OPTIONS({
+        secureSecretMutator: {
+          setSecret: async ({ keyName }) => ({
+            keyName,
+            selector: `secret://${keyName}`,
+            backendId: 'unsafe-local-file',
+            warning: backendWarning,
+          }),
+        },
+      }),
+    );
+
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes(
+          'Secret set completed for /secret set openai/api-key via backend unsafe-local-file.',
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes(`Backend warning: ${backendWarning}`),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.some((line) => line.includes('sk-warning-secret')),
+      ),
+    ).toBe(false);
+  });
+
+  it('maps secure local backend-unavailable failures to redacted fallback guidance', async () => {
+    const inkRunner = new StubSessionShellInkRunner([
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/secret set openai/api-key',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+      {
+        type: CliSessionShellInputActionType.SECURE_CAPTURE_APPEND,
+        value: 'sk-failed-secret',
+      },
+      {
+        type: CliSessionShellInputActionType.SECURE_CAPTURE_SUBMITTED,
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/exit',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+    ]);
+    const runner = new CliSessionShellRunner(
+      undefined,
+      new RecordingSessionShellRenderer() as never,
+      () => new StubSessionShellPromptAdapter([]),
+      () => new CliSessionShellInkController(),
+      () => inkRunner as never,
+      () => true,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(
+      DEFAULT_RUN_OPTIONS({
+        secureSecretMutator: {
+          setSecret: async () => {
+            throw new RuntimeError(
+              GovernorErrorCode.SECRET_BACKEND_UNAVAILABLE,
+              'Secret backend "macos-keychain" is unavailable: security CLI is unavailable or keychain access failed.',
+              {
+                backend: 'macos-keychain',
+              },
+            );
+          },
+        },
+      }),
+    );
+
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes(
+          'Secure local secret mutation could not reach a writable backend for /secret set openai/api-key.',
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes(
+          'Run /secret status to inspect backend availability, or use the standalone CLI with --backend unsafe-local-file --stdin only if you explicitly want the local-only fallback.',
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.some((line) =>
+          line.includes('security CLI is unavailable or keychain access failed.'),
+        ),
+      ),
+    ).toBe(false);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.some((line) => line.includes('sk-failed-secret')),
+      ),
+    ).toBe(false);
+  });
+
+  it('maps secure local invalid-input failures to redacted retry guidance', async () => {
+    const inkRunner = new StubSessionShellInkRunner([
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/secret set openai/api-key',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+      {
+        type: CliSessionShellInputActionType.SECURE_CAPTURE_APPEND,
+        value: 'sk-invalid-secret',
+      },
+      {
+        type: CliSessionShellInputActionType.SECURE_CAPTURE_SUBMITTED,
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/exit',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+    ]);
+    const runner = new CliSessionShellRunner(
+      undefined,
+      new RecordingSessionShellRenderer() as never,
+      () => new StubSessionShellPromptAdapter([]),
+      () => new CliSessionShellInkController(),
+      () => inkRunner as never,
+      () => true,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(
+      DEFAULT_RUN_OPTIONS({
+        secureSecretMutator: {
+          setSecret: async () => {
+            throw new RuntimeError(
+              GovernorErrorCode.SECRET_INPUT_INVALID,
+              'captured secret sk-invalid-secret was rejected by the local mutator.',
+            );
+          },
+        },
+      }),
+    );
+
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes(
+          'Secure local secret mutation rejected the captured input for /secret set openai/api-key.',
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes(
+          'Re-run /secret set openai/api-key and enter the secret again in secure local capture.',
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.some((line) => line.includes('captured secret sk-invalid-secret was rejected')),
+      ),
+    ).toBe(false);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.some((line) => line.includes('sk-invalid-secret')),
+      ),
+    ).toBe(false);
+  });
+
+  it('maps generic secure local mutation failures to redacted backend-status guidance', async () => {
+    const inkRunner = new StubSessionShellInkRunner([
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/secret set openai/api-key',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+      {
+        type: CliSessionShellInputActionType.SECURE_CAPTURE_APPEND,
+        value: 'sk-operation-secret',
+      },
+      {
+        type: CliSessionShellInputActionType.SECURE_CAPTURE_SUBMITTED,
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/exit',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+    ]);
+    const runner = new CliSessionShellRunner(
+      undefined,
+      new RecordingSessionShellRenderer() as never,
+      () => new StubSessionShellPromptAdapter([]),
+      () => new CliSessionShellInkController(),
+      () => inkRunner as never,
+      () => true,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(
+      DEFAULT_RUN_OPTIONS({
+        secureSecretMutator: {
+          setSecret: async () => {
+            throw new RuntimeError(
+              GovernorErrorCode.SECRET_OPERATION_FAILED,
+              'write failed for sk-operation-secret while storing the secret.',
+            );
+          },
+        },
+      }),
+    );
+
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes(
+          'Secure local secret mutation failed while writing the captured secret for /secret set openai/api-key.',
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes(
+          'Run /secret status to inspect backend availability, then retry /secret set openai/api-key in secure local capture.',
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.some((line) => line.includes('write failed for sk-operation-secret')),
+      ),
+    ).toBe(false);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.some((line) => line.includes('sk-operation-secret')),
+      ),
+    ).toBe(false);
   });
 
   it('clears the secure-local buffer on cancel without leaking the typed secret into transcript or history', async () => {

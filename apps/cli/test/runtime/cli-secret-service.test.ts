@@ -12,17 +12,30 @@ import { UnsafeLocalFileSecretBackend } from '../../src/runtime/secrets/unsafe-l
 class InMemorySecretBackend implements CliSecretBackend {
   public readonly backendId: string;
   private readonly records = new Map<string, string>();
+  private readonly statusWarning: string | null;
+  private readonly statusDetail: string;
+  private readonly statusAvailable: boolean;
 
-  public constructor(backendId: string) {
+  public constructor(
+    backendId: string,
+    options: {
+      available?: boolean;
+      detail?: string;
+      warning?: string | null;
+    } = {},
+  ) {
     this.backendId = backendId;
+    this.statusAvailable = options.available ?? true;
+    this.statusDetail = options.detail ?? backendId;
+    this.statusWarning = options.warning ?? null;
   }
 
   public async getStatus(): Promise<CliSecretBackendStatus> {
     return {
       backendId: this.backendId,
-      available: true,
-      detail: this.backendId,
-      warning: null,
+      available: this.statusAvailable,
+      detail: this.statusDetail,
+      warning: this.statusWarning,
     };
   }
 
@@ -123,6 +136,43 @@ describe('CliSecretService', () => {
         backendId: 'unsafe-local-file',
         value: 'sk-fresh',
       });
+    } finally {
+      await rm(temporaryHomeRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('returns backend warning metadata when an explicit unsafe fallback backend is selected', async () => {
+    const temporaryHomeRoot = await mkdtemp(resolve(tmpdir(), 'cli-secret-service-warning-'));
+    const environment = {
+      ...process.env,
+      HOME: temporaryHomeRoot,
+    };
+    const warning =
+      'unsafe-local-file stores plaintext secrets on disk; use it only with explicit local-only opt-in.';
+    const service = new CliSecretService({
+      backends: {
+        'macos-keychain': new InMemorySecretBackend('macos-keychain'),
+        'unsafe-local-file': new InMemorySecretBackend('unsafe-local-file', {
+          warning,
+        }),
+      },
+    });
+
+    try {
+      const result = await service.setSecret({
+        keyName: 'openai/api-key',
+        value: 'sk-live',
+        backendId: 'unsafe-local-file',
+        environment,
+      });
+
+      expect(result).toEqual({
+        keyName: 'openai/api-key',
+        selector: 'secret://openai/api-key',
+        backendId: 'unsafe-local-file',
+        warning,
+      });
+      expect(Object.values(result)).not.toContain('sk-live');
     } finally {
       await rm(temporaryHomeRoot, { recursive: true, force: true });
     }

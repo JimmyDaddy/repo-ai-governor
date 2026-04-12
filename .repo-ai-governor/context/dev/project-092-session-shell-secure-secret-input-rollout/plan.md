@@ -34,7 +34,7 @@
 | --- | --- | --- | --- | --- | --- |
 | TK-806 | sprint-001 | implement secure route parsing and pre-commit extra-token rejection for `/secret set` | shell/routing | promotion handoff | completed |
 | TK-807 | sprint-001 | add secure local capture mode and redacted presenter semantics | shell/input | TK-806 | completed |
-| TK-808 | sprint-001 | wire secure secret mutation seam and fallback/error guidance | secret/runtime | TK-807 | planned |
+| TK-808 | sprint-001 | wire secure secret mutation seam and fallback/error guidance | secret/runtime | TK-807 | completed |
 | TK-809 | sprint-001 | sprint-001 exit acceptance and project completion assessment | closeout/handoff | TK-806、TK-807、TK-808 | planned |
 
 ## 4. 依赖产物策略

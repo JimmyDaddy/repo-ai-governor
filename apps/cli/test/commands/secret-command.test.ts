@@ -3,6 +3,7 @@ import { PassThrough } from 'node:stream';
 import {
   CliReactThemePreset,
   DEFAULT_I18N_RUNTIME_CONFIG,
+  GovernorErrorCode,
   I18nRuntime,
 } from '@repo-ai-governor/shared';
 import { vi } from 'vitest';
@@ -136,5 +137,54 @@ describe('CliSecretCommand', () => {
         value: '  stdin-secret  ',
       }),
     );
+  });
+
+  it('rejects `secret set --from-env` so environment imports stay on the dedicated import path', async () => {
+    const context = await createSecretCommandContext();
+    context.options.secretCommandOptions = {
+      action: 'set',
+      keyName: 'openai/api-key',
+      fromEnv: 'OPENAI_API_KEY',
+    };
+    const setSecret = vi.fn();
+    const command = new CliSecretCommand({
+      secretService: {
+        setLocalizeText: vi.fn(),
+        setSecret,
+      } as never,
+    });
+
+    await expect(command.execute(context)).rejects.toMatchObject({
+      code: GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+    });
+    expect(setSecret).not.toHaveBeenCalled();
+  });
+
+  it('surfaces backend warning metadata without echoing the captured secret in the result payload', async () => {
+    const context = await createSecretCommandContext();
+    context.options.secretCommandOptions = {
+      action: 'set',
+      keyName: 'openai/api-key',
+      stdin: true,
+    };
+    const warning =
+      'unsafe-local-file stores plaintext secrets on disk; use it only with explicit local-only opt-in.';
+    const command = new CliSecretCommand({
+      secretService: {
+        setLocalizeText: vi.fn(),
+        setSecret: vi.fn(async () => ({
+          keyName: 'openai/api-key',
+          selector: 'secret://openai/api-key',
+          backendId: 'unsafe-local-file',
+          warning,
+        })),
+      } as never,
+      stdinReader: async () => 'sk-warning-secret\n',
+    });
+
+    const result = await command.execute(context);
+
+    expect(result.commandResult.details?.warning).toBe(warning);
+    expect(JSON.stringify(result.commandResult)).not.toContain('sk-warning-secret');
   });
 });

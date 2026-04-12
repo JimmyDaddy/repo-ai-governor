@@ -2436,18 +2436,60 @@ export class CliSessionShellRunner {
         options,
         runtimeState,
         OrchestrationSessionTranscriptRole.SYSTEM,
-        [
-          options.translate('cli.sessionShell.responses.secureSecretCaptureFailed', {
-            command: activeSecureCapture.displayCommand,
-            reason: standardizedError.message,
-          }),
-        ],
+        this.buildSecureLocalSecretCaptureFailureLines(
+          standardizedError,
+          activeSecureCapture.displayCommand,
+          options,
+        ),
         {
           renderKind: 'system_notice',
         },
       );
       return;
     }
+  }
+
+  private buildSecureLocalSecretCaptureFailureLines(
+    standardizedError: StandardizedError,
+    displayCommand: string,
+    options: CliSessionShellRunOptions,
+  ): string[] {
+    if (standardizedError.code === GovernorErrorCode.SECRET_BACKEND_UNAVAILABLE) {
+      return [
+        options.translate(
+          'cli.sessionShell.responses.secureSecretCaptureFailedBackendUnavailable',
+          {
+            command: displayCommand,
+          },
+        ),
+        options.translate(
+          'cli.sessionShell.responses.secureSecretCaptureFailedBackendUnavailableNextStep',
+        ),
+      ];
+    }
+
+    if (standardizedError.code === GovernorErrorCode.SECRET_INPUT_INVALID) {
+      return [
+        options.translate('cli.sessionShell.responses.secureSecretCaptureFailedInvalidInput', {
+          command: displayCommand,
+        }),
+        options.translate(
+          'cli.sessionShell.responses.secureSecretCaptureFailedInvalidInputNextStep',
+          {
+            command: displayCommand,
+          },
+        ),
+      ];
+    }
+
+    return [
+      options.translate('cli.sessionShell.responses.secureSecretCaptureFailedOperation', {
+        command: displayCommand,
+      }),
+      options.translate('cli.sessionShell.responses.secureSecretCaptureFailedOperationNextStep', {
+        command: displayCommand,
+      }),
+    ];
   }
 
   private applySecureLocalSecretCapturePresentation(

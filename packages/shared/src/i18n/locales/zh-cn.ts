@@ -453,6 +453,17 @@ export const ZH_CN_TRANSLATIONS = {
         secureSecretCaptureBackendWarning: 'Backend 警告：{{warning}}',
         secureSecretCaptureFailed:
           '{{command}} 的 secure local secret mutation 失败。原因：{{reason}}',
+        secureSecretCaptureFailedBackendUnavailable:
+          '{{command}} 当前没有可写入的 secret backend 可用。',
+        secureSecretCaptureFailedBackendUnavailableNextStep:
+          '请先执行 /secret status 检查 backend 可用性；只有在明确接受 local-only fallback 时，才改用独立 CLI 配合 --backend unsafe-local-file --stdin。',
+        secureSecretCaptureFailedInvalidInput: '{{command}} 捕获到的 secure 输入未通过校验。',
+        secureSecretCaptureFailedInvalidInputNextStep:
+          '请重新执行 {{command}}，并在 secure local capture 中再次输入 secret。',
+        secureSecretCaptureFailedOperation:
+          '{{command}} 在写入已配置 backend 时发生 secure local secret mutation 失败。',
+        secureSecretCaptureFailedOperationNextStep:
+          '请先执行 /secret status 检查 backend 可用性，然后在 secure local capture 中重试 {{command}}。',
         secureSecretCaptureCaptured:
           '{{command}} 的 secure input 已在本地采集完成，但当前附着面尚未接通 direct mutation handoff。',
         secureSecretSlashSuffixRejected:

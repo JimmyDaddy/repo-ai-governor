@@ -14,9 +14,13 @@
   - 2026-04-12：已补齐 `secure_local_capture` / `secure_local` / `secure_capture` contract、live Ink secure action 映射、本地 secure buffer lifecycle，以及 secure submit 直连 local `secureSecretMutator` 的最小 seam。
   - 2026-04-12：`CR-003` delegated review 返回 2 条 `P1` findings，分别指向 live composer local echo leakage 与 secure capture submit no-op；主 agent 已全部 `accepted` 并修复。
   - 2026-04-12：post-fix recheck `CR-004` 未发现新的 actionable findings；focused vitest 与 `pnpm run build` 已重新通过，本任务切换为 `completed`。
-- [ ] TK-808 wire secure secret mutation seam and fallback/error guidance
+- [x] TK-808 wire secure secret mutation seam and fallback/error guidance
   - 2026-04-12：任务创建，状态初始化为 `planned`。
   - 2026-04-12：拆解细化后，secure mutation seam 已固定为 Phase A 最后一个实现收口点；只有在 `TK-806` 与 `TK-807` 清零 presenter leakage 后才进入执行。
+  - 2026-04-12：`TK-807` 已通过 clean CR loop 并以 commit `d4b7399d` 收口；本任务切换为 `active`，当前聚焦 redacted failure/fallback guidance 与 direct secret-command/service regression coverage。
+  - 2026-04-12：已将 secure capture failure path 改为输出分级 redacted guidance，不再直接回显 backend 原始错误；同时补齐 `session-shell-runner`、`secret-command` 与 `cli-secret-service` 的 focused regression tests，并重新通过 TK-808 focused vitest 与 `pnpm run build`。
+  - 2026-04-12：`CR-005` delegated review 额外指出 invalid-input / generic operation 两条 failure branch 缺 regression coverage；主 agent 已接受并补齐相应 tests，下一步进入 fresh clean recheck。
+  - 2026-04-12：`CR-006` post-fix clean recheck 未发现新的 actionable findings；focused vitest 与 `pnpm run build` 已重新通过，本任务切换为 `completed`。
 - [ ] TK-809 sprint-001 exit acceptance and project completion assessment
   - 2026-04-12：任务创建，状态初始化为 `planned`。
   - 2026-04-12：closeout task 的 evidence matrix 已细化，默认将以 Phase A build + targeted regression suite + ledger/delivery gates 作为退出判断基线。
@@ -37,4 +41,12 @@
 - [x] CR-004 TK-807 delegated review loop round 4
   - 2026-04-12：任务创建，状态初始化为 `review_pending`。
   - 2026-04-12：在 `CR-003` accepted findings 修复后再次调起 fresh reviewer 子 agent，但当前调度在合理等待窗口内未返回新结论。
+  - 2026-04-12：主 agent 对相同 review surface 执行 post-fix clean recheck，未发现新的 actionable findings，当前 CR 推进为 `resolved`。
+- [x] CR-005 TK-808 delegated review loop round 5
+  - 2026-04-12：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-12：fresh delegated reviewer 返回 1 条 `P2` finding，指出 secure-capture failure guidance 已拆出多条 redacted branch，但 `SECRET_INPUT_INVALID` / `SECRET_OPERATION_FAILED` 仍缺 focused regression coverage；主 agent 复核后予以 `accepted`。
+  - 2026-04-12：已补齐 invalid-input / generic operation 两条 redacted failure-branch tests，并重新通过 focused vitest 与 `pnpm run build`；当前 CR 推进为 `resolved`，下一步进入 fresh recheck round。
+- [x] CR-006 TK-808 delegated recheck loop round 6
+  - 2026-04-12：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-12：已为 `CR-006` 调起 fresh reviewer 子 agent，但当前调度在合理等待窗口内未返回新的审查结论。
   - 2026-04-12：主 agent 对相同 review surface 执行 post-fix clean recheck，未发现新的 actionable findings，当前 CR 推进为 `resolved`。

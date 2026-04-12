@@ -512,6 +512,18 @@ export const EN_US_TRANSLATIONS = {
         secureSecretCaptureBackendWarning: 'Backend warning: {{warning}}',
         secureSecretCaptureFailed:
           'Secure local secret mutation failed for {{command}}. reason={{reason}}',
+        secureSecretCaptureFailedBackendUnavailable:
+          'Secure local secret mutation could not reach a writable backend for {{command}}.',
+        secureSecretCaptureFailedBackendUnavailableNextStep:
+          'Run /secret status to inspect backend availability, or use the standalone CLI with --backend unsafe-local-file --stdin only if you explicitly want the local-only fallback.',
+        secureSecretCaptureFailedInvalidInput:
+          'Secure local secret mutation rejected the captured input for {{command}}.',
+        secureSecretCaptureFailedInvalidInputNextStep:
+          'Re-run {{command}} and enter the secret again in secure local capture.',
+        secureSecretCaptureFailedOperation:
+          'Secure local secret mutation failed while writing the captured secret for {{command}}.',
+        secureSecretCaptureFailedOperationNextStep:
+          'Run /secret status to inspect backend availability, then retry {{command}} in secure local capture.',
         secureSecretCaptureCaptured:
           'Secure input was captured locally for {{command}}. Direct mutation handoff is not wired in this attachment yet.',
         secureSecretSlashSuffixRejected:
