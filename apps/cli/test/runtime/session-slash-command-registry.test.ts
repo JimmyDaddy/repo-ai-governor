@@ -338,6 +338,20 @@ describe('CliSessionSlashCommandRegistry', () => {
       },
       summaryKey: 'cli.commands.secret.description',
     });
+    expect(registry.resolveAction('/secret set --help')).toEqual({
+      bridgeArgv: ['secret', 'set', '--help'],
+      command: '/secret',
+      executionMode: 'direct',
+      kind: 'bridge',
+      summaryKey: 'cli.commands.secret.description',
+    });
+    expect(registry.resolveAction('/secret set -h')).toEqual({
+      bridgeArgv: ['secret', 'set', '-h'],
+      command: '/secret',
+      executionMode: 'direct',
+      kind: 'bridge',
+      summaryKey: 'cli.commands.secret.description',
+    });
     expect(registry.resolveAction('/SECRET list')).toEqual({
       bridgeArgv: ['secret', 'list'],
       command: '/secret',

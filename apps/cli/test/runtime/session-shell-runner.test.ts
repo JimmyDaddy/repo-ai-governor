@@ -1919,6 +1919,56 @@ describe('CliSessionShellRunner', () => {
     ).toBe(false);
   });
 
+  it('keeps /secret set --help on the ordinary bridge path instead of entering secure local capture', async () => {
+    const renderer = new RecordingSessionShellRenderer();
+    const commandExecutor = vi.fn<
+      (argv: string[]) => Promise<CliSessionShellCommandExecutionResult>
+    >(async (argv) => ({
+      artifactPaths: [],
+      commandLine: argv.join(' '),
+      message: 'secret help output',
+      status: 'success',
+      summaryLines: ['Summary: secret help output'],
+    }));
+    const runner = new CliSessionShellRunner(
+      undefined,
+      renderer as never,
+      () => new StubSessionShellPromptAdapter(['/secret set --help', '/exit']),
+      undefined,
+      undefined,
+      () => false,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(
+      DEFAULT_RUN_OPTIONS({
+        commandExecutor,
+      }),
+    );
+
+    expect(commandExecutor).toHaveBeenCalledWith(
+      ['secret', 'set', '--help'],
+      expect.objectContaining({
+        progressSink: expect.any(Object),
+      }),
+    );
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.some((line) => line.includes('Secure local capture is active for /secret set')),
+      ),
+    ).toBe(false);
+    expect(
+      renderer.frames.some(
+        (frame) =>
+          frame.commandPreview ===
+          'Secure local capture is active for /secret set --help. Typed input stays hidden on this device.',
+      ),
+    ).toBe(false);
+    expect(
+      result.transcriptItems.some((item) => item.lines.includes('Summary: secret help output')),
+    ).toBe(true);
+  });
+
   it('enters secure-local capture mode in the Ink shell without reflecting the secret into presenter-visible state', async () => {
     const inkRunner = new StubSessionShellInkRunner([
       {

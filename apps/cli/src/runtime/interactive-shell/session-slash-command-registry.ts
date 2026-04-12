@@ -310,7 +310,8 @@ export class CliSessionSlashCommandRegistry {
     if (
       this.normalizeSlashCommandToken(rawCommandToken ?? '') !== '/secret' ||
       actionToken?.toLowerCase() !== 'set' ||
-      !keyName
+      !keyName ||
+      keyName.startsWith('-')
     ) {
       return null;
     }
