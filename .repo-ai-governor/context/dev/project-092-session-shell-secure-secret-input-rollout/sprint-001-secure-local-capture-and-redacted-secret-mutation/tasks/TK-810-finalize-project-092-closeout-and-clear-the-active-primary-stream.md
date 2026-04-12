@@ -1,6 +1,6 @@
 # TK-810 finalize project-092 closeout and clear the active primary stream
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-12
 - Owner: AI-Agent
 - Priority: P0
@@ -18,8 +18,8 @@
 
 ## 3. 预期产物
 
-1. final closeout handoff
-2. project completion audit summary
+1. `DA-810-project-092-final-closeout-and-idle-primary-stream-handoff.md`
+2. `project-092-session-shell-secure-secret-input-rollout-completion-audit-summary.md`
 3. completed truth write-back across project / sprint / context / history / delivery
 
 ## 4. Required Inputs
@@ -34,6 +34,7 @@
 
 1. `.repo-ai-governor/context/dev/project-092-session-shell-secure-secret-input-rollout/sprint-001-secure-local-capture-and-redacted-secret-mutation/tasks/TK-809-sprint-001-exit-acceptance-and-project-completion-assessment.md`
 2. `.repo-ai-governor/context/dev/project-092-session-shell-secure-secret-input-rollout/sprint-001-secure-local-capture-and-redacted-secret-mutation/tasks/DA-809-sprint-001-closeout-and-project-final-review-activation-handoff.md`
+3. `.repo-ai-governor/context/dev/project-092-session-shell-secure-secret-input-rollout/sprint-001-secure-local-capture-and-redacted-secret-mutation/review/resolved_code_review_working-tree-20260412-2202.md`
 
 ## 6. 实施计划
 
@@ -43,8 +44,9 @@
 
 ## 7. Development Verification
 
-1. 校对 `project-092` 当前所有 `TK/CR` 已进入终态。
-2. 校对 `current-context.md` 与 `completed-streams-history.md` 的 stream 切换结果。
+1. 已校对 `TK-806` 至 `TK-809` 的最新状态均为 `completed`。
+2. 已校对 `CR-001` 至 `CR-007` 的最新状态均为 `resolved`。
+3. 已校对本窗口只修改 docs / ledger / registry closeout 产物，不新增 `apps/**`、`packages/**`、`bin/**`、`test/**` 可执行代码改动。
 
 ## 8. Delivery Verification
 
@@ -54,12 +56,19 @@
 4. `node ./scripts/governance/check-code-review-status-sync.js`
 5. `node ./scripts/governance/check-worktree-review-target.js`
 6. `node ./scripts/governance/check-technical-solution-delivery-registry.js`
-7. `pnpm run check`
+7. `pnpm run build`
+8. `pnpm run check`
 
 ## 9. 执行记录
 
 1. 2026-04-12：在 `TK-809` 完成 sprint closeout handoff 后创建本任务，等待 latest project-final clean round `resolved` 后执行。
+2. 2026-04-12：`CR-007` clean `resolved` 后，已写入 `DA-810` 与 project completion audit summary，并将 `project-092 / sprint-001` plan、`current-context.md`、`completed-streams-history.md` 与 delivery registry 同步到最终 completed / idle 真值。
+3. 2026-04-12：已完成 `TK-810` canonical task-ledger sync，并重新通过 `pnpm run build`、治理检查与 `pnpm run check`；当前 project 已具备完整完成态证据。
 
 ## 10. 产出
 
-1. 待执行：project-092 final closeout and active primary stream clearance
+1. `/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-092-session-shell-secure-secret-input-rollout/project-092-session-shell-secure-secret-input-rollout-completion-audit-summary.md`
+2. `/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-092-session-shell-secure-secret-input-rollout/sprint-001-secure-local-capture-and-redacted-secret-mutation/tasks/DA-810-project-092-final-closeout-and-idle-primary-stream-handoff.md`
+3. `/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/current-context.md`
+4. `/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/completed-streams-history.md`
+5. `/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/technical-solution-delivery-registry.yaml`

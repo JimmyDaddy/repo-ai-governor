@@ -1,6 +1,6 @@
 # project-092-session-shell-secure-secret-input-rollout 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-12
 - Stage Mapping: session-shell secure secret input rollout
 - Phase Mapping: secure route parsing / secure local capture / redacted mutation handoff
@@ -23,10 +23,10 @@
 
 ## 2.1 sprint-001-secure-local-capture-and-redacted-secret-mutation
 
-- Status: active
+- Status: completed
 - Sprint Goal: 完成 explicit `/secret set <keyName>` secure route、secure local capture 与 redacted local mutation handoff 的 Phase A 实现闭环。
 - Task Package: `TK-806`、`TK-807`、`TK-808`、`TK-809`、`TK-810`
-- Immediate Execution Lane: `TK-806 -> TK-807 -> TK-808 -> TK-809 -> project-final CR -> TK-810`
+- Immediate Execution Lane: `TK-806 -> TK-807 -> TK-808 -> TK-809 -> project-final CR -> TK-810`（completed）
 
 ## 3. 任务拆解矩阵（WBS）
 
@@ -36,7 +36,7 @@
 | TK-807 | sprint-001 | add secure local capture mode and redacted presenter semantics | shell/input | TK-806 | completed |
 | TK-808 | sprint-001 | wire secure secret mutation seam and fallback/error guidance | secret/runtime | TK-807 | completed |
 | TK-809 | sprint-001 | sprint-001 exit acceptance and project completion assessment | closeout/handoff | TK-806、TK-807、TK-808 | completed |
-| TK-810 | sprint-001 | finalize project-092 closeout and clear the active primary stream | final closeout | TK-809、project-final CR | planned |
+| TK-810 | sprint-001 | finalize project-092 closeout and clear the active primary stream | final closeout | TK-809、project-final CR | completed |
 
 ## 4. 依赖产物策略
 
@@ -59,3 +59,8 @@
 3. 2026-04-12：已激活 `project-092 / sprint-001` 作为新的 primary execution surface，并将 `TK-806` 冻结为第一条实现任务，后续执行顺序固定为 `TK-806 -> TK-807 -> TK-808 -> TK-809`。
 4. 2026-04-12：`TK-808` 已以 commit `0cbc831b` 完成边界收口；`TK-809 / DA-809` 已完成 sprint-001 exit acceptance 与 project-final review activation handoff，当前继续复用 `sprint-001` 作为 project-final CR surface。
 5. 2026-04-12：已补充 `TK-810` 作为最终 project closeout 任务，待 latest project-final fresh reviewer clean 后执行 completion audit、delivery registry completed write-back 与 primary stream clearance。
+6. 2026-04-12：`CR-007` clean `resolved` 后，`TK-810 / DA-810` 已完成最终 closeout write-back；`project-092` 正式进入 `completed`，并在此里程碑回链 [project-092 completion audit summary](./project-092-session-shell-secure-secret-input-rollout-completion-audit-summary.md)。
+
+## 7. 里程碑记录入口
+
+1. [project-092-session-shell-secure-secret-input-rollout-completion-audit-summary.md](./project-092-session-shell-secure-secret-input-rollout-completion-audit-summary.md)

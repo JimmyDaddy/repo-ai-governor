@@ -1,6 +1,6 @@
 # sprint-001-secure-local-capture-and-redacted-secret-mutation 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-12
 - Project: `project-092-session-shell-secure-secret-input-rollout`
 - Sprint Goal: 完成 explicit `/secret set <keyName>` secure route、secure local capture 与 redacted mutation handoff 的 Phase A 实现闭环。
@@ -21,7 +21,7 @@
 2. `TK-807` add secure local capture mode and redacted presenter semantics (`completed`)
 3. `TK-808` wire secure secret mutation seam and fallback/error guidance (`completed`)
 4. `TK-809` sprint-001 exit acceptance and project completion assessment (`completed`)
-5. `TK-810` finalize project-092 closeout and clear the active primary stream
+5. `TK-810` finalize project-092 closeout and clear the active primary stream (`completed`)
 
 ## 3. Execution Lanes
 
@@ -57,3 +57,4 @@
 2. 所有用户可见 copy 必须保持 redacted，不得出现 secret 前后缀或长度泄漏。
 3. 当前主执行顺序固定为先清零 presenter leakage risk，再补 foreground secure capture，最后接入 mutation seam 与 closeout evidence，避免实现倒序导致返工。
 4. `TK-809` 已完成 sprint closeout handoff，但 `project-092 / sprint-001` 继续作为 project-final review 与最终 closeout 的默认 `tasks/` / `review/` surface。
+5. `CR-007` clean `resolved` 后，`TK-810 / DA-810` 已完成最终 closeout write-back；当前 sprint 已恢复为最终 `completed` 真值，并迁出 active execution surface。

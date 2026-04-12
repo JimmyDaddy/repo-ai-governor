@@ -3,13 +3,15 @@
 ## Primary Stream
 
 - Status: idle
-- Note: `2026-04-12` `project-089-local-user-config-and-secret-command-rollout` 已完成 final closeout；当前 worktree 无默认 active primary stream，如需继续新的 project / sprint，请先显式激活新的主执行流。
+- Note: `2026-04-12` `project-092-session-shell-secure-secret-input-rollout` 已完成 final closeout；当前 worktree 无默认 active primary stream，如需继续新的 project / sprint，请先显式激活新的主执行流。
 
 ## Active Streams
 
 - none
 
 ## Planned Follow-Up Streams
+
+- none
 
 ## Completed Stream History
 

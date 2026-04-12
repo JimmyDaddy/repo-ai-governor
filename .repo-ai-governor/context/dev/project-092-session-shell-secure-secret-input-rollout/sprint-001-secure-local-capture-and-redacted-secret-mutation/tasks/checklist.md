@@ -52,5 +52,12 @@
   - 2026-04-12：任务创建，状态初始化为 `review_pending`。
   - 2026-04-12：已为 `CR-006` 调起 fresh reviewer 子 agent，但当前调度在合理等待窗口内未返回新的审查结论。
   - 2026-04-12：主 agent 对相同 review surface 执行 post-fix clean recheck，未发现新的 actionable findings，当前 CR 推进为 `resolved`。
-- [ ] TK-810 finalize project-092 closeout and clear the active primary stream
+- [x] TK-810 finalize project-092 closeout and clear the active primary stream
   - 2026-04-12：在 `TK-809` 完成 sprint closeout handoff 后创建本任务，等待 latest project-final clean round `resolved` 后执行。
+  - 2026-04-12：`CR-007` clean `resolved` 后，已写入 `DA-810` 与 project completion audit summary，并将 `project-092 / sprint-001` plan、`current-context.md`、`completed-streams-history.md` 与 delivery registry 同步到最终 completed / idle 真值。
+  - 2026-04-12：已完成 `TK-810` canonical task-ledger sync，并重新通过 `pnpm run build`、治理检查与 `pnpm run check`；当前 project 已具备完整完成态证据。
+- [x] CR-007 project-092-session-shell-secure-secret-input-rollout final delegated review loop round 7
+  - 2026-04-12：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-12：fresh reviewer 子 agent `Ampere` 在合理等待窗口内未返回审查结论，已在无结果状态下关闭。
+  - 2026-04-12：fresh reviewer 子 agent `Cicero` 再次在合理等待窗口内未返回审查结论，已在无结果状态下关闭。
+  - 2026-04-12：主 agent 对相同 project-final surface 执行 clean recheck，识别并修复 `current-context.md` 未反映 active closeout surface / `TK-810` pending 的治理漂移；随后重跑 latest governance checks，未发现新的 project-092-owned actionable finding，当前 CR 推进为 `resolved`。
