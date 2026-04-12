@@ -11,8 +11,15 @@ import type {
 } from '../../types/index.js';
 import { CliSessionMainCapabilityDiscoverabilityRuntime } from '../session-main-capability-discoverability-runtime.js';
 
-type SessionSlashCommandKind = 'builtin' | 'bridge' | 'ai_workflow';
+type SessionSlashCommandKind = 'builtin' | 'bridge' | 'ai_workflow' | 'secure_local_secret_capture';
 type SessionSlashCommandExecutionMode = 'direct' | 'confirm';
+
+interface SessionSlashCommandSecureLocalSecretCapture {
+  action: 'set';
+  keyName: string;
+  displayCommand: string;
+  rejectedSuffix: boolean;
+}
 
 interface SessionSlashCommandDefinition {
   command: string;
@@ -29,6 +36,7 @@ interface SessionSlashCommandResolution {
   bridgeArgv?: string[];
   aiWorkflowPrompt?: string;
   executionMode?: SessionSlashCommandExecutionMode;
+  secureLocalSecretCapture?: SessionSlashCommandSecureLocalSecretCapture;
 }
 
 interface SessionSlashCommandSuggestOptions {
@@ -245,6 +253,16 @@ export class CliSessionSlashCommandRegistry {
    * @returns Runtime command resolution or `null` when no exact command exists.
    */
   public resolveAction(query: string): SessionSlashCommandResolution | null {
+    const secureLocalSecretCapture = this.resolveSecureLocalSecretCapture(query);
+    if (secureLocalSecretCapture) {
+      return {
+        command: '/secret set',
+        summaryKey: 'cli.commands.secret.description',
+        kind: 'secure_local_secret_capture',
+        secureLocalSecretCapture,
+      };
+    }
+
     const definition = this.resolveDefinition(query);
 
     if (!definition) {
@@ -272,6 +290,36 @@ export class CliSessionSlashCommandRegistry {
               aiWorkflowPrompt: this.resolveAiWorkflowPrompt(definition.command, argumentTokens),
             }
           : {}),
+    };
+  }
+
+  /**
+   * Detects the secure local `/secret set <keyName>` route before any presenter-safe state is updated.
+   * @param query Raw slash query including arguments.
+   * @returns Secure-local capture metadata or `null` when the query is not the secure route.
+   */
+  public resolveSecureLocalSecretCapture(
+    query: string,
+  ): SessionSlashCommandSecureLocalSecretCapture | null {
+    const queryTokens = this.resolveQueryTokens(query);
+    if (queryTokens.length < 3) {
+      return null;
+    }
+
+    const [rawCommandToken, actionToken, keyName, ...suffixTokens] = queryTokens;
+    if (
+      this.normalizeSlashCommandToken(rawCommandToken ?? '') !== '/secret' ||
+      actionToken?.toLowerCase() !== 'set' ||
+      !keyName
+    ) {
+      return null;
+    }
+
+    return {
+      action: 'set',
+      keyName,
+      displayCommand: `/secret set ${keyName}`,
+      rejectedSuffix: suffixTokens.length > 0,
     };
   }
 

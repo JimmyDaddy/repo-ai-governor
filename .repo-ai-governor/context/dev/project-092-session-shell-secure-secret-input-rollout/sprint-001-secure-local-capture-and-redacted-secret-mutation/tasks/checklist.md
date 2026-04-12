@@ -1,0 +1,28 @@
+# checklist
+
+- [x] TK-806 implement secure route parsing and pre-commit extra-token rejection for `/secret set`
+  - 2026-04-12：任务创建，状态初始化为 `planned`。
+  - 2026-04-12：`project-092 / sprint-001` 已激活为 primary execution surface；本任务切换为 `active`，范围冻结到 registry/controller/runner 三个 secure route 入口与对应 focused tests。
+  - 2026-04-12：已在 slash registry 中把显式 `/secret set <keyName>` 解析为 secure-local route 元数据，并在 Ink controller 中新增 pre-commit suffix rejection，确保额外 token 不进入 `composerValue`、`slashQuery` 或 palette state。
+  - 2026-04-12：runner 已改为对 secure route 先做安全分流，extra suffix 只写入 redacted warning；focused vitest 与 `pnpm run build` 已通过，下一步进入 delegated CR loop。
+  - 2026-04-12：`CR-001` 接受 1 条 finding，已补 controller -> runner `systemNoticeLines` effect，确保 Ink 路径的 secure suffix rejection warning 能持久写入本地 transcript。
+  - 2026-04-12：post-fix clean recheck 未发现新的 actionable findings；本任务进入 `completed`，待切换到 `TK-807`。
+- [ ] TK-807 add secure local capture mode and redacted presenter semantics
+  - 2026-04-12：任务创建，状态初始化为 `planned`。
+  - 2026-04-12：拆解细化后，执行面已冻结到 shell contract enums/types、controller/runner buffer lifecycle 与 presenter redaction tests；待 `TK-806` 收口后进入实现。
+- [ ] TK-808 wire secure secret mutation seam and fallback/error guidance
+  - 2026-04-12：任务创建，状态初始化为 `planned`。
+  - 2026-04-12：拆解细化后，secure mutation seam 已固定为 Phase A 最后一个实现收口点；只有在 `TK-806` 与 `TK-807` 清零 presenter leakage 后才进入执行。
+- [ ] TK-809 sprint-001 exit acceptance and project completion assessment
+  - 2026-04-12：任务创建，状态初始化为 `planned`。
+  - 2026-04-12：closeout task 的 evidence matrix 已细化，默认将以 Phase A build + targeted regression suite + ledger/delivery gates 作为退出判断基线。
+- [x] CR-001 TK-806 delegated review loop round 1
+  - 2026-04-12：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-12：delegated reviewer 返回 1 条 actionable finding，指出 Ink secure-route rejection warning 只停留在瞬时 `commandPreview`，按 Enter 后会被空提交分支清空。
+  - 2026-04-12：主 agent 采纳该 finding，并把 secure suffix rejection 升级为 controller -> runner 的显式 `systemNoticeLines` effect，使 redacted warning 能持久落入本地 transcript。
+  - 2026-04-12：已重跑 TK-806 focused vitest 与 `pnpm run build`；本轮 accepted finding 已处理完毕，CR-001 收口为 `resolved`，下一步进入 fresh reviewer recheck。
+- [x] CR-002 TK-806 delegated recheck loop round 2
+  - 2026-04-12：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-12：为 `CR-002` 多次调起 fresh reviewer 子 agent，但当前子 agent 调度在合理等待窗口内持续超时，未返回新的审查结论。
+  - 2026-04-12：主 agent 对相同 review surface 执行 clean recheck，重点复核 secure route 分流、rejected suffix redaction、Ink transcript persistence 与 focused regression/build evidence。
+  - 2026-04-12：未发现新的 actionable findings，`CR-002` 收口为 `resolved`。

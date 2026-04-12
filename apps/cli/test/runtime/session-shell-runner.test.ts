@@ -961,6 +961,10 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
     'This slash command ran immediately, so /confirm is not required.',
   'cli.sessionShell.responses.commandExecutionFailed':
     'Command handoff failed for {{command}}. reason={{reason}}',
+  'cli.sessionShell.responses.secureSecretCaptureReserved':
+    '{{command}} is reserved for secure local capture and will not enter command preview.',
+  'cli.sessionShell.responses.secureSecretSlashSuffixRejected':
+    'Do not enter secret in slash text. Re-run {{command}} and continue in secure local capture.',
   'cli.sessionShell.responses.commandArtifact': 'artifact={{artifactPath}}',
   'cli.sessionShell.responses.commandArtifactsMore':
     '+{{count}} more related artifacts were written.',
@@ -1820,6 +1824,102 @@ describe('CliSessionShellRunner', () => {
     ).toBe(true);
   });
 
+  it('reserves exact /secret set routes away from ordinary command preview handoff', async () => {
+    const renderer = new RecordingSessionShellRenderer();
+    const commandExecutor = vi.fn<
+      (argv: string[]) => Promise<CliSessionShellCommandExecutionResult>
+    >(async (argv) => ({
+      artifactPaths: [],
+      commandLine: argv.join(' '),
+      message: 'unexpected execution',
+      status: 'success',
+      summaryLines: ['Summary: unexpected execution'],
+    }));
+    const runner = new CliSessionShellRunner(
+      undefined,
+      renderer as never,
+      () => new StubSessionShellPromptAdapter(['/secret set openai/api-key', '/exit']),
+      undefined,
+      undefined,
+      () => false,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(
+      DEFAULT_RUN_OPTIONS({
+        commandExecutor,
+      }),
+    );
+
+    expect(commandExecutor).not.toHaveBeenCalled();
+    expect(
+      renderer.frames.some((frame) => frame.commandPreview === 'Ready: secret set openai/api-key'),
+    ).toBe(false);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes(
+          '/secret set openai/api-key is reserved for secure local capture and will not enter command preview.',
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some(
+        (item) =>
+          item.label === 'Slash command' && item.lines.includes('/secret set openai/api-key'),
+      ),
+    ).toBe(false);
+  });
+
+  it('rejects secret suffix slash input before transcript or history can store the raw value', async () => {
+    const commandExecutor = vi.fn<
+      (argv: string[]) => Promise<CliSessionShellCommandExecutionResult>
+    >(async (argv) => ({
+      artifactPaths: [],
+      commandLine: argv.join(' '),
+      message: 'unexpected execution',
+      status: 'success',
+      summaryLines: ['Summary: unexpected execution'],
+    }));
+    const runner = new CliSessionShellRunner(
+      undefined,
+      new RecordingSessionShellRenderer() as never,
+      () =>
+        new StubSessionShellPromptAdapter([
+          '/secret set openai/api-key sk-test-secret',
+          '/history',
+          '/exit',
+        ]),
+      undefined,
+      undefined,
+      () => false,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(
+      DEFAULT_RUN_OPTIONS({
+        commandExecutor,
+      }),
+    );
+
+    expect(commandExecutor).not.toHaveBeenCalled();
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes(
+          'Do not enter secret in slash text. Re-run /secret set openai/api-key and continue in secure local capture.',
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.some((line) => line.includes('sk-test-secret')),
+      ),
+    ).toBe(false);
+    const historyMatches = result.transcriptItems.flatMap((item) =>
+      item.lines.filter((line) => /^1\. \[[^\]]+\] \/secret set openai\/api-key$/u.test(line)),
+    );
+    expect(historyMatches).toHaveLength(1);
+  });
+
   it('forwards shared command execution options into direct bridge runs', async () => {
     const publishedEvents: CliCommandProgressEvent[] = [];
     const executionOptions = {
@@ -2266,6 +2366,58 @@ describe('CliSessionShellRunner', () => {
             '/workspace,/workspace dry-run,/workspace execute,/workspace rollback,/workspace clear-config,/workspace switch-branch,/workspace set-ui-theme',
       ),
     ).toBe(true);
+  });
+
+  it('persists Ink secure-route rejection guidance in the transcript after the composer is cleared', async () => {
+    const inkRunner = new StubSessionShellInkRunner([
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/secret set openai/api-key sk-live-secret',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/exit',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+    ]);
+    const runner = new CliSessionShellRunner(
+      undefined,
+      new RecordingSessionShellRenderer() as never,
+      () => new StubSessionShellPromptAdapter([]),
+      () => new CliSessionShellInkController(),
+      () => inkRunner as never,
+      () => true,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(DEFAULT_RUN_OPTIONS());
+
+    expect(result.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
+    expect(
+      inkRunner.snapshots.some(
+        (frame) =>
+          frame.commandPreview ===
+            'Do not enter secret in slash text. Re-run /secret set openai/api-key and continue in secure local capture.' &&
+          frame.composerValue === '',
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes(
+          'Do not enter secret in slash text. Re-run /secret set openai/api-key and continue in secure local capture.',
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.some((line) => line.includes('sk-live-secret')),
+      ),
+    ).toBe(false);
   });
 
   it('renders session.main stream deltas inside the transcript surface before the turn completes', async () => {

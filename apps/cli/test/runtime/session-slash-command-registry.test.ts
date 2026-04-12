@@ -316,6 +316,28 @@ describe('CliSessionSlashCommandRegistry', () => {
       kind: 'bridge',
       summaryKey: 'cli.commands.config.description',
     });
+    expect(registry.resolveAction('/secret set api.token')).toEqual({
+      command: '/secret set',
+      kind: 'secure_local_secret_capture',
+      secureLocalSecretCapture: {
+        action: 'set',
+        keyName: 'api.token',
+        displayCommand: '/secret set api.token',
+        rejectedSuffix: false,
+      },
+      summaryKey: 'cli.commands.secret.description',
+    });
+    expect(registry.resolveAction('/secret set api.token super-secret')).toEqual({
+      command: '/secret set',
+      kind: 'secure_local_secret_capture',
+      secureLocalSecretCapture: {
+        action: 'set',
+        keyName: 'api.token',
+        displayCommand: '/secret set api.token',
+        rejectedSuffix: true,
+      },
+      summaryKey: 'cli.commands.secret.description',
+    });
     expect(registry.resolveAction('/SECRET list')).toEqual({
       bridgeArgv: ['secret', 'list'],
       command: '/secret',

@@ -493,6 +493,10 @@ export const EN_US_TRANSLATIONS = {
         commandConfirmHint:
           'Run /confirm to execute this handoff, or /cancel to discard the preview.',
         commandNotExecutable: 'This slash command has no executable handoff target.',
+        secureSecretCaptureReserved:
+          '{{command}} is reserved for secure local capture and will not enter command preview.',
+        secureSecretSlashSuffixRejected:
+          'Do not enter secret in slash text. Re-run {{command}} and continue in secure local capture.',
         commandExecutionSucceeded: 'Command handoff completed for {{command}}.',
         commandDirectExecutionNotice:
           'This slash command ran immediately, so /confirm is not required.',

@@ -435,6 +435,10 @@ export const ZH_CN_TRANSLATIONS = {
         commandHandoffPending: '{{command}} 的 command handoff 预览已经就绪。',
         commandConfirmHint: '输入 /confirm 执行当前 handoff，或输入 /cancel 放弃本次预览。',
         commandNotExecutable: '该 slash command 当前没有可执行的 handoff 目标。',
+        secureSecretCaptureReserved:
+          '{{command}} 已保留给 secure local capture，不会进入普通 command preview。',
+        secureSecretSlashSuffixRejected:
+          '不要在 slash 文本中输入 secret。请重新执行 {{command}}，并在 secure local capture 中继续。',
         commandExecutionSucceeded: '{{command}} 的 command handoff 已完成。',
         commandDirectExecutionNotice: '这条 slash command 已直接执行，因此不需要 /confirm。',
         commandExecutionFailed: '{{command}} 的 command handoff 失败。原因：{{reason}}',

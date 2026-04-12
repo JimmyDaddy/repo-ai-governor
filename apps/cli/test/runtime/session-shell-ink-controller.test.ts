@@ -45,6 +45,17 @@ function createViewModel(): CliSessionShellViewModel {
   };
 }
 
+function translate(key: string, interpolation?: Record<string, string>): string {
+  const translations: Record<string, string> = {
+    'cli.sessionShell.responses.secureSecretSlashSuffixRejected':
+      'Do not enter secret in slash text. Re-run {{command}} and continue in secure local capture.',
+  };
+
+  return (translations[key] ?? key).replace(/\{\{(\w+)\}\}/gu, (_match, placeholder: string) => {
+    return interpolation?.[placeholder] ?? '';
+  });
+}
+
 describe('CliSessionShellInkController', () => {
   it('primes one view model with Ink ownership and the shared action contract', () => {
     const controller = new CliSessionShellInkController();
@@ -68,7 +79,7 @@ describe('CliSessionShellInkController', () => {
         type: CliSessionShellInputActionType.COMPOSER_CHANGED,
         value: '/wo',
       },
-      (key) => key,
+      translate,
     );
 
     expect(viewModel.shellMode).toBe(CliSessionShellMode.COMMAND_PALETTE);
@@ -90,7 +101,7 @@ describe('CliSessionShellInkController', () => {
         type: CliSessionShellInputActionType.COMPOSER_CHANGED,
         value: '/',
       },
-      (key) => key,
+      translate,
     );
 
     expect(viewModel.slashSuggestions.map((suggestion) => suggestion.command)).toEqual([
@@ -117,7 +128,7 @@ describe('CliSessionShellInkController', () => {
         type: CliSessionShellInputActionType.COMPOSER_CHANGED,
         value: '/workspace ',
       },
-      (key) => key,
+      translate,
     );
 
     expect(viewModel.slashSuggestions.map((suggestion) => suggestion.command)).toEqual([
@@ -143,7 +154,7 @@ describe('CliSessionShellInkController', () => {
         type: CliSessionShellInputActionType.COMPOSER_CHANGED,
         value: '/workspace set-ui-theme ',
       },
-      (key) => key,
+      translate,
     );
 
     expect(viewModel.slashSuggestions.map((suggestion) => suggestion.command)).toEqual([
@@ -165,7 +176,7 @@ describe('CliSessionShellInkController', () => {
         type: CliSessionShellInputActionType.COMPOSER_CHANGED,
         value: '?',
       },
-      (key) => key,
+      translate,
     );
 
     expect(viewModel.shellMode).toBe(CliSessionShellMode.COMMAND_PALETTE);
@@ -181,6 +192,32 @@ describe('CliSessionShellInkController', () => {
     ).toBe(true);
   });
 
+  it('drops secret suffix input before it reaches presenter-visible slash state', () => {
+    const controller = new CliSessionShellInkController();
+    const viewModel = createViewModel();
+
+    controller.primeViewModel(viewModel);
+    controller.applyAction(
+      viewModel,
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/secret set openai/api-key sk-live-secret',
+      },
+      translate,
+    );
+
+    expect(viewModel.composerValue).toBe('');
+    expect(viewModel.shellMode).toBe(CliSessionShellMode.SESSION_SHELL);
+    expect(viewModel.inputMode).toBe(CliSessionShellInputMode.PLAIN_TEXT);
+    expect(viewModel.slashQuery).toBe('');
+    expect(viewModel.slashPaletteVisible).toBe(false);
+    expect(viewModel.commandPreview).toBe(
+      'Do not enter secret in slash text. Re-run /secret set openai/api-key and continue in secure local capture.',
+    );
+    expect(viewModel.commandPreview?.includes('sk-live-secret')).toBe(false);
+    expect(viewModel.foregroundFocusTarget).toBe(CliSessionShellForegroundFocusTarget.COMPOSER);
+  });
+
   it('returns follow-up effects for submit, clear-screen, and exit actions', () => {
     const controller = new CliSessionShellInkController();
     const viewModel = createViewModel();
@@ -191,7 +228,7 @@ describe('CliSessionShellInkController', () => {
         {
           type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
         },
-        (key) => key,
+        translate,
       ),
     ).toEqual({
       submitComposer: true,
@@ -205,7 +242,7 @@ describe('CliSessionShellInkController', () => {
         {
           type: CliSessionShellInputActionType.SESSION_CLEAR_SCREEN,
         },
-        (key) => key,
+        translate,
       ),
     ).toEqual({
       submitComposer: false,
@@ -219,7 +256,7 @@ describe('CliSessionShellInkController', () => {
         {
           type: CliSessionShellInputActionType.SESSION_EXIT_REQUESTED,
         },
-        (key) => key,
+        translate,
       ),
     ).toEqual({
       submitComposer: false,
@@ -247,14 +284,14 @@ describe('CliSessionShellInkController', () => {
       {
         type: CliSessionShellInputActionType.PALETTE_HIGHLIGHT_NEXT,
       },
-      (key) => key,
+      translate,
     );
     controller.applyAction(
       viewModel,
       {
         type: CliSessionShellInputActionType.PALETTE_ACCEPT_HIGHLIGHTED,
       },
-      (key) => key,
+      translate,
     );
 
     expect(viewModel.shellMode).toBe(CliSessionShellMode.SESSION_SHELL);
@@ -273,14 +310,14 @@ describe('CliSessionShellInkController', () => {
         type: CliSessionShellInputActionType.COMPOSER_CHANGED,
         value: '/wo',
       },
-      (key) => key,
+      translate,
     );
     controller.applyAction(
       viewModel,
       {
         type: CliSessionShellInputActionType.PALETTE_CLOSED,
       },
-      (key) => key,
+      translate,
     );
 
     expect(viewModel.composerValue).toBe('/wo');

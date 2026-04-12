@@ -174,6 +174,7 @@ export interface CliSessionShellInputActionResult {
   submitComposer: boolean;
   clearScreenRequested: boolean;
   exitRequested: boolean;
+  systemNoticeLines?: string[];
 }
 
 /**

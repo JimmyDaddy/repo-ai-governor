@@ -321,6 +321,17 @@ export class CliSessionShellRunner {
         const effects = inkController.applyAction(viewModel, action, options.translate);
         viewModel.promptBarLines = this.buildPromptBarLines(viewModel, options, runtimeState);
 
+        if (effects.systemNoticeLines && effects.systemNoticeLines.length > 0) {
+          this.appendLocalTranscriptItem(viewModel, runtimeState, {
+            role: CliSessionTranscriptRole.SYSTEM,
+            label: options.translate('cli.sessionShell.transcript.systemLabel'),
+            lines: effects.systemNoticeLines,
+            renderKind: 'system_notice',
+          });
+          viewModel.promptBarLines = this.buildPromptBarLines(viewModel, options, runtimeState);
+          this.renderActiveSurface(viewModel);
+        }
+
         if (effects.clearScreenRequested) {
           await this.clearLocalTranscriptView(
             viewModel,
@@ -763,11 +774,40 @@ export class CliSessionShellRunner {
     runtimeState: CliSessionShellRuntimeState,
     turnProgressDock: CliSessionShellTurnProgressDock,
   ): Promise<CliSessionShellRunResult | null> {
-    this.recordHistory(query, runtimeState);
+    const secureLocalSecretCapture =
+      this.slashCommandRegistry.resolveSecureLocalSecretCapture(query);
+    this.recordHistory(secureLocalSecretCapture?.displayCommand ?? query, runtimeState);
     viewModel.inputMode = CliSessionShellInputMode.SLASH_COMMAND;
 
     if (query.trim() === '?') {
       this.showShortcutHelpPalette(viewModel, options, runtimeState);
+      return null;
+    }
+
+    if (query.trim() === '/') {
+      this.showSlashLauncherPalette(viewModel, options, runtimeState);
+      return null;
+    }
+
+    if (secureLocalSecretCapture?.rejectedSuffix) {
+      await this.handleRejectedSecureLocalSecretSlash(
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+        secureLocalSecretCapture.displayCommand,
+      );
+      return null;
+    }
+
+    if (secureLocalSecretCapture) {
+      await this.handleReservedSecureLocalSecretCaptureRoute(
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+        secureLocalSecretCapture.displayCommand,
+      );
       return null;
     }
 
@@ -778,10 +818,6 @@ export class CliSessionShellRunner {
       viewModel.slashSuggestions.length > 0
         ? CliSessionShellForegroundFocusTarget.PALETTE
         : CliSessionShellForegroundFocusTarget.COMPOSER;
-    if (query.trim() === '/') {
-      this.showSlashLauncherPalette(viewModel, options, runtimeState);
-      return null;
-    }
 
     const exactCommand = this.slashCommandRegistry.resolveAction(query);
     if (exactCommand?.command !== '/help') {
@@ -1053,6 +1089,56 @@ export class CliSessionShellRunner {
       ],
     );
     return null;
+  }
+
+  private async handleRejectedSecureLocalSecretSlash(
+    viewModel: CliSessionShellViewModel,
+    transcriptStore: CliSessionShellTranscriptStore,
+    options: CliSessionShellRunOptions,
+    runtimeState: CliSessionShellRuntimeState,
+    displayCommand: string,
+  ): Promise<void> {
+    this.resetPromptState(viewModel, options, runtimeState);
+    await this.appendServiceTranscriptItem(
+      viewModel,
+      transcriptStore,
+      options,
+      runtimeState,
+      OrchestrationSessionTranscriptRole.SYSTEM,
+      [
+        options.translate('cli.sessionShell.responses.secureSecretSlashSuffixRejected', {
+          command: displayCommand,
+        }),
+      ],
+      {
+        renderKind: 'system_notice',
+      },
+    );
+  }
+
+  private async handleReservedSecureLocalSecretCaptureRoute(
+    viewModel: CliSessionShellViewModel,
+    transcriptStore: CliSessionShellTranscriptStore,
+    options: CliSessionShellRunOptions,
+    runtimeState: CliSessionShellRuntimeState,
+    displayCommand: string,
+  ): Promise<void> {
+    this.resetPromptState(viewModel, options, runtimeState);
+    await this.appendServiceTranscriptItem(
+      viewModel,
+      transcriptStore,
+      options,
+      runtimeState,
+      OrchestrationSessionTranscriptRole.SYSTEM,
+      [
+        options.translate('cli.sessionShell.responses.secureSecretCaptureReserved', {
+          command: displayCommand,
+        }),
+      ],
+      {
+        renderKind: 'system_notice',
+      },
+    );
   }
 
   private async handleUnknownSlashCommand(

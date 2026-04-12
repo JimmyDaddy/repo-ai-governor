@@ -56,9 +56,15 @@ export class CliSessionShellInkController {
     translate: (key: string, interpolation?: Record<string, string>) => string,
   ): CliSessionShellInputActionResult {
     switch (action.type) {
-      case CliSessionShellInputActionType.COMPOSER_CHANGED:
-        this.applyComposerValue(viewModel, action.value ?? '', translate);
-        return DEFAULT_ACTION_RESULT;
+      case CliSessionShellInputActionType.COMPOSER_CHANGED: {
+        const systemNoticeLines = this.applyComposerValue(viewModel, action.value ?? '', translate);
+        return systemNoticeLines
+          ? {
+              ...DEFAULT_ACTION_RESULT,
+              systemNoticeLines,
+            }
+          : DEFAULT_ACTION_RESULT;
+      }
       case CliSessionShellInputActionType.COMPOSER_SUBMITTED:
         return {
           ...DEFAULT_ACTION_RESULT,
@@ -99,19 +105,32 @@ export class CliSessionShellInkController {
     viewModel: CliSessionShellViewModel,
     nextValue: string,
     translate: (key: string, interpolation?: Record<string, string>) => string,
-  ): void {
-    viewModel.composerValue = nextValue;
+  ): string[] | null {
     viewModel.commandPreview = null;
     viewModel.handoffState = CliSessionShellHandoffState.IDLE;
 
+    const secureLocalSecretCapture =
+      nextValue.startsWith('/') && nextValue.length > 0
+        ? this.slashCommandRegistry.resolveSecureLocalSecretCapture(nextValue)
+        : null;
+    if (secureLocalSecretCapture?.rejectedSuffix) {
+      return this.rejectSecureLocalSecretSlashSuffix(
+        viewModel,
+        secureLocalSecretCapture.displayCommand,
+        translate,
+      );
+    }
+
+    viewModel.composerValue = nextValue;
+
     if (nextValue === '?') {
       this.showShortcutsPalette(viewModel, translate);
-      return;
+      return null;
     }
 
     if (!nextValue.startsWith('/')) {
       this.resetPalette(viewModel, translate);
-      return;
+      return null;
     }
 
     const suggestions = this.slashCommandRegistry.suggest(nextValue, translate);
@@ -125,6 +144,27 @@ export class CliSessionShellInkController {
       suggestions.length > 0
         ? CliSessionShellForegroundFocusTarget.PALETTE
         : CliSessionShellForegroundFocusTarget.COMPOSER;
+    return null;
+  }
+
+  private rejectSecureLocalSecretSlashSuffix(
+    viewModel: CliSessionShellViewModel,
+    displayCommand: string,
+    translate: (key: string, interpolation?: Record<string, string>) => string,
+  ): string[] {
+    const warningLine = translate('cli.sessionShell.responses.secureSecretSlashSuffixRejected', {
+      command: displayCommand,
+    });
+    viewModel.composerValue = '';
+    viewModel.shellMode = CliSessionShellMode.SESSION_SHELL;
+    viewModel.inputMode = CliSessionShellInputMode.PLAIN_TEXT;
+    viewModel.slashQuery = '';
+    viewModel.slashPaletteVisible = false;
+    viewModel.slashSuggestions = this.slashCommandRegistry.suggest('', translate);
+    viewModel.highlightedCommand = viewModel.slashSuggestions[0]?.command ?? null;
+    viewModel.commandPreview = warningLine;
+    viewModel.foregroundFocusTarget = CliSessionShellForegroundFocusTarget.COMPOSER;
+    return [warningLine];
   }
 
   private showShortcutsPalette(
