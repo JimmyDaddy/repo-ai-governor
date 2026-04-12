@@ -25,8 +25,8 @@
 
 - Status: active
 - Sprint Goal: 完成 explicit `/secret set <keyName>` secure route、secure local capture 与 redacted local mutation handoff 的 Phase A 实现闭环。
-- Task Package: `TK-806`、`TK-807`、`TK-808`、`TK-809`
-- Immediate Execution Lane: `TK-806 -> TK-807 -> TK-808 -> TK-809`
+- Task Package: `TK-806`、`TK-807`、`TK-808`、`TK-809`、`TK-810`
+- Immediate Execution Lane: `TK-806 -> TK-807 -> TK-808 -> TK-809 -> project-final CR -> TK-810`
 
 ## 3. 任务拆解矩阵（WBS）
 
@@ -35,7 +35,8 @@
 | TK-806 | sprint-001 | implement secure route parsing and pre-commit extra-token rejection for `/secret set` | shell/routing | promotion handoff | completed |
 | TK-807 | sprint-001 | add secure local capture mode and redacted presenter semantics | shell/input | TK-806 | completed |
 | TK-808 | sprint-001 | wire secure secret mutation seam and fallback/error guidance | secret/runtime | TK-807 | completed |
-| TK-809 | sprint-001 | sprint-001 exit acceptance and project completion assessment | closeout/handoff | TK-806、TK-807、TK-808 | planned |
+| TK-809 | sprint-001 | sprint-001 exit acceptance and project completion assessment | closeout/handoff | TK-806、TK-807、TK-808 | completed |
+| TK-810 | sprint-001 | finalize project-092 closeout and clear the active primary stream | final closeout | TK-809、project-final CR | planned |
 
 ## 4. 依赖产物策略
 
@@ -56,3 +57,5 @@
 1. 2026-04-12：基于 `technical-solution.session-shell-secure-secret-input-and-redacted-command-handoff` promotion cutover 创建 `project-092`，作为新的 planned follow-up stream。
 2. 2026-04-12：已将 `sprint-001` 与 `TK-806 ~ TK-809` 全量拆解写入 project / sprint / task surface，待后续窗口激活。
 3. 2026-04-12：已激活 `project-092 / sprint-001` 作为新的 primary execution surface，并将 `TK-806` 冻结为第一条实现任务，后续执行顺序固定为 `TK-806 -> TK-807 -> TK-808 -> TK-809`。
+4. 2026-04-12：`TK-808` 已以 commit `0cbc831b` 完成边界收口；`TK-809 / DA-809` 已完成 sprint-001 exit acceptance 与 project-final review activation handoff，当前继续复用 `sprint-001` 作为 project-final CR surface。
+5. 2026-04-12：已补充 `TK-810` 作为最终 project closeout 任务，待 latest project-final fresh reviewer clean 后执行 completion audit、delivery registry completed write-back 与 primary stream clearance。

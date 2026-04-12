@@ -21,9 +21,11 @@
   - 2026-04-12：已将 secure capture failure path 改为输出分级 redacted guidance，不再直接回显 backend 原始错误；同时补齐 `session-shell-runner`、`secret-command` 与 `cli-secret-service` 的 focused regression tests，并重新通过 TK-808 focused vitest 与 `pnpm run build`。
   - 2026-04-12：`CR-005` delegated review 额外指出 invalid-input / generic operation 两条 failure branch 缺 regression coverage；主 agent 已接受并补齐相应 tests，下一步进入 fresh clean recheck。
   - 2026-04-12：`CR-006` post-fix clean recheck 未发现新的 actionable findings；focused vitest 与 `pnpm run build` 已重新通过，本任务切换为 `completed`。
-- [ ] TK-809 sprint-001 exit acceptance and project completion assessment
+- [x] TK-809 sprint-001 exit acceptance and project completion assessment
   - 2026-04-12：任务创建，状态初始化为 `planned`。
   - 2026-04-12：closeout task 的 evidence matrix 已细化，默认将以 Phase A build + targeted regression suite + ledger/delivery gates 作为退出判断基线。
+  - 2026-04-12：`TK-808` 已以 commit `0cbc831b` 完成边界收口；当前开始汇总 sprint-001 closeout truth、project-final review activation handoff 与 delivery registry `in_progress` 中间态。
+  - 2026-04-12：已完成 `DA-809`、project/sprint handoff write-back、`TK-810` final closeout task 预留，以及 latest governance checks + `pnpm run check`；当前 sprint surface 继续保留给 project-final CR loop。
 - [x] CR-001 TK-806 delegated review loop round 1
   - 2026-04-12：任务创建，状态初始化为 `review_pending`。
   - 2026-04-12：delegated reviewer 返回 1 条 actionable finding，指出 Ink secure-route rejection warning 只停留在瞬时 `commandPreview`，按 Enter 后会被空提交分支清空。
@@ -50,3 +52,5 @@
   - 2026-04-12：任务创建，状态初始化为 `review_pending`。
   - 2026-04-12：已为 `CR-006` 调起 fresh reviewer 子 agent，但当前调度在合理等待窗口内未返回新的审查结论。
   - 2026-04-12：主 agent 对相同 review surface 执行 post-fix clean recheck，未发现新的 actionable findings，当前 CR 推进为 `resolved`。
+- [ ] TK-810 finalize project-092 closeout and clear the active primary stream
+  - 2026-04-12：在 `TK-809` 完成 sprint closeout handoff 后创建本任务，等待 latest project-final clean round `resolved` 后执行。

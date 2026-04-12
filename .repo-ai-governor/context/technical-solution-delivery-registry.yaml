@@ -1,5 +1,5 @@
 schema_version: 1
-generated_at: 2026-04-11
+generated_at: 2026-04-12
 status: active
 owner: architecture
 
@@ -34,6 +34,37 @@ allowed_rollout_statuses:
   - completed
 
 deliveries:
+  - solution_id: technical-solution.session-shell-secure-secret-input-and-redacted-command-handoff
+    delivery_mode: followup_required
+    consumer_surfaces:
+      - adopter_cli
+      - runtime_service
+      - docs_playbook
+    user_impact_level: medium
+    execution_status: in_progress
+    rollout_status: in_progress
+    owner: runtime
+    project_ref: project-092-session-shell-secure-secret-input-rollout
+    sprint_ref: sprint-001-secure-local-capture-and-redacted-secret-mutation
+    task_ids:
+      - TK-806
+      - TK-807
+      - TK-808
+      - TK-809
+      - TK-810
+    project_plan_path: .repo-ai-governor/context/dev/project-092-session-shell-secure-secret-input-rollout/plan.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-092-session-shell-secure-secret-input-rollout/sprint-001-secure-local-capture-and-redacted-secret-mutation/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-092-session-shell-secure-secret-input-rollout/sprint-001-secure-local-capture-and-redacted-secret-mutation/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-092-session-shell-secure-secret-input-rollout/sprint-001-secure-local-capture-and-redacted-secret-mutation/tasks/DA-809-sprint-001-closeout-and-project-final-review-activation-handoff.md
+    rollout_artifacts:
+      - .repo-ai-governor/context/dev/project-091-session-shell-secure-secret-input-promotion-and-decomposition/plan.md
+      - .repo-ai-governor/context/dev/project-091-session-shell-secure-secret-input-promotion-and-decomposition/sprint-001-review-promotion-and-followup-decomposition/review/resolved_code_review_tk-802-805-session-shell-secure-secret-input-promotion-and-decomposition.md
+      - .repo-ai-governor/context/dev/project-091-session-shell-secure-secret-input-promotion-and-decomposition/sprint-001-review-promotion-and-followup-decomposition/tasks/DA-804-session-shell-secure-secret-input-promotion-and-rollout-decomposition-handoff.md
+      - .repo-ai-governor/context/dev/project-092-session-shell-secure-secret-input-rollout/plan.md
+      - .repo-ai-governor/context/dev/project-092-session-shell-secure-secret-input-rollout/sprint-001-secure-local-capture-and-redacted-secret-mutation/plan.md
+      - .repo-ai-governor/context/dev/project-092-session-shell-secure-secret-input-rollout/sprint-001-secure-local-capture-and-redacted-secret-mutation/tasks/DA-809-sprint-001-closeout-and-project-final-review-activation-handoff.md
+    accepted_at: 2026-04-12
+
   - solution_id: technical-solution.modular-loading-and-dependency-governance
     delivery_mode: existing_stream
     consumer_surfaces:
