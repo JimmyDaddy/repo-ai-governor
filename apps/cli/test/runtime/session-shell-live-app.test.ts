@@ -1,9 +1,13 @@
-import { CliSessionShellInputActionType } from '../../src/constants/cli-session-shell.constant.js';
+import {
+  CliSessionShellInputActionType,
+  CliSessionShellInputMode,
+} from '../../src/constants/cli-session-shell.constant.js';
 import {
   applyLiveActivityViewport,
   mapSessionShellKeypressToAction,
   mapSessionShellKeypressToViewportCommand,
   resolveLiveActivityViewportCapacity,
+  shouldSuppressLiveComposerPreviewEcho,
 } from '../../src/react-cli/views/session-shell-live-app.js';
 
 describe('mapSessionShellKeypressToAction', () => {
@@ -337,6 +341,89 @@ describe('mapSessionShellKeypressToAction', () => {
         type: CliSessionShellInputActionType.PALETTE_HIGHLIGHT_NEXT,
       },
     });
+  });
+
+  it('maps secure-local capture typing, submit, cancel, and backspace without mutating the composer preview', () => {
+    expect(
+      mapSessionShellKeypressToAction({
+        input: 's',
+        key: {} as never,
+        composerValue: '',
+        inputMode: CliSessionShellInputMode.SECURE_LOCAL,
+        highlightedCommand: null,
+        slashPaletteVisible: false,
+      }),
+    ).toEqual({
+      kind: 'action',
+      action: {
+        type: CliSessionShellInputActionType.SECURE_CAPTURE_APPEND,
+        value: 's',
+      },
+    });
+
+    expect(
+      mapSessionShellKeypressToAction({
+        input: '',
+        key: {
+          backspace: true,
+        } as never,
+        composerValue: '',
+        inputMode: CliSessionShellInputMode.SECURE_LOCAL,
+        highlightedCommand: null,
+        slashPaletteVisible: false,
+      }),
+    ).toEqual({
+      kind: 'action',
+      action: {
+        type: CliSessionShellInputActionType.SECURE_CAPTURE_BACKSPACE,
+      },
+    });
+
+    expect(
+      mapSessionShellKeypressToAction({
+        input: '\r',
+        key: {
+          return: true,
+        } as never,
+        composerValue: '',
+        inputMode: CliSessionShellInputMode.SECURE_LOCAL,
+        highlightedCommand: null,
+        slashPaletteVisible: false,
+      }),
+    ).toEqual({
+      kind: 'action',
+      action: {
+        type: CliSessionShellInputActionType.SECURE_CAPTURE_SUBMITTED,
+      },
+    });
+
+    expect(
+      mapSessionShellKeypressToAction({
+        input: '\u001b',
+        key: {
+          escape: true,
+        } as never,
+        composerValue: '',
+        inputMode: CliSessionShellInputMode.SECURE_LOCAL,
+        highlightedCommand: null,
+        slashPaletteVisible: false,
+      }),
+    ).toEqual({
+      kind: 'action',
+      action: {
+        type: CliSessionShellInputActionType.SECURE_CAPTURE_CANCELLED,
+      },
+    });
+  });
+});
+
+describe('shouldSuppressLiveComposerPreviewEcho', () => {
+  it('suppresses secure secret suffix echo before the controller can reject it', () => {
+    expect(shouldSuppressLiveComposerPreviewEcho('/secret set openai/api-key sk-live-secret')).toBe(
+      true,
+    );
+    expect(shouldSuppressLiveComposerPreviewEcho('/secret set openai/api-key')).toBe(false);
+    expect(shouldSuppressLiveComposerPreviewEcho('/workspace dry-run')).toBe(false);
   });
 });
 

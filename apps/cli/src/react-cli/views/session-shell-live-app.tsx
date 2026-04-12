@@ -1,7 +1,11 @@
 import { stderr } from 'node:process';
 import { type Key, useInput } from 'ink';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CliSessionShellInputActionType } from '../../constants/cli-session-shell.constant.js';
+import {
+  CliSessionShellInputActionType,
+  CliSessionShellInputMode,
+} from '../../constants/cli-session-shell.constant.js';
+import { CliSessionSlashCommandRegistry } from '../../runtime/interactive-shell/session-slash-command-registry.js';
 import type { CliSessionShellInputAction, CliSessionShellViewModel } from '../../types/index.js';
 import { ReactCliSessionShellApp } from './session-shell-app.js';
 import { MAX_VISIBLE_SLASH_SUGGESTIONS } from './slash-command-palette.js';
@@ -16,6 +20,7 @@ interface ReactCliSessionShellKeypressContext {
   input: string;
   key: Key;
   composerValue: string;
+  inputMode?: CliSessionShellInputMode;
   highlightedCommand: string | null;
   slashPaletteVisible: boolean;
 }
@@ -36,6 +41,8 @@ export interface ReactCliSessionShellLiveActivityViewportOptions {
   maxVisibleDetailLines: number;
   detailOffsetFromBottom: number;
 }
+
+const LIVE_SESSION_SHELL_SLASH_COMMAND_REGISTRY = new CliSessionSlashCommandRegistry();
 
 /**
  * Resolves one transcript-viewport command from a raw Ink keypress.
@@ -158,6 +165,10 @@ export function mapSessionShellKeypressToAction(
     };
   }
 
+  if (context.inputMode === CliSessionShellInputMode.SECURE_LOCAL) {
+    return mapSecureLocalCaptureKeypressToAction(context);
+  }
+
   if (context.key.upArrow) {
     return {
       kind: 'action',
@@ -261,6 +272,83 @@ export function mapSessionShellKeypressToAction(
         value: nextComposerValue,
       },
       nextComposerValue,
+    };
+  }
+
+  return {
+    kind: 'ignore',
+  };
+}
+
+/**
+ * Prevents raw secret suffix bytes from entering live composer-local state before controller rejection.
+ * @param nextComposerValue Candidate composer value derived from the latest keypress.
+ * @returns True when the live shell must not echo the candidate into local presenter refs/state.
+ */
+export function shouldSuppressLiveComposerPreviewEcho(nextComposerValue: string): boolean {
+  return (
+    LIVE_SESSION_SHELL_SLASH_COMMAND_REGISTRY.resolveSecureLocalSecretCapture(nextComposerValue)
+      ?.rejectedSuffix === true
+  );
+}
+
+function mapSecureLocalCaptureKeypressToAction(
+  context: ReactCliSessionShellKeypressContext,
+): ReactCliSessionShellKeypressResolution {
+  const normalizedInput = context.input.toLowerCase();
+
+  if ((context.key.ctrl && normalizedInput === 'l') || context.input === '\u000c') {
+    return {
+      kind: 'action',
+      action: {
+        type: CliSessionShellInputActionType.SESSION_CLEAR_SCREEN,
+      },
+    };
+  }
+
+  if ((context.key.ctrl && normalizedInput === 'o') || context.input === '\u000f') {
+    return {
+      kind: 'action',
+      action: {
+        type: CliSessionShellInputActionType.SESSION_TOGGLE_LATEST_DETAILS,
+      },
+    };
+  }
+
+  if (context.key.escape || context.input === '\u001b') {
+    return {
+      kind: 'action',
+      action: {
+        type: CliSessionShellInputActionType.SECURE_CAPTURE_CANCELLED,
+      },
+    };
+  }
+
+  if (context.key.return || context.input === '\r' || context.input === '\n') {
+    return {
+      kind: 'action',
+      action: {
+        type: CliSessionShellInputActionType.SECURE_CAPTURE_SUBMITTED,
+      },
+    };
+  }
+
+  if (context.key.backspace || context.key.delete) {
+    return {
+      kind: 'action',
+      action: {
+        type: CliSessionShellInputActionType.SECURE_CAPTURE_BACKSPACE,
+      },
+    };
+  }
+
+  if (context.input.length > 0 && !context.key.ctrl && !context.key.meta) {
+    return {
+      kind: 'action',
+      action: {
+        type: CliSessionShellInputActionType.SECURE_CAPTURE_APPEND,
+        value: context.input,
+      },
     };
   }
 
@@ -406,11 +494,18 @@ export function ReactCliLiveSessionShellApp({
       input,
       key,
       composerValue: composerValueRef.current,
+      inputMode: viewModel.inputMode,
       highlightedCommand: viewModel.highlightedCommand,
       slashPaletteVisible: viewModel.slashPaletteVisible,
     });
 
-    if (resolution.nextComposerValue !== undefined) {
+    if (
+      resolution.nextComposerValue !== undefined &&
+      !(
+        resolution.action?.type === CliSessionShellInputActionType.COMPOSER_CHANGED &&
+        shouldSuppressLiveComposerPreviewEcho(resolution.nextComposerValue)
+      )
+    ) {
       composerValueRef.current = resolution.nextComposerValue;
       setDisplayComposerValue(resolution.nextComposerValue);
     } else if (

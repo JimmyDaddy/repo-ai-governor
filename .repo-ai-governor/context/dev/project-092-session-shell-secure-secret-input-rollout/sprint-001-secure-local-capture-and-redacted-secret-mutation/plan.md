@@ -18,7 +18,7 @@
 ## 2. Task Package
 
 1. `TK-806` implement secure route parsing and pre-commit extra-token rejection for `/secret set` (`completed`)
-2. `TK-807` add secure local capture mode and redacted presenter semantics
+2. `TK-807` add secure local capture mode and redacted presenter semantics (`completed`)
 3. `TK-808` wire secure secret mutation seam and fallback/error guidance
 4. `TK-809` sprint-001 exit acceptance and project completion assessment
 

@@ -161,6 +161,60 @@ describe('ReactCliRunner', () => {
     expect(output).toContain('/confirm · /cancel · Esc');
   });
 
+  it('renders secure-local capture guidance without reflecting secret text or length', () => {
+    const runner = new ReactCliRunner();
+    const output = runner.renderSessionShellFrame({
+      sessionId: 'session-shell-secure-capture-123',
+      shellMode: CliSessionShellMode.SECURE_LOCAL_CAPTURE,
+      inputMode: CliSessionShellInputMode.SECURE_LOCAL,
+      transcriptItems: [
+        {
+          id: 'system:1',
+          role: CliSessionTranscriptRole.SYSTEM,
+          label: 'System',
+          lines: [
+            'Secure local capture is active for /secret set openai/api-key. Typed input stays hidden on this device.',
+          ],
+          renderKind: 'system_notice',
+        },
+      ],
+      transcriptTitle: 'History',
+      composerTitle: 'Secure input',
+      composerValue: '',
+      composerPlaceholder: 'Secret input stays hidden while you type.',
+      slashQuery: '',
+      slashPaletteVisible: false,
+      slashSuggestions: [],
+      highlightedCommand: null,
+      slashPaletteTitle: 'Slash palette',
+      slashPaletteEmptyState: 'No slash commands matched.',
+      commandPreview:
+        'Secure local capture is active for /secret set openai/api-key. Typed input stays hidden on this device.',
+      handoffState: CliSessionShellHandoffState.IDLE,
+      cwd: '/workspace/repo',
+      workspaceSummary: 'workspace_id=repo mode=repo_local',
+      outputContract: ErrorOutputEnvironment.PRETTY,
+      persistenceOwner: CliSessionShellPersistenceOwner.LOCAL_ORCHESTRATION_SERVICE,
+      resumeSelector: 'latest',
+      foregroundInputOwner: CliSessionShellForegroundInputOwner.INK,
+      foregroundFocusTarget: CliSessionShellForegroundFocusTarget.SECURE_CAPTURE,
+      inputActionContract: [...CLI_SESSION_SHELL_INPUT_ACTION_CONTRACT],
+      secureCapture: {
+        displayCommand: '/secret set openai/api-key',
+        keyName: 'openai/api-key',
+      },
+      title: 'Repo AI Governor session shell',
+      subtitle: 'Session-first preview baseline.',
+      promptBarTitle: 'Prompt bar',
+      promptBarLines: ['Enter submit · Esc cancel · Ctrl+D'],
+    });
+
+    expect(output).toContain('Secure input');
+    expect(output).toContain('Secret input stays hidden while you type.');
+    expect(output).toContain('Enter submit · Esc cancel · Ctrl+D');
+    expect(output).not.toContain('sk-live-secret');
+  });
+
   it('renders markdown answers, structured command recap, and collaboration recap transcript items', () => {
     const runner = new ReactCliRunner();
     const output = runner.renderSessionShellFrame({

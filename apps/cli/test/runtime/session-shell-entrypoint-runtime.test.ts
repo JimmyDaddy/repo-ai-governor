@@ -84,9 +84,13 @@ describe('CliSessionShellEntrypointRuntime', () => {
     const progressSink = {
       publish: vi.fn(),
     };
+    const secureSecretMutator = {
+      setSecret: vi.fn(),
+    };
     const abortController = new AbortController();
     const runtime = createRuntime({
       translate,
+      secureSecretMutator,
       commandExecutionOptions: {
         progressSink,
         abortSignal: abortController.signal,
@@ -110,6 +114,7 @@ describe('CliSessionShellEntrypointRuntime', () => {
           progressSink,
           abortSignal: abortController.signal,
         },
+        secureSecretMutator,
         translate,
       }),
     );

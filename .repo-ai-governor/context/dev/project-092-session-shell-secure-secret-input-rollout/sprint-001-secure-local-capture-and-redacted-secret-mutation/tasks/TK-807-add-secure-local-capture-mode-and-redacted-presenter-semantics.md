@@ -1,6 +1,6 @@
 # TK-807 add secure local capture mode and redacted presenter semantics
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-12
 - Owner: AI-Agent
 - Priority: P0
@@ -48,11 +48,11 @@
 
 ## 7. Development Verification
 
-1. `pnpm exec vitest run apps/cli/test/runtime/session-shell-ink-controller.test.ts apps/cli/test/runtime/session-shell-runner.test.ts apps/cli/test/runtime/session-shell-live-app.test.ts apps/cli/test/runtime/react-cli-runner.test.ts --maxWorkers=1 --maxConcurrency=1`
+1. `pnpm exec vitest run apps/cli/test/runtime/session-shell-entrypoint-runtime.test.ts apps/cli/test/runtime/session-shell-ink-controller.test.ts apps/cli/test/runtime/session-shell-runner.test.ts apps/cli/test/runtime/session-shell-live-app.test.ts apps/cli/test/runtime/react-cli-runner.test.ts --maxWorkers=1 --maxConcurrency=1`
 
 ## 8. Delivery Verification
 
-1. `pnpm exec vitest run apps/cli/test/runtime/session-shell-ink-controller.test.ts apps/cli/test/runtime/session-shell-runner.test.ts apps/cli/test/runtime/session-shell-live-app.test.ts apps/cli/test/runtime/react-cli-runner.test.ts --maxWorkers=1 --maxConcurrency=1`
+1. `pnpm exec vitest run apps/cli/test/runtime/session-shell-entrypoint-runtime.test.ts apps/cli/test/runtime/session-shell-ink-controller.test.ts apps/cli/test/runtime/session-shell-runner.test.ts apps/cli/test/runtime/session-shell-live-app.test.ts apps/cli/test/runtime/react-cli-runner.test.ts --maxWorkers=1 --maxConcurrency=1`
 2. `pnpm run build`
 3. `node ./scripts/governance/sync-task-ledger.js --task-id TK-807 --tasks-dir ".repo-ai-governor/context/dev/project-092-session-shell-secure-secret-input-rollout/sprint-001-secure-local-capture-and-redacted-secret-mutation/tasks"`
 4. `node ./scripts/governance/check-task-ledger-sync.js`
@@ -62,7 +62,15 @@
 
 1. 2026-04-12：任务创建，状态初始化为 `planned`。
 2. 2026-04-12：拆解细化后，执行面已冻结到 shell contract enums/types、controller/runner buffer lifecycle 与 presenter redaction tests；待 `TK-806` 收口后进入实现。
+3. 2026-04-12：`TK-806` 已完成并完成 clean CR loop；本任务切换为 `active`，下一步进入 secure local capture mode / buffer lifecycle / live app presenter redaction 实现。
+4. 2026-04-12：已补齐 `secure_local_capture` / `secure_local` / `secure_capture` contract、live Ink secure action 映射、本地 secure buffer lifecycle，以及 secure submit 直连 local `secureSecretMutator` 的最小 seam。
+5. 2026-04-12：`CR-003` delegated review 返回 2 条 `P1` findings，分别指向 live composer local echo leakage 与 secure capture submit no-op；主 agent 已全部 `accepted` 并修复。
+6. 2026-04-12：post-fix recheck `CR-004` 未发现新的 actionable findings；focused vitest 与 `pnpm run build` 已重新通过，本任务切换为 `completed`。
 
 ## 10. 产出
 
-1. 待执行：secure local capture mode and redacted presenter implementation
+1. secure local capture mode / input / focus / prompt-bar semantics
+2. live Ink secure suffix local-echo suppression
+3. local `secureSecretMutator` seam wiring through entrypoint runtime + main session shell bootstrap
+4. secure success / failure / cancel / unavailable redacted transcript guidance
+5. focused runtime/live-app/entrypoint recheck suite and build evidence

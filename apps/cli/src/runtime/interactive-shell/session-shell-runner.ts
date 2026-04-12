@@ -81,6 +81,12 @@ interface SessionMainHandoffResolutionRecord {
   state: 'cancelled' | 'executed' | 'failed';
 }
 
+interface ActiveSecureLocalSecretCaptureState {
+  displayCommand: string;
+  keyName: string;
+  buffer: string;
+}
+
 const SESSION_MAIN_HANDOFF_RESOLUTION_METADATA_KEY = 'sessionMainHandoffResolution';
 const SESSION_MAIN_TURN_POLL_INTERVAL_MS = 25;
 const SESSION_MAIN_MISSING_SESSION_RECOVERY_MAX_ATTEMPTS = 3;
@@ -96,6 +102,7 @@ interface CliSessionShellRuntimeState {
   recoveredTurnRetryPending: boolean;
   startupPath: 'default_session_shell' | 'startup_prompt' | 'resume_command';
   startupBootstrapElapsedMs: number;
+  secureLocalSecretCapture: ActiveSecureLocalSecretCaptureState | null;
 }
 
 /**
@@ -145,6 +152,7 @@ export class CliSessionShellRunner {
       recoveredTurnRetryPending: false,
       startupPath: this.resolveStartupPath(options),
       startupBootstrapElapsedMs,
+      secureLocalSecretCapture: null,
     };
     const viewModel = this.createInitialViewModel(
       options,
@@ -363,6 +371,36 @@ export class CliSessionShellRunner {
             viewModel.promptBarLines = this.buildPromptBarLines(viewModel, options, runtimeState);
             this.renderActiveSurface(viewModel);
           }
+          continue;
+        }
+
+        if (action.type === CliSessionShellInputActionType.SECURE_CAPTURE_APPEND) {
+          this.appendSecureLocalSecretCaptureInput(action.value ?? '', runtimeState);
+          continue;
+        }
+
+        if (action.type === CliSessionShellInputActionType.SECURE_CAPTURE_BACKSPACE) {
+          this.backspaceSecureLocalSecretCaptureInput(runtimeState);
+          continue;
+        }
+
+        if (action.type === CliSessionShellInputActionType.SECURE_CAPTURE_CANCELLED) {
+          await this.cancelSecureLocalSecretCapture(
+            viewModel,
+            transcriptStore,
+            options,
+            runtimeState,
+          );
+          continue;
+        }
+
+        if (action.type === CliSessionShellInputActionType.SECURE_CAPTURE_SUBMITTED) {
+          await this.submitSecureLocalSecretCapture(
+            viewModel,
+            transcriptStore,
+            options,
+            runtimeState,
+          );
           continue;
         }
 
@@ -801,12 +839,35 @@ export class CliSessionShellRunner {
     }
 
     if (secureLocalSecretCapture) {
-      await this.handleReservedSecureLocalSecretCaptureRoute(
+      if (viewModel.foregroundInputOwner !== CliSessionShellForegroundInputOwner.INK) {
+        await this.handleUnavailableSecureLocalSecretCaptureRoute(
+          viewModel,
+          transcriptStore,
+          options,
+          runtimeState,
+          secureLocalSecretCapture.displayCommand,
+        );
+        return null;
+      }
+
+      if (!options.secureSecretMutator) {
+        await this.handleMissingSecureLocalSecretMutator(
+          viewModel,
+          transcriptStore,
+          options,
+          runtimeState,
+          secureLocalSecretCapture.displayCommand,
+        );
+        return null;
+      }
+
+      await this.activateSecureLocalSecretCapture(
         viewModel,
         transcriptStore,
         options,
         runtimeState,
         secureLocalSecretCapture.displayCommand,
+        secureLocalSecretCapture.keyName,
       );
       return null;
     }
@@ -1116,7 +1177,7 @@ export class CliSessionShellRunner {
     );
   }
 
-  private async handleReservedSecureLocalSecretCaptureRoute(
+  private async handleUnavailableSecureLocalSecretCaptureRoute(
     viewModel: CliSessionShellViewModel,
     transcriptStore: CliSessionShellTranscriptStore,
     options: CliSessionShellRunOptions,
@@ -1132,6 +1193,37 @@ export class CliSessionShellRunner {
       OrchestrationSessionTranscriptRole.SYSTEM,
       [
         options.translate('cli.sessionShell.responses.secureSecretCaptureReserved', {
+          command: displayCommand,
+        }),
+        options.translate('cli.sessionShell.responses.secureSecretCaptureRequiresInk', {
+          command: displayCommand,
+        }),
+      ],
+      {
+        renderKind: 'system_notice',
+      },
+    );
+  }
+
+  private async handleMissingSecureLocalSecretMutator(
+    viewModel: CliSessionShellViewModel,
+    transcriptStore: CliSessionShellTranscriptStore,
+    options: CliSessionShellRunOptions,
+    runtimeState: CliSessionShellRuntimeState,
+    displayCommand: string,
+  ): Promise<void> {
+    this.resetPromptState(viewModel, options, runtimeState);
+    await this.appendServiceTranscriptItem(
+      viewModel,
+      transcriptStore,
+      options,
+      runtimeState,
+      OrchestrationSessionTranscriptRole.SYSTEM,
+      [
+        options.translate('cli.sessionShell.responses.secureSecretCaptureReserved', {
+          command: displayCommand,
+        }),
+        options.translate('cli.sessionShell.responses.secureSecretCaptureMutationUnavailable', {
           command: displayCommand,
         }),
       ],
@@ -1849,6 +1941,7 @@ export class CliSessionShellRunner {
     exitReason: CliSessionShellExitReason,
   ): CliSessionShellRunResult {
     runtimeState.pendingCommand = null;
+    runtimeState.secureLocalSecretCapture = null;
     viewModel.shellMode = CliSessionShellMode.SESSION_SHELL;
     viewModel.inputMode = CliSessionShellInputMode.PLAIN_TEXT;
     viewModel.slashQuery = '';
@@ -1859,6 +1952,8 @@ export class CliSessionShellRunner {
     viewModel.handoffState = CliSessionShellHandoffState.IDLE;
     viewModel.commandProgressPanel = undefined;
     viewModel.composerValue = '';
+    this.restoreDefaultComposerPresentation(viewModel, options);
+    viewModel.foregroundFocusTarget = CliSessionShellForegroundFocusTarget.COMPOSER;
     viewModel.promptBarLines = this.buildPromptBarLines(viewModel, options, runtimeState);
     const exitMessage =
       exitReason === CliSessionShellExitReason.SLASH_EXIT
@@ -1951,6 +2046,7 @@ export class CliSessionShellRunner {
       foregroundInputOwner: CliSessionShellForegroundInputOwner.READLINE_FALLBACK,
       foregroundFocusTarget: CliSessionShellForegroundFocusTarget.COMPOSER,
       inputActionContract: [...CLI_SESSION_SHELL_INPUT_ACTION_CONTRACT],
+      secureCapture: null,
       title: options.translate('cli.sessionShell.title'),
       subtitle: options.translate('cli.sessionShell.subtitle'),
       promptBarTitle: options.translate('cli.sessionShell.sections.promptBar'),
@@ -2021,6 +2117,12 @@ export class CliSessionShellRunner {
     options: CliSessionShellRunOptions,
   ): string {
     const executionDetailsShortcut = this.buildExecutionDetailsShortcut(viewModel, options);
+    if (viewModel.shellMode === CliSessionShellMode.SECURE_LOCAL_CAPTURE) {
+      return executionDetailsShortcut
+        ? `${options.translate('cli.sessionShell.promptBar.secureCaptureShortcuts')} · ${executionDetailsShortcut}`
+        : options.translate('cli.sessionShell.promptBar.secureCaptureShortcuts');
+    }
+
     if (
       viewModel.handoffState === CliSessionShellHandoffState.PREVIEWING ||
       viewModel.handoffState === CliSessionShellHandoffState.AWAITING_CONFIRMATION
@@ -2157,12 +2259,251 @@ export class CliSessionShellRunner {
     ];
   }
 
+  private async activateSecureLocalSecretCapture(
+    viewModel: CliSessionShellViewModel,
+    transcriptStore: CliSessionShellTranscriptStore,
+    options: CliSessionShellRunOptions,
+    runtimeState: CliSessionShellRuntimeState,
+    displayCommand: string,
+    keyName: string,
+  ): Promise<void> {
+    runtimeState.secureLocalSecretCapture = {
+      displayCommand,
+      keyName,
+      buffer: '',
+    };
+    this.applySecureLocalSecretCapturePresentation(viewModel, options, runtimeState);
+    await this.appendServiceTranscriptItem(
+      viewModel,
+      transcriptStore,
+      options,
+      runtimeState,
+      OrchestrationSessionTranscriptRole.SYSTEM,
+      [
+        options.translate('cli.sessionShell.responses.secureSecretCaptureActive', {
+          command: displayCommand,
+        }),
+      ],
+      {
+        renderKind: 'system_notice',
+      },
+    );
+  }
+
+  private appendSecureLocalSecretCaptureInput(
+    inputChunk: string,
+    runtimeState: CliSessionShellRuntimeState,
+  ): void {
+    if (!runtimeState.secureLocalSecretCapture || inputChunk.length === 0) {
+      return;
+    }
+
+    runtimeState.secureLocalSecretCapture.buffer += inputChunk;
+  }
+
+  private backspaceSecureLocalSecretCaptureInput(runtimeState: CliSessionShellRuntimeState): void {
+    if (
+      !runtimeState.secureLocalSecretCapture ||
+      runtimeState.secureLocalSecretCapture.buffer.length === 0
+    ) {
+      return;
+    }
+
+    runtimeState.secureLocalSecretCapture.buffer = Array.from(
+      runtimeState.secureLocalSecretCapture.buffer,
+    )
+      .slice(0, -1)
+      .join('');
+  }
+
+  private async cancelSecureLocalSecretCapture(
+    viewModel: CliSessionShellViewModel,
+    transcriptStore: CliSessionShellTranscriptStore,
+    options: CliSessionShellRunOptions,
+    runtimeState: CliSessionShellRuntimeState,
+  ): Promise<void> {
+    const activeSecureCapture = runtimeState.secureLocalSecretCapture;
+    if (!activeSecureCapture) {
+      this.resetPromptState(viewModel, options, runtimeState);
+      return;
+    }
+
+    this.resetPromptState(viewModel, options, runtimeState);
+    await this.appendServiceTranscriptItem(
+      viewModel,
+      transcriptStore,
+      options,
+      runtimeState,
+      OrchestrationSessionTranscriptRole.SYSTEM,
+      [
+        options.translate('cli.sessionShell.responses.secureSecretCaptureCancelled', {
+          command: activeSecureCapture.displayCommand,
+        }),
+      ],
+      {
+        renderKind: 'system_notice',
+      },
+    );
+  }
+
+  private async submitSecureLocalSecretCapture(
+    viewModel: CliSessionShellViewModel,
+    transcriptStore: CliSessionShellTranscriptStore,
+    options: CliSessionShellRunOptions,
+    runtimeState: CliSessionShellRuntimeState,
+  ): Promise<void> {
+    const activeSecureCapture = runtimeState.secureLocalSecretCapture;
+    if (!activeSecureCapture) {
+      this.resetPromptState(viewModel, options, runtimeState);
+      return;
+    }
+
+    const secureCaptureBuffer = activeSecureCapture.buffer;
+    this.resetPromptState(viewModel, options, runtimeState);
+
+    if (!options.secureSecretMutator) {
+      await this.appendServiceTranscriptItem(
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+        OrchestrationSessionTranscriptRole.SYSTEM,
+        [
+          options.translate('cli.sessionShell.responses.secureSecretCaptureMutationUnavailable', {
+            command: activeSecureCapture.displayCommand,
+          }),
+        ],
+        {
+          renderKind: 'system_notice',
+        },
+      );
+      return;
+    }
+
+    if (secureCaptureBuffer.length === 0) {
+      await this.appendServiceTranscriptItem(
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+        OrchestrationSessionTranscriptRole.SYSTEM,
+        [
+          options.translate('cli.sessionShell.responses.secureSecretCaptureEmpty', {
+            command: activeSecureCapture.displayCommand,
+          }),
+        ],
+        {
+          renderKind: 'system_notice',
+        },
+      );
+      return;
+    }
+
+    try {
+      const mutationResult = await options.secureSecretMutator.setSecret({
+        keyName: activeSecureCapture.keyName,
+        value: secureCaptureBuffer,
+      });
+      await this.appendServiceTranscriptItem(
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+        OrchestrationSessionTranscriptRole.SYSTEM,
+        [
+          options.translate('cli.sessionShell.responses.secureSecretCaptureSucceeded', {
+            command: activeSecureCapture.displayCommand,
+            backendId: mutationResult.backendId,
+          }),
+          ...(mutationResult.warning
+            ? [
+                options.translate('cli.sessionShell.responses.secureSecretCaptureBackendWarning', {
+                  warning: mutationResult.warning,
+                }),
+              ]
+            : []),
+        ],
+        {
+          renderKind: 'system_notice',
+        },
+      );
+      return;
+    } catch (error) {
+      const standardizedError = standardizeError(error);
+      await this.appendServiceTranscriptItem(
+        viewModel,
+        transcriptStore,
+        options,
+        runtimeState,
+        OrchestrationSessionTranscriptRole.SYSTEM,
+        [
+          options.translate('cli.sessionShell.responses.secureSecretCaptureFailed', {
+            command: activeSecureCapture.displayCommand,
+            reason: standardizedError.message,
+          }),
+        ],
+        {
+          renderKind: 'system_notice',
+        },
+      );
+      return;
+    }
+  }
+
+  private applySecureLocalSecretCapturePresentation(
+    viewModel: CliSessionShellViewModel,
+    options: CliSessionShellRunOptions,
+    runtimeState: CliSessionShellRuntimeState,
+  ): void {
+    const activeSecureCapture = runtimeState.secureLocalSecretCapture;
+    if (!activeSecureCapture) {
+      return;
+    }
+
+    this.resetHistoryNavigation(runtimeState);
+    viewModel.shellMode = CliSessionShellMode.SECURE_LOCAL_CAPTURE;
+    viewModel.inputMode = CliSessionShellInputMode.SECURE_LOCAL;
+    viewModel.slashQuery = '';
+    viewModel.slashPaletteVisible = false;
+    viewModel.slashSuggestions = this.slashCommandRegistry.suggest('', options.translate);
+    viewModel.highlightedCommand = viewModel.slashSuggestions[0]?.command ?? null;
+    viewModel.commandPreview = options.translate(
+      'cli.sessionShell.responses.secureSecretCaptureActive',
+      {
+        command: activeSecureCapture.displayCommand,
+      },
+    );
+    viewModel.handoffState = CliSessionShellHandoffState.IDLE;
+    viewModel.commandProgressPanel = undefined;
+    viewModel.composerValue = '';
+    viewModel.composerTitle = options.translate('cli.sessionShell.sections.secureCaptureComposer');
+    viewModel.composerPlaceholder = options.translate(
+      'cli.sessionShell.composer.securePlaceholder',
+    );
+    viewModel.foregroundFocusTarget = CliSessionShellForegroundFocusTarget.SECURE_CAPTURE;
+    viewModel.secureCapture = {
+      displayCommand: activeSecureCapture.displayCommand,
+      keyName: activeSecureCapture.keyName,
+    };
+    viewModel.promptBarLines = this.buildPromptBarLines(viewModel, options, runtimeState);
+  }
+
+  private restoreDefaultComposerPresentation(
+    viewModel: CliSessionShellViewModel,
+    options: CliSessionShellRunOptions,
+  ): void {
+    viewModel.composerTitle = options.translate('cli.sessionShell.sections.composer');
+    viewModel.composerPlaceholder = options.translate('cli.sessionShell.composer.placeholder');
+    viewModel.secureCapture = null;
+  }
+
   private resetPromptState(
     viewModel: CliSessionShellViewModel,
     options: CliSessionShellRunOptions,
     runtimeState: CliSessionShellRuntimeState,
   ): void {
     this.resetHistoryNavigation(runtimeState);
+    runtimeState.secureLocalSecretCapture = null;
     viewModel.shellMode = CliSessionShellMode.SESSION_SHELL;
     viewModel.inputMode = CliSessionShellInputMode.PLAIN_TEXT;
     viewModel.slashQuery = '';
@@ -2173,6 +2514,7 @@ export class CliSessionShellRunner {
     viewModel.handoffState = CliSessionShellHandoffState.IDLE;
     viewModel.commandProgressPanel = undefined;
     viewModel.composerValue = '';
+    this.restoreDefaultComposerPresentation(viewModel, options);
     viewModel.foregroundFocusTarget = CliSessionShellForegroundFocusTarget.COMPOSER;
     viewModel.promptBarLines = this.buildPromptBarLines(viewModel, options, runtimeState);
   }
@@ -2276,6 +2618,11 @@ export class CliSessionShellRunner {
         runtimeState,
         turnProgressDock,
       );
+      return;
+    }
+
+    if (runtimeState.secureLocalSecretCapture) {
+      this.applySecureLocalSecretCapturePresentation(viewModel, options, runtimeState);
       return;
     }
 

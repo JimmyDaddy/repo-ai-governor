@@ -124,6 +124,14 @@ export interface CliSessionSlashCommandSuggestion {
 }
 
 /**
+ * Defines one presenter-safe secure-capture descriptor exposed to the live shell.
+ */
+export interface CliSessionShellSecureCaptureDescriptor {
+  displayCommand: string;
+  keyName: string;
+}
+
+/**
  * Defines the presenter-only view model consumed by the session-shell React surface.
  */
 export interface CliSessionShellViewModel {
@@ -151,6 +159,7 @@ export interface CliSessionShellViewModel {
   foregroundInputOwner: CliSessionShellForegroundInputOwner;
   foregroundFocusTarget: CliSessionShellForegroundFocusTarget;
   inputActionContract: CliSessionShellInputActionType[];
+  secureCapture?: CliSessionShellSecureCaptureDescriptor | null;
   title: string;
   subtitle: string;
   commandProgressPanel?: CliCommandProgressPanelViewModel;
@@ -184,6 +193,23 @@ export interface CliSessionShellPromptAdapter {
   readLine(prompt: string): Promise<string | null>;
   readMultiline?(prompt: string, terminator: string): Promise<string | null>;
   close(): void;
+}
+
+/**
+ * Defines the minimal local secret-mutation seam that secure session-shell capture can call.
+ */
+export interface CliSessionShellSecureSecretMutator {
+  setSecret(options: {
+    keyName: string;
+    value: string;
+    backendId?: string | null;
+    environment?: NodeJS.ProcessEnv;
+  }): Promise<{
+    keyName: string;
+    selector: string;
+    backendId: string;
+    warning: string | null;
+  }>;
 }
 
 export interface CliSessionShellCommandExecutionResult {
@@ -253,6 +279,7 @@ export interface CliSessionShellRunOptions {
   sessionClient: CliSessionShellServiceClientLike;
   commandExecutor?: CliSessionShellCommandExecutor;
   commandExecutionOptions?: CliGovernanceCommandExecutionOptions;
+  secureSecretMutator?: CliSessionShellSecureSecretMutator;
   passthroughExecutor?: CliSessionShellPassthroughExecutor;
   currentWorkingDirectory: string;
   workspaceSummary: string;

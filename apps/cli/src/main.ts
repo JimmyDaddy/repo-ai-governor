@@ -521,6 +521,7 @@ export async function runCli(
               : {}),
           }),
       }),
+      secureSecretMutator: cliSecretService,
       ...(dependencies.nestedCommandExecutionOptions
         ? {
             commandExecutionOptions: dependencies.nestedCommandExecutionOptions,

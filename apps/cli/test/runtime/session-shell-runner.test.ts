@@ -24,8 +24,10 @@ import {
 } from '@repo-ai-governor/shared';
 import {
   CliSessionShellExitReason,
+  CliSessionShellForegroundFocusTarget,
   CliSessionShellHandoffState,
   CliSessionShellInputActionType,
+  CliSessionShellInputMode,
   CliSessionShellMode,
 } from '../../src/constants/cli-session-shell.constant.js';
 import { CliSessionShellInkController } from '../../src/runtime/interactive-shell/session-shell-ink-controller.js';
@@ -857,9 +859,11 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
     'workspace_id={{workspaceId}} mode={{workspaceMode}} root={{workspaceRoot}}',
   'cli.sessionShell.sections.transcript': 'History',
   'cli.sessionShell.sections.composer': 'Current input',
+  'cli.sessionShell.sections.secureCaptureComposer': 'Secure input',
   'cli.sessionShell.sections.slashPalette': 'Slash palette',
   'cli.sessionShell.sections.promptBar': 'Prompt bar',
   'cli.sessionShell.composer.placeholder': 'Type a message, / for commands, or ? for shortcuts.',
+  'cli.sessionShell.composer.securePlaceholder': 'Secret input stays hidden while you type.',
   'cli.sessionShell.palette.emptyState': 'No slash commands matched.',
   'cli.sessionShell.resumeSelector.latest': 'latest',
   'cli.sessionShell.transcript.systemLabel': 'System',
@@ -877,6 +881,7 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.promptBar.idleShortcuts': '? shortcuts · /status · Ctrl+D',
   'cli.sessionShell.promptBar.paletteShortcuts': '↑↓ · Tab/Enter · Esc',
   'cli.sessionShell.promptBar.previewShortcuts': '/confirm · /cancel · Esc',
+  'cli.sessionShell.promptBar.secureCaptureShortcuts': 'Enter submit · Esc cancel · Ctrl+D',
   'cli.sessionShell.promptBar.showExecutionDetailsShortcut': 'Ctrl+O details',
   'cli.sessionShell.promptBar.hideExecutionDetailsShortcut': 'Ctrl+O hide details',
   'cli.sessionShell.commands.help.summary': 'List exposed session-shell commands.',
@@ -963,6 +968,23 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
     'Command handoff failed for {{command}}. reason={{reason}}',
   'cli.sessionShell.responses.secureSecretCaptureReserved':
     '{{command}} is reserved for secure local capture and will not enter command preview.',
+  'cli.sessionShell.responses.secureSecretCaptureRequiresInk':
+    'Secure local capture currently requires the live Ink shell. Re-run {{command}} in interactive pretty mode.',
+  'cli.sessionShell.responses.secureSecretCaptureActive':
+    'Secure local capture is active for {{command}}. Typed input stays hidden on this device.',
+  'cli.sessionShell.responses.secureSecretCaptureCancelled':
+    'Secure local capture cancelled for {{command}}.',
+  'cli.sessionShell.responses.secureSecretCaptureEmpty':
+    'No secret was entered for {{command}}. Re-run the command to start secure local capture again.',
+  'cli.sessionShell.responses.secureSecretCaptureMutationUnavailable':
+    'Secure local secret mutation is unavailable in this shell attachment. Re-run {{command}} after the local mutation seam is configured.',
+  'cli.sessionShell.responses.secureSecretCaptureSucceeded':
+    'Secret set completed for {{command}} via backend {{backendId}}.',
+  'cli.sessionShell.responses.secureSecretCaptureBackendWarning': 'Backend warning: {{warning}}',
+  'cli.sessionShell.responses.secureSecretCaptureFailed':
+    'Secure local secret mutation failed for {{command}}. reason={{reason}}',
+  'cli.sessionShell.responses.secureSecretCaptureCaptured':
+    'Secure input was captured locally for {{command}}. Direct mutation handoff is not wired in this attachment yet.',
   'cli.sessionShell.responses.secureSecretSlashSuffixRejected':
     'Do not enter secret in slash text. Re-run {{command}} and continue in secure local capture.',
   'cli.sessionShell.responses.commandArtifact': 'artifact={{artifactPath}}',
@@ -1077,6 +1099,14 @@ const DEFAULT_RUN_OPTIONS = (
   overrides: Partial<CliSessionShellRunOptions> = {},
 ): CliSessionShellRunOptions => ({
   sessionClient: new FakeSessionShellServiceClient(),
+  secureSecretMutator: {
+    setSecret: async ({ keyName }) => ({
+      keyName,
+      selector: `secret://${keyName}`,
+      backendId: 'macos-keychain',
+      warning: null,
+    }),
+  },
   currentWorkingDirectory: '/workspace/repo',
   workspaceSummary: 'workspace_id=repo mode=repo_local root=/workspace/repo/.repo-ai-governor',
   outputMode: ErrorOutputEnvironment.PRETTY,
@@ -1863,11 +1893,160 @@ describe('CliSessionShellRunner', () => {
       ),
     ).toBe(true);
     expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes(
+          'Secure local capture currently requires the live Ink shell. Re-run /secret set openai/api-key in interactive pretty mode.',
+        ),
+      ),
+    ).toBe(true);
+    expect(
       result.transcriptItems.some(
         (item) =>
           item.label === 'Slash command' && item.lines.includes('/secret set openai/api-key'),
       ),
     ).toBe(false);
+  });
+
+  it('enters secure-local capture mode in the Ink shell without reflecting the secret into presenter-visible state', async () => {
+    const inkRunner = new StubSessionShellInkRunner([
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/secret set openai/api-key',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+      {
+        type: CliSessionShellInputActionType.SECURE_CAPTURE_APPEND,
+        value: 'sk-live-secret',
+      },
+      {
+        type: CliSessionShellInputActionType.SECURE_CAPTURE_SUBMITTED,
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/history',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/exit',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+    ]);
+    const runner = new CliSessionShellRunner(
+      undefined,
+      new RecordingSessionShellRenderer() as never,
+      () => new StubSessionShellPromptAdapter([]),
+      () => new CliSessionShellInkController(),
+      () => inkRunner as never,
+      () => true,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(DEFAULT_RUN_OPTIONS());
+
+    expect(result.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
+    expect(
+      inkRunner.snapshots.some(
+        (frame) =>
+          frame.shellMode === CliSessionShellMode.SECURE_LOCAL_CAPTURE &&
+          frame.inputMode === CliSessionShellInputMode.SECURE_LOCAL &&
+          frame.foregroundFocusTarget === CliSessionShellForegroundFocusTarget.SECURE_CAPTURE &&
+          frame.composerValue === '' &&
+          frame.secureCapture?.displayCommand === '/secret set openai/api-key' &&
+          frame.commandPreview ===
+            'Secure local capture is active for /secret set openai/api-key. Typed input stays hidden on this device.' &&
+          frame.promptBarLines.includes('Enter submit · Esc cancel · Ctrl+D'),
+      ),
+    ).toBe(true);
+    expect(
+      inkRunner.snapshots.some((frame) =>
+        frame.transcriptItems.some((item) =>
+          item.lines.some((line) => line.includes('sk-live-secret')),
+        ),
+      ),
+    ).toBe(false);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes(
+          'Secret set completed for /secret set openai/api-key via backend macos-keychain.',
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.some((line) => line.includes('sk-live-secret')),
+      ),
+    ).toBe(false);
+    const historyMatches = result.transcriptItems.flatMap((item) =>
+      item.lines.filter((line) => /^1\. \[[^\]]+\] \/secret set openai\/api-key$/u.test(line)),
+    );
+    expect(historyMatches).toHaveLength(1);
+  });
+
+  it('clears the secure-local buffer on cancel without leaking the typed secret into transcript or history', async () => {
+    const inkRunner = new StubSessionShellInkRunner([
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/secret set openai/api-key',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+      {
+        type: CliSessionShellInputActionType.SECURE_CAPTURE_APPEND,
+        value: 'sk-cancel-secret',
+      },
+      {
+        type: CliSessionShellInputActionType.SECURE_CAPTURE_CANCELLED,
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/history',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '/exit',
+      },
+      {
+        type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
+      },
+    ]);
+    const runner = new CliSessionShellRunner(
+      undefined,
+      new RecordingSessionShellRenderer() as never,
+      () => new StubSessionShellPromptAdapter([]),
+      () => new CliSessionShellInkController(),
+      () => inkRunner as never,
+      () => true,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(DEFAULT_RUN_OPTIONS());
+
+    expect(result.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes('Secure local capture cancelled for /secret set openai/api-key.'),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.some((line) => line.includes('sk-cancel-secret')),
+      ),
+    ).toBe(false);
+    const historyMatches = result.transcriptItems.flatMap((item) =>
+      item.lines.filter((line) => /^1\. \[[^\]]+\] \/secret set openai\/api-key$/u.test(line)),
+    );
+    expect(historyMatches).toHaveLength(1);
   });
 
   it('rejects secret suffix slash input before transcript or history can store the raw value', async () => {

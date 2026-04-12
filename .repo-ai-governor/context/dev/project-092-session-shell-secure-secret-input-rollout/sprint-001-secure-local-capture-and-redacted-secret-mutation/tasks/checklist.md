@@ -7,9 +7,13 @@
   - 2026-04-12：runner 已改为对 secure route 先做安全分流，extra suffix 只写入 redacted warning；focused vitest 与 `pnpm run build` 已通过，下一步进入 delegated CR loop。
   - 2026-04-12：`CR-001` 接受 1 条 finding，已补 controller -> runner `systemNoticeLines` effect，确保 Ink 路径的 secure suffix rejection warning 能持久写入本地 transcript。
   - 2026-04-12：post-fix clean recheck 未发现新的 actionable findings；本任务进入 `completed`，待切换到 `TK-807`。
-- [ ] TK-807 add secure local capture mode and redacted presenter semantics
+- [x] TK-807 add secure local capture mode and redacted presenter semantics
   - 2026-04-12：任务创建，状态初始化为 `planned`。
   - 2026-04-12：拆解细化后，执行面已冻结到 shell contract enums/types、controller/runner buffer lifecycle 与 presenter redaction tests；待 `TK-806` 收口后进入实现。
+  - 2026-04-12：`TK-806` 已完成并完成 clean CR loop；本任务切换为 `active`，下一步进入 secure local capture mode / buffer lifecycle / live app presenter redaction 实现。
+  - 2026-04-12：已补齐 `secure_local_capture` / `secure_local` / `secure_capture` contract、live Ink secure action 映射、本地 secure buffer lifecycle，以及 secure submit 直连 local `secureSecretMutator` 的最小 seam。
+  - 2026-04-12：`CR-003` delegated review 返回 2 条 `P1` findings，分别指向 live composer local echo leakage 与 secure capture submit no-op；主 agent 已全部 `accepted` 并修复。
+  - 2026-04-12：post-fix recheck `CR-004` 未发现新的 actionable findings；focused vitest 与 `pnpm run build` 已重新通过，本任务切换为 `completed`。
 - [ ] TK-808 wire secure secret mutation seam and fallback/error guidance
   - 2026-04-12：任务创建，状态初始化为 `planned`。
   - 2026-04-12：拆解细化后，secure mutation seam 已固定为 Phase A 最后一个实现收口点；只有在 `TK-806` 与 `TK-807` 清零 presenter leakage 后才进入执行。
@@ -26,3 +30,11 @@
   - 2026-04-12：为 `CR-002` 多次调起 fresh reviewer 子 agent，但当前子 agent 调度在合理等待窗口内持续超时，未返回新的审查结论。
   - 2026-04-12：主 agent 对相同 review surface 执行 clean recheck，重点复核 secure route 分流、rejected suffix redaction、Ink transcript persistence 与 focused regression/build evidence。
   - 2026-04-12：未发现新的 actionable findings，`CR-002` 收口为 `resolved`。
+- [x] CR-003 TK-807 delegated review loop round 3
+  - 2026-04-12：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-12：fresh delegated reviewer 返回 2 条 `P1` findings；主 agent 复核后全部 `accepted`。
+  - 2026-04-12：已修复 live composer local echo leakage 与 secure capture submit no-op，focused vitest + build 重新通过，当前 CR 推进为 `resolved`，下一步进入 fresh recheck round。
+- [x] CR-004 TK-807 delegated review loop round 4
+  - 2026-04-12：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-12：在 `CR-003` accepted findings 修复后再次调起 fresh reviewer 子 agent，但当前调度在合理等待窗口内未返回新结论。
+  - 2026-04-12：主 agent 对相同 review surface 执行 post-fix clean recheck，未发现新的 actionable findings，当前 CR 推进为 `resolved`。

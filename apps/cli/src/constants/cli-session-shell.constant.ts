@@ -6,6 +6,7 @@ export enum CliSessionShellMode {
   COMMAND_PALETTE = 'command_palette',
   COMMAND_HANDOFF_PREVIEW = 'command_handoff_preview',
   COMMAND_RUNNING = 'command_running',
+  SECURE_LOCAL_CAPTURE = 'secure_local_capture',
 }
 
 /**
@@ -14,6 +15,7 @@ export enum CliSessionShellMode {
 export enum CliSessionShellInputMode {
   PLAIN_TEXT = 'plain_text',
   SLASH_COMMAND = 'slash_command',
+  SECURE_LOCAL = 'secure_local',
 }
 
 /**
@@ -51,6 +53,7 @@ export enum CliSessionShellForegroundFocusTarget {
   COMPOSER = 'composer',
   PALETTE = 'palette',
   HANDOFF_PREVIEW = 'handoff_preview',
+  SECURE_CAPTURE = 'secure_capture',
 }
 
 /**
@@ -61,6 +64,10 @@ export enum CliSessionShellInputActionType {
   COMPOSER_SUBMITTED = 'composer_submitted',
   COMPOSER_HISTORY_PREVIOUS = 'composer_history_previous',
   COMPOSER_HISTORY_NEXT = 'composer_history_next',
+  SECURE_CAPTURE_APPEND = 'secure_capture_append',
+  SECURE_CAPTURE_BACKSPACE = 'secure_capture_backspace',
+  SECURE_CAPTURE_SUBMITTED = 'secure_capture_submitted',
+  SECURE_CAPTURE_CANCELLED = 'secure_capture_cancelled',
   PALETTE_HIGHLIGHT_NEXT = 'palette_highlight_next',
   PALETTE_HIGHLIGHT_PREVIOUS = 'palette_highlight_previous',
   PALETTE_ACCEPT_HIGHLIGHTED = 'palette_accept_highlighted',
@@ -107,6 +114,10 @@ export const CLI_SESSION_SHELL_INPUT_ACTION_CONTRACT = [
   CliSessionShellInputActionType.COMPOSER_SUBMITTED,
   CliSessionShellInputActionType.COMPOSER_HISTORY_PREVIOUS,
   CliSessionShellInputActionType.COMPOSER_HISTORY_NEXT,
+  CliSessionShellInputActionType.SECURE_CAPTURE_APPEND,
+  CliSessionShellInputActionType.SECURE_CAPTURE_BACKSPACE,
+  CliSessionShellInputActionType.SECURE_CAPTURE_SUBMITTED,
+  CliSessionShellInputActionType.SECURE_CAPTURE_CANCELLED,
   CliSessionShellInputActionType.PALETTE_HIGHLIGHT_NEXT,
   CliSessionShellInputActionType.PALETTE_HIGHLIGHT_PREVIOUS,
   CliSessionShellInputActionType.PALETTE_ACCEPT_HIGHLIGHTED,

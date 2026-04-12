@@ -18,6 +18,7 @@ import type {
   CliSessionShellCommandExecutionResult,
   CliSessionShellCommandExecutor,
   CliSessionShellRunOptions,
+  CliSessionShellSecureSecretMutator,
   CliSessionShellServiceClientLike,
   CliSuccessOutputPayload,
 } from '../../types/index.js';
@@ -49,6 +50,7 @@ interface CliSessionShellEntrypointRuntimeOptions {
   sessionClient: CliSessionShellServiceClientLike;
   commandExecutor?: CliSessionShellCommandExecutor;
   commandExecutionOptions?: CliGovernanceCommandExecutionOptions;
+  secureSecretMutator?: CliSessionShellSecureSecretMutator;
   currentWorkingDirectory: string;
   workspaceSummary: string;
   outputMode: ErrorOutputEnvironment;
@@ -151,6 +153,11 @@ export class CliSessionShellEntrypointRuntime {
       ...(this.options.commandExecutionOptions
         ? {
             commandExecutionOptions: this.options.commandExecutionOptions,
+          }
+        : {}),
+      ...(this.options.secureSecretMutator
+        ? {
+            secureSecretMutator: this.options.secureSecretMutator,
           }
         : {}),
       currentWorkingDirectory: this.options.currentWorkingDirectory,

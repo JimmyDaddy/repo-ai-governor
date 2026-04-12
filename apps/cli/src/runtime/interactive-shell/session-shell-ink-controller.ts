@@ -70,6 +70,11 @@ export class CliSessionShellInkController {
           ...DEFAULT_ACTION_RESULT,
           submitComposer: true,
         };
+      case CliSessionShellInputActionType.SECURE_CAPTURE_APPEND:
+      case CliSessionShellInputActionType.SECURE_CAPTURE_BACKSPACE:
+      case CliSessionShellInputActionType.SECURE_CAPTURE_SUBMITTED:
+      case CliSessionShellInputActionType.SECURE_CAPTURE_CANCELLED:
+        return DEFAULT_ACTION_RESULT;
       case CliSessionShellInputActionType.PALETTE_HIGHLIGHT_NEXT:
         this.rotateHighlight(viewModel, 1);
         return DEFAULT_ACTION_RESULT;

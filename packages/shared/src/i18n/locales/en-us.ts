@@ -389,11 +389,13 @@ export const EN_US_TRANSLATIONS = {
       sections: {
         transcript: 'History',
         composer: 'Current input',
+        secureCaptureComposer: 'Secure input',
         slashPalette: 'Slash palette',
         promptBar: 'Prompt bar',
       },
       composer: {
         placeholder: 'Type a message, / for commands, or ? for shortcuts.',
+        securePlaceholder: 'Secret input stays hidden while you type.',
       },
       palette: {
         emptyState: 'No matching slash commands. Type /help to view the MVP command set.',
@@ -418,6 +420,7 @@ export const EN_US_TRANSLATIONS = {
         idleShortcuts: '? shortcuts · /status · Ctrl+D',
         paletteShortcuts: '↑↓ · Tab/Enter · Esc',
         previewShortcuts: '/confirm · /cancel · Esc',
+        secureCaptureShortcuts: 'Enter submit · Esc cancel · Ctrl+D',
         showExecutionDetailsShortcut: 'Ctrl+O details',
         hideExecutionDetailsShortcut: 'Ctrl+O hide details',
       },
@@ -495,6 +498,22 @@ export const EN_US_TRANSLATIONS = {
         commandNotExecutable: 'This slash command has no executable handoff target.',
         secureSecretCaptureReserved:
           '{{command}} is reserved for secure local capture and will not enter command preview.',
+        secureSecretCaptureRequiresInk:
+          'Secure local capture currently requires the live Ink shell. Re-run {{command}} in interactive pretty mode.',
+        secureSecretCaptureActive:
+          'Secure local capture is active for {{command}}. Typed input stays hidden on this device.',
+        secureSecretCaptureCancelled: 'Secure local capture cancelled for {{command}}.',
+        secureSecretCaptureEmpty:
+          'No secret was entered for {{command}}. Re-run the command to start secure local capture again.',
+        secureSecretCaptureMutationUnavailable:
+          'Secure local secret mutation is unavailable in this shell attachment. Re-run {{command}} after the local mutation seam is configured.',
+        secureSecretCaptureSucceeded:
+          'Secret set completed for {{command}} via backend {{backendId}}.',
+        secureSecretCaptureBackendWarning: 'Backend warning: {{warning}}',
+        secureSecretCaptureFailed:
+          'Secure local secret mutation failed for {{command}}. reason={{reason}}',
+        secureSecretCaptureCaptured:
+          'Secure input was captured locally for {{command}}. Direct mutation handoff is not wired in this attachment yet.',
         secureSecretSlashSuffixRejected:
           'Do not enter secret in slash text. Re-run {{command}} and continue in secure local capture.',
         commandExecutionSucceeded: 'Command handoff completed for {{command}}.',

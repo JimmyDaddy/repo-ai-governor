@@ -334,11 +334,13 @@ export const ZH_CN_TRANSLATIONS = {
       sections: {
         transcript: '会话记录',
         composer: '当前输入',
+        secureCaptureComposer: '安全输入',
         slashPalette: 'Slash Palette',
         promptBar: 'Prompt Bar',
       },
       composer: {
         placeholder: '输入消息，/ 打开命令，? 查看快捷帮助。',
+        securePlaceholder: '输入 secret 时内容会保持隐藏。',
       },
       palette: {
         emptyState: '没有匹配的 slash command。可输入 /help 查看当前 MVP 命令集合。',
@@ -363,6 +365,7 @@ export const ZH_CN_TRANSLATIONS = {
         idleShortcuts: '? 快捷帮助 · /status · Ctrl+D',
         paletteShortcuts: '↑↓ · Tab/Enter · Esc',
         previewShortcuts: '/confirm · /cancel · Esc',
+        secureCaptureShortcuts: 'Enter 提交 · Esc 取消 · Ctrl+D',
         showExecutionDetailsShortcut: 'Ctrl+O 过程详情',
         hideExecutionDetailsShortcut: 'Ctrl+O 收起详情',
       },
@@ -437,6 +440,21 @@ export const ZH_CN_TRANSLATIONS = {
         commandNotExecutable: '该 slash command 当前没有可执行的 handoff 目标。',
         secureSecretCaptureReserved:
           '{{command}} 已保留给 secure local capture，不会进入普通 command preview。',
+        secureSecretCaptureRequiresInk:
+          '当前 secure local capture 需要 live Ink shell。请在 interactive pretty 模式下重新执行 {{command}}。',
+        secureSecretCaptureActive:
+          '{{command}} 已进入 secure local capture，后续输入会在当前设备上保持隐藏。',
+        secureSecretCaptureCancelled: '{{command}} 的 secure local capture 已取消。',
+        secureSecretCaptureEmpty:
+          '{{command}} 未输入任何 secret。请重新执行该命令，再次进入 secure local capture。',
+        secureSecretCaptureMutationUnavailable:
+          '当前 shell attachment 尚未接通 secure local secret mutation。请在本地 mutation seam 就绪后重新执行 {{command}}。',
+        secureSecretCaptureSucceeded: '{{command}} 已通过 backend {{backendId}} 完成 secret set。',
+        secureSecretCaptureBackendWarning: 'Backend 警告：{{warning}}',
+        secureSecretCaptureFailed:
+          '{{command}} 的 secure local secret mutation 失败。原因：{{reason}}',
+        secureSecretCaptureCaptured:
+          '{{command}} 的 secure input 已在本地采集完成，但当前附着面尚未接通 direct mutation handoff。',
         secureSecretSlashSuffixRejected:
           '不要在 slash 文本中输入 secret。请重新执行 {{command}}，并在 secure local capture 中继续。',
         commandExecutionSucceeded: '{{command}} 的 command handoff 已完成。',

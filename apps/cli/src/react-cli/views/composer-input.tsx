@@ -26,7 +26,12 @@ export function ReactCliComposerInput({
 }: ReactCliComposerInputProps): React.JSX.Element {
   const promptLabel = CLI_SESSION_SHELL_PROMPT.trim();
   const isSlashMode = inputMode === CliSessionShellInputMode.SLASH_COMMAND;
-  const composerTitleColor = isSlashMode ? shellPalette.promptTitleColor : shellPalette.footerColor;
+  const isSecureMode = inputMode === CliSessionShellInputMode.SECURE_LOCAL;
+  const composerTitleColor = isSlashMode
+    ? shellPalette.promptTitleColor
+    : isSecureMode
+      ? shellPalette.sectionTitleColor
+      : shellPalette.footerColor;
 
   return (
     <Box flexDirection='column' marginTop={2}>
