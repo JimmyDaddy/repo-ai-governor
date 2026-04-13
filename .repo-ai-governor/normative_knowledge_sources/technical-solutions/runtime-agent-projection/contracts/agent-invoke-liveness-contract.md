@@ -1,7 +1,7 @@
 # Agent Invoke Liveness Contract
 
 - Status: active
-- Date: 2026-04-02
+- Date: 2026-04-13
 - Contract ID: `contract.runtime.agent-invoke-liveness.v1`
 - Producer Module: `runtime.agent-projection`
 
@@ -76,6 +76,7 @@
 9. `doctor/verify` 只负责 preflight readiness / auth / route abnormal；invoke 已开始后的 idle / semantic stall / graceful interrupt / hard timeout 必须通过 execution diagnostics、event replay 或同等级 runtime artifact 暴露。
 10. 当 invoke 走 `remote_api` 时，liveness snapshot 必须 materialize `transport_kind` 与 `vendor_binding_kind`；若 provider 暴露稳定 request id，则应填充 `remote_request_id`。
 11. `cancelled` 在 `remote_api` 场景默认只表示 Governor 已发出本地 abort 或 provider cancel attempt，不默认宣称 provider 端任务一定停止。
+12. 当 invoke 走 native `cli_exec` 时，更新时间戳、`terminate_phase`、partial snapshot 与 suspect 状态迁移的 shared owner 应来自统一 process runtime 的 lifecycle observer seam；adapter parser 只负责 semantic-progress 回灌，不得在各 adapter 内复制第二套 liveness watchdog 真值。
 
 ## 5. Output Semantics
 
@@ -141,3 +142,4 @@
 3. `v1` 允许不同 surface 对 `active_operation_kind` 做差异化分类，但稳定顶层状态与 reason code 必须保持一致。
 4. `v1` 要求 service-backed 与 embedded 路径最终消费同一 execution projection 语义，即使底层 adapter 事件 taxonomy 不同。
 5. `v1` 允许通过 additive fields 扩展 `transport_kind`、`vendor_binding_kind`、`remote_request_id` 与 `cancel_mechanism`，使 child-process 与 remote-stream liveness 可以共用同一 contract。
+6. `v1` 允许 native `cli_exec` shared runtime 作为 `Codex`、`Claude Code` 与 `GitHub Copilot` 的共用采集层，只要 adapter-specific parser 仍保有 semantic-progress owner，且 launch / diagnostics 相关字段继续保持 additive / optional truth。

@@ -1,7 +1,7 @@
 # Adapter Health And Route Probe Contract
 
 - Status: active
-- Date: 2026-04-09
+- Date: 2026-04-13
 - Contract ID: `contract.runtime.adapter-health-check.v1`
 - Producer Module: `runtime.agent-projection`
 
@@ -65,6 +65,7 @@
 8. 当 `remote_api` binding 无法唯一解析或与 surface 不匹配时，probe 必须以结构化 reason code fail-closed，而不是静默退回默认 binding。
 9. 当 route input 已显式锁定 `transport_kind` 时，probe 只允许针对该 transport 生成 availability truth；同一 surface 的其他 transport 成功结果不得覆盖这次失败。
 10. `fallback_allowed` 只能表达 route consumer 是否可继续尝试其他 surface；若 presenter 想建议 `switch_to_cli_exec`，那只能作为 follow-up next action，而不是 probe runtime 的隐式重试。
+11. 当 probe / diagnostics 复用 shared native `cli_exec` runtime 时，`selected_entrypoint` 与 `request_cancellation_mode` 仍必须从 adapter-authored launch plan 机械投影；shared runtime 只能补结构化 launch diagnostics，不得反向改写 route truth。
 
 ## 5. Output Semantics
 
@@ -77,6 +78,7 @@
 7. `credential_source` 与 `endpoint_source` 应帮助 consumer 区分 repo 显式配置、env override、secret store、provider-local discovery 与 vendor default。
 8. `request_cancellation_mode=local_abort_only` 表示 Governor 只能保证本地 stream / request 已发出 abort，而不默认宣称 provider 端任务已被强取消。
 9. 当当前尝试来自显式 transport 选择时，diagnostics 应让 consumer 可区分 `config_explicit`、`inferred_from_remote_api` 与 `surface_default` 三种选择来源。
+10. `diagnostics[]` 可以 additive 方式带出 `entrypoint_resolution`、`shell_wrapped`、`process_tree_policy`、`spawn_error_code` 等 launch evidence；这些字段的缺失不得被解释为失败，也不得把它们升级成 `v1` minimum fields。
 
 ## 6. Stable Reason Codes
 
@@ -96,3 +98,4 @@
 2. `v1` 允许在 rollout 早期分阶段接入：先统一 shared normalization，再逐步替换 adapter-specific auth/protocol probe。
 3. `v1` 允许 route probe 继续复用现有 role binding / descriptor 结构，但 route 诊断必须能稳定回链 `route_key` 与 `surface_id`。
 4. `v1` 允许 CLI-only row 继续表达 `transport_kind=cli_exec` 与 `provider_kind/vendor_binding_kind=null`，同时对 `remote_api` row 增量补充 binding-aware 字段。
+5. `v1` 允许 shared native `cli_exec` runtime 为多个 adapter 供给 additive launch diagnostics，只要这些字段仍保持 optional truth，且 adapter-owned authoring 边界没有被共享层吞并。

@@ -1,7 +1,7 @@
 # Runtime Agent Projection Module Overview
 
 - Status: active
-- Date: 2026-04-11
+- Date: 2026-04-13
 - Module ID: `runtime.agent-projection`
 - Owner: runtime
 - Layer: `runtime-core`
@@ -26,6 +26,7 @@
 12. 正式拥有 `~/.repo-ai-governor/user-config.yaml` authoring layer 向 canonical onboarding / projection truth 的 normalization seam：`config` / `secret` surface 可以写入 user-private defaults 与 `credentialRef` selector，但 runtime 只能在 `enabled_tools[] / configured_remote_api / AgentDescriptor.selected_*` 这一条 canonical truth 链路中消费这些事实，不得把 raw authoring path 升格为第二事实源。
 13. 正式拥有 runtime / contract support truth 与 adopter-facing public support wording 的边界：`codex` / `claude-code` 的 `remote_api` 可先在 runtime/contract 层 formalize 为用户可选 transport，但 support-matrix / playbook uplift 仍受单独 evidence gate 约束。
 14. 正式拥有 standards-guided delegated reviewer handoff 的 projection 语义：orchestration service 只产出结构化 review request，projection 模块负责把 `projectedRules / deterministicFindings / uncoveredRuleIds` 等事实渲染到具体宿主 surface，并将 reviewer 输出归一化回 provenance-aware finding 结构，但不得把 prompt prose 自身升格为事实源。
+15. 正式拥有 shared native `cli_exec` process runtime convergence boundary：adapter 必须先产出 `resolved launch plan`，shared runtime 只负责 process lifecycle、lifecycle observer、partial-output retention、process-tree termination 与 structured diagnostics；未来 ACP-like protocol expansion 必须保持为 explicit additive seam，不得伪装成当前 `cli_exec` canonical truth。
 
 ## 3. 非目标
 
@@ -39,6 +40,7 @@
 8. 不在同一 surface 内自动把失败的 `remote_api` 改写为 `cli_exec` 成功结果，反之亦然。
 9. 不因 runtime / contract 层已 formalize 某条 `remote_api` 路径，就自动升级 adopter-facing `docs/support-matrix*` 或 `docs/local-adoption-playbook*` 的公开支持声明。
 10. 不允许 `user-config.yaml` 或 secret backend 覆盖 repo / workspace 已显式声明的治理真值；它们只能补默认值或提供 read-only credential resolution seam。
+11. 不允许把 ACP 或其他 protocol layer 隐式包进当前 `cli_exec` 成功路径，也不允许让 `packages/adapter-sdk` 演变成第二条 formal technical-solution truth source。
 
 ## 4. North Star References
 
@@ -69,6 +71,7 @@
 7. 当问题涉及 provider session reuse、backend conversation continuity、continuation handle compatibility、transport-aware reuse 或 adapter-facing continuation request/result seam 时，也应优先补载本模块。
 8. 当问题涉及 delegated reviewer request normalization、standards-guided review handoff、review finding transport projection 或 reviewer 输出归一化时，也应优先补载本模块。
 9. 当问题涉及 `user-config.yaml` 默认值、`credentialRef -> secret backend` 解析、`config` / `secret` command follow-up 如何投影回 canonical onboarding truth 时，也应优先补载本模块。
+10. 当问题涉及 native `cli_exec` process runtime、`resolved launch plan`、lifecycle observer、process-tree termination 或 explicit ACP extension seam guardrail 时，也应优先补载本模块。
 
 ## 8. Detail Docs
 
@@ -83,6 +86,7 @@
    - `adrs/layered-adapter-health-check-and-route-capability-probe.md`
    - `adrs/agent-invoke-liveness-and-timeout-governance.md`
    - `adrs/remote-api-transport-and-provider-binding-seam.md`
-   - `adrs/local-user-config-defaults-and-secret-backed-credential-resolution.md`
-   - `adrs/transport-selection-authority-and-strict-transport-routing.md`
-   - `adrs/provider-session-reuse-and-continuation-handle-seam.md`
+  - `adrs/local-user-config-defaults-and-secret-backed-credential-resolution.md`
+  - `adrs/transport-selection-authority-and-strict-transport-routing.md`
+  - `adrs/native-cli-exec-runtime-hardening-and-explicit-acp-extension-seam.md`
+  - `adrs/provider-session-reuse-and-continuation-handle-seam.md`

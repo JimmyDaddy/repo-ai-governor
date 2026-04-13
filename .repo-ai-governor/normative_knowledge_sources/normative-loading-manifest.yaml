@@ -1,5 +1,5 @@
 schema_version: 1
-generated_at: 2026-04-11
+generated_at: 2026-04-13
 status: active
 owner: repo-ai-governor
 
@@ -880,6 +880,21 @@ documents:
       - technical_solution_promotion_change
     owner: runtime
     last_reviewed_at: 2026-04-09
+
+  - doc_id: technical_solution_runtime_agent_projection_cli_exec_runtime_acp_seam_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/native-cli-exec-runtime-hardening-and-explicit-acp-extension-seam.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - runtime_contract_change
+      - adapter_change
+      - cli_ui_change
+      - command_surface_change
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+    owner: runtime
+    last_reviewed_at: 2026-04-13
 
   - doc_id: technical_solution_runtime_agent_projection_provider_continuation_adr
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/provider-session-reuse-and-continuation-handle-seam.md

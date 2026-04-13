@@ -1,5 +1,5 @@
 schema_version: 1
-generated_at: 2026-04-12
+generated_at: 2026-04-13
 status: active
 owner: architecture
 
@@ -740,6 +740,37 @@ deliveries:
       - .repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/sprint-003-evidence-gated-docs-and-adopter-truth/tasks/DA-734-rollout-closeout-and-delivery-evidence-handoff.md
       - .repo-ai-governor/context/dev/project-076-transport-selection-authority-rollout/project-076-transport-selection-authority-rollout-completion-audit-summary.md
     accepted_at: 2026-04-09
+
+  - solution_id: technical-solution.cli-exec-runtime-hardening-and-explicit-acp-extension-seam
+    delivery_mode: followup_required
+    consumer_surfaces:
+      - adopter_cli
+      - runtime_service
+      - docs_playbook
+    user_impact_level: medium
+    execution_status: planned
+    rollout_status: planned
+    owner: runtime
+    project_ref: project-098-cli-exec-runtime-rollout
+    sprint_ref: sprint-001-native-cli-runtime-foundation-and-codex-convergence
+    task_ids:
+      - TK-821
+      - TK-822
+      - TK-823
+      - TK-824
+    project_plan_path: .repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/plan.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-001-native-cli-runtime-foundation-and-codex-convergence/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-001-native-cli-runtime-foundation-and-codex-convergence/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-097-cli-exec-runtime-promotion-and-decomposition/sprint-001-promotion-and-followup-decomposition/tasks/DA-819-cli-exec-runtime-promotion-and-rollout-decomposition-handoff.md
+    rollout_artifacts:
+      - .repo-ai-governor/context/dev/project-097-cli-exec-runtime-promotion-and-decomposition/plan.md
+      - .repo-ai-governor/context/dev/project-097-cli-exec-runtime-promotion-and-decomposition/sprint-001-promotion-and-followup-decomposition/review/resolved_code_review_tk-817-820-cli-exec-runtime-promotion-and-decomposition.md
+      - .repo-ai-governor/context/dev/project-097-cli-exec-runtime-promotion-and-decomposition/sprint-001-promotion-and-followup-decomposition/tasks/DA-819-cli-exec-runtime-promotion-and-rollout-decomposition-handoff.md
+      - .repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/plan.md
+      - .repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-001-native-cli-runtime-foundation-and-codex-convergence/plan.md
+      - .repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-002-cross-adapter-runtime-hardening-and-diagnostics-evidence/plan.md
+      - .repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-003-explicit-acp-extension-seam-guardrails-and-rollout-closeout/plan.md
+    accepted_at: 2026-04-13
 
   - solution_id: technical-solution.session-main-prompt-first-command-model
     delivery_mode: followup_required

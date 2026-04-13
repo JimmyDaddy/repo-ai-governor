@@ -1,5 +1,5 @@
 schema_version: 2
-generated_at: 2026-04-11
+generated_at: 2026-04-13
 status: active
 owner: architecture
 
@@ -412,6 +412,8 @@ modules:
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/local-user-config-defaults-and-secret-backed-credential-resolution.md
         kind: adr
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/transport-selection-authority-and-strict-transport-routing.md
+        kind: adr
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/native-cli-exec-runtime-hardening-and-explicit-acp-extension-seam.md
         kind: adr
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/provider-session-reuse-and-continuation-handle-seam.md
         kind: adr
