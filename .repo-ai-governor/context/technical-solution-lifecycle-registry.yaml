@@ -742,6 +742,139 @@ solutions:
     activated_at: 2026-04-13
     supersedes: []
 
+  - solution_id: technical-solution.cli-exec-compatibility-and-stability-productization
+    title: CLI exec compatibility and stability productization technical solution
+    status: active
+    owner: runtime
+    version: v1
+    scope: runtime
+    draft_paths:
+      - .repo-ai-governor/draft/cli-exec-compatibility-and-stability-productization-technical-solution.md
+    review_paths:
+      - .repo-ai-governor/context/dev/project-099-cli-exec-compatibility-and-stability-solution-review/sprint-001-draft-review-and-lifecycle-writeback/review/solution_review_cli-exec-compatibility-and-stability-productization.md
+    final_paths:
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/native-cli-exec-compatibility-and-stability-productization.md
+    target_module_ids:
+      - runtime.agent-projection
+    north_star_refs:
+      - prd.multi-tool-adapters
+      - overall.graph-first-runtime
+      - architecture.runtime-boundary
+    approved_at: 2026-04-13
+    approved_by: AI-Agent
+    activated_at: 2026-04-13
+    supersedes: []
+
+  - solution_id: technical-solution.cli-exec-additive-diagnostics-consumer-productization
+    title: CLI exec additive diagnostics consumer productization technical solution
+    status: active
+    owner: runtime
+    version: v1
+    scope: runtime
+    draft_paths:
+      - .repo-ai-governor/draft/cli-exec-additive-diagnostics-consumer-productization-technical-solution.md
+    review_paths:
+      - .repo-ai-governor/context/dev/project-101-cli-exec-followup-solution-review-and-promotion/sprint-002-additive-diagnostics-consumer/review/solution_review_cli-exec-additive-diagnostics-consumer-productization.md
+    final_paths:
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/shared-launch-diagnostics-projection-and-consumer-surfaces.md
+    target_module_ids:
+      - runtime.agent-projection
+    north_star_refs:
+      - prd.multi-tool-adapters
+      - overall.graph-first-runtime
+      - architecture.runtime-boundary
+    approved_at: 2026-04-13
+    approved_by: AI-Agent
+    activated_at: 2026-04-13
+    supersedes: []
+
+  - solution_id: technical-solution.cli-exec-adapter-launch-authoring-contract-tests
+    title: CLI exec adapter launch authoring contract tests technical solution
+    status: active
+    owner: runtime
+    version: v1
+    scope: runtime
+    draft_paths:
+      - .repo-ai-governor/draft/cli-exec-adapter-launch-authoring-contract-tests-technical-solution.md
+    review_paths:
+      - .repo-ai-governor/context/dev/project-101-cli-exec-followup-solution-review-and-promotion/sprint-001-launch-authoring-contract-tests/review/solution_review_cli-exec-adapter-launch-authoring-contract-tests.md
+    final_paths:
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/adapter-authored-launch-plan-ownership-and-contract-tests.md
+    target_module_ids:
+      - runtime.agent-projection
+    north_star_refs:
+      - prd.multi-tool-adapters
+      - overall.graph-first-runtime
+      - architecture.runtime-boundary
+    approved_at: 2026-04-13
+    approved_by: AI-Agent
+    activated_at: 2026-04-13
+    supersedes: []
+
+  - solution_id: technical-solution.acp-host-facing-transport-formalization
+    title: ACP host-facing transport formalization technical solution
+    status: active
+    owner: runtime
+    version: v1
+    scope: cross-cutting
+    draft_paths:
+      - .repo-ai-governor/draft/acp-host-facing-transport-formalization-technical-solution.md
+    review_paths:
+      - .repo-ai-governor/context/dev/project-101-cli-exec-followup-solution-review-and-promotion/sprint-004-acp-host-facing-transport-formalization/review/solution_review_acp-host-facing-transport-formalization.md
+    final_paths:
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/acp-host-facing-transport-formalization-and-distribution-boundary.md
+    target_module_ids:
+      - runtime.agent-projection
+    north_star_refs:
+      - prd.multi-tool-adapters
+      - overall.graph-first-runtime
+      - architecture.runtime-boundary
+    approved_at: 2026-04-13
+    approved_by: AI-Agent
+    activated_at: 2026-04-13
+    supersedes: []
+
+  - solution_id: technical-solution.cli-exec-onboarding-and-adoption-readiness-productization
+    title: CLI exec onboarding and adoption readiness productization technical solution
+    status: active
+    owner: runtime
+    version: v1
+    scope: cross-cutting
+    draft_paths:
+      - .repo-ai-governor/draft/cli-exec-onboarding-and-adoption-readiness-productization-technical-solution.md
+    review_paths:
+      - .repo-ai-governor/context/dev/project-101-cli-exec-followup-solution-review-and-promotion/sprint-003-onboarding-adoption-readiness/review/solution_review_cli-exec-onboarding-and-adoption-readiness-productization.md
+    final_paths:
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/cli-exec-onboarding-and-adoption-readiness-productization.md
+    target_module_ids:
+      - runtime.agent-projection
+    north_star_refs:
+      - prd.multi-tool-adapters
+      - overall.graph-first-runtime
+      - architecture.runtime-boundary
+    approved_at: 2026-04-13
+    approved_by: AI-Agent
+    activated_at: 2026-04-13
+    supersedes: []
+
+  - solution_id: technical-solution.cli-exec-five-direction-dependency-and-sequencing-analysis
+    title: CLI exec five-direction dependency and sequencing analysis technical solution
+    status: draft
+    owner: runtime
+    version: v1
+    scope: cross-cutting
+    draft_paths:
+      - .repo-ai-governor/draft/cli-exec-five-direction-dependency-and-sequencing-analysis-technical-solution.md
+    review_paths: []
+    final_paths: []
+    target_module_ids:
+      - runtime.agent-projection
+    north_star_refs:
+      - prd.multi-tool-adapters
+      - overall.graph-first-runtime
+      - architecture.runtime-boundary
+    supersedes: []
+
   - solution_id: technical-solution.task-id-decoupling-and-collaboration-safe-ledger
     title: Task id decoupling and collaboration-safe ledger technical solution
     status: draft

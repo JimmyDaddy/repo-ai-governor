@@ -1,7 +1,7 @@
 # Agent Projection Contract
 
 - Status: active
-- Date: 2026-04-11
+- Date: 2026-04-13
 - Contract ID: `contract.runtime.agent-projection.v1`
 - Producer Module: `runtime.agent-projection`
 
@@ -73,6 +73,7 @@
 10. 如果 consumer 想建议 `switch_to_cli_exec` 或其他替代 route，只能通过 descriptor companion diagnostics / next-action surface 暴露，不得篡改当前 `AgentDescriptor` 的 canonical transport truth。
 11. `selected_transport / selected_provider_kind / selected_vendor_binding_kind / selected_model` 可以来自 CLI 参数、workspace config 或 `user-config` 默认值，但前提是这些输入已先被 onboarding runtime 归一化为 canonical tool rows；raw `user-config` path 不得直接进入 `AgentDescriptor`。
 12. `workspace_mode=repo_local` 只允许在 repo / workspace 未显式声明 `workspace.mode` 时由 `workspace.mode_preference` 派生；user-local preference 不得覆盖共享 workspace truth。
+13. 当 `selected_transport=acp_exec` 时，projection 必须把 ACP 保留为独立 transport truth；同一 surface 内不得把 ACP success / failure 重写成 `cli_exec`，也不得把 provider continuation compatibility 误投影成 ACP host protocol truth。
 
 ## 5. Provider Continuation Extension
 
@@ -133,7 +134,20 @@
 7. `lane_key` 属于 caller-provided runtime boundary；adapter 不得把 provider 私有 thread 拓扑反向提升为 canonical lane identity。
 8. 所有有限集合字段必须收口到集中 enum/constants；不得在实现里继续保留漂移的 inline string-literal union。
 
-## 8. Compatibility
+## 8. ACP Host-Facing Transport Extension
+
+1. 当 onboarding / route truth 显式选择 ACP host-facing transport 时，`selected_transport` 可以取值 `acp_exec`；该值与 `cli_exec` 保持并列的显式 transport truth，而不是 fallback alias。
+2. `AgentDescriptor` 可以 additive 方式携带 transport-scoped `acp_host_companion`，其 presenter-safe facts 包括：
+   - `acp_session_id`
+   - `permission_queue_id`
+   - `terminal_channel_id`
+   - optional `host_readiness_status`
+   - optional `distribution_boundary`
+   - optional `companion_state_summary`
+3. `acp_host_companion` 归 `runtime.agent-projection` 所有；这些 ACP-local ids 不得覆盖 minimum `session_id`，不得写入 `AgentSessionRegistry` canonical truth，也不得被编码到 `ProviderContinuationHandle`。
+4. `acp_host_companion` 只承担 transport-scoped、presenter-safe host protocol companion truth；packaged distribution enablement、runtime-service enablement、clean-room verify execution 与 adopter-facing support wording 继续属于 rollout evidence，不进入 `AgentDescriptor` minimum fields。
+
+## 9. Compatibility
 
 1. `v1` 允许 `AgentDescriptor` 由 CLI、report 与 diagnostics 共用。
 2. `v1` 允许在不引入 UI 事实源的前提下，为后续桌面端提供同一份投影数据。
@@ -143,3 +157,5 @@
 6. `v1` 不要求所有 provider 与所有 transport 第一阶段都支持 continuation reuse；不支持时必须诚实返回 `unsupported`。
 7. `v1` 目前只接受 non-secret inline provider reference；若某个 provider 只能返回敏感 continuation token，则在 secret-store reference seam formalized 之前应保持 unsupported。
 8. `v1` 允许 companion diagnostics 以 additive fields 暴露 `transport_selection_source` 与 `transport_selection_locked`，只要 `AgentDescriptor` minimum fields 与 replay semantics 继续保持兼容。
+9. `v1` 允许 additive `selected_transport=acp_exec` 与 `acp_host_companion`，只要旧 consumer 在未读取 ACP companion 字段时仍可继续消费既有 `AgentDescriptor` minimum fields。
+10. `v1` 不因为 `acp_exec` 已 formalize 到 contract 就自动承诺 packaged distribution、runtime-service enablement、clean-room verify execution 或 adopter-facing support wording；这些 consumer surfaces 继续由 rollout evidence 决定。

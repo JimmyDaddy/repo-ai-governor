@@ -3,24 +3,28 @@
 ## Primary Stream
 
 - Status: idle
-- Stream: `none`
-- Project: `none`
-- Sprint: `none`
-- Docs: `none`
-- Plan: `none`
-- Tasks: `none`
-- Checklist: `none`
-- CSV: `none`
-- Review: `none`
-- Note: `2026-04-13` 已完成 `project-098 / sprint-003` final closeout；当前默认执行入口恢复为 idle，最近完成流已迁入 `.repo-ai-governor/context/completed-streams-history.md`。
+- Stream: `idle`
+- Project: `(none)`
+- Sprint: `(none)`
+- Docs: `(none)`
+- Plan: `(none)`
+- Tasks: `(none)`
+- Checklist: `(none)`
+- CSV: `(none)`
+- Review: `(none)`
+- Note: `2026-04-14` `project-101-cli-exec-followup-solution-review-and-promotion` 已完成并移入 completed history；planned follow-up streams 已扩展为 execution-ready rollout queue，推荐顺序为 `project-106 -> project-102 -> project-103 -> project-104 -> project-105`，当前 primary 继续保持 `idle`。
 
 ## Active Streams
 
-- none
+_None. Primary stream is currently idle._
 
 ## Planned Follow-Up Streams
 
-- none
+- `stream-project-106-sprint-001`: primary=`false`, project=`project-106-cli-exec-compatibility-and-stability-rollout`, sprint=`sprint-001-compatibility-taxonomy-and-regression-harness`, docs=`.repo-ai-governor/context/dev/project-106-cli-exec-compatibility-and-stability-rollout`, plan=`.repo-ai-governor/context/dev/project-106-cli-exec-compatibility-and-stability-rollout/sprint-001-compatibility-taxonomy-and-regression-harness/plan.md`, tasks=`.repo-ai-governor/context/dev/project-106-cli-exec-compatibility-and-stability-rollout/sprint-001-compatibility-taxonomy-and-regression-harness/tasks/`, checklist=`.repo-ai-governor/context/dev/project-106-cli-exec-compatibility-and-stability-rollout/sprint-001-compatibility-taxonomy-and-regression-harness/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-106-cli-exec-compatibility-and-stability-rollout/sprint-001-compatibility-taxonomy-and-regression-harness/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-106-cli-exec-compatibility-and-stability-rollout/sprint-001-compatibility-taxonomy-and-regression-harness/review/`, status=`planned`, note=`2026-04-14 由 compatibility/stability solution delivery handoff 转换为真实 rollout stream，并作为 5 方向 rollout 的推荐起点；当前仅完成 execution-ready scaffold，待后续实现窗口激活。`
+- `stream-project-102-sprint-001`: primary=`false`, project=`project-102-cli-exec-launch-authoring-contract-tests-rollout`, sprint=`sprint-001-launch-authoring-contract-tests-rollout`, docs=`.repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout`, plan=`.repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout/sprint-001-launch-authoring-contract-tests-rollout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout/sprint-001-launch-authoring-contract-tests-rollout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout/sprint-001-launch-authoring-contract-tests-rollout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout/sprint-001-launch-authoring-contract-tests-rollout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout/sprint-001-launch-authoring-contract-tests-rollout/review/`, status=`planned`, note=`2026-04-14 在保留 2026-04-13 TK-846 promotion handoff 来源的基础上扩展为多 sprint execution-ready scaffold；作为 technical-solution.cli-exec-adapter-launch-authoring-contract-tests 的 followup_required rollout stream，默认在 project-106 之后激活。`
+- `stream-project-103-sprint-001`: primary=`false`, project=`project-103-cli-exec-additive-diagnostics-consumer-rollout`, sprint=`sprint-001-additive-diagnostics-consumer-rollout`, docs=`.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout`, plan=`.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-001-additive-diagnostics-consumer-rollout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-001-additive-diagnostics-consumer-rollout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-001-additive-diagnostics-consumer-rollout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-001-additive-diagnostics-consumer-rollout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-001-additive-diagnostics-consumer-rollout/review/`, status=`planned`, note=`2026-04-14 在保留 2026-04-13 TK-849 promotion handoff 来源的基础上扩展为多 sprint execution-ready scaffold；作为 technical-solution.cli-exec-additive-diagnostics-consumer-productization 的 followup_required rollout stream，默认在 project-102 之后激活。`
+- `stream-project-104-sprint-001`: primary=`false`, project=`project-104-cli-exec-onboarding-adoption-readiness-rollout`, sprint=`sprint-001-onboarding-adoption-readiness-rollout`, docs=`.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout`, plan=`.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-001-onboarding-adoption-readiness-rollout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-001-onboarding-adoption-readiness-rollout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-001-onboarding-adoption-readiness-rollout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-001-onboarding-adoption-readiness-rollout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-001-onboarding-adoption-readiness-rollout/review/`, status=`planned`, note=`2026-04-14 在保留 2026-04-13 TK-852 promotion handoff 来源的基础上扩展为多 sprint execution-ready scaffold；作为 technical-solution.cli-exec-onboarding-and-adoption-readiness-productization 的 followup_required rollout stream，默认在 project-103 之后激活。`
+- `stream-project-105-sprint-001`: primary=`false`, project=`project-105-acp-host-facing-transport-rollout`, sprint=`sprint-001-acp-host-facing-transport-rollout`, docs=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout`, plan=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-001-acp-host-facing-transport-rollout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-001-acp-host-facing-transport-rollout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-001-acp-host-facing-transport-rollout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-001-acp-host-facing-transport-rollout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-001-acp-host-facing-transport-rollout/review/`, status=`planned`, note=`2026-04-14 在保留 2026-04-13 TK-855 promotion handoff 来源的基础上扩展为多 sprint execution-ready scaffold；作为 technical-solution.acp-host-facing-transport-formalization 的 followup_required rollout stream，默认作为第 5 条执行流保留到前置 cli_exec 主链收口后再激活。`
 
 ## Completed Stream History
 

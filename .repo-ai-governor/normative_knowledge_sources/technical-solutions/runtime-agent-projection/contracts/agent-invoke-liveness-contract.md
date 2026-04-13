@@ -77,6 +77,8 @@
 10. 当 invoke 走 `remote_api` 时，liveness snapshot 必须 materialize `transport_kind` 与 `vendor_binding_kind`；若 provider 暴露稳定 request id，则应填充 `remote_request_id`。
 11. `cancelled` 在 `remote_api` 场景默认只表示 Governor 已发出本地 abort 或 provider cancel attempt，不默认宣称 provider 端任务一定停止。
 12. 当 invoke 走 native `cli_exec` 时，更新时间戳、`terminate_phase`、partial snapshot 与 suspect 状态迁移的 shared owner 应来自统一 process runtime 的 lifecycle observer seam；adapter parser 只负责 semantic-progress 回灌，不得在各 adapter 内复制第二套 liveness watchdog 真值。
+13. 当 native `cli_exec` compatibility baseline 评估 `timeout_soft_terminated`、`timeout_hard_terminated`、`abort_soft_terminated` 或 `abort_hard_terminated` 时，必须继续把 `terminate_phase` 视为 preserved fact；若当时确有可保留的 assistant draft / semantic progress，`partial_output_preserved` 也必须继续保持真实而非退化成统一失败文案。
+14. 当 shared launch-authoring contract tests 评估 invoke surface 时，invoke-visible preserved facts 只包括 `terminate_phase`、`partial_output_preserved` 与 `cancel_mechanism`；`process_tree_policy` 与 `request_cancellation_mode` 仍属于 adapter-authored launch truth 或 additive evidence，不得被 invoke consumer 反向重写为新的 minimum field。
 
 ## 5. Output Semantics
 
@@ -143,3 +145,5 @@
 4. `v1` 要求 service-backed 与 embedded 路径最终消费同一 execution projection 语义，即使底层 adapter 事件 taxonomy 不同。
 5. `v1` 允许通过 additive fields 扩展 `transport_kind`、`vendor_binding_kind`、`remote_request_id` 与 `cancel_mechanism`，使 child-process 与 remote-stream liveness 可以共用同一 contract。
 6. `v1` 允许 native `cli_exec` shared runtime 作为 `Codex`、`Claude Code` 与 `GitHub Copilot` 的共用采集层，只要 adapter-specific parser 仍保有 semantic-progress owner，且 launch / diagnostics 相关字段继续保持 additive / optional truth。
+7. `v1` 允许 `runtime.agent-projection` 以 runtime guidance 形式 formalize native `cli_exec` timeout / abort compatibility taxonomy，但该 guidance 不得借机新增 minimum fields，也不得自动变成 `governance.execution-gates` formal truth。
+8. `v1` 允许 shared launch-authoring contract harness 复用 invoke failure-path taxonomy 来验证 ownership guardrail，但该 harness 只消费本 contract 已声明的 invoke-visible preserved facts，不构成新的 invoke behavior truth source。

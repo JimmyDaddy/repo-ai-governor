@@ -1,5 +1,5 @@
 schema_version: 1
-generated_at: 2026-04-13
+generated_at: 2026-04-14
 status: active
 owner: architecture
 
@@ -224,6 +224,134 @@ deliveries:
     handoff_artifact_path: .repo-ai-governor/context/dev/project-035-session-main-supervisor-and-role-subagent-productization/sprint-004-streaming-and-host-parity/tasks/DA-474-runtime-durable-storage-and-sqlite-fs-cutover-technical-solution-promotion.md
     rollout_artifacts: []
     accepted_at: 2026-04-02
+
+  - solution_id: technical-solution.cli-exec-compatibility-and-stability-productization
+    delivery_mode: followup_required
+    consumer_surfaces:
+      - internal_governance
+    user_impact_level: none
+    execution_status: planned
+    rollout_status: not_required
+    owner: runtime
+    project_ref: project-106-cli-exec-compatibility-and-stability-rollout
+    sprint_ref: sprint-001-compatibility-taxonomy-and-regression-harness
+    task_ids:
+      - TK-861
+      - TK-862
+      - TK-863
+    project_plan_path: .repo-ai-governor/context/dev/project-106-cli-exec-compatibility-and-stability-rollout/plan.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-106-cli-exec-compatibility-and-stability-rollout/sprint-001-compatibility-taxonomy-and-regression-harness/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-106-cli-exec-compatibility-and-stability-rollout/sprint-001-compatibility-taxonomy-and-regression-harness/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-100-cli-exec-compatibility-and-stability-promotion/sprint-001-formalization-and-promotion-cutover/tasks/DA-842-cli-exec-compatibility-and-stability-promotion-cutover.md
+    rollout_artifacts: []
+    accepted_at: 2026-04-13
+
+  - solution_id: technical-solution.cli-exec-adapter-launch-authoring-contract-tests
+    delivery_mode: followup_required
+    consumer_surfaces:
+      - internal_governance
+    user_impact_level: none
+    execution_status: planned
+    rollout_status: not_required
+    owner: runtime
+    project_ref: project-102-cli-exec-launch-authoring-contract-tests-rollout
+    sprint_ref: sprint-001-launch-authoring-contract-tests-rollout
+    task_ids:
+      - TK-857
+      - TK-867
+      - TK-868
+    project_plan_path: .repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout/plan.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout/sprint-001-launch-authoring-contract-tests-rollout/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout/sprint-001-launch-authoring-contract-tests-rollout/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-101-cli-exec-followup-solution-review-and-promotion/sprint-001-launch-authoring-contract-tests/tasks/DA-846-cli-exec-launch-authoring-contract-tests-promotion-cutover.md
+    rollout_artifacts: []
+    accepted_at: 2026-04-13
+
+  - solution_id: technical-solution.cli-exec-additive-diagnostics-consumer-productization
+    delivery_mode: followup_required
+    consumer_surfaces:
+      - adopter_cli
+    user_impact_level: low
+    execution_status: planned
+    rollout_status: planned
+    owner: runtime
+    project_ref: project-103-cli-exec-additive-diagnostics-consumer-rollout
+    sprint_ref: sprint-001-additive-diagnostics-consumer-rollout
+    task_ids:
+      - TK-858
+      - TK-872
+      - TK-873
+    project_plan_path: .repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/plan.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-001-additive-diagnostics-consumer-rollout/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-001-additive-diagnostics-consumer-rollout/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-101-cli-exec-followup-solution-review-and-promotion/sprint-002-additive-diagnostics-consumer/tasks/DA-849-cli-exec-additive-diagnostics-consumer-promotion-cutover.md
+    rollout_artifacts:
+      - .repo-ai-governor/context/dev/project-101-cli-exec-followup-solution-review-and-promotion/plan.md
+      - .repo-ai-governor/context/dev/project-101-cli-exec-followup-solution-review-and-promotion/sprint-002-additive-diagnostics-consumer/review/solution_review_cli-exec-additive-diagnostics-consumer-productization.md
+      - .repo-ai-governor/context/dev/project-101-cli-exec-followup-solution-review-and-promotion/sprint-002-additive-diagnostics-consumer/tasks/DA-849-cli-exec-additive-diagnostics-consumer-promotion-cutover.md
+      - .repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/plan.md
+      - .repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-001-additive-diagnostics-consumer-rollout/plan.md
+      - .repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-002-consumer-surface-adoption-and-rollout-closeout/plan.md
+    accepted_at: 2026-04-13
+
+  - solution_id: technical-solution.cli-exec-onboarding-and-adoption-readiness-productization
+    delivery_mode: followup_required
+    consumer_surfaces:
+      - adopter_cli
+      - docs_playbook
+    user_impact_level: medium
+    execution_status: planned
+    rollout_status: planned
+    owner: runtime
+    project_ref: project-104-cli-exec-onboarding-adoption-readiness-rollout
+    sprint_ref: sprint-001-onboarding-adoption-readiness-rollout
+    task_ids:
+      - TK-859
+      - TK-877
+      - TK-878
+    project_plan_path: .repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/plan.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-001-onboarding-adoption-readiness-rollout/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-001-onboarding-adoption-readiness-rollout/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-101-cli-exec-followup-solution-review-and-promotion/sprint-003-onboarding-adoption-readiness/tasks/DA-852-cli-exec-onboarding-and-adoption-readiness-promotion-cutover.md
+    rollout_artifacts:
+      - .repo-ai-governor/context/dev/project-101-cli-exec-followup-solution-review-and-promotion/plan.md
+      - .repo-ai-governor/context/dev/project-101-cli-exec-followup-solution-review-and-promotion/sprint-003-onboarding-adoption-readiness/review/solution_review_cli-exec-onboarding-and-adoption-readiness-productization.md
+      - .repo-ai-governor/context/dev/project-101-cli-exec-followup-solution-review-and-promotion/sprint-003-onboarding-adoption-readiness/tasks/DA-852-cli-exec-onboarding-and-adoption-readiness-promotion-cutover.md
+      - .repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/plan.md
+      - .repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-001-onboarding-adoption-readiness-rollout/plan.md
+      - .repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-002-playbook-readback-and-support-evidence-prep/plan.md
+    accepted_at: 2026-04-13
+
+  - solution_id: technical-solution.acp-host-facing-transport-formalization
+    delivery_mode: followup_required
+    consumer_surfaces:
+      - adopter_cli
+      - packaged_distribution
+      - runtime_service
+    user_impact_level: high
+    execution_status: planned
+    rollout_status: planned
+    owner: runtime
+    project_ref: project-105-acp-host-facing-transport-rollout
+    sprint_ref: sprint-001-acp-host-facing-transport-rollout
+    task_ids:
+      - TK-860
+      - TK-882
+      - TK-883
+      - TK-884
+    project_plan_path: .repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/plan.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-001-acp-host-facing-transport-rollout/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-001-acp-host-facing-transport-rollout/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-101-cli-exec-followup-solution-review-and-promotion/sprint-004-acp-host-facing-transport-formalization/tasks/DA-855-acp-host-facing-transport-formalization-promotion-cutover.md
+    rollout_artifacts:
+      - .repo-ai-governor/context/dev/project-101-cli-exec-followup-solution-review-and-promotion/plan.md
+      - .repo-ai-governor/context/dev/project-101-cli-exec-followup-solution-review-and-promotion/sprint-004-acp-host-facing-transport-formalization/review/solution_review_acp-host-facing-transport-formalization.md
+      - .repo-ai-governor/context/dev/project-101-cli-exec-followup-solution-review-and-promotion/sprint-004-acp-host-facing-transport-formalization/tasks/DA-855-acp-host-facing-transport-formalization-promotion-cutover.md
+      - .repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/plan.md
+      - .repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-001-acp-host-facing-transport-rollout/plan.md
+      - .repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-002-distribution-and-runtime-service-enablement/plan.md
+      - .repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-003-clean-room-verify-support-truth-and-rollout-closeout/plan.md
+    accepted_at: 2026-04-13
 
   - solution_id: technical-solution.langgraph-orchestration-direction
     delivery_mode: existing_stream

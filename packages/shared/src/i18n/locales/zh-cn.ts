@@ -547,20 +547,21 @@ export const ZH_CN_TRANSLATIONS = {
         mainTurnBacklink: '回链：kind={{kind}} label={{label}} target={{target}}',
         mainTurnSuggestedActionsTitle: '建议下一步',
         providerContinuationTitle: 'Provider 会话连续性',
+        providerContinuationTransportSummary: '，transport={{transportKind}}',
         providerContinuationModelSummary: '，model={{model}}',
         providerContinuationReasonSummary: '，原因={{reason}}',
         providerContinuationCreated:
-          '{{laneLabel}}：已在 {{surface}}{{modelSummary}} 上启动后端会话。',
+          '{{laneLabel}}：已在 {{surface}}{{transportSummary}}{{modelSummary}} 上启动后端会话。',
         providerContinuationReused:
-          '{{laneLabel}}：已在 {{surface}}{{modelSummary}} 上复用后端会话。',
+          '{{laneLabel}}：已在 {{surface}}{{transportSummary}}{{modelSummary}} 上复用后端会话。',
         providerContinuationRefreshed:
-          '{{laneLabel}}：已在 {{surface}}{{modelSummary}} 上刷新后端会话{{reasonSummary}}。',
+          '{{laneLabel}}：已在 {{surface}}{{transportSummary}}{{modelSummary}} 上刷新后端会话{{reasonSummary}}。',
         providerContinuationCleared:
-          '{{laneLabel}}：已清理 {{surface}}{{modelSummary}} 的后端会话状态{{reasonSummary}}。',
+          '{{laneLabel}}：已清理 {{surface}}{{transportSummary}}{{modelSummary}} 的后端会话状态{{reasonSummary}}。',
         providerContinuationFallbackActive:
-          '{{laneLabel}}：已通过轻量会话摘要保持连续性；{{surface}}{{modelSummary}} 未提供后端会话复用{{reasonSummary}}。',
+          '{{laneLabel}}：已通过轻量会话摘要保持连续性；{{surface}}{{transportSummary}}{{modelSummary}} 未提供后端会话复用{{reasonSummary}}。',
         providerContinuationUnsupported:
-          '{{laneLabel}}：{{surface}}{{modelSummary}} 当前不支持后端会话复用，且没有轻量会话摘要可用于保持连续性{{reasonSummary}}。',
+          '{{laneLabel}}：{{surface}}{{transportSummary}}{{modelSummary}} 当前不支持后端会话复用，且没有轻量会话摘要可用于保持连续性{{reasonSummary}}。',
         mainTurnFollowUpPrompt: '主 agent 在 handoff 前还需要一次补充说明：',
         sessionStarted: '已在 {{routeId}} 上启动 service-backed session {{sessionId}}。',
         sessionResumed: '已通过 selector={{resumeSelector}} 恢复 session {{sessionId}}。',

@@ -1,7 +1,7 @@
 # Agent Onboarding Contract
 
 - Status: active
-- Date: 2026-04-11
+- Date: 2026-04-13
 - Contract ID: `contract.runtime.agent-onboarding.v1`
 - Producer Module: `runtime.agent-projection`
 
@@ -66,6 +66,15 @@
 14. 若兼容期仍输出 `tool_transport_matrix`，它必须完全由 `enabled_tools[]` 机械派生，不得承载额外 canonical truth；`remote_api_candidate` 只允许作为 `configured_remote_api` 的 compatibility alias。
 15. `connect / doctor / verify` 可以做 repo config、env、`credentialRef`、provider-local config 与官方 auth path 的 read-only discovery，但不得静默写入 keychain、credential manager 或 provider-owned config。
 16. 认证修复、secret 创建更新、provider login 与 transport 切换必须通过显式 `next_action` / `next_actions[]` 暴露，而不是在 analyze-first 路径中隐式完成。
+17. 当 onboarding surface 消费 native `cli_exec` launch-aware diagnostics 时，`enabled_tools[]` 只能机械读取 probe truth 与 additive launch evidence：
+   - `selected_entrypoint` 与 `request_cancellation_mode` 继续来自 probe-owned preserved facts
+   - `shell_wrapped`、`process_tree_policy`、`spawn_error_code` 只允许作为 additive launch evidence 进入 consumer payload
+   - 若 materialize `launch_diagnostics` companion，它也只是 derived consumer view，不得覆盖 probe truth、不得改写 `verification_status`，缺失时只能降级解释
+18. `verification_status`、`diagnostic_summary`、`next_action` 与 `next_actions[]` 继续是 onboarding-owned composition fields；`connect / doctor / verify` 若消费 probe truth、reason codes 或 additive launch diagnostics，只能基于 canonical contract facts 组合这些输出，不得从 raw stdout、stderr 或 adopter docs 自行发明第二套 readiness truth。
+19. `connect` 可以投影 baseline readiness 与下一步动作，但当缺少 probe / verify evidence 时，只能保留 `warn / fail` posture 或显式 next action；不得把“尚未验证”表达成 `pass`。
+20. `docs/local-adoption-playbook.md`、`docs/support-matrix.md` 与其他 adopter-facing consumer surface 只允许渲染既有 onboarding outputs，不得反向改写 `verification_status`、不得追加未 formalize 的 readiness 字段，也不得把 runbook wording 升格为 support truth。
+21. 当 onboarding surface 显式投影 ACP host-facing transport 时，必须保留 `transport_kind=acp_exec` 作为 canonical truth；ACP row 可以 additive 方式携带 presenter-safe readiness / boundary companion，但不得把 ACP success 回写为 `cli_exec`，也不得把 provider continuation facts 伪装成 ACP host session truth。
+22. `acp_exec` 的 packaged distribution enablement、runtime-service enablement、clean-room verify execution 与 adopter-facing support wording uplift 继续受 rollout evidence gate 约束；`connect / doctor / verify` 在本轮 formalization 中只能表达当前 readiness posture 与 `next_action(s)`，不得把这些 downstream consumer surfaces 写成已完成。
 
 ## 5. Output Semantics
 
@@ -78,6 +87,15 @@
 7. 当显式选择的 transport 不可用时，contract payload 必须保留失败的 `transport_kind` 真值，并通过 `next_actions[]` 给出显式切换建议，而不是在 payload 内回写同 surface 的替代 transport。
 8. 当 `credentialRef` 来自 `user-config.yaml` 或 workspace config 但 secret backend 中尚不存在对应 secret 时，payload 必须保留 `credential_mode=credential_ref` 的 candidate truth，并通过 `create_credential_ref` 或等价 `secret set/import` guidance 暴露修复方向，而不是在 onboarding 流程里隐式创建 secret。
 9. `workspace.mode_preference` 只允许在 repo / workspace 未显式声明 `workspace.mode` 时参与 candidate 生成；一旦上层已有显式 mode，onboarding payload 不得把 user-local preference 反向投影为 canonical workspace truth。
+10. `enabled_tools[]` 可以 additive 方式带出 snake_case `launch_diagnostics` companion：
+   - `selected_entrypoint`
+   - `request_cancellation_mode`
+   - `shell_wrapped`
+   - `process_tree_policy`
+   - `spawn_error_code`
+   但 authoritative probe truth 仍以 `probe_truth` / related readiness facts 为准；`launch_diagnostics` 只是 consumer convenience projection，不扩 `Minimum Fields`。
+11. local adoption / troubleshooting consumer 可以为了 operator guidance 重新排序或分组既有 `next_action(s)`，但不得改变 canonical action taxonomy、不得重写 `verification_status`，也不得单凭文档呈现推导出新的 public support claim。
+12. 当 `transport_kind=acp_exec` 时，onboarding payload 可以 additive 方式暴露 presenter-safe ACP readiness 或 distribution boundary summary，但这些字段仍只是 optional companion；ACP-local session / permission / terminal ids 不属于 onboarding minimum fields，也不得在本层被升格为 shared session truth。
 
 ## 6. Compatibility
 
@@ -86,3 +104,6 @@
 3. `v1` 允许 candidate diff / merge explain / apply receipt 作为 companion artifact 存在，只要默认 `connect` contract 仍保持 non-mutating。
 4. `v1` 允许通过 additive nested fields 扩展 `enabled_tools[]` 与 candidate config，使 CLI-only row 继续以 `transport_kind=cli_exec`、`provider_kind=null`、`vendor_binding_kind=null` 表达，同时稳定带出 `transport_selection_source`、`transport_selection_locked` 与 `configured_remote_api`，而不需要升级到 `v2`。
 5. `v1` 允许兼容期保留 `tool_transport_matrix.remote_api_candidate` 作为 derived alias，只要 canonical truth 已回收到 `enabled_tools[]` 与 `configured_remote_api`。
+6. `v1` 允许 `enabled_tools[]` additive 暴露 `launch_diagnostics` companion 作为 onboarding/doctor/report consumer projection，只要 snake_case naming 保持 formal canonical、probe truth 仍是 authoritative source，且该 companion 不扩 `Minimum Fields`。
+7. `v1` 允许 `connect / doctor / verify` 输出形成 downstream readiness evidence chain，供 local adoption playbook 等 consumer 读取，只要 onboarding contract 仍是 `verification_status / diagnostic_summary / next_action(s)` 的唯一 composition owner，且本窗口不引入新的 minimum fields 或 public support truth。
+8. `v1` 允许 `enabled_tools[]` additive 投影 `transport_kind=acp_exec` 与 presenter-safe ACP readiness companion，只要 `verification_status / diagnostic_summary / next_action(s)` 仍保持 onboarding-owned composition，且 packaged distribution / runtime-service / support wording uplift 继续留在 rollout follow-up。

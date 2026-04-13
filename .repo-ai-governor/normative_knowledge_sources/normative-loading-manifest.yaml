@@ -932,6 +932,81 @@ documents:
     owner: runtime
     last_reviewed_at: 2026-04-13
 
+  - doc_id: technical_solution_runtime_agent_projection_launch_authoring_contract_tests_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/adapter-authored-launch-plan-ownership-and-contract-tests.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - runtime_contract_change
+      - adapter_change
+      - cli_ui_change
+      - command_surface_change
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+    owner: runtime
+    last_reviewed_at: 2026-04-13
+
+  - doc_id: technical_solution_runtime_agent_projection_launch_diagnostics_consumer_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/shared-launch-diagnostics-projection-and-consumer-surfaces.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - runtime_contract_change
+      - adapter_change
+      - cli_ui_change
+      - command_surface_change
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+    owner: runtime
+    last_reviewed_at: 2026-04-13
+
+  - doc_id: technical_solution_runtime_agent_projection_cli_exec_compatibility_stability_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/native-cli-exec-compatibility-and-stability-productization.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - runtime_contract_change
+      - adapter_change
+      - cli_ui_change
+      - command_surface_change
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+    owner: runtime
+    last_reviewed_at: 2026-04-13
+
+  - doc_id: technical_solution_runtime_agent_projection_onboarding_adoption_readiness_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/cli-exec-onboarding-and-adoption-readiness-productization.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - runtime_contract_change
+      - adapter_change
+      - cli_ui_change
+      - command_surface_change
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+    owner: runtime
+    last_reviewed_at: 2026-04-13
+
+  - doc_id: technical_solution_runtime_agent_projection_acp_host_facing_transport_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/acp-host-facing-transport-formalization-and-distribution-boundary.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - runtime_contract_change
+      - adapter_change
+      - cli_ui_change
+      - command_surface_change
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+    owner: runtime
+    last_reviewed_at: 2026-04-13
+
   - doc_id: technical_solution_runtime_agent_projection_provider_continuation_adr
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/provider-session-reuse-and-continuation-handle-seam.md
     tier: L2

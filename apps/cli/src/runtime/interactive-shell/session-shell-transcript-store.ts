@@ -712,9 +712,15 @@ export class CliSessionShellTranscriptStore {
       const record = entry as Record<string, unknown>;
       const laneLabel = this.readOptionalString(record.laneLabel) ?? `lane-${String(index + 1)}`;
       const surface = this.readOptionalString(record.surface) ?? 'unknown';
+      const transportKind = this.readOptionalString(record.transportKind);
       const model = this.readOptionalString(record.model);
       const invalidationReason = this.readOptionalString(record.invalidationReason);
       const lightweightSessionFallbackApplied = record.lightweightSessionFallbackApplied === true;
+      const transportSummary = transportKind
+        ? translate('cli.sessionShell.responses.providerContinuationTransportSummary', {
+            transportKind,
+          })
+        : '';
       const modelSummary = model
         ? translate('cli.sessionShell.responses.providerContinuationModelSummary', {
             model,
@@ -732,6 +738,7 @@ export class CliSessionShellTranscriptStore {
           translate('cli.sessionShell.responses.providerContinuationCreated', {
             laneLabel,
             surface,
+            transportSummary,
             modelSummary,
           }),
         ];
@@ -741,6 +748,7 @@ export class CliSessionShellTranscriptStore {
           translate('cli.sessionShell.responses.providerContinuationReused', {
             laneLabel,
             surface,
+            transportSummary,
             modelSummary,
           }),
         ];
@@ -750,6 +758,7 @@ export class CliSessionShellTranscriptStore {
           translate('cli.sessionShell.responses.providerContinuationRefreshed', {
             laneLabel,
             surface,
+            transportSummary,
             modelSummary,
             reasonSummary,
           }),
@@ -760,6 +769,7 @@ export class CliSessionShellTranscriptStore {
           translate('cli.sessionShell.responses.providerContinuationCleared', {
             laneLabel,
             surface,
+            transportSummary,
             modelSummary,
             reasonSummary,
           }),
@@ -774,6 +784,7 @@ export class CliSessionShellTranscriptStore {
             {
               laneLabel,
               surface,
+              transportSummary,
               modelSummary,
               reasonSummary,
             },

@@ -27,6 +27,11 @@
 13. 正式拥有 runtime / contract support truth 与 adopter-facing public support wording 的边界：`codex` / `claude-code` 的 `remote_api` 可先在 runtime/contract 层 formalize 为用户可选 transport，但 support-matrix / playbook uplift 仍受单独 evidence gate 约束。
 14. 正式拥有 standards-guided delegated reviewer handoff 的 projection 语义：orchestration service 只产出结构化 review request，projection 模块负责把 `projectedRules / deterministicFindings / uncoveredRuleIds` 等事实渲染到具体宿主 surface，并将 reviewer 输出归一化回 provenance-aware finding 结构，但不得把 prompt prose 自身升格为事实源。
 15. 正式拥有 shared native `cli_exec` process runtime convergence boundary：adapter 必须先产出 `resolved launch plan`，shared runtime 只负责 process lifecycle、lifecycle observer、partial-output retention、process-tree termination 与 structured diagnostics；未来 ACP-like protocol expansion 必须保持为 explicit additive seam，不得伪装成当前 `cli_exec` canonical truth。
+16. 正式拥有 native `cli_exec` compatibility/stability runtime guidance：`scenario class x required preserved facts` taxonomy、focused verification profiles 与 trigger matrix 可以作为 producer truth formalize 到本模块，但它们仍属于 runtime guidance，不自动升级为 `governance.execution-gates` 的 formal gate truth。
+17. 正式拥有 adapter-authored launch-plan ownership 与 shared contract-test guardrail：adapter 继续拥有 `resolved_entrypoint`、`shell_strategy`、`process_tree_policy` 与 `request_cancellation_mode` 的 authoring truth；probe / invoke surface 只消费各自 contract 已声明的 preserved facts 与 additive launch evidence，不得把 shared runtime 或 consumer projection 反向升级为新的 authoring owner。
+18. 正式拥有 additive launch diagnostics consumer projection：`connect / doctor / verify` 与 related reporting surface 可以消费 machine-readable `launch_diagnostics` companion，但 snake_case formal vocabulary、probe-owned preserved facts 与 additive-only evidence 边界必须保持不变；camelCase SDK carrier 只作为 implementation detail 存在，不得变成第二 truth source。
+19. 正式拥有 native `cli_exec` onboarding/adoption readiness evidence chain：`connect / doctor / verify` 可以在既有 onboarding truth、probe truth 与 additive launch evidence 之上组合 `verification_status / diagnostic_summary / next_action(s)`，但 `docs/local-adoption-playbook.md` 与 `docs/support-matrix.md` 仍只是 downstream consumer surface；playbook uplift 与 public support wording 继续受独立 evidence gate 约束。
+20. 正式拥有 ACP host-facing transport formalization boundary：当 onboarding / projection 明确选择 `acp_exec` 时，ACP 必须作为独立 transport truth 存在；ACP-local host protocol ids 只能落到 projection-owned、transport-scoped additive companion `acp_host_companion`，不得回写 `cli_exec`、shared session truth 或 provider continuation truth。
 
 ## 3. 非目标
 
@@ -41,6 +46,11 @@
 9. 不因 runtime / contract 层已 formalize 某条 `remote_api` 路径，就自动升级 adopter-facing `docs/support-matrix*` 或 `docs/local-adoption-playbook*` 的公开支持声明。
 10. 不允许 `user-config.yaml` 或 secret backend 覆盖 repo / workspace 已显式声明的治理真值；它们只能补默认值或提供 read-only credential resolution seam。
 11. 不允许把 ACP 或其他 protocol layer 隐式包进当前 `cli_exec` 成功路径，也不允许让 `packages/adapter-sdk` 演变成第二条 formal technical-solution truth source。
+12. 不允许因为 native `cli_exec` compatibility/stability guidance 已 formalize，就自动把 `cli_exec_compatibility_*` profiles、support wording 或 adopter-facing release gate 升格为新的公共真值。
+13. 不允许把 launch-authoring ownership contract tests 泛化成全量 adapter test strategy；本模块只 formalize shared ownership invariant、failure-path preservation taxonomy 与 rollout guardrail。
+14. 不允许在 additive diagnostics consumer formalization 窗口里把 `agent-invoke-liveness` 改写成新的 launch-diagnostics producer truth，也不允许借 consumer projection 隐式 uplift public support wording。
+15. 不允许把 local adoption playbook、support matrix 或其他 adopter-facing guidance 升格为新的 readiness truth source；它们只能消费 canonical onboarding / probe outputs，不得重算 success、support 或 minimum-field posture。
+16. 不允许因为 `acp_exec` 已 formalize 到 runtime contract，就把 packaged distribution、runtime-service enablement、clean-room verify execution 或 adopter-facing support wording 视为已完成；这些 consumer-facing outputs 仍属于后续 rollout evidence。
 
 ## 4. North Star References
 
@@ -72,6 +82,11 @@
 8. 当问题涉及 delegated reviewer request normalization、standards-guided review handoff、review finding transport projection 或 reviewer 输出归一化时，也应优先补载本模块。
 9. 当问题涉及 `user-config.yaml` 默认值、`credentialRef -> secret backend` 解析、`config` / `secret` command follow-up 如何投影回 canonical onboarding truth 时，也应优先补载本模块。
 10. 当问题涉及 native `cli_exec` process runtime、`resolved launch plan`、lifecycle observer、process-tree termination 或 explicit ACP extension seam guardrail 时，也应优先补载本模块。
+11. 当问题涉及 native `cli_exec` compatibility baseline、failure-path regression taxonomy、focused verification profiles 或 trigger matrix guidance 时，也应优先补载本模块。
+12. 当问题涉及 adapter-authored `resolved launch plan`、probe / invoke preserved-fact split、fallback entrypoint projection 或 shared launch-authoring contract tests 时，也应优先补载本模块。
+13. 当问题涉及 additive `launch_diagnostics` consumer projection、camelCase carrier 到 snake_case formal naming 的映射、或 onboarding/doctor/report 如何消费 native `cli_exec` launch evidence 时，也应优先补载本模块。
+14. 当问题涉及 `connect / doctor / verify` readiness evidence chain、`verification_status / next_action(s)` composition ownership，或 local adoption playbook 与 support wording 的后置边界时，也应优先补载本模块。
+15. 当问题涉及 `acp_exec`、`acp_host_companion`、ACP-local session / permission / terminal carrier，或 host-facing packaging / support gating 与 `project-105` rollout boundary 时，也应优先补载本模块。
 
 ## 8. Detail Docs
 
@@ -85,8 +100,13 @@
    - `adrs/connect-apply-and-projection-consumer-productization.md`
    - `adrs/layered-adapter-health-check-and-route-capability-probe.md`
    - `adrs/agent-invoke-liveness-and-timeout-governance.md`
-   - `adrs/remote-api-transport-and-provider-binding-seam.md`
+  - `adrs/remote-api-transport-and-provider-binding-seam.md`
   - `adrs/local-user-config-defaults-and-secret-backed-credential-resolution.md`
   - `adrs/transport-selection-authority-and-strict-transport-routing.md`
   - `adrs/native-cli-exec-runtime-hardening-and-explicit-acp-extension-seam.md`
+  - `adrs/adapter-authored-launch-plan-ownership-and-contract-tests.md`
+  - `adrs/shared-launch-diagnostics-projection-and-consumer-surfaces.md`
+  - `adrs/native-cli-exec-compatibility-and-stability-productization.md`
+  - `adrs/cli-exec-onboarding-and-adoption-readiness-productization.md`
+  - `adrs/acp-host-facing-transport-formalization-and-distribution-boundary.md`
   - `adrs/provider-session-reuse-and-continuation-handle-seam.md`
