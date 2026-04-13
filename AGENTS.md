@@ -52,6 +52,7 @@
    - 技术方案草案生成 / 按模板起草 / draft 初始化：`.codex/skills/technical-solution-drafting/SKILL.md`
    - 技术方案提升 / draft 转正式：`.codex/skills/technical-solution-promotion/SKILL.md`
    - 技术方案评审 / draft 评审 / 审批前复核：`.codex/skills/technical-solution-review/SKILL.md`
+   - 当前工作区 task/project/sprint 拆解、执行流骨架初始化、plan/task 模板化：`.codex/skills/workspace-task-decomposition/SKILL.md`
    - 当前工作区 code review / CR 复核 / CR 修复：`.codex/skills/workspace-code-review-workflow/SKILL.md`
    - 当前工作区 task/sprint/project 执行 + 子 agent 循环 CR：`.codex/skills/workspace-scoped-cr-loop/SKILL.md`
    - 当前工作区收尾 / 提交 / 推送：`.codex/skills/workspace-delivery-finisher/SKILL.md`
@@ -61,19 +62,20 @@
 
 1. 新的规划或执行工作应遵循 `.repo-ai-governor/context/current-context.md` 中声明的活跃执行流路径。
 2. 新建 `.repo-ai-governor/draft/**` 下的 technical solution 草案时，默认遵循 `.repo-ai-governor/normative_knowledge_sources/governance/technical-solution-draft-template.md`，并优先通过 `.codex/skills/technical-solution-drafting/SKILL.md` 执行。
-3. 主执行流必须维护对应的 `plan.md`、canonical task-ledger sqlite、rendered `tasks/checklist.md`、rendered `tasks/tasks.csv` 与任务卡；实现任务使用 `tasks/TK-xxx.md`，code review 管理任务使用 `tasks/CR-xxx.md`。
-4. 代码评审输出必须写入 `current-context.md` 解析出的默认 `review/` 目录：默认使用 active primary stream；若存在 `Worktree Review Target`，则优先写入其 `review/` 目录，并使用有意义的状态前缀文件名。
-5. 默认 CR 生命周期：
+3. 新建 `project/sprint/task` 执行流骨架时，默认遵循 `.repo-ai-governor/normative_knowledge_sources/governance/execution-stream-scaffold-template.md`、`.repo-ai-governor/normative_knowledge_sources/governance/project-plan-template.md`、`.repo-ai-governor/normative_knowledge_sources/governance/sprint-plan-template.md` 与 `.repo-ai-governor/normative_knowledge_sources/governance/task-card-template.md`，并优先通过 `.codex/skills/workspace-task-decomposition/SKILL.md` 执行。
+4. 主执行流必须维护对应的 `plan.md`、canonical task-ledger sqlite、rendered `tasks/checklist.md`、rendered `tasks/tasks.csv` 与任务卡；实现任务使用 `tasks/TK-xxx.md`，code review 管理任务使用 `tasks/CR-xxx.md`。
+5. 代码评审输出必须写入 `current-context.md` 解析出的默认 `review/` 目录：默认使用 active primary stream；若存在 `Worktree Review Target`，则优先写入其 `review/` 目录，并使用有意义的状态前缀文件名。
+6. 默认 CR 生命周期：
    - `code_review_<slug>.md`
    - `verified_code_review_<slug>.md`
    - `resolved_code_review_<slug>.md`
-6. 实施进度必须先写 canonical task-ledger sqlite，再重渲染 `checklist.md` 与 `tasks.csv`。
-7. 新建 `TK-xxx` 时，默认遵循 `task-card-template.md`。
-8. 新建 `CR-xxx` 时，默认也遵循 `task-card-template.md`，但状态流转使用 `review_pending -> verified -> resolved`，且不得复用实现任务 `TK-xxx` 的编号空间。
-9. `TK` 与 `CR` 共同构成任务语义主写入面；task-ledger sqlite 是任务账面 canonical truth；`checklist.md` 与 `tasks.csv` 为 rendered/derived views，修复漂移时先修语义文档或 canonical sqlite，再重渲染派生面。
-10. 当某 sprint 下所有 `TK` 最新状态均为 `completed` 且所有 `CR` 最新状态均为 `resolved` 时，必须立即创建并推进该 sprint 的 closeout 任务；不得让 active sprint 长时间停留在“全部任务已终态但仍未 closeout”的状态。
-11. `code_review_`、`verified_code_review_`、`resolved_code_review_` 的文件名前缀与顶部 `Status` 必须同步推进；若该评审已纳入任务台账，则对应 `CR-xxx` 状态也必须同步推进。
-12. 每个 `project-xxx` 在收尾为 `completed` 前，必须产出项目级完成态审计摘要（推荐命名 `project-xxx-completion-audit-summary.md`），并在项目 `plan.md` 中新增“里程碑记录”入口回链该文档。
+7. 实施进度必须先写 canonical task-ledger sqlite，再重渲染 `checklist.md` 与 `tasks.csv`。
+8. 新建 `TK-xxx` 时，默认遵循 `task-card-template.md`。
+9. 新建 `CR-xxx` 时，默认也遵循 `task-card-template.md`，但状态流转使用 `review_pending -> verified -> resolved`，且不得复用实现任务 `TK-xxx` 的编号空间。
+10. `TK` 与 `CR` 共同构成任务语义主写入面；task-ledger sqlite 是任务账面 canonical truth；`checklist.md` 与 `tasks.csv` 为 rendered/derived views，修复漂移时先修语义文档或 canonical sqlite，再重渲染派生面。
+11. 当某 sprint 下所有 `TK` 最新状态均为 `completed` 且所有 `CR` 最新状态均为 `resolved` 时，必须立即创建并推进该 sprint 的 closeout 任务；不得让 active sprint 长时间停留在“全部任务已终态但仍未 closeout”的状态。
+12. `code_review_`、`verified_code_review_`、`resolved_code_review_` 的文件名前缀与顶部 `Status` 必须同步推进；若该评审已纳入任务台账，则对应 `CR-xxx` 状态也必须同步推进。
+13. 每个 `project-xxx` 在收尾为 `completed` 前，必须产出项目级完成态审计摘要（推荐命名 `project-xxx-completion-audit-summary.md`），并在项目 `plan.md` 中新增“里程碑记录”入口回链该文档。
 
 ## 命名规则
 

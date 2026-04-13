@@ -1,7 +1,7 @@
 # Decomposition Protocol Template
 
 - Status: active
-- Date: 2026-04-06
+- Date: 2026-04-13
 - Scope: project/sprint/task decomposition
 - Owner: `project-008-workflow-optimization / TK-044`
 
@@ -38,6 +38,13 @@
 5. `sprint-xxx/tasks/TK-xxx-*.md`
 6. `sprint-xxx/tasks/CR-xxx-*.md`（命中 review workflow 时）
 7. `sprint-xxx/review/.gitkeep`
+
+Concrete scaffold/template sources:
+
+1. `.repo-ai-governor/normative_knowledge_sources/governance/execution-stream-scaffold-template.md`
+2. `.repo-ai-governor/normative_knowledge_sources/governance/project-plan-template.md`
+3. `.repo-ai-governor/normative_knowledge_sources/governance/sprint-plan-template.md`
+4. `.repo-ai-governor/normative_knowledge_sources/governance/task-card-template.md`
 
 plan 约束：
 
@@ -78,8 +85,9 @@ Concrete template source of truth:
 3. `tasks.csv` 只保留从 canonical truth 渲染出的机器审计必需字段，不承载完整 tracebacks，也不作为手工真值入口。
 4. `TK` 与 `CR` 的状态、checklist 勾选、sqlite 最新 canonical 行与 rendered `tasks.csv` 必须一致；`TK` 终态为 `completed`，`CR` 终态为 `resolved`。
 5. 推荐使用 `node ./scripts/governance/sync-task-ledger.js --task-id <TK-xxx|CR-xxx>` 来更新 sqlite canonical ledger 并回写派生视图，而不是手工分别编辑 checklist 和 CSV。
-6. 多人并发拆解同一 `sprint` 时，应先通过 `node ./scripts/governance/reserve-task-id.js --tasks-dir <...> --type <TK|CR> --count <n>` 预留连续号段，再创建对应任务卡，避免多人同时猜测“下一个编号”。
-7. 当某 sprint 下所有 `TK` 与 `CR` 均进入终态时，必须立即补入 closeout 任务，避免 active sprint 处于“全终态无 closeout”的悬空状态。
+6. bootstrap 阶段允许先生成 `checklist.md` / `tasks.csv` 的 scaffold seed；但在 stream 正式进入 active execution 前，必须执行一次 `node ./scripts/governance/sync-task-ledger.js --tasks-dir <...>` 完成 canonical sqlite 对齐。
+7. 多人并发拆解同一 `sprint` 时，应先通过 `node ./scripts/governance/reserve-task-id.js --tasks-dir <...> --type <TK|CR> --count <n>` 预留连续号段，再创建对应任务卡，避免多人同时猜测“下一个编号”。
+8. 当某 sprint 下所有 `TK` 与 `CR` 均进入终态时，必须立即补入 closeout 任务，避免 active sprint 处于“全终态无 closeout”的悬空状态。
 
 ## 6. Exit Checklist
 
