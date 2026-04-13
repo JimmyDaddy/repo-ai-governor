@@ -79,6 +79,15 @@ When the user does not override reviewer settings, spawn the reviewer with:
 
 This skill assumes the user has explicitly allowed sub-agents by asking for delegated CR loops.
 
+## Reviewer Wait Guidance
+
+When waiting for a reviewer sub-agent round:
+
+1. default to `wait_agent` with `timeout_ms=900000` (`15` minutes) for each CR round unless the user explicitly wants a different wait policy
+2. do not treat the reviewer as stalled just because the first `1` to `2` minutes are quiet; scoped CR rounds can legitimately take longer
+3. do not close or replace the reviewer early unless there is concrete failure evidence, the user asked to stop, or the runtime reports a terminal error
+4. if you want a progress check before the full wait elapses, use non-destructive polling and keep the same reviewer alive
+
 ## Phase 1: Resolve Scope
 
 Resolve the target unit first:
