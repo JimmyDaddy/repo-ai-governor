@@ -1,6 +1,6 @@
 # sprint-002-verification-profiles-trigger-matrix-and-closeout 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-14
 - Sprint Goal: 补齐 focused compatibility verification profile、trigger matrix 与 rollout closeout guidance。
 - Project: `project-106-cli-exec-compatibility-and-stability-rollout`
@@ -19,7 +19,7 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-864 | wire focused compatibility verification profiles and trigger-matrix routing without promoting them to governance gates | TK-863 | planned |
+| TK-864 | wire focused compatibility verification profiles and trigger-matrix routing without promoting them to governance gates | TK-863 | in_progress |
 | TK-865 | capture compatibility baseline evidence pack and closeout guidance for future runtime windows | TK-864 | planned |
 | TK-866 | finalize project-106 closeout and delivery evidence handoff | TK-864、TK-865、activation-time local CR-001 | planned |
 
@@ -34,3 +34,4 @@
 1. 激活后先预留本地 `CR-001`，再开始 implementation 与 reviewer loop。
 2. 当前 sprint 不得把 compatibility profile 变成新的 `governance.execution-gates` contract truth。
 3. `TK-866` 负责 project-106 final closeout，但只有在 sprint-002 local `CR-001` clean 后才允许完成。
+4. 2026-04-14：sprint-001 clean closeout 后，当前 sprint 已被激活为新的 primary execution surface，`TK-864` 进入执行前准备状态。

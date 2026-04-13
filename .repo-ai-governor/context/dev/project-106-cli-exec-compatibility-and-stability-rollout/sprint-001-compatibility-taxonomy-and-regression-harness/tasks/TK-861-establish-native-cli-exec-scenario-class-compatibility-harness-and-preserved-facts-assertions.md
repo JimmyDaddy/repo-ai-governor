@@ -1,6 +1,6 @@
 # TK-861 establish native cli_exec scenario-class compatibility harness and preserved-facts assertions
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-14
 - Owner: AI-Agent
 - Priority: P1
@@ -42,16 +42,22 @@
 
 ## 7. Development Verification
 
-1. 待激活后补充 compatibility harness focused verification。
+1. `pnpm exec vitest run packages/adapter-sdk/test/native-cli-exec-process-runtime.unit.test.ts packages/adapters/codex/test/codex-agent-adapter.smoke.test.ts packages/adapters/claude-code/test/claude-code-agent-adapter.smoke.test.ts packages/adapters/github-copilot/test/github-copilot-agent-adapter.smoke.test.ts apps/cli/test/runtime/agent-onboarding-runtime.test.ts apps/cli/test/runtime/adapter-verification-runtime.test.ts`
 
 ## 8. Delivery Verification
 
-1. 待激活后补充 rollout-window delivery verification与治理检查。
+1. `pnpm run build`
+2. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
 
 ## 9. 执行记录
 
 1. 2026-04-14：任务创建，状态初始化为 `planned`。
+2. 2026-04-14：`project-106 / sprint-001` 激活，当前任务切换为 `in_progress`，开始收敛 scenario-class harness 与 preserved-facts assertion entrypoint。
+3. 2026-04-14：新增 shared `test/native-cli-exec-compatibility-harness.ts`，将 scenario class x preserved-facts matrix 固化为可复用断言入口，并补齐 shared runtime 的 `spawn_failed / signal_exit / timeout_soft_terminated / timeout_hard_terminated / abort_soft_terminated / abort_hard_terminated` 覆盖。
+4. 2026-04-14：focused compatibility tests、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 已通过，当前实现面进入 sprint-level `CR-001` 前置状态。
+5. 2026-04-14：`CR-001` 已完成修复并 resolved，`CR-002` clean recheck 无 actionable finding；当前任务边界已满足 sprint-001 closeout 条件并推进为 `completed`。
 
 ## 10. 产出
 
-1. 待激活：compatibility harness artifacts to be defined in rollout window。
+1. `test/native-cli-exec-compatibility-harness.ts`
+2. `packages/adapter-sdk/test/native-cli-exec-process-runtime.unit.test.ts`

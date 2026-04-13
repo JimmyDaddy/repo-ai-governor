@@ -23,6 +23,10 @@ import {
   RuntimeError,
 } from '@repo-ai-governor/shared';
 import {
+  expectNativeCliExecPreservedFacts,
+  hasAgentHealthDiagnostic,
+} from '../../../../test/native-cli-exec-compatibility-harness.js';
+import {
   CodexAgentAdapter,
   CodexAgentAdapterExecutionMode,
   type CodexExecRunner,
@@ -234,10 +238,51 @@ describe('codex-agent-adapter smoke', () => {
         }),
       ]),
     );
+    expectNativeCliExecPreservedFacts('probe_protocol_parse_failed', {
+      launch_diagnostics_preserved:
+        probeResult.healthCheck?.selectedEntrypoint === 'codex' &&
+        hasAgentHealthDiagnostic(
+          probeResult.healthCheck?.diagnostics,
+          'install.entrypoint_resolution',
+          'codex',
+        ) &&
+        hasAgentHealthDiagnostic(
+          probeResult.healthCheck?.diagnostics,
+          'protocol.process_tree_policy',
+          'process_group_best_effort',
+        ),
+      adapter_launch_truth_projected:
+        probeResult.healthCheck?.selectedEntrypoint === 'codex' &&
+        hasAgentHealthDiagnostic(
+          probeResult.healthCheck?.diagnostics,
+          'protocol.shell_wrapped',
+          'false',
+        ) &&
+        hasAgentHealthDiagnostic(
+          probeResult.healthCheck?.diagnostics,
+          'protocol.process_tree_policy',
+          'process_group_best_effort',
+        ),
+    });
 
-    await expect(adapter.invokeStage(createInvokeRequest())).rejects.toMatchObject({
+    const invokeError = await adapter
+      .invokeStage(createInvokeRequest())
+      .then(() => null)
+      .catch((error) => error as RuntimeError);
+
+    expect(invokeError).toMatchObject({
       code: GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
       message: expect.stringContaining('malformed JSON output'),
+    });
+    const invokeDetails = invokeError?.details ?? {};
+    expectNativeCliExecPreservedFacts('invoke_protocol_parse_failed', {
+      launch_diagnostics_preserved:
+        invokeDetails.selectedEntrypoint === 'codex' &&
+        invokeDetails.processTreePolicy === 'process_group_best_effort',
+      adapter_launch_truth_projected:
+        invokeDetails.selectedEntrypoint === 'codex' &&
+        invokeDetails.shellWrapped === false &&
+        invokeDetails.processTreePolicy === 'process_group_best_effort',
     });
   });
 

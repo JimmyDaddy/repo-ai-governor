@@ -1,6 +1,6 @@
 # TK-862 align codex claude-code github-copilot smoke plus onboarding routing tests to the compatibility taxonomy
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-14
 - Owner: AI-Agent
 - Priority: P1
@@ -41,16 +41,25 @@
 
 ## 7. Development Verification
 
-1. 待激活后补充 cross-adapter compatibility verification。
+1. `pnpm exec vitest run packages/adapter-sdk/test/native-cli-exec-process-runtime.unit.test.ts packages/adapters/codex/test/codex-agent-adapter.smoke.test.ts packages/adapters/claude-code/test/claude-code-agent-adapter.smoke.test.ts packages/adapters/github-copilot/test/github-copilot-agent-adapter.smoke.test.ts apps/cli/test/runtime/agent-onboarding-runtime.test.ts apps/cli/test/runtime/adapter-verification-runtime.test.ts`
+2. `pnpm exec vitest run apps/cli/test/runtime/adapter-routing-runtime.test.ts apps/cli/test/connect-phase2.integration.test.ts`
 
 ## 8. Delivery Verification
 
-1. 待激活后补充 rollout-window delivery verification与治理检查。
+1. `pnpm run build`
+2. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
 
 ## 9. 执行记录
 
 1. 2026-04-14：任务创建，状态初始化为 `planned`。
+2. 2026-04-14：任务切换为 `in_progress`，开始把 Codex / Claude Code / GitHub Copilot 的 malformed-probe / malformed-invoke preserved-facts 断言接到同一 compatibility harness。
+3. 2026-04-14：新增 onboarding / verification consumer-side preserved-facts checks，并补跑 `adapter-routing-runtime` 与 `connect-phase2` 集成切片，确认 cross-surface baseline 未回退。
+4. 2026-04-14：已补齐 reviewer round 1 接受的 3 个 coverage gaps，并在 `CR-002` clean recheck 后确认当前 cross-surface alignment 无新的 actionable finding；当前任务推进为 `completed`。
 
 ## 10. 产出
 
-1. 待激活：cross-adapter compatibility evidence artifacts to be defined in rollout window。
+1. `packages/adapters/codex/test/codex-agent-adapter.smoke.test.ts`
+2. `packages/adapters/claude-code/test/claude-code-agent-adapter.smoke.test.ts`
+3. `packages/adapters/github-copilot/test/github-copilot-agent-adapter.smoke.test.ts`
+4. `apps/cli/test/runtime/agent-onboarding-runtime.test.ts`
+5. `apps/cli/test/runtime/adapter-verification-runtime.test.ts`

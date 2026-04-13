@@ -26,6 +26,10 @@ import {
   RuntimeError,
 } from '@repo-ai-governor/shared';
 import {
+  expectNativeCliExecPreservedFacts,
+  hasAgentHealthDiagnostic,
+} from '../../../../test/native-cli-exec-compatibility-harness.js';
+import {
   ClaudeCodeAgentAdapter,
   ClaudeCodeAgentAdapterExecutionMode,
   type ClaudeCodeExecRunner,
@@ -1237,6 +1241,80 @@ describe('claude-code-agent-adapter smoke', () => {
         }),
       ]),
     );
+    expectNativeCliExecPreservedFacts('probe_protocol_parse_failed', {
+      launch_diagnostics_preserved:
+        probeResult.healthCheck?.selectedEntrypoint === 'claude-code' &&
+        hasAgentHealthDiagnostic(
+          probeResult.healthCheck?.diagnostics,
+          'install.entrypoint_resolution',
+          'claude-code',
+        ) &&
+        hasAgentHealthDiagnostic(
+          probeResult.healthCheck?.diagnostics,
+          'protocol.process_tree_policy',
+          'process_group_best_effort',
+        ),
+      adapter_launch_truth_projected:
+        probeResult.healthCheck?.selectedEntrypoint === 'claude-code' &&
+        hasAgentHealthDiagnostic(
+          probeResult.healthCheck?.diagnostics,
+          'protocol.shell_wrapped',
+          'false',
+        ) &&
+        hasAgentHealthDiagnostic(
+          probeResult.healthCheck?.diagnostics,
+          'protocol.process_tree_policy',
+          'process_group_best_effort',
+        ),
+    });
+  });
+
+  it('preserves launch diagnostics when invoke returns no response text from claude-code cli output', async () => {
+    const execRunner = vi.fn<ClaudeCodeExecRunner>(async () => ({
+      stdout: '',
+      stderr: '',
+      exitCode: 0,
+      signal: null,
+      elapsedMs: 5,
+      launchDiagnostics: {
+        selectedEntrypoint: 'claude-code',
+        shellWrapped: false,
+        processTreePolicy: 'process_group_best_effort',
+      },
+    }));
+    const adapter = new ClaudeCodeAgentAdapter({
+      executionMode: ClaudeCodeAgentAdapterExecutionMode.CLI_EXEC,
+      command: 'claude-code',
+      execRunner,
+    });
+
+    const invokeError = await adapter
+      .invokeStage({
+        processId: 'process-1',
+        executionId: 'execution-1',
+        stageId: 'stage-1',
+        routeKey: 'codegen',
+        input: {
+          prompt: 'implement feature',
+        },
+      })
+      .then(() => null)
+      .catch((error) => error as RuntimeError);
+
+    expect(invokeError).toMatchObject({
+      code: GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+      message: expect.stringContaining('returned no response text'),
+    });
+    const invokeDetails = invokeError?.details ?? {};
+    expectNativeCliExecPreservedFacts('invoke_protocol_parse_failed', {
+      launch_diagnostics_preserved:
+        invokeDetails.selectedEntrypoint === 'claude-code' &&
+        invokeDetails.processTreePolicy === 'process_group_best_effort',
+      adapter_launch_truth_projected:
+        invokeDetails.selectedEntrypoint === 'claude-code' &&
+        invokeDetails.shellWrapped === false &&
+        invokeDetails.processTreePolicy === 'process_group_best_effort',
+    });
   });
 
   it('places the prompt after a delimiter so --add-dir does not swallow it', async () => {

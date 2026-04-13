@@ -16,6 +16,7 @@ import {
   GovernorErrorCode,
   LocalModelProvider,
 } from '@repo-ai-governor/shared';
+import { expectNativeCliExecPreservedFacts } from '../../../../test/native-cli-exec-compatibility-harness.js';
 import { CliAgentOnboardingPreset } from '../../src/constants/cli-agent-onboarding.constant.js';
 import {
   CliAdapterRoleSelectionSource,
@@ -1007,7 +1008,7 @@ describe('CliAgentOnboardingRuntime', () => {
             routeKey: 'cli.adapter.probe.codex',
             unavailableReasons: [],
             transportKind: AdapterTransportKind.CLI_EXEC,
-            requestCancellationMode: AdapterRequestCancellationMode.PROCESS_SIGNAL,
+            requestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
           }),
           capabilitySupportByCapability: new Map(),
           failureAttributions: [],
@@ -1044,6 +1045,93 @@ describe('CliAgentOnboardingRuntime', () => {
         }),
       ]),
     );
+  });
+
+  it('preserves cli_exec selected entrypoint and cancellation truth in verify matrix probe rows', () => {
+    const runtime = new CliAgentOnboardingRuntime();
+    const sourceConfig = createGovernorConfigFixture();
+
+    const verification = {
+      overallStatus: CliGovernanceCheckStatus.WARN,
+      tools: [
+        {
+          toolId: AdapterSurface.CODEX,
+          enabled: true,
+          configuredAvailability: AdapterAvailability.AVAILABLE,
+          availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+          unavailableReasons: ['health_check_invalid_response:codex:malformed_json'],
+          healthCheck: buildLayeredHealthCheckResult({
+            adapterId: 'codex-agent',
+            surfaceId: AdapterSurface.CODEX,
+            availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+            selectedEntrypoint: AdapterSurface.CODEX,
+            routeKey: 'cli.adapter.probe.codex',
+            unavailableReasons: ['health_check_invalid_response:codex:malformed_json'],
+            transportKind: AdapterTransportKind.CLI_EXEC,
+            requestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+            diagnostics: [
+              {
+                layer: 'install',
+                status: 'pass',
+                code: 'install.entrypoint_resolution',
+                detail: AdapterSurface.CODEX,
+              },
+              {
+                layer: 'protocol',
+                status: 'pass',
+                code: 'protocol.shell_wrapped',
+                detail: 'false',
+              },
+              {
+                layer: 'protocol',
+                status: 'pass',
+                code: 'protocol.process_tree_policy',
+                detail: 'process_group_best_effort',
+              },
+            ],
+          }),
+          capabilitySupportByCapability: new Map(),
+          failureAttributions: ['execution_runtime'],
+        },
+      ],
+      roleEvaluations: [],
+      requiredRoleCount: 1,
+      requiredRoleFailedCount: 1,
+      degradedRoleCount: 0,
+      fallbackRoleCount: 0,
+      nextActions: ['Re-run doctor after fixing malformed cli_exec output.'],
+    };
+
+    const verifyPayload = runtime.createVerifyMatrixPayload({
+      executionId: 'verify-cli-exec-preserved-facts',
+      verification,
+      adaptersConfig: sourceConfig.adapters,
+    });
+
+    const codexRow = verifyPayload.tool_transport_matrix[0] as Record<string, unknown>;
+    const probeTruth = codexRow.probe_truth as Record<string, unknown>;
+    const invokeLivenessDiagnostics = codexRow.invoke_liveness_diagnostics as Record<
+      string,
+      unknown
+    >;
+
+    expect(invokeLivenessDiagnostics).toEqual(
+      expect.objectContaining({
+        selected_entrypoint: AdapterSurface.CODEX,
+        request_cancellation_mode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+      }),
+    );
+    expectNativeCliExecPreservedFacts('probe_protocol_parse_failed', {
+      launch_diagnostics_preserved:
+        invokeLivenessDiagnostics.selected_entrypoint === AdapterSurface.CODEX &&
+        Array.isArray(probeTruth.reason_codes) &&
+        probeTruth.reason_codes.includes('semantic.invalid_response'),
+      adapter_launch_truth_projected:
+        invokeLivenessDiagnostics.selected_entrypoint === AdapterSurface.CODEX &&
+        invokeLivenessDiagnostics.request_cancellation_mode ===
+          AdapterRequestCancellationMode.NOT_SUPPORTED &&
+        codexRow.transport_kind === AdapterTransportKind.CLI_EXEC,
+    });
   });
 
   it('projects default cli_exec transport truth for Claude Code without explicit transport config', () => {

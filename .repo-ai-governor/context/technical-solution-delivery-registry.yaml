@@ -230,18 +230,18 @@ deliveries:
     consumer_surfaces:
       - internal_governance
     user_impact_level: none
-    execution_status: planned
+    execution_status: in_progress
     rollout_status: not_required
     owner: runtime
     project_ref: project-106-cli-exec-compatibility-and-stability-rollout
-    sprint_ref: sprint-001-compatibility-taxonomy-and-regression-harness
+    sprint_ref: sprint-002-verification-profiles-trigger-matrix-and-closeout
     task_ids:
-      - TK-861
-      - TK-862
-      - TK-863
+      - TK-864
+      - TK-865
+      - TK-866
     project_plan_path: .repo-ai-governor/context/dev/project-106-cli-exec-compatibility-and-stability-rollout/plan.md
-    sprint_plan_path: .repo-ai-governor/context/dev/project-106-cli-exec-compatibility-and-stability-rollout/sprint-001-compatibility-taxonomy-and-regression-harness/plan.md
-    task_csv_path: .repo-ai-governor/context/dev/project-106-cli-exec-compatibility-and-stability-rollout/sprint-001-compatibility-taxonomy-and-regression-harness/tasks/tasks.csv
+    sprint_plan_path: .repo-ai-governor/context/dev/project-106-cli-exec-compatibility-and-stability-rollout/sprint-002-verification-profiles-trigger-matrix-and-closeout/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-106-cli-exec-compatibility-and-stability-rollout/sprint-002-verification-profiles-trigger-matrix-and-closeout/tasks/tasks.csv
     handoff_artifact_path: .repo-ai-governor/context/dev/project-100-cli-exec-compatibility-and-stability-promotion/sprint-001-formalization-and-promotion-cutover/tasks/DA-842-cli-exec-compatibility-and-stability-promotion-cutover.md
     rollout_artifacts: []
     accepted_at: 2026-04-13

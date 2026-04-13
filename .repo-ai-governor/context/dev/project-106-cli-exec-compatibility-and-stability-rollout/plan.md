@@ -1,6 +1,6 @@
 # project-106-cli-exec-compatibility-and-stability-rollout 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-14
 - Stage Mapping: cli_exec compatibility and stability rollout
 - Phase Mapping: compatibility taxonomy and regression harness / verification profiles and trigger matrix / rollout closeout guidance
@@ -19,13 +19,13 @@
 
 ## 2.1 sprint-001-compatibility-taxonomy-and-regression-harness
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 建立 native `cli_exec` scenario-class compatibility harness 与 preserved-facts assertions。
 - Task Package: `TK-861`、`TK-862`、`TK-863`
 
 ## 2.2 sprint-002-verification-profiles-trigger-matrix-and-closeout
 
-- Status: planned
+- Status: active
 - Sprint Goal: 补齐 focused compatibility verification profile、trigger matrix 与 rollout closeout guidance。
 - Task Package: `TK-864`、`TK-865`、`TK-866`
 
@@ -33,10 +33,10 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 | --- | --- | --- | --- | --- | --- |
-| TK-861 | sprint-001 | establish native cli_exec scenario-class compatibility harness and preserved-facts assertions | runtime/compatibility | DA-842 | planned |
-| TK-862 | sprint-001 | align codex claude-code github-copilot smoke plus onboarding routing tests to the compatibility taxonomy | adapter/evidence | TK-861 | planned |
-| TK-863 | sprint-001 | sprint-001 exit acceptance and sprint-002 activation handoff | sprint/closeout | TK-861、TK-862、activation-time local CR-001 | planned |
-| TK-864 | sprint-002 | wire focused compatibility verification profiles and trigger-matrix routing without promoting them to governance gates | verification/profile | TK-863 | planned |
+| TK-861 | sprint-001 | establish native cli_exec scenario-class compatibility harness and preserved-facts assertions | runtime/compatibility | DA-842 | completed |
+| TK-862 | sprint-001 | align codex claude-code github-copilot smoke plus onboarding routing tests to the compatibility taxonomy | adapter/evidence | TK-861 | completed |
+| TK-863 | sprint-001 | sprint-001 exit acceptance and sprint-002 activation handoff | sprint/closeout | TK-861、TK-862、activation-time local CR-001 | completed |
+| TK-864 | sprint-002 | wire focused compatibility verification profiles and trigger-matrix routing without promoting them to governance gates | verification/profile | TK-863 | in_progress |
 | TK-865 | sprint-002 | capture compatibility baseline evidence pack and closeout guidance for future runtime windows | evidence/closeout | TK-864 | planned |
 | TK-866 | sprint-002 | finalize project-106 closeout and delivery evidence handoff | closeout/delivery | TK-864、TK-865、activation-time local CR-001 | planned |
 
@@ -57,6 +57,8 @@
 
 1. 2026-04-14：创建 `project-106` 与 `sprint-001 ~ sprint-002`，承接 cli_exec compatibility/stability rollout decomposition。
 2. 2026-04-14：`TK-861 ~ TK-866` 已写入 execution-ready task package，并与 delivery/current-context 真值同步。
+3. 2026-04-14：preflight baseline 以 `d0b66f35` checkpoint commit 收口后，正式激活 `sprint-001` 进入 implementation + CR loop 窗口。
+4. 2026-04-14：`sprint-001` 已完成 compatibility harness 与 cross-adapter baseline 收口，并在 clean reviewer recheck 后切换到 `sprint-002` primary surface。
 
 ## 7. 里程碑记录入口
 

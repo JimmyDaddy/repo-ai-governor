@@ -1,6 +1,6 @@
 # TK-864 wire focused compatibility verification profiles and trigger-matrix routing without promoting them to governance gates
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-04-14
 - Owner: AI-Agent
 - Priority: P1
@@ -49,6 +49,7 @@
 ## 9. 执行记录
 
 1. 2026-04-14：任务创建，状态初始化为 `planned`。
+2. 2026-04-14：sprint-001 clean closeout 后，当前任务状态切换为 `in_progress`，当前 sprint 被激活为新的 primary execution surface；下一步先为 sprint-002 分配本地 `CR-001`，再开始 profile routing implementation。
 
 ## 10. 产出
 

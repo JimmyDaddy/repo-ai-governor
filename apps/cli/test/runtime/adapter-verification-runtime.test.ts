@@ -11,6 +11,7 @@ import {
   AdapterCredentialSource,
   AdapterEndpointSource,
   AdapterProviderKind,
+  AdapterRequestCancellationMode,
   AdapterSurface,
   AdapterTransportKind,
   AdapterVendorBindingKind,
@@ -22,6 +23,10 @@ import {
   RuntimeError,
   standardizeError,
 } from '@repo-ai-governor/shared';
+import {
+  expectNativeCliExecPreservedFacts,
+  hasAgentHealthDiagnostic,
+} from '../../../../test/native-cli-exec-compatibility-harness.js';
 import {
   CliAdapterRoleSelectionSource,
   CliGovernanceCheckStatus,
@@ -1256,5 +1261,150 @@ describe('Cli adapter verification runtime', () => {
     expect(verification.nextActions).toContain(
       'Set or export the required remote-api credential environment variables before connect/doctor: codex:OPENAI_API_KEY.',
     );
+  });
+
+  it('preserves cli_exec launch truth when probe parsing fails before onboarding consumers read verification rows', async () => {
+    const _i18nRuntime = new I18nRuntime(DEFAULT_I18N_RUNTIME_CONFIG);
+    const adaptersConfig: AdaptersConfig = {
+      roles: [
+        {
+          roleId: 'coder',
+          roleProfileId: DefaultRoleProfileId.CODER,
+          requiredCapabilities: [AgentCapability.TOOL_CALLING],
+          required: true,
+        },
+      ],
+      routing: {
+        roleBindings: {
+          coder: {
+            primarySurface: AdapterSurface.CODEX,
+            fallbackSurfaces: [],
+          },
+        },
+      },
+      tools: [
+        {
+          toolId: AdapterSurface.CODEX,
+          enabled: true,
+          availability: AdapterAvailability.AVAILABLE,
+        },
+      ],
+    };
+    const toolConfigBySurface = new Map(
+      (adaptersConfig.tools ?? []).map((tool) => [tool.toolId, tool]),
+    );
+    const localProbeRuntime = new CliLocalModelProbeRuntime(
+      undefined,
+      async () => undefined,
+      (error) => standardizeError(error).message,
+    );
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      adaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createToolConfigBySurfaceMap: () => typeof toolConfigBySurface;
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+      resolveRoleBindingCandidateSurfaces: (
+        roleBinding: AdaptersConfig['routing']['roleBindings'][string],
+      ) => AdapterSurface[];
+      resolveTrackedAdapterSurfaces: (
+        trackedToolConfigBySurface?: typeof toolConfigBySurface,
+      ) => AdapterSurface[];
+    };
+    adapterRoutingRuntime.createToolConfigBySurfaceMap = () => toolConfigBySurface;
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: {
+        probe: async () => ({
+          ...createProbeResult(
+            AdapterSurface.CODEX,
+            AgentCapability.TOOL_CALLING,
+            AgentCapabilitySupportLevel.SUPPORTED,
+          ),
+          availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+          unavailableReasons: ['health_check_invalid_response:codex:malformed_json'],
+          healthCheck: buildLayeredHealthCheckResult({
+            adapterId: 'codex-agent',
+            surfaceId: AdapterSurface.CODEX,
+            availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+            selectedEntrypoint: AdapterSurface.CODEX,
+            routeKey: 'cli.adapter.probe.codex',
+            unavailableReasons: ['health_check_invalid_response:codex:malformed_json'],
+            transportKind: AdapterTransportKind.CLI_EXEC,
+            requestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+            diagnostics: [
+              {
+                layer: 'install',
+                status: 'pass',
+                code: 'install.entrypoint_resolution',
+                detail: AdapterSurface.CODEX,
+              },
+              {
+                layer: 'protocol',
+                status: 'pass',
+                code: 'protocol.shell_wrapped',
+                detail: 'false',
+              },
+              {
+                layer: 'protocol',
+                status: 'pass',
+                code: 'protocol.process_tree_policy',
+                detail: 'process_group_best_effort',
+              },
+            ],
+          }),
+        }),
+        invokeStage: async () => {
+          throw new RuntimeError(GovernorErrorCode.UNKNOWN, 'unused in verification test');
+        },
+        streamEvents: async function* () {},
+        requestConfirmation: async () => {
+          throw new RuntimeError(GovernorErrorCode.UNKNOWN, 'unused in verification test');
+        },
+        cancel: async () => {
+          throw new RuntimeError(GovernorErrorCode.UNKNOWN, 'unused in verification test');
+        },
+      },
+    });
+    adapterRoutingRuntime.resolveRoleBindingCandidateSurfaces = (roleBinding) => [
+      roleBinding.primarySurface,
+      ...(roleBinding.fallbackSurfaces ?? []),
+    ];
+    adapterRoutingRuntime.resolveTrackedAdapterSurfaces = (trackedToolConfigBySurface) =>
+      Array.from((trackedToolConfigBySurface ?? new Map()).keys());
+
+    const runtime = new CliAdapterVerificationRuntime(
+      adaptersConfig,
+      (key) => key,
+      (error) => standardizeError(error).message,
+      adapterRoutingRuntime,
+      localProbeRuntime,
+    );
+
+    const verification = await runtime.resolveAdapterVerification();
+    const codexTool = verification.tools.find((tool) => tool.toolId === AdapterSurface.CODEX);
+
+    expect(codexTool?.healthCheck).toEqual(
+      expect.objectContaining({
+        selectedEntrypoint: AdapterSurface.CODEX,
+        requestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+      }),
+    );
+    expectNativeCliExecPreservedFacts('probe_protocol_parse_failed', {
+      launch_diagnostics_preserved:
+        codexTool?.healthCheck?.selectedEntrypoint === AdapterSurface.CODEX &&
+        hasAgentHealthDiagnostic(
+          codexTool.healthCheck?.diagnostics,
+          'install.entrypoint_resolution',
+          AdapterSurface.CODEX,
+        ) &&
+        hasAgentHealthDiagnostic(
+          codexTool.healthCheck?.diagnostics,
+          'protocol.process_tree_policy',
+          'process_group_best_effort',
+        ),
+      adapter_launch_truth_projected:
+        codexTool?.healthCheck?.selectedEntrypoint === AdapterSurface.CODEX &&
+        codexTool.healthCheck?.requestCancellationMode ===
+          AdapterRequestCancellationMode.NOT_SUPPORTED,
+    });
   });
 });

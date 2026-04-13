@@ -17,6 +17,10 @@ import {
   RuntimeError,
 } from '@repo-ai-governor/shared';
 import {
+  expectNativeCliExecPreservedFacts,
+  hasAgentHealthDiagnostic,
+} from '../../../../test/native-cli-exec-compatibility-harness.js';
+import {
   GithubCopilotAgentAdapter,
   GithubCopilotAgentAdapterExecutionMode,
   type GithubCopilotExecRunner,
@@ -521,6 +525,32 @@ describe('github-copilot-agent-adapter smoke', () => {
         }),
       ]),
     );
+    expectNativeCliExecPreservedFacts('probe_protocol_parse_failed', {
+      launch_diagnostics_preserved:
+        probeResult.healthCheck?.selectedEntrypoint === 'gh' &&
+        hasAgentHealthDiagnostic(
+          probeResult.healthCheck?.diagnostics,
+          'install.entrypoint_resolution',
+          'gh',
+        ) &&
+        hasAgentHealthDiagnostic(
+          probeResult.healthCheck?.diagnostics,
+          'protocol.process_tree_policy',
+          'process_group_best_effort',
+        ),
+      adapter_launch_truth_projected:
+        probeResult.healthCheck?.selectedEntrypoint === 'gh' &&
+        hasAgentHealthDiagnostic(
+          probeResult.healthCheck?.diagnostics,
+          'protocol.shell_wrapped',
+          'false',
+        ) &&
+        hasAgentHealthDiagnostic(
+          probeResult.healthCheck?.diagnostics,
+          'protocol.process_tree_policy',
+          'process_group_best_effort',
+        ),
+    });
   });
 
   it('preserves fallback launch diagnostics and standardized errors on malformed gh fallback output', async () => {
@@ -572,9 +602,35 @@ describe('github-copilot-agent-adapter smoke', () => {
         }),
       ]),
     );
+    expectNativeCliExecPreservedFacts('probe_protocol_parse_failed', {
+      launch_diagnostics_preserved:
+        probeResult.healthCheck?.selectedEntrypoint === 'gh' &&
+        hasAgentHealthDiagnostic(
+          probeResult.healthCheck?.diagnostics,
+          'install.entrypoint_resolution',
+          'gh',
+        ) &&
+        hasAgentHealthDiagnostic(
+          probeResult.healthCheck?.diagnostics,
+          'protocol.process_tree_policy',
+          'process_group_best_effort',
+        ),
+      adapter_launch_truth_projected:
+        probeResult.healthCheck?.selectedEntrypoint === 'gh' &&
+        hasAgentHealthDiagnostic(
+          probeResult.healthCheck?.diagnostics,
+          'protocol.shell_wrapped',
+          'false',
+        ) &&
+        hasAgentHealthDiagnostic(
+          probeResult.healthCheck?.diagnostics,
+          'protocol.process_tree_policy',
+          'process_group_best_effort',
+        ),
+    });
 
-    await expect(
-      adapter.invokeStage({
+    const invokeError = await adapter
+      .invokeStage({
         processId: 'process-1',
         executionId: 'execution-1',
         stageId: 'stage-1',
@@ -582,10 +638,23 @@ describe('github-copilot-agent-adapter smoke', () => {
         input: {
           prompt: 'implement feature',
         },
-      }),
-    ).rejects.toMatchObject({
+      })
+      .then(() => null)
+      .catch((error) => error as RuntimeError);
+
+    expect(invokeError).toMatchObject({
       code: GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
       message: expect.stringContaining('malformed JSON output'),
+    });
+    const invokeDetails = invokeError?.details ?? {};
+    expectNativeCliExecPreservedFacts('invoke_protocol_parse_failed', {
+      launch_diagnostics_preserved:
+        invokeDetails.selectedEntrypoint === 'gh' &&
+        invokeDetails.processTreePolicy === 'process_group_best_effort',
+      adapter_launch_truth_projected:
+        invokeDetails.selectedEntrypoint === 'gh' &&
+        invokeDetails.shellWrapped === false &&
+        invokeDetails.processTreePolicy === 'process_group_best_effort',
     });
   });
 
