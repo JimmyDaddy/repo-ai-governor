@@ -1,6 +1,6 @@
 # TK-830 add guardrails so ACP remains additive non-default and non-public without a separate solution
 
-- Status: planned
+- Status: active
 - Date: 2026-04-13
 - Owner: AI-Agent
 - Priority: P0
@@ -45,3 +45,4 @@
 ## 8. 执行记录
 
 1. 2026-04-13：任务通过 `DA-819` 创建，当前保持 `planned`，等待 `TK-829` 完成后执行。
+2. 2026-04-13：随着 `TK-828` 完成，任务状态切换为 `active`；当前围绕 config guardrail 与 non-public boundary 推进收口，确保 `acp` 不被 authoring 成 canonical transport，也不进入 public support wording；当前等待 sprint-003 delegated CR。

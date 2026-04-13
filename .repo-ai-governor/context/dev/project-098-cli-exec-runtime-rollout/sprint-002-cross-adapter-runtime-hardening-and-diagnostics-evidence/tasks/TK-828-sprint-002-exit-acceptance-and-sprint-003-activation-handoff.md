@@ -1,6 +1,6 @@
 # TK-828 sprint-002 exit acceptance and sprint-003 activation handoff
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-13
 - Owner: AI-Agent
 - Priority: P1
@@ -47,3 +47,4 @@
 ## 8. 执行记录
 
 1. 2026-04-13：任务通过 `DA-819` 创建，当前保持 `planned`，等待 sprint-002 clean 收口后执行。
+2. 2026-04-13：随着 `CR-001` clean 收口，已完成 sprint-002 exit acceptance、delivery registry handoff 与 `current-context` primary stream 切换；`sprint-003-explicit-acp-extension-seam-guardrails-and-rollout-closeout` 已被激活为新的 primary execution surface。

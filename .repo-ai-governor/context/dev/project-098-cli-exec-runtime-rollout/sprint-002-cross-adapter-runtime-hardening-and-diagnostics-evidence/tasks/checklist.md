@@ -1,13 +1,22 @@
 # checklist
 
-- [ ] TK-825 cut claude-code onto the shared native cli_exec runtime and lifecycle observer
+- [x] TK-825 cut claude-code onto the shared native cli_exec runtime and lifecycle observer
   - 2026-04-13：任务通过 `DA-819` 创建，当前保持 `planned`，等待 sprint-002 激活后执行。
-  - 2026-04-13：随着 `TK-824` 完成，任务状态切换为 `active`；当前 boundary 已进入 sprint-002 primary execution surface，下一步推进 `Claude Code` shared runtime cutover implementation 与 fresh reviewer CR loop。
-- [ ] TK-826 cut github-copilot onto the shared native cli_exec runtime and aligned cancellation semantics
+  - 2026-04-13：随着 `TK-824` 完成，任务状态切换为 `active`；`Claude Code` 已切到 shared native `cli_exec` runtime 与 lifecycle observer，保留 adapter-owned parser / route / capability truth，并已通过 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run check`；当前等待 sprint-002 delegated CR。
+  - 2026-04-13：`CR-001` 已 clean 收口；`Claude Code` shared runtime cutover、launch diagnostics additive truth 与 hard terminate lifecycle surface 保持稳定，本任务收口为 `completed`。
+- [x] TK-826 cut github-copilot onto the shared native cli_exec runtime and aligned cancellation semantics
   - 2026-04-13：任务通过 `DA-819` 创建，当前保持 `planned`，等待 `TK-825` 完成后执行。
-  - 2026-04-13：随着 `TK-824` 完成，任务状态切换为 `active`；当前 boundary 已进入 sprint-002 primary execution surface，下一步推进 `GitHub Copilot` shared runtime cutover、aligned cancellation semantics 与 fresh reviewer CR loop。
-- [ ] TK-827 harden Unix and Windows process-tree termination plus additive diagnostics evidence across adapters
+  - 2026-04-13：随着 `TK-824` 完成，任务状态切换为 `active`；`GitHub Copilot` 已切到 shared native `cli_exec` runtime，并与 shared graceful/hard terminate 语义对齐，同时保持 adapter-owned transport truth，并已通过 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run check`；当前等待 sprint-002 delegated CR。
+  - 2026-04-13：`CR-001` 已 clean 收口；`GitHub Copilot` shared runtime cutover、取消/终止语义与 additive diagnostics 仍保持 adapter-owned transport truth，本任务收口为 `completed`。
+- [x] TK-827 harden Unix and Windows process-tree termination plus additive diagnostics evidence across adapters
   - 2026-04-13：任务通过 `DA-819` 创建，当前保持 `planned`，等待 `TK-826` 完成后执行。
-  - 2026-04-13：随着 `TK-824` 完成，任务状态切换为 `active`；当前 boundary 已进入 sprint-002 primary execution surface，下一步推进 cross-platform process-tree hardening、additive diagnostics evidence 汇总与 fresh reviewer CR loop。
-- [ ] TK-828 sprint-002 exit acceptance and sprint-003 activation handoff
+  - 2026-04-13：随着 `TK-824` 完成，任务状态切换为 `active`；shared runtime 已补齐 Unix process-group / Windows `taskkill /T` 树终止收敛、launch diagnostics additive truth 与非零退出失败语义，`Claude Code` / `GitHub Copilot` / `Codex` cross-adapter evidence 已通过 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run check`；当前等待 sprint-002 delegated CR。
+  - 2026-04-13：`CR-001` 要求补齐 `process_group_best_effort` branch-level regression coverage；补丁与验证已完成，cross-platform terminate hardening claim 获得直接测试守护，本任务收口为 `completed`。
+- [x] TK-828 sprint-002 exit acceptance and sprint-003 activation handoff
   - 2026-04-13：任务通过 `DA-819` 创建，当前保持 `planned`，等待 sprint-002 clean 收口后执行。
+  - 2026-04-13：随着 `CR-001` clean 收口，已完成 sprint-002 exit acceptance、delivery registry handoff 与 `current-context` primary stream 切换；`sprint-003-explicit-acp-extension-seam-guardrails-and-rollout-closeout` 已被激活为新的 primary execution surface。
+  - 2026-04-13: TK-828 completed after delivery registry handoff and current-context switched to sprint-003.
+- [x] CR-001 sprint-002-cross-adapter-runtime-hardening-and-diagnostics-evidence delegated review loop round 1
+  - 2026-04-13：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-13：fresh review 发现 1 条 lifecycle-sensitive coverage gap；主 agent 已完成复核并认可该 finding，review artifact 已补充 `复核结论`。
+  - 2026-04-13：已补齐 shared runtime `process_group_best_effort` 分支的 Unix / Windows regression coverage，并将 review artifact 推进到 `resolved_code_review_working-tree-20260413-1435.md`。

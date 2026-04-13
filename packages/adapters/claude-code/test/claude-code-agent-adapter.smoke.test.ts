@@ -107,6 +107,11 @@ describe('claude-code-agent-adapter smoke', () => {
       exitCode: 0,
       signal: null,
       elapsedMs: 11,
+      launchDiagnostics: {
+        selectedEntrypoint: 'claude',
+        shellWrapped: false,
+        processTreePolicy: 'process_group_best_effort',
+      },
     });
   };
 
@@ -153,6 +158,25 @@ describe('claude-code-agent-adapter smoke', () => {
     expect(probeResult.capabilityMatrix.cancellation.supportsCancel).toBe(false);
     expect(probeResult.capabilityMatrix.timeout.minTimeoutMs).toBe(500);
     expect(probeResult.capabilityMatrix.timeout.maxTimeoutMs).toBe(600000);
+    expect(probeResult.healthCheck?.transportKind).toBe('cli_exec');
+    expect(probeResult.healthCheck?.requestCancellationMode).toBe('not_supported');
+    expect(probeResult.healthCheck?.selectedEntrypoint).toBe('claude');
+    expect(probeResult.healthCheck?.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'install.entrypoint_resolution',
+          detail: 'claude',
+        }),
+        expect.objectContaining({
+          code: 'protocol.shell_wrapped',
+          detail: 'false',
+        }),
+        expect.objectContaining({
+          code: 'protocol.process_tree_policy',
+          detail: 'process_group_best_effort',
+        }),
+      ]),
+    );
   });
 
   it('accepts trivial punctuation variants in probe health-check responses', async () => {
@@ -1358,6 +1382,7 @@ describe('claude-code-agent-adapter smoke', () => {
       execRunner: async (request) => {
         request.onStdoutChunk?.('partial');
         request.onGracefulInterruptStart?.('process_signal');
+        request.onHardTerminateStart?.('process_signal');
         throw new RuntimeError(
           GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
           'Claude Code invoke timed out after 30ms.',
@@ -1394,6 +1419,7 @@ describe('claude-code-agent-adapter smoke', () => {
       AgentStreamEventType.STATUS,
       AgentStreamEventType.TOKEN,
       AgentStreamEventType.STATUS,
+      AgentStreamEventType.STATUS,
       AgentStreamEventType.FAILED,
     ]);
     expect(events[2]?.payload).toEqual(
@@ -1407,6 +1433,16 @@ describe('claude-code-agent-adapter smoke', () => {
       }),
     );
     expect(events[3]?.payload).toEqual(
+      expect.objectContaining({
+        status: 'hard_terminating',
+        invokeLiveness: expect.objectContaining({
+          status: 'hard_terminating',
+          cancelMechanism: 'process_signal',
+          suspectReasonCodes: expect.arrayContaining(['invoke_graceful_interrupt_exceeded']),
+        }),
+      }),
+    );
+    expect(events[4]?.payload).toEqual(
       expect.objectContaining({
         accumulatedText: 'partial',
         responseText: 'partial',

@@ -3,24 +3,24 @@
 ## Primary Stream
 
 - Status: active
-- Stream: `stream-project-098-sprint-002`
+- Stream: `stream-project-098-sprint-003`
 - Project: `project-098-cli-exec-runtime-rollout`
-- Sprint: `sprint-002-cross-adapter-runtime-hardening-and-diagnostics-evidence`
+- Sprint: `sprint-003-explicit-acp-extension-seam-guardrails-and-rollout-closeout`
 - Docs: `.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout`
-- Plan: `.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-002-cross-adapter-runtime-hardening-and-diagnostics-evidence/plan.md`
-- Tasks: `.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-002-cross-adapter-runtime-hardening-and-diagnostics-evidence/tasks/`
-- Checklist: `.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-002-cross-adapter-runtime-hardening-and-diagnostics-evidence/tasks/checklist.md`
-- CSV: `.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-002-cross-adapter-runtime-hardening-and-diagnostics-evidence/tasks/tasks.csv`
-- Review: `.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-002-cross-adapter-runtime-hardening-and-diagnostics-evidence/review/`
-- Note: `2026-04-13` `CR-001` 已 resolved，`TK-821 ~ TK-824` 已 clean 收口并完成 sprint-001 exit acceptance；当前已激活 `project-098 / sprint-002` 作为 primary execution surface，下一步推进 cross-adapter runtime hardening boundary 及其 fresh reviewer CR loop。
+- Plan: `.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-003-explicit-acp-extension-seam-guardrails-and-rollout-closeout/plan.md`
+- Tasks: `.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-003-explicit-acp-extension-seam-guardrails-and-rollout-closeout/tasks/`
+- Checklist: `.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-003-explicit-acp-extension-seam-guardrails-and-rollout-closeout/tasks/checklist.md`
+- CSV: `.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-003-explicit-acp-extension-seam-guardrails-and-rollout-closeout/tasks/tasks.csv`
+- Review: `.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-003-explicit-acp-extension-seam-guardrails-and-rollout-closeout/review/`
+- Note: `2026-04-13` `sprint-002 / CR-001` 已 resolved，`TK-825 ~ TK-828` 已 clean 收口并完成 sprint-003 activation handoff；当前已激活 `project-098 / sprint-003` 作为 primary execution surface，`TK-829 ~ TK-831` 已切换为 `active`，internal ACP seam、guardrail 与 non-regression evidence 当前进入 fresh reviewer CR loop。
 
 ## Active Streams
 
-- `stream-project-098-sprint-002`: primary=`true`, project=`project-098-cli-exec-runtime-rollout`, sprint=`sprint-002-cross-adapter-runtime-hardening-and-diagnostics-evidence`, docs=`.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout`, plan=`.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-002-cross-adapter-runtime-hardening-and-diagnostics-evidence/plan.md`, tasks=`.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-002-cross-adapter-runtime-hardening-and-diagnostics-evidence/tasks/`, checklist=`.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-002-cross-adapter-runtime-hardening-and-diagnostics-evidence/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-002-cross-adapter-runtime-hardening-and-diagnostics-evidence/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-002-cross-adapter-runtime-hardening-and-diagnostics-evidence/review/`, status=`active`
+- `stream-project-098-sprint-003`: primary=`true`, project=`project-098-cli-exec-runtime-rollout`, sprint=`sprint-003-explicit-acp-extension-seam-guardrails-and-rollout-closeout`, docs=`.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout`, plan=`.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-003-explicit-acp-extension-seam-guardrails-and-rollout-closeout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-003-explicit-acp-extension-seam-guardrails-and-rollout-closeout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-003-explicit-acp-extension-seam-guardrails-and-rollout-closeout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-003-explicit-acp-extension-seam-guardrails-and-rollout-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-003-explicit-acp-extension-seam-guardrails-and-rollout-closeout/review/`, status=`active`
 
 ## Planned Follow-Up Streams
 
-- `stream-project-098-sprint-003`: project=`project-098-cli-exec-runtime-rollout`, sprint=`sprint-003-explicit-acp-extension-seam-guardrails-and-rollout-closeout`, docs=`.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout`, plan=`.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-003-explicit-acp-extension-seam-guardrails-and-rollout-closeout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-003-explicit-acp-extension-seam-guardrails-and-rollout-closeout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-003-explicit-acp-extension-seam-guardrails-and-rollout-closeout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-003-explicit-acp-extension-seam-guardrails-and-rollout-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-003-explicit-acp-extension-seam-guardrails-and-rollout-closeout/review/`, status=`planned`
+- 无。project-final review 将继续复用 `sprint-003` 的 `tasks/` 与 `review/` surface。
 
 ## Completed Stream History
 

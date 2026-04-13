@@ -1,4 +1,3 @@
-import { spawn } from 'node:child_process';
 import { setTimeout as delay } from 'node:timers/promises';
 
 import {
@@ -9,9 +8,11 @@ import {
   AgentCapabilitySupportLevel,
   AgentCliExecOperation,
   AgentCliExecOperationsRuntime,
+  type AgentCliLaunchDiagnostics,
   AgentConfirmationDecision,
   type AgentConfirmationRequest,
   type AgentConfirmationResult,
+  type AgentHealthCheckDiagnostic,
   type AgentInvokeStageRequest,
   type AgentInvokeStageResult,
   type AgentProbeRequest,
@@ -25,6 +26,7 @@ import {
   type AgentStreamEventsRequest,
   DEFAULT_AGENT_CLI_EXEC_MAX_RETRY_ATTEMPTS,
   DEFAULT_AGENT_CLI_EXEC_RETRY_BACKOFF_MS,
+  NativeCliExecProcessRuntime,
   buildLayeredHealthCheckResult,
   resolveAgentStageExecutionPolicy,
 } from '@repo-ai-governor/adapter-sdk';
@@ -64,6 +66,8 @@ const CLAUDE_CODE_REPOSITORY_REVIEW_TIMEOUT_MS = 600000;
 const CLAUDE_CODE_REPOSITORY_REVIEW_PROGRESS_INTERVAL_MS = 15000;
 const CLAUDE_CODE_DEFAULT_PROBE_CACHE_TTL_MS = 30000;
 const CLAUDE_CODE_CLI_EXECUTION_CACHE_TTL_MS = 30000;
+const CLAUDE_CODE_CLI_TERMINATE_GRACE_MIN_MS = 250;
+const CLAUDE_CODE_CLI_TERMINATE_GRACE_MAX_MS = 2000;
 const CLAUDE_CODE_CHAT_ONLY_ARGS = ['--tools', ''] as const;
 const CLAUDE_CODE_REPOSITORY_REVIEW_SCOPE = 'uncommitted_changes';
 const CLAUDE_CODE_REPOSITORY_REVIEW_ARGS = [
@@ -160,6 +164,7 @@ interface ClaudeCodeCliExecutionState {
 interface ClaudeCodeProbeResolution {
   availabilityStatus: AgentAvailabilityStatus;
   unavailableReasons: string[];
+  launchDiagnostics?: AgentCliLaunchDiagnostics | null;
 }
 
 interface ClaudeCodeProbeCacheEntry {
@@ -219,6 +224,7 @@ type ClaudeCodeCliLivenessStatus =
   | 'starting'
   | 'running'
   | 'graceful_interrupting'
+  | 'hard_terminating'
   | 'completed'
   | 'failed';
 type ClaudeCodeCliCancelMechanism = 'none' | 'process_signal' | 'abort_signal';
@@ -247,6 +253,7 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
   private readonly options: ResolvedClaudeCodeAgentAdapterOptions;
   private readonly execRunner: ClaudeCodeExecRunner;
   private readonly cliExecOperationsRuntime: AgentCliExecOperationsRuntime;
+  private readonly cliProcessRuntime: NativeCliExecProcessRuntime;
   private readonly usesInjectedExecRunner: boolean;
   private readonly inflightCliExecutions = new Map<string, ClaudeCodeCliExecutionState>();
   private probeCache: ClaudeCodeProbeCacheEntry | null = null;
@@ -291,6 +298,7 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
       this.options.maxRetryAttempts,
       this.options.retryBackoffMs,
     );
+    this.cliProcessRuntime = new NativeCliExecProcessRuntime(this.cliExecOperationsRuntime);
     this.execRunner =
       options.execRunner ??
       ((request) => {
@@ -357,7 +365,10 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
         adapterId: this.options.agentId,
         surfaceId: CLAUDE_CODE_SURFACE,
         availabilityStatus,
-        selectedEntrypoint: remoteApiOptions?.endpoint ?? this.options.command,
+        selectedEntrypoint:
+          remoteApiOptions?.endpoint ??
+          runtimeProbe.launchDiagnostics?.selectedEntrypoint ??
+          this.options.command,
         routeKey: request.routeKey,
         routeRequirements: (request.requiredCapabilities ?? []).map(String),
         fallbackAllowed: true,
@@ -375,10 +386,10 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
         model: remoteApiOptions?.model ?? null,
         credentialSource: remoteApiCredentialResolution?.source ?? null,
         endpointSource: remoteApiOptions?.endpointSource ?? null,
-        diagnostics:
-          remoteApiCredentialResolution?.source === AdapterCredentialSource.CREDENTIAL_REF &&
-          remoteApiCredentialResolution.value &&
-          remoteApiCredentialResolution.detail.length > 0
+        diagnostics: remoteApiOptions
+          ? remoteApiCredentialResolution?.source === AdapterCredentialSource.CREDENTIAL_REF &&
+            remoteApiCredentialResolution.value &&
+            remoteApiCredentialResolution.detail.length > 0
             ? [
                 {
                   layer: 'auth',
@@ -387,11 +398,12 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
                   detail: remoteApiCredentialResolution.detail,
                 },
               ]
-            : [],
+            : []
+          : this.buildCliLaunchHealthDiagnostics(runtimeProbe.launchDiagnostics),
         requestCancellationMode:
           this.options.executionMode === ClaudeCodeAgentAdapterExecutionMode.REMOTE_API
             ? AdapterRequestCancellationMode.LOCAL_ABORT_ONLY
-            : AdapterRequestCancellationMode.NOT_SUPPORTED,
+            : this.resolveCliRequestCancellationMode(),
       }),
     };
   }
@@ -635,6 +647,9 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
         },
         onGracefulInterruptStart: (cancelMechanism) => {
           this.pushCliGracefulInterruptEvent(state, request, cancelMechanism);
+        },
+        onHardTerminateStart: (cancelMechanism) => {
+          this.pushCliHardTerminationEvent(state, request, cancelMechanism);
         },
       });
 
@@ -956,6 +971,48 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
     });
   }
 
+  private pushCliHardTerminationEvent(
+    state: ClaudeCodeCliExecutionState,
+    request: ClaudeCodeCliExecutionRequest,
+    cancelMechanism: ClaudeCodeCliCancelMechanism,
+  ): void {
+    const terminatedAt = new Date().toISOString();
+    const suspectReasonCodes = [
+      'invoke_graceful_interrupt_exceeded',
+      ...(state.accumulatedAssistantText.length > 0 ? ['invoke_partial_output_preserved'] : []),
+    ];
+    this.recordCliTransportEvent(
+      state,
+      terminatedAt,
+      'hard_terminating',
+      state.accumulatedAssistantText.length > 0 ? state.accumulatedAssistantText : undefined,
+    );
+    this.pushCliExecutionEvent(state, {
+      eventType: AgentStreamEventType.STATUS,
+      timestamp: terminatedAt,
+      processId: request.processId,
+      executionId: request.executionId,
+      stageId: request.stageId,
+      routeKey: request.routeKey,
+      payload: {
+        status: 'hard_terminating',
+        surface: CLAUDE_CODE_SURFACE,
+        transportKind: AdapterTransportKind.CLI_EXEC,
+        detail:
+          cancelMechanism === 'abort_signal'
+            ? 'Claude Code invoke did not stop after abort signal; forcing hard termination.'
+            : 'Claude Code invoke did not stop after graceful interrupt; forcing hard termination.',
+        invokeLiveness: this.buildCliInvokeLivenessSnapshot(request, state, {
+          status: 'hard_terminating',
+          partialOutputPreserved: state.accumulatedAssistantText.length > 0,
+          cancelMechanism,
+          lastTerminalSignalAt: terminatedAt,
+          suspectReasonCodes,
+        }),
+      },
+    });
+  }
+
   private normalizeCliOutputLine(line: string): string | undefined {
     const normalizedLine = line.replace(/\s+/gu, ' ').trim();
     if (normalizedLine.length === 0) {
@@ -1056,6 +1113,86 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
       return 'abort_signal';
     }
     return 'none';
+  }
+
+  private resolveCliTerminateGraceMs(timeoutMs: number): number {
+    return Math.min(
+      CLAUDE_CODE_CLI_TERMINATE_GRACE_MAX_MS,
+      Math.max(CLAUDE_CODE_CLI_TERMINATE_GRACE_MIN_MS, Math.floor(timeoutMs * 0.1)),
+    );
+  }
+
+  private resolveCliProcessTreePolicy(): 'process_group_best_effort' {
+    return 'process_group_best_effort';
+  }
+
+  private resolveCliRequestCancellationMode(): AdapterRequestCancellationMode {
+    return AdapterRequestCancellationMode.NOT_SUPPORTED;
+  }
+
+  private buildCliLaunchHealthDiagnostics(
+    launchDiagnostics?: AgentCliLaunchDiagnostics | null,
+  ): AgentHealthCheckDiagnostic[] {
+    if (!launchDiagnostics) {
+      return [];
+    }
+    return [
+      {
+        layer: 'install',
+        status: 'pass',
+        code: 'install.entrypoint_resolution',
+        detail: launchDiagnostics.selectedEntrypoint,
+      },
+      {
+        layer: 'protocol',
+        status: 'pass',
+        code: 'protocol.shell_wrapped',
+        detail: String(launchDiagnostics.shellWrapped),
+      },
+      {
+        layer: launchDiagnostics.spawnErrorCode ? 'install' : 'protocol',
+        status: launchDiagnostics.spawnErrorCode ? 'fail' : 'pass',
+        code: launchDiagnostics.spawnErrorCode
+          ? 'install.spawn_error_code'
+          : 'protocol.process_tree_policy',
+        detail: launchDiagnostics.spawnErrorCode ?? launchDiagnostics.processTreePolicy,
+      },
+    ];
+  }
+
+  private readCliLaunchDiagnosticsFromError(error: unknown): AgentCliLaunchDiagnostics | null {
+    const details =
+      error && typeof error === 'object' && 'details' in error && error.details
+        ? error.details
+        : error && typeof error === 'object' && 'metadata' in error && error.metadata
+          ? error.metadata
+          : null;
+    if (!details || typeof details !== 'object') {
+      return null;
+    }
+    const detailsRecord = details as Record<string, unknown>;
+    const selectedEntrypoint =
+      typeof detailsRecord.selectedEntrypoint === 'string'
+        ? detailsRecord.selectedEntrypoint
+        : null;
+    const shellWrapped =
+      typeof detailsRecord.shellWrapped === 'boolean' ? detailsRecord.shellWrapped : null;
+    const processTreePolicy =
+      typeof detailsRecord.processTreePolicy === 'string' ? detailsRecord.processTreePolicy : null;
+    if (!selectedEntrypoint || shellWrapped === null || !processTreePolicy) {
+      return null;
+    }
+    return {
+      selectedEntrypoint,
+      shellWrapped,
+      processTreePolicy:
+        processTreePolicy === 'process_group_best_effort'
+          ? 'process_group_best_effort'
+          : 'process_only',
+      ...(typeof detailsRecord.spawnErrorCode === 'string'
+        ? { spawnErrorCode: detailsRecord.spawnErrorCode }
+        : {}),
+    };
   }
 
   /**
@@ -1171,6 +1308,7 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
       return {
         availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
         unavailableReasons: [],
+        launchDiagnostics: null,
       };
     }
 
@@ -1182,6 +1320,7 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
       return {
         availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
         unavailableReasons: [],
+        launchDiagnostics: null,
       };
     }
 
@@ -1225,17 +1364,20 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
           unavailableReasons: [
             `health_check_invalid_response:${CLAUDE_CODE_SURFACE}:${this.cliExecOperationsRuntime.sanitizeReasonSegment(parsedOutput.responseText)}`,
           ],
+          launchDiagnostics: executionResult.launchDiagnostics ?? null,
         };
       }
 
       return {
         availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
         unavailableReasons: [],
+        launchDiagnostics: executionResult.launchDiagnostics ?? null,
       };
     } catch (error) {
       return {
         availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
         unavailableReasons: this.resolveProbeFailureReasons(error),
+        launchDiagnostics: this.readCliLaunchDiagnosticsFromError(error),
       };
     }
   }
@@ -1248,7 +1390,12 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
   private async runClaudeCodeOperation(
     request: Pick<
       ClaudeCodeExecRunnerRequest,
-      'prompt' | 'timeoutMs' | 'signal' | 'operation' | 'onGracefulInterruptStart'
+      | 'prompt'
+      | 'timeoutMs'
+      | 'signal'
+      | 'operation'
+      | 'onGracefulInterruptStart'
+      | 'onHardTerminateStart'
     > & {
       commandArgumentsPrefixResolver?: (
         basePrefix: string[],
@@ -1286,6 +1433,7 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
                 onStdoutChunk: request.onStdoutChunk,
                 onStderrChunk: request.onStderrChunk,
                 onGracefulInterruptStart: request.onGracefulInterruptStart,
+                onHardTerminateStart: request.onHardTerminateStart,
               });
             } catch (error) {
               lastError = error;
@@ -2673,129 +2821,58 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
   private async executeClaudeCodeCli(
     request: ClaudeCodeExecRunnerRequest,
   ): Promise<ClaudeCodeExecRunnerResult> {
-    const startedAt = Date.now();
-    const args = [
-      ...request.commandArgumentsPrefix,
-      '--print',
-      '--output-format',
-      'text',
-      '--no-session-persistence',
-      '--dangerously-skip-permissions',
-      '--add-dir',
-      request.cwd,
-      '--',
-      request.prompt,
-    ];
+    return await this.cliProcessRuntime.execute(this.createClaudeCodeCliLaunchPlan(request));
+  }
 
-    return await new Promise<ClaudeCodeExecRunnerResult>((resolveResult, reject) => {
-      const childProcess = spawn(request.command, args, {
-        cwd: request.cwd,
-        env: request.env,
-        stdio: ['ignore', 'pipe', 'pipe'],
-        ...(request.signal ? { signal: request.signal } : {}),
-      });
-      let stdout = '';
-      let stderr = '';
-      let settled = false;
-      let gracefulInterruptNotified = false;
-
-      const notifyGracefulInterrupt = (
-        cancelMechanism: 'process_signal' | 'abort_signal',
-      ): void => {
-        if (gracefulInterruptNotified) {
-          return;
-        }
-        gracefulInterruptNotified = true;
-        request.onGracefulInterruptStart?.(cancelMechanism);
-      };
-
-      const settle = (
-        result: ClaudeCodeExecRunnerResult | RuntimeError,
-        isError: boolean,
-      ): void => {
-        if (settled) {
-          return;
-        }
-        settled = true;
-        if (timeoutHandle) {
-          clearTimeout(timeoutHandle);
-        }
-        request.signal?.removeEventListener('abort', onAbortSignal);
-        if (isError) {
-          reject(result);
-          return;
-        }
-        resolveResult(result as ClaudeCodeExecRunnerResult);
-      };
-
-      const onAbortSignal = () => {
-        notifyGracefulInterrupt('abort_signal');
-      };
-
-      request.signal?.addEventListener('abort', onAbortSignal, { once: true });
-
-      const timeoutHandle = setTimeout(() => {
-        notifyGracefulInterrupt('process_signal');
-        childProcess.kill('SIGTERM');
-        settle(
-          new RuntimeError(
-            request.operation === AgentCliExecOperation.PROBE
-              ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
-              : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
-            `Claude Code ${request.operation} timed out after ${request.timeoutMs}ms.`,
-            this.cliExecOperationsRuntime.createRedactedProcessDetails({
-              surface: CLAUDE_CODE_SURFACE,
-              operation: request.operation,
-              timeoutMs: request.timeoutMs,
-              stdout,
-              stderr,
-            }),
-          ),
-          true,
-        );
-      }, request.timeoutMs);
-
-      childProcess.stdout.setEncoding('utf8');
-      childProcess.stderr.setEncoding('utf8');
-      childProcess.stdout.on('data', (chunk: string) => {
-        stdout += chunk;
-        request.onStdoutChunk?.(chunk);
-      });
-      childProcess.stderr.on('data', (chunk: string) => {
-        stderr += chunk;
-        request.onStderrChunk?.(chunk);
-      });
-      childProcess.on('error', (error) => {
-        settle(
-          new RuntimeError(
-            request.operation === AgentCliExecOperation.PROBE
-              ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
-              : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
-            `Claude Code ${request.operation} process launch failed: ${standardizeError(error).message}`,
-            this.cliExecOperationsRuntime.createRedactedProcessDetails({
-              surface: CLAUDE_CODE_SURFACE,
-              operation: request.operation,
-              command: request.command,
-              stdout,
-              stderr,
-            }),
-          ),
-          true,
-        );
-      });
-      childProcess.on('close', (exitCode, signal) => {
-        settle(
-          {
-            stdout,
-            stderr,
-            exitCode,
-            signal,
-            elapsedMs: Date.now() - startedAt,
-          },
-          false,
-        );
-      });
-    });
+  private createClaudeCodeCliLaunchPlan(request: ClaudeCodeExecRunnerRequest): {
+    surfaceId: string;
+    operation: AgentCliExecOperation;
+    command: string;
+    commandArguments: string[];
+    cwd: string;
+    env: NodeJS.ProcessEnv;
+    timeoutMs: number;
+    signal?: AbortSignal;
+    stdinMode: 'ignore';
+    terminateGraceMs: number;
+    launchDiagnostics: AgentCliLaunchDiagnostics;
+    onStdoutChunk?: (chunk: string) => void;
+    onStderrChunk?: (chunk: string) => void;
+    onGracefulInterruptStart?: (cancelMechanism: 'process_signal' | 'abort_signal') => void;
+    onHardTerminateStart?: (cancelMechanism: 'process_signal' | 'abort_signal') => void;
+  } {
+    return {
+      surfaceId: CLAUDE_CODE_SURFACE,
+      operation: request.operation,
+      command: request.command,
+      commandArguments: [
+        ...request.commandArgumentsPrefix,
+        '--print',
+        '--output-format',
+        'text',
+        '--no-session-persistence',
+        '--dangerously-skip-permissions',
+        '--add-dir',
+        request.cwd,
+        '--',
+        request.prompt,
+      ],
+      cwd: request.cwd,
+      env: request.env,
+      timeoutMs: request.timeoutMs,
+      ...(request.signal ? { signal: request.signal } : {}),
+      stdinMode: 'ignore',
+      terminateGraceMs: this.resolveCliTerminateGraceMs(request.timeoutMs),
+      launchDiagnostics: {
+        selectedEntrypoint: request.command,
+        shellWrapped: false,
+        processTreePolicy: this.resolveCliProcessTreePolicy(),
+      },
+      onStdoutChunk: request.onStdoutChunk,
+      onStderrChunk: request.onStderrChunk,
+      onGracefulInterruptStart: request.onGracefulInterruptStart,
+      onHardTerminateStart: request.onHardTerminateStart,
+    };
   }
 
   private resolveCommandArgumentsPrefix(

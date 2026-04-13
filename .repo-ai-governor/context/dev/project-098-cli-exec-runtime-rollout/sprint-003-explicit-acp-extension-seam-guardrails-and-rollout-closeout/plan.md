@@ -1,6 +1,6 @@
 # sprint-003-explicit-acp-extension-seam-guardrails-and-rollout-closeout 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-13
 - Project: `project-098-cli-exec-runtime-rollout`
 - Sprint Goal: 锁定 explicit ACP seam guardrail、补齐 non-regression evidence，并完成 rollout closeout。
@@ -22,3 +22,5 @@
 
 1. 2026-04-13：作为 `project-098` 的第三阶段 execution surface 创建，当前保持 `planned`。
 2. 2026-04-13：当前 sprint 明确只承接 seam guardrail 与 closeout，不承接新的 public ACP surface formalization。
+3. 2026-04-13：随着 `TK-828` 完成，当前 sprint 已被激活为 `project-098` primary execution surface；后续 project-final review 将继续复用本 sprint 的 `tasks/` 与 `review/` surface。
+4. 2026-04-13：internal ACP seam、config public-boundary guardrail 与 non-regression evidence 已进入实施/收口阶段，当前进入 sprint-003 fresh reviewer CR loop。

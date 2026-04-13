@@ -29,13 +29,13 @@
 
 ## 2.2 sprint-002-cross-adapter-runtime-hardening-and-diagnostics-evidence
 
-- Status: active
+- Status: completed
 - Sprint Goal: 将 shared runtime 扩展到 `Claude Code` / `GitHub Copilot`，并补齐 cross-platform diagnostics 与 evidence。
 - Task Package: `TK-825`、`TK-826`、`TK-827`、`TK-828`
 
 ## 2.3 sprint-003-explicit-acp-extension-seam-guardrails-and-rollout-closeout
 
-- Status: planned
+- Status: active
 - Sprint Goal: 锁定 explicit ACP seam guardrail、补齐 non-regression evidence，并完成 rollout closeout。
 - Task Package: `TK-829`、`TK-830`、`TK-831`、`TK-832`
 
@@ -47,13 +47,13 @@
 | TK-822 | sprint-001 | project codex lifecycle observer partial-output and terminate-phase semantics onto the shared runtime | runtime/liveness | TK-821 | completed |
 | TK-823 | sprint-001 | preserve adapter-owned entrypoint shell and process-tree policies while adding baseline launch diagnostics | diagnostics/ownership | TK-822 | completed |
 | TK-824 | sprint-001 | sprint-001 exit acceptance and sprint-002 activation handoff | sprint/closeout | TK-821、TK-822、TK-823 | completed |
-| TK-825 | sprint-002 | cut claude-code onto the shared native cli_exec runtime and lifecycle observer | adapter/cutover | TK-823 | active |
-| TK-826 | sprint-002 | cut github-copilot onto the shared native cli_exec runtime and aligned cancellation semantics | adapter/cutover | TK-825 | active |
-| TK-827 | sprint-002 | harden Unix and Windows process-tree termination plus additive diagnostics evidence across adapters | cross-platform/evidence | TK-826 | active |
-| TK-828 | sprint-002 | sprint-002 exit acceptance and sprint-003 activation handoff | sprint/closeout | TK-825、TK-826、TK-827 | planned |
-| TK-829 | sprint-003 | isolate a provisional ACP extension seam behind non-canonical internal runtime boundaries | runtime/seam | TK-827 | planned |
-| TK-830 | sprint-003 | add guardrails so ACP remains additive non-default and non-public without a separate solution | governance/guardrails | TK-829 | planned |
-| TK-831 | sprint-003 | produce regression and evidence packets for native cli_exec convergence and ACP seam non-regression | evidence/verification | TK-830 | planned |
+| TK-825 | sprint-002 | cut claude-code onto the shared native cli_exec runtime and lifecycle observer | adapter/cutover | TK-823 | completed |
+| TK-826 | sprint-002 | cut github-copilot onto the shared native cli_exec runtime and aligned cancellation semantics | adapter/cutover | TK-825 | completed |
+| TK-827 | sprint-002 | harden Unix and Windows process-tree termination plus additive diagnostics evidence across adapters | cross-platform/evidence | TK-826 | completed |
+| TK-828 | sprint-002 | sprint-002 exit acceptance and sprint-003 activation handoff | sprint/closeout | TK-825、TK-826、TK-827 | completed |
+| TK-829 | sprint-003 | isolate a provisional ACP extension seam behind non-canonical internal runtime boundaries | runtime/seam | TK-827 | active |
+| TK-830 | sprint-003 | add guardrails so ACP remains additive non-default and non-public without a separate solution | governance/guardrails | TK-829 | active |
+| TK-831 | sprint-003 | produce regression and evidence packets for native cli_exec convergence and ACP seam non-regression | evidence/verification | TK-830 | active |
 | TK-832 | sprint-003 | finalize project-098 rollout closeout and delivery evidence handoff | closeout/delivery | TK-831 | planned |
 
 ## 4. 依赖产物策略
@@ -77,6 +77,9 @@
 3. 2026-04-13：已将 `sprint-001 ~ sprint-003` 与 `TK-821 ~ TK-832` 全量拆解写入 project / sprint / task surface，待后续窗口按顺序激活。
 4. 2026-04-13：`project-098 / sprint-001` 已切为 primary execution surface；shared runtime、Codex convergence、Claude/GitHub cutover、ACP internal seam 与 focused evidence 已完成实现，当前按 sprint 顺序进入 delegated CR loop。
 5. 2026-04-13：`CR-001` 已 resolved，shared runtime 非零退出语义与 regression coverage 已补齐；`TK-821 ~ TK-824` 已完成收口，当前已激活 `sprint-002` 作为下一条 primary execution surface。
+6. 2026-04-13：`Claude Code` / `GitHub Copilot` shared runtime cutover、cross-platform terminate hardening 与 additive diagnostics evidence 已完成实现，`TK-825 ~ TK-827` 当前进入 sprint-002 fresh reviewer CR loop。
+7. 2026-04-13：`sprint-002` fresh review 已 clean 收口；`process_group_best_effort` branch-level regression coverage 已补齐，`TK-825 ~ TK-828` 全部完成，当前已激活 `sprint-003` 作为新的 primary execution surface。
+8. 2026-04-13：`TK-829 ~ TK-831` 已切换为 `active`；internal ACP seam、config guardrail 与 non-regression evidence 当前进入 sprint-003 fresh reviewer CR loop。
 
 ## 7. 里程碑记录入口
 

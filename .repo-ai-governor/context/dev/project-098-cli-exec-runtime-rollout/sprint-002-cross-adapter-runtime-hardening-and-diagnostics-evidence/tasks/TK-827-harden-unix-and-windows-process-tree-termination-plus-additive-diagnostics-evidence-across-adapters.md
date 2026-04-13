@@ -1,6 +1,6 @@
 # TK-827 harden Unix and Windows process-tree termination plus additive diagnostics evidence across adapters
 
-- Status: active
+- Status: completed
 - Date: 2026-04-13
 - Owner: AI-Agent
 - Priority: P0
@@ -45,4 +45,5 @@
 ## 8. 执行记录
 
 1. 2026-04-13：任务通过 `DA-819` 创建，当前保持 `planned`，等待 `TK-826` 完成后执行。
-2. 2026-04-13：随着 `TK-824` 完成，任务状态切换为 `active`；当前 boundary 已进入 sprint-002 primary execution surface，下一步推进 cross-platform process-tree hardening、additive diagnostics evidence 汇总与 fresh reviewer CR loop。
+2. 2026-04-13：随着 `TK-824` 完成，任务状态切换为 `active`；shared runtime 已补齐 Unix process-group / Windows `taskkill /T` 树终止收敛、launch diagnostics additive truth 与非零退出失败语义，`Claude Code` / `GitHub Copilot` / `Codex` cross-adapter evidence 已通过 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run check`；当前等待 sprint-002 delegated CR。
+3. 2026-04-13：`CR-001` 要求补齐 `process_group_best_effort` branch-level regression coverage；补丁与验证已完成，cross-platform terminate hardening claim 获得直接测试守护，本任务收口为 `completed`。

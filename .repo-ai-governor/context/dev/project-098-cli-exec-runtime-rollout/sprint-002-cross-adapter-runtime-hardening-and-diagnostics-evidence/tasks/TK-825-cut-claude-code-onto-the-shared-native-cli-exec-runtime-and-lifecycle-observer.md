@@ -1,6 +1,6 @@
 # TK-825 cut claude-code onto the shared native cli_exec runtime and lifecycle observer
 
-- Status: active
+- Status: completed
 - Date: 2026-04-13
 - Owner: AI-Agent
 - Priority: P0
@@ -44,4 +44,5 @@
 ## 8. 执行记录
 
 1. 2026-04-13：任务通过 `DA-819` 创建，当前保持 `planned`，等待 sprint-002 激活后执行。
-2. 2026-04-13：随着 `TK-824` 完成，任务状态切换为 `active`；当前 boundary 已进入 sprint-002 primary execution surface，下一步推进 `Claude Code` shared runtime cutover implementation 与 fresh reviewer CR loop。
+2. 2026-04-13：随着 `TK-824` 完成，任务状态切换为 `active`；`Claude Code` 已切到 shared native `cli_exec` runtime 与 lifecycle observer，保留 adapter-owned parser / route / capability truth，并已通过 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run check`；当前等待 sprint-002 delegated CR。
+3. 2026-04-13：`CR-001` 已 clean 收口；`Claude Code` shared runtime cutover、launch diagnostics additive truth 与 hard terminate lifecycle surface 保持稳定，本任务收口为 `completed`。
