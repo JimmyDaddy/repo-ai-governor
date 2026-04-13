@@ -29,7 +29,7 @@
 1. 想要最低风险证明，先用 `dist-binary`。
 2. 目标仓库本来就是 `pnpm`，而且准备长期安装 governor，就用 `path`。
 3. 只有明确要跟着本地源码变化走，才用 `link`。
-4. 只有明确需要 packaged-install 证据，并且环境还能访问 npm registry，才用 `tgz`。
+4. 只有明确需要 packaged-install 证据，并且环境还能访问 npm registry，才用 `tgz`。它不是离线自包含安装器。
 
 ## 2. 最短首轮成功路径
 
@@ -103,7 +103,7 @@ pnpm exec repo-ai-governor adopt verify --repo . --output json
 ```bash
 pnpm exec repo-ai-governor connect --tools codex,claude-code --preset multi-tool-default --output json
 pnpm exec repo-ai-governor doctor --adapters --fix --output json
-pnpm exec repo-ai-governor verify --adapters --output json
+pnpm exec repo-ai-governor doctor --adapters --output json
 pnpm exec repo-ai-governor run --output json --dry-run --trace
 ```
 
@@ -111,10 +111,10 @@ pnpm exec repo-ai-governor run --output json --dry-run --trace
 
 1. `connect` 先写可审阅 candidate config，不会原地盲改活动配置。
 2. `doctor --adapters --fix` 只做 safe local repairs。
-3. `verify --adapters` 是真实执行前的 readiness check。
+3. 第二次 `doctor --adapters` 是真实执行前的只读 readiness check。
 4. `run --dry-run --trace` 是证明路由和 projected descriptor 是否合理的最低风险方式。
 
-如果你一开始就要配置 `remote_api`，用显式 authoring flags，不要先手改配置：
+如果你一开始就要配置 `remote_api`，用显式 authoring flags，不要先手改配置；这也是最低风险的 remote-api rehearsal 路径：
 
 ```bash
 pnpm exec repo-ai-governor connect --tools codex --remote-api-model codex=gpt-5 --output pretty
@@ -240,7 +240,7 @@ pnpm run check:desktop-entry-smoke
 pnpm run release:verify-local
 ```
 
-只有当你想验证 built source checkout 上的 desktop sidecar foundation 时才使用。它不是独立桌面安装器。
+只有当你想验证 built source checkout 上的 desktop sidecar foundation 时才使用。它不是独立桌面安装器，也不是已发布桌面 bundle。
 
 ### 宿主原生资产生成
 
@@ -265,7 +265,7 @@ pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/ho
 
 1. 重跑 `doctor --output json`
 2. 重跑 `doctor --adapters --fix --output json`
-3. 重跑 `verify --adapters --output json`
+3. 重跑 `doctor --adapters --output json`
 4. 在 trace 产物看起来健康之前，优先使用 `run --dry-run --trace`
 5. 先查 `docs/support-matrix.zh-CN.md`，再判断某个 surface 是否正式 supported
 

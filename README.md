@@ -19,7 +19,7 @@ With the current public CLI surface you can:
 |---|---|
 | Bootstrap a repository and inspect environment readiness | `init`, `doctor`, `check` |
 | Install and maintain a managed adoption baseline | `adopt list`, `adopt apply`, `adopt diff`, `adopt verify`, `adopt upgrade`, `adopt remove` |
-| Connect multiple AI tools into one governed baseline | `connect`, `verify` |
+| Connect multiple AI tools into one governed baseline | `connect`, `doctor` |
 | Keep personal machine defaults and secrets out of shared config | `config`, `secret` |
 | Run a governed delivery loop | `plan`, `run`, `review`, `review-verify` |
 | Use a conversation-first shell instead of one-shot commands | `repo-ai-governor`, `resume` |
@@ -93,7 +93,7 @@ After the repository is bootstrapped, the shortest end-to-end governed path is:
 ```bash
 pnpm exec repo-ai-governor connect --tools codex,claude-code --preset multi-tool-default --output json
 pnpm exec repo-ai-governor doctor --adapters --fix --output json
-pnpm exec repo-ai-governor verify --adapters --output json
+pnpm exec repo-ai-governor doctor --adapters --output json
 pnpm exec repo-ai-governor run --output json --dry-run --trace
 pnpm exec repo-ai-governor review --output json
 pnpm exec repo-ai-governor review-verify --output json
@@ -103,7 +103,7 @@ Why this order works:
 
 1. `connect` creates a reviewable candidate config instead of mutating the active config blindly.
 2. `doctor --adapters --fix` handles safe local repairs only.
-3. `verify --adapters` is the readiness gate before a real run.
+3. A second `doctor --adapters` is the read-only readiness recheck before a real run.
 4. `run --dry-run --trace` gives you routing and artifact evidence with the lowest risk.
 5. `review` and `review-verify` close the loop with a governed review lifecycle.
 
@@ -131,7 +131,7 @@ Use these as a mental model for the product:
 | Job to be done | Recommended commands |
 |---|---|
 | Install or refresh one governed repository baseline | `adopt apply`, `adopt verify`, `adopt diff`, `adopt upgrade`, `adopt remove` |
-| Wire multiple tools into one repository | `connect`, `doctor --adapters`, `verify --adapters` |
+| Wire multiple tools into one repository | `connect`, `doctor --adapters --fix`, `doctor --adapters` |
 | Run the first plan -> run -> review loop | `plan`, `run --dry-run --trace`, `review`, `review-verify` |
 | Work in a conversation-first shell | `repo-ai-governor --output pretty`, `resume` |
 | Move the workspace into or out of the target repo | `workspace dry-run`, `workspace execute`, `workspace rollback` |
@@ -157,11 +157,13 @@ Use the docs like this:
 These are the constraints that most often surprise new readers:
 
 1. `dist-binary` proves CLI/runtime behavior, not packaged-install behavior.
-2. `tgz` is an online packaged-install rehearsal, not an offline/self-contained installer.
+2. `tgz` is an online packaged-install rehearsal that still depends on the npm registry, not an offline/self-contained installer.
 3. Built-in `adopt apply` is the preferred whole-repository installation path; lower-level `host export` and `host pack` are follow-up surfaces, not the default installer story.
 4. VS Code support is currently a built-source companion and local VSIX packaging path, not Marketplace support.
-5. Desktop support is currently foundation-only from a built source checkout, not a standalone desktop product.
+5. Desktop support is currently desktop foundation-only from a built source checkout, not a standalone desktop installer or standalone desktop product.
 6. `local-model` is a constrained fallback surface, not a full substitute for primary remote adapters.
+
+Built-in adoption packs can also project repository-local `.codex/skills/` assets when that governed baseline is part of the installation.
 
 For the exact support contract, always check `docs/support-matrix.md`.
 

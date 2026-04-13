@@ -70,6 +70,7 @@ const REQUIRED_PACKED_PATH_SUFFIXES = [
   'examples/single-role-minimal-flow/expected/runtime-baseline.json',
   'integrations/ci/README.md',
   'integrations/ci/github-actions/quality-gate.yml',
+  'integrations/ci/github-actions/publish-npm-cli.yml',
   'integrations/ci/github-actions/release-governance.yml',
   'integrations/ci/gitlab-ci/quality-gate.gitlab-ci.yml',
   'integrations/ci/gitlab-ci/release-governance.gitlab-ci.yml',
@@ -758,23 +759,29 @@ async function runRemoteApiDistSmokeScenario() {
     const doctorDiagnostics = JSON.parse(readFileSync(doctorArtifactPath, 'utf8'));
     assertRemoteApiVerificationPayload(doctorDiagnostics.verification, 'dist remote-api doctor');
 
-    const verifyResult = runCommand(
+    const recheckResult = runCommand(
       'node',
-      [cliEntryPath, '--output', 'json', 'verify', '--adapters'],
-      'Dist remote-api verify smoke',
+      [cliEntryPath, '--output', 'json', 'doctor', '--adapters'],
+      'Dist remote-api doctor recheck smoke',
       {
         cwd: repositoryPath,
         env: runtimeEnv,
       },
     );
-    const verifyPayload = parseJsonOutput(verifyResult.stdout ?? '', 'dist remote-api verify');
-    const verifyArtifactPath = resolveArtifactPath(
-      verifyPayload,
-      'verify_diagnostics',
-      'dist remote-api verify',
+    const recheckPayload = parseJsonOutput(
+      recheckResult.stdout ?? '',
+      'dist remote-api doctor recheck',
     );
-    const verifyDiagnostics = JSON.parse(readFileSync(verifyArtifactPath, 'utf8'));
-    assertRemoteApiVerificationPayload(verifyDiagnostics.verification, 'dist remote-api verify');
+    const recheckArtifactPath = resolveArtifactPath(
+      recheckPayload,
+      'doctor_diagnostics',
+      'dist remote-api doctor recheck',
+    );
+    const recheckDiagnostics = JSON.parse(readFileSync(recheckArtifactPath, 'utf8'));
+    assertRemoteApiVerificationPayload(
+      recheckDiagnostics.verification,
+      'dist remote-api doctor recheck',
+    );
 
     return {
       status: 'passed',
@@ -786,10 +793,10 @@ async function runRemoteApiDistSmokeScenario() {
         diagnosticsPath: doctorArtifactPath,
         overallStatus: doctorDiagnostics.verification?.overallStatus ?? null,
       },
-      verify: {
-        command: `node ${cliEntryPath} --output json verify --adapters`,
-        diagnosticsPath: verifyArtifactPath,
-        overallStatus: verifyDiagnostics.verification?.overallStatus ?? null,
+      doctorRecheck: {
+        command: `node ${cliEntryPath} --output json doctor --adapters`,
+        diagnosticsPath: recheckArtifactPath,
+        overallStatus: recheckDiagnostics.verification?.overallStatus ?? null,
       },
       endpoints: {
         openAi: server.openAiEndpoint,

@@ -734,23 +734,26 @@ async function runRemoteApiSmokeScenario(options) {
       `doctor(remote-api/${options.mode})`,
     );
 
-    const verifyStep = runCleanroomCliCommand({
+    const doctorRecheckStep = runCleanroomCliCommand({
       repositoryPath,
       runtimeEnv: scenarioEnv,
-      args: ['--output', 'json', 'verify', '--adapters'],
-      label: `verify(remote-api/${options.mode})`,
+      args: ['--output', 'json', 'doctor', '--adapters'],
+      label: `doctor-recheck(remote-api/${options.mode})`,
     });
-    const verifyPayload = parseJsonOutput(verifyStep.stdout, `verify(remote-api/${options.mode})`);
-    assertCliSuccessPayload(verifyPayload, `verify(remote-api/${options.mode})`);
-    const verifyDiagnosticsPath = resolveArtifactPath(
-      verifyPayload,
-      'verify_diagnostics',
-      `verify(remote-api/${options.mode})`,
+    const doctorRecheckPayload = parseJsonOutput(
+      doctorRecheckStep.stdout,
+      `doctor-recheck(remote-api/${options.mode})`,
     );
-    const verifyDiagnostics = JSON.parse(readFileSync(verifyDiagnosticsPath, 'utf8'));
+    assertCliSuccessPayload(doctorRecheckPayload, `doctor-recheck(remote-api/${options.mode})`);
+    const doctorRecheckDiagnosticsPath = resolveArtifactPath(
+      doctorRecheckPayload,
+      'doctor_diagnostics',
+      `doctor-recheck(remote-api/${options.mode})`,
+    );
+    const doctorRecheckDiagnostics = JSON.parse(readFileSync(doctorRecheckDiagnosticsPath, 'utf8'));
     assertRemoteApiVerificationPayload(
-      verifyDiagnostics.verification,
-      `verify(remote-api/${options.mode})`,
+      doctorRecheckDiagnostics.verification,
+      `doctor-recheck(remote-api/${options.mode})`,
     );
 
     return {
@@ -765,11 +768,11 @@ async function runRemoteApiSmokeScenario(options) {
         diagnosticsPath: doctorDiagnosticsPath,
         verificationStatus: doctorDiagnostics.verification?.overallStatus ?? null,
       },
-      verify: {
-        command: verifyStep.command,
-        durationMs: verifyStep.durationMs,
-        diagnosticsPath: verifyDiagnosticsPath,
-        verificationStatus: verifyDiagnostics.verification?.overallStatus ?? null,
+      doctorRecheck: {
+        command: doctorRecheckStep.command,
+        durationMs: doctorRecheckStep.durationMs,
+        diagnosticsPath: doctorRecheckDiagnosticsPath,
+        verificationStatus: doctorRecheckDiagnostics.verification?.overallStatus ?? null,
       },
       endpoints: {
         openAi: server.openAiEndpoint,

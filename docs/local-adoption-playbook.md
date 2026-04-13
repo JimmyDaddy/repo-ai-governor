@@ -29,7 +29,7 @@ Rules of thumb:
 1. Start with `dist-binary` if you want the lowest-risk proof.
 2. Start with `path` if the repo already uses `pnpm` and you expect to keep the governor installed.
 3. Use `link` only when live source-following is intentional.
-4. Use `tgz` only when you explicitly need packaged-install evidence and the environment can still reach the npm registry.
+4. Use `tgz` only when you explicitly need packaged-install evidence and the environment can still reach the npm registry. It is not an offline/self-contained installer.
 
 ## 2. Fastest Path To First Success
 
@@ -103,7 +103,7 @@ Use `connect` when you want one repository baseline to route multiple tools thro
 ```bash
 pnpm exec repo-ai-governor connect --tools codex,claude-code --preset multi-tool-default --output json
 pnpm exec repo-ai-governor doctor --adapters --fix --output json
-pnpm exec repo-ai-governor verify --adapters --output json
+pnpm exec repo-ai-governor doctor --adapters --output json
 pnpm exec repo-ai-governor run --output json --dry-run --trace
 ```
 
@@ -111,10 +111,10 @@ What each step proves:
 
 1. `connect` writes a reviewable candidate config instead of mutating the active config in place.
 2. `doctor --adapters --fix` performs safe local repairs only.
-3. `verify --adapters` is the readiness check before real execution.
+3. A second `doctor --adapters` is the read-only readiness check before real execution.
 4. `run --dry-run --trace` is the lowest-risk proof that routing and projected descriptors make sense.
 
-If you want `remote_api` from the start, use explicit authoring flags instead of hand-editing config first:
+If you want `remote_api` from the start, use explicit authoring flags instead of hand-editing config first. This is the lowest-risk remote-api rehearsal path:
 
 ```bash
 pnpm exec repo-ai-governor connect --tools codex --remote-api-model codex=gpt-5 --output pretty
@@ -240,7 +240,7 @@ pnpm run check:desktop-entry-smoke
 pnpm run release:verify-local
 ```
 
-Use this only when you want to validate the desktop sidecar foundation from a built source checkout. It is not a standalone desktop installer.
+Use this only when you want to validate the desktop sidecar foundation from a built source checkout. It is not a standalone desktop installer or a published desktop bundle.
 
 ### Host-native asset generation
 
@@ -265,7 +265,7 @@ When in doubt:
 
 1. Re-run `doctor --output json`.
 2. Re-run `doctor --adapters --fix --output json`.
-3. Re-run `verify --adapters --output json`.
+3. Re-run `doctor --adapters --output json`.
 4. Prefer `run --dry-run --trace` over a real run until the trace artifacts look healthy.
 5. Check `docs/support-matrix.md` before assuming a surface is formally supported.
 

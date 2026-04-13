@@ -49,6 +49,8 @@ Pick the runbook that matches the question you are trying to answer.
 
 Use this when the question is "what does the packaged CLI surface currently ship, and is the documentation truthful about it?"
 
+This runbook is the maintainer entry for packaged delivery surfaces: it tells you which packaged assets, docs, and evidence paths still match the public claims.
+
 ```bash
 cd <governor-repo>
 pnpm run release:verify-local

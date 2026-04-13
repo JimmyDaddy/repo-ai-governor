@@ -49,6 +49,8 @@
 
 当你想回答“当前打包后的 CLI surface 到底交付了什么、文档有没有说实话”时，用这条 runbook。
 
+这条 runbook 就是维护者面向演练打包发布面的入口：它说明当前随包资产、文档和证据路径是否仍与公开叙事一致。
+
 ```bash
 cd <governor-repo>
 pnpm run release:verify-local

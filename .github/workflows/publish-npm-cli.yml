@@ -1,0 +1,87 @@
+name: publish-npm-cli
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref to publish
+        required: true
+        default: main
+        type: string
+      dist_tag:
+        description: npm dist-tag
+        type: choice
+        options:
+          - latest
+          - next
+          - canary
+        default: latest
+      dry_run:
+        description: Validate the tarball without publishing to npm
+        type: boolean
+        default: true
+
+env:
+  PNPM_VERSION: 10.30.3
+  NODE_VERSION: 22
+  NPM_PUBLISH_DIRECTORY: .tmp/npm-publish/cli
+
+jobs:
+  publish-npm-cli:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+          scope: '@repo-ai-governor'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run release readiness checks
+        run: pnpm run release:check
+
+      - name: Prepare publishable CLI package
+        run: pnpm run release:prepare-npm-cli-publish -- --output "${NPM_PUBLISH_DIRECTORY}"
+
+      - name: Verify npm pack payload
+        run: npm pack --dry-run "${NPM_PUBLISH_DIRECTORY}"
+
+      - name: Smoke packaged CLI entrypoint
+        run: node "${NPM_PUBLISH_DIRECTORY}/bin/repo-ai-governor.js" --help >/dev/null
+
+      - name: Publish @repo-ai-governor/cli to npm
+        if: ${{ !inputs.dry_run }}
+        working-directory: ${{ env.NPM_PUBLISH_DIRECTORY }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --provenance --access public --tag "${{ inputs.dist_tag }}"
+
+      - name: Summarize publish result
+        env:
+          PUBLISH_MODE: ${{ inputs.dry_run && 'dry-run' || 'live-publish' }}
+        run: |
+          {
+            echo "publish_mode=${PUBLISH_MODE}"
+            echo "ref=${{ inputs.ref }}"
+            echo "dist_tag=${{ inputs.dist_tag }}"
+            echo "package=@repo-ai-governor/cli"
+            echo "publish_directory=${NPM_PUBLISH_DIRECTORY}"
+          } >> "${GITHUB_STEP_SUMMARY}"

@@ -19,7 +19,7 @@
 |---|---|
 | 初始化仓库并检查环境状态 | `init`、`doctor`、`check` |
 | 安装并维护受管 adoption baseline | `adopt list`、`adopt apply`、`adopt diff`、`adopt verify`、`adopt upgrade`、`adopt remove` |
-| 把多种 AI 工具接到同一套治理基线 | `connect`、`verify` |
+| 把多种 AI 工具接到同一套治理基线 | `connect`、`doctor` |
 | 把个人机器偏好与密钥从共享配置中隔离出来 | `config`、`secret` |
 | 跑一条受治理的交付闭环 | `plan`、`run`、`review`、`review-verify` |
 | 使用对话式 shell，而不是一次性子命令 | 无子命令执行 `repo-ai-governor`、`resume` |
@@ -93,7 +93,7 @@ pnpm exec repo-ai-governor adopt verify --repo . --output json
 ```bash
 pnpm exec repo-ai-governor connect --tools codex,claude-code --preset multi-tool-default --output json
 pnpm exec repo-ai-governor doctor --adapters --fix --output json
-pnpm exec repo-ai-governor verify --adapters --output json
+pnpm exec repo-ai-governor doctor --adapters --output json
 pnpm exec repo-ai-governor run --output json --dry-run --trace
 pnpm exec repo-ai-governor review --output json
 pnpm exec repo-ai-governor review-verify --output json
@@ -103,7 +103,7 @@ pnpm exec repo-ai-governor review-verify --output json
 
 1. `connect` 先生成可审阅的 candidate config，而不是盲改活动配置。
 2. `doctor --adapters --fix` 只处理 safe-local 修复。
-3. `verify --adapters` 是真实执行前的 readiness gate。
+3. 第二次 `doctor --adapters` 负责在真实执行前做只读 readiness 复检。
 4. `run --dry-run --trace` 能以最低风险拿到路由与产物证据。
 5. `review` 和 `review-verify` 用正式 review 生命周期把闭环补齐。
 
@@ -131,7 +131,7 @@ pnpm exec repo-ai-governor connect --tools codex --output pretty
 | 要完成的事 | 推荐命令 |
 |---|---|
 | 安装或刷新一套受治理仓库 baseline | `adopt apply`、`adopt verify`、`adopt diff`、`adopt upgrade`、`adopt remove` |
-| 给一个仓库接多种 AI 工具 | `connect`、`doctor --adapters`、`verify --adapters` |
+| 给一个仓库接多种 AI 工具 | `connect`、`doctor --adapters --fix`、`doctor --adapters` |
 | 跑通第一条 plan -> run -> review 闭环 | `plan`、`run --dry-run --trace`、`review`、`review-verify` |
 | 使用对话式 shell | `repo-ai-governor --output pretty`、`resume` |
 | 把 workspace 迁入或迁出目标仓库 | `workspace dry-run`、`workspace execute`、`workspace rollback` |
@@ -157,11 +157,13 @@ pnpm exec repo-ai-governor connect --tools codex --output pretty
 这些约束最容易让新读者踩坑：
 
 1. `dist-binary` 证明的是 CLI/runtime 行为，不是 packaged install 行为。
-2. `tgz` 是联网的 packaged install 演练，不是离线自包含安装器。
+2. `tgz` 是仍需访问 npm registry 的联网 packaged install 演练，不是离线自包含安装器。
 3. 内置 `adopt apply` 才是默认整仓安装路径；更低层的 `host export` 和 `host pack` 只是 follow-up surface，不是默认 installer story。
 4. VS Code 目前支持的是 built-source companion 和本地 VSIX 打包路径，不是 Marketplace 发布路径。
-5. Desktop 目前仍是 built-source foundation-only，不是独立桌面产品。
+5. Desktop 目前仍是 built-source 的 desktop foundation-only 路径，不是独立桌面安装器，也不是独立桌面产品。
 6. `local-model` 是受能力约束的 fallback surface，不是 primary remote adapter 的等价替代。
+
+当治理基线需要时，内置 adoption pack 也可以一并投影仓库本地的 `.codex/skills/` 资产。
 
 所有正式支持边界，都以 `docs/support-matrix.zh-CN.md` 为准。
 

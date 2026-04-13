@@ -1,7 +1,7 @@
 # integrations/ci Baseline
 
 - Status: active
-- Date: 2026-04-05
+- Date: 2026-04-13
 - Scope: `project-001-foundation / TK-004` + `project-046 / sprint-001 / TK-554`
 
 ## Purpose
@@ -16,6 +16,7 @@
 4. 模板最小集合：
    - quality gate：PR / merge-request / 主分支质量门禁
    - release governance：`canary` / `rc` / `ga` 发布治理与失败回滚信号
+   - npm publish：面向显式人工触发的 npm 包发布
 5. 后续新增 CI 平台模板时，保持同级目录命名并复用同一命令契约。
 
 ## Gate Command Contract
@@ -32,11 +33,19 @@
 3. ga：`pnpm run release:ga-candidate-unified-gate -- --output <report>`
 4. ga 失败时：`pnpm run release:rollback-rehearsal -- --output <report>`
 
+## Publish Contract
+
+1. 发布前校验：`pnpm run release:check`
+2. 发布包准备：`pnpm run release:prepare-npm-cli-publish -- --output <dir>`
+3. tarball 校验：`npm pack --dry-run <dir>`
+4. live publish：`npm publish --provenance --access public --tag <dist-tag>`
+
 ## Template Set
 
 1. GitHub Actions
    - `github-actions/quality-gate.yml`
    - `github-actions/release-governance.yml`
+   - `github-actions/publish-npm-cli.yml`
 2. GitLab CI
    - `gitlab-ci/quality-gate.gitlab-ci.yml`
    - `gitlab-ci/release-governance.gitlab-ci.yml`
