@@ -6,6 +6,21 @@ import type {
 } from '../../constants/index.js';
 
 /**
+ * Defines how one shared CLI runtime should terminate the spawned process tree.
+ */
+export type AgentCliProcessTreePolicy = 'process_only' | 'process_group_best_effort';
+
+/**
+ * Captures additive launch facts surfaced by the shared native CLI runtime.
+ */
+export interface AgentCliLaunchDiagnostics {
+  selectedEntrypoint: string;
+  shellWrapped: boolean;
+  processTreePolicy: AgentCliProcessTreePolicy;
+  spawnErrorCode?: string | null;
+}
+
+/**
  * Defines the shared request contract for CLI-backed adapter exec runners.
  */
 export interface AgentCliExecRunnerRequest {
@@ -31,6 +46,7 @@ export interface AgentCliExecRunnerResult {
   exitCode: number | null;
   signal: NodeJS.Signals | null;
   elapsedMs: number;
+  launchDiagnostics?: AgentCliLaunchDiagnostics;
 }
 
 /**
@@ -62,4 +78,27 @@ export interface AgentCliAdapterOptions<TExecRunner = AgentCliExecRunner> {
   resolveCredentialRef?: (selector: string) => Promise<string | null>;
   fetchImplementation?: typeof fetch;
   execRunner?: TExecRunner;
+}
+
+/**
+ * Defines one adapter-authored launch plan consumed by the shared native CLI runtime.
+ */
+export interface AgentCliResolvedLaunchPlan {
+  surfaceId: string;
+  operation: AgentCliExecOperation;
+  command: string;
+  commandArguments: string[];
+  cwd: string;
+  env: NodeJS.ProcessEnv;
+  timeoutMs: number;
+  signal?: AbortSignal;
+  stdinMode?: 'pipe' | 'ignore';
+  stdinPayload?: string;
+  terminateGraceMs?: number;
+  launchDiagnostics: AgentCliLaunchDiagnostics;
+  onStarted?: (startedAt: string) => void;
+  onStdoutChunk?: (chunk: string) => void;
+  onStderrChunk?: (chunk: string) => void;
+  onGracefulInterruptStart?: (cancelMechanism: 'process_signal' | 'abort_signal') => void;
+  onHardTerminateStart?: (cancelMechanism: 'process_signal' | 'abort_signal') => void;
 }

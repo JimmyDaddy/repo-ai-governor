@@ -1,6 +1,6 @@
 # sprint-002-cross-adapter-runtime-hardening-and-diagnostics-evidence 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-13
 - Project: `project-098-cli-exec-runtime-rollout`
 - Sprint Goal: 将 shared runtime 扩展到 `Claude Code` / `GitHub Copilot`，并补齐 cross-platform diagnostics 与 evidence。
@@ -22,3 +22,4 @@
 
 1. 2026-04-13：作为 `project-098` 的第二阶段 execution surface 创建，当前保持 `planned`。
 2. 2026-04-13：当前 sprint 必须等 `sprint-001` clean 收口后再激活，避免 adapter cutover 建在漂移的 runtime abstraction 上。
+3. 2026-04-13：`CR-001` resolved 后，`sprint-002` 已被激活为新的 primary execution surface；下一步推进 `TK-825 ~ TK-827` 的 cross-adapter runtime hardening 实施与 sprint-scoped fresh reviewer CR loop。

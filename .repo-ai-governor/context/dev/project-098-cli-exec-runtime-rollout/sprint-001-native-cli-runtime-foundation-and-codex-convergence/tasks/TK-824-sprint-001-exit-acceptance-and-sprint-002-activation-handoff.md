@@ -1,6 +1,6 @@
 # TK-824 sprint-001 exit acceptance and sprint-002 activation handoff
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-13
 - Owner: AI-Agent
 - Priority: P1
@@ -47,3 +47,5 @@
 ## 8. 执行记录
 
 1. 2026-04-13：任务通过 `DA-819` 创建，当前保持 `planned`，等待 sprint-001 clean 收口后执行。
+2. 2026-04-13：`CR-001` 已 resolved，`TK-821 ~ TK-823` clean 收口完成；当前开始执行 sprint-001 exit acceptance，并准备将 primary execution surface 切换到 `sprint-002`。
+3. 2026-04-13：已完成 sprint-001 exit acceptance 与 sprint-002 activation handoff；`current-context.md`、project/sprint `plan.md` 与 completed-streams-history 已同步切换到 `sprint-002` primary surface，并通过 `node ./scripts/governance/check-task-ledger-sync.js`、`node ./scripts/governance/check-sprint-plan-status-sync.js` 与 `node ./scripts/governance/check-technical-solution-delivery-registry.js`，任务收口为 `completed`。

@@ -48,7 +48,10 @@ export type {
 } from './agent-protocol.interface.js';
 export type {
   AgentCliAdapterOptions,
+  AgentCliLaunchDiagnostics,
+  AgentCliProcessTreePolicy,
   AgentCliExecRunner,
   AgentCliExecRunnerRequest,
   AgentCliExecRunnerResult,
+  AgentCliResolvedLaunchPlan,
 } from './agent-cli-exec.interface.js';

@@ -1,6 +1,6 @@
 # TK-826 cut github-copilot onto the shared native cli_exec runtime and aligned cancellation semantics
 
-- Status: planned
+- Status: active
 - Date: 2026-04-13
 - Owner: AI-Agent
 - Priority: P0
@@ -44,3 +44,4 @@
 ## 8. 执行记录
 
 1. 2026-04-13：任务通过 `DA-819` 创建，当前保持 `planned`，等待 `TK-825` 完成后执行。
+2. 2026-04-13：随着 `TK-824` 完成，任务状态切换为 `active`；当前 boundary 已进入 sprint-002 primary execution surface，下一步推进 `GitHub Copilot` shared runtime cutover、aligned cancellation semantics 与 fresh reviewer CR loop。

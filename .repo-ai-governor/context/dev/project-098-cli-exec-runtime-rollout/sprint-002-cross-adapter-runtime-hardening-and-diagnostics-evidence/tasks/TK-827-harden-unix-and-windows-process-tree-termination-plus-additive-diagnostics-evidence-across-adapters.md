@@ -1,6 +1,6 @@
 # TK-827 harden Unix and Windows process-tree termination plus additive diagnostics evidence across adapters
 
-- Status: planned
+- Status: active
 - Date: 2026-04-13
 - Owner: AI-Agent
 - Priority: P0
@@ -45,3 +45,4 @@
 ## 8. 执行记录
 
 1. 2026-04-13：任务通过 `DA-819` 创建，当前保持 `planned`，等待 `TK-826` 完成后执行。
+2. 2026-04-13：随着 `TK-824` 完成，任务状态切换为 `active`；当前 boundary 已进入 sprint-002 primary execution surface，下一步推进 cross-platform process-tree hardening、additive diagnostics evidence 汇总与 fresh reviewer CR loop。

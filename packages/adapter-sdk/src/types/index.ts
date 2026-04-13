@@ -16,9 +16,12 @@ export type {
 } from './interfaces/index.js';
 export type {
   AgentCliAdapterOptions,
+  AgentCliLaunchDiagnostics,
+  AgentCliProcessTreePolicy,
   AgentCliExecRunner,
   AgentCliExecRunnerRequest,
   AgentCliExecRunnerResult,
+  AgentCliResolvedLaunchPlan,
   AgentCancelRequest,
   AgentCancelResult,
   AgentCancellationCapability,
