@@ -1189,6 +1189,56 @@ describe('claude-code-agent-adapter smoke', () => {
     );
   });
 
+  it('preserves fallback launch diagnostics when probe parsing fails after fallback launch', async () => {
+    const execRunner = vi.fn<ClaudeCodeExecRunner>(async (request) => {
+      if (request.command === 'claude') {
+        throw new RuntimeError(
+          GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED,
+          'spawn claude ENOENT',
+          {
+            stderr: 'spawn claude ENOENT',
+          },
+        );
+      }
+
+      return {
+        stdout: '',
+        stderr: '',
+        exitCode: 0,
+        signal: null,
+        elapsedMs: 5,
+        launchDiagnostics: {
+          selectedEntrypoint: 'claude-code',
+          shellWrapped: false,
+          processTreePolicy: 'process_group_best_effort',
+        },
+      };
+    });
+    const adapter = new ClaudeCodeAgentAdapter({
+      executionMode: ClaudeCodeAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner,
+    });
+
+    const probeResult = await adapter.probe({
+      routeKey: 'codegen',
+    });
+
+    expect(probeResult.availabilityStatus).toBe('unavailable');
+    expect(probeResult.healthCheck?.selectedEntrypoint).toBe('claude-code');
+    expect(probeResult.healthCheck?.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'install.entrypoint_resolution',
+          detail: 'claude-code',
+        }),
+        expect.objectContaining({
+          code: 'protocol.process_tree_policy',
+          detail: 'process_group_best_effort',
+        }),
+      ]),
+    );
+  });
+
   it('places the prompt after a delimiter so --add-dir does not swallow it', async () => {
     const tempRoot = mkdtempSync(join(tmpdir(), 'claude-cli-argv-'));
     const commandPath = join(tempRoot, 'fake-claude');

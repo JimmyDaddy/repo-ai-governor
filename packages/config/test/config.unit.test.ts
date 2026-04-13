@@ -383,6 +383,28 @@ describe('config unit', () => {
     expect(codexTool?.remoteApi?.vendorBinding).toBe(AdapterVendorBindingKind.OPENAI_RESPONSES);
   });
 
+  it('rejects non-canonical acp transport authoring for adapter tools', () => {
+    const validator = new SchemaValidator();
+    const baseConfig = createConfigFixture();
+    const baseAdapters = requireAdaptersFixture(baseConfig);
+    const invalidConfig: GovernorConfig = {
+      ...baseConfig,
+      adapters: {
+        ...baseAdapters,
+        tools: [
+          {
+            toolId: AdapterSurface.CODEX,
+            enabled: true,
+            availability: AdapterAvailability.AVAILABLE,
+            transport: 'acp' as AdapterTransportKind,
+          },
+        ],
+      },
+    };
+
+    expect(() => validator.validateOrThrow(invalidConfig)).toThrow(/transport/u);
+  });
+
   it('preserves inferred remote_api selection when remoteApi is configured without transport', () => {
     const validator = new SchemaValidator();
     const baseConfig = createConfigFixture();

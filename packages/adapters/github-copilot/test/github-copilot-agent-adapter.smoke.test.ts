@@ -473,6 +473,122 @@ describe('github-copilot-agent-adapter smoke', () => {
     );
   });
 
+  it('preserves fallback launch diagnostics when probe parsing fails after gh fallback launch', async () => {
+    const execRunner = vi.fn<GithubCopilotExecRunner>(async (request) => {
+      if (request.command === 'copilot') {
+        throw new RuntimeError(
+          GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED,
+          'spawn copilot ENOENT',
+          {
+            stderr: 'spawn copilot ENOENT',
+          },
+        );
+      }
+
+      return {
+        stdout: '{"type":"result","exitCode":0}',
+        stderr: '',
+        exitCode: 0,
+        signal: null,
+        elapsedMs: 5,
+        launchDiagnostics: {
+          selectedEntrypoint: 'gh',
+          shellWrapped: false,
+          processTreePolicy: 'process_group_best_effort',
+        },
+      };
+    });
+    const adapter = new GithubCopilotAgentAdapter({
+      executionMode: GithubCopilotAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner,
+    });
+
+    const probeResult = await adapter.probe({
+      routeKey: 'codegen',
+    });
+
+    expect(probeResult.availabilityStatus).toBe('unavailable');
+    expect(probeResult.healthCheck?.selectedEntrypoint).toBe('gh');
+    expect(probeResult.healthCheck?.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'install.entrypoint_resolution',
+          detail: 'gh',
+        }),
+        expect.objectContaining({
+          code: 'protocol.process_tree_policy',
+          detail: 'process_group_best_effort',
+        }),
+      ]),
+    );
+  });
+
+  it('preserves fallback launch diagnostics and standardized errors on malformed gh fallback output', async () => {
+    const malformedStdout = '{"type":"assistant.message","data":{"content":"OK"}';
+    const execRunner = vi.fn<GithubCopilotExecRunner>(async (request) => {
+      if (request.command === 'copilot') {
+        throw new RuntimeError(
+          GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED,
+          'spawn copilot ENOENT',
+          {
+            stderr: 'spawn copilot ENOENT',
+          },
+        );
+      }
+
+      return {
+        stdout: malformedStdout,
+        stderr: '',
+        exitCode: 0,
+        signal: null,
+        elapsedMs: 5,
+        launchDiagnostics: {
+          selectedEntrypoint: 'gh',
+          shellWrapped: false,
+          processTreePolicy: 'process_group_best_effort',
+        },
+      };
+    });
+    const adapter = new GithubCopilotAgentAdapter({
+      executionMode: GithubCopilotAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner,
+    });
+
+    const probeResult = await adapter.probe({
+      routeKey: 'codegen',
+    });
+
+    expect(probeResult.availabilityStatus).toBe('unavailable');
+    expect(probeResult.healthCheck?.selectedEntrypoint).toBe('gh');
+    expect(probeResult.healthCheck?.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'install.entrypoint_resolution',
+          detail: 'gh',
+        }),
+        expect.objectContaining({
+          code: 'protocol.process_tree_policy',
+          detail: 'process_group_best_effort',
+        }),
+      ]),
+    );
+
+    await expect(
+      adapter.invokeStage({
+        processId: 'process-1',
+        executionId: 'execution-1',
+        stageId: 'stage-1',
+        routeKey: 'codegen',
+        input: {
+          prompt: 'implement feature',
+        },
+      }),
+    ).rejects.toMatchObject({
+      code: GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+      message: expect.stringContaining('malformed JSON output'),
+    });
+  });
+
   it('reuses one cli_exec invocation across streamEvents and invokeStage and relays token/status output incrementally', async () => {
     const abortController = new AbortController();
     const execRunner = vi.fn<GithubCopilotExecRunner>().mockImplementation(async (request) => {

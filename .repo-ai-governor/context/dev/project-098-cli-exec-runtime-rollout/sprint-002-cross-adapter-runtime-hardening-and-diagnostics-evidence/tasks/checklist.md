@@ -11,12 +11,12 @@
 - [x] TK-827 harden Unix and Windows process-tree termination plus additive diagnostics evidence across adapters
   - 2026-04-13：任务通过 `DA-819` 创建，当前保持 `planned`，等待 `TK-826` 完成后执行。
   - 2026-04-13：随着 `TK-824` 完成，任务状态切换为 `active`；shared runtime 已补齐 Unix process-group / Windows `taskkill /T` 树终止收敛、launch diagnostics additive truth 与非零退出失败语义，`Claude Code` / `GitHub Copilot` / `Codex` cross-adapter evidence 已通过 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run check`；当前等待 sprint-002 delegated CR。
-  - 2026-04-13：`CR-001` 要求补齐 `process_group_best_effort` branch-level regression coverage；补丁与验证已完成，cross-platform terminate hardening claim 获得直接测试守护，本任务收口为 `completed`。
+  - 2026-04-13：`CR-001` 第 2 次 fresh review 识别 `Claude Code` / `GitHub Copilot` probe fallback launch diagnostics 在 parse-failure path 上会丢失；已补齐 adapter error-detail launch diagnostics 透传与 smoke regression，cross-platform terminate hardening 与 additive diagnostics evidence 已 clean 收口，本任务收口为 `completed`。
 - [x] TK-828 sprint-002 exit acceptance and sprint-003 activation handoff
   - 2026-04-13：任务通过 `DA-819` 创建，当前保持 `planned`，等待 sprint-002 clean 收口后执行。
   - 2026-04-13：随着 `CR-001` clean 收口，已完成 sprint-002 exit acceptance、delivery registry handoff 与 `current-context` primary stream 切换；`sprint-003-explicit-acp-extension-seam-guardrails-and-rollout-closeout` 已被激活为新的 primary execution surface。
-  - 2026-04-13: TK-828 completed after delivery registry handoff and current-context switched to sprint-003.
 - [x] CR-001 sprint-002-cross-adapter-runtime-hardening-and-diagnostics-evidence delegated review loop round 1
   - 2026-04-13：任务创建，状态初始化为 `review_pending`。
-  - 2026-04-13：fresh review 发现 1 条 lifecycle-sensitive coverage gap；主 agent 已完成复核并认可该 finding，review artifact 已补充 `复核结论`。
-  - 2026-04-13：已补齐 shared runtime `process_group_best_effort` 分支的 Unix / Windows regression coverage，并将 review artifact 推进到 `resolved_code_review_working-tree-20260413-1435.md`。
+  - 2026-04-13：第 1 次 fresh reviewer 在完整等待窗口后未返回可消费结论；主 agent 已保留 timeout 事实并发起第 2 次 fresh reviewer。
+  - 2026-04-13：第 2 次 fresh reviewer 返回 2 条 actionable findings；主 agent 已完成复核并全部认可，review artifact 已补充 `复核结论`。
+  - 2026-04-13：已完成 Claude Code / GitHub Copilot probe fallback launch diagnostics 修复与 smoke regression 补强，并将 review artifact 推进到 `resolved_code_review_working-tree-20260413-1435.md`。

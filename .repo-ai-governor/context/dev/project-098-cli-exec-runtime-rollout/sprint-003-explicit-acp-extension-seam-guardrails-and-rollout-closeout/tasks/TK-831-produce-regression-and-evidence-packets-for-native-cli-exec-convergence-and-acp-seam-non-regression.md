@@ -1,6 +1,6 @@
 # TK-831 produce regression and evidence packets for native cli_exec convergence and ACP seam non-regression
 
-- Status: active
+- Status: completed
 - Date: 2026-04-13
 - Owner: AI-Agent
 - Priority: P0
@@ -47,3 +47,4 @@
 
 1. 2026-04-13：任务通过 `DA-819` 创建，当前保持 `planned`，等待 `TK-830` 完成后执行。
 2. 2026-04-13：随着 `TK-828` 完成，任务状态切换为 `active`；当前围绕 seam unit test、config public-boundary guardrail test 与 package-level non-regression suite 收敛 evidence packet，等待 sprint-003 delegated CR。
+3. 2026-04-13：`CR-001` clean 收口后，ACP seam non-regression 与 native `cli_exec` convergence evidence 已具备 project-final review 前置条件，本任务收口为 `completed`。

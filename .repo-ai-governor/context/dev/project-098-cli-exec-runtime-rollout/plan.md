@@ -1,6 +1,6 @@
 # project-098-cli-exec-runtime-rollout 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-13
 - Stage Mapping: runtime.agent-projection cli_exec runtime rollout
 - Phase Mapping: native runtime foundation / cross-adapter hardening and diagnostics evidence / explicit ACP seam guardrails and closeout
@@ -35,7 +35,7 @@
 
 ## 2.3 sprint-003-explicit-acp-extension-seam-guardrails-and-rollout-closeout
 
-- Status: active
+- Status: completed
 - Sprint Goal: 锁定 explicit ACP seam guardrail、补齐 non-regression evidence，并完成 rollout closeout。
 - Task Package: `TK-829`、`TK-830`、`TK-831`、`TK-832`
 
@@ -51,10 +51,10 @@
 | TK-826 | sprint-002 | cut github-copilot onto the shared native cli_exec runtime and aligned cancellation semantics | adapter/cutover | TK-825 | completed |
 | TK-827 | sprint-002 | harden Unix and Windows process-tree termination plus additive diagnostics evidence across adapters | cross-platform/evidence | TK-826 | completed |
 | TK-828 | sprint-002 | sprint-002 exit acceptance and sprint-003 activation handoff | sprint/closeout | TK-825、TK-826、TK-827 | completed |
-| TK-829 | sprint-003 | isolate a provisional ACP extension seam behind non-canonical internal runtime boundaries | runtime/seam | TK-827 | active |
-| TK-830 | sprint-003 | add guardrails so ACP remains additive non-default and non-public without a separate solution | governance/guardrails | TK-829 | active |
-| TK-831 | sprint-003 | produce regression and evidence packets for native cli_exec convergence and ACP seam non-regression | evidence/verification | TK-830 | active |
-| TK-832 | sprint-003 | finalize project-098 rollout closeout and delivery evidence handoff | closeout/delivery | TK-831 | planned |
+| TK-829 | sprint-003 | isolate a provisional ACP extension seam behind non-canonical internal runtime boundaries | runtime/seam | TK-827 | completed |
+| TK-830 | sprint-003 | add guardrails so ACP remains additive non-default and non-public without a separate solution | governance/guardrails | TK-829 | completed |
+| TK-831 | sprint-003 | produce regression and evidence packets for native cli_exec convergence and ACP seam non-regression | evidence/verification | TK-830 | completed |
+| TK-832 | sprint-003 | finalize project-098 rollout closeout and delivery evidence handoff | closeout/delivery | TK-831 | completed |
 
 ## 4. 依赖产物策略
 
@@ -78,9 +78,11 @@
 4. 2026-04-13：`project-098 / sprint-001` 已切为 primary execution surface；shared runtime、Codex convergence、Claude/GitHub cutover、ACP internal seam 与 focused evidence 已完成实现，当前按 sprint 顺序进入 delegated CR loop。
 5. 2026-04-13：`CR-001` 已 resolved，shared runtime 非零退出语义与 regression coverage 已补齐；`TK-821 ~ TK-824` 已完成收口，当前已激活 `sprint-002` 作为下一条 primary execution surface。
 6. 2026-04-13：`Claude Code` / `GitHub Copilot` shared runtime cutover、cross-platform terminate hardening 与 additive diagnostics evidence 已完成实现，`TK-825 ~ TK-827` 当前进入 sprint-002 fresh reviewer CR loop。
-7. 2026-04-13：`sprint-002` fresh review 已 clean 收口；`process_group_best_effort` branch-level regression coverage 已补齐，`TK-825 ~ TK-828` 全部完成，当前已激活 `sprint-003` 作为新的 primary execution surface。
+7. 2026-04-13：`sprint-002` fresh review 已 clean 收口；`Claude Code` / `GitHub Copilot` probe fallback launch diagnostics parse-failure drift 已修复并补齐 smoke regression，`TK-825 ~ TK-828` 全部完成，当前已激活 `sprint-003` 作为新的 primary execution surface。
 8. 2026-04-13：`TK-829 ~ TK-831` 已切换为 `active`；internal ACP seam、config guardrail 与 non-regression evidence 当前进入 sprint-003 fresh reviewer CR loop。
+9. 2026-04-13：`sprint-003 / CR-001` 已 clean 收口；`TK-829 ~ TK-831` 已全部完成，当前继续在 sprint-003 surface 上承接 project-final fresh review 与 `TK-832` closeout。
+10. 2026-04-13：`project-final / CR-002` 已 clean 收口，`TK-832` 已完成最终 closeout write-back，`project-098` 正式进入 `completed`，并在此里程碑回链 [project-098 completion audit summary](./project-098-cli-exec-runtime-rollout-completion-audit-summary.md)。
 
 ## 7. 里程碑记录入口
 
-1. 后续 closeout 完成后在此回链 `project-098-cli-exec-runtime-rollout-completion-audit-summary.md`
+1. [project-098 completion audit summary](./project-098-cli-exec-runtime-rollout-completion-audit-summary.md)

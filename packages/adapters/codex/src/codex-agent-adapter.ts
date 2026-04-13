@@ -813,11 +813,25 @@ export class CodexAgentAdapter extends AgentProtocol {
     executionResult: CodexExecRunnerResult,
     operation: AgentCliExecOperation,
   ): CodexCliParsedOutput {
-    const jsonEvents: CodexCliJsonEvent[] = executionResult.stdout
-      .split(/\r?\n/u)
-      .map((line) => line.trim())
-      .filter((line) => line.startsWith('{'))
-      .map((line) => JSON.parse(line) as CodexCliJsonEvent);
+    let jsonEvents: CodexCliJsonEvent[];
+    try {
+      jsonEvents = executionResult.stdout
+        .split(/\r?\n/u)
+        .map((line) => line.trim())
+        .filter((line) => line.startsWith('{'))
+        .map((line) => JSON.parse(line) as CodexCliJsonEvent);
+    } catch (error) {
+      const standardizedError = standardizeError(error);
+      throw new RuntimeError(
+        operation === AgentCliExecOperation.PROBE
+          ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
+          : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+        `Codex ${operation} returned malformed JSON output: ${standardizedError.message}`,
+        this.createCodexCliFailureDetails(executionResult, operation, {
+          parseError: standardizedError.message,
+        }),
+      );
+    }
 
     const completedMessage = jsonEvents
       .filter((event) => event.type === 'item.completed' && event.item?.type === 'agent_message')
@@ -831,12 +845,7 @@ export class CodexAgentAdapter extends AgentProtocol {
           ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
           : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
         `Codex ${operation} returned no completed agent_message event.`,
-        this.cliExecOperationsRuntime.createRedactedProcessDetails({
-          surface: CODEX_SURFACE,
-          operation,
-          stdout: executionResult.stdout,
-          stderr: executionResult.stderr,
-        }),
+        this.createCodexCliFailureDetails(executionResult, operation),
       );
     }
 
@@ -863,6 +872,32 @@ export class CodexAgentAdapter extends AgentProtocol {
         .map((line) => line.trim())
         .filter((line) => line.length > 0),
     };
+  }
+
+  private createCodexCliFailureDetails(
+    executionResult: CodexExecRunnerResult,
+    operation: AgentCliExecOperation,
+    extraDetails: Record<string, unknown> = {},
+  ) {
+    return this.cliExecOperationsRuntime.createRedactedProcessDetails({
+      surface: CODEX_SURFACE,
+      operation,
+      stdout: executionResult.stdout,
+      stderr: executionResult.stderr,
+      ...extraDetails,
+      ...(executionResult.launchDiagnostics
+        ? {
+            selectedEntrypoint: executionResult.launchDiagnostics.selectedEntrypoint,
+            shellWrapped: executionResult.launchDiagnostics.shellWrapped,
+            processTreePolicy: executionResult.launchDiagnostics.processTreePolicy,
+            ...(executionResult.launchDiagnostics.spawnErrorCode
+              ? {
+                  spawnErrorCode: executionResult.launchDiagnostics.spawnErrorCode,
+                }
+              : {}),
+          }
+        : {}),
+    });
   }
 
   private resolveRemoteApiOptions(): ResolvedCodexRemoteApiOptions | null {

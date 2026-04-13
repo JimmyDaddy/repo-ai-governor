@@ -182,6 +182,65 @@ describe('codex-agent-adapter smoke', () => {
     expect(execRunner).toHaveBeenCalledTimes(2);
   });
 
+  it('preserves launch diagnostics and standardized errors when cli_exec output is malformed', async () => {
+    const malformedStdout = '{"type":"thread.started","thread_id":"thread-1"';
+    const execRunner = vi
+      .fn<CodexExecRunner>()
+      .mockResolvedValueOnce({
+        stdout: malformedStdout,
+        stderr: '',
+        exitCode: 0,
+        signal: null,
+        elapsedMs: 12,
+        launchDiagnostics: {
+          selectedEntrypoint: 'codex',
+          shellWrapped: false,
+          processTreePolicy: 'process_group_best_effort',
+        },
+      })
+      .mockResolvedValueOnce({
+        stdout: malformedStdout,
+        stderr: '',
+        exitCode: 0,
+        signal: null,
+        elapsedMs: 12,
+        launchDiagnostics: {
+          selectedEntrypoint: 'codex',
+          shellWrapped: false,
+          processTreePolicy: 'process_group_best_effort',
+        },
+      });
+    const adapter = new CodexAgentAdapter({
+      executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner,
+      currentWorkingDirectory: process.cwd(),
+    });
+
+    const probeResult = await adapter.probe({
+      routeKey: 'cli.adapter.probe.codex',
+    });
+
+    expect(probeResult.availabilityStatus).toBe('unavailable');
+    expect(probeResult.healthCheck?.selectedEntrypoint).toBe('codex');
+    expect(probeResult.healthCheck?.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'install.entrypoint_resolution',
+          detail: 'codex',
+        }),
+        expect.objectContaining({
+          code: 'protocol.process_tree_policy',
+          detail: 'process_group_best_effort',
+        }),
+      ]),
+    );
+
+    await expect(adapter.invokeStage(createInvokeRequest())).rejects.toMatchObject({
+      code: GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+      message: expect.stringContaining('malformed JSON output'),
+    });
+  });
+
   it('supports remote_api probe and invoke through OpenAI-compatible fetch', async () => {
     const fetchImplementation = vi
       .fn<typeof fetch>()

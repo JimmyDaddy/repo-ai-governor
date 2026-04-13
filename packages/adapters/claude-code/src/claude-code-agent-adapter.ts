@@ -1533,11 +1533,7 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
           ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
           : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
         `Claude Code ${operation} failed with exit code ${executionResult.exitCode}.`,
-        this.cliExecOperationsRuntime.createRedactedProcessDetails({
-          surface: CLAUDE_CODE_SURFACE,
-          operation,
-          stdout: executionResult.stdout,
-          stderr: executionResult.stderr,
+        this.createClaudeCodeCliFailureDetails(executionResult, operation, {
           exitCode: executionResult.exitCode,
           signal: executionResult.signal,
         }),
@@ -1551,12 +1547,7 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
           ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
           : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
         `Claude Code ${operation} returned no response text.`,
-        this.cliExecOperationsRuntime.createRedactedProcessDetails({
-          surface: CLAUDE_CODE_SURFACE,
-          operation,
-          stdout: executionResult.stdout,
-          stderr: executionResult.stderr,
-        }),
+        this.createClaudeCodeCliFailureDetails(executionResult, operation),
       );
     }
 
@@ -1573,6 +1564,32 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
           }
         : {}),
     };
+  }
+
+  private createClaudeCodeCliFailureDetails(
+    executionResult: ClaudeCodeExecRunnerResult,
+    operation: AgentCliExecOperation,
+    extraDetails: Record<string, unknown> = {},
+  ) {
+    return this.cliExecOperationsRuntime.createRedactedProcessDetails({
+      surface: CLAUDE_CODE_SURFACE,
+      operation,
+      stdout: executionResult.stdout,
+      stderr: executionResult.stderr,
+      ...extraDetails,
+      ...(executionResult.launchDiagnostics
+        ? {
+            selectedEntrypoint: executionResult.launchDiagnostics.selectedEntrypoint,
+            shellWrapped: executionResult.launchDiagnostics.shellWrapped,
+            processTreePolicy: executionResult.launchDiagnostics.processTreePolicy,
+            ...(executionResult.launchDiagnostics.spawnErrorCode
+              ? {
+                  spawnErrorCode: executionResult.launchDiagnostics.spawnErrorCode,
+                }
+              : {}),
+          }
+        : {}),
+    });
   }
 
   private resolveStructuredResponse(responseText: string): unknown | undefined {

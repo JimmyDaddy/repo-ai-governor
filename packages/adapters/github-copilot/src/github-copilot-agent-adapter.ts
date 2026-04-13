@@ -1573,11 +1573,25 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
     executionResult: GithubCopilotExecRunnerResult,
     operation: AgentCliExecOperation,
   ): GithubCopilotCliParsedOutput {
-    const jsonEvents = executionResult.stdout
-      .split(/\r?\n/u)
-      .map((line) => line.trim())
-      .filter((line) => line.startsWith('{'))
-      .map((line) => JSON.parse(line) as GithubCopilotCliJsonEvent);
+    let jsonEvents: GithubCopilotCliJsonEvent[];
+    try {
+      jsonEvents = executionResult.stdout
+        .split(/\r?\n/u)
+        .map((line) => line.trim())
+        .filter((line) => line.startsWith('{'))
+        .map((line) => JSON.parse(line) as GithubCopilotCliJsonEvent);
+    } catch (error) {
+      const standardizedError = standardizeError(error);
+      throw new RuntimeError(
+        operation === AgentCliExecOperation.PROBE
+          ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
+          : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+        `GitHub Copilot ${operation} returned malformed JSON output: ${standardizedError.message}`,
+        this.createGithubCopilotCliFailureDetails(executionResult, operation, {
+          parseError: standardizedError.message,
+        }),
+      );
+    }
 
     const sessionErrorEvent = jsonEvents.find((event) => event.type === 'session.error');
     if (sessionErrorEvent) {
@@ -1586,11 +1600,7 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
           ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
           : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
         `GitHub Copilot ${operation} failed: ${sessionErrorEvent.data?.message ?? 'unknown session error'}`,
-        this.cliExecOperationsRuntime.createRedactedProcessDetails({
-          surface: GITHUB_COPILOT_SURFACE,
-          operation,
-          stdout: executionResult.stdout,
-          stderr: executionResult.stderr,
+        this.createGithubCopilotCliFailureDetails(executionResult, operation, {
           statusCode: sessionErrorEvent.data?.statusCode,
           errorType: sessionErrorEvent.data?.errorType,
         }),
@@ -1605,11 +1615,7 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
           ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
           : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
         `GitHub Copilot ${operation} exited with code ${resultExitCode}.`,
-        this.cliExecOperationsRuntime.createRedactedProcessDetails({
-          surface: GITHUB_COPILOT_SURFACE,
-          operation,
-          stdout: executionResult.stdout,
-          stderr: executionResult.stderr,
+        this.createGithubCopilotCliFailureDetails(executionResult, operation, {
           exitCode: resultExitCode,
         }),
       );
@@ -1642,12 +1648,7 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
           ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
           : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
         `GitHub Copilot ${operation} returned no assistant response.`,
-        this.cliExecOperationsRuntime.createRedactedProcessDetails({
-          surface: GITHUB_COPILOT_SURFACE,
-          operation,
-          stdout: executionResult.stdout,
-          stderr: executionResult.stderr,
-        }),
+        this.createGithubCopilotCliFailureDetails(executionResult, operation),
       );
     }
 
@@ -1658,6 +1659,32 @@ export class GithubCopilotAgentAdapter extends AgentProtocol {
         .map((line) => line.trim())
         .filter((line) => line.length > 0),
     };
+  }
+
+  private createGithubCopilotCliFailureDetails(
+    executionResult: GithubCopilotExecRunnerResult,
+    operation: AgentCliExecOperation,
+    extraDetails: Record<string, unknown> = {},
+  ) {
+    return this.cliExecOperationsRuntime.createRedactedProcessDetails({
+      surface: GITHUB_COPILOT_SURFACE,
+      operation,
+      stdout: executionResult.stdout,
+      stderr: executionResult.stderr,
+      ...extraDetails,
+      ...(executionResult.launchDiagnostics
+        ? {
+            selectedEntrypoint: executionResult.launchDiagnostics.selectedEntrypoint,
+            shellWrapped: executionResult.launchDiagnostics.shellWrapped,
+            processTreePolicy: executionResult.launchDiagnostics.processTreePolicy,
+            ...(executionResult.launchDiagnostics.spawnErrorCode
+              ? {
+                  spawnErrorCode: executionResult.launchDiagnostics.spawnErrorCode,
+                }
+              : {}),
+          }
+        : {}),
+    });
   }
 
   /**
