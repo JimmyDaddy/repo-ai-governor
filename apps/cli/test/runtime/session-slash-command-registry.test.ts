@@ -36,9 +36,17 @@ const TRANSLATIONS: Record<string, string> = {
     'Open the session-shell theme selector or persist one explicit workspace/global theme.',
   'cli.reactShell.themePresets.governor.description':
     'Cool blue-gray default palette with higher contrast for governance-focused information.',
+  'cli.reactShell.themePresets.copilot.description':
+    'Compact blue-black shell inspired by GitHub Copilot surfaces.',
   'cli.reactShell.themePresets.catppuccin.description':
     'Vivid pastel palette for a more expressive shell surface.',
   'cli.reactShell.themePresets.calm.description': 'Soft low-contrast palette for longer sessions.',
+  'cli.reactShell.themePresets.tokyo-night.description':
+    'Electric midnight blues with crisp cyan-violet highlights.',
+  'cli.reactShell.themePresets.kanagawa.description':
+    'Muted Japanese-ink palette with warm neutrals and soft gold accents.',
+  'cli.reactShell.themePresets.flexoki.description':
+    'Warm ink-on-paper contrast with readable amber and teal accents.',
   'sessionMainCapabilities.catalog.branch_switch.summary':
     'Switch the current repository to an existing local git branch through the governed workspace flow.',
   'sessionMainCapabilities.catalog.connect.summary':
@@ -160,6 +168,15 @@ describe('CliSessionSlashCommandRegistry', () => {
         ],
       },
       {
+        command: '/workspace set-ui-theme copilot',
+        summary: 'Compact blue-black shell inspired by GitHub Copilot surfaces.',
+        highlightSegments: [
+          { text: '/', highlighted: false },
+          { text: 'workspace set-ui-theme', highlighted: true },
+          { text: ' copilot', highlighted: false },
+        ],
+      },
+      {
         command: '/workspace set-ui-theme catppuccin',
         summary: 'Vivid pastel palette for a more expressive shell surface.',
         highlightSegments: [
@@ -177,9 +194,45 @@ describe('CliSessionSlashCommandRegistry', () => {
           { text: ' calm', highlighted: false },
         ],
       },
+      {
+        command: '/workspace set-ui-theme tokyo-night',
+        summary: 'Electric midnight blues with crisp cyan-violet highlights.',
+        highlightSegments: [
+          { text: '/', highlighted: false },
+          { text: 'workspace set-ui-theme', highlighted: true },
+          { text: ' tokyo-night', highlighted: false },
+        ],
+      },
+      {
+        command: '/workspace set-ui-theme kanagawa',
+        summary: 'Muted Japanese-ink palette with warm neutrals and soft gold accents.',
+        highlightSegments: [
+          { text: '/', highlighted: false },
+          { text: 'workspace set-ui-theme', highlighted: true },
+          { text: ' kanagawa', highlighted: false },
+        ],
+      },
+      {
+        command: '/workspace set-ui-theme flexoki',
+        summary: 'Warm ink-on-paper contrast with readable amber and teal accents.',
+        highlightSegments: [
+          { text: '/', highlighted: false },
+          { text: 'workspace set-ui-theme', highlighted: true },
+          { text: ' flexoki', highlighted: false },
+        ],
+      },
     ]);
 
     expect(registry.suggest('/workspace set-ui-theme c', translate)).toEqual([
+      {
+        command: '/workspace set-ui-theme copilot',
+        summary: 'Compact blue-black shell inspired by GitHub Copilot surfaces.',
+        highlightSegments: [
+          { text: '/', highlighted: false },
+          { text: 'workspace set-ui-theme c', highlighted: true },
+          { text: 'opilot', highlighted: false },
+        ],
+      },
       {
         command: '/workspace set-ui-theme catppuccin',
         summary: 'Vivid pastel palette for a more expressive shell surface.',

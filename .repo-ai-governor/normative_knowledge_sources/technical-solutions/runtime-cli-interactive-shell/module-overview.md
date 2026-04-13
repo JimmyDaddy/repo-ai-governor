@@ -1,7 +1,7 @@
 # Runtime CLI Interactive Shell Module Overview
 
 - Status: active
-- Date: 2026-04-11
+- Date: 2026-04-13
 - Module ID: `runtime.cli-interactive-shell`
 - Owner: runtime
 - Layer: `runtime-core`
@@ -26,6 +26,7 @@
 12. 为 interactive CLI command surface 的 maturity layering、thin-baseline enhancement priority 与 companion contract linked-input policy 提供正式 planning ADR，但不得把优先级分析误当作 command runtime truth。
 13. 对 nested governed command 的结构化错误输出承担 presenter 级恢复引导职责：shell 必须把 machine-readable `error_code / hint / next_action` 转译成用户可执行的 shell-native 提示，而不是把原始 JSON 载荷直接暴露给 transcript。
 14. 对 session shell 默认可读性与 nested discoverability 的增强只允许停留在 presenter 层：可以调节 dim/强调样式、对比度、palette row budget、摘要截断与 nested action hints，但不得把这类增强升级成宿主字体设置、额外 public command family 或第二套命令语义真值。
+15. 对显式 `/secret set <keyName>` authoring path 承担 shell-local secure capture 与 redacted command handoff 的正式边界：shell 必须在 secure route 命中后于 presenter-state commit 之前拦截额外 suffix、把 raw secret 限制在本地隐藏输入 buffer 中，并通过本地 mutation seam 交给共享 secret backend 路径，而不得继续经由 `bridgeArgv`、nested JSON CLI 或 transcript recap 传递真实 secret。
 
 ## 3. 非目标
 
@@ -79,7 +80,9 @@
 17. 截至 `2026-04-10`，本模块进一步接受“session.main prompt-first command model split”补充方向：session shell 的 discoverability/presenter 现需显式区分 raw `@role` expert surface、AI fixed workflow slash command、deterministic utility slash command 与 explain-only affordance；`/verify` 不再作为 public discoverable command 保留，而 `/run` 继续保留但只能以 reusable governed execution flow 的 narrowed wording 对用户展示。
 18. 截至 `2026-04-11`，本模块进一步接受“structured nested-command error recovery guidance”补充方向：当 nested CLI command 返回 `cli_output_v1` 错误或 stdout 中出现重复 JSON payload 时，session shell 仍需优先恢复结构化错误、输出用户可执行的恢复建议，并避免把原始 JSON 错误块直接回显到 transcript 主画布。
 19. 截至 `2026-04-11`，本模块进一步接受“session-shell readability tuning and workspace nested discoverability”补充方向：默认可读性增强只允许调节 presenter emphasis/density/contrast，不新增真实字体缩放或宿主字号偏好；`/workspace` slash palette 需显式暴露 `dry-run|execute|rollback|clear-config|switch-branch|set-ui-theme`，但 bare `/` launcher shortlist 仍保持受控。
-20. 截至 `2026-04-11`，本模块进一步接受“session-shell theme preset choice follow-up”补充方向：`/workspace set-ui-theme` 在 session shell 中需直接暴露 `governor|catppuccin|calm` preset-choice 提示，并允许带空格前缀的 `Enter/Tab` 优先接受更具体子命令，避免无 preset 父命令先失败再回退的交互。
+20. 截至 `2026-04-11`，本模块进一步接受“session-shell theme preset choice follow-up”补充方向：`/workspace set-ui-theme` 在 session shell 中需直接暴露当前公开 preset catalog 的 choice 提示；当前真值为 `governor|catppuccin|calm|tokyo-night|kanagawa|flexoki`，并允许带空格前缀的 `Enter/Tab` 优先接受更具体子命令，避免无 preset 父命令先失败再回退的交互。
+21. 截至 `2026-04-12`，本模块进一步接受“session-shell secure local secret capture and redacted handoff”补充方向：显式 `/secret set <keyName>` 现必须切换到 shell-local secure capture；extra token/suffix 的 typed/pasted bytes 必须在进入 `composer_value` / `slash_query` 之前被拦截并丢弃；raw secret 只允许在本地隐藏输入 buffer 与共享 secret mutation seam 之间短暂存在，而 `session.main`-triggered secure-input request 与 desktop/VS Code parity 继续留在后续独立 solution。
+22. 截至 `2026-04-13`，本模块进一步接受“web-inspired theme pack expansion”补充方向：theme definitions 现应与 registry logic 分离维护，新增 preset 继续复用 shared preset enum 与统一 discoverability/help 真值，不得因为 palette 数量增长而把 registry 退化成一份难以维护的单文件 theme 数据表。
 
 ## 9. Detail Docs
 
@@ -89,6 +92,7 @@
 2. ADR:
    - `adrs/session-first-shell-and-service-owned-session-state.md`
    - `adrs/ink-owned-input-and-action-driven-session-shell.md`
+   - `adrs/secure-local-secret-capture-and-redacted-command-handoff.md`
    - `adrs/live-command-progress-and-running-react-shell.md`
    - `adrs/structured-session-output-and-markdown-content-blocks.md`
    - `adrs/cli-command-capability-maturity-and-baseline-enhancement-priority.md`

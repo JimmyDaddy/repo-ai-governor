@@ -1,7 +1,7 @@
 # CLI Session Shell Contract
 
 - Status: active
-- Date: 2026-04-11
+- Date: 2026-04-13
 - Contract ID: `contract.cli.session-shell.v1`
 - Producer Module: `runtime.cli-interactive-shell`
 
@@ -53,9 +53,11 @@
    - `command_palette`
    - `command_handoff_preview`
    - `command_running`
+   - `secure_local_capture`
 2. `input_mode`
    - `plain_text`
    - `slash_command`
+   - `secure_local`
 3. `handoff_state`
    - `idle`
    - `previewing`
@@ -77,6 +79,7 @@
    - `composer`
    - `palette`
    - `handoff_preview`
+   - `secure_capture`
 8. `transcript_render_kind`
    - `plain_text`
    - `markdown`
@@ -152,7 +155,12 @@
 32. 当 nested governed command 返回 `cli_output_v1` 结构化错误时，shell 必须优先解码 `message / hint / next_action` 并渲染成用户可执行的恢复提示；若 stdout 中出现重复 JSON 行或其他可恢复噪音，也不得把原始 JSON payload 直接当作 transcript 正文回显。
 33. session shell 的默认可读性增强只允许调整 presenter 级 emphasis/dim usage、palette visible-row budget 与摘要截断宽度；实际字体大小仍由宿主终端/IDE 控制，不得新增 shell-local font-size flag、宿主字号集成或持久化字体偏好。
 34. `/workspace` discoverability 可以在 slash palette 中显式暴露 `dry-run / execute / rollback / clear-config / switch-branch / set-ui-theme` 等 nested action，但这仍属于既有 `workspace` command family 的 presenter-level hint，不得引入新的 public command family；bare `/` launcher shortlist 也不得因此被 nested action 刷屏。
-35. 当用户把 slash 前缀收窄到 `/workspace set-ui-theme` 时，palette 必须直接暴露现有 `workspace set-ui-theme <preset>` 的 preset-choice 子提示（至少 `governor / catppuccin / calm`），并允许 `Enter/Tab` 优先接受高亮的更具体子命令，而不是把缺 preset 的父命令直接提交为失败执行。
+35. 当用户把 slash 前缀收窄到 `/workspace set-ui-theme` 时，palette 必须直接暴露现有 `workspace set-ui-theme <preset>` 的 preset-choice 子提示，并覆盖当前公开 preset catalog 真值（`governor / catppuccin / calm / tokyo-night / kanagawa / flexoki`）；同时允许 `Enter/Tab` 优先接受高亮的更具体子命令，而不是把缺 preset 的父命令直接提交为失败执行。
+36. 当显式 `/secret set <keyName>` 被解析为 secure route 时，shell 必须在同一状态迁移中清空普通 slash/composer presenter state，并切换到 `shell_mode=secure_local_capture`、`input_mode=secure_local`、`foreground_focus_target=secure_capture`；后续 secret 输入不得再经过普通 composer/slash presenter。
+37. 对 `/secret set <keyName>` 而言，只允许精确的 `keyName` authoring request 进入 secure-local path；一旦 secure route 被识别，额外 typed/pasted suffix 必须在 presenter-state commit 之前被拦截并丢弃，不得写入 `composer_value`、`slash_query`、palette suggestion/highlight state 或 `command_preview`。
+38. `secure_local_capture` 的 raw buffer 只能存在于 shell-local ephemeral controller state；不得写入 `transcript_items`、`handoff_state` payload、`artifact_backlinks`、turn metadata、running dock、localized error strings 或 thrown error metadata。
+39. `secure_local_capture` 成功、失败、取消与清理路径只允许追加 redacted system notice / summary；用户可见文字中不得包含 secret 原文、前后缀、长度或带 secret 的 command recap。
+40. shell 在 secure-local path 中必须直接调用本地 secret mutation seam；不得把 raw secret 重新封装成 `bridgeArgv`、nested CLI JSON stdout/stderr payload 或其他可回放的 governed handoff artifact。
 
 ## 5. Consumers
 
@@ -172,3 +180,5 @@
 8. `v1` 现进一步接受“service-owned capability explainer + contextual command guidance”补充方向；capability explanation turn 仍属于 `answer` path，但 shell 需要额外消费 capability metadata 与 suggested-action affordance，同时保持 shell-local builtins 不被误并入 service-owned governed capability catalog。
 9. `v1` 现进一步接受“prompt-first command model split”补充方向；`/plan`、`/review`、`/review verify` 作为 AI fixed workflow 呈现，`/plan sync` 与其他 utility slash command 继续保持 deterministic bridge，而 public `/verify` 被删除。
 10. `v1` 现进一步接受“session-shell theme preset choice discoverability”补充方向；`/workspace set-ui-theme` 在 session shell 中需要暴露 preset-choice palette path，但这仍是既有 `workspace set-ui-theme <preset>` 语义的 presenter-level discoverability 增强。
+11. `v1` 现进一步接受“显式 `/secret set <keyName>` secure local capture”补充方向；当前 formal scope 只覆盖 shell-initiated secure capture、pre-commit suffix rejection 与 redacted local mutation handoff，`session.main`-triggered secure-input outcome 以及 desktop / VS Code secure prompt parity 仍留在后续独立 solution。
+12. `v1` 现进一步接受“web-inspired theme pack expansion”补充方向；新增 preset 仍必须复用同一套 shared preset enum、selector、slash palette 与 help discoverability 真值，不得为单个主题引入额外配置层或独立 command surface。

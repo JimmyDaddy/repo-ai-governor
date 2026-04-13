@@ -20,8 +20,8 @@ function createViewModel(): CliSessionShellViewModel {
     transcriptItems: [],
     transcriptTitle: 'History',
     composerValue: '',
-    composerTitle: 'Current input',
-    composerPlaceholder: 'Type a message, / for commands, or ? for shortcuts.',
+    composerTitle: 'Input',
+    composerPlaceholder: 'Type a message or / command.',
     slashQuery: '',
     slashPaletteVisible: false,
     slashSuggestions: [],
@@ -38,7 +38,7 @@ function createViewModel(): CliSessionShellViewModel {
     foregroundInputOwner: CliSessionShellForegroundInputOwner.READLINE_FALLBACK,
     foregroundFocusTarget: CliSessionShellForegroundFocusTarget.COMPOSER,
     inputActionContract: [],
-    title: 'Repo AI Governor session shell',
+    title: 'Repo AI Governor',
     subtitle: 'Session-first preview baseline.',
     promptBarTitle: 'Prompt bar',
     promptBarLines: [],
@@ -159,8 +159,12 @@ describe('CliSessionShellInkController', () => {
 
     expect(viewModel.slashSuggestions.map((suggestion) => suggestion.command)).toEqual([
       '/workspace set-ui-theme governor',
+      '/workspace set-ui-theme copilot',
       '/workspace set-ui-theme catppuccin',
       '/workspace set-ui-theme calm',
+      '/workspace set-ui-theme tokyo-night',
+      '/workspace set-ui-theme kanagawa',
+      '/workspace set-ui-theme flexoki',
     ]);
     expect(viewModel.highlightedCommand).toBe('/workspace set-ui-theme governor');
   });

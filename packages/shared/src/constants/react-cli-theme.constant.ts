@@ -6,8 +6,12 @@
  */
 export enum CliReactThemePreset {
   GOVERNOR = 'governor',
+  COPILOT = 'copilot',
   CATPPUCCIN = 'catppuccin',
   CALM = 'calm',
+  TOKYO_NIGHT = 'tokyo-night',
+  KANAGAWA = 'kanagawa',
+  FLEXOKI = 'flexoki',
 }
 
 /**
@@ -15,8 +19,12 @@ export enum CliReactThemePreset {
  */
 export const CLI_REACT_THEME_PRESET_ORDER = [
   CliReactThemePreset.GOVERNOR,
+  CliReactThemePreset.COPILOT,
   CliReactThemePreset.CATPPUCCIN,
   CliReactThemePreset.CALM,
+  CliReactThemePreset.TOKYO_NIGHT,
+  CliReactThemePreset.KANAGAWA,
+  CliReactThemePreset.FLEXOKI,
 ] as const;
 
 /**

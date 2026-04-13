@@ -1,24 +1,67 @@
 # Maintainer Validation Playbook
 
-## 1. Audience
+This playbook is for people maintaining, validating, or releasing `repo-ai-governor` itself.
 
-This document is for people maintaining, releasing, or validating `repo-ai-governor` itself. It is intentionally separate from the adopter-facing README and local adoption playbook.
+Use it when you need to answer questions like:
 
-Use this playbook when you need to:
+1. Which command chain proves the current packaged CLI surface?
+2. Which checks belong to adopter truth, and which belong only to maintainer confidence?
+3. Where should I look for evidence after a validation run?
+4. Which runbook should I use for VS Code, desktop, host-native assets, or release gates?
 
-1. Rehearse packaged delivery surfaces.
-2. Validate real-project interactive behavior before rollout.
-3. Run clean-room and GA-style verification from the governor repository.
+This document is intentionally procedural. It does not redefine support status. `docs/support-matrix.md` is the single public support truth.
 
-### 1.1 Formal Support Truth Route
+## 1. Use The Right Truth Surface
 
-1. Use `docs/support-matrix.md` as the single public support truth surface; `## 9. GA Support Truthfulness Snapshot` is the current closeout-facing summary.
-2. Use this playbook for command order, operator intent, and backlinks to the underlying evidence files.
-3. Use `docs/ga-readiness-evidence.md` for the broader program-level GA signal matrix.
+Keep the docs separated like this:
 
-## 2. Published Package Surface Expectations
+| Document | Purpose |
+|---|---|
+| `README.md` | Product overview and shortest path to first success |
+| `docs/local-adoption-playbook.md` | Adopter runbook |
+| `docs/support-matrix.md` | Formal support truth |
+| `docs/maintainer-validation-playbook.md` | Maintainer validation workflow and evidence routing |
+| `docs/ga-readiness-evidence.md` | Broader program-level GA signal rollup |
 
-Published tarballs are expected to include:
+Rule of thumb:
+
+1. If you are describing what is supported, update `docs/support-matrix.md`.
+2. If you are explaining how to validate it, update this playbook.
+3. If you are recording a broader release-readiness assessment, update `docs/ga-readiness-evidence.md`.
+
+## 2. Start With The Validation Goal
+
+Pick the runbook that matches the question you are trying to answer.
+
+| Goal | Primary commands | What it proves |
+|---|---|---|
+| Check the published CLI and shipped docs/reference assets | `pnpm run release:verify-local`, `pnpm pack --json --dry-run` | Local distribution truthfulness |
+| Rehearse a clean-room install path | `pnpm run release:verify-cleanroom-local-install` | Install-mode evidence |
+| Rehearse real-project interactive behavior | Build once, then run the real-target command chain | Real target operator flow |
+| Recheck examples and docs-backed scenarios | `pnpm run check:examples-doc-smoke`, `pnpm run check:examples-runtime-smoke` | Example coherence and runnable scenario contract |
+| Recheck VS Code companion boundary | targeted vitest slice plus `release:verify-vscode-extension-distribution` | Editor-native companion packaging and contract |
+| Recheck host-native asset boundary | targeted vitest slice plus `release:verify-host-distribution` | Codex / Claude Code / GitHub Copilot host follow-up boundary |
+| Recheck desktop foundation boundary | targeted vitest slice plus `check:desktop-entry-smoke` and `release:verify-local` | Desktop foundation-only truth |
+| Recheck official governance pack catalog | targeted vitest slice plus `pnpm run build` | Pack catalog contract and runtime loader compatibility |
+| Make a broader release call | `pnpm run check`, `pnpm run release:ga-check` | Maintainer confidence for wider release |
+
+## 3. Packaged Surface Validation
+
+Use this when the question is "what does the packaged CLI surface currently ship, and is the documentation truthful about it?"
+
+```bash
+cd <governor-repo>
+pnpm run release:verify-local
+pnpm pack --json --dry-run
+```
+
+Expect this to answer:
+
+1. Does the packaged CLI still behave like the currently documented local distribution?
+2. Does the tarball still ship the expected adopter docs and reference assets?
+3. Are we accidentally overstating packaged support for secondary surfaces?
+
+Published tarballs are expected to carry:
 
 1. `README.md` and `README.zh-CN.md`
 2. `docs/local-adoption-playbook.md` and `docs/local-adoption-playbook.zh-CN.md`
@@ -28,15 +71,13 @@ Published tarballs are expected to include:
 6. `integrations/ide/` and `integrations/desktop/`
 7. `.codex/skills/`
 
-Repo-local skills are shipped as reference assets only. They are not automatically copied into target repositories.
-The support matrix ships with the tarball because the packaged surface must carry the same public support boundary it claims.
-The real app workspaces under `apps/vscode-extension` and `apps/desktop` remain source-checkout validation surfaces; the published tarball can still carry internal `dist/**` build payloads, but it does not ship those app workspaces as standalone package-install roots.
+Repo-local skills ship as reference assets only. They are not automatically installed into target repositories.
 
-## 3. Real-project Validation Runbook
+## 4. Real-project Rehearsal
 
-Use this sequence when you want to validate the current interactive-shell delivery in one real target repository before widening rollout.
+Use this when you need evidence from one actual target repository before widening rollout or changing public narrative.
 
-Current wrapper script:
+Current wrapper entry:
 
 ```bash
 TARGET_REPO=/absolute/path/to/real-target-repo \
@@ -51,57 +92,48 @@ export TARGET_REPO=/absolute/path/to/real-target-repo
 export CLI_BIN="$GOVERNOR_REPO/dist/bin/repo-ai-governor.js"
 export ACCEPTANCE_HOME="$TARGET_REPO/.project-027-acceptance/home"
 export REPO_LOCAL_ROOT="$TARGET_REPO/.repo-ai-governor"
+```
 
+Minimum rehearsal chain:
+
+```bash
 cd "$GOVERNOR_REPO"
 pnpm run build
 
-cd "$TARGET_REPO"
-```
-
-Low-impact bootstrap rehearsal:
-
-```bash
 HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json init
 HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json doctor
 HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json check
-```
-
-Workspace cutover and rollback rehearsal:
-
-```bash
 HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json --workspace-action dry-run --workspace-mode repo_local --workspace-root "$REPO_LOCAL_ROOT" workspace
 HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json --workspace-action execute --workspace-mode repo_local --workspace-root "$REPO_LOCAL_ROOT" workspace
 HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json --workspace-action rollback --workspace-plan <plan-path> workspace
-```
-
-Interactive-shell rehearsal:
-
-```bash
-HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output pretty --ui react workflow preview --workflow-template condition-route
-HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output pretty --ui react upgrade
-HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output pretty
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output pretty --ui react
 HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" resume
 ```
 
-## 4. Example And Documentation Smoke
+Use this runbook when you need confidence in operator experience, not just unit or integration coverage.
 
-Run these from `<governor-repo>`:
+## 5. Example And Documentation Smoke
+
+Use this when you changed examples, adopter docs, or command narratives that examples depend on.
 
 ```bash
+cd <governor-repo>
 pnpm run check:examples-doc-smoke
 pnpm run check:examples-runtime-smoke
 pnpm run check:examples-smoke
 ```
 
-Use them to validate:
+This runbook is most valuable when you need to answer:
 
-1. Root examples remain coherent.
-2. Example docs still match runnable assets.
-3. Runtime/example expectations do not drift silently.
+1. Do the example docs still describe runnable command chains?
+2. Do example assertions still match actual output contracts?
+3. Did documentation drift away from the example assets without anyone noticing?
 
-### 4.1 VS Code Secondary Surface Validation
+## 6. Secondary-surface Validation
 
-Use this runbook when refreshing the editor-native companion support boundary:
+### VS Code companion
+
+Use this runbook when refreshing the editor-native companion boundary:
 
 ```bash
 pnpm exec vitest run apps/vscode-extension/test/vscode-extension-service-runtime.test.ts apps/vscode-extension/test/vscode-extension-contract.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-selection-store.test.ts apps/vscode-extension/test/vscode-extension-packaging-boundary.test.ts --maxWorkers=1 --maxConcurrency=1
@@ -110,7 +142,6 @@ pnpm run release:verify-vscode-extension-distribution -- --output .tmp/project-0
 pnpm pack --json --dry-run
 pnpm run check:ide-entry-smoke
 pnpm run check:ide-docs-parity
-pnpm exec biome check apps/vscode-extension/src apps/vscode-extension/test apps/vscode-extension/package.json apps/vscode-extension/README.md
 ```
 
 Optional manual rehearsal:
@@ -119,18 +150,9 @@ Optional manual rehearsal:
 code --extensionDevelopmentPath <governor-repo>/apps/vscode-extension <target-repo>
 ```
 
-Notes:
+### Host-native asset boundary
 
-1. Current formal support is limited to a built source checkout plus one extension-development host or one locally generated packaged extension root / VSIX from that same checkout.
-2. `pnpm run release:verify-vscode-extension-distribution` is the dedicated packaging rehearsal; it validates the local VSIX archive shape plus packaged module-resolution smoke without claiming Marketplace or published installer support.
-3. Use `pnpm pack --json --dry-run` to verify the published artifact still omits the extension workspace and published installable bundle even if internal `dist/apps/vscode-extension/**` payloads remain.
-4. The published npm/tgz install surface and Marketplace remain unsupported for VS Code extension delivery.
-5. There is still no dedicated automated extension-development-host launch smoke; the manual `code --extensionDevelopmentPath ...` rehearsal or `code --install-extension ...` step remains optional supporting evidence only.
-6. `project-054` keeps desktop as a foundation-only surface; use this runbook to validate the VS Code companion path, not to widen desktop support claims.
-
-### 4.2 Host-native Asset Validation
-
-Use this runbook when refreshing the Codex / Claude Code host-native follow-up boundary:
+Use this when refreshing the Codex / Claude Code / GitHub Copilot host follow-up story:
 
 ```bash
 pnpm exec vitest run apps/cli/test/commands/host-command.test.ts apps/cli/test/host-command.integration.test.ts packages/adapters/codex/test/codex-host-renderer.test.ts packages/adapters/claude-code/test/claude-code-host-renderer.test.ts --maxWorkers=1 --maxConcurrency=1
@@ -138,23 +160,15 @@ pnpm run build
 pnpm run release:verify-host-distribution -- --output .tmp/project-067-sprint-001-host-distribution-report.json
 ```
 
-Notes:
-
-1. This runbook validates only the built source-checkout host follow-up surface for Codex / Claude Code `project-local` export/apply plus plugin-bundle pack/verify.
-2. Treat `host verify` as the contract recheck after every regenerated manifest. “Upgrade” for these assets means rerender plus verify after source or vendored-skill changes, not a standalone installer path.
-3. Keep the public narrative aligned in `README*`, `docs/local-adoption-playbook*`, and `docs/support-matrix*` whenever the rendered asset shape, supported targets, or refresh contract changes.
-4. `github-com-agent` stays reserved and intentionally blocked: staged export shape may remain schema-safe, but `host verify` should still surface a blocking result until target capabilities advertise a supported mode/discovery path, pass-level target-specific export/verify evidence exists, and the GitHub.com consumption path is proven to hand control back through the canonical governor runtime.
-5. When the change touches that reserved target contract, also rerun:
+When the change touches the reserved GitHub.com target contract, also run:
 
 ```bash
 pnpm run release:verify-github-com-agent-reserved-target -- --output .tmp/project-068-sprint-002-github-com-agent-reserved-target-report.json
 ```
 
-6. The dedicated reserved-target report passes only when the blocked semantics remain fail-closed: staged export still produces schema-safe artifacts, `--apply-to-repo` stays rejected, `host verify` stays blocking, and bundle packaging remains unsupported.
+### Desktop foundation
 
-### 4.3 Desktop Foundation-only Surface Validation
-
-Use this runbook when refreshing the desktop secondary-surface decision without widening the public contract beyond the built-source foundation path:
+Use this when refreshing the desktop foundation-only boundary:
 
 ```bash
 pnpm exec vitest run apps/desktop/test/desktop-governance-console-view-model-builder.test.ts apps/desktop/test/desktop-preload-bridge.test.ts apps/desktop/test/desktop-shell-bootstrap.test.ts apps/desktop/test/desktop-session-bridge.test.ts test/desktop-entry-smoke.integration.test.ts --maxWorkers=1 --maxConcurrency=1
@@ -163,77 +177,74 @@ pnpm run check:desktop-entry-smoke
 pnpm run release:verify-local -- --output .tmp/project-065-sprint-001-desktop-foundation-report.json
 ```
 
-Notes:
+## 7. Official Governance Pack Catalog Validation
 
-1. `project-065` keeps desktop at a foundation-only support boundary: built governor source checkout plus local foundation verification. It does not create a standalone desktop installer, published desktop app bundle, or preferred-secondary-surface claim.
-2. `pnpm run release:verify-local` is the maintainer truthfulness recheck for this boundary; it confirms the packaged CLI artifact still ships the desktop integration docs and still omits the `apps/desktop` workspace as a standalone package-install root.
-3. The single public support declaration remains `docs/support-matrix.md`; keep `apps/desktop/README.md`, `integrations/desktop/README.md`, and `docs/local-adoption-playbook.md` aligned whenever the desktop narrative changes.
-
-### 4.4 Official Governance Pack Catalog Validation
-
-Use this runbook when refreshing the published official standards-pack catalog or the related runtime/docs examples:
+Use this when changing the built-in standards-pack catalog, pack runtime loading, or related docs.
 
 ```bash
 pnpm exec vitest run packages/standards/test/language-minimal-governance-packs.integration.test.ts packages/standards/test/standards-runtime-loader.integration.test.ts packages/config/test/config.unit.test.ts --maxWorkers=1 --maxConcurrency=1
 pnpm run build
 ```
 
-Notes:
+This is the right runbook when the question is "does the documented official pack catalog still match what the product can actually load and validate?"
 
-1. `project-066` first-wave scope fixes the official catalog to `workflowReviewGovernancePack` plus the JavaScript / Python / Go / Rust language baselines; the self-host TypeScript governance chain remains a repository-level reference example instead of a separately published official pack.
-2. Keep `packages/standards/README.md`, `packages/config/README.md`, `docs/local-adoption-playbook*.md`, and `docs/support-matrix*.md` aligned whenever the exported official pack list or recommended layering changes.
-3. The targeted vitest slice is the contract proof that the in-repo official-pack examples still render cleanly through `StandardsRuntimeLoader` and that the documented official catalog remains acceptable to the config schema.
+## 8. Clean-room And Release Gates
 
-## 5. Clean-room And Release Verification
-
-Run clean-room install verification from `<governor-repo>`:
+Use this when you need the higher-confidence maintainer gate, not just a focused subsystem refresh.
 
 ```bash
+cd <governor-repo>
 pnpm run release:verify-cleanroom-local-install
-```
-
-Run broader maintainer gates from `<governor-repo>`:
-
-```bash
 pnpm run check
 pnpm run release:verify-host-distribution
 pnpm run release:verify-local
 pnpm run release:ga-check
 ```
 
-Notes:
+Read these commands as a ladder:
 
-1. `release:verify-cleanroom-local-install` validates packaged-install paths and can emit a machine-readable report with `--output <path>`.
-2. Use `--modes tgz --iterations 1` when you are refreshing the online tarball-install support boundary instead of the older `path/link` baseline only.
-3. `release:verify-local` includes local verification surfaces that are useful before rollout, including packed-surface truthfulness for shipped docs and reference assets.
-4. `release:ga-check` is for maintainers deciding whether the current state is ready for broader release, not for ordinary adopters.
-5. Current evidence backlinks expected by this playbook are `.tmp/project-052-sprint-001-cleanroom-report.json`, `.tmp/project-052-sprint-001-local-distribution-report.json`, `.tmp/project-052-sprint-002-command-rehearsal-summary.json`, `.tmp/project-055-sprint-001-pilot-1-rehearsal-summary.json`, `.tmp/project-055-sprint-001-pilot-2-rehearsal-summary.json`, `.tmp/project-063-sprint-001-cleanroom-tgz-report.json`, `.tmp/project-063-sprint-001-local-distribution-report.json`, `.tmp/project-065-sprint-001-desktop-foundation-report.json`, `.tmp/project-067-sprint-001-host-distribution-report.json`, and `.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-002-ga-evidence-consolidation-and-closeout/tasks/DA-616-ga-evidence-dossier-and-cross-surface-backlinks.md`.
-6. When those signals change, update `docs/support-matrix.md` first instead of creating a second status table in this playbook.
-7. `local-model` remains a restricted-network / explicit-local-fallback truth surface only. Do not treat a passing local fallback rehearsal as proof for `tool_calling`, `structured_output`, `confirmation_gate`, or unattended reviewer delegation support; those ceilings stay documented in `docs/support-matrix*.md`.
+1. `release:verify-cleanroom-local-install` proves install-mode behavior.
+2. `check` proves the repository-level quality baseline.
+3. `release:verify-host-distribution` rechecks host-native follow-up surfaces.
+4. `release:verify-local` rechecks the packaged/local distribution surface.
+5. `release:ga-check` is the maintainers' broader release decision gate.
 
-## 6. Interpreting External-adopter Warnings
+## 9. Evidence Expectations
 
-Fresh external repositories may still show warnings such as:
+When you update docs or support claims, keep the evidence model disciplined:
+
+1. Update `docs/support-matrix.md` first when the supported boundary changes.
+2. Keep this playbook focused on command order, operator intent, and evidence backlinks.
+3. Prefer one authoritative evidence file per validation chain over scattered status notes.
+4. Do not turn this playbook into a second support matrix.
+
+Common evidence paths referenced by this runbook include:
+
+1. `.tmp/project-063-sprint-001-local-distribution-report.json`
+2. `.tmp/project-063-sprint-001-cleanroom-tgz-report.json`
+3. `.tmp/project-064-vscode-extension-distribution-report.json`
+4. `.tmp/project-065-sprint-001-desktop-foundation-report.json`
+5. `.tmp/project-067-sprint-001-host-distribution-report.json`
+6. `.tmp/project-068-sprint-002-github-com-agent-reserved-target-report.json`
+7. `.tmp/project-076-sprint-003-cleanroom-report.json`
+8. `.tmp/project-076-sprint-003-local-distribution-report.json`
+
+## 10. Interpreting Adopter Warnings
+
+Fresh external repositories may still surface warnings such as:
 
 1. `baseline_docs missing=5/5`
 2. `script_not_found`
 
-Interpretation:
+Interpret them carefully:
 
-1. For adopters, these are usually informational unless the target repository is intentionally vendoring this repository's own self-host governance stack.
-2. For maintainers, they are still useful signals when checking whether user-facing docs explain the external-adopter baseline clearly enough.
+1. For adopters, they are usually informational unless the target repository is intentionally vendoring this repository's own governance stack.
+2. For maintainers, they are useful signals about whether adopter docs are setting expectations clearly enough.
 
-## 7. Related References
+## 11. Related References
 
 1. `README.md`
-2. `README.zh-CN.md`
-3. `docs/local-adoption-playbook.md`
-4. `docs/local-adoption-playbook.zh-CN.md`
-5. `docs/support-matrix.md`
-6. `docs/ga-readiness-evidence.md`
-7. `.tmp/project-052-sprint-001-cleanroom-report.json`
-8. `.tmp/project-052-sprint-001-local-distribution-report.json`
-9. `.tmp/project-052-sprint-002-command-rehearsal-summary.json`
-10. `.tmp/project-055-sprint-001-pilot-1-rehearsal-summary.json`
-11. `.tmp/project-055-sprint-001-pilot-2-rehearsal-summary.json`
-12. `.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-002-ga-evidence-consolidation-and-closeout/tasks/DA-616-ga-evidence-dossier-and-cross-surface-backlinks.md`
+2. `docs/local-adoption-playbook.md`
+3. `docs/support-matrix.md`
+4. `docs/ga-readiness-evidence.md`
+5. `examples/`

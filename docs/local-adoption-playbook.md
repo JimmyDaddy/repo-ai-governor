@@ -1,61 +1,79 @@
 # Local Adoption Playbook
 
-## 1. Scope
+This playbook is for people adopting `repo-ai-governor` in a target repository.
 
-This playbook is for people adopting `repo-ai-governor` in a target repository. It focuses on how to install it, bootstrap it, connect AI tools, and run everyday governed flows without requiring knowledge of this repository's own self-host release process.
+Use it when you want a practical answer to questions like:
+
+1. How should I install or rehearse this tool in a real repo?
+2. What is the safest path to first success?
+3. How do I connect tools, secrets, and user-local defaults?
+4. How do I run the first governed loop without taking avoidable risks?
 
 If you maintain or release `repo-ai-governor` itself, use `docs/maintainer-validation-playbook.md` instead.
 
-## 2. Install Strategy Matrix
+`docs/support-matrix.md` remains the formal support truth. This playbook is the operator runbook.
 
-| Mode | Typical Use | Command |
+## 1. Choose The Lightest Install Path
+
+Start with the smallest thing that proves the behavior you care about.
+
+| Mode | Use it when... | Main command |
 |---|---|---|
-| `path` | Fast local adoption | `pnpm add --save-exact <governor-repo>` |
-| `link` | Source-linked development | `pnpm add --save-exact link:<governor-repo>` |
-| `tgz` | Online packaged CLI-install rehearsal | `pnpm pack --json` + `pnpm add --save-exact <tarball>` |
-| `dist-binary` | No-install CLI/runtime rehearsal for Yarn/npm or dirty repositories | `node <governor-repo>/dist/bin/repo-ai-governor.js <command>` |
+| `dist-binary` | You want a no-install rehearsal, or the target repo is dirty or non-`pnpm` | `node <governor-repo>/dist/bin/repo-ai-governor.js <command>` |
+| `path` | You want the normal local adoption path in a `pnpm` repository | `pnpm add --save-exact <governor-repo>` |
+| `link` | The target repo should track your local source checkout closely | `pnpm add --save-exact link:<governor-repo>` |
+| `tgz` | You want to rehearse the packaged CLI tarball in an online environment | `pnpm pack --json` then `pnpm add --save-exact <tarball>` |
 
-Choose the lightest path that matches your goal:
+Rules of thumb:
 
-1. Start with `path` unless you have a reason not to.
-2. Use `link` only when the target repo should follow local governor source changes.
-3. Use `tgz` only when you want an online packaged CLI-install rehearsal and the environment can still reach the npm registry.
-4. Use `dist-binary` when the target repo is dirty or non-`pnpm`, or when you want to validate CLI/runtime behavior before touching the target repo dependency graph.
+1. Start with `dist-binary` if you want the lowest-risk proof.
+2. Start with `path` if the repo already uses `pnpm` and you expect to keep the governor installed.
+3. Use `link` only when live source-following is intentional.
+4. Use `tgz` only when you explicitly need packaged-install evidence and the environment can still reach the npm registry.
 
-The formal acceptance contract for these install modes lives in `docs/support-matrix.md`.
+## 2. Fastest Path To First Success
 
-## 3. Bootstrap A Target Repository
+Assume the governor source checkout is `<governor-repo>` and the target repository is `<target-repo>`.
 
-Run this baseline chain from the target repository:
+### Path A: no-install rehearsal
 
 ```bash
+cd <governor-repo>
+pnpm run build
+
+cd <target-repo>
+node <governor-repo>/dist/bin/repo-ai-governor.js --help
+node <governor-repo>/dist/bin/repo-ai-governor.js init --output pretty
+node <governor-repo>/dist/bin/repo-ai-governor.js doctor --output json
+node <governor-repo>/dist/bin/repo-ai-governor.js check --output json
+```
+
+### Path B: install into the target repo
+
+```bash
+cd <target-repo>
+pnpm add --save-exact <governor-repo>
 pnpm exec repo-ai-governor --help
 pnpm exec repo-ai-governor init --output pretty
 pnpm exec repo-ai-governor doctor --output json
 pnpm exec repo-ai-governor check --output json
 ```
 
-If you are using the `dist-binary` path, replace `pnpm exec repo-ai-governor` with:
+Success looks like this:
 
-```bash
-node <governor-repo>/dist/bin/repo-ai-governor.js <command>
-```
+1. `init` completes one guided setup path.
+2. `doctor` reports facts instead of crashing.
+3. `check` returns machine-readable totals even in a repo that is not a self-host copy of this repository.
 
-What success looks like:
+Notes for external adopters:
 
-1. `init --output pretty` completes one guided setup path.
-2. `doctor` reports attach/write-mode facts instead of crashing.
-3. `check` returns machine-readable totals, even when the target repo is not a self-host copy of this repository.
-
-External-adopter notes:
-
-1. Fresh target repositories may still show `baseline_docs missing=5/5` or `script_not_found` warnings.
-2. Treat those warnings as informational unless your target repository is intentionally vendoring this repository's own governance docs and scripts.
+1. Fresh target repositories may still report warnings such as `baseline_docs missing=5/5` or `script_not_found`.
+2. Treat those as informational unless you are intentionally vendoring this repository's own governance docs and scripts.
 3. `init` defaults to `tool_managed`, so a fresh target repo may not create `.repo-ai-governor/` immediately.
 
-### 3.1 Preferred managed repo installation with `adopt`
+## 3. Prefer Managed Installation With `adopt`
 
-Use this when you want the supported whole-repository installation story instead of manually staging lower-level host exports:
+Once bootstrap succeeds, use the managed installer path before reaching for lower-level host export commands.
 
 ```bash
 pnpm exec repo-ai-governor adopt list --output json
@@ -63,83 +81,24 @@ pnpm exec repo-ai-governor adopt apply adopter-complete --repo . --hosts codex,c
 pnpm exec repo-ai-governor adopt verify --repo . --output json
 ```
 
-What this path gives you:
+Why this is the default path:
 
-1. `adopt apply` materializes managed host-facing assets, `.mcp.json`, adoption guides, and install metadata under `.repo-ai-governor/adoption/installations/**`.
+1. `adopt apply` materializes managed host-facing assets, install metadata, and adoption guides under `.repo-ai-governor/adoption/installations/**`.
 2. Built-in adoption packs do not require a pre-existing source-local `.codex/skills/**` tree in the target repository.
-3. `adopt verify`, `adopt diff`, `adopt upgrade`, and `adopt remove` become the supported lifecycle path for that managed install.
+3. `adopt verify`, `adopt diff`, `adopt upgrade`, and `adopt remove` become the supported lifecycle path after installation.
 
-Advanced self-host bootstrap:
+Use the self-host profile only if the target repository should own a repo-local governance workspace template:
 
 ```bash
 pnpm exec repo-ai-governor adopt apply adopter-complete --adoption-profile self-host-complete --repo . --workspace-mode repo_local --hosts codex --output json
 pnpm exec repo-ai-governor adopt verify --repo . --output json
 ```
 
-Use the self-host profile only when the target repository itself should host a template-backed repo-local governance workspace. This seeds empty/template surfaces such as `current-context.md`, project/sprint/task templates, and sqlite registries; it does not clone any live execution state from this repository.
+That path seeds empty or template-backed governance surfaces. It does not copy live execution state from this repository.
 
-### 3.2 Optional VS Code Secondary Surface
+## 4. Connect Tools Before You Run
 
-Use this only when you want the editor-native companion on top of the normal CLI bootstrap path:
-
-```bash
-cd <governor-repo>
-pnpm run build
-
-code --extensionDevelopmentPath <governor-repo>/apps/vscode-extension <target-repo>
-```
-
-Boundary notes:
-
-1. Current formal support starts from a built governor source checkout; build the repository before launching the extension-development host or generating packaged artifacts.
-2. Use `pnpm run release:pack-vscode-extension -- --output <path>.vsix` or `pnpm run release:verify-vscode-extension-distribution -- --output <report>.json` when you want the supported packaged boundary from that same checkout.
-3. The supported packaged boundary is limited to the locally generated VSIX / packaged extension root from the built source checkout. Automated evidence covers archive structure and packaged module-resolution smoke, while `code --install-extension ...` or a real host launch remains optional manual rehearsal when available.
-4. The published npm/tgz package surface still does not include the `apps/vscode-extension` workspace or a published installable extension bundle; Marketplace remains unsupported.
-5. Trust-sensitive commands stay gated by `Workspace Trust`, so use a trusted workspace when validating review, HITL, recovery, or termination actions.
-6. The current VS Code MVP is a service-backed companion for execution/review/HITL/context flows; it does not replace the normal CLI bootstrap path or the session shell.
-
-### 3.2 Optional Desktop Foundation Surface
-
-Use this only when you want to validate the desktop sidecar foundation from a built governor source checkout on top of the normal CLI bootstrap path:
-
-```bash
-cd <governor-repo>
-pnpm run build
-pnpm run check:desktop-entry-smoke
-pnpm run release:verify-local
-```
-
-Boundary notes:
-
-1. Current formal support is limited to the built governor source checkout plus the foundation verification chain above, including `pnpm run release:verify-local`; `apps/desktop` is not a supported standalone desktop installer or published desktop bundle.
-2. `apps/desktop` remains a service-backed foundation surface for session, execution, HITL, artifact-pane, and queue-overview seams; it does not replace CLI bootstrap or session-shell ownership.
-3. Use `integrations/desktop/README.md` for the current desktop contract baseline and non-goal guardrails.
-4. Use `docs/support-matrix.md` for the single public support declaration for this surface.
-
-## 4. Session Shell Quick Tour
-
-Use the session shell when you want a conversation-first entrypoint instead of a one-shot subcommand.
-
-```bash
-pnpm exec repo-ai-governor --output pretty
-pnpm exec repo-ai-governor --output pretty "summarize this repository"
-pnpm exec repo-ai-governor resume [session-id]
-```
-
-Quick checks:
-
-1. In local TTY + `pretty`, the no-subcommand entry should attach to the session shell on `stderr`.
-2. `/help`, `/history`, `/search <term>`, `/multiline`, and `!<shell-command>` should be available from the shell.
-3. `resume` should reattach the latest or named persisted session.
-4. `--no-interactive`, non-TTY, `plain`, and `json` should not enter the interactive shell.
-5. Typing `/config` or `/secret` in the slash palette should surface the same command family as the CLI; these are discoverability shortcuts only, not a second config or secret state.
-6. Typing `/workspace` or `/workspace ` in the slash palette should surface `dry-run`, `execute`, `rollback`, `clear-config`, `switch-branch`, and `set-ui-theme`, while bare `/` still stays on the shorter launcher shortlist.
-7. Typing `/workspace set-ui-theme` or `/workspace set-ui-theme ` in the session shell should surface `governor`, `catppuccin`, and `calm` preset choices instead of forcing a failed no-preset submission path.
-8. Current readability tuning only changes presenter emphasis, contrast, and palette density; actual font size remains controlled by the host terminal or IDE.
-
-## 5. Multi-tool Onboarding
-
-Use this path when you want to wire Codex, Claude Code, or GitHub Copilot style adapters into one repository baseline:
+Use `connect` when you want one repository baseline to route multiple tools through the same governed flow.
 
 ```bash
 pnpm exec repo-ai-governor connect --tools codex,claude-code --preset multi-tool-default --output json
@@ -148,36 +107,28 @@ pnpm exec repo-ai-governor verify --adapters --output json
 pnpm exec repo-ai-governor run --output json --dry-run --trace
 ```
 
-What to pay attention to:
+What each step proves:
 
-1. `connect` writes a reviewable candidate config instead of mutating the active `governor.yaml` in place.
-2. `doctor --adapters --fix` performs safe-local repairs only; authentication and tool installation remain follow-up actions.
-3. `verify --adapters` should be treated as the readiness decision before real execution.
-4. `run --dry-run --trace` is the safest way to validate routing and projected descriptors before a real run.
-5. `tool_transport_matrix` now projects effective transport truth; CLI-backed adapters such as `codex`, `claude-code`, and `github-copilot` show `cli_exec` even when config omits an explicit `transport`.
-6. A `warn` or failed dry-run still counts as useful evidence when `report`, `replay`, and `diagnostics_trace` artifacts are emitted, because those artifacts preserve the failing stage and adapter attribution for follow-up routing fixes.
-7. If you explicitly select `codex=remote_api` or `claude-code=remote_api`, the validated expectation is that the route stays on `remote_api`; `doctor` / `verify` may still report environment-precondition `warn` states, but those warnings do not mean the system silently reused same-surface `cli_exec` truth.
-8. In the current validated `codex` baseline, `run --dry-run --trace` can complete the baseline `prepare -> execute -> report` chain through real `cli_exec` routing without performing governed file edits or dependency mutations; it still persists audit artifacts under the active governor workspace, so treat that as the preferred success signal before enabling a non-dry-run run.
-9. `github-copilot` now follows the same CLI-backed truth model for tester-route verification, while `local-model` should still be read as a constrained fallback surface only for restricted-network or operator-selected local fallback flows whose route requirements stay capability-compatible.
-10. Do not treat `local-model` as a promoted primary substitute for repository-review reviewer delegation or for roles that require `tool_calling`, `structured_output`, or `confirmation_gate`; those paths remain unsupported or explicitly guarded.
-11. If `connect` fails with `ADAPTER_ROUTE_CONFIG_INVALID` and says it requires an adapters baseline in source config, repair the active `governor.yaml` first: for first-time setup run `init`; if an existing config looks stale or broken, run `workspace clear-config`, then `init`, and retry `connect`.
+1. `connect` writes a reviewable candidate config instead of mutating the active config in place.
+2. `doctor --adapters --fix` performs safe local repairs only.
+3. `verify --adapters` is the readiness check before real execution.
+4. `run --dry-run --trace` is the lowest-risk proof that routing and projected descriptors make sense.
 
-When you want `connect` to author first-time `remote_api` config without hand-editing `governor.yaml`, use:
+If you want `remote_api` from the start, use explicit authoring flags instead of hand-editing config first:
 
 ```bash
 pnpm exec repo-ai-governor connect --tools codex --remote-api-model codex=gpt-5 --output pretty
 pnpm exec repo-ai-governor connect --tools claude-code --remote-api-model claude-code=<model> --remote-api-credential-env-var claude-code=ANTHROPIC_API_KEY --remote-api-endpoint claude-code=https://api.anthropic.com/v1/messages --output pretty
 ```
 
-Notes:
+Important boundaries:
 
-1. `--remote-api-model` is the required authoring input for first-time `remote_api`; `--remote-api-credential-env-var` and `--remote-api-endpoint` are optional per-tool overrides.
-2. These flags only write model, endpoint, and env-var references into the candidate config. The actual API key value should still come from your shell environment, `direnv`, CI secret store, or another external secret source.
-3. If you already keep personal defaults in `~/.repo-ai-governor/user-config.yaml`, `connect --tools <tool>` will consume them only when no higher-precedence CLI override or workspace `governor.yaml` value already exists.
+1. Explicit `remote_api` selection is environment-gated. Warn states do not mean the system silently reused `cli_exec`.
+2. `local-model` is a constrained fallback surface, not a drop-in replacement for routes that require `tool_calling`, `structured_output`, or `confirmation_gate`.
 
-### 5.1 User-local defaults and secret-backed selectors
+## 5. Keep Shared Config And Personal Secrets Separate
 
-Use this path when a model, endpoint, or auth selector should stay personal to one machine instead of being committed into workspace `governor.yaml`:
+Use workspace config for repository-owned truth. Use `config` and `secret` when the setting belongs to one machine or one operator.
 
 ```bash
 pnpm exec repo-ai-governor config set tools.codex.transport remote_api
@@ -188,24 +139,15 @@ pnpm exec repo-ai-governor secret status
 pnpm exec repo-ai-governor connect --tools codex --output pretty
 ```
 
-What this path means:
+Use this pattern when:
 
-1. `config` writes user-local defaults to the canonical `~/.repo-ai-governor/user-config.yaml` path instead of mutating the shared workspace `governor.yaml`.
-2. Precedence remains strict: explicit CLI args win first, workspace `governor.yaml` stays second, and `user-config.yaml` only fills defaults underneath them.
-3. `credentialRef` is only a selector such as `secret://openai/api-key`; the real API key value lives in the secret backend, not in `user-config.yaml` or `governor.yaml`.
-4. On macOS, the validated default backend path is the keychain-backed baseline. On other platforms, run `secret status` first to inspect what secure backend support is actually available in your environment.
-5. `--backend unsafe-local-file` is an explicit fallback for local-only/plaintext risk acceptance; do not treat it as the default or recommended storage mode.
+1. You want the repo to refer to a stable selector such as `secret://openai/api-key`.
+2. You do not want the real API key value committed into `governor.yaml`.
+3. Different operators on different machines need different personal defaults.
 
-Helpful artifact paths:
+## 6. Run The First Governed Loop
 
-1. Candidate config: `<workspace_root>/context/diagnostics/connect/<connect-id>.governor.yaml`
-2. Candidate diagnostics: `<workspace_root>/context/diagnostics/connect/<connect-id>.json`
-3. Verify diagnostics: `<workspace_root>/context/diagnostics/verify/`
-4. Traced dry-run diagnostics: `<workspace_root>/context/diagnostics/run/` and `<workspace_root>/context/diagnostics/trace/`
-
-## 6. First Governed Flow
-
-Use this sequence when you want the full plan -> run -> review -> verify path:
+When the repository is bootstrapped and at least one adapter path is ready, use this minimum end-to-end loop:
 
 ```bash
 pnpm exec repo-ai-governor plan --output json
@@ -214,17 +156,39 @@ pnpm exec repo-ai-governor review --output json
 pnpm exec repo-ai-governor review-verify --output json
 ```
 
-Expected outputs are stored under the active workspace root. Common locations include:
+Look for artifacts under the active workspace root, especially:
 
-1. `context/review-queue/requests`
-2. `context/review-queue/results`
-3. `context/ledger-backfill/review-verify`
+1. `context/diagnostics/connect/`
+2. `context/diagnostics/verify/`
+3. `context/diagnostics/run/`
+4. `context/diagnostics/trace/`
+5. `context/review-queue/requests`
+6. `context/review-queue/results`
 
-When the active workspace exposes canonical sprint `tasks/`, the review chain also allocates a `CR-xxx` task card and keeps that card synchronized with the review lifecycle status.
+In workspaces with canonical sprint `tasks/` surfaces, the review chain can also allocate and advance a `CR-xxx` lifecycle.
 
-## 7. Workspace Mode And Rollback
+## 7. Use The Session Shell When Conversation Is Faster
 
-Default mode is `tool_managed`. Switch to `repo_local` only when you want the governance workspace persisted inside the target repository.
+Use the session shell when you want a conversation-first entry point instead of one-shot commands.
+
+```bash
+pnpm exec repo-ai-governor --output pretty
+pnpm exec repo-ai-governor --output pretty "summarize this repository"
+pnpm exec repo-ai-governor resume [session-id]
+```
+
+Quick checks:
+
+1. In local TTY plus `pretty`, the no-subcommand entry should attach to the interactive shell.
+2. `resume` should reattach the latest or named persisted session.
+3. `/help`, `/history`, `/search <term>`, `/multiline`, and `!<shell-command>` should be available.
+4. `plain`, `json`, non-TTY, and `--no-interactive` surfaces should stay non-interactive.
+
+## 8. Common Operations After Day One
+
+### Workspace migration and rollback
+
+Use this when you want the governance workspace inside the target repo instead of tool-managed storage:
 
 ```bash
 pnpm exec repo-ai-governor workspace dry-run --workspace-mode repo_local --output json
@@ -232,237 +196,82 @@ pnpm exec repo-ai-governor workspace execute --workspace-mode repo_local --outpu
 pnpm exec repo-ai-governor workspace rollback <plan-path> --output json
 ```
 
-Formal contract:
+Keep the emitted `plan-path`. That is the hand-off artifact for rollback.
 
-1. `dry-run` and `execute` require `--workspace-mode <repo_local|tool_managed>` and always hand off one saved `plan_path`.
-2. `execute` writes the migrated plan plus `context/workspace/<migration-id>.execution.json`; failed execute flows persist `context/workspace/<migration-id>.failure.json` before retry.
-3. `rollback` only consumes the saved `plan-path` and writes `context/workspace/<migration-id>.rollback.json`.
-4. Re-run `doctor` after execute or rollback so you can confirm the active `workspaceRoot`.
+### Controlled upgrades
 
-Recommended habits:
-
-1. Keep the printed `plan-path` from `workspace dry-run` or `workspace execute`.
-2. Re-run `doctor` after migration or rollback so you can confirm the active `workspaceRoot`.
-3. If migration fails, inspect the reported failure-summary artifact before retrying.
-4. In the session shell, `/workspace` discoverability is only a hint layer over the same `workspace` command family; it does not introduce a second parser or a separate public command namespace.
-5. `set-ui-theme` preset choices shown under `/workspace set-ui-theme` are the same existing `workspace set-ui-theme <preset>` command semantics, just exposed as palette hints.
-
-## 8. Advanced User Capabilities
-
-### 8.1 Workflow And Upgrade Surfaces
+Use this when the workspace schema or config baseline needs a governed change:
 
 ```bash
-pnpm exec repo-ai-governor workflow preview --workflow-template loop-guarded --output json
-pnpm exec repo-ai-governor workflow create --workflow-template condition-route --output json
-pnpm exec repo-ai-governor workflow edit --output pretty
-pnpm exec repo-ai-governor upgrade --output pretty
 pnpm exec repo-ai-governor upgrade --output json
 pnpm exec repo-ai-governor upgrade apply <report-path> --confirm-upgrade approve --output json
 pnpm exec repo-ai-governor upgrade rollback <apply-receipt-or-rollback-snapshot> --output json
 ```
 
-Use these when you want to:
+Preview first. Keep the preview report and apply receipt artifacts.
 
-1. Preview or persist active workflow definitions.
-2. Preview schema upgrades before changing `governor.yaml`.
-3. Apply one reviewed upgrade report with explicit confirmation.
-4. Roll back one applied upgrade from an apply receipt or rollback snapshot.
-5. Use the React-shell surfaces for richer local TTY interaction.
-
-Formal upgrade contract:
-
-1. Preview writes `context/upgrade/<upgrade-id>.report.json`, `<upgrade-id>.auto-migrated-config.json`, and `<upgrade-id>.rollback-snapshot.yaml`.
-2. Apply only consumes one preview `report_path` plus explicit `--confirm-upgrade approve`, and then writes one `*.apply-receipt.json` plus one verify receipt.
-3. Rollback consumes one apply receipt or rollback snapshot and writes one `*.rollback-receipt.json` plus one verify receipt.
-4. If preview reports blocking confirmation items, stop before apply and review them first.
-
-Common artifacts:
-
-1. Workflow definition: `<workspace_root>/context/workflow/active-workflow.definition.json`
-2. Compiled IR snapshot: `<workspace_root>/context/compiled-ir/<execution_id>.json`
-3. Upgrade report: `<workspace_root>/context/upgrade/<upgrade-id>.report.json`
-4. Auto-migrated config preview: `<workspace_root>/context/upgrade/<upgrade-id>.auto-migrated-config.json`
-5. Upgrade rollback snapshot: `<workspace_root>/context/upgrade/<upgrade-id>.rollback-snapshot.yaml`
-6. Upgrade apply receipt: `<workspace_root>/context/upgrade/<apply-id>.apply-receipt.json`
-7. Upgrade rollback receipt: `<workspace_root>/context/upgrade/<rollback-id>.rollback-receipt.json`
-
-### 8.2 Workspace Utilities And Shell Themes
+### Theme and shell preference changes
 
 ```bash
-pnpm exec repo-ai-governor workspace clear-config --output pretty
-pnpm exec repo-ai-governor workspace switch-branch main --output pretty
-pnpm exec repo-ai-governor set-ui-theme calm --output pretty
 pnpm exec repo-ai-governor workspace set-ui-theme --output pretty
+pnpm exec repo-ai-governor set-ui-theme calm --theme-scope workspace --output pretty
 ```
 
-Use these when you want to:
+## 9. Optional Secondary Surfaces And Lower-level Paths
 
-1. Remove the current selector/config file without deleting diagnostics, workflow, or review artifacts.
-2. Switch to an existing local Git branch through the governed workspace flow.
-3. Persist the default React shell theme globally or per workspace.
-4. Open the interactive theme selector by running `set-ui-theme` or `workspace set-ui-theme` without `[theme]` in an interactive TTY + `pretty` shell.
-5. Inside the session shell, `/workspace set-ui-theme` now surfaces `governor`, `catppuccin`, and `calm` as direct preset choices so you can accept one from the palette before execution.
+These surfaces are real, but they are not the default adopter story.
 
-Notes:
-
-1. `workspace switch-branch` only switches to an existing local branch; it does not fetch or create one for you.
-2. Theme precedence is one-shot `--ui-theme` override -> workspace config -> global CLI preference.
-3. Top-level `set-ui-theme` defaults to global scope; `workspace set-ui-theme` defaults to workspace scope.
-
-### 8.3 Host Distribution And Public Service Host
+### VS Code companion
 
 ```bash
-pnpm exec repo-ai-governor host export --host codex --mode project-local --output-dir .repo-ai-governor/generated/hosts/codex
-pnpm exec repo-ai-governor host verify --output-dir .repo-ai-governor/generated/hosts/codex
-pnpm exec repo-ai-governor host pack --host claude-code --mode plugin-bundle --bundle-dir .repo-ai-governor/generated/bundles/claude
+cd <governor-repo>
+pnpm run build
+code --extensionDevelopmentPath <governor-repo>/apps/vscode-extension <target-repo>
 ```
 
-Use these when you want to:
+Use this only when you want the editor-native companion on top of the normal CLI path. Current support is limited to a built source checkout and local VSIX or packaged-extension-root rehearsal.
 
-1. Render staged host assets for `codex`, `claude-code`, or `github-copilot`.
-2. Verify staged exports or applied repo-local assets before handing them off to other users or repositories.
-3. Materialize an installable bundle when the chosen host target supports `plugin-bundle`.
-4. Keep one manifest/receipt trail for `export`, `verify`, and `pack` closeout.
-5. Work below the preferred `adopt apply` whole-repository install path.
-
-Public package boundary:
-
-1. For clean-room or desktop-sidecar bootstrap, the only supported root-package service-host import path is `@cjhdev/repo-ai-governor/service-host`.
-2. Do not deep-import internal `dist/**` host files from the published tarball.
-
-Operational notes:
-
-1. Built-in `adopt apply` does not require pre-existing `.codex/skills/**`; the `.codex/skills/**` dependency applies to lower-level `host export` and `host pack` flows when they generate host assets from this repo's packaged skill layer.
-2. Target capabilities vary by host and mode (`project-local` vs `plugin-bundle`); keep the emitted manifest and verification summary as the hand-off artifacts.
-3. GitHub Copilot also supports `--copilot-target repo-local|cli-plugin|github-com-agent` when you need target-specific export or bundle selection.
-
-Typical usage patterns:
-
-1. Repo-local onboarding for one target repository:
-   Run `host export --mode project-local`, optionally add `--apply-to-repo <target-repo>`, then run `host verify`.
-   Typical outputs include host-native instruction/skill files plus a staged `host-export.manifest.json` and `host-verification.summary.json`.
-2. Codex project-local example:
-   `host export --host codex --mode project-local` stages `AGENTS.md`, `.agents/skills/**`, `.agents/subagents/**`, and `.mcp.json` for a repository-local Codex setup.
-3. Claude Code project-local example:
-   `host export --host claude-code --mode project-local` stages `.claude/settings.json`, `.claude/hooks/hooks.json`, `.claude/skills/**`, `.claude/agents/**`, and `.mcp.json`.
-4. GitHub Copilot repo-local example:
-   `host export --host github-copilot --mode project-local --copilot-target repo-local` stages `.github/copilot-instructions.md`, `.github/instructions/**`, `.github/skills/**`, `.github/agents/**`, and `.github/mcp.json`.
-5. Plugin distribution example:
-   `host pack --mode plugin-bundle` produces a bundle plus `host-pack.report.json`; for example Codex emits `.codex-plugin/plugin.json`, while Claude Code emits `.claude-plugin/plugin.json`.
-6. Verification step:
-   `host verify --manifest <manifest-path>` or `host verify --output-dir <staged-export-dir>` checks the staged export plus any apply/pack receipts for drift before hand-off.
-
-### 8.4 HITL Notification Providers
-
-You can enable webhook-style HITL notifications with environment variables:
+### Desktop foundation
 
 ```bash
-export REPO_AI_GOVERNOR_NOTIFICATION_WEBHOOK_URL="https://example.com/webhook"
-export REPO_AI_GOVERNOR_NOTIFICATION_CHAT_IM_URL="https://example.com/chat-im"
-pnpm exec repo-ai-governor run --output json
-```
-
-### 8.5 Built-in Governance Packs
-
-The current official standards catalog includes five built-in governance packs:
-
-1. `workflowReviewGovernancePack`
-2. `javascriptMinimalGovernancePack`
-3. `pythonMinimalGovernancePack`
-4. `goMinimalGovernancePack`
-5. `rustMinimalGovernancePack`
-
-Use `workflowReviewGovernancePack` when you want the adopter-facing governance flow itself to allocate standalone `CR-xxx` review task cards and keep the `review_pending -> verified -> resolved` lifecycle synchronized.
-
-Then layer the language pack you need on top:
-
-1. `javascriptMinimalGovernancePack` for `package.json` script-driven JavaScript / Node repositories.
-2. `pythonMinimalGovernancePack` for `pyproject.toml` + `ruff/pytest/pyright` style Python repositories.
-3. `goMinimalGovernancePack` for `go.mod` / `go.sum` repositories.
-4. `rustMinimalGovernancePack` for Cargo workspace repositories.
-
-The self-host TypeScript governance chain in this repository remains the canonical repository-level reference example, but it is not a separately published official language pack yet.
-The current `project-066` proof window rechecks the repository examples module plus config-schema acceptance for this catalog; packaged consumer-path verification still belongs to release/distribution surfaces.
-
-## 9. Troubleshooting And Known Limitations
-
-1. `pnpm add <tarball>` failing with `ENOTFOUND` usually means the install environment cannot reach the npm registry; use `path`, `link`, or `dist-binary` instead.
-2. `dist-binary` validates CLI/runtime behavior, not packaged-install behavior.
-3. `tgz` is not offline/self-contained; installation still resolves external dependencies.
-4. The `tgz` path validates the published CLI tarball surface plus shipped docs/reference assets only; it does not widen packaged VS Code support beyond the built-source local VSIX / packaged-extension-root path, and it does not provide Marketplace or published-installable extension support.
-5. If a target repository already uses Yarn/npm or has a dirty worktree, start with `dist-binary`; otherwise start with `path` and move to `link` or `tgz` only when the workflow requires it.
-5. Self-host warnings such as `baseline_docs missing=5/5` or `script_not_found` are expected in fresh external repos unless you intentionally vendor this repository's own governance stack.
-6. If `upgrade` preview reports blocking confirmation items, stop before `apply`, review the saved `report_path` and `auto_migrated_config_path`, then rerun preview after fixing the configuration drift.
-7. Keep both the preview `report_path` and either the `apply_receipt_path` or `rollback_snapshot_path`; supported rollback depends on those hand-off artifacts rather than manual path guessing.
-8. After `workspace execute` or `workspace rollback`, rerun `doctor` to confirm the active `workspaceRoot` instead of inferring success from directory layout alone.
-9. When rehearsing workspace migration, use a real target repository or an isolated external temp directory. Running the command from the governor source repository can reattach to that repo's Git root and create misleading workspace artifacts.
-10. Keep the generated `*.rollback.json` or `*.rollback-receipt.json` artifacts in your acceptance window; they are the audit trail that proves the migration or upgrade closeout completed cleanly.
-11. If `host export` or `host pack` reports missing repository-local skills, make sure `.codex/skills/` is present; built-in `adopt apply` does not need that tree unless you later use the lower-level host distribution surfaces.
-
-## 10. Optional Self-host Assets
-
-1. Repository-local helpers live under `.codex/skills/`; external adopters can ignore them for plain CLI bootstrap and built-in `adopt apply`, but they become relevant when you want the same self-host skill prompts/workflows or need the lower-level host distribution surfaces.
-2. These assets are operational helpers for local AI tooling, not a requirement for the CLI install surfaces documented above.
-3. `apps/vscode-extension` is an optional secondary surface for source-checkout evaluation, not part of the published package-install baseline.
-
-### 10.1 Optional Codex / Claude Code Host-native Lifecycle
-
-Use this path only when you already have a built governor source checkout and want generated Codex / Claude Code assets inside the target repository or as plugin bundles:
-
-Run these commands from `<governor-repo>`, and point `--apply-to-repo` at the adopter repository root that should receive the generated files.
-
-```bash
-pnpm exec repo-ai-governor host export --host codex --mode project-local --output-dir .repo-ai-governor/generated/hosts/codex --apply-to-repo /absolute/path/to/<target-repo>
-pnpm exec repo-ai-governor host export --host claude-code --mode project-local --output-dir .repo-ai-governor/generated/hosts/claude-code --apply-to-repo /absolute/path/to/<target-repo>
-pnpm exec repo-ai-governor host pack --host codex --mode plugin-bundle --output-dir .repo-ai-governor/generated/hosts/codex-plugin --bundle-dir .repo-ai-governor/generated/bundles/codex
-pnpm exec repo-ai-governor host pack --host claude-code --mode plugin-bundle --output-dir .repo-ai-governor/generated/hosts/claude-code-plugin --bundle-dir .repo-ai-governor/generated/bundles/claude-code
-```
-
-Then recheck the staged manifest that belongs to the export or bundle you just rendered:
-
-```bash
-pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/codex/host-export.manifest.json
-pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/claude-code/host-export.manifest.json
-pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/codex-plugin/host-export.manifest.json
-pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/claude-code-plugin/host-export.manifest.json
-```
-
-Formal contract:
-
-1. `host export` is the supported path for Codex / Claude Code `project-local` follow-up assets when you want generated AGENTS/skills/agents/hooks/MCP files in a target repository.
-2. `host pack` is the supported path for Codex / Claude Code plugin bundles when you want one installable host-side bundle materialized from the same built source checkout.
-3. `host verify` must be rerun against the generated manifest after every `host export` or `host pack`, and again after any governor source or vendored-skill refresh.
-4. “Upgrade” for these host-native assets means rerender plus verify after the source checkout or vendored skills changed. It is not a separate packaged installer, and it is not the same contract as `repo-ai-governor upgrade`.
-5. These generated host assets are source-checkout follow-up surfaces and adopter-facing distribution artifacts. They do not replace the canonical governor workspace truth under `context/`, `tasks/`, `review/`, or audit ledgers.
-
-### 10.2 GitHub Copilot Reserved Target Notice
-
-`github-com-agent` remains a reserved GitHub Copilot target. The current contract is intentionally blocked:
-
-1. The target id and renderer path exist only so staged exports can remain schema-safe and target-aware; they do not mean GitHub.com coding-agent consumption is formally supported.
-2. Current capability truth stays frozen at `supportedModes=[]`, `discoveryState=staged_export only`, `supportsApplyToRepo=false`, `supportsBundlePackaging=false`, and `isMvpTarget=false`.
-3. `host export --copilot-target github-com-agent --apply-to-repo ...` must still fail, and `host verify` on that reserved manifest must still return a blocking result until the target leaves deferred status.
-4. This blocked mode exits only after the target advertises at least one supported mode plus a discoverable/installed consumer path, pass-level export/verify evidence exists for that target, and the adopter-facing consumption narrative is proven to route back through the canonical governor runtime instead of a host-local fork.
-5. Maintainers should refresh `.tmp/project-068-sprint-002-github-com-agent-reserved-target-report.json` with `pnpm run release:verify-github-com-agent-reserved-target` whenever this reserved-target contract changes, so the blocked proof path remains replayable.
-
-## 11. Remote-api Rehearsal
-
-Use this remote-api rehearsal only when you want to validate provider-backed behavior instead of the default local CLI-backed or fallback rehearsal:
-
-```bash
-export OPENAI_API_KEY="sk-..."
-export ANTHROPIC_API_KEY="sk-ant-..."
+cd <governor-repo>
+pnpm run build
+pnpm run check:desktop-entry-smoke
 pnpm run release:verify-local
 ```
 
-Notes:
+Use this only when you want to validate the desktop sidecar foundation from a built source checkout. It is not a standalone desktop installer.
 
-1. `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` are only needed for remote-api rehearsal windows; normal local adoption can stay on default CLI-backed, fallback-only local-model, or dist-binary flows.
-2. This rehearsal still assumes network access to the npm registry when your chosen install mode needs dependency resolution.
+### Host-native asset generation
 
-## 12. Next Steps
+```bash
+pnpm exec repo-ai-governor host export --host codex --mode project-local --output-dir .repo-ai-governor/generated/hosts/codex --apply-to-repo /absolute/path/to/<target-repo>
+pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/codex/host-export.manifest.json
+```
 
-1. Use `docs/support-matrix.md` for current support boundaries.
-2. Use `examples/` as starter assets for team adoption drills.
-3. Use `CHANGELOG.md` for upgrade and migration notes.
-4. Use `docs/maintainer-validation-playbook.md` only when you maintain or release `repo-ai-governor` itself.
+Treat `host export`, `host verify`, and `host pack` as lower-level follow-up surfaces beneath the main `adopt apply` installation story.
+
+## 10. Troubleshooting And Known Boundaries
+
+If the first run feels confusing, these are the usual reasons:
+
+1. You are mixing adopter-facing docs with maintainer-only validation docs. Stay on this playbook unless you are validating the governor project itself.
+2. You are trying to prove packaged-install truth with `dist-binary`. It only proves CLI/runtime behavior.
+3. You are treating `host export` as the default installer. It is not.
+4. You are reading environment-gated adapter warnings as governance failure. They usually mean missing auth, endpoint, CLI health, or quota preconditions.
+5. You are expecting `local-model` to cover the same capability envelope as primary remote adapters. It does not.
+
+When in doubt:
+
+1. Re-run `doctor --output json`.
+2. Re-run `doctor --adapters --fix --output json`.
+3. Re-run `verify --adapters --output json`.
+4. Prefer `run --dry-run --trace` over a real run until the trace artifacts look healthy.
+5. Check `docs/support-matrix.md` before assuming a surface is formally supported.
+
+## 11. What To Read Next
+
+1. Use `README.md` when you need the short product overview.
+2. Use `docs/support-matrix.md` when you need formal support truth.
+3. Use `docs/maintainer-validation-playbook.md` only when you maintain or release this repository.
+4. Use `examples/` when you want runnable scenarios instead of a generic runbook.

@@ -71,13 +71,13 @@ class StubSessionShellPromptAdapter implements CliSessionShellPromptAdapter {
 }
 
 const SESSION_SHELL_TRANSLATIONS: Record<string, string> = {
-  'cli.sessionShell.title': 'Repo AI Governor session shell',
+  'cli.sessionShell.title': 'Repo AI Governor',
   'cli.sessionShell.subtitle': 'Session shell parity integration test.',
   'cli.sessionShell.sections.transcript': 'History',
-  'cli.sessionShell.sections.composer': 'Current input',
+  'cli.sessionShell.sections.composer': 'Input',
   'cli.sessionShell.sections.slashPalette': 'Slash palette',
   'cli.sessionShell.sections.promptBar': 'Prompt bar',
-  'cli.sessionShell.composer.placeholder': 'Type a message, / for commands, or ? for shortcuts.',
+  'cli.sessionShell.composer.placeholder': 'Type a message or / command.',
   'cli.sessionShell.palette.emptyState': 'No slash commands matched.',
   'cli.sessionShell.resumeSelector.latest': 'latest',
   'cli.sessionShell.transcript.systemLabel': 'System',

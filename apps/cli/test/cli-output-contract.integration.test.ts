@@ -1782,6 +1782,7 @@ describe('CLI output contract integration', () => {
       expect(payload.command_result.details.action).toBe('set_ui_theme');
       expect(payload.command_result.details.ui_theme).toBe('calm');
       expect(payload.command_result.details.persisted_path_count).toBe(1);
+      expect(payload.command_result.summary).toContain('workspace config');
       expect(configContent).toContain('ui:');
       expect(configContent).toContain('theme: calm');
     } finally {
@@ -1801,7 +1802,9 @@ describe('CLI output contract integration', () => {
       const renderedOutput = `${stdoutBuffer.join('')}${stderrBuffer.join('')}`;
 
       expect(exitCode).toBe(1);
-      expect(renderedOutput).toContain('governor|catppuccin|calm');
+      expect(renderedOutput).toContain(
+        'governor|copilot|catppuccin|calm|tokyo-night|kanagawa|flexoki',
+      );
       expect(renderedOutput).toContain('omit [theme] to open the selector');
     } finally {
       await rm(temporaryRepositoryRoot, { recursive: true, force: true });
@@ -1847,6 +1850,7 @@ describe('CLI output contract integration', () => {
       expect(payload.command_result.details.action).toBe('set_ui_theme');
       expect(payload.command_result.details.ui_theme).toBe('calm');
       expect(payload.command_result.details.theme_scope).toBe('global');
+      expect(payload.command_result.summary).toContain('global user-config');
       expect(globalPreferenceContent).toContain('theme: calm');
       expect(updatedConfigContent).toBe(originalConfigContent);
     } finally {

@@ -1,82 +1,49 @@
 # Repo AI Governor
 
-Repository-local AI governance CLI for teams that want to connect tools like Codex, Claude Code, and GitHub Copilot to one governed workflow inside their own repository.
+`repo-ai-governor` is a repository-local AI governance CLI. It lets one repository connect tools like Codex, Claude Code, and GitHub Copilot to a shared workflow for planning, execution, review, verification, and audit.
+
+This project is for teams that want more than "let the agent run." It is built for repositories that need repeatable AI workflows, clear review loops, explicit human gates, and durable workspace artifacts.
 
 - Chinese guide: `README.zh-CN.md`
-- Local adoption playbook: `docs/local-adoption-playbook.md`
-- Maintainer validation playbook: `docs/maintainer-validation-playbook.md`
-- Support matrix: `docs/support-matrix.md`
-- Examples: `examples/`
+- Adopter runbook: `docs/local-adoption-playbook.md`
+- Maintainer runbook: `docs/maintainer-validation-playbook.md`
+- Formal support boundary: `docs/support-matrix.md`
+- Runnable examples: `examples/`
 - Changelog: `CHANGELOG.md`
 
-## 1. Current Surface
+## What This Project Helps You Do
 
-Today the public CLI and package surface covers:
+With the current public CLI surface you can:
 
-1. Bootstrap and audit: `init`, `doctor`, `check`
-2. Managed repo installation lifecycle: `adopt list`, `adopt apply`, `adopt diff`, `adopt verify`, `adopt upgrade`, `adopt remove`
-3. Multi-tool onboarding: `connect`, `verify`
-4. Governed execution: `plan`, `run`, `review`, `review-verify`
-5. Session-first shell: run `repo-ai-governor` with no subcommand, then `resume`
-6. Workflow and schema lifecycle utilities: `workflow`, `upgrade`
-7. Workspace and shell preferences: `workspace`, `set-ui-theme`
-8. Lower-level host distribution: `host export`, `host verify`, `host pack`
-9. Optional secondary/public package surfaces: source-checkout VS Code companion, desktop foundation, and the root-package export `@cjhdev/repo-ai-governor/service-host`
+| Goal | Main commands |
+|---|---|
+| Bootstrap a repository and inspect environment readiness | `init`, `doctor`, `check` |
+| Install and maintain a managed adoption baseline | `adopt list`, `adopt apply`, `adopt diff`, `adopt verify`, `adopt upgrade`, `adopt remove` |
+| Connect multiple AI tools into one governed baseline | `connect`, `verify` |
+| Keep personal machine defaults and secrets out of shared config | `config`, `secret` |
+| Run a governed delivery loop | `plan`, `run`, `review`, `review-verify` |
+| Use a conversation-first shell instead of one-shot commands | `repo-ai-governor`, `resume` |
+| Preview workflows and manage workspace or schema changes | `workflow`, `workspace`, `set-ui-theme`, `upgrade` |
+| Generate lower-level host assets and service-host integrations | `host export`, `host verify`, `host pack`, `@cjhdev/repo-ai-governor/service-host` |
 
-The formal support boundary for these surfaces lives in `docs/support-matrix.md`.
+If you only remember one thing: most adopters should start with `init`, `doctor`, and `adopt apply`, then move to `connect` and a traced `run --dry-run`.
 
-## 2. Quick Start
+## Start Here
 
-### 2.1 Prerequisites
+Choose the path that matches your goal:
 
-1. Node.js `>=18`
-2. `pnpm` when using `path`, `link`, or `tgz`
-3. A target repository where you want to run governed AI workflows
-
-### 2.2 Choose an install path
+| If you want to... | Start with |
+|---|---|
+| Try the CLI without changing the target repo dependency graph | `dist-binary` rehearsal |
+| Install the governor into a normal `pnpm` repository | `path` install |
+| Keep a target repo following a local source checkout closely | `link` install |
+| Rehearse the packaged CLI tarball | `tgz` install |
 
 Assume this repository is `<governor-repo>` and your target repository is `<target-repo>`.
 
-Recommended start order:
+### Option A: Fastest safe rehearsal with `dist-binary`
 
-1. Start with `path` when the target repo already uses `pnpm` and you want the default local adoption route.
-2. Move to `link` only when the target repo should follow local governor source changes closely.
-3. Use `dist-binary` when the target repo is dirty, uses Yarn/npm, or you want a no-install CLI/runtime rehearsal first.
-4. Use `tgz` only for an online packaged CLI-install rehearsal in an environment that can still reach the npm registry.
-
-The formal acceptance contract for these install modes lives in `docs/support-matrix.md`.
-
-#### Option A: `path`
-
-```bash
-cd <target-repo>
-pnpm add --save-exact <governor-repo>
-```
-
-Use this when you want the simplest local adoption path.
-
-#### Option B: `link`
-
-```bash
-cd <target-repo>
-pnpm add --save-exact link:<governor-repo>
-```
-
-Use this when the target repo should follow local governor source changes closely.
-
-#### Option C: `tgz`
-
-```bash
-cd <governor-repo>
-pnpm pack --json
-
-cd <target-repo>
-pnpm add --save-exact /absolute/path/to/cjhdev-repo-ai-governor-<version>.tgz
-```
-
-Use this when you want an online packaged CLI-install rehearsal. It still requires registry access for external dependencies and does not widen packaged VS Code or other secondary-surface support.
-
-#### Option D: `dist-binary`
+Use this when the target repository is dirty, uses Yarn/npm, or you want to prove CLI/runtime behavior before adding a dependency.
 
 ```bash
 cd <governor-repo>
@@ -84,34 +51,27 @@ pnpm run build
 
 cd <target-repo>
 node <governor-repo>/dist/bin/repo-ai-governor.js --help
+node <governor-repo>/dist/bin/repo-ai-governor.js init --output pretty
+node <governor-repo>/dist/bin/repo-ai-governor.js doctor --output json
+node <governor-repo>/dist/bin/repo-ai-governor.js check --output json
 ```
 
-Use this when you want to validate CLI/runtime behavior before changing the target repo dependency graph. It does not prove packaged-install behavior.
+### Option B: Recommended install for a normal `pnpm` repo
 
-### 2.3 First run in a target repository
+Use this when you want the cleanest local adoption story.
 
 ```bash
+cd <target-repo>
+pnpm add --save-exact <governor-repo>
 pnpm exec repo-ai-governor --help
 pnpm exec repo-ai-governor init --output pretty
 pnpm exec repo-ai-governor doctor --output json
 pnpm exec repo-ai-governor check --output json
 ```
 
-If you use the `dist-binary` path, replace `pnpm exec repo-ai-governor` with:
+### Option C: Managed installation for a real adopter baseline
 
-```bash
-node <governor-repo>/dist/bin/repo-ai-governor.js <command>
-```
-
-What to expect:
-
-1. `init --output pretty` gives you a guided first-time setup.
-2. In local TTY + `pretty`, running `repo-ai-governor` with no subcommand opens the session-first shell on `stderr`.
-3. `resume [session-id]` can reattach the latest or a named persisted session.
-4. Fresh external repositories may still show self-host-specific warnings such as `baseline_docs missing=5/5` or `script_not_found`; treat them as informational unless you intentionally vendor this repository's own governance docs and scripts.
-5. Human-readable help and status text is localized; use `--locale en-US` or `--locale zh-CN` when you want to pin the language explicitly.
-
-### 2.4 Apply the managed adoption baseline
+Once bootstrap succeeds, apply the managed baseline instead of hand-copying host assets.
 
 ```bash
 pnpm exec repo-ai-governor adopt list --output json
@@ -119,111 +79,100 @@ pnpm exec repo-ai-governor adopt apply adopter-complete --repo . --hosts codex,c
 pnpm exec repo-ai-governor adopt verify --repo . --output json
 ```
 
-Use this when you want the preferred whole-repository install path instead of manually staging lower-level host exports.
+What you should expect after this:
 
-Notes:
+1. `init` completes a guided first-time setup.
+2. `doctor` and `check` return readable or machine-readable facts instead of crashing.
+3. `adopt apply` writes managed installation metadata under `.repo-ai-governor/adoption/installations/**`.
+4. `adopt verify` becomes the supported way to prove the managed baseline is still healthy.
 
-1. Built-in adoption packs materialize managed host assets, guides, and install metadata under `.repo-ai-governor/adoption/installations/**`.
-2. Built-in `adopt apply` does not require a pre-existing source-local `.codex/skills/**` tree in the target repository.
-3. For the advanced self-host path, use `adopt apply adopter-complete --adoption-profile self-host-complete --workspace-mode repo_local`.
+## First Successful Workflow
 
-## 3. Common User Paths
-
-### 3.1 Install or maintain one managed repository baseline
-
-```bash
-pnpm exec repo-ai-governor adopt apply adopter-complete --repo . --hosts codex,claude-code,github-copilot --output json
-pnpm exec repo-ai-governor adopt verify --repo . --output json
-pnpm exec repo-ai-governor adopt diff --repo . --output json
-pnpm exec repo-ai-governor adopt upgrade adopter-complete --repo . --output json
-pnpm exec repo-ai-governor adopt remove adopter-complete --repo . --force --output json
-```
-
-Use this when you want the supported high-level install, drift check, upgrade, and removal path for a target repository.
-
-### 3.2 Connect multiple AI tools
+After the repository is bootstrapped, the shortest end-to-end governed path is:
 
 ```bash
 pnpm exec repo-ai-governor connect --tools codex,claude-code --preset multi-tool-default --output json
 pnpm exec repo-ai-governor doctor --adapters --fix --output json
 pnpm exec repo-ai-governor verify --adapters --output json
 pnpm exec repo-ai-governor run --output json --dry-run --trace
-```
-
-This flow generates a reviewable candidate config, checks adapter readiness, and verifies routing before real execution.
-
-### 3.3 Run your first governed loop
-
-```bash
-pnpm exec repo-ai-governor plan --output json
-pnpm exec repo-ai-governor run --output json --dry-run --trace
 pnpm exec repo-ai-governor review --output json
 pnpm exec repo-ai-governor review-verify --output json
 ```
 
-Use this when you want the full plan -> run -> review -> verify path with audit artifacts under the active workspace.
+Why this order works:
 
-In managed review workspaces, `review` allocates a canonical `CR-xxx` task card for the round, and `review-verify` advances that same card through `review_pending -> verified -> resolved`.
+1. `connect` creates a reviewable candidate config instead of mutating the active config blindly.
+2. `doctor --adapters --fix` handles safe local repairs only.
+3. `verify --adapters` is the readiness gate before a real run.
+4. `run --dry-run --trace` gives you routing and artifact evidence with the lowest risk.
+5. `review` and `review-verify` close the loop with a governed review lifecycle.
 
-### 3.4 Switch workspace mode or shell theme
+## Personal Defaults And Secrets
 
-```bash
-pnpm exec repo-ai-governor workspace dry-run --workspace-mode repo_local --output json
-pnpm exec repo-ai-governor workspace execute --workspace-mode repo_local --output json
-pnpm exec repo-ai-governor workspace rollback <plan-path> --output json
-pnpm exec repo-ai-governor workspace set-ui-theme --output pretty
-pnpm exec repo-ai-governor set-ui-theme calm --theme-scope workspace --output pretty
-```
+One easy-to-miss part of the current product is that shared repo config and personal machine config are intentionally separate.
 
-Keep the printed `plan-path`. It is your rollback reference for that workspace migration.
-
-`workspace` also accepts `clear-config` and `switch-branch` as direct shorthand actions. In interactive TTY + `pretty`, omitting `[theme]` from `workspace set-ui-theme` or `set-ui-theme` opens the theme selector instead of requiring a preset.
-
-### 3.5 Preview, Apply, Or Roll Back Upgrades
+Use `connect` for shared repository-facing onboarding, and use `config` plus `secret` when a model choice, endpoint, or credential selector should stay user-local:
 
 ```bash
-pnpm exec repo-ai-governor upgrade --output json
-pnpm exec repo-ai-governor upgrade apply <report-path> --confirm-upgrade approve --output json
-pnpm exec repo-ai-governor upgrade rollback <apply-receipt-or-rollback-snapshot> --output json
+pnpm exec repo-ai-governor config set tools.codex.transport remote_api
+pnpm exec repo-ai-governor config set tools.codex.remoteApi.model gpt-5
+pnpm exec repo-ai-governor config set tools.codex.remoteApi.credentialRef secret://openai/api-key
+printf '%s' "$OPENAI_API_KEY" | pnpm exec repo-ai-governor secret set openai/api-key --stdin
+pnpm exec repo-ai-governor secret status
+pnpm exec repo-ai-governor connect --tools codex --output pretty
 ```
 
-Use `upgrade` preview first. Keep the emitted `report_path` from preview and the `apply_receipt_path` from apply; those are the supported hand-off artifacts for the adopter-facing apply/rollback path.
+This keeps plaintext secrets out of shared workspace config while still letting the repository consume a stable selector such as `secret://openai/api-key`.
 
-### 3.6 Refresh Optional Source-checkout Host Assets
+## Common User Paths
 
-```bash
-pnpm exec repo-ai-governor host export --host codex --mode project-local --output-dir .repo-ai-governor/generated/hosts/codex --apply-to-repo /absolute/path/to/<target-repo>
-pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/codex/host-export.manifest.json
-pnpm exec repo-ai-governor host export --host github-copilot --mode project-local --copilot-target repo-local --output-dir .repo-ai-governor/generated/hosts/github-copilot --apply-to-repo /absolute/path/to/<target-repo>
-pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/github-copilot/host-export.manifest.json
-pnpm exec repo-ai-governor host pack --host claude-code --mode plugin-bundle --output-dir .repo-ai-governor/generated/hosts/claude-code-plugin --bundle-dir .repo-ai-governor/generated/bundles/claude-code
-pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/claude-code-plugin/host-export.manifest.json
-```
+Use these as a mental model for the product:
 
-Run these commands from `<governor-repo>` and point `--apply-to-repo` at the actual adopter repository root you want to receive the generated files.
+| Job to be done | Recommended commands |
+|---|---|
+| Install or refresh one governed repository baseline | `adopt apply`, `adopt verify`, `adopt diff`, `adopt upgrade`, `adopt remove` |
+| Wire multiple tools into one repository | `connect`, `doctor --adapters`, `verify --adapters` |
+| Run the first plan -> run -> review loop | `plan`, `run --dry-run --trace`, `review`, `review-verify` |
+| Work in a conversation-first shell | `repo-ai-governor --output pretty`, `resume` |
+| Move the workspace into or out of the target repo | `workspace dry-run`, `workspace execute`, `workspace rollback` |
+| Preview or apply controlled schema/workspace upgrades | `upgrade`, `upgrade apply`, `upgrade rollback` |
+| Generate host-native follow-up assets from a source checkout | `host export`, `host verify`, `host pack` |
 
-Use this only when you are working from a built governor source checkout and want optional host-native follow-up assets on top of the normal CLI bootstrap path.
+The session shell theme selector currently exposes `governor`, `catppuccin`, `calm`, `tokyo-night`, `kanagawa`, and `flexoki`. Run `repo-ai-governor set-ui-theme --output pretty` or `repo-ai-governor workspace set-ui-theme --output pretty` to choose one interactively.
 
-Public host families currently include Codex, Claude Code, and GitHub Copilot. For GitHub Copilot, keep adopter-facing flows on targets such as `repo-local`; `github-com-agent` remains a reserved fail-closed target until the support matrix says otherwise.
+## Which Document To Read Next
 
-The supported refresh path is: update the governor source checkout or the vendored host-facing skills, rerun `host export` or `host pack`, then rerun `host verify`. This is a source-checkout follow-up surface, not a packaged-install baseline or a separate installer contract.
+Use the docs like this:
 
-## 4. Notes For External Adopters
+| Document | Use it for |
+|---|---|
+| `README.md` | Product overview, quick start, and the shortest path to first success |
+| `docs/local-adoption-playbook.md` | Day-to-day adopter runbook with install, onboarding, dry-run, rollback, and troubleshooting steps |
+| `docs/support-matrix.md` | Formal support truth for install modes, adapters, and secondary surfaces |
+| `docs/maintainer-validation-playbook.md` | Release and validation runbook for maintainers of this repository |
+| `examples/` | Runnable scenarios for adoption drills and command-contract examples |
 
-1. `dist-binary` rehearsal proves CLI/runtime behavior, not packaged-install behavior.
-2. `tgz` is not offline/self-contained; package installation still resolves external dependencies from the npm registry.
-3. The `tgz` path validates the published CLI tarball surface and shipped docs/reference assets only; it does not widen packaged VS Code support beyond the built-source local VSIX / packaged-extension-root path, and it does not provide Marketplace or published-installable extension support.
-4. If a target repository already uses Yarn/npm or has a dirty worktree, start with `dist-binary`; otherwise start with `path` and move to `link` or `tgz` only when the workflow requires it.
-5. Session shell, React-shell command surfaces, workflow editing, upgrade analysis, host distribution, workspace utilities, HITL notifications, and troubleshooting details are covered in the local adoption playbook.
-6. The optional VS Code companion surface supports either one extension-development host or one locally generated VSIX / packaged extension root from a built governor source checkout via `apps/vscode-extension` and the release packaging scripts. Published npm/tgz install may still carry internal `dist/apps/vscode-extension/**` payloads, but it does not ship a supported installable extension bundle, and Marketplace remains unsupported.
-7. The optional desktop surface stays desktop foundation-only on a built governor source checkout. There is no supported standalone desktop installer, published desktop bundle, or packaged desktop product claim.
-8. Built-in `adopt apply` does not require a pre-existing source-local `.codex/skills/**` tree in the target repository; repository-local Codex helpers ship under `.codex/skills/` for self-host and maintainer flows, and external adopters only need to vendor them when they want the same local skill ergonomics.
-9. Optional host-native follow-up assets (`host export` / `host verify` / `host pack`) stay on the source-checkout follow-up surface. Public host families include Codex, Claude Code, and GitHub Copilot, but target support still varies; keep the emitted manifest/verification summary, rerun the host command plus `host verify` after a governor or skill refresh, and treat `github-com-agent` as reserved/blocked until `docs/support-matrix.md` says otherwise.
-10. For clean-room or desktop-sidecar bootstrap, `@cjhdev/repo-ai-governor/service-host` is the only supported root-package service-host import path; do not deep-import internal `dist/**` host files.
+## Support Boundaries Worth Knowing Early
 
-## 5. Read More
+These are the constraints that most often surprise new readers:
 
-1. Use `docs/local-adoption-playbook.md` for day-to-day adoption, onboarding, rollback, workflow, and troubleshooting guidance.
-2. Use `docs/support-matrix.md` when you want the current support boundary for install modes, adapters, and validation status.
-3. Use `docs/maintainer-validation-playbook.md` only if you maintain or release `repo-ai-governor` itself.
-4. Use `examples/` when you want starter assets for team adoption drills.
+1. `dist-binary` proves CLI/runtime behavior, not packaged-install behavior.
+2. `tgz` is an online packaged-install rehearsal, not an offline/self-contained installer.
+3. Built-in `adopt apply` is the preferred whole-repository installation path; lower-level `host export` and `host pack` are follow-up surfaces, not the default installer story.
+4. VS Code support is currently a built-source companion and local VSIX packaging path, not Marketplace support.
+5. Desktop support is currently foundation-only from a built source checkout, not a standalone desktop product.
+6. `local-model` is a constrained fallback surface, not a full substitute for primary remote adapters.
+
+For the exact support contract, always check `docs/support-matrix.md`.
+
+## Examples
+
+The repository ships runnable example scenarios for:
+
+1. Single-role minimal flow
+2. Multi-role collaboration flow
+3. HITL escalation flow
+4. Restricted-network degrade flow
+5. Optional plugin-memory flow
+
+Start with `examples/README.md` when you want a concrete scenario instead of a generic quick start.

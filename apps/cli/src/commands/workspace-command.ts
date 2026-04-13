@@ -597,17 +597,25 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
         ? await this.persistGlobalUiThemePreference(context, requestedUiTheme)
         : await this.persistUiThemeConfig(context, config, requestedUiTheme);
     const persistedPathCount = persistedConfigPaths.length;
+    const themeScopeLabel = this.resolveThemeScopeDisplayLabel(context, themeScope);
+    const persistenceTarget = this.resolveThemePersistenceTargetLabel(
+      context,
+      themeScope,
+      persistedConfigPaths,
+    );
     const statusMessage = this.translate(
       context,
       'cli.reactShell.workspace.status.setThemeCompleted',
       {
         theme: requestedUiTheme,
-        scope: themeScope,
+        scope: themeScopeLabel,
+        target: persistenceTarget,
       },
     );
     const message = this.translate(context, 'cli.reactShell.workspace.message.setThemeCompleted', {
       theme: requestedUiTheme,
-      scope: themeScope,
+      scope: themeScopeLabel,
+      target: persistenceTarget,
       count: String(persistedPathCount),
       paths: persistedConfigPaths.join(', '),
     });
@@ -794,6 +802,43 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
    */
   private formatAvailableThemeList(): string {
     return CLI_REACT_THEME_PRESET_ORDER.join('|');
+  }
+
+  /**
+   * Resolves one localized display label for the theme persistence scope.
+   * @param context Command execution context.
+   * @param themeScope Target persistence scope.
+   * @returns Human-readable scope label.
+   */
+  private resolveThemeScopeDisplayLabel(
+    context: CliCommandExecutorContext,
+    themeScope: CliWorkspaceThemeScope,
+  ): string {
+    return this.translate(context, `cli.reactShell.workspace.scope.${themeScope}`);
+  }
+
+  /**
+   * Resolves one localized description for where the theme preference was persisted.
+   * @param context Command execution context.
+   * @param themeScope Target persistence scope.
+   * @param persistedConfigPaths Concrete file paths written during the command.
+   * @returns Human-readable persistence target label.
+   */
+  private resolveThemePersistenceTargetLabel(
+    context: CliCommandExecutorContext,
+    themeScope: CliWorkspaceThemeScope,
+    persistedConfigPaths: string[],
+  ): string {
+    if (themeScope === CliWorkspaceThemeScope.GLOBAL) {
+      return this.translate(context, 'cli.reactShell.workspace.persistenceTarget.globalUserConfig');
+    }
+
+    return persistedConfigPaths.length > 1
+      ? this.translate(
+          context,
+          'cli.reactShell.workspace.persistenceTarget.workspaceAndRepoLocalSelectorConfig',
+        )
+      : this.translate(context, 'cli.reactShell.workspace.persistenceTarget.workspaceConfig');
   }
 
   private resolveTargetWorkspace(
@@ -1643,7 +1688,14 @@ export class CliWorkspaceCommand implements CliCommandExecutor {
           theme: options.themePreset,
         }),
         this.translate(context, 'cli.reactShell.workspace.summary.appliedThemeScope', {
-          scope: options.themeScope,
+          scope: this.resolveThemeScopeDisplayLabel(context, options.themeScope),
+        }),
+        this.translate(context, 'cli.reactShell.workspace.summary.persistenceTarget', {
+          target: this.resolveThemePersistenceTargetLabel(
+            context,
+            options.themeScope,
+            options.persistedConfigPaths,
+          ),
         }),
         this.translate(context, 'cli.reactShell.workspace.summary.persistedConfigPaths', {
           paths: options.persistedConfigPaths.join(', '),

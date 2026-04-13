@@ -3,7 +3,16 @@
 ## Primary Stream
 
 - Status: idle
-- Note: `2026-04-12` `project-092-session-shell-secure-secret-input-rollout` 已完成 final closeout；当前 worktree 无默认 active primary stream，如需继续新的 project / sprint，请先显式激活新的主执行流。
+- Stream: `none`
+- Project: `none`
+- Sprint: `none`
+- Docs: `none`
+- Plan: `none`
+- Tasks: `none`
+- Checklist: `none`
+- CSV: `none`
+- Review: `none`
+- Note: `2026-04-13` 已完成 `project-095 / sprint-001` closeout；当前默认执行入口恢复为 idle，最近完成流已迁入 `.repo-ai-governor/context/completed-streams-history.md`。
 
 ## Active Streams
 

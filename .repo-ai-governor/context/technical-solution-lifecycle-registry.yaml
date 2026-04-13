@@ -1,5 +1,5 @@
 schema_version: 1
-generated_at: 2026-04-11
+generated_at: 2026-04-12
 status: active
 owner: architecture
 
@@ -552,6 +552,32 @@ solutions:
     approved_at: 2026-04-11
     approved_by: AI-Agent
     activated_at: 2026-04-11
+    supersedes: []
+
+  - solution_id: technical-solution.session-shell-secure-secret-input-and-redacted-command-handoff
+    title: Session shell secure secret input and redacted command handoff
+    status: active
+    owner: runtime
+    version: v1
+    scope: cross-cutting
+    draft_paths:
+      - .repo-ai-governor/draft/session-shell-secure-secret-input-and-redacted-command-handoff-technical-solution.md
+    review_paths:
+      - .repo-ai-governor/context/dev/project-090-session-shell-secure-secret-input-solution-review/sprint-001-draft-review-and-lifecycle-writeback/review/solution_review_session-shell-secure-secret-input-and-redacted-command-handoff.md
+      - .repo-ai-governor/context/dev/project-091-session-shell-secure-secret-input-promotion-and-decomposition/sprint-001-review-promotion-and-followup-decomposition/review/approved_solution_review_session-shell-secure-secret-input-and-redacted-command-handoff.md
+    final_paths:
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/adrs/secure-local-secret-capture-and-redacted-command-handoff.md
+    target_module_ids:
+      - runtime.cli-interactive-shell
+      - runtime.governance-clients
+    north_star_refs:
+      - prd.multi-agent-orchestration
+      - overall.graph-first-runtime
+      - architecture.runtime-boundary
+      - architecture.governance-boundary
+    approved_at: 2026-04-12
+    approved_by: AI-Agent
+    activated_at: 2026-04-12
     supersedes: []
 
   - solution_id: technical-solution.provider-session-reuse-and-backend-conversation-continuity

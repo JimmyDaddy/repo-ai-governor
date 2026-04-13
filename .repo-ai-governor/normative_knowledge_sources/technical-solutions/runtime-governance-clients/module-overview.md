@@ -1,7 +1,7 @@
 # Runtime Governance Clients Module Overview
 
 - Status: active
-- Date: 2026-04-11
+- Date: 2026-04-12
 - Module ID: `runtime.governance-clients`
 - Owner: runtime
 - Layer: `runtime-core`
@@ -25,6 +25,7 @@
 11. 为 adopter truthfulness、real adapter invocation、secondary surface sequencing、GA evidence consolidation、standards runtime productization 与 adoption-pack installer rollout 提供 planning-side formal direction，但不把路线图判断误报为已完成交付。
 12. 为 current surface baseline classification、host-native lifecycle carry slot 与 follow-up decomposition 提供 planning-side formal direction，但不把路线图判断误报为已完成交付。
 13. 正式拥有 `config` / `secret` command family、session shell `/config` / `/secret` discoverability 与 `~/.repo-ai-governor/user-config.yaml` authoring UX 的 host-facing boundary；这些 surface 只能写入 user-private defaults、`credentialRef` selector 与 secret backend mutation request，不得把 raw secret value 或 user-config path 冒充为 runtime canonical truth。
+14. 对显式 `/secret set <keyName>` 的 session-shell authoring path，正式要求 host-facing surface 在 slash secure route 命中后切换到本地隐藏输入与 redacted mutation handoff；raw secret 不得经由 slash text、argv、preview recap、error copy 或 transcript surface 暴露，而 skill-triggered secure-input request 与 desktop / VS Code prompt parity 继续留待后续独立 solution。
 
 ## 3. 非目标
 
@@ -90,6 +91,7 @@
    - `secret` 成为本机 secret backend mutation surface，真实 secret 只允许进入 OS keychain / helper 或显式 opt-in 的 unsafe fallback backend。
    - session shell `/config`、`/secret` 只承担 discoverability 与 handoff affordance，不形成新的 runtime truth。
    - `runtime.governance-clients` 负责 authoring UX 与 host-facing copy，`runtime.agent-projection` 继续负责 canonical normalization 与 read-only consumption。
+10. 截至 `2026-04-12`，本模块进一步接受“session-shell secure local secret authoring”补充方向：显式 `/secret set <keyName>` 允许由 session shell 直接切换到本地隐藏输入，但当前 formal scope 仅锁定 command-initiated secure capture、redacted mutation handoff 与 suffix pre-commit rejection；service-owned secure-input request、desktop secure dialog 与 VS Code secure prompt 仍不属于本轮 active truth。
 
 ## 9. Detail Docs
 

@@ -1,8 +1,8 @@
 # @repo-ai-governor/cli
 
 - Status: baseline
-- Date: 2026-04-11
-- Scope: `project-009-production-readiness / TK-075,TK-076`; `project-061-adoption-pack-installer-and-self-host-bootstrap-rollout / TK-656~TK-667`; `project-082-session-shell-readability-and-workspace-discoverability / TK-765~TK-767`; `project-083-session-shell-theme-choice-and-readability-followup / TK-768~TK-770`; `project-085-command-based-remote-api-configuration / TK-773~TK-774`; `project-089-local-user-config-and-secret-command-rollout / TK-788~TK-799`
+- Date: 2026-04-13
+- Scope: `project-009-production-readiness / TK-075,TK-076`; `project-061-adoption-pack-installer-and-self-host-bootstrap-rollout / TK-656~TK-667`; `project-082-session-shell-readability-and-workspace-discoverability / TK-765~TK-767`; `project-083-session-shell-theme-choice-and-readability-followup / TK-768~TK-770`; `project-085-command-based-remote-api-configuration / TK-773~TK-774`; `project-089-local-user-config-and-secret-command-rollout / TK-788~TK-799`; `project-094-session-shell-theme-pack-expansion / TK-813~TK-814`
 
 ## Purpose
 
@@ -30,7 +30,7 @@
 7. `run` 支持 `--dry-run`、`--trace` 与 `--replay <path>`，并产出 `context/diagnostics/{trace,replay}` 诊断产物；它面向已明确目标后的执行流，而不是开放式实现讨论入口。
 8. `review-verify` 结果会同时生成 `context/ledger-backfill/review-verify/*.json`，用于后续台账回填与归因。
 9. 无子命令入口在交互式 TTY + `pretty` 模式下会进入 session shell；`resume` 可恢复最近一次或指定的持久化会话。
-10. `workspace` 现在同时承接 `dry-run|execute|rollback|clear-config|switch-branch|set-ui-theme`，而顶层 `set-ui-theme` 负责持久化 React shell 主题；在交互式 TTY + `pretty` 下省略 `[theme]` 时，两条入口都会直接打开 selector。session shell 中输入 `/workspace` 会补齐这些 nested action 提示，而输入 `/workspace set-ui-theme` 会直接给出 `governor|catppuccin|calm` preset 选项；这仍只是 discoverability 增强，不是新的 public command family。
+10. `workspace` 现在同时承接 `dry-run|execute|rollback|clear-config|switch-branch|set-ui-theme`，而顶层 `set-ui-theme` 负责持久化 React shell 主题；在交互式 TTY + `pretty` 下省略 `[theme]` 时，两条入口都会直接打开 selector。session shell 中输入 `/workspace` 会补齐这些 nested action 提示，而输入 `/workspace set-ui-theme` 会直接给出 `governor|catppuccin|calm|tokyo-night|kanagawa|flexoki` preset 选项；这仍只是 discoverability 增强，不是新的 public command family。
 11. `adopt list/apply/diff/verify/upgrade/remove` 负责 built-in 或 override adoption pack 的解析、受管安装、差异检查、验证与移除；`self-host-complete` profile 只在显式选择时才会 materialize `repo_local` governance bootstrap surface。
 12. `host export/verify/pack` 负责 staged host assets、verification summary 与 pack receipt；公开 host family 已覆盖 `codex`、`claude-code` 与 `github-copilot`，其中 `github-com-agent` 仍保持 reserved/fail-closed；公开的 service-host 根包入口固定为 `@cjhdev/repo-ai-governor/service-host`。
 13. session shell 的默认可读性增强只调整 presenter 层的强调样式、关键 chrome 对比度、palette 可见条目数与摘要截断宽度；实际字体大小仍由宿主终端或 IDE 控制，不新增 shell-side font/theme preference。

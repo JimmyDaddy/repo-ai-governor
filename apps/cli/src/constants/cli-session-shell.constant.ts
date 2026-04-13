@@ -104,7 +104,7 @@ export const CLI_SESSION_SHELL_PREVIEW_SESSION_ID_PREFIX = 'session-shell-previe
 /**
  * Defines the default prompt label rendered by the readline-backed session shell.
  */
-export const CLI_SESSION_SHELL_PROMPT = 'governor> ';
+export const CLI_SESSION_SHELL_PROMPT = '> ';
 
 /**
  * Defines the stable action-contract order exposed by the Ink-owned session-shell baseline.

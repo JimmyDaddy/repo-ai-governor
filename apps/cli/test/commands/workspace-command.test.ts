@@ -473,6 +473,9 @@ describe('CliWorkspaceCommand', () => {
       expect(result.commandResult.details?.action).toBe('set_ui_theme');
       expect(result.commandResult.details?.ui_theme).toBe(CliReactThemePreset.CATPPUCCIN);
       expect(result.commandResult.details?.persisted_path_count).toBe(2);
+      expect(result.commandResult.summary).toContain(
+        'active workspace config and repo-local selector config',
+      );
       expect(repoLocalConfig.ui?.react?.theme).toBe(CliReactThemePreset.CATPPUCCIN);
       expect(activeWorkspaceConfig.ui?.react?.theme).toBe(CliReactThemePreset.CATPPUCCIN);
     } finally {
@@ -500,7 +503,9 @@ describe('CliWorkspaceCommand', () => {
 
       await expect(command.execute(fixture.context)).rejects.toMatchObject({
         code: GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
-        message: expect.stringContaining('governor|catppuccin|calm'),
+        message: expect.stringContaining(
+          'governor|copilot|catppuccin|calm|tokyo-night|kanagawa|flexoki',
+        ),
       });
     } finally {
       await rm(fixture.tempRoot, { recursive: true, force: true });
@@ -738,6 +743,7 @@ describe('CliWorkspaceCommand', () => {
       expect(result.commandResult.details?.theme_scope).toBe('global');
       expect(result.commandResult.details?.persisted_path_count).toBe(1);
       expect(result.commandResult.details?.persisted_config_paths).toBe(globalPreferencePath);
+      expect(result.commandResult.summary).toContain('global user-config');
       expect(globalPreferenceContent).toContain('theme: calm');
       expect(globalPreferenceContent).toContain('mode_preference: tool_managed');
       expect(globalPreferenceContent).toContain('model: gpt-5-user-default');

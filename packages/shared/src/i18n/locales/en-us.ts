@@ -9,7 +9,7 @@ export const EN_US_TRANSLATIONS = {
       output: 'Output mode: pretty|plain|json.',
       ui: 'Interactive UI mode: none|classic|react|tui. Default is react in interactive TTY pretty mode.',
       uiTheme:
-        'One-off React shell theme override: governor|catppuccin|calm. Default precedence is --ui-theme > workspace config > global CLI preference.',
+        'One-off React shell theme override: governor|copilot|catppuccin|calm|tokyo-night|kanagawa|flexoki. Default precedence is --ui-theme > workspace config > global CLI preference.',
       themeScope:
         'Theme persistence scope for set-ui-theme: workspace|global. Top-level set-ui-theme defaults to global; workspace set-ui-theme defaults to workspace.',
       backend: 'Secret backend override: macos-keychain|unsafe-local-file.',
@@ -377,7 +377,7 @@ export const EN_US_TRANSLATIONS = {
       correctLocale: 'Please correct the invalid locale value and try again.',
     },
     sessionShell: {
-      title: 'Repo AI Governor session shell',
+      title: 'Repo AI Governor',
       subtitle:
         'Session-first local shell with service-backed transcript, command handoff, and resume continuity.',
       fallbackToHelp:
@@ -388,13 +388,13 @@ export const EN_US_TRANSLATIONS = {
         'workspace_id={{workspaceId}} mode={{workspaceMode}} root={{workspaceRoot}}',
       sections: {
         transcript: 'History',
-        composer: 'Current input',
+        composer: 'Input',
         secureCaptureComposer: 'Secure input',
         slashPalette: 'Slash palette',
         promptBar: 'Prompt bar',
       },
       composer: {
-        placeholder: 'Type a message, / for commands, or ? for shortcuts.',
+        placeholder: 'Type a message or / command.',
         securePlaceholder: 'Secret input stays hidden while you type.',
       },
       palette: {
@@ -877,11 +877,23 @@ export const EN_US_TRANSLATIONS = {
         governor: {
           description: 'Cool slate-blue default with higher governance contrast.',
         },
+        copilot: {
+          description: 'Compact blue-black shell inspired by GitHub Copilot surfaces.',
+        },
         catppuccin: {
           description: 'Vivid pastel palette for a more expressive shell surface.',
         },
         calm: {
           description: 'Soft low-contrast palette for longer sessions.',
+        },
+        'tokyo-night': {
+          description: 'Electric midnight blues with crisp cyan-violet highlights.',
+        },
+        kanagawa: {
+          description: 'Muted Japanese-ink palette with warm neutrals and soft gold accents.',
+        },
+        flexoki: {
+          description: 'Warm ink-on-paper contrast with readable amber and teal accents.',
         },
       },
       themeSelector: {
@@ -890,7 +902,8 @@ export const EN_US_TRANSLATIONS = {
           'Persist one default theme for the current workspace. The selected preset becomes the workspace-layer default.',
         globalDescription:
           'Persist one global theme shared by every workspace. The selected preset becomes the CLI-wide default.',
-        validation: 'The selected theme must be one of governor, catppuccin, or calm.',
+        validation:
+          'The selected theme must be one of governor, copilot, catppuccin, calm, tokyo-night, kanagawa, or flexoki.',
         submittingTitle: 'Applying theme selection',
         submittingMessage: 'Persisting theme "{{theme}}" to {{scope}} scope.',
         successMessage: 'Theme "{{theme}}" is now the {{scope}} default.',
@@ -1068,9 +1081,19 @@ export const EN_US_TRANSLATIONS = {
           branchSwitchLocalOnly:
             'switch-branch only targets existing local branches; fetch or create the branch explicitly first when it is not present.',
           setThemePersistsToConfig:
-            'set-ui-theme persists the workspace config by default, or the global CLI preference file when --theme-scope global is used; repo-local selector config is kept in sync only when it already exists.',
+            'set-ui-theme persists the workspace config by default, or the global user-config file when --theme-scope global is used; when a separate repo-local selector config already exists, workspace persistence keeps it in sync too.',
           setThemeFlagStillOverrides:
             '--ui-theme still works as a one-off override for the current command even after the default theme is persisted.',
+        },
+        scope: {
+          workspace: 'workspace',
+          global: 'global',
+        },
+        persistenceTarget: {
+          workspaceConfig: 'workspace config',
+          workspaceAndRepoLocalSelectorConfig:
+            'active workspace config and repo-local selector config',
+          globalUserConfig: 'global user-config',
         },
         status: {
           executionCompleted: 'Workspace migration execution completed.',
@@ -1081,7 +1104,7 @@ export const EN_US_TRANSLATIONS = {
           branchSwitchCompleted: 'Switched the current repository branch to {{targetBranch}}.',
           branchSwitchNoop: 'The current repository is already on branch {{targetBranch}}.',
           setThemeCompleted:
-            'Default React shell theme persisted as {{theme}} for {{scope}} scope.',
+            'Default React shell theme persisted as {{theme}} for {{scope}} scope in {{target}}.',
         },
         message: {
           executeCompleted: 'Workspace migration executed successfully; plan={{planPath}}.',
@@ -1094,7 +1117,7 @@ export const EN_US_TRANSLATIONS = {
           branchSwitchNoop:
             'Already on {{targetBranch}} in {{repositoryRoot}}; receipt={{artifactPath}}.',
           setThemeCompleted:
-            'Persisted React shell theme {{theme}} for {{scope}} scope into {{count}} file(s): {{paths}}.',
+            'Persisted React shell theme {{theme}} for {{scope}} scope in {{target}} ({{count}} file(s)): {{paths}}.',
         },
         errors: {
           branchSwitchTargetRequired:
@@ -1156,6 +1179,7 @@ export const EN_US_TRANSLATIONS = {
           targetBranch: 'Target branch: {{branch}}',
           appliedTheme: 'Applied theme: {{theme}}',
           appliedThemeScope: 'Applied theme scope: {{scope}}',
+          persistenceTarget: 'Persistence target: {{target}}',
           persistedConfigPaths: 'Persisted config paths: {{paths}}',
         },
       },

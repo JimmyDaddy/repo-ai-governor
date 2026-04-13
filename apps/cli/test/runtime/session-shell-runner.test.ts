@@ -853,16 +853,16 @@ class FailingLifecycleCommandSessionShellServiceClient extends FakeSessionShellS
 }
 
 const DEFAULT_TRANSLATIONS: Record<string, string> = {
-  'cli.sessionShell.title': 'Repo AI Governor session shell',
+  'cli.sessionShell.title': 'Repo AI Governor',
   'cli.sessionShell.subtitle': 'Session shell baseline.',
   'cli.sessionShell.workspaceSummary':
     'workspace_id={{workspaceId}} mode={{workspaceMode}} root={{workspaceRoot}}',
   'cli.sessionShell.sections.transcript': 'History',
-  'cli.sessionShell.sections.composer': 'Current input',
+  'cli.sessionShell.sections.composer': 'Input',
   'cli.sessionShell.sections.secureCaptureComposer': 'Secure input',
   'cli.sessionShell.sections.slashPalette': 'Slash palette',
   'cli.sessionShell.sections.promptBar': 'Prompt bar',
-  'cli.sessionShell.composer.placeholder': 'Type a message, / for commands, or ? for shortcuts.',
+  'cli.sessionShell.composer.placeholder': 'Type a message or / command.',
   'cli.sessionShell.composer.securePlaceholder': 'Secret input stays hidden while you type.',
   'cli.sessionShell.palette.emptyState': 'No slash commands matched.',
   'cli.sessionShell.resumeSelector.latest': 'latest',

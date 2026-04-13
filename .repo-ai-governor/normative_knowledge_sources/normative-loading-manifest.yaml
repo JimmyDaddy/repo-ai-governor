@@ -664,6 +664,19 @@ documents:
     last_reviewed_at: 2026-03-28
     notes: concrete reusable template for canonical TK task-card generation
 
+  - doc_id: technical_solution_draft_template
+    path: .repo-ai-governor/normative_knowledge_sources/governance/technical-solution-draft-template.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_draft_generation
+      - technical_solution_review_change
+      - planning_template_update
+    owner: architecture
+    last_reviewed_at: 2026-04-12
+    notes: concrete reusable template for `.repo-ai-governor/draft/**` technical-solution authoring
+
   - doc_id: normative_loading_lifecycle_governance
     path: .repo-ai-governor/normative_knowledge_sources/governance/normative-loading-manifest-lifecycle-governance.md
     tier: L2
@@ -894,7 +907,7 @@ documents:
       - cli_ui_change
       - command_surface_change
     owner: runtime
-    last_reviewed_at: 2026-04-04
+    last_reviewed_at: 2026-04-12
 
   - doc_id: runtime_cli_interactive_shell_contract
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/contracts/cli-interactive-shell-contract.md
@@ -920,7 +933,7 @@ documents:
       - cli_ui_change
       - command_surface_change
     owner: runtime
-    last_reviewed_at: 2026-03-31
+    last_reviewed_at: 2026-04-12
 
   - doc_id: runtime_cli_session_shell_adr
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/adrs/session-first-shell-and-service-owned-session-state.md
@@ -947,6 +960,19 @@ documents:
       - command_surface_change
     owner: runtime
     last_reviewed_at: 2026-03-30
+
+  - doc_id: runtime_cli_secure_local_secret_capture_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/adrs/secure-local-secret-capture-and-redacted-command-handoff.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - cli_ui_change
+      - command_surface_change
+    owner: runtime
+    last_reviewed_at: 2026-04-12
 
   - doc_id: runtime_cli_command_live_progress_adr
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/adrs/live-command-progress-and-running-react-shell.md
@@ -1000,7 +1026,7 @@ documents:
       - ide_surface_change
       - command_surface_change
     owner: runtime
-    last_reviewed_at: 2026-04-11
+    last_reviewed_at: 2026-04-12
 
   - doc_id: runtime_governance_surface_client_contract
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/governance-surface-client-contract.md
@@ -1030,7 +1056,7 @@ documents:
       - desktop_surface_change
       - ide_surface_change
     owner: runtime
-    last_reviewed_at: 2026-04-11
+    last_reviewed_at: 2026-04-12
 
   - doc_id: runtime_governance_host_distribution_contract
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/governance-host-distribution-contract.md

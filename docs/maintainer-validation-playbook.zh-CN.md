@@ -1,49 +1,90 @@
-# 维护者验收手册
+# Maintainer 验证手册
 
-## 1. 适用人群
+这份 playbook 面向维护、验证或发布 `repo-ai-governor` 本身的人员。
 
-本手册面向维护、发布或验收 `repo-ai-governor` 本身的人员。它与 adopter-facing 的 `README` 和本地接入手册分开，避免把内部验证流程强行塞给普通使用者。
+当你需要回答这些问题时，用它最合适：
 
-当你需要做下面这些事情时，请使用本手册：
+1. 哪条命令链能证明当前 packaged CLI surface？
+2. 哪些检查属于 adopter truth，哪些只是 maintainer confidence？
+3. 验证跑完后应该去哪里找证据？
+4. VS Code、desktop、宿主原生资产、release gates 分别该走哪条 runbook？
 
-1. 演练打包发布面。
-2. 在扩大 rollout 前验证真实项目中的交互行为。
-3. 在 governor 仓库里执行 clean-room、release、GA 风格的维护者验证。
+这份文档只讲流程，不重新定义支持状态。`docs/support-matrix.zh-CN.md` 仍然是唯一的公开支持真值。
 
-### 1.1 正式 Support Truth 路由
+## 1. 先用对真值面
 
-1. `docs/support-matrix.zh-CN.md` 是唯一的公开 support truth surface；其中 `## 9. GA Support Truthfulness 快照` 是当前 closeout-facing 总结。
-2. 本手册只负责命令顺序、维护者意图说明，以及到底层 evidence 文件的 backlinks。
-3. `docs/ga-readiness-evidence.zh-CN.md` 负责更宽的 program-level GA signal matrix。
+建议把文档职责分开理解：
 
-## 2. 已发布包的参考资产面
+| 文档 | 作用 |
+|---|---|
+| `README.zh-CN.md` | 产品概览和最短上手路径 |
+| `docs/local-adoption-playbook.zh-CN.md` | adopter runbook |
+| `docs/support-matrix.zh-CN.md` | 正式支持真值 |
+| `docs/maintainer-validation-playbook.zh-CN.md` | maintainer 验证流程和证据路由 |
+| `docs/ga-readiness-evidence.zh-CN.md` | 更广义的 GA 信号汇总 |
 
-已发布 tarball 预期包含：
+简单规则：
 
-1. `README.md` 与 `README.zh-CN.md`
-2. `docs/local-adoption-playbook.md` 与 `docs/local-adoption-playbook.zh-CN.md`
-3. `docs/maintainer-validation-playbook.md` 与 `docs/maintainer-validation-playbook.zh-CN.md`
-4. `docs/support-matrix.md` 与 `docs/support-matrix.zh-CN.md`
+1. 如果你在描述“支持什么”，更新 `docs/support-matrix.zh-CN.md`
+2. 如果你在说明“怎么验证”，更新这份 playbook
+3. 如果你在记录更高层的 release-readiness 判断，更新 `docs/ga-readiness-evidence.zh-CN.md`
+
+## 2. 先明确你的验证目标
+
+按你要回答的问题选择 runbook：
+
+| 目标 | 主命令 | 它证明什么 |
+|---|---|---|
+| 检查已发布 CLI 及随包文档 / 参考资产 | `pnpm run release:verify-local`、`pnpm pack --json --dry-run` | 本地打包面 truthfulness |
+| 演练 clean-room 安装路径 | `pnpm run release:verify-cleanroom-local-install` | install-mode 证据 |
+| 演练真实项目里的交互行为 | 先 build，再跑 real-target 命令链 | 真实目标仓库的操作者体验 |
+| 复核 examples 与 docs-backed scenarios | `pnpm run check:examples-doc-smoke`、`pnpm run check:examples-runtime-smoke` | 示例一致性与可运行契约 |
+| 复核 VS Code companion 边界 | 定向 vitest + `release:verify-vscode-extension-distribution` | editor-native companion 的打包与契约 |
+| 复核宿主原生资产边界 | 定向 vitest + `release:verify-host-distribution` | Codex / Claude Code / GitHub Copilot 宿主 follow-up 边界 |
+| 复核 desktop foundation 边界 | 定向 vitest + `check:desktop-entry-smoke` + `release:verify-local` | desktop foundation-only 真值 |
+| 复核官方治理模板目录 | 定向 vitest + `pnpm run build` | pack catalog 契约与 runtime loader 兼容性 |
+| 做更广义的 release 判断 | `pnpm run check`、`pnpm run release:ga-check` | wider release 所需的 maintainer confidence |
+
+## 3. 已发布包面的验证
+
+当你想回答“当前打包后的 CLI surface 到底交付了什么、文档有没有说实话”时，用这条 runbook。
+
+```bash
+cd <governor-repo>
+pnpm run release:verify-local
+pnpm pack --json --dry-run
+```
+
+这组命令重点回答：
+
+1. 当前 packaged CLI 行为是否仍与文档描述一致？
+2. tarball 是否仍携带预期的 adopter 文档和参考资产？
+3. 我们有没有无意中夸大 secondary surface 的 packaged support？
+
+当前 published tarball 预期至少包含：
+
+1. `README.md` 和 `README.zh-CN.md`
+2. `docs/local-adoption-playbook.md` 和 `docs/local-adoption-playbook.zh-CN.md`
+3. `docs/maintainer-validation-playbook.md` 和 `docs/maintainer-validation-playbook.zh-CN.md`
+4. `docs/support-matrix.md` 和 `docs/support-matrix.zh-CN.md`
 5. `examples/`
-6. `integrations/ide/` 与 `integrations/desktop/`
+6. `integrations/ide/` 和 `integrations/desktop/`
 7. `.codex/skills/`
 
-`.codex/skills/` 只是参考资产，不会自动复制到目标仓库。
-support matrix 也必须随 tarball 一起交付，因为已发布打包面的公开支持边界需要随包自带，而不能只留在源码仓。
-`apps/vscode-extension` 与 `apps/desktop` 这两个真实 app workspace 仍属于源码仓验证面；已发布 tarball 仍可能携带内部 `dist/**` 构建产物，但不会把这些 app workspace 作为独立 package-install 根目录交付。
+repo-local skills 以参考资产形式随包，不会自动安装进目标仓库。
 
-## 3. 真实项目验收 Runbook
+## 4. 真实项目演练
 
-如果你想在一个真实目标仓库中验证当前 interactive-shell 交付，再决定是否扩大 rollout，可使用下面的路径。
+当你需要在扩大 rollout 或改变公开叙事前，先拿到一个真实目标仓库的证据时，用这条路径。
 
-当前 wrapper 脚本：
+当前 wrapper 入口：
 
 ```bash
 TARGET_REPO=/absolute/path/to/real-target-repo \
 bash "$GOVERNOR_REPO/scripts/acceptance/run-project-027-real-project-validation.sh"
 ```
 
-建议环境：
+建议环境变量：
 
 ```bash
 export GOVERNOR_REPO=/absolute/path/to/repo-ai-governor
@@ -51,57 +92,48 @@ export TARGET_REPO=/absolute/path/to/real-target-repo
 export CLI_BIN="$GOVERNOR_REPO/dist/bin/repo-ai-governor.js"
 export ACCEPTANCE_HOME="$TARGET_REPO/.project-027-acceptance/home"
 export REPO_LOCAL_ROOT="$TARGET_REPO/.repo-ai-governor"
+```
 
+最小演练链：
+
+```bash
 cd "$GOVERNOR_REPO"
 pnpm run build
 
-cd "$TARGET_REPO"
-```
-
-低侵入 bootstrap 演练：
-
-```bash
 HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json init
 HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json doctor
 HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json check
-```
-
-Workspace 切换与回滚演练：
-
-```bash
 HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json --workspace-action dry-run --workspace-mode repo_local --workspace-root "$REPO_LOCAL_ROOT" workspace
 HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json --workspace-action execute --workspace-mode repo_local --workspace-root "$REPO_LOCAL_ROOT" workspace
 HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output json --workspace-action rollback --workspace-plan <plan-path> workspace
-```
-
-交互壳层演练：
-
-```bash
-HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output pretty --ui react workflow preview --workflow-template condition-route
-HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output pretty --ui react upgrade
-HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output pretty
+HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" --output pretty --ui react
 HOME="$ACCEPTANCE_HOME" node "$CLI_BIN" resume
 ```
 
-## 4. 示例与文档 Smoke
+这条 runbook 的价值在于验证真实操作者体验，而不只是测试覆盖率。
 
-在 `<governor-repo>` 执行：
+## 5. 示例与文档 Smoke
+
+当你修改了 examples、adopter 文档或 examples 依赖的命令叙事时，用这条路径。
 
 ```bash
+cd <governor-repo>
 pnpm run check:examples-doc-smoke
 pnpm run check:examples-runtime-smoke
 pnpm run check:examples-smoke
 ```
 
-这些命令用于确认：
+它最适合回答这几个问题：
 
-1. 根级 examples 仍然成体系。
-2. 示例文档和可运行资产没有静默漂移。
-3. 示例层的运行预期仍然成立。
+1. example docs 是否仍描述了可运行命令链？
+2. example 断言是否仍与真实输出契约一致？
+3. 文档有没有在没人注意的情况下偏离 example 资产？
 
-### 4.1 VS Code Secondary Surface 验证
+## 6. Secondary Surface 验证
 
-当你需要刷新 editor-native companion 的正式支持边界时，使用这条 runbook：
+### VS Code companion
+
+当你要刷新 editor-native companion 边界时，用：
 
 ```bash
 pnpm exec vitest run apps/vscode-extension/test/vscode-extension-service-runtime.test.ts apps/vscode-extension/test/vscode-extension-contract.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-selection-store.test.ts apps/vscode-extension/test/vscode-extension-packaging-boundary.test.ts --maxWorkers=1 --maxConcurrency=1
@@ -110,27 +142,17 @@ pnpm run release:verify-vscode-extension-distribution -- --output .tmp/project-0
 pnpm pack --json --dry-run
 pnpm run check:ide-entry-smoke
 pnpm run check:ide-docs-parity
-pnpm exec biome check apps/vscode-extension/src apps/vscode-extension/test apps/vscode-extension/package.json apps/vscode-extension/README.md
 ```
 
-可选的人工演练：
+可选人工演练：
 
 ```bash
 code --extensionDevelopmentPath <governor-repo>/apps/vscode-extension <target-repo>
 ```
 
-说明：
+### 宿主原生资产边界
 
-1. 当前正式支持覆盖“已构建源码仓 + extension-development host”，以及“从同一源码仓本地生成的 packaged extension root / VSIX”。
-2. `pnpm run release:verify-vscode-extension-distribution` 是专门的 packaging rehearsal；它验证本地 VSIX archive 结构与 packaged module-resolution smoke，但不会把支持口径扩大到 Marketplace 或已发布安装器。
-3. 通过 `pnpm pack --json --dry-run` 核对已发布产物仍不包含扩展 workspace 与“已发布可安装 bundle”；即便保留内部 `dist/apps/vscode-extension/**` 产物，也不能把它误当成正式扩展分发。
-4. VS Code 扩展的已发布 npm/tgz 安装面与 Marketplace 仍不在正式支持范围内。
-5. 当前仍没有专门的自动化 extension-development-host launch smoke；手动 `code --extensionDevelopmentPath ...` 演练或 `code --install-extension ...` 步骤只属于补充证据，不单独升级支持声明。
-6. `project-054` 继续把 desktop 保留为 foundation-only surface；本 runbook 用来验证 VS Code companion 路径，而不是扩大 desktop 的公开支持口径。
-
-### 4.2 宿主原生资产验证
-
-当你需要刷新 Codex / Claude Code 宿主原生 follow-up 支持边界时，使用这条 runbook：
+当你要刷新 Codex / Claude Code / GitHub Copilot 的宿主 follow-up story 时，用：
 
 ```bash
 pnpm exec vitest run apps/cli/test/commands/host-command.test.ts apps/cli/test/host-command.integration.test.ts packages/adapters/codex/test/codex-host-renderer.test.ts packages/adapters/claude-code/test/claude-code-host-renderer.test.ts --maxWorkers=1 --maxConcurrency=1
@@ -138,23 +160,15 @@ pnpm run build
 pnpm run release:verify-host-distribution -- --output .tmp/project-067-sprint-001-host-distribution-report.json
 ```
 
-说明：
-
-1. 这条 runbook 只验证“已构建源码仓上的 Codex / Claude Code 宿主 follow-up surface”，也就是 `project-local` export/apply 与 plugin-bundle pack/verify。
-2. `host verify` 是每次 manifest 刷新后的正式复核步骤；这些资产的“升级”语义固定为源码仓或 vendored skills 变化后重新渲染并重新校验，而不是新增一条独立 installer 路径。
-3. 只要渲染资产形态、支持 target 或刷新契约有变化，就必须同步收口 `README*`、`docs/local-adoption-playbook*` 与 `docs/support-matrix*` 中的公开叙事。
-4. `github-com-agent` 仍保持 reserved 且故意阻断：staged export 形态可以继续 schema-safe，但在 target capabilities 明确声明 supported mode / discovery path、拿到 pass 级 target-specific export/verify 证据，并证明 GitHub.com consumption 仍会回接 canonical governor runtime 之前，`host verify` 都应继续返回阻断结果。
-5. 若变更触及这个 reserved target contract，还要额外执行：
+如果变更触及 GitHub.com reserved target 契约，还要额外执行：
 
 ```bash
 pnpm run release:verify-github-com-agent-reserved-target -- --output .tmp/project-068-sprint-002-github-com-agent-reserved-target-report.json
 ```
 
-6. 这份专用 reserved-target 报告只有在 blocked 语义仍保持 fail-closed 时才会通过：staged export 继续产出 schema-safe artifact，`--apply-to-repo` 继续被拒绝，`host verify` 继续返回阻断，bundle packaging 也继续不支持。
+### Desktop foundation
 
-### 4.3 Desktop Foundation-only Surface 验证
-
-当你需要刷新 desktop secondary-surface decision、但又不能把公开支持边界扩张到 built-source foundation 之外时，使用这条 runbook：
+当你要刷新 desktop foundation-only 边界时，用：
 
 ```bash
 pnpm exec vitest run apps/desktop/test/desktop-governance-console-view-model-builder.test.ts apps/desktop/test/desktop-preload-bridge.test.ts apps/desktop/test/desktop-shell-bootstrap.test.ts apps/desktop/test/desktop-session-bridge.test.ts test/desktop-entry-smoke.integration.test.ts --maxWorkers=1 --maxConcurrency=1
@@ -163,77 +177,74 @@ pnpm run check:desktop-entry-smoke
 pnpm run release:verify-local -- --output .tmp/project-065-sprint-001-desktop-foundation-report.json
 ```
 
-说明：
+## 7. 官方治理模板目录验证
 
-1. `project-065` 明确把 desktop 固定为 foundation-only 支持边界：只覆盖“已构建 governor 源码仓 + 本地 foundation 验证”，不会新增独立桌面安装器、已发布桌面 app bundle 或 preferred secondary surface 声明。
-2. `pnpm run release:verify-local` 是这条边界的 maintainer truthfulness 复核命令；它会确认 packaged CLI 产物仍然携带 desktop integration docs，同时继续排除把 `apps/desktop` workspace 当成独立 package-install root 的误导口径。
-3. 唯一公开支持声明仍是 `docs/support-matrix.zh-CN.md`；只要 desktop narrative 变化，就必须同步收口 `apps/desktop/README.md`、`integrations/desktop/README.md` 与 `docs/local-adoption-playbook.zh-CN.md`。
-
-### 4.4 官方治理模板目录验证
-
-当你需要刷新已发布的官方 standards-pack 目录，或同步调整对应 runtime/docs example 时，使用这条 runbook：
+当你修改了内置 standards-pack catalog、pack runtime loading 或相关文档时，用：
 
 ```bash
 pnpm exec vitest run packages/standards/test/language-minimal-governance-packs.integration.test.ts packages/standards/test/standards-runtime-loader.integration.test.ts packages/config/test/config.unit.test.ts --maxWorkers=1 --maxConcurrency=1
 pnpm run build
 ```
 
-说明：
+这条 runbook 回答的问题是：“文档里写的官方 pack 目录，是否仍与产品实际可加载、可验证的能力一致？”
 
-1. `project-066` 的 first-wave scope 已固定：官方目录包含 `workflowReviewGovernancePack`，以及 JavaScript / Python / Go / Rust 语言基线；本仓库自举用的 TypeScript 治理链继续保留为 repository-level reference example，而不是单独发布的官方 pack。
-2. 只要官方导出 pack 列表或推荐 layering 变化，就必须同步收口 `packages/standards/README.md`、`packages/config/README.md`、`docs/local-adoption-playbook*.md` 与 `docs/support-matrix*.md`。
-3. 这组定向 vitest slice 是正式契约证据：它证明仓库内的 official-pack examples 仍能通过 `StandardsRuntimeLoader` 干净渲染，同时文档声明的官方目录继续保持对 config schema 可接受。
+## 8. Clean-room 与 Release Gates
 
-## 5. Clean-room 与 Release 验证
-
-在 `<governor-repo>` 执行 clean-room 安装验证：
+当你需要的是更高信心的 maintainer gate，而不是某个子系统的局部刷新时，用：
 
 ```bash
+cd <governor-repo>
 pnpm run release:verify-cleanroom-local-install
-```
-
-在 `<governor-repo>` 执行更完整的维护者门禁：
-
-```bash
 pnpm run check
 pnpm run release:verify-host-distribution
 pnpm run release:verify-local
 pnpm run release:ga-check
 ```
 
-说明：
+这组命令可以理解成一条递进阶梯：
 
-1. `release:verify-cleanroom-local-install` 用于验证 packaged-install 路径，并支持通过 `--output <path>` 输出机器可读报告。
-2. 当你刷新“联网 tarball 安装支持边界”时，应显式使用 `--modes tgz --iterations 1`，而不是只沿用旧的 `path/link` 基线。
-3. `release:verify-local` 适合 rollout 前的本地维护者验证，并会覆盖已发布文档与参考资产的 packed-surface truthfulness。
-4. `release:ga-check` 面向维护者的发布准备判断，不适合作为普通 adopter 的日常命令。
-5. 当前本手册预期回链的结构化 evidence 包括 `.tmp/project-052-sprint-001-cleanroom-report.json`、`.tmp/project-052-sprint-001-local-distribution-report.json`、`.tmp/project-052-sprint-002-command-rehearsal-summary.json`、`.tmp/project-055-sprint-001-pilot-1-rehearsal-summary.json`、`.tmp/project-055-sprint-001-pilot-2-rehearsal-summary.json`、`.tmp/project-063-sprint-001-cleanroom-tgz-report.json`、`.tmp/project-063-sprint-001-local-distribution-report.json`、`.tmp/project-065-sprint-001-desktop-foundation-report.json`、`.tmp/project-067-sprint-001-host-distribution-report.json`，以及 `.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-002-ga-evidence-consolidation-and-closeout/tasks/DA-616-ga-evidence-dossier-and-cross-surface-backlinks.md`。
-6. 当这些信号变化时，应先更新 `docs/support-matrix.zh-CN.md`，而不是在本手册里再维护第二张状态表。
-7. `local-model` 仍只是一条 restricted-network / explicit-local-fallback 的 truth surface。不要把一次通过的本地 fallback rehearsal 误当成 `tool_calling`、`structured_output`、`confirmation_gate` 或 unattended reviewer delegation 已正式支持的证明；这些能力上限必须继续以 `docs/support-matrix*.md` 为准。
+1. `release:verify-cleanroom-local-install` 证明 install-mode 行为
+2. `check` 证明仓库级质量基线
+3. `release:verify-host-distribution` 复核宿主原生 follow-up surface
+4. `release:verify-local` 复核 packaged / local distribution surface
+5. `release:ga-check` 是维护者更广义的发布决策 gate
 
-## 6. 如何理解 external-adopter warning
+## 9. 证据管理预期
 
-全新的外部仓库里可能仍会出现：
+当你更新文档或支持声明时，尽量保持证据模型干净：
+
+1. 支持边界变化时，先更新 `docs/support-matrix.zh-CN.md`
+2. 这份 playbook 只负责命令顺序、操作者意图和证据回链
+3. 每条验证链尽量只保留一份权威 evidence file，不要到处散落状态说明
+4. 不要把这份 playbook 写成第二张 support matrix
+
+这份 runbook 常引用的 evidence 路径包括：
+
+1. `.tmp/project-063-sprint-001-local-distribution-report.json`
+2. `.tmp/project-063-sprint-001-cleanroom-tgz-report.json`
+3. `.tmp/project-064-vscode-extension-distribution-report.json`
+4. `.tmp/project-065-sprint-001-desktop-foundation-report.json`
+5. `.tmp/project-067-sprint-001-host-distribution-report.json`
+6. `.tmp/project-068-sprint-002-github-com-agent-reserved-target-report.json`
+7. `.tmp/project-076-sprint-003-cleanroom-report.json`
+8. `.tmp/project-076-sprint-003-local-distribution-report.json`
+
+## 10. 如何理解 adopter warning
+
+全新的外部仓库仍可能看到这些 warning：
 
 1. `baseline_docs missing=5/5`
 2. `script_not_found`
 
-解释方式：
+解释方式要谨慎：
 
-1. 对 adopter 来说，除非目标仓库本来就要 vendoring 本仓库自己的 self-host 治理栈，否则这些通常只是提示。
-2. 对维护者来说，它们也是有价值的信号，用来检查用户入口文档是否足够清楚地解释了 external-adopter baseline。
+1. 对 adopter 来说，除非目标仓库本来就在 vendoring 本仓库治理栈，否则通常只是 informational
+2. 对 maintainer 来说，它们是判断 adopter 文档是否把预期讲清楚的有用信号
 
-## 7. 相关文档
+## 11. 相关文档
 
-1. `README.md`
-2. `README.zh-CN.md`
-3. `docs/local-adoption-playbook.md`
-4. `docs/local-adoption-playbook.zh-CN.md`
-5. `docs/support-matrix.zh-CN.md`
-6. `docs/ga-readiness-evidence.zh-CN.md`
-7. `.tmp/project-052-sprint-001-cleanroom-report.json`
-8. `.tmp/project-052-sprint-001-local-distribution-report.json`
-9. `.tmp/project-052-sprint-002-command-rehearsal-summary.json`
-10. `.tmp/project-055-sprint-001-pilot-1-rehearsal-summary.json`
-11. `.tmp/project-055-sprint-001-pilot-2-rehearsal-summary.json`
-12. `.repo-ai-governor/context/dev/project-055-ga-evidence-and-adopter-pilot-closeout/sprint-002-ga-evidence-consolidation-and-closeout/tasks/DA-616-ga-evidence-dossier-and-cross-surface-backlinks.md`
+1. `README.zh-CN.md`
+2. `docs/local-adoption-playbook.zh-CN.md`
+3. `docs/support-matrix.zh-CN.md`
+4. `docs/ga-readiness-evidence.zh-CN.md`
+5. `examples/`

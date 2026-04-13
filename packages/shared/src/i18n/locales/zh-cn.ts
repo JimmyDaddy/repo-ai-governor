@@ -9,7 +9,7 @@ export const ZH_CN_TRANSLATIONS = {
       output: '指定输出模式：pretty|plain|json。',
       ui: '指定交互式 UI 模式：none|classic|react|tui。交互式 TTY 且 pretty 模式下默认使用 react。',
       uiTheme:
-        '指定当前命令的一次性 React shell 主题覆盖：governor|catppuccin|calm。默认优先级为 --ui-theme > workspace config > 全局 CLI 偏好。',
+        '指定当前命令的一次性 React shell 主题覆盖：governor|copilot|catppuccin|calm|tokyo-night|kanagawa|flexoki。默认优先级为 --ui-theme > workspace config > 全局 CLI 偏好。',
       themeScope:
         '指定 set-ui-theme 的主题持久化范围：workspace|global。顶层 set-ui-theme 默认 global，workspace set-ui-theme 默认 workspace。',
       backend: '指定 secret backend 覆盖：macos-keychain|unsafe-local-file。',
@@ -323,7 +323,7 @@ export const ZH_CN_TRANSLATIONS = {
       correctLocale: '请修正无效的语言值后重新输入。',
     },
     sessionShell: {
-      title: 'Repo AI Governor 会话壳层',
+      title: 'Repo AI Governor',
       subtitle:
         'session-first 本地壳层已启用，transcript、command handoff 与 resume continuity 现在统一走 service-backed 语义。',
       fallbackToHelp: 'session shell 在完成启动前失败，CLI 已回退到 help 输出。原因：{{reason}}',
@@ -333,13 +333,13 @@ export const ZH_CN_TRANSLATIONS = {
         'workspace_id={{workspaceId}} mode={{workspaceMode}} root={{workspaceRoot}}',
       sections: {
         transcript: '会话记录',
-        composer: '当前输入',
+        composer: '输入',
         secureCaptureComposer: '安全输入',
         slashPalette: 'Slash Palette',
         promptBar: 'Prompt Bar',
       },
       composer: {
-        placeholder: '输入消息，/ 打开命令，? 查看快捷帮助。',
+        placeholder: '输入消息或 / 命令。',
         securePlaceholder: '输入 secret 时内容会保持隐藏。',
       },
       palette: {
@@ -792,11 +792,23 @@ export const ZH_CN_TRANSLATIONS = {
         governor: {
           description: '偏冷蓝灰的默认主题，对治理类信息有更高对比度。',
         },
+        copilot: {
+          description: '更紧凑的蓝黑主题，视觉风格参考 GitHub Copilot 类终端。',
+        },
         catppuccin: {
           description: '更鲜明的粉彩主题，适合想要更有表现力的壳层外观。',
         },
         calm: {
           description: '更柔和、低对比的主题，适合长时间会话。',
+        },
+        'tokyo-night': {
+          description: '带霓虹蓝紫点缀的午夜主题，适合想要更锐利层次感的壳层外观。',
+        },
+        kanagawa: {
+          description: '带日式墨色与柔和金调的主题，整体更克制、沉稳。',
+        },
+        flexoki: {
+          description: '偏纸墨感的暖色主题，用琥珀与青绿点缀提升可读性。',
         },
       },
       themeSelector: {
@@ -805,7 +817,8 @@ export const ZH_CN_TRANSLATIONS = {
           '为当前 workspace 持久化一个默认主题。所选预设会成为 workspace 层默认值。',
         globalDescription:
           '为所有 workspace 持久化一个全局共享主题。所选预设会成为 CLI 全局默认值。',
-        validation: '主题只能是 governor、catppuccin 或 calm。',
+        validation:
+          '主题只能是 governor、copilot、catppuccin、calm、tokyo-night、kanagawa 或 flexoki。',
         submittingTitle: '正在应用主题选择',
         submittingMessage: '正在把主题“{{theme}}”持久化到 {{scope}} 范围。',
         successMessage: '主题“{{theme}}”已成为 {{scope}} 默认值。',
@@ -976,9 +989,18 @@ export const ZH_CN_TRANSLATIONS = {
           branchSwitchLocalOnly:
             'switch-branch 只面向已存在的本地分支；如果目标分支还不存在，需要先显式 fetch 或创建它。',
           setThemePersistsToConfig:
-            'set-ui-theme 默认持久化到当前活动工作区配置；使用 --theme-scope global 时则写入全局 CLI 偏好文件。repo-local selector config 只有在原本已存在时才会同步。',
+            'set-ui-theme 默认持久化到当前活动工作区配置；使用 --theme-scope global 时则写入全局 user-config 文件。如果单独的 repo-local selector config 原本已存在，workspace 持久化也会把它一并同步。',
           setThemeFlagStillOverrides:
             '即使默认主题已持久化，--ui-theme 仍可作为当前命令的一次性外观覆盖。',
+        },
+        scope: {
+          workspace: '工作区',
+          global: '全局',
+        },
+        persistenceTarget: {
+          workspaceConfig: '工作区配置文件',
+          workspaceAndRepoLocalSelectorConfig: '活动工作区配置文件和 repo-local selector 配置文件',
+          globalUserConfig: '全局 user-config 文件',
         },
         status: {
           executionCompleted: '工作区迁移执行已完成。',
@@ -988,7 +1010,8 @@ export const ZH_CN_TRANSLATIONS = {
           clearConfigNoop: '当前没有可清除的工作区配置。',
           branchSwitchCompleted: '当前仓库分支已切换到 {{targetBranch}}。',
           branchSwitchNoop: '当前仓库已经位于分支 {{targetBranch}}。',
-          setThemeCompleted: '默认 React shell 主题已为 {{scope}} 范围持久化为 {{theme}}。',
+          setThemeCompleted:
+            '默认 React shell 主题已为 {{scope}} 范围持久化为 {{theme}}，写入目标为 {{target}}。',
         },
         message: {
           executeCompleted: '工作区迁移执行成功；计划文件={{planPath}}。',
@@ -1001,7 +1024,7 @@ export const ZH_CN_TRANSLATIONS = {
           branchSwitchNoop:
             '当前已位于 {{repositoryRoot}} 的 {{targetBranch}} 分支；回执={{artifactPath}}。',
           setThemeCompleted:
-            '已将 React shell 主题 {{theme}} 以 {{scope}} 范围持久化到 {{count}} 个文件：{{paths}}。',
+            '已将 React shell 主题 {{theme}} 以 {{scope}} 范围持久化到 {{target}}（{{count}} 个文件）：{{paths}}。',
         },
         errors: {
           branchSwitchTargetRequired:
@@ -1058,6 +1081,7 @@ export const ZH_CN_TRANSLATIONS = {
           targetBranch: '目标分支：{{branch}}',
           appliedTheme: '已应用主题：{{theme}}',
           appliedThemeScope: '已应用主题范围：{{scope}}',
+          persistenceTarget: '持久化目标：{{target}}',
           persistedConfigPaths: '已持久化配置路径：{{paths}}',
         },
       },

@@ -20,6 +20,7 @@ interface ReactCliSessionShellKeypressContext {
   input: string;
   key: Key;
   composerValue: string;
+  composerCursorIndex?: number;
   inputMode?: CliSessionShellInputMode;
   highlightedCommand: string | null;
   slashPaletteVisible: boolean;
@@ -29,6 +30,7 @@ interface ReactCliSessionShellKeypressResolution {
   kind: 'action' | 'interrupt' | 'eof' | 'ignore';
   action?: CliSessionShellInputAction;
   nextComposerValue?: string;
+  nextComposerCursorIndex?: number;
 }
 
 export type ReactCliSessionShellViewportCommand =
@@ -152,6 +154,13 @@ export function mapSessionShellKeypressToAction(
   context: ReactCliSessionShellKeypressContext,
 ): ReactCliSessionShellKeypressResolution {
   const normalizedInput = context.input.toLowerCase();
+  const composerCharacters = Array.from(context.composerValue);
+  const composerLength = composerCharacters.length;
+  const composerCursorIndex = Math.max(
+    0,
+    Math.min(context.composerCursorIndex ?? composerLength, composerLength),
+  );
+  const shouldExposeCursorIndex = context.composerCursorIndex !== undefined;
 
   if ((context.key.ctrl && normalizedInput === 'c') || context.input === '\u0003') {
     return {
@@ -167,6 +176,20 @@ export function mapSessionShellKeypressToAction(
 
   if (context.inputMode === CliSessionShellInputMode.SECURE_LOCAL) {
     return mapSecureLocalCaptureKeypressToAction(context);
+  }
+
+  if (context.key.leftArrow) {
+    return {
+      kind: 'ignore',
+      nextComposerCursorIndex: Math.max(composerCursorIndex - 1, 0),
+    };
+  }
+
+  if (context.key.rightArrow) {
+    return {
+      kind: 'ignore',
+      nextComposerCursorIndex: Math.min(composerCursorIndex + 1, composerLength),
+    };
   }
 
   if (context.key.upArrow) {
@@ -252,7 +275,19 @@ export function mapSessionShellKeypressToAction(
   }
 
   if (context.key.backspace || context.key.delete) {
-    const nextComposerValue = Array.from(context.composerValue).slice(0, -1).join('');
+    const nextComposerCharacters = [...composerCharacters];
+    // Ink reports DEL (0x7f), which many terminals send for Backspace, as `key.delete`.
+    // Prefer backward deletion here so the common terminal Backspace behavior stays correct.
+    const removeIndex = composerCursorIndex - 1;
+    if (removeIndex < 0 || removeIndex >= composerLength) {
+      return {
+        kind: 'ignore',
+        ...(shouldExposeCursorIndex ? { nextComposerCursorIndex: composerCursorIndex } : {}),
+      };
+    }
+    nextComposerCharacters.splice(removeIndex, 1);
+    const nextComposerValue = nextComposerCharacters.join('');
+    const nextComposerCursorIndex = Math.max(composerCursorIndex - 1, 0);
     return {
       kind: 'action',
       action: {
@@ -260,11 +295,16 @@ export function mapSessionShellKeypressToAction(
         value: nextComposerValue,
       },
       nextComposerValue,
+      ...(shouldExposeCursorIndex ? { nextComposerCursorIndex } : {}),
     };
   }
 
   if (context.input.length > 0 && !context.key.ctrl && !context.key.meta) {
-    const nextComposerValue = `${context.composerValue}${context.input}`;
+    const nextComposerCharacters = [...composerCharacters];
+    const insertedCharacters = Array.from(context.input);
+    nextComposerCharacters.splice(composerCursorIndex, 0, ...insertedCharacters);
+    const nextComposerValue = nextComposerCharacters.join('');
+    const nextComposerCursorIndex = composerCursorIndex + insertedCharacters.length;
     return {
       kind: 'action',
       action: {
@@ -272,6 +312,7 @@ export function mapSessionShellKeypressToAction(
         value: nextComposerValue,
       },
       nextComposerValue,
+      ...(shouldExposeCursorIndex ? { nextComposerCursorIndex } : {}),
     };
   }
 
@@ -408,8 +449,12 @@ export function ReactCliLiveSessionShellApp({
   interactionHandlers: ReactCliSessionShellInteractionHandlers;
 }): React.JSX.Element {
   const [displayComposerValue, setDisplayComposerValue] = useState(viewModel.composerValue);
+  const [displayComposerCursorIndex, setDisplayComposerCursorIndex] = useState(
+    Array.from(viewModel.composerValue).length,
+  );
   const [liveActivityDetailOffsetFromBottom, setLiveActivityDetailOffsetFromBottom] = useState(0);
   const composerValueRef = useRef(viewModel.composerValue);
+  const composerCursorIndexRef = useRef(Array.from(viewModel.composerValue).length);
   const authoritativeComposerValueRef = useRef(viewModel.composerValue);
   const lastLiveActivityItemIdRef = useRef<string | null>(null);
 
@@ -419,7 +464,9 @@ export function ReactCliLiveSessionShellApp({
     }
     authoritativeComposerValueRef.current = viewModel.composerValue;
     composerValueRef.current = viewModel.composerValue;
+    composerCursorIndexRef.current = Array.from(viewModel.composerValue).length;
     setDisplayComposerValue(viewModel.composerValue);
+    setDisplayComposerCursorIndex(composerCursorIndexRef.current);
   }, [viewModel.composerValue]);
 
   const liveActivityItem = useMemo(
@@ -494,6 +541,7 @@ export function ReactCliLiveSessionShellApp({
       input,
       key,
       composerValue: composerValueRef.current,
+      composerCursorIndex: composerCursorIndexRef.current,
       inputMode: viewModel.inputMode,
       highlightedCommand: viewModel.highlightedCommand,
       slashPaletteVisible: viewModel.slashPaletteVisible,
@@ -508,12 +556,21 @@ export function ReactCliLiveSessionShellApp({
     ) {
       composerValueRef.current = resolution.nextComposerValue;
       setDisplayComposerValue(resolution.nextComposerValue);
+      const nextComposerCursorIndex =
+        resolution.nextComposerCursorIndex ?? Array.from(resolution.nextComposerValue).length;
+      composerCursorIndexRef.current = nextComposerCursorIndex;
+      setDisplayComposerCursorIndex(nextComposerCursorIndex);
     } else if (
       resolution.kind === 'action' &&
       resolution.action?.type === CliSessionShellInputActionType.COMPOSER_SUBMITTED
     ) {
       composerValueRef.current = '';
+      composerCursorIndexRef.current = 0;
       setDisplayComposerValue('');
+      setDisplayComposerCursorIndex(0);
+    } else if (resolution.nextComposerCursorIndex !== undefined) {
+      composerCursorIndexRef.current = resolution.nextComposerCursorIndex;
+      setDisplayComposerCursorIndex(resolution.nextComposerCursorIndex);
     }
 
     if (resolution.kind === 'interrupt') {
@@ -543,6 +600,7 @@ export function ReactCliLiveSessionShellApp({
           detailOffsetFromBottom: liveActivityDetailOffsetFromBottom,
         },
       )}
+      composerCursorIndex={displayComposerCursorIndex}
     />
   );
 }

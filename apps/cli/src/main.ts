@@ -2179,10 +2179,11 @@ function resolveRuntimeDebugOptions(
     );
   }
   const uiThemeOption = readOptionInput(args, '--ui-theme');
+  const supportedThemeList = CLI_REACT_THEME_PRESET_ORDER.join('|');
   if (uiThemeOption.isPresent && !uiThemeOption.value) {
     throw new RuntimeError(
       GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
-      'Option --ui-theme requires one value: governor|catppuccin|calm.',
+      `Option --ui-theme requires one value: ${supportedThemeList}.`,
       { option: '--ui-theme' },
     );
   }
@@ -2195,7 +2196,7 @@ function resolveRuntimeDebugOptions(
   if (requestedUiTheme && !CLI_REACT_THEME_VALUES.has(requestedUiTheme)) {
     throw new RuntimeError(
       GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
-      `Option --ui-theme must be one of governor|catppuccin|calm; received '${requestedUiTheme}'.`,
+      `Option --ui-theme must be one of ${supportedThemeList}; received '${requestedUiTheme}'.`,
       { option: '--ui-theme', value: requestedUiTheme },
     );
   }

@@ -1,6 +1,6 @@
 {
-  "name": "@cjhdev/repo-ai-governor",
-  "version": "0.1.5",
+  "name": "repo-ai-governor",
+  "version": "0.0.1",
   "private": false,
   "description": "Repository-local AI governance CLI.",
   "packageManager": "pnpm@10.30.3",

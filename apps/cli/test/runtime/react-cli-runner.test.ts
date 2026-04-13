@@ -6,6 +6,7 @@ import {
   CliInteractiveShellStderrRenderingMode,
   CliInteractiveUiMode,
 } from '../../src/constants/cli-interactive-shell.constant.js';
+import { CliReactThemePreset } from '../../src/constants/cli-react-theme.constant.js';
 import {
   CLI_SESSION_SHELL_INPUT_ACTION_CONTRACT,
   CliSessionShellForegroundFocusTarget,
@@ -20,6 +21,10 @@ import { ReactCliRunner, ReactCliStderrFramePresenter } from '../../src/react-cl
 import { CliInteractiveShellStderrRenderer } from '../../src/runtime/interactive-shell/interactive-shell-stderr-renderer.js';
 import { CliSessionShellStderrRenderer } from '../../src/runtime/interactive-shell/session-shell-stderr-renderer.js';
 import type { CliInteractiveShellSessionState } from '../../src/types/index.js';
+
+function normalizeRenderedOutput(output: string): string {
+  return output.replace(/[│╭╮╰╯─═]/gu, ' ').replace(/\s+/gu, ' ');
+}
 
 describe('ReactCliRunner', () => {
   it('renders shared shell frames through Ink and Ink UI', () => {
@@ -108,9 +113,9 @@ describe('ReactCliRunner', () => {
         },
       ],
       transcriptTitle: 'History',
-      composerTitle: 'Current input',
+      composerTitle: 'Input',
       composerValue: '',
-      composerPlaceholder: 'Type a message, / for commands, or ? for shortcuts.',
+      composerPlaceholder: 'Type a message or / command.',
       slashQuery: '/wo',
       slashPaletteVisible: true,
       slashSuggestions: [
@@ -137,24 +142,26 @@ describe('ReactCliRunner', () => {
       foregroundInputOwner: CliSessionShellForegroundInputOwner.READLINE_FALLBACK,
       foregroundFocusTarget: CliSessionShellForegroundFocusTarget.COMPOSER,
       inputActionContract: [...CLI_SESSION_SHELL_INPUT_ACTION_CONTRACT],
-      title: 'Repo AI Governor session shell',
+      title: 'Repo AI Governor',
       subtitle: 'Session-first preview baseline.',
       promptBarTitle: 'Prompt bar',
       promptBarLines: ['/confirm · /cancel · Esc'],
     });
 
-    expect(output).toContain('Repo AI Governor session shell');
+    expect(output).toContain('Repo AI Governor');
     expect(output).toContain('Session shell foundation is active.');
     expect(output).toContain('History');
-    expect(output).toContain('Current input');
+    expect(output).toContain('Type a message or / command.');
     expect(output).toContain('Live activity');
     expect(output).toContain('Running · 0s');
     expect(output).toContain('Inspecting workspace state.');
-    expect(output).toContain('governor>');
+    expect(output).toContain('>');
     expect(output).toContain('/workspace');
     expect(output).toContain('› ');
+    expect(output).toContain('Session-first preview baseline.');
+    expect(output).toContain('/workspace/repo');
+    expect(output).toContain('workspace_id=repo mode=repo_local');
     expect(output).not.toContain('Prompt bar');
-    expect(output).not.toContain('Session-first preview baseline.');
     expect(output).not.toContain('session_id=');
     expect(output).not.toContain('shell_mode=');
     expect(output).not.toContain('query=');
@@ -203,7 +210,7 @@ describe('ReactCliRunner', () => {
         displayCommand: '/secret set openai/api-key',
         keyName: 'openai/api-key',
       },
-      title: 'Repo AI Governor session shell',
+      title: 'Repo AI Governor',
       subtitle: 'Session-first preview baseline.',
       promptBarTitle: 'Prompt bar',
       promptBarLines: ['Enter submit · Esc cancel · Ctrl+D'],
@@ -213,6 +220,61 @@ describe('ReactCliRunner', () => {
     expect(output).toContain('Secret input stays hidden while you type.');
     expect(output).toContain('Enter submit · Esc cancel · Ctrl+D');
     expect(output).not.toContain('sk-live-secret');
+  });
+
+  it('renders a welcome screen for empty sessions and supports the copilot theme preset', () => {
+    const runner = new ReactCliRunner();
+    const output = runner.renderSessionShellFrame({
+      sessionId: 'session-shell-empty-welcome',
+      shellMode: CliSessionShellMode.SESSION_SHELL,
+      inputMode: CliSessionShellInputMode.PLAIN_TEXT,
+      transcriptItems: [],
+      transcriptTitle: 'History',
+      composerTitle: 'Input',
+      composerValue: '',
+      composerPlaceholder: 'Type a message or / command.',
+      slashQuery: '',
+      slashPaletteVisible: false,
+      slashSuggestions: [
+        {
+          command: '/workspace',
+          summary: 'Plan or execute workspace migration baseline.',
+          highlightSegments: [{ text: '/workspace', highlighted: false }],
+        },
+        {
+          command: '/doctor',
+          summary: 'Diagnose adapter health, environment readiness, and route blockers.',
+          highlightSegments: [{ text: '/doctor', highlighted: false }],
+        },
+      ],
+      highlightedCommand: '/workspace',
+      slashPaletteTitle: 'Slash palette',
+      slashPaletteEmptyState: 'No slash commands matched.',
+      commandPreview: null,
+      handoffState: CliSessionShellHandoffState.IDLE,
+      cwd: '/workspace/repo',
+      workspaceSummary: 'workspace_id=repo mode=repo_local',
+      outputContract: ErrorOutputEnvironment.PRETTY,
+      persistenceOwner: CliSessionShellPersistenceOwner.LOCAL_ORCHESTRATION_SERVICE,
+      resumeSelector: 'latest',
+      foregroundInputOwner: CliSessionShellForegroundInputOwner.INK,
+      foregroundFocusTarget: CliSessionShellForegroundFocusTarget.COMPOSER,
+      inputActionContract: [...CLI_SESSION_SHELL_INPUT_ACTION_CONTRACT],
+      title: 'Repo AI Governor',
+      subtitle: 'Session-first preview baseline.',
+      promptBarTitle: 'Prompt bar',
+      promptBarLines: ['? shortcuts · /status · Ctrl+D'],
+      themePreset: CliReactThemePreset.COPILOT,
+    });
+
+    expect(output).toContain('Repo AI Governor');
+    expect(output).toContain('[copilot]');
+    expect(output).toContain('Session-first preview baseline.');
+    expect(output).toContain('/workspace/repo');
+    expect(output).toContain('/workspace');
+    expect(output).toContain('/doctor');
+    expect(output).toContain('Type a message or / command.');
+    expect(output).not.toContain('History');
   });
 
   it('renders markdown answers, structured command recap, and collaboration recap transcript items', () => {
@@ -274,9 +336,9 @@ describe('ReactCliRunner', () => {
         },
       ],
       transcriptTitle: 'History',
-      composerTitle: 'Current input',
+      composerTitle: 'Input',
       composerValue: '',
-      composerPlaceholder: 'Type a message, / for commands, or ? for shortcuts.',
+      composerPlaceholder: 'Type a message or / command.',
       slashQuery: '',
       slashPaletteVisible: false,
       slashSuggestions: [],
@@ -293,11 +355,12 @@ describe('ReactCliRunner', () => {
       foregroundInputOwner: CliSessionShellForegroundInputOwner.INK,
       foregroundFocusTarget: CliSessionShellForegroundFocusTarget.COMPOSER,
       inputActionContract: [...CLI_SESSION_SHELL_INPUT_ACTION_CONTRACT],
-      title: 'Repo AI Governor session shell',
+      title: 'Repo AI Governor',
       subtitle: 'Session-first preview baseline.',
       promptBarTitle: 'Prompt bar',
       promptBarLines: ['? shortcuts · /status · Ctrl+D'],
     });
+    const normalizedOutput = normalizeRenderedOutput(output);
 
     expect(output).toContain('Delivery plan');
     expect(output).toContain('- inspect current stream');
@@ -315,7 +378,9 @@ describe('ReactCliRunner', () => {
     expect(output).toContain('parallel_analysis');
     expect(output).toContain('[Execution surface]');
     expect(output).toContain('architect:ollama | reviewer:ollama | verifier:ollama');
-    expect(output).toContain('Execution surface selection switched to a fallback automatically.');
+    expect(normalizedOutput).toContain(
+      'Execution surface selection switched to a fallback automatically.',
+    );
     expect(output).toContain('Execution details');
     expect(output).toContain('Collapsed · 2 entries · Ctrl+O to open');
     expect(output).toContain('Architect + Reviewer + Verifier Parallel Analysis');
@@ -354,9 +419,9 @@ describe('ReactCliRunner', () => {
           },
         ],
         transcriptTitle: 'History',
-        composerTitle: 'Current input',
+        composerTitle: 'Input',
         composerValue: '',
-        composerPlaceholder: 'Type a message, / for commands, or ? for shortcuts.',
+        composerPlaceholder: 'Type a message or / command.',
         slashQuery: '',
         slashPaletteVisible: false,
         slashSuggestions: [],
@@ -373,7 +438,7 @@ describe('ReactCliRunner', () => {
         foregroundInputOwner: CliSessionShellForegroundInputOwner.INK,
         foregroundFocusTarget: CliSessionShellForegroundFocusTarget.COMPOSER,
         inputActionContract: [...CLI_SESSION_SHELL_INPUT_ACTION_CONTRACT],
-        title: 'Repo AI Governor session shell',
+        title: 'Repo AI Governor',
         subtitle: 'Session-first preview baseline.',
         promptBarTitle: 'Prompt bar',
         promptBarLines: ['? shortcuts · /status · Ctrl+D'],
@@ -422,9 +487,9 @@ describe('ReactCliRunner', () => {
         },
       ],
       transcriptTitle: 'History',
-      composerTitle: 'Current input',
+      composerTitle: 'Input',
       composerValue: '',
-      composerPlaceholder: 'Type a message, / for commands, or ? for shortcuts.',
+      composerPlaceholder: 'Type a message or / command.',
       slashQuery: '',
       slashPaletteVisible: false,
       slashSuggestions: [],
@@ -441,14 +506,17 @@ describe('ReactCliRunner', () => {
       foregroundInputOwner: CliSessionShellForegroundInputOwner.INK,
       foregroundFocusTarget: CliSessionShellForegroundFocusTarget.COMPOSER,
       inputActionContract: [...CLI_SESSION_SHELL_INPUT_ACTION_CONTRACT],
-      title: 'Repo AI Governor session shell',
+      title: 'Repo AI Governor',
       subtitle: 'Session-first preview baseline.',
       promptBarTitle: 'Prompt bar',
       promptBarLines: ['? shortcuts · /status · Ctrl+D'],
     });
+    const normalizedOutput = normalizeRenderedOutput(output);
 
     expect(output).toContain('[reviewer]');
-    expect(output).toContain('Codex repository review is running; waiting for CLI output.');
+    expect(normalizedOutput).toContain(
+      'Codex repository review is running; waiting for CLI output.',
+    );
     expect(output).toContain('[git]');
     expect(output).toContain('Reading diff summary.');
     expect(output).toContain('[codex stderr]');
@@ -475,9 +543,9 @@ describe('ReactCliRunner', () => {
         },
       ],
       transcriptTitle: 'History',
-      composerTitle: 'Current input',
+      composerTitle: 'Input',
       composerValue: '',
-      composerPlaceholder: 'Type a message, / for commands, or ? for shortcuts.',
+      composerPlaceholder: 'Type a message or / command.',
       slashQuery: '',
       slashPaletteVisible: false,
       slashSuggestions: [],
@@ -494,7 +562,7 @@ describe('ReactCliRunner', () => {
       foregroundInputOwner: CliSessionShellForegroundInputOwner.INK,
       foregroundFocusTarget: CliSessionShellForegroundFocusTarget.COMPOSER,
       inputActionContract: [...CLI_SESSION_SHELL_INPUT_ACTION_CONTRACT],
-      title: 'Repo AI Governor session shell',
+      title: 'Repo AI Governor',
       subtitle: 'Session-first preview baseline.',
       promptBarTitle: 'Prompt bar',
       promptBarLines: ['? shortcuts · /status · Ctrl+D'],
@@ -521,9 +589,9 @@ describe('ReactCliRunner', () => {
         inputMode: CliSessionShellInputMode.PLAIN_TEXT,
         transcriptItems: [],
         transcriptTitle: 'History',
-        composerTitle: 'Current input',
+        composerTitle: 'Input',
         composerValue: '',
-        composerPlaceholder: 'Type a message, / for commands, or ? for shortcuts.',
+        composerPlaceholder: 'Type a message or / command.',
         slashQuery: '',
         slashPaletteVisible: false,
         slashSuggestions: [],
@@ -540,7 +608,7 @@ describe('ReactCliRunner', () => {
         foregroundInputOwner: CliSessionShellForegroundInputOwner.INK,
         foregroundFocusTarget: CliSessionShellForegroundFocusTarget.COMPOSER,
         inputActionContract: [...CLI_SESSION_SHELL_INPUT_ACTION_CONTRACT],
-        title: 'Repo AI Governor session shell',
+        title: 'Repo AI Governor',
         subtitle: 'Session-first preview baseline.',
         promptBarTitle: 'Prompt bar',
         promptBarLines: ['? shortcuts · /status · Ctrl+D'],
@@ -573,9 +641,9 @@ describe('ReactCliRunner', () => {
         inputMode: CliSessionShellInputMode.PLAIN_TEXT,
         transcriptItems: [],
         transcriptTitle: 'History',
-        composerTitle: 'Current input',
+        composerTitle: 'Input',
         composerValue: '',
-        composerPlaceholder: 'Type a message, / for commands, or ? for shortcuts.',
+        composerPlaceholder: 'Type a message or / command.',
         slashQuery: '',
         slashPaletteVisible: false,
         slashSuggestions: [],
@@ -592,7 +660,7 @@ describe('ReactCliRunner', () => {
         foregroundInputOwner: CliSessionShellForegroundInputOwner.INK,
         foregroundFocusTarget: CliSessionShellForegroundFocusTarget.COMPOSER,
         inputActionContract: [...CLI_SESSION_SHELL_INPUT_ACTION_CONTRACT],
-        title: 'Repo AI Governor session shell',
+        title: 'Repo AI Governor',
         subtitle: 'Session-first preview baseline.',
         promptBarTitle: 'Prompt bar',
         promptBarLines: ['? shortcuts · /status · Ctrl+D'],
@@ -615,9 +683,9 @@ describe('ReactCliRunner', () => {
       inputMode: CliSessionShellInputMode.SLASH_COMMAND,
       transcriptItems: [],
       transcriptTitle: 'History',
-      composerTitle: 'Current input',
+      composerTitle: 'Input',
       composerValue: '/wo',
-      composerPlaceholder: 'Type a message, / for commands, or ? for shortcuts.',
+      composerPlaceholder: 'Type a message or / command.',
       slashQuery: '',
       slashPaletteVisible: false,
       slashSuggestions: [],
@@ -634,7 +702,7 @@ describe('ReactCliRunner', () => {
       foregroundInputOwner: CliSessionShellForegroundInputOwner.INK,
       foregroundFocusTarget: CliSessionShellForegroundFocusTarget.COMPOSER,
       inputActionContract: [...CLI_SESSION_SHELL_INPUT_ACTION_CONTRACT],
-      title: 'Repo AI Governor session shell',
+      title: 'Repo AI Governor',
       subtitle: 'Session-first preview baseline.',
       promptBarTitle: 'Prompt bar',
       promptBarLines: ['Shortcuts: /help, /exit, Ctrl+C, Ctrl+D.'],
@@ -652,9 +720,9 @@ describe('ReactCliRunner', () => {
       inputMode: CliSessionShellInputMode.SLASH_COMMAND,
       transcriptItems: [],
       transcriptTitle: 'History',
-      composerTitle: 'Current input',
+      composerTitle: 'Input',
       composerValue: '/workspace',
-      composerPlaceholder: 'Type a message, / for commands, or ? for shortcuts.',
+      composerPlaceholder: 'Type a message or / command.',
       slashQuery: '/workspace',
       slashPaletteVisible: true,
       slashSuggestions: [
@@ -712,7 +780,7 @@ describe('ReactCliRunner', () => {
       foregroundInputOwner: CliSessionShellForegroundInputOwner.INK,
       foregroundFocusTarget: CliSessionShellForegroundFocusTarget.PALETTE,
       inputActionContract: [...CLI_SESSION_SHELL_INPUT_ACTION_CONTRACT],
-      title: 'Repo AI Governor session shell',
+      title: 'Repo AI Governor',
       subtitle: 'Session-first preview baseline.',
       promptBarTitle: 'Prompt bar',
       promptBarLines: ['↑↓ · Tab/Enter · Esc'],
@@ -880,9 +948,9 @@ describe('CliSessionShellStderrRenderer', () => {
       inputMode: CliSessionShellInputMode.PLAIN_TEXT,
       transcriptItems: [],
       transcriptTitle: 'History',
-      composerTitle: 'Current input',
+      composerTitle: 'Input',
       composerValue: '',
-      composerPlaceholder: 'Type a message, / for commands, or ? for shortcuts.',
+      composerPlaceholder: 'Type a message or / command.',
       slashQuery: '',
       slashPaletteVisible: false,
       slashSuggestions: [],
@@ -899,7 +967,7 @@ describe('CliSessionShellStderrRenderer', () => {
       foregroundInputOwner: CliSessionShellForegroundInputOwner.READLINE_FALLBACK,
       foregroundFocusTarget: CliSessionShellForegroundFocusTarget.COMPOSER,
       inputActionContract: [...CLI_SESSION_SHELL_INPUT_ACTION_CONTRACT],
-      title: 'Repo AI Governor session shell',
+      title: 'Repo AI Governor',
       subtitle: 'Session-first preview baseline.',
       promptBarTitle: 'Prompt bar',
       promptBarLines: ['Shortcuts: /help, /exit, Ctrl+C, Ctrl+D.'],

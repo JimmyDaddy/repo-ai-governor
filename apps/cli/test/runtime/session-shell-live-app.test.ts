@@ -307,6 +307,122 @@ describe('mapSessionShellKeypressToAction', () => {
     });
   });
 
+  it('moves the local cursor with Left/Right and edits relative to that cursor', () => {
+    expect(
+      mapSessionShellKeypressToAction({
+        input: '',
+        key: {
+          leftArrow: true,
+        } as never,
+        composerValue: 'hello',
+        composerCursorIndex: 5,
+        highlightedCommand: null,
+        slashPaletteVisible: false,
+      }),
+    ).toEqual({
+      kind: 'ignore',
+      nextComposerCursorIndex: 4,
+    });
+
+    expect(
+      mapSessionShellKeypressToAction({
+        input: '',
+        key: {
+          rightArrow: true,
+        } as never,
+        composerValue: 'hello',
+        composerCursorIndex: 2,
+        highlightedCommand: null,
+        slashPaletteVisible: false,
+      }),
+    ).toEqual({
+      kind: 'ignore',
+      nextComposerCursorIndex: 3,
+    });
+
+    expect(
+      mapSessionShellKeypressToAction({
+        input: 'X',
+        key: {} as never,
+        composerValue: 'hello',
+        composerCursorIndex: 2,
+        highlightedCommand: null,
+        slashPaletteVisible: false,
+      }),
+    ).toEqual({
+      kind: 'action',
+      action: {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: 'heXllo',
+      },
+      nextComposerValue: 'heXllo',
+      nextComposerCursorIndex: 3,
+    });
+
+    expect(
+      mapSessionShellKeypressToAction({
+        input: '',
+        key: {
+          backspace: true,
+        } as never,
+        composerValue: 'heXllo',
+        composerCursorIndex: 3,
+        highlightedCommand: null,
+        slashPaletteVisible: false,
+      }),
+    ).toEqual({
+      kind: 'action',
+      action: {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: 'hello',
+      },
+      nextComposerValue: 'hello',
+      nextComposerCursorIndex: 2,
+    });
+
+    expect(
+      mapSessionShellKeypressToAction({
+        input: '',
+        key: {
+          delete: true,
+        } as never,
+        composerValue: 'hello',
+        composerCursorIndex: 2,
+        highlightedCommand: null,
+        slashPaletteVisible: false,
+      }),
+    ).toEqual({
+      kind: 'action',
+      action: {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: 'hllo',
+      },
+      nextComposerValue: 'hllo',
+      nextComposerCursorIndex: 1,
+    });
+
+    expect(
+      mapSessionShellKeypressToAction({
+        input: '',
+        key: {
+          delete: true,
+        } as never,
+        composerValue: 'hello',
+        composerCursorIndex: 5,
+        highlightedCommand: null,
+        slashPaletteVisible: false,
+      }),
+    ).toEqual({
+      kind: 'action',
+      action: {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: 'hell',
+      },
+      nextComposerValue: 'hell',
+      nextComposerCursorIndex: 4,
+    });
+  });
+
   it('keeps arrow navigation inside the slash palette even when no suggestion is highlighted', () => {
     expect(
       mapSessionShellKeypressToAction({
@@ -495,8 +611,8 @@ describe('live activity viewport helpers', () => {
         ],
         transcriptTitle: 'History',
         composerValue: '',
-        composerTitle: 'Current input',
-        composerPlaceholder: 'Type a message, / for commands, or ? for shortcuts.',
+        composerTitle: 'Input',
+        composerPlaceholder: 'Type a message or / command.',
         slashQuery: '',
         slashPaletteVisible: false,
         slashSuggestions: [],
@@ -513,7 +629,7 @@ describe('live activity viewport helpers', () => {
         foregroundInputOwner: 'ink',
         foregroundFocusTarget: 'composer',
         inputActionContract: [],
-        title: 'Repo AI Governor session shell',
+        title: 'Repo AI Governor',
         subtitle: 'Session-first preview baseline.',
         promptBarTitle: 'Prompt bar',
         promptBarLines: [],

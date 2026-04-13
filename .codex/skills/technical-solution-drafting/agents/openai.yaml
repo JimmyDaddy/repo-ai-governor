@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tech Solution Drafting"
+  short_description: "Draft technical solutions with the repo standard template"
+  default_prompt: "Use $technical-solution-drafting to create or normalize a technical-solution draft under .repo-ai-governor/draft with the repository's standard draft template and lifecycle guardrails."
