@@ -20,13 +20,13 @@
 
 ## 2.1 sprint-001-additive-diagnostics-consumer-rollout
 
-- Status: active
+- Status: completed
 - Sprint Goal: 初始化 launch diagnostics consumer projection rollout baseline，并冻结第一阶段 implementation boundary。
 - Task Package: `TK-858`、`TK-872`、`TK-873`
 
 ## 2.2 sprint-002-consumer-surface-adoption-and-rollout-closeout
 
-- Status: planned
+- Status: active
 - Sprint Goal: 推进 consumer surface adoption，补齐 scenario-driven evidence 并完成 rollout closeout。
 - Task Package: `TK-874`、`TK-875`、`TK-876`
 
@@ -34,10 +34,10 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 | --- | --- | --- | --- | --- | --- |
-| TK-858 | sprint-001 | implement cli-exec additive diagnostics consumer rollout baseline | rollout/planned | DA-849 | in_progress |
-| TK-872 | sprint-001 | project snake_case launch_diagnostics companion from shared producer truth without adding minimum fields | projection/consumer | TK-858 | planned |
-| TK-873 | sprint-001 | sprint-001 exit acceptance and sprint-002 activation handoff | sprint/closeout | TK-858、TK-872、activation-time local CR-001 | planned |
-| TK-874 | sprint-002 | adopt launch_diagnostics across connect doctor verify and report surfaces and retire stderr-guess branches | surface/adoption | TK-873 | planned |
+| TK-858 | sprint-001 | implement cli-exec additive diagnostics consumer rollout baseline | rollout/planned | DA-849 | completed |
+| TK-872 | sprint-001 | project snake_case launch_diagnostics companion from shared producer truth without adding minimum fields | projection/consumer | TK-858 | completed |
+| TK-873 | sprint-001 | sprint-001 exit acceptance and sprint-002 activation handoff | sprint/closeout | TK-858、TK-872、activation-time local CR-001 | completed |
+| TK-874 | sprint-002 | adopt launch_diagnostics across connect doctor verify and report surfaces and retire stderr-guess branches | surface/adoption | TK-873 | in_progress |
 | TK-875 | sprint-002 | produce scenario-driven evidence for spawn-failed parse-failed non-zero and signal consumer mappings | evidence/scenario | TK-874 | planned |
 | TK-876 | sprint-002 | finalize project-103 closeout and delivery evidence handoff | closeout/delivery | TK-874、TK-875、activation-time local CR-001 | planned |
 
@@ -45,7 +45,7 @@
 
 1. 必须先消费 `DA-849` 与 active diagnostics-consumer ADR，再进入任何 consumer rollout。
 2. 推荐在 `project-102` launch-authoring ownership guardrail 起步后再激活 `project-103`，避免 consumer projection 与 producer truth 脱节。
-3. `sprint-001` 只处理 snake_case companion projection；`sprint-002` 才承接 surface adoption、scenario evidence 与 closeout。
+3. `sprint-001` 已完成 snake_case companion projection与 CR clean 收口；当前 `sprint-002` 承接 surface adoption、scenario evidence 与 closeout。
 4. 本次 decomposition 不预创建 `CR-xxx` task card；每个 sprint 激活后必须先预留本地 `CR-001` 并走 `workspace-scoped-cr-loop`。
 
 ## 5. DoD（project-103）
@@ -59,6 +59,7 @@
 1. 2026-04-13：由 `project-101 / TK-849` promotion cutover 创建为 planned follow-up stream。
 2. 2026-04-14：`project-103` 已扩展为两阶段 execution-ready scaffold，并与 `project-102` 的推荐前置顺序对齐。
 3. 2026-04-14：`project-102` final closeout 完成后，当前 project 已切换为 active，并将 `sprint-001` 激活为新的 primary implementation surface。
+4. 2026-04-14：`sprint-001` 已完成 `TK-858 / TK-872 / TK-873` 与 `CR-001 / CR-002` clean 收口；当前已激活 `sprint-002` 并将 `TK-874` 切换为 `in_progress`。
 
 ## 7. 里程碑记录入口
 

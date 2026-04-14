@@ -276,14 +276,14 @@ deliveries:
     rollout_status: planned
     owner: runtime
     project_ref: project-103-cli-exec-additive-diagnostics-consumer-rollout
-    sprint_ref: sprint-001-additive-diagnostics-consumer-rollout
+    sprint_ref: sprint-002-consumer-surface-adoption-and-rollout-closeout
     task_ids:
-      - TK-858
-      - TK-872
-      - TK-873
+      - TK-874
+      - TK-875
+      - TK-876
     project_plan_path: .repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/plan.md
-    sprint_plan_path: .repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-001-additive-diagnostics-consumer-rollout/plan.md
-    task_csv_path: .repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-001-additive-diagnostics-consumer-rollout/tasks/tasks.csv
+    sprint_plan_path: .repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-002-consumer-surface-adoption-and-rollout-closeout/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-002-consumer-surface-adoption-and-rollout-closeout/tasks/tasks.csv
     handoff_artifact_path: .repo-ai-governor/context/dev/project-101-cli-exec-followup-solution-review-and-promotion/sprint-002-additive-diagnostics-consumer/tasks/DA-849-cli-exec-additive-diagnostics-consumer-promotion-cutover.md
     rollout_artifacts:
       - .repo-ai-governor/context/dev/project-101-cli-exec-followup-solution-review-and-promotion/plan.md

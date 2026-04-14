@@ -3,20 +3,20 @@
 ## Primary Stream
 
 - Status: active
-- Stream: `stream-project-103-sprint-001`
+- Stream: `stream-project-103-sprint-002`
 - Project: `project-103-cli-exec-additive-diagnostics-consumer-rollout`
-- Sprint: `sprint-001-additive-diagnostics-consumer-rollout`
+- Sprint: `sprint-002-consumer-surface-adoption-and-rollout-closeout`
 - Docs: `.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout`
-- Plan: `.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-001-additive-diagnostics-consumer-rollout/plan.md`
-- Tasks: `.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-001-additive-diagnostics-consumer-rollout/tasks/`
-- Checklist: `.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-001-additive-diagnostics-consumer-rollout/tasks/checklist.md`
-- CSV: `.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-001-additive-diagnostics-consumer-rollout/tasks/tasks.csv`
-- Review: `.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-001-additive-diagnostics-consumer-rollout/review/`
-- Note: `2026-04-14` `project-102` 已完成 project-final `CR-002` clean recheck、`TK-871` closeout 与 final project commit；当前已激活 `project-103 / sprint-001`，下一步预留本地 `CR-001` 并开始 additive diagnostics consumer rollout baseline。 
+- Plan: `.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-002-consumer-surface-adoption-and-rollout-closeout/plan.md`
+- Tasks: `.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-002-consumer-surface-adoption-and-rollout-closeout/tasks/`
+- Checklist: `.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-002-consumer-surface-adoption-and-rollout-closeout/tasks/checklist.md`
+- CSV: `.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-002-consumer-surface-adoption-and-rollout-closeout/tasks/tasks.csv`
+- Review: `.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-002-consumer-surface-adoption-and-rollout-closeout/review/`
+- Note: `2026-04-14` `project-103 / sprint-001` 已完成 `TK-858 / TK-872 / TK-873` 与 `CR-001 / CR-002` clean 收口，并已切换到 `project-103 / sprint-002` active surface；下一步预留本地 `CR-001` 并开始 consumer-surface adoption rollout。 
 
 ## Active Streams
 
-- `stream-project-103-sprint-001`: role=`primary`, primary=`true`, project=`project-103-cli-exec-additive-diagnostics-consumer-rollout`, sprint=`sprint-001-additive-diagnostics-consumer-rollout`, docs=`.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout`, plan=`.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-001-additive-diagnostics-consumer-rollout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-001-additive-diagnostics-consumer-rollout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-001-additive-diagnostics-consumer-rollout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-001-additive-diagnostics-consumer-rollout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-001-additive-diagnostics-consumer-rollout/review/`, status=`active`, note=`2026-04-14 project-102 final closeout 已完成，当前已激活 sprint-001 additive diagnostics consumer baseline；下一步预留本地 CR-001 并开始 implementation。`
+- `stream-project-103-sprint-002`: role=`primary`, primary=`true`, project=`project-103-cli-exec-additive-diagnostics-consumer-rollout`, sprint=`sprint-002-consumer-surface-adoption-and-rollout-closeout`, docs=`.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout`, plan=`.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-002-consumer-surface-adoption-and-rollout-closeout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-002-consumer-surface-adoption-and-rollout-closeout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-002-consumer-surface-adoption-and-rollout-closeout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-002-consumer-surface-adoption-and-rollout-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-002-consumer-surface-adoption-and-rollout-closeout/review/`, status=`active`, note=`2026-04-14 sprint-001 additive diagnostics consumer baseline 已 clean 收口；当前已激活 sprint-002，下一步预留本地 CR-001 并开始 consumer adoption implementation。`
 
 ## Planned Follow-Up Streams
 

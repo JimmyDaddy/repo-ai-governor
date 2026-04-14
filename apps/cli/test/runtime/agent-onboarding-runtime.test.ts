@@ -1102,13 +1102,33 @@ describe('CliAgentOnboardingRuntime', () => {
       nextActions: ['Re-run doctor after fixing malformed cli_exec output.'],
     };
 
+    const onboardingPayload = runtime.createOnboardingContractPayload({
+      commandName: 'doctor',
+      executionId: 'verify-cli-exec-preserved-facts',
+      workspaceId: 'workspace-1',
+      verificationStatus: CliGovernanceCheckStatus.FAIL,
+      nextActions: verification.nextActions,
+      enabledTools: [AdapterSurface.CODEX],
+      adaptersConfig: sourceConfig.adapters,
+      verification,
+      dryRun: false,
+      overwrite: false,
+      singleToolAllRoles: false,
+      diagnosticSummary: 'status=fail',
+    });
     const verifyPayload = runtime.createVerifyMatrixPayload({
       executionId: 'verify-cli-exec-preserved-facts',
       verification,
       adaptersConfig: sourceConfig.adapters,
     });
 
+    const onboardingEnabledToolRow = onboardingPayload.enabled_tools[0] as Record<string, unknown>;
+    const onboardingTransportRow = onboardingPayload.tool_transport_matrix[0] as Record<
+      string,
+      unknown
+    >;
     const codexRow = verifyPayload.tool_transport_matrix[0] as Record<string, unknown>;
+    const launchDiagnostics = codexRow.launch_diagnostics as Record<string, unknown>;
     const probeTruth = codexRow.probe_truth as Record<string, unknown>;
     const invokeLivenessDiagnostics = codexRow.invoke_liveness_diagnostics as Record<
       string,
@@ -1121,17 +1141,118 @@ describe('CliAgentOnboardingRuntime', () => {
         request_cancellation_mode: AdapterRequestCancellationMode.NOT_SUPPORTED,
       }),
     );
+    expect(launchDiagnostics).toEqual(
+      expect.objectContaining({
+        selected_entrypoint: AdapterSurface.CODEX,
+        request_cancellation_mode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+        shell_wrapped: false,
+        process_tree_policy: 'process_group_best_effort',
+      }),
+    );
+    expect(onboardingEnabledToolRow.launch_diagnostics).toEqual(launchDiagnostics);
+    expect(onboardingTransportRow.launch_diagnostics).toEqual(launchDiagnostics);
     expectNativeCliExecPreservedFacts('probe_protocol_parse_failed', {
       launch_diagnostics_preserved:
-        invokeLivenessDiagnostics.selected_entrypoint === AdapterSurface.CODEX &&
+        launchDiagnostics.selected_entrypoint === AdapterSurface.CODEX &&
         Array.isArray(probeTruth.reason_codes) &&
-        probeTruth.reason_codes.includes('semantic.invalid_response'),
+        probeTruth.reason_codes.includes('semantic.invalid_response') &&
+        launchDiagnostics.process_tree_policy === 'process_group_best_effort',
       adapter_launch_truth_projected:
-        invokeLivenessDiagnostics.selected_entrypoint === AdapterSurface.CODEX &&
-        invokeLivenessDiagnostics.request_cancellation_mode ===
+        launchDiagnostics.selected_entrypoint === AdapterSurface.CODEX &&
+        launchDiagnostics.request_cancellation_mode ===
           AdapterRequestCancellationMode.NOT_SUPPORTED &&
         codexRow.transport_kind === AdapterTransportKind.CLI_EXEC,
     });
+  });
+
+  it('projects cli_exec spawn_error_code into the additive launch_diagnostics companion', () => {
+    const runtime = new CliAgentOnboardingRuntime();
+    const sourceConfig = createGovernorConfigFixture();
+    const verification = {
+      overallStatus: CliGovernanceCheckStatus.FAIL,
+      tools: [
+        {
+          toolId: AdapterSurface.CODEX,
+          enabled: true,
+          configuredAvailability: AdapterAvailability.AVAILABLE,
+          availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+          unavailableReasons: ['spawn_failed:codex:ENOENT'],
+          healthCheck: buildLayeredHealthCheckResult({
+            adapterId: 'codex-agent',
+            surfaceId: AdapterSurface.CODEX,
+            availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+            selectedEntrypoint: AdapterSurface.CODEX,
+            routeKey: 'cli.adapter.probe.codex',
+            unavailableReasons: ['spawn_failed:codex:ENOENT'],
+            transportKind: AdapterTransportKind.CLI_EXEC,
+            requestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+            diagnostics: [
+              {
+                layer: 'install',
+                status: 'pass',
+                code: 'install.entrypoint_resolution',
+                detail: AdapterSurface.CODEX,
+              },
+              {
+                layer: 'protocol',
+                status: 'pass',
+                code: 'protocol.shell_wrapped',
+                detail: 'true',
+              },
+              {
+                layer: 'install',
+                status: 'fail',
+                code: 'install.spawn_error_code',
+                detail: 'ENOENT',
+              },
+            ],
+          }),
+          capabilitySupportByCapability: new Map(),
+          failureAttributions: ['environment_precondition'],
+        },
+      ],
+      roleEvaluations: [],
+      requiredRoleCount: 1,
+      requiredRoleFailedCount: 1,
+      degradedRoleCount: 0,
+      fallbackRoleCount: 0,
+      nextActions: ['Install codex before retrying doctor.'],
+    };
+
+    const onboardingPayload = runtime.createOnboardingContractPayload({
+      commandName: 'doctor',
+      executionId: 'verify-cli-exec-spawn-error',
+      workspaceId: 'workspace-1',
+      verificationStatus: CliGovernanceCheckStatus.FAIL,
+      nextActions: verification.nextActions,
+      enabledTools: [AdapterSurface.CODEX],
+      adaptersConfig: sourceConfig.adapters,
+      verification,
+      dryRun: false,
+      overwrite: false,
+      singleToolAllRoles: false,
+      diagnosticSummary: 'status=fail',
+    });
+    const verifyPayload = runtime.createVerifyMatrixPayload({
+      executionId: 'verify-cli-exec-spawn-error',
+      verification,
+      adaptersConfig: sourceConfig.adapters,
+    });
+    const codexRow = verifyPayload.tool_transport_matrix[0] as Record<string, unknown>;
+    const onboardingEnabledToolRow = onboardingPayload.enabled_tools[0] as Record<string, unknown>;
+    const onboardingTransportRow = onboardingPayload.tool_transport_matrix[0] as Record<
+      string,
+      unknown
+    >;
+
+    expect(codexRow.launch_diagnostics).toEqual({
+      selected_entrypoint: AdapterSurface.CODEX,
+      request_cancellation_mode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+      shell_wrapped: true,
+      spawn_error_code: 'ENOENT',
+    });
+    expect(onboardingEnabledToolRow.launch_diagnostics).toEqual(codexRow.launch_diagnostics);
+    expect(onboardingTransportRow.launch_diagnostics).toEqual(codexRow.launch_diagnostics);
   });
 
   it('projects default cli_exec transport truth for Claude Code without explicit transport config', () => {

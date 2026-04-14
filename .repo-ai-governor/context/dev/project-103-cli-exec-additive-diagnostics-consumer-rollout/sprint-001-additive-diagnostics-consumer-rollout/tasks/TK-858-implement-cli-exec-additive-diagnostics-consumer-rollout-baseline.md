@@ -1,6 +1,6 @@
 # TK-858 implement cli-exec additive diagnostics consumer rollout baseline
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-04-13
 - Owner: AI-Agent
 - Priority: P0
@@ -41,17 +41,25 @@
 
 ## 7. Development Verification
 
-1. 待激活后补充 implementation-window verification。
+1. `pnpm exec vitest run apps/cli/test/runtime/agent-onboarding-runtime.test.ts --maxWorkers=1 --maxConcurrency=1`
+2. `pnpm exec vitest run apps/cli/test/runtime/adapter-verification-runtime.test.ts --maxWorkers=1 --maxConcurrency=1`
+3. `pnpm run build`
+4. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
 
 ## 8. Delivery Verification
 
-1. 待激活后补充 rollout-window delivery verification。
+1. `pnpm run build`
+2. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
+3. `node ./scripts/governance/check-task-ledger-sync.js`
+4. `node ./scripts/governance/check-sprint-plan-status-sync.js`
 
 ## 9. 执行记录
 
 1. 2026-04-13：任务创建，状态初始化为 `planned`，作为 `followup_required` rollout skeleton 的 canonical task。
 2. 2026-04-14：`project-102` final closeout 后，当前任务切换为 `in_progress`，作为 `project-103 / sprint-001` 激活后的 baseline implementation 入口。
+3. 2026-04-14：已在 `CliAgentOnboardingRuntime` 为 `enabled_tools[]` canonical carrier 落地 CLI-exec additive `launch_diagnostics` companion，并让 `tool_transport_matrix` 仅做机械派生；同时补上 parse-failed / spawn-failed runtime coverage、canonical/alias parity 断言与命令级 `cli-output-contract` integration 证据。focused suites、`pnpm run build` 与 `pnpm run test:packages` 已在同窗通过，当前任务完成。
 
 ## 10. 产出
 
-1. 待激活：implementation artifacts to be defined in rollout window
+1. `apps/cli/src/runtime/agent-onboarding-runtime.ts`
+2. `apps/cli/test/runtime/agent-onboarding-runtime.test.ts`

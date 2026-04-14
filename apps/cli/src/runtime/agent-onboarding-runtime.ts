@@ -35,6 +35,11 @@ import { CliRemoteApiAuthoringDefaultsService } from './cli-remote-api-authoring
 
 const MINIMAL_ROLE_IDS = new Set(['planner', 'coder', 'reviewer']);
 const CLI_EXEC_DEFAULT_REQUEST_TIMEOUT_MS = 30000;
+const CLI_EXEC_LAUNCH_DIAGNOSTIC_CODES = {
+  SHELL_WRAPPED: 'protocol.shell_wrapped',
+  PROCESS_TREE_POLICY: 'protocol.process_tree_policy',
+  SPAWN_ERROR_CODE: 'install.spawn_error_code',
+} as const;
 
 /**
  * Owns connect/doctor onboarding template shaping and report-friendly matrix payloads.
@@ -273,6 +278,10 @@ export class CliAgentOnboardingRuntime {
         configuredTool,
         verificationTool?.healthCheck?.transportKind,
       );
+      const launchDiagnostics = this.createLaunchDiagnosticsPayload({
+        transportKind: resolvedTransportKind,
+        healthCheck: verificationTool?.healthCheck,
+      });
       return {
         tool_id: toolId,
         enabled: configuredTool?.enabled ?? true,
@@ -333,6 +342,7 @@ export class CliAgentOnboardingRuntime {
           unavailableReasons: verificationTool?.unavailableReasons,
           failureAttributions: verificationTool?.failureAttributions,
         }),
+        ...(launchDiagnostics ? { launch_diagnostics: launchDiagnostics } : {}),
       };
     });
   }
@@ -358,6 +368,7 @@ export class CliAgentOnboardingRuntime {
       remote_api_candidate: row.configured_remote_api,
       probe_truth: row.probe_truth,
       invoke_liveness_diagnostics: row.invoke_liveness_diagnostics,
+      ...(row.launch_diagnostics ? { launch_diagnostics: row.launch_diagnostics } : {}),
     }));
   }
 
@@ -414,6 +425,48 @@ export class CliAgentOnboardingRuntime {
       unavailable_reasons: [...(options.unavailableReasons ?? [])],
       failure_attributions: [...(options.failureAttributions ?? [])],
     };
+  }
+
+  private createLaunchDiagnosticsPayload(options: {
+    transportKind: unknown;
+    healthCheck?: CliAdapterVerificationResolution['tools'][number]['healthCheck'];
+  }): Record<string, unknown> | null {
+    if (options.transportKind !== AdapterTransportKind.CLI_EXEC || !options.healthCheck) {
+      return null;
+    }
+
+    const shellWrappedDetail = this.findHealthCheckDiagnosticDetail(
+      options.healthCheck,
+      CLI_EXEC_LAUNCH_DIAGNOSTIC_CODES.SHELL_WRAPPED,
+    );
+    const processTreePolicy = this.findHealthCheckDiagnosticDetail(
+      options.healthCheck,
+      CLI_EXEC_LAUNCH_DIAGNOSTIC_CODES.PROCESS_TREE_POLICY,
+    );
+    const spawnErrorCode = this.findHealthCheckDiagnosticDetail(
+      options.healthCheck,
+      CLI_EXEC_LAUNCH_DIAGNOSTIC_CODES.SPAWN_ERROR_CODE,
+    );
+    const shellWrapped =
+      shellWrappedDetail === 'true' ? true : shellWrappedDetail === 'false' ? false : null;
+
+    return {
+      selected_entrypoint: options.healthCheck.selectedEntrypoint,
+      request_cancellation_mode: options.healthCheck.requestCancellationMode,
+      ...(shellWrapped !== null ? { shell_wrapped: shellWrapped } : {}),
+      ...(processTreePolicy ? { process_tree_policy: processTreePolicy } : {}),
+      ...(spawnErrorCode ? { spawn_error_code: spawnErrorCode } : {}),
+    };
+  }
+
+  private findHealthCheckDiagnosticDetail(
+    healthCheck: NonNullable<CliAdapterVerificationResolution['tools'][number]['healthCheck']>,
+    code: string,
+  ): string | null {
+    const diagnostic = healthCheck.diagnostics.find((candidate) => candidate.code === code);
+    return typeof diagnostic?.detail === 'string' && diagnostic.detail.length > 0
+      ? diagnostic.detail
+      : null;
   }
 
   private resolveFallbackAvailabilityStatus(

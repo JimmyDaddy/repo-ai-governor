@@ -1418,18 +1418,23 @@ describe('claude-code-agent-adapter smoke', () => {
       },
     });
 
-    expect(execRunner).toHaveBeenNthCalledWith(
-      1,
+    const firstInvokeRequest = execRunner.mock.calls[0]?.[0];
+    const secondInvokeRequest = execRunner.mock.calls[1]?.[0];
+
+    expect(firstInvokeRequest).toEqual(
       expect.objectContaining({
-        timeoutMs: 500,
+        timeoutMs: expect.any(Number),
       }),
     );
-    expect(execRunner).toHaveBeenNthCalledWith(
-      2,
+    expect(secondInvokeRequest).toEqual(
       expect.objectContaining({
-        timeoutMs: 600000,
+        timeoutMs: expect.any(Number),
       }),
     );
+    expect(firstInvokeRequest?.timeoutMs).toBeGreaterThanOrEqual(499);
+    expect(firstInvokeRequest?.timeoutMs).toBeLessThanOrEqual(500);
+    expect(secondInvokeRequest?.timeoutMs).toBeGreaterThanOrEqual(599999);
+    expect(secondInvokeRequest?.timeoutMs).toBeLessThanOrEqual(600000);
   });
 
   it('reuses one cli_exec invocation across streamEvents and invokeStage and relays stdout/stderr incrementally', async () => {

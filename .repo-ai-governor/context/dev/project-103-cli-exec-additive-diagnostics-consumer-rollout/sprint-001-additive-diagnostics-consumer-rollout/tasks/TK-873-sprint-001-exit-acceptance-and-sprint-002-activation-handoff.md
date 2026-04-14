@@ -1,6 +1,6 @@
 # TK-873 sprint-001 exit acceptance and sprint-002 activation handoff
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-14
 - Owner: AI-Agent
 - Priority: P1
@@ -41,16 +41,31 @@
 
 ## 7. Development Verification
 
-1. 待激活后补充 sprint-001 closeout verification。
+1. `pnpm exec vitest run apps/cli/test/runtime/agent-onboarding-runtime.test.ts --maxWorkers=1 --maxConcurrency=1`
+2. `pnpm exec vitest run apps/cli/test/runtime/adapter-verification-runtime.test.ts --maxWorkers=1 --maxConcurrency=1`
+3. `pnpm exec vitest run apps/cli/test/cli-output-contract.integration.test.ts --maxWorkers=1 --maxConcurrency=1`
+4. `pnpm run build`
+5. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
+6. `pnpm run check`
 
 ## 8. Delivery Verification
 
-1. 待激活后补充 sprint handoff delivery verification与治理检查。
+1. `pnpm run check`
+2. `node ./scripts/governance/check-code-review-status-sync.js`
+3. `node ./scripts/governance/check-task-ledger-sync.js`
+4. `node ./scripts/governance/check-sprint-plan-status-sync.js`
+5. `node ./scripts/governance/check-worktree-review-target.js`
 
 ## 9. 执行记录
 
 1. 2026-04-14：任务创建，状态初始化为 `planned`。
+2. 2026-04-14：`TK-858`、`TK-872`、`CR-001` 与 `CR-002` 已全部 clean 收口；当前已将 `sprint-001` 标记为 `completed`，并把 `sprint-002` 激活为新的 primary execution surface。
+3. 2026-04-14：`TK-874` 已切换为 `in_progress` 作为 `sprint-002` implementation 入口；下一步在 active sprint surface 预留本地 `CR-001` 后进入 consumer adoption rollout。
 
 ## 10. 产出
 
-1. 待激活：sprint-001 closeout and sprint-002 handoff artifacts to be defined in rollout window。
+1. `.repo-ai-governor/context/current-context.md`
+2. `.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/plan.md`
+3. `.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-001-additive-diagnostics-consumer-rollout/plan.md`
+4. `.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-002-consumer-surface-adoption-and-rollout-closeout/plan.md`
+5. `.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/sprint-002-consumer-surface-adoption-and-rollout-closeout/tasks/TK-874-adopt-launch-diagnostics-across-connect-doctor-verify-and-report-surfaces-and-retire-stderr-guess-branches.md`

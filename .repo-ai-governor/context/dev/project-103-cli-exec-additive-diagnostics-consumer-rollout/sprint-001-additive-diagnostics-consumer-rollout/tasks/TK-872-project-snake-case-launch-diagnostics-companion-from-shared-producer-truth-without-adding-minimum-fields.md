@@ -1,6 +1,6 @@
 # TK-872 project snake_case launch_diagnostics companion from shared producer truth without adding minimum fields
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-14
 - Owner: AI-Agent
 - Priority: P1
@@ -40,16 +40,24 @@
 
 ## 7. Development Verification
 
-1. 待激活后补充 diagnostics companion verification。
+1. `pnpm exec vitest run apps/cli/test/runtime/agent-onboarding-runtime.test.ts --maxWorkers=1 --maxConcurrency=1`
+2. `pnpm exec vitest run apps/cli/test/runtime/adapter-verification-runtime.test.ts --maxWorkers=1 --maxConcurrency=1`
+3. `pnpm run build`
+4. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
 
 ## 8. Delivery Verification
 
-1. 待激活后补充 rollout-window delivery verification与治理检查。
+1. `pnpm run build`
+2. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
+3. `node ./scripts/governance/check-task-ledger-sync.js`
+4. `node ./scripts/governance/check-sprint-plan-status-sync.js`
 
 ## 9. 执行记录
 
 1. 2026-04-14：任务创建，状态初始化为 `planned`。
+2. 2026-04-14：已把 snake_case `launch_diagnostics` companion 固定为从 CLI-exec producer truth 单向投影的 optional canonical carrier，由 `enabled_tools[]` materialize 后再机械派生到 `tool_transport_matrix`；仅承载 `selected_entrypoint / request_cancellation_mode / shell_wrapped / process_tree_policy / spawn_error_code`，未新增 minimum fields。focused suites、命令级 `cli-output-contract` integration、`pnpm run build` 与 `pnpm run test:packages` 已在同窗通过，当前任务完成。
 
 ## 10. 产出
 
-1. 待激活：launch_diagnostics projection artifacts to be defined in rollout window。
+1. `apps/cli/src/runtime/agent-onboarding-runtime.ts`
+2. `apps/cli/test/runtime/agent-onboarding-runtime.test.ts`
