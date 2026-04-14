@@ -1,3 +1,7 @@
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { resolve } from 'node:path';
+
 import { AgentAvailabilityStatus } from '@repo-ai-governor/adapter-sdk';
 import type { AdaptersConfig } from '@repo-ai-governor/config';
 import {
@@ -6,6 +10,7 @@ import {
   AdapterSurface,
   AdapterTransportKind,
 } from '@repo-ai-governor/shared';
+import { HOST_VERIFICATION_SUMMARY_SCHEMA_VERSION } from '@repo-ai-governor/standards';
 import { CliAdapterRoutingRuntime } from '../../src/runtime/adapter-routing-runtime.js';
 
 describe('Cli adapter routing runtime', () => {
@@ -165,6 +170,100 @@ describe('Cli adapter routing runtime', () => {
     );
     expect(probeResult?.healthCheck?.transportKind).toBe(AdapterTransportKind.ACP_EXEC);
     expect(probeResult?.healthCheck?.reasonCodes).toContain('protocol.health_check_failed');
+  });
+
+  it('projects packaged-distribution and runtime-service evidence into ACP diagnostics without rewriting ACP transport truth', async () => {
+    const acpAdaptersConfig: AdaptersConfig = {
+      ...adaptersConfig,
+      tools: [
+        {
+          toolId: AdapterSurface.CODEX,
+          enabled: true,
+          availability: AdapterAvailability.AVAILABLE,
+          transport: AdapterTransportKind.ACP_EXEC,
+        },
+      ],
+    };
+    const repoRoot = await mkdtemp(resolve(tmpdir(), 'acp-host-evidence-'));
+
+    try {
+      const workspaceRoot = resolve(repoRoot, '.repo-ai-governor');
+      const runtimeExportRoot = resolve(workspaceRoot, 'generated', 'hosts-final', 'codex');
+      const pluginExportRoot = resolve(workspaceRoot, 'generated', 'hosts-final', 'codex-plugin');
+      await mkdir(runtimeExportRoot, { recursive: true });
+      await mkdir(pluginExportRoot, { recursive: true });
+      await writeFile(
+        resolve(runtimeExportRoot, 'host-export.manifest.json'),
+        `${JSON.stringify({ host: 'codex', target: 'codex.project_local' }, null, 2)}\n`,
+        'utf8',
+      );
+      await writeFile(
+        resolve(runtimeExportRoot, 'host-verification.summary.json'),
+        `${JSON.stringify(
+          {
+            schemaVersion: HOST_VERIFICATION_SUMMARY_SCHEMA_VERSION,
+            status: 'pass',
+            verifiedAt: '2026-04-15T06:30:00.000Z',
+          },
+          null,
+          2,
+        )}\n`,
+        'utf8',
+      );
+      await writeFile(
+        resolve(pluginExportRoot, 'host-export.manifest.json'),
+        `${JSON.stringify({ host: 'codex', target: 'codex.plugin' }, null, 2)}\n`,
+        'utf8',
+      );
+      await writeFile(
+        resolve(pluginExportRoot, 'host-verification.summary.json'),
+        `${JSON.stringify(
+          {
+            schemaVersion: HOST_VERIFICATION_SUMMARY_SCHEMA_VERSION,
+            status: 'pass',
+            verifiedAt: '2026-04-15T06:35:00.000Z',
+          },
+          null,
+          2,
+        )}\n`,
+        'utf8',
+      );
+
+      const runtime = new CliAdapterRoutingRuntime(acpAdaptersConfig, {
+        acpHostEvidenceSearchRoot: repoRoot,
+      });
+      const protocolBySurface = runtime.createProtocolBySurface(
+        runtime.createToolConfigBySurfaceMap(),
+      );
+      const probeResult = await protocolBySurface[AdapterSurface.CODEX]?.probe({
+        routeKey: 'cli.adapter.probe.codex',
+        requiredCapabilities: [],
+      });
+
+      expect(probeResult?.availabilityStatus).toBe(AgentAvailabilityStatus.UNAVAILABLE);
+      expect(probeResult?.healthCheck?.transportKind).toBe(AdapterTransportKind.ACP_EXEC);
+      expect(probeResult?.healthCheck?.diagnostics).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            code: 'protocol.acp_host_readiness_status',
+            detail: 'runtime_service_ready',
+          }),
+          expect.objectContaining({
+            code: 'protocol.acp_distribution_boundary',
+            detail: 'packaged_distribution_ready',
+          }),
+          expect.objectContaining({
+            code: 'protocol.acp_companion_state_summary',
+            detail: 'runtime_service_and_distribution_ready',
+          }),
+        ]),
+      );
+      expect(probeResult?.unavailableReasons).toContain(
+        'health_check_failed:codex:acp_host_transport_not_ready',
+      );
+    } finally {
+      await rm(repoRoot, { recursive: true, force: true });
+    }
   });
 
   it('localizes the acp_exec fail-closed runtime error through the routing bridge', async () => {

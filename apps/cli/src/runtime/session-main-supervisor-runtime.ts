@@ -190,6 +190,7 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
             }
           : {}),
         sharedProtocolCacheNamespace: options.adapterRoutingRuntimeCacheNamespace,
+        acpHostEvidenceSearchRoot: options.currentWorkingDirectory,
       });
     this.subagentRegistry =
       options.subagentRegistry ??

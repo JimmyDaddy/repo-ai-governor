@@ -26,13 +26,13 @@
 
 ## 2.2 sprint-002-distribution-and-runtime-service-enablement
 
-- Status: active
+- Status: completed
 - Sprint Goal: 推进 `acp_exec` readiness composition、packaged distribution 与 runtime-service enablement。
 - Task Package: `TK-885`、`TK-886`、`TK-887`
 
 ## 2.3 sprint-003-clean-room-verify-support-truth-and-rollout-closeout
 
-- Status: planned
+- Status: active
 - Sprint Goal: 执行 clean-room verify、support/docs truth uplift，并完成 rollout closeout。
 - Task Package: `TK-888`、`TK-889`、`TK-890`
 
@@ -44,10 +44,10 @@
 | TK-882 | sprint-001 | implement explicit acp_exec transport routing and fail-closed separation from cli_exec | transport/routing | TK-860 | completed |
 | TK-883 | sprint-001 | project acp_host_companion carrier without polluting session or continuation canonical truth | companion/carrier | TK-882 | completed |
 | TK-884 | sprint-001 | sprint-001 exit acceptance and sprint-002 activation handoff | sprint/closeout | TK-860、TK-882、TK-883、activation-time local CR-001 | completed |
-| TK-885 | sprint-002 | integrate connect doctor verify readiness composition for acp_exec and host next-actions | onboarding/readiness | TK-884 | in_progress |
-| TK-886 | sprint-002 | enable packaged-distribution and runtime-service surfaces behind explicit ACP boundaries | distribution/runtime-service | TK-885 | planned |
-| TK-887 | sprint-002 | sprint-002 exit acceptance and sprint-003 activation handoff | sprint/closeout | TK-885、TK-886、activation-time local CR-001 | planned |
-| TK-888 | sprint-003 | execute clean-room ACP verification and distribution runtime evidence capture | verify/evidence | TK-887 | planned |
+| TK-885 | sprint-002 | integrate connect doctor verify readiness composition for acp_exec and host next-actions | onboarding/readiness | TK-884 | completed |
+| TK-886 | sprint-002 | enable packaged-distribution and runtime-service surfaces behind explicit ACP boundaries | distribution/runtime-service | TK-885 | completed |
+| TK-887 | sprint-002 | sprint-002 exit acceptance and sprint-003 activation handoff | sprint/closeout | TK-885、TK-886、latest fresh reviewer clean round | completed |
+| TK-888 | sprint-003 | execute clean-room ACP verification and distribution runtime evidence capture | verify/evidence | TK-887 | in_progress |
 | TK-889 | sprint-003 | uplift ACP adopter-facing support docs truth only for evidence-backed surfaces while preserving cli_exec separation | support/docs | TK-888 | planned |
 | TK-890 | sprint-003 | finalize project-105 closeout and delivery evidence handoff | closeout/delivery | TK-888、TK-889、activation-time local CR-001 | planned |
 
@@ -70,6 +70,7 @@
 2. 2026-04-14：`project-105` 已扩展为三阶段 execution-ready scaffold，并固定为 5 方向 rollout 的最后一条默认执行流。
 3. 2026-04-15：`project-104` final closeout 完成后，当前 project 已切换为 active，并将 `sprint-001` 激活为新的 primary execution surface。
 4. 2026-04-15：`CR-001 ~ CR-009` 已全部收口，latest fresh reviewer round clean；`sprint-001` 完成 closeout，并将 `sprint-002` 激活为新的 primary execution surface，`TK-885` 进入 `in_progress`。
+5. 2026-04-15：`CR-001` repair round 与 `CR-002` clean recheck 已全部 resolved；`sprint-002` 完成 closeout，并将 `sprint-003` 激活为新的 primary execution surface，`TK-888` 进入 `in_progress`。
 
 ## 7. 里程碑记录入口
 

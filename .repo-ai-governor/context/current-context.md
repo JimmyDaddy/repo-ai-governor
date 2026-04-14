@@ -3,20 +3,20 @@
 ## Primary Stream
 
 - Status: active
-- Stream: `stream-project-105-sprint-002`
+- Stream: `stream-project-105-sprint-003`
 - Project: `project-105-acp-host-facing-transport-rollout`
-- Sprint: `sprint-002-distribution-and-runtime-service-enablement`
+- Sprint: `sprint-003-clean-room-verify-support-truth-and-rollout-closeout`
 - Docs: `.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout`
-- Plan: `.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-002-distribution-and-runtime-service-enablement/plan.md`
-- Tasks: `.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-002-distribution-and-runtime-service-enablement/tasks/`
-- Checklist: `.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-002-distribution-and-runtime-service-enablement/tasks/checklist.md`
-- CSV: `.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-002-distribution-and-runtime-service-enablement/tasks/tasks.csv`
-- Review: `.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-002-distribution-and-runtime-service-enablement/review/`
-- Note: `2026-04-15` `project-105 / sprint-001` 已在 `CR-001 ~ CR-009` 收口后完成 clean closeout；当前已激活 `project-105 / sprint-002` 作为新的 primary execution surface，`TK-885` 已切换为 `in_progress`，下一步先预留本地 `CR-001` 再开始 ACP readiness composition 与 runtime-service enablement implementation。
+- Plan: `.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-003-clean-room-verify-support-truth-and-rollout-closeout/plan.md`
+- Tasks: `.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-003-clean-room-verify-support-truth-and-rollout-closeout/tasks/`
+- Checklist: `.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-003-clean-room-verify-support-truth-and-rollout-closeout/tasks/checklist.md`
+- CSV: `.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-003-clean-room-verify-support-truth-and-rollout-closeout/tasks/tasks.csv`
+- Review: `.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-003-clean-room-verify-support-truth-and-rollout-closeout/review/`
+- Note: `2026-04-15` `project-105 / sprint-002` 已在 `CR-001` 修复收口与 `CR-002` clean recheck 后完成 clean closeout；当前已激活 `project-105 / sprint-003` 作为新的 primary execution surface，`TK-888` 已切换为 `in_progress`，下一步先预留本地 `CR-001` 再开始 clean-room ACP verify 与 evidence capture implementation。
 
 ## Active Streams
 
-- `stream-project-105-sprint-002`: role=`primary`, primary=`true`, project=`project-105-acp-host-facing-transport-rollout`, sprint=`sprint-002-distribution-and-runtime-service-enablement`, docs=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout`, plan=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-002-distribution-and-runtime-service-enablement/plan.md`, tasks=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-002-distribution-and-runtime-service-enablement/tasks/`, checklist=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-002-distribution-and-runtime-service-enablement/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-002-distribution-and-runtime-service-enablement/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-002-distribution-and-runtime-service-enablement/review/`, status=`active`, note=`2026-04-15 `project-105 / sprint-001` clean closeout 已完成；当前 sprint 已激活为新的 primary execution surface，`TK-885` 进入 `in_progress`，下一步先本地预留 `CR-001` 再开始 ACP readiness composition 与 runtime-service enablement implementation。`
+- `stream-project-105-sprint-003`: role=`primary`, primary=`true`, project=`project-105-acp-host-facing-transport-rollout`, sprint=`sprint-003-clean-room-verify-support-truth-and-rollout-closeout`, docs=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout`, plan=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-003-clean-room-verify-support-truth-and-rollout-closeout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-003-clean-room-verify-support-truth-and-rollout-closeout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-003-clean-room-verify-support-truth-and-rollout-closeout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-003-clean-room-verify-support-truth-and-rollout-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-003-clean-room-verify-support-truth-and-rollout-closeout/review/`, status=`active`, note=`2026-04-15 `project-105 / sprint-002` clean closeout 已完成；当前 sprint 已激活为新的 primary execution surface，`TK-888` 进入 `in_progress`，下一步先本地预留 `CR-001` 再开始 clean-room ACP verify 与 evidence capture implementation。`
 
 ## Planned Follow-Up Streams
 

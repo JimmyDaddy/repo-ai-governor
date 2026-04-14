@@ -12,6 +12,7 @@ import type {
   CliInteractionPrompt,
   CliRoleStageProgress,
 } from '../types/index.js';
+import { CliAcpHostCompanionRuntime } from './cli-acp-host-companion-runtime.js';
 import { CliLaunchDiagnosticsProjectionRuntime } from './cli-launch-diagnostics-projection-runtime.js';
 
 /**
@@ -26,6 +27,7 @@ export class CliAdapterDiagnosticsRuntime {
       verification: CliAdapterVerificationResolution,
     ) => Record<string, number>,
     launchDiagnosticsProjectionRuntime = new CliLaunchDiagnosticsProjectionRuntime(),
+    private readonly acpHostCompanionRuntime: CliAcpHostCompanionRuntime = new CliAcpHostCompanionRuntime(),
   ) {
     this.launchDiagnosticsProjectionRuntime = launchDiagnosticsProjectionRuntime;
   }
@@ -126,6 +128,10 @@ export class CliAdapterDiagnosticsRuntime {
             transportKind: tool.healthCheck?.transportKind ?? null,
             healthCheck: tool.healthCheck,
           });
+        const acpHostCompanion = this.acpHostCompanionRuntime.createCompanionPayload({
+          transportKind: tool.healthCheck?.transportKind,
+          healthCheck: tool.healthCheck,
+        });
 
         return {
           toolId: tool.toolId,
@@ -138,6 +144,7 @@ export class CliAdapterDiagnosticsRuntime {
           capabilitySupportByCapability: Object.fromEntries(
             tool.capabilitySupportByCapability.entries(),
           ),
+          ...(acpHostCompanion ? { acp_host_companion: acpHostCompanion } : {}),
           ...(launchDiagnostics ? { launch_diagnostics: launchDiagnostics } : {}),
         };
       }),
@@ -150,6 +157,10 @@ export class CliAdapterDiagnosticsRuntime {
             transportKind: roleToolHealthCheck?.transportKind ?? null,
             healthCheck: roleToolHealthCheck,
           });
+        const acpHostCompanion = this.acpHostCompanionRuntime.createCompanionPayload({
+          transportKind: roleToolHealthCheck?.transportKind,
+          healthCheck: roleToolHealthCheck,
+        });
 
         return {
           roleId: role.roleId,
@@ -164,6 +175,7 @@ export class CliAdapterDiagnosticsRuntime {
           healthCheck: role.healthCheck,
           failureAttributions: role.failureAttributions,
           status: role.status,
+          ...(acpHostCompanion ? { acp_host_companion: acpHostCompanion } : {}),
           ...(launchDiagnostics ? { launch_diagnostics: launchDiagnostics } : {}),
         };
       }),
@@ -285,6 +297,10 @@ export class CliAdapterDiagnosticsRuntime {
       return '';
     }
 
+    const acpHostCompanion = this.acpHostCompanionRuntime.createCompanionPayload({
+      transportKind: healthCheck.transportKind,
+      healthCheck,
+    });
     const reasonCodes =
       healthCheck.reasonCodes.length > 0 ? healthCheck.reasonCodes.join('|') : 'none';
     return [
@@ -295,6 +311,9 @@ export class CliAdapterDiagnosticsRuntime {
       `cancel=${healthCheck.requestCancellationMode}`,
       `route=${healthCheck.routeKey}`,
       `reason_codes=${reasonCodes}`,
+      acpHostCompanion ? `acp_runtime=${acpHostCompanion.hostReadinessStatus}` : '',
+      acpHostCompanion ? `acp_distribution=${acpHostCompanion.distributionBoundary}` : '',
+      acpHostCompanion ? `acp_state=${acpHostCompanion.companionStateSummary}` : '',
     ]
       .filter((part) => part.length > 0)
       .join(' ');

@@ -17,6 +17,10 @@ import {
   RuntimeError,
 } from '@repo-ai-governor/shared';
 import {
+  CliAcpHostDistributionBoundary,
+  CliAcpHostReadinessStatus,
+} from '../constants/cli-acp-host.constant.js';
+import {
   CLI_AGENT_ONBOARDING_SCHEMA_VERSION,
   CliAgentOnboardingPreset,
 } from '../constants/cli-agent-onboarding.constant.js';
@@ -31,6 +35,7 @@ import type {
   CliConnectToolTransportOverride,
 } from '../types/interfaces/cli-runtime-debug.interface.js';
 import type { CliAdapterVerificationResolution } from '../types/interfaces/index.js';
+import { CliAcpHostCompanionRuntime } from './cli-acp-host-companion-runtime.js';
 import { CliLaunchDiagnosticsProjectionRuntime } from './cli-launch-diagnostics-projection-runtime.js';
 import { CliRemoteApiAuthoringDefaultsService } from './cli-remote-api-authoring-defaults-service.js';
 
@@ -43,6 +48,7 @@ const CLI_EXEC_DEFAULT_REQUEST_TIMEOUT_MS = 30000;
 export class CliAgentOnboardingRuntime {
   private readonly remoteApiAuthoringDefaultsService = new CliRemoteApiAuthoringDefaultsService();
   private readonly launchDiagnosticsProjectionRuntime = new CliLaunchDiagnosticsProjectionRuntime();
+  private readonly acpHostCompanionRuntime = new CliAcpHostCompanionRuntime();
 
   public resolveSelectedTools(options: {
     requestedTools: AdapterSurface[];
@@ -240,6 +246,10 @@ export class CliAgentOnboardingRuntime {
             transportKind: resolvedTransportKind,
             healthCheck: toolHealthCheck,
           });
+        const acpHostCompanion = this.acpHostCompanionRuntime.createCompanionPayload({
+          transportKind: resolvedTransportKind,
+          healthCheck: toolHealthCheck,
+        });
 
         return {
           tool: resolvedSurface,
@@ -273,6 +283,7 @@ export class CliAgentOnboardingRuntime {
             failureAttributions: toolFailureAttributions,
           }),
           next_action: options.verification.nextActions[0] ?? null,
+          ...(acpHostCompanion ? { acp_host_companion: acpHostCompanion } : {}),
           ...(launchDiagnostics ? { launch_diagnostics: launchDiagnostics } : {}),
         };
       }),
@@ -289,6 +300,14 @@ export class CliAgentOnboardingRuntime {
             ),
             healthCheck: roleToolHealthCheck,
           });
+        const acpHostCompanion = this.acpHostCompanionRuntime.createCompanionPayload({
+          transportKind: this.resolveToolTransportKind(
+            resolvedSurface,
+            configuredToolById.get(resolvedSurface),
+            roleToolHealthCheck?.transportKind,
+          ),
+          healthCheck: roleToolHealthCheck,
+        });
 
         return {
           role_profile_id: roleEvaluation.roleProfileId,
@@ -305,6 +324,7 @@ export class CliAgentOnboardingRuntime {
             unavailableReasons: roleEvaluation.unavailableReasons,
             failureAttributions: roleEvaluation.failureAttributions,
           }),
+          ...(acpHostCompanion ? { acp_host_companion: acpHostCompanion } : {}),
           ...(launchDiagnostics ? { launch_diagnostics: launchDiagnostics } : {}),
         };
       }),
@@ -330,6 +350,13 @@ export class CliAgentOnboardingRuntime {
         `fallback_roles=${options.verification.fallbackRoleCount}`,
         `degraded_roles=${options.verification.degradedRoleCount}`,
       );
+      const acpRolloutSummary = this.createAcpRolloutSummary(options.verification);
+      if (acpRolloutSummary) {
+        diagnosticSummarySegments.push(
+          `acp_runtime_ready=${acpRolloutSummary.runtimeServiceReadyCount}/${acpRolloutSummary.trackedToolCount}`,
+          `acp_distribution_ready=${acpRolloutSummary.distributionReadyCount}/${acpRolloutSummary.trackedToolCount}`,
+        );
+      }
     }
     if (options.commandName === 'doctor' && options.safeLocalFixCount !== undefined) {
       diagnosticSummarySegments.push(`safe_local_fix=${options.safeLocalFixCount}`);
@@ -369,6 +396,10 @@ export class CliAgentOnboardingRuntime {
           transportKind: resolvedTransportKind,
           healthCheck: verificationTool?.healthCheck,
         });
+      const acpHostCompanion = this.acpHostCompanionRuntime.createCompanionPayload({
+        transportKind: resolvedTransportKind,
+        healthCheck: verificationTool?.healthCheck,
+      });
       return {
         tool_id: toolId,
         enabled: configuredTool?.enabled ?? true,
@@ -429,6 +460,7 @@ export class CliAgentOnboardingRuntime {
           unavailableReasons: verificationTool?.unavailableReasons,
           failureAttributions: verificationTool?.failureAttributions,
         }),
+        ...(acpHostCompanion ? { acp_host_companion: acpHostCompanion } : {}),
         ...(launchDiagnostics ? { launch_diagnostics: launchDiagnostics } : {}),
       };
     });
@@ -455,8 +487,40 @@ export class CliAgentOnboardingRuntime {
       remote_api_candidate: row.configured_remote_api,
       probe_truth: row.probe_truth,
       invoke_liveness_diagnostics: row.invoke_liveness_diagnostics,
+      ...(row.acp_host_companion ? { acp_host_companion: row.acp_host_companion } : {}),
       ...(row.launch_diagnostics ? { launch_diagnostics: row.launch_diagnostics } : {}),
     }));
+  }
+
+  private createAcpRolloutSummary(verification: CliAdapterVerificationResolution): {
+    trackedToolCount: number;
+    runtimeServiceReadyCount: number;
+    distributionReadyCount: number;
+  } | null {
+    const companions = verification.tools
+      .map((tool) =>
+        this.acpHostCompanionRuntime.createCompanionPayload({
+          transportKind: tool.healthCheck?.transportKind,
+          healthCheck: tool.healthCheck,
+        }),
+      )
+      .filter((companion): companion is NonNullable<typeof companion> => companion !== null);
+    if (companions.length === 0) {
+      return null;
+    }
+
+    return {
+      trackedToolCount: companions.length,
+      runtimeServiceReadyCount: companions.filter(
+        (companion) =>
+          companion.hostReadinessStatus === CliAcpHostReadinessStatus.RUNTIME_SERVICE_READY,
+      ).length,
+      distributionReadyCount: companions.filter(
+        (companion) =>
+          companion.distributionBoundary ===
+          CliAcpHostDistributionBoundary.PACKAGED_DISTRIBUTION_READY,
+      ).length,
+    };
   }
 
   private createInvokeLivenessDiagnosticsPayload(options: {

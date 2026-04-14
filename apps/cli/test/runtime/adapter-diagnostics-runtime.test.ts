@@ -15,6 +15,10 @@ import {
 } from '@repo-ai-governor/shared';
 import { expectNativeCliExecPreservedFacts } from '../../../../test/native-cli-exec-compatibility-harness.js';
 import {
+  CliAcpHostDistributionBoundary,
+  CliAcpHostReadinessStatus,
+} from '../../src/constants/cli-acp-host.constant.js';
+import {
   CliAdapterRoleSelectionSource,
   CliGovernanceCheckStatus,
 } from '../../src/constants/cli-governance-runtime.constant.js';
@@ -185,6 +189,86 @@ function createCliExecVerificationFixture(options: {
           unavailableReasons: [options.unavailableReason],
           transportKind: AdapterTransportKind.CLI_EXEC,
           requestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+        }),
+        status: CliGovernanceCheckStatus.WARN,
+      },
+    ],
+  };
+}
+
+function createAcpVerificationFixture(): CliAdapterVerificationResolution {
+  const diagnostics = [
+    {
+      layer: 'protocol' as const,
+      status: 'pass' as const,
+      code: 'protocol.acp_host_readiness_status',
+      detail: 'runtime_service_ready',
+    },
+    {
+      layer: 'protocol' as const,
+      status: 'pass' as const,
+      code: 'protocol.acp_distribution_boundary',
+      detail: 'packaged_distribution_ready',
+    },
+    {
+      layer: 'protocol' as const,
+      status: 'pass' as const,
+      code: 'protocol.acp_companion_state_summary',
+      detail: 'runtime_service_and_distribution_ready',
+    },
+  ];
+
+  return {
+    overallStatus: CliGovernanceCheckStatus.WARN,
+    requiredRoleCount: 1,
+    requiredRoleFailedCount: 0,
+    degradedRoleCount: 1,
+    fallbackRoleCount: 0,
+    nextActions: ['Run ACP clean-room verify before support uplift.'],
+    tools: [
+      {
+        toolId: AdapterSurface.CODEX,
+        enabled: true,
+        configuredAvailability: AdapterAvailability.AVAILABLE,
+        availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+        unavailableReasons: ['health_check_failed:codex:acp_host_transport_not_ready'],
+        failureAttributions: ['environment_precondition'],
+        healthCheck: buildLayeredHealthCheckResult({
+          adapterId: 'codex-acp-host-protocol',
+          surfaceId: AdapterSurface.CODEX,
+          availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+          selectedEntrypoint: AdapterSurface.CODEX,
+          routeKey: 'cli.adapter.probe.codex',
+          unavailableReasons: ['health_check_failed:codex:acp_host_transport_not_ready'],
+          transportKind: AdapterTransportKind.ACP_EXEC,
+          requestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+          diagnostics,
+        }),
+        capabilitySupportByCapability: new Map(),
+      },
+    ],
+    roleEvaluations: [
+      {
+        roleId: 'coder',
+        roleProfileId: 'default.coder',
+        required: true,
+        primarySurface: AdapterSurface.CODEX,
+        selectedSurface: AdapterSurface.CODEX,
+        selectedBy: CliAdapterRoleSelectionSource.PRIMARY,
+        unsupportedCapabilities: [],
+        degradedCapabilities: [],
+        unavailableReasons: ['health_check_failed:codex:acp_host_transport_not_ready'],
+        failureAttributions: ['environment_precondition'],
+        healthCheck: buildLayeredHealthCheckResult({
+          adapterId: 'codex-acp-host-protocol',
+          surfaceId: AdapterSurface.CODEX,
+          availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+          selectedEntrypoint: AdapterSurface.CODEX,
+          routeKey: 'cli.adapter.role.coder',
+          unavailableReasons: ['health_check_failed:codex:acp_host_transport_not_ready'],
+          transportKind: AdapterTransportKind.ACP_EXEC,
+          requestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+          diagnostics,
         }),
         status: CliGovernanceCheckStatus.WARN,
       },
@@ -371,5 +455,34 @@ describe('Cli adapter diagnostics runtime', () => {
           AdapterRequestCancellationMode.NOT_SUPPORTED &&
         roleRow?.launch_diagnostics?.selected_entrypoint === AdapterSurface.CODEX,
     });
+  });
+
+  it('adds acp_host_companion payloads and ACP readiness footnotes to verification artifacts', async () => {
+    const i18nRuntime = new I18nRuntime();
+    await i18nRuntime.initialize(DEFAULT_I18N_RUNTIME_CONFIG, 'en-US');
+    const runtime = new CliAdapterDiagnosticsRuntime(
+      (key, interpolation) => i18nRuntime.t(key, interpolation),
+      () => ({
+        environment_precondition: 2,
+      }),
+    );
+    const verification = createAcpVerificationFixture();
+    const payload = runtime.createAdapterVerificationArtifactPayload(verification) as {
+      tools?: Array<{ toolId?: string; acp_host_companion?: Record<string, unknown> }>;
+      roles?: Array<{ roleId?: string; acp_host_companion?: Record<string, unknown> }>;
+    };
+    const toolRow = payload.tools?.find((tool) => tool.toolId === AdapterSurface.CODEX);
+    const roleRow = payload.roles?.find((role) => role.roleId === 'coder');
+    const toolDetail = runtime.resolveToolProbeCheckDetail(verification.tools[0] as never);
+
+    expect(toolRow?.acp_host_companion).toEqual({
+      hostReadinessStatus: CliAcpHostReadinessStatus.RUNTIME_SERVICE_READY,
+      distributionBoundary: CliAcpHostDistributionBoundary.PACKAGED_DISTRIBUTION_READY,
+      companionStateSummary: 'runtime_service_and_distribution_ready',
+    });
+    expect(roleRow?.acp_host_companion).toEqual(toolRow?.acp_host_companion);
+    expect(toolDetail).toContain('acp_runtime=runtime_service_ready');
+    expect(toolDetail).toContain('acp_distribution=packaged_distribution_ready');
+    expect(toolDetail).toContain('acp_state=runtime_service_and_distribution_ready');
   });
 });

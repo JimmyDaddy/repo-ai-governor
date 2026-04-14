@@ -216,6 +216,7 @@ export class CliGovernanceRuntime {
       resolveCredentialRef: async (selector: string) => await this.resolveCredentialRef(selector),
       sharedProtocolCacheNamespace: `cli-governance:${this.options.workspace.workspaceRoot}`,
       localizeText: (english: string, chinese: string) => this.localizeText(english, chinese),
+      acpHostEvidenceSearchRoot: this.options.currentWorkingDirectory,
     });
     this.adapterVerificationRuntime = new CliAdapterVerificationRuntime(
       this.options.adaptersConfig,
@@ -2566,6 +2567,7 @@ export class CliGovernanceRuntime {
       resolveCredentialRef: async (selector: string) => await this.resolveCredentialRef(selector),
       sharedProtocolCacheNamespace: `cli-governance:${this.options.workspace.workspaceRoot}`,
       localizeText: (english: string, chinese: string) => this.localizeText(english, chinese),
+      acpHostEvidenceSearchRoot: this.options.currentWorkingDirectory,
     });
     const adapterVerificationRuntime = new CliAdapterVerificationRuntime(
       adaptersConfig,

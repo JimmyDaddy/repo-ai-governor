@@ -335,6 +335,12 @@ export const EN_US_TRANSLATIONS = {
         'Remote-api credential references cannot be materialized automatically; resolve them manually for: {{credentials}}.',
       authenticateAdapters:
         'Authenticate or refresh login for remote adapters before connect/doctor: {{credentials}}.',
+      enableAcpRuntimeService:
+        'Complete ACP runtime-service enablement and host handoff verification before relying on: {{toolIds}}.',
+      verifyAcpPackagedDistribution:
+        'Capture ACP packaged-distribution evidence and keep it transport-scoped for: {{toolIds}}.',
+      runAcpCleanRoomVerify:
+        'ACP runtime-service and packaged-distribution evidence exist for {{toolIds}}; run clean-room verify and keep support wording gated to evidence-backed surfaces.',
       investigateHealthChecks:
         'Investigate remote adapter health checks before unattended execution: {{healthChecks}}.',
       pullLocalModels:

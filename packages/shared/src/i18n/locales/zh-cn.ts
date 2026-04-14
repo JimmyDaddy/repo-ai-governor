@@ -286,6 +286,12 @@ export const ZH_CN_TRANSLATIONS = {
         '当前不会自动物化 remote-api credentialRef；请手动解析以下引用：{{credentials}}。',
       authenticateAdapters:
         '请先为以下远端 adapter 完成认证或刷新登录状态，再执行 connect/doctor：{{credentials}}。',
+      enableAcpRuntimeService:
+        '请先完成以下 ACP surface 的 runtime-service enablement 与 host handoff 验证，再依赖其执行：{{toolIds}}。',
+      verifyAcpPackagedDistribution:
+        '请先为以下 ACP surface 补齐 packaged-distribution 证据，并保持 transport-scoped 边界：{{toolIds}}。',
+      runAcpCleanRoomVerify:
+        '以下 ACP surface 已具备 runtime-service 与 packaged-distribution 证据；下一步请执行 clean-room verify，并仅在 evidence-backed surface 上提升支持口径：{{toolIds}}。',
       investigateHealthChecks:
         '请先排查以下远端 adapter 的健康检查结果，再进行无人值守执行：{{healthChecks}}。',
       pullLocalModels: '请先拉取或修正以下缺失的本地模型，再进行无人值守执行：{{models}}。',

@@ -27,6 +27,7 @@ import {
   expectNativeCliExecPreservedFacts,
   hasAgentHealthDiagnostic,
 } from '../../../../test/native-cli-exec-compatibility-harness.js';
+import { CLI_ACP_HOST_HEALTH_CHECK_FAILURE_DETAIL } from '../../src/constants/cli-acp-host.constant.js';
 import {
   CliAdapterRoleSelectionSource,
   CliGovernanceCheckStatus,
@@ -293,6 +294,67 @@ describe('Cli adapter verification runtime', () => {
     expect(
       codexTool?.unavailableReasons.some((reason) => reason.startsWith('command_missing:')),
     ).toBe(false);
+  });
+
+  it('emits ACP-specific next actions instead of generic probe-unavailable hints for acp_exec surfaces', async () => {
+    const i18nRuntime = new I18nRuntime();
+    await i18nRuntime.initialize(DEFAULT_I18N_RUNTIME_CONFIG, 'en-US');
+    const adaptersConfig: AdaptersConfig = {
+      roles: [
+        {
+          roleId: 'coder',
+          roleProfileId: DefaultRoleProfileId.CODER,
+          requiredCapabilities: [AgentCapability.TOOL_CALLING],
+          required: true,
+        },
+      ],
+      routing: {
+        roleBindings: {
+          coder: {
+            primarySurface: AdapterSurface.CODEX,
+          },
+        },
+      },
+      tools: [
+        {
+          toolId: AdapterSurface.CODEX,
+          enabled: true,
+          availability: AdapterAvailability.AVAILABLE,
+          transport: AdapterTransportKind.ACP_EXEC,
+        },
+      ],
+    };
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(adaptersConfig);
+    const localProbeRuntime = new CliLocalModelProbeRuntime(
+      undefined,
+      async () => undefined,
+      (error) => standardizeError(error).message,
+    );
+    const runtime = new CliAdapterVerificationRuntime(
+      adaptersConfig,
+      (key, interpolation) => i18nRuntime.t(key, interpolation),
+      (error) => standardizeError(error).message,
+      adapterRoutingRuntime,
+      localProbeRuntime,
+      createMockSecretService(),
+      (english: string) => english,
+      {},
+    );
+
+    const verification = await runtime.resolveAdapterVerification();
+
+    expect(verification.nextActions).toContain(
+      'Complete ACP runtime-service enablement and host handoff verification before relying on: codex.',
+    );
+    expect(verification.nextActions).toContain(
+      'Capture ACP packaged-distribution evidence and keep it transport-scoped for: codex.',
+    );
+    expect(verification.nextActions).not.toContain(
+      'Probe/login dependencies are unavailable for: codex.',
+    );
+    expect(verification.nextActions).not.toContain(
+      `Investigate remote adapter health checks before unattended execution: ${CLI_ACP_HOST_HEALTH_CHECK_FAILURE_DETAIL}.`,
+    );
   });
 
   it('aggregates configuration_missing attribution from extracted verification runtime', async () => {

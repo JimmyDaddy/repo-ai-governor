@@ -17,6 +17,10 @@ import {
   LocalModelProvider,
 } from '@repo-ai-governor/shared';
 import { expectNativeCliExecPreservedFacts } from '../../../../test/native-cli-exec-compatibility-harness.js';
+import {
+  CliAcpHostDistributionBoundary,
+  CliAcpHostReadinessStatus,
+} from '../../src/constants/cli-acp-host.constant.js';
 import { CliAgentOnboardingPreset } from '../../src/constants/cli-agent-onboarding.constant.js';
 import {
   CliAdapterRoleSelectionSource,
@@ -444,11 +448,150 @@ describe('CliAgentOnboardingRuntime', () => {
         model: 'gpt-5',
         credential_mode: AdapterCredentialSource.ENV_EXPLICIT,
         endpoint_source: AdapterEndpointSource.VENDOR_DEFAULT,
+        acp_host_companion: {
+          hostReadinessStatus: CliAcpHostReadinessStatus.BASELINE_ONLY,
+          distributionBoundary: CliAcpHostDistributionBoundary.PACKAGED_DISTRIBUTION_PENDING,
+          companionStateSummary: 'runtime_service_enablement_pending',
+        },
+      }),
+    ]);
+    expect(onboardingPayload.enabled_tools).toEqual([
+      expect.objectContaining({
+        acp_host_companion: {
+          hostReadinessStatus: CliAcpHostReadinessStatus.BASELINE_ONLY,
+          distributionBoundary: CliAcpHostDistributionBoundary.PACKAGED_DISTRIBUTION_PENDING,
+          companionStateSummary: 'runtime_service_enablement_pending',
+        },
       }),
     ]);
     expect(
       (onboardingPayload.enabled_tools[0] as Record<string, unknown>).launch_diagnostics,
     ).toBeUndefined();
+  });
+
+  it('summarizes ACP readiness evidence and projects companion payloads into verify matrices', () => {
+    const runtime = new CliAgentOnboardingRuntime();
+    const sourceConfig = createGovernorConfigFixture();
+    sourceConfig.adapters.tools = [
+      {
+        toolId: AdapterSurface.CODEX,
+        enabled: true,
+        availability: AdapterAvailability.AVAILABLE,
+        transport: AdapterTransportKind.ACP_EXEC,
+      },
+    ];
+    const healthCheck = buildLayeredHealthCheckResult({
+      adapterId: 'codex-acp-host-protocol',
+      surfaceId: AdapterSurface.CODEX,
+      availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+      selectedEntrypoint: AdapterSurface.CODEX,
+      routeKey: 'cli.adapter.probe.codex',
+      unavailableReasons: ['health_check_failed:codex:acp_host_transport_not_ready'],
+      transportKind: AdapterTransportKind.ACP_EXEC,
+      requestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+      diagnostics: [
+        {
+          layer: 'protocol',
+          status: 'pass',
+          code: 'protocol.acp_host_readiness_status',
+          detail: 'runtime_service_ready',
+        },
+        {
+          layer: 'protocol',
+          status: 'pass',
+          code: 'protocol.acp_distribution_boundary',
+          detail: 'packaged_distribution_ready',
+        },
+        {
+          layer: 'protocol',
+          status: 'pass',
+          code: 'protocol.acp_companion_state_summary',
+          detail: 'runtime_service_and_distribution_ready',
+        },
+      ],
+    });
+    const verification = {
+      overallStatus: CliGovernanceCheckStatus.WARN,
+      tools: [
+        {
+          toolId: AdapterSurface.CODEX,
+          enabled: true,
+          configuredAvailability: AdapterAvailability.AVAILABLE,
+          availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+          unavailableReasons: ['health_check_failed:codex:acp_host_transport_not_ready'],
+          healthCheck,
+          capabilitySupportByCapability: new Map(),
+          failureAttributions: ['environment_precondition'],
+        },
+      ],
+      roleEvaluations: [
+        {
+          roleId: 'coder',
+          roleProfileId: 'coder-default',
+          required: true,
+          primarySurface: AdapterSurface.CODEX,
+          selectedSurface: AdapterSurface.CODEX,
+          selectedBy: CliAdapterRoleSelectionSource.PRIMARY,
+          unsupportedCapabilities: [],
+          degradedCapabilities: [],
+          unavailableReasons: ['health_check_failed:codex:acp_host_transport_not_ready'],
+          healthCheck,
+          failureAttributions: ['environment_precondition'],
+          status: CliGovernanceCheckStatus.WARN,
+        },
+      ],
+      requiredRoleCount: 1,
+      requiredRoleFailedCount: 0,
+      degradedRoleCount: 1,
+      fallbackRoleCount: 0,
+      nextActions: ['Run ACP clean-room verify before support uplift.'],
+    };
+
+    const onboardingPayload = runtime.createOnboardingContractPayload({
+      commandName: 'doctor',
+      executionId: 'doctor-acp-ready',
+      workspaceId: 'workspace-1',
+      verificationStatus: CliGovernanceCheckStatus.WARN,
+      nextActions: verification.nextActions,
+      enabledTools: [AdapterSurface.CODEX],
+      adaptersConfig: sourceConfig.adapters,
+      verification,
+      dryRun: false,
+      overwrite: false,
+      singleToolAllRoles: false,
+    });
+    const verifyPayload = runtime.createVerifyMatrixPayload({
+      commandName: 'verify',
+      executionId: 'verify-acp-ready',
+      verification,
+      adaptersConfig: sourceConfig.adapters,
+      nextActions: verification.nextActions,
+    });
+
+    expect(onboardingPayload.diagnostic_summary).toContain('acp_runtime_ready=1/1');
+    expect(onboardingPayload.diagnostic_summary).toContain('acp_distribution_ready=1/1');
+    expect(verifyPayload.diagnostic_summary).toContain('acp_runtime_ready=1/1');
+    expect(verifyPayload.diagnostic_summary).toContain('acp_distribution_ready=1/1');
+    expect(verifyPayload.tool_matrix).toEqual([
+      expect.objectContaining({
+        tool: AdapterSurface.CODEX,
+        acp_host_companion: {
+          hostReadinessStatus: 'runtime_service_ready',
+          distributionBoundary: 'packaged_distribution_ready',
+          companionStateSummary: 'runtime_service_and_distribution_ready',
+        },
+      }),
+    ]);
+    expect(verifyPayload.role_binding_matrix).toEqual([
+      expect.objectContaining({
+        primary_tool: AdapterSurface.CODEX,
+        acp_host_companion: {
+          hostReadinessStatus: 'runtime_service_ready',
+          distributionBoundary: 'packaged_distribution_ready',
+          companionStateSummary: 'runtime_service_and_distribution_ready',
+        },
+      }),
+    ]);
   });
 
   it('distinguishes inferred remote_api selection from an explicit transport lock', () => {

@@ -333,14 +333,14 @@ deliveries:
     rollout_status: planned
     owner: runtime
     project_ref: project-105-acp-host-facing-transport-rollout
-    sprint_ref: sprint-002-distribution-and-runtime-service-enablement
+    sprint_ref: sprint-003-clean-room-verify-support-truth-and-rollout-closeout
     task_ids:
-      - TK-885
-      - TK-886
-      - TK-887
+      - TK-888
+      - TK-889
+      - TK-890
     project_plan_path: .repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/plan.md
-    sprint_plan_path: .repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-002-distribution-and-runtime-service-enablement/plan.md
-    task_csv_path: .repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-002-distribution-and-runtime-service-enablement/tasks/tasks.csv
+    sprint_plan_path: .repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-003-clean-room-verify-support-truth-and-rollout-closeout/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-003-clean-room-verify-support-truth-and-rollout-closeout/tasks/tasks.csv
     handoff_artifact_path: .repo-ai-governor/context/dev/project-101-cli-exec-followup-solution-review-and-promotion/sprint-004-acp-host-facing-transport-formalization/tasks/DA-855-acp-host-facing-transport-formalization-promotion-cutover.md
     rollout_artifacts:
       - .repo-ai-governor/context/dev/project-101-cli-exec-followup-solution-review-and-promotion/plan.md

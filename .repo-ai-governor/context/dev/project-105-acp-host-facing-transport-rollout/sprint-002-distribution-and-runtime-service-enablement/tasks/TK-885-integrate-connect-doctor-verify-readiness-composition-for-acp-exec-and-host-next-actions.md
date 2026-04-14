@@ -1,7 +1,7 @@
 # TK-885 integrate connect doctor verify readiness composition for acp_exec and host next-actions
 
-- Status: in_progress
-- Date: 2026-04-14
+- Status: completed
+- Date: 2026-04-15
 - Owner: AI-Agent
 - Priority: P1
 - Project: `project-105-acp-host-facing-transport-rollout`
@@ -40,17 +40,24 @@
 
 ## 7. Development Verification
 
-1. 待激活后补充 ACP readiness composition verification。
+1. `pnpm vitest run apps/cli/test/runtime/adapter-routing-runtime.test.ts apps/cli/test/runtime/agent-onboarding-runtime.test.ts apps/cli/test/runtime/adapter-diagnostics-runtime.test.ts apps/cli/test/runtime/adapter-verification-runtime.test.ts`
+2. `pnpm run build`
+3. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
 
 ## 8. Delivery Verification
 
-1. 待激活后补充 rollout-window delivery verification与治理检查。
+1. `node ./scripts/governance/sync-task-ledger.js --tasks-dir ".repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-002-distribution-and-runtime-service-enablement/tasks"`
+2. `node ./scripts/governance/check-task-ledger-sync.js`
+3. `node ./scripts/governance/check-sprint-plan-status-sync.js`
+4. `node ./scripts/governance/check-code-review-status-sync.js`
 
 ## 9. 执行记录
 
 1. 2026-04-14：任务创建，状态初始化为 `planned`。
 2. 2026-04-15：`sprint-001` clean closeout 完成后，当前任务切换为 `in_progress`，并作为 `project-105 / sprint-002` 的 implementation 入口；下一步先本地预留 `CR-001`，再开始 ACP readiness composition 与 host next-actions implementation。
+3. 2026-04-15：已把 ACP host companion/evidence runtime 接到 `connect / doctor / verify` readiness composition，`enabled_tools[] / tool_transport_matrix / verify matrix / diagnostics artifact` 现在都会稳定投影 `acp_host_companion`，`diagnostic_summary` 也会机械带出 ACP runtime/distribution readiness 计数。当前实现边界完成，进入 `CR-001` fresh reviewer loop。
 
 ## 10. 产出
 
-1. 待激活：ACP readiness composition artifacts to be defined in rollout window。
+1. ACP readiness composition implementation in `apps/cli/src/runtime/{cli-acp-host-protocol,cli-acp-host-evidence-runtime,cli-acp-host-companion-runtime,agent-onboarding-runtime,adapter-diagnostics-runtime,adapter-verification-runtime}.ts`
+2. Focused ACP readiness coverage in `apps/cli/test/runtime/{adapter-routing-runtime,agent-onboarding-runtime,adapter-diagnostics-runtime,adapter-verification-runtime}.test.ts`

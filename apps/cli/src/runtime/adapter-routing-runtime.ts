@@ -63,6 +63,7 @@ export class CliAdapterRoutingRuntime {
       resolveCredentialRef?: (selector: string) => Promise<string | null>;
       sharedProtocolCacheNamespace?: string;
       localizeText?: (english: string, chinese: string) => string;
+      acpHostEvidenceSearchRoot?: string | null;
     } = {},
   ) {}
 
@@ -330,6 +331,7 @@ export class CliAdapterRoutingRuntime {
         surfaceId: surface,
         localizeText: this.options.localizeText,
         unavailableReasons: adapterOptions.unavailableReasons,
+        acpHostEvidenceSearchRoot: this.options.acpHostEvidenceSearchRoot,
       });
     }
 
@@ -423,6 +425,7 @@ export class CliAdapterRoutingRuntime {
             '__adapter-routing-runtime-zh__',
           )
         : null,
+      acpHostEvidenceSearchRoot: this.options.acpHostEvidenceSearchRoot ?? null,
       remoteApi: toolConfig?.remoteApi ?? null,
       localModel: toolConfig?.localModel ?? null,
     });

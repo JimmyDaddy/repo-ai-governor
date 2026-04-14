@@ -1,6 +1,6 @@
 # sprint-003-clean-room-verify-support-truth-and-rollout-closeout 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-14
 - Sprint Goal: 执行 clean-room verify、support/docs truth uplift，并完成 rollout closeout。
 - Project: `project-105-acp-host-facing-transport-rollout`
@@ -19,7 +19,7 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-888 | execute clean-room ACP verification and distribution runtime evidence capture | TK-887 | planned |
+| TK-888 | execute clean-room ACP verification and distribution runtime evidence capture | TK-887 | in_progress |
 | TK-889 | uplift ACP adopter-facing support docs truth only for evidence-backed surfaces while preserving cli_exec separation | TK-888 | planned |
 | TK-890 | finalize project-105 closeout and delivery evidence handoff | TK-888、TK-889、activation-time local CR-001 | planned |
 
@@ -34,3 +34,4 @@
 1. 激活后先预留本地 `CR-001`，再开始 implementation 与 reviewer loop。
 2. 当前 sprint 才允许处理 adopter-facing support/docs truth uplift；前置 sprint 不得提前宣称完成。
 3. `TK-890` 负责 `project-105` final closeout，但只有在 sprint-003 local `CR-001` clean 后才允许完成。
+4. 2026-04-15：`sprint-002` clean closeout 已完成，当前 sprint 已切换为 active primary surface；`TK-888` 进入 `in_progress`，下一步先本地预留 `CR-001`，再开始 clean-room ACP verify 与 evidence capture implementation。

@@ -13,13 +13,11 @@ import {
   AdapterTransportKind,
   AdapterVendorBindingKind,
 } from '@repo-ai-governor/shared';
-import {
-  CLI_ACP_HOST_COMPANION_STATE_SUMMARY,
-  CliAcpHostDiagnosticCode,
-  CliAcpHostDistributionBoundary,
-  CliAcpHostReadinessStatus,
-} from '../constants/cli-acp-host.constant.js';
 import type { CliAdapterVerificationResolution } from '../types/interfaces/index.js';
+import {
+  type CliAcpHostCompanionPayload,
+  CliAcpHostCompanionRuntime,
+} from './cli-acp-host-companion-runtime.js';
 
 /**
  * Adapts core agent projection services into CLI/report-friendly view payloads.
@@ -27,6 +25,7 @@ import type { CliAdapterVerificationResolution } from '../types/interfaces/index
 export class CliAgentProjectionRuntime {
   public constructor(
     private readonly projectionService: AgentProjectionService = new AgentProjectionService(),
+    private readonly acpHostCompanionRuntime: CliAcpHostCompanionRuntime = new CliAcpHostCompanionRuntime(),
   ) {}
 
   public createDescriptorsFromRoleEvaluations(options: {
@@ -320,36 +319,20 @@ export class CliAgentProjectionRuntime {
     selectedTransport: AdapterTransportKind | null,
     healthCheck: CliAdapterVerificationResolution['roleEvaluations'][number]['healthCheck'],
   ): AgentDescriptorAcpHostCompanion | null {
-    if (selectedTransport !== AdapterTransportKind.ACP_EXEC) {
-      return null;
-    }
-
-    return {
-      hostReadinessStatus:
-        this.findHealthCheckDiagnosticDetail(
-          healthCheck,
-          CliAcpHostDiagnosticCode.HOST_READINESS_STATUS,
-        ) ?? CliAcpHostReadinessStatus.BASELINE_ONLY,
-      distributionBoundary:
-        this.findHealthCheckDiagnosticDetail(
-          healthCheck,
-          CliAcpHostDiagnosticCode.DISTRIBUTION_BOUNDARY,
-        ) ?? CliAcpHostDistributionBoundary.PACKAGED_DISTRIBUTION_PENDING,
-      companionStateSummary:
-        this.findHealthCheckDiagnosticDetail(
-          healthCheck,
-          CliAcpHostDiagnosticCode.COMPANION_STATE_SUMMARY,
-        ) ?? CLI_ACP_HOST_COMPANION_STATE_SUMMARY,
-    };
+    const companion = this.acpHostCompanionRuntime.createCompanionPayload({
+      transportKind: selectedTransport,
+      healthCheck,
+    });
+    return companion ? this.toDescriptorAcpHostCompanion(companion) : null;
   }
 
-  private findHealthCheckDiagnosticDetail(
-    healthCheck: CliAdapterVerificationResolution['roleEvaluations'][number]['healthCheck'],
-    code: CliAcpHostDiagnosticCode,
-  ): string | null {
-    const diagnostic = healthCheck?.diagnostics.find((candidate) => candidate.code === code);
-    return typeof diagnostic?.detail === 'string' && diagnostic.detail.length > 0
-      ? diagnostic.detail
-      : null;
+  private toDescriptorAcpHostCompanion(
+    companion: CliAcpHostCompanionPayload,
+  ): AgentDescriptorAcpHostCompanion {
+    return {
+      hostReadinessStatus: companion.hostReadinessStatus,
+      distributionBoundary: companion.distributionBoundary,
+      companionStateSummary: companion.companionStateSummary,
+    };
   }
 }

@@ -32,6 +32,7 @@ import {
   CliAcpHostDistributionBoundary,
   CliAcpHostReadinessStatus,
 } from '../constants/cli-acp-host.constant.js';
+import { CliAcpHostEvidenceRuntime } from './cli-acp-host-evidence-runtime.js';
 
 const CLI_ACP_HOST_ROLE = 'coder';
 const CLI_ACP_HOST_ROLE_PROFILE_ID = 'coder-default';
@@ -70,6 +71,7 @@ interface CliAcpHostProtocolOptions {
   availabilityStatus?: AgentAvailabilityStatus;
   localizeText?: (english: string, chinese: string) => string;
   unavailableReasons?: string[];
+  acpHostEvidenceSearchRoot?: string | null;
 }
 
 /**
@@ -78,10 +80,14 @@ interface CliAcpHostProtocolOptions {
  */
 export class CliAcpHostProtocol extends AgentProtocol {
   private readonly localizeText: (english: string, chinese: string) => string;
+  private readonly evidenceRuntime: CliAcpHostEvidenceRuntime | null;
 
   public constructor(private readonly options: CliAcpHostProtocolOptions) {
     super();
     this.localizeText = options.localizeText ?? DEFAULT_LOCALIZE_TEXT;
+    this.evidenceRuntime = options.acpHostEvidenceSearchRoot
+      ? new CliAcpHostEvidenceRuntime(options.acpHostEvidenceSearchRoot)
+      : null;
   }
 
   public async probe(request: AgentProbeRequest): Promise<AgentProbeResult> {
@@ -157,6 +163,7 @@ export class CliAcpHostProtocol extends AgentProtocol {
   }
 
   private createAcpHostDiagnostics(): AgentHealthCheckDiagnostic[] {
+    const evidence = this.evidenceRuntime?.resolveEvidence(this.options.surfaceId);
     return [
       {
         layer: 'protocol',
@@ -168,19 +175,21 @@ export class CliAcpHostProtocol extends AgentProtocol {
         layer: 'protocol',
         status: 'warn',
         code: CliAcpHostDiagnosticCode.HOST_READINESS_STATUS,
-        detail: CliAcpHostReadinessStatus.BASELINE_ONLY,
+        detail: evidence?.hostReadinessStatus ?? CliAcpHostReadinessStatus.BASELINE_ONLY,
       },
       {
         layer: 'protocol',
         status: 'warn',
         code: CliAcpHostDiagnosticCode.DISTRIBUTION_BOUNDARY,
-        detail: CliAcpHostDistributionBoundary.PACKAGED_DISTRIBUTION_PENDING,
+        detail:
+          evidence?.distributionBoundary ??
+          CliAcpHostDistributionBoundary.PACKAGED_DISTRIBUTION_PENDING,
       },
       {
         layer: 'protocol',
         status: 'warn',
         code: CliAcpHostDiagnosticCode.COMPANION_STATE_SUMMARY,
-        detail: CLI_ACP_HOST_COMPANION_STATE_SUMMARY,
+        detail: evidence?.companionStateSummary ?? CLI_ACP_HOST_COMPANION_STATE_SUMMARY,
       },
     ];
   }
