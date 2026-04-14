@@ -67,7 +67,7 @@ Notes:
 |---|---|---|
 | Bootstrap and audit (`init`, `doctor`, `check`) | Supported | Baseline external-adopter entry path for environment bootstrap and machine-readable governance facts. |
 | Managed repo installation lifecycle (`adopt list/apply/diff/verify/upgrade/remove`) | Supported | Preferred whole-repository installer path for adopter baselines. Built-in packs materialize managed host assets, guides, and install metadata under `.repo-ai-governor/adoption/installations/**`; built-in `adopt apply` does not require a pre-existing source-local `.codex/skills/**` tree, while `self-host-complete` remains an explicit `repo_local` template-bootstrap path. |
-| Adapter onboarding (`connect`, `verify`) | Supported | `connect` generates, diffs, and applies candidate configs; `verify --adapters` is the readiness gate before real execution. |
+| Adapter onboarding (`connect`, `doctor`) | Supported | `connect` generates, diffs, and applies candidate configs; `doctor --adapters` is the public readiness gate before real execution, and `doctor --adapters --fix` remains limited to safe local repairs. |
 | Governed execution (`plan`, `run`, `review`, `review-verify`) | Supported | `plan` supports `preview|commit`; the review chain persists audit artifacts and can synchronize a canonical `CR-xxx` lifecycle when the workspace exposes sprint task surfaces. |
 | Session shell (`repo-ai-governor`, `resume`) | Supported | Interactive TTY + `pretty` enters the session-first shell; `resume` can reattach the latest or named persisted session, while non-interactive surfaces stay on plain/json command semantics. |
 | Workflow and schema lifecycle (`workflow`, `upgrade`) | Supported | `workflow` supports `preview/create/edit`; `upgrade` supports `preview/apply/rollback` with explicit hand-off artifacts and confirmation gates. |
@@ -154,6 +154,7 @@ Notes:
 3. After `workspace execute` or `workspace rollback`, rerun `doctor` to confirm the active `workspaceRoot` instead of inferring success from directory layout alone.
 4. Rehearsal and pilot runs should use target repositories or isolated external temp directories; running workspace migration from the governor source repository can attach to the outer Git root and create misleading artifacts.
 5. `.tmp/project-052-sprint-002-command-rehearsal-summary.json` is the formal sprint-002 acceptance evidence for the repo-external upgrade/workspace closeout path.
+6. Support-truth refresh requests should include the latest `connect` / `doctor` diagnostics artifact path plus the readback of `verification_status`, `diagnostic_summary`, and `next_action(s)`; if the issue only appears on the execution path, add the latest `run --dry-run --trace` artifact path. Without that evidence, keep the current support row unchanged.
 
 ## 9. GA Support Truthfulness Snapshot (TK-596)
 

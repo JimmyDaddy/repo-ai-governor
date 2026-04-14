@@ -1,9 +1,23 @@
 # checklist
 
-- [ ] TK-879 apply the readiness evidence chain to local adoption readback and playbook-consumer surfaces
+- [x] TK-879 apply the readiness evidence chain to local adoption readback and playbook-consumer surfaces
   - 2026-04-14：任务创建，状态初始化为 `planned`。
   - 2026-04-14：`sprint-001` clean closeout 完成后，当前任务已切换为 `in_progress` 并作为 `sprint-002` 的 implementation 入口；下一步先本地预留 `CR-001`，再开始 playbook readback rollout。
-- [ ] TK-880 prepare support-evidence package and guardrails without uplifting support-matrix truth by default
+  - 2026-04-14：已预留 `CR-001` 并将 readiness evidence chain 写回 `docs/local-adoption-playbook*.md`，明确要求 local adoption readback 先读取 `verification_status / diagnostic_summary / next_action(s)`，再把 `launch_diagnostics` 作为 additive 细节消费。
+  - 2026-04-14：`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 ledger/governance sync checks 已通过；当前任务实现边界完成，等待 fresh reviewer loop。
+- [x] TK-880 prepare support-evidence package and guardrails without uplifting support-matrix truth by default
   - 2026-04-14：任务创建，状态初始化为 `planned`。
+  - 2026-04-14：已将 support-evidence handoff 最小包与“无证据不 uplift support truth”的 guardrail 写入 `docs/support-matrix*.md`，同时保持现有 support row 与 public support wording 不变。
+  - 2026-04-14：当前任务与 `TK-879` 共享同一 docs-only rollout window，并复用 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 ledger/governance sync evidence；实现边界已完成，等待 fresh reviewer loop。
 - [ ] TK-881 finalize project-104 closeout and delivery evidence handoff
   - 2026-04-14：任务创建，状态初始化为 `planned`。
+  - 2026-04-14：`CR-001` accepted findings 已修复并收口，`CR-002` latest fresh reviewer round clean；当前任务切换为 `in_progress`，下一步完成 sprint boundary closeout、local commit、project-final fresh review 与最终 delivery write-back。
+- [x] CR-001 sprint-002-playbook-readback-and-support-evidence-prep delegated review loop round 1
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 1 返回 2 条 accepted finding，指出 sprint-002 新增 docs guidance 把已删除的公开 `verify` 命令重新写回 playbook / support guardrail。
+  - 2026-04-14：main agent 已接受两条 finding，并将 docs readback / support-evidence guidance 改为只依赖公开 `connect` / `doctor` diagnostics artifacts；如果问题只出现在执行路径，再追加 `run --dry-run --trace` artifact。
+  - 2026-04-14：`node ./dist/bin/repo-ai-governor.js verify --adapters --output json` 已按预期复现 removed-command 错误，`node ./dist/bin/repo-ai-governor.js connect --help >/dev/null`、`node ./dist/bin/repo-ai-governor.js doctor --adapters --output json`、`pnpm run check` 与 governance sync checks 已通过；当前 round 收口为 `resolved`，下一步新开 fresh `CR-002` clean recheck。
+- [x] CR-002 sprint-002-playbook-readback-and-support-evidence-prep delegated recheck loop round 2
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer clean recheck 未发现新的 actionable finding，确认 sprint-002 当前 docs boundary 已不再依赖 removed public `verify` 命令。
+  - 2026-04-14：`pnpm run check`、公开命令边界 replay 与 governance sync checks 通过；当前 round 收口为 `resolved`，下一步进入 `TK-881` sprint/project closeout。

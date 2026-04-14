@@ -1,6 +1,6 @@
 # TK-879 apply the readiness evidence chain to local adoption readback and playbook-consumer surfaces
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-04-14
 - Owner: AI-Agent
 - Priority: P1
@@ -40,17 +40,24 @@
 
 ## 7. Development Verification
 
-1. 待激活后补充 playbook readback verification。
+1. `pnpm run build`
+2. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
 
 ## 8. Delivery Verification
 
-1. 待激活后补充 rollout-window delivery verification与治理检查。
+1. `node ./scripts/governance/check-task-ledger-sync.js`
+2. `node ./scripts/governance/check-sprint-plan-status-sync.js`
+3. `node ./scripts/governance/check-code-review-status-sync.js`
+4. `node ./scripts/governance/check-worktree-review-target.js`
 
 ## 9. 执行记录
 
 1. 2026-04-14：任务创建，状态初始化为 `planned`。
 2. 2026-04-14：`sprint-001` clean closeout 完成后，当前任务已切换为 `in_progress` 并作为 `sprint-002` 的 implementation 入口；下一步先本地预留 `CR-001`，再开始 playbook readback rollout。
+3. 2026-04-14：已预留 `CR-001` 并将 readiness evidence chain 写回 `docs/local-adoption-playbook*.md`，明确要求 local adoption readback 先读取 `verification_status / diagnostic_summary / next_action(s)`，再把 `launch_diagnostics` 作为 additive 细节消费。
+4. 2026-04-14：`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 ledger/governance sync checks 已通过；当前任务实现边界完成，等待 fresh reviewer loop。
 
 ## 10. 产出
 
-1. 待激活：local adoption readback artifacts to be defined in rollout window。
+1. `docs/local-adoption-playbook.md`
+2. `docs/local-adoption-playbook.zh-CN.md`

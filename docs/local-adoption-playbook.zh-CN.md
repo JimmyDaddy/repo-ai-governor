@@ -126,6 +126,29 @@ pnpm exec repo-ai-governor connect --tools claude-code --remote-api-model claude
 1. 显式 `remote_api` 选择是 environment-gated 的；出现 warn 不代表系统已经静默切回 `cli_exec`。
 2. `local-model` 是受能力约束的 fallback surface，不是需要 `tool_calling`、`structured_output`、`confirmation_gate` 路线的等价替代。
 
+### 在第一次真实执行前先把 readiness 链路读回来
+
+把命令产出的 diagnostics payload 当成事实来源。playbook 只负责解释这些字段，不会自己重算一套 readiness 真值。
+
+直接复用 onboarding 时已经在跑的命令：
+
+```bash
+pnpm exec repo-ai-governor connect --tools codex,claude-code --preset multi-tool-default --output json
+pnpm exec repo-ai-governor doctor --adapters --fix --output json
+pnpm exec repo-ai-governor doctor --adapters --output json
+```
+
+按这个顺序读字段：
+
+| 字段 | 读取位置 | 用法 |
+|---|---|---|
+| `verification_status` | 最新 `connect` 或 `doctor` diagnostics artifact 中的 `verificationMatrix.verification_status` | 把它当作刚刚这条公开 surface 的 readiness verdict。不要只因为命令退出成功，就自行推断成 `pass`。 |
+| `diagnostic_summary` | `verificationMatrix.diagnostic_summary` | 把它当成 required-role failure、fallback/degraded role 计数，以及 `doctor --fix` 的 `safe_local_fix=<n>` 活动摘要。`safe_local_fix` 只表示本地 workspace/config 修补发生过，不代表 CLI、auth 或 model 已经替你补好。 |
+| `next_action` / `next_actions` | `verificationMatrix.next_action` 与 `verificationMatrix.next_actions` | 把它们当作 canonical operator next steps。playbook 可以重组或解释，但不能凭空写出更绿的结论。 |
+| `launch_diagnostics` | 受影响 tool/role 对应的 `verificationMatrix.tool_transport_matrix[]` 与 `verificationMatrix.role_binding_matrix[]` 行 | 只有在先看完 readiness verdict 后，再用这些 additive 细节解释 `selected_entrypoint`、`shell_wrapped`、`process_tree_policy`、`spawn_error_code` 等事实。 |
+
+如果后面需要求助或申请 support-truth refresh，请把最新的 `connect` / `doctor` diagnostics artifact 路径，以及最新的 `verification_status`、`diagnostic_summary` 与 `next_action(s)` 一起保留下来；如果问题只会在执行路径上出现，再补上 `run --dry-run --trace` 的 artifact 路径。这就是最小的 evidence hand-off 包。
+
 ## 5. 共享配置和个人 secrets 要分开
 
 仓库级真值留在 workspace config；只属于某台机器或某个操作者的设置，用 `config` 和 `secret` 管。
@@ -267,7 +290,8 @@ pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/ho
 2. 重跑 `doctor --adapters --fix --output json`
 3. 重跑 `doctor --adapters --output json`
 4. 在 trace 产物看起来健康之前，优先使用 `run --dry-run --trace`
-5. 先查 `docs/support-matrix.zh-CN.md`，再判断某个 surface 是否正式 supported
+5. 在升级求助前，先读回 `verification_status`、`diagnostic_summary` 与 `next_action(s)`；`launch_diagnostics` 只作为被选路由的补充细节
+6. 先查 `docs/support-matrix.zh-CN.md`，再判断某个 surface 是否正式 supported
 
 ## 11. 接下来读什么
 

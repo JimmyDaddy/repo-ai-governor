@@ -37,9 +37,9 @@
 | TK-859 | sprint-001 | implement cli-exec onboarding and adoption readiness rollout baseline | rollout/planned | DA-852 | completed |
 | TK-877 | sprint-001 | compose verification_status diagnostic_summary and next_action(s) from canonical onboarding probe truth | readiness/composition | TK-859 | completed |
 | TK-878 | sprint-001 | sprint-001 exit acceptance and sprint-002 activation handoff | sprint/closeout | TK-859、TK-877、activation-time local CR-001 | completed |
-| TK-879 | sprint-002 | apply the readiness evidence chain to local adoption readback and playbook-consumer surfaces | docs/readback | TK-878 | in_progress |
-| TK-880 | sprint-002 | prepare support-evidence package and guardrails without uplifting support-matrix truth by default | support/evidence | TK-879 | planned |
-| TK-881 | sprint-002 | finalize project-104 closeout and delivery evidence handoff | closeout/delivery | TK-879、TK-880、activation-time local CR-001 | planned |
+| TK-879 | sprint-002 | apply the readiness evidence chain to local adoption readback and playbook-consumer surfaces | docs/readback | TK-878 | completed |
+| TK-880 | sprint-002 | prepare support-evidence package and guardrails without uplifting support-matrix truth by default | support/evidence | TK-879 | completed |
+| TK-881 | sprint-002 | finalize project-104 closeout and delivery evidence handoff | closeout/delivery | TK-879、TK-880、activation-time local CR-001 | in_progress |
 
 ## 4. 依赖产物策略
 
@@ -60,6 +60,8 @@
 2. 2026-04-14：`project-104` 已扩展为两阶段 execution-ready scaffold，并与 `project-103` 的推荐前置顺序对齐。
 3. 2026-04-14：`project-103` final closeout 完成后，当前 project 已切换为 active，并将 `sprint-001` 激活为新的 primary implementation surface。
 4. 2026-04-14：`sprint-001` 已在 `CR-001` finding round + `CR-002` clean recheck 后完成 closeout，并将 `sprint-002` 激活为新的 primary execution surface。
+5. 2026-04-14：`sprint-002` 已预留本地 `CR-001`，并完成 playbook readback / support-evidence docs boundary；当前等待 fresh reviewer loop 进入 sprint clean 收口阶段。
+6. 2026-04-14：`CR-001` 已在 accepted docs fixes 后收口，`CR-002` latest fresh recheck clean；当前进入 sprint boundary closeout、local commit 与 project-final review activation 窗口。
 
 ## 7. 里程碑记录入口
 

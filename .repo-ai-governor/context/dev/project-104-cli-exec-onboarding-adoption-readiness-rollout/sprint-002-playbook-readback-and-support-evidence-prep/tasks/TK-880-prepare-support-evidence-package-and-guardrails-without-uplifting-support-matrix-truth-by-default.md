@@ -1,6 +1,6 @@
 # TK-880 prepare support-evidence package and guardrails without uplifting support-matrix truth by default
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-14
 - Owner: AI-Agent
 - Priority: P1
@@ -40,16 +40,23 @@
 
 ## 7. Development Verification
 
-1. 待激活后补充 support-evidence preparation verification。
+1. `pnpm run build`
+2. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
 
 ## 8. Delivery Verification
 
-1. 待激活后补充 rollout-window delivery verification与治理检查。
+1. `node ./scripts/governance/check-task-ledger-sync.js`
+2. `node ./scripts/governance/check-sprint-plan-status-sync.js`
+3. `node ./scripts/governance/check-code-review-status-sync.js`
+4. `node ./scripts/governance/check-worktree-review-target.js`
 
 ## 9. 执行记录
 
 1. 2026-04-14：任务创建，状态初始化为 `planned`。
+2. 2026-04-14：已将 support-evidence handoff 最小包与“无证据不 uplift support truth”的 guardrail 写入 `docs/support-matrix*.md`，同时保持现有 support row 与 public support wording 不变。
+3. 2026-04-14：当前任务与 `TK-879` 共享同一 docs-only rollout window，并复用 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 ledger/governance sync evidence；实现边界已完成，等待 fresh reviewer loop。
 
 ## 10. 产出
 
-1. 待激活：support-evidence preparation artifacts to be defined in rollout window。
+1. `docs/support-matrix.md`
+2. `docs/support-matrix.zh-CN.md`

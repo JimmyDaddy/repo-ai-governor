@@ -67,7 +67,7 @@
 |---|---|---|
 | 初始化与审计（`init`、`doctor`、`check`） | Supported | 面向外部 adopter 的基线入口，用于环境初始化与机器可读治理事实输出。 |
 | 受管仓库安装生命周期（`adopt list/apply/diff/verify/upgrade/remove`） | Supported | 面向 adopter baseline 的首选整仓安装路径。内置 pack 会把受管宿主资产、guide 与安装元数据写到 `.repo-ai-governor/adoption/installations/**`；内置 `adopt apply` 不要求目标仓库预先存在 source-local `.codex/skills/**`，而 `self-host-complete` 仍保持显式 `repo_local` template-bootstrap 边界。 |
-| 多工具接入（`connect`、`verify`） | Supported | `connect` 负责生成、diff、apply candidate 配置；`verify --adapters` 是真实执行前的 readiness gate。 |
+| 多工具接入（`connect`、`doctor`） | Supported | `connect` 负责生成、diff、apply candidate 配置；`doctor --adapters` 是真实执行前的公开 readiness gate，而 `doctor --adapters --fix` 仍只允许 safe local repairs。 |
 | 受治理执行（`plan`、`run`、`review`、`review-verify`） | Supported | `plan` 支持 `preview|commit`；review 链会持久化审计产物，并在 workspace 暴露 sprint task surface 时同步 canonical `CR-xxx` 生命周期。 |
 | Session shell（`repo-ai-governor`、`resume`） | Supported | 在交互式 TTY + `pretty` 模式下进入 session-first shell；`resume` 可恢复最近一次或指定的持久化会话，而非交互面仍保持 plain/json 命令语义。 |
 | 流程与 schema 生命周期（`workflow`、`upgrade`） | Supported | `workflow` 支持 `preview/create/edit`；`upgrade` 支持 `preview/apply/rollback`，并附带显式 hand-off artifact 与确认闸口。 |
@@ -154,6 +154,7 @@
 3. `workspace execute` 或 `workspace rollback` 之后，应重新执行 `doctor` 来确认活动 `workspaceRoot`，不要只凭目录结构变化推断成功。
 4. rehearsal 或 pilot 应在目标仓库或隔离的外部临时目录中执行；若直接从 governor 源仓库发起 workspace migration，命令可能附着到外层 Git root 并产生误导性产物。
 5. `.tmp/project-052-sprint-002-command-rehearsal-summary.json` 是 sprint-002 repo-external upgrade/workspace closeout 路径的正式 acceptance evidence。
+6. 任何 support-truth refresh 请求都应附带最新的 `connect` / `doctor` diagnostics artifact 路径，以及 `verification_status`、`diagnostic_summary`、`next_action(s)` 的读回结果；如果问题只出现在执行路径上，再补上最新的 `run --dry-run --trace` artifact 路径。没有这些证据时，应保持当前 support row 不变。
 
 ## 9. GA Support Truthfulness 快照（TK-596）
 
