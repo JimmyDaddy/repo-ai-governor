@@ -12,17 +12,23 @@ import type {
   CliInteractionPrompt,
   CliRoleStageProgress,
 } from '../types/index.js';
+import { CliLaunchDiagnosticsProjectionRuntime } from './cli-launch-diagnostics-projection-runtime.js';
 
 /**
  * Owns CLI-local adapter diagnostics shaping so payload/progress/prompt builders stay outside the facade.
  */
 export class CliAdapterDiagnosticsRuntime {
+  private readonly launchDiagnosticsProjectionRuntime: CliLaunchDiagnosticsProjectionRuntime;
+
   public constructor(
     private readonly translate: (key: string, interpolation?: Record<string, string>) => string,
     private readonly createFailureAttributionSummary: (
       verification: CliAdapterVerificationResolution,
     ) => Record<string, number>,
-  ) {}
+    launchDiagnosticsProjectionRuntime = new CliLaunchDiagnosticsProjectionRuntime(),
+  ) {
+    this.launchDiagnosticsProjectionRuntime = launchDiagnosticsProjectionRuntime;
+  }
 
   /**
    * Resolves adapter tool-level check status from one probe snapshot.
@@ -102,6 +108,8 @@ export class CliAdapterDiagnosticsRuntime {
   public createAdapterVerificationArtifactPayload(
     verification: CliAdapterVerificationResolution,
   ): Record<string, unknown> {
+    const toolSnapshotBySurface = new Map(verification.tools.map((tool) => [tool.toolId, tool]));
+
     return {
       overallStatus: verification.overallStatus,
       requiredRoleCount: verification.requiredRoleCount,
@@ -112,32 +120,53 @@ export class CliAdapterDiagnosticsRuntime {
       nextActions: [...verification.nextActions],
       secretBackends: verification.secretBackends,
       credentialReferences: verification.credentialReferences,
-      tools: verification.tools.map((tool) => ({
-        toolId: tool.toolId,
-        enabled: tool.enabled,
-        configuredAvailability: tool.configuredAvailability,
-        availabilityStatus: tool.availabilityStatus,
-        unavailableReasons: tool.unavailableReasons,
-        healthCheck: tool.healthCheck,
-        failureAttributions: tool.failureAttributions,
-        capabilitySupportByCapability: Object.fromEntries(
-          tool.capabilitySupportByCapability.entries(),
-        ),
-      })),
-      roles: verification.roleEvaluations.map((role) => ({
-        roleId: role.roleId,
-        roleProfileId: role.roleProfileId,
-        required: role.required,
-        primarySurface: role.primarySurface,
-        selectedSurface: role.selectedSurface,
-        selectedBy: role.selectedBy,
-        unsupportedCapabilities: role.unsupportedCapabilities,
-        degradedCapabilities: role.degradedCapabilities,
-        unavailableReasons: role.unavailableReasons,
-        healthCheck: role.healthCheck,
-        failureAttributions: role.failureAttributions,
-        status: role.status,
-      })),
+      tools: verification.tools.map((tool) => {
+        const launchDiagnostics =
+          this.launchDiagnosticsProjectionRuntime.createLaunchDiagnosticsPayload({
+            transportKind: tool.healthCheck?.transportKind ?? null,
+            healthCheck: tool.healthCheck,
+          });
+
+        return {
+          toolId: tool.toolId,
+          enabled: tool.enabled,
+          configuredAvailability: tool.configuredAvailability,
+          availabilityStatus: tool.availabilityStatus,
+          unavailableReasons: tool.unavailableReasons,
+          healthCheck: tool.healthCheck,
+          failureAttributions: tool.failureAttributions,
+          capabilitySupportByCapability: Object.fromEntries(
+            tool.capabilitySupportByCapability.entries(),
+          ),
+          ...(launchDiagnostics ? { launch_diagnostics: launchDiagnostics } : {}),
+        };
+      }),
+      roles: verification.roleEvaluations.map((role) => {
+        const resolvedSurface = role.selectedSurface ?? role.primarySurface;
+        const roleToolHealthCheck =
+          toolSnapshotBySurface.get(resolvedSurface)?.healthCheck ?? role.healthCheck;
+        const launchDiagnostics =
+          this.launchDiagnosticsProjectionRuntime.createLaunchDiagnosticsPayload({
+            transportKind: roleToolHealthCheck?.transportKind ?? null,
+            healthCheck: roleToolHealthCheck,
+          });
+
+        return {
+          roleId: role.roleId,
+          roleProfileId: role.roleProfileId,
+          required: role.required,
+          primarySurface: role.primarySurface,
+          selectedSurface: role.selectedSurface,
+          selectedBy: role.selectedBy,
+          unsupportedCapabilities: role.unsupportedCapabilities,
+          degradedCapabilities: role.degradedCapabilities,
+          unavailableReasons: role.unavailableReasons,
+          healthCheck: role.healthCheck,
+          failureAttributions: role.failureAttributions,
+          status: role.status,
+          ...(launchDiagnostics ? { launch_diagnostics: launchDiagnostics } : {}),
+        };
+      }),
     };
   }
 

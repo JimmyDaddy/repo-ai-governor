@@ -248,6 +248,7 @@ describe('CliConnectCommand', () => {
           degradedRoleCount: 1,
           fallbackRoleCount: 1,
           nextActions: ['Install missing local command.'],
+          tools: [],
           roleEvaluations: [
             {
               roleId: 'planner',
@@ -281,6 +282,7 @@ describe('CliConnectCommand', () => {
             degradedRoleCount: 1,
             fallbackRoleCount: 1,
             nextActions: ['Install missing local command.'],
+            tools: [],
             roleEvaluations: [
               {
                 roleId: 'planner',
@@ -329,6 +331,16 @@ describe('CliConnectCommand', () => {
         status?: string;
         taskId?: string;
       };
+      const diagnosticsArtifactPath = String(
+        result.commandResult.artifacts?.find((artifact) => artifact.id === 'connect_diagnostics')
+          ?.path,
+      );
+      const diagnosticsPayload = JSON.parse(await readFile(diagnosticsArtifactPath, 'utf8')) as {
+        verificationMatrix?: {
+          execution_id?: string;
+          tool_transport_matrix?: unknown[];
+        };
+      };
 
       expect(result.reactCliViewModel?.title).toContain('[react-shell:connect]');
       expect(result.reactCliViewModel?.sections[0]?.lines).toContain(
@@ -345,6 +357,10 @@ describe('CliConnectCommand', () => {
         ),
       ).toBe(true);
       expect(result.reactCliViewModel?.agentProjectionPanel?.title).toBe('Agent projection');
+      expect(diagnosticsPayload.verificationMatrix?.execution_id).toBeDefined();
+      expect(Array.isArray(diagnosticsPayload.verificationMatrix?.tool_transport_matrix)).toBe(
+        true,
+      );
       expect(result.reactCliViewModel?.agentProjectionPanel?.summaryBadges).toEqual([
         'fallback=1',
         'degraded=1',
@@ -498,6 +514,7 @@ describe('CliConnectCommand', () => {
           degradedRoleCount: 0,
           fallbackRoleCount: 0,
           nextActions: [],
+          tools: [],
           roleEvaluations: [],
         }),
         resolveAdapterVerificationForConfig: async () => ({
@@ -507,6 +524,7 @@ describe('CliConnectCommand', () => {
           degradedRoleCount: 0,
           fallbackRoleCount: 0,
           nextActions: [],
+          tools: [],
           roleEvaluations: [],
         }),
         validateGovernorConfig: (candidate: unknown) =>
@@ -552,6 +570,7 @@ describe('CliConnectCommand', () => {
             degradedRoleCount: 0,
             fallbackRoleCount: 0,
             nextActions: [],
+            tools: [],
             roleEvaluations: [],
           };
         },
@@ -674,6 +693,7 @@ describe('CliConnectCommand', () => {
           degradedRoleCount: 0,
           fallbackRoleCount: 0,
           nextActions: [],
+          tools: [],
           roleEvaluations: [],
         }),
         resolveAdapterVerificationForConfig,

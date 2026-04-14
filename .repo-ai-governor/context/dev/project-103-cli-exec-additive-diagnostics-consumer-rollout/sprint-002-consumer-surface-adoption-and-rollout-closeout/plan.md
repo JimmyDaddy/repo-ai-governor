@@ -19,8 +19,8 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-874 | adopt launch_diagnostics across connect doctor verify and report surfaces and retire stderr-guess branches | TK-873 | in_progress |
-| TK-875 | produce scenario-driven evidence for spawn-failed parse-failed non-zero and signal consumer mappings | TK-874 | planned |
+| TK-874 | adopt launch_diagnostics across connect doctor verify and report surfaces and retire stderr-guess branches | TK-873 | completed |
+| TK-875 | produce scenario-driven evidence for spawn-failed parse-failed non-zero and signal consumer mappings | TK-874 | completed |
 | TK-876 | finalize project-103 closeout and delivery evidence handoff | TK-874、TK-875、activation-time local CR-001 | planned |
 
 ## 3. Exit Criteria
@@ -35,3 +35,5 @@
 2. 当前 sprint 只承接 consumer adoption、scenario evidence 与 closeout，不新增 minimum contract fields。
 3. `TK-876` 负责 `project-103` final closeout，但只有在 sprint-002 local `CR-001` clean 后才允许完成。
 4. 2026-04-14：`TK-873` 已完成 sprint-001 closeout 与 activation handoff；当前 sprint 已切换为 active，`TK-874` 作为新的 implementation 入口切换为 `in_progress`。
+5. 2026-04-14：`TK-874 / TK-875` 已完成 shared projection runtime、verificationMatrix/report surface wiring 与 spawn/parse/non-zero/signal consumer evidence；下一步进入本地 `CR-001` fresh reviewer loop。
+6. 2026-04-14：`CR-001` accepted findings 已修复，并由 `CR-002` latest fresh clean recheck 收口为 `resolved`；当前 sprint boundary 已通过 focused vitest、`pnpm run build`、`pnpm run test:packages`、ledger/CR sync checks 与 `pnpm run check`，下一步执行本地 sprint commit，随后进入 project-final review。

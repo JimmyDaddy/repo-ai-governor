@@ -269,6 +269,11 @@ export class CliConnectCommand implements CliCommandExecutor {
       presetId: runtimeDebugOptions.presetId,
       diagnosticSummary,
     });
+    const verificationMatrix = context.onboardingRuntime.createVerifyMatrixPayload({
+      executionId: connectId,
+      verification: adapterVerification,
+      adaptersConfig: effectiveCandidateConfig.adapters ?? context.options.adaptersConfig,
+    });
     this.emitProgress(context, {
       commandName: CliCommandName.CONNECT,
       row: {
@@ -328,6 +333,7 @@ export class CliConnectCommand implements CliCommandExecutor {
       candidateDiff: candidateArtifacts.diffSummary,
       mergeExplain: candidateArtifacts.mergeExplain,
       onboardingContract,
+      verificationMatrix,
       agentView,
       verification:
         context.adapterDiagnosticsRuntime.createAdapterVerificationArtifactPayload(

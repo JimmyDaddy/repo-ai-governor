@@ -31,21 +31,18 @@ import type {
   CliConnectToolTransportOverride,
 } from '../types/interfaces/cli-runtime-debug.interface.js';
 import type { CliAdapterVerificationResolution } from '../types/interfaces/index.js';
+import { CliLaunchDiagnosticsProjectionRuntime } from './cli-launch-diagnostics-projection-runtime.js';
 import { CliRemoteApiAuthoringDefaultsService } from './cli-remote-api-authoring-defaults-service.js';
 
 const MINIMAL_ROLE_IDS = new Set(['planner', 'coder', 'reviewer']);
 const CLI_EXEC_DEFAULT_REQUEST_TIMEOUT_MS = 30000;
-const CLI_EXEC_LAUNCH_DIAGNOSTIC_CODES = {
-  SHELL_WRAPPED: 'protocol.shell_wrapped',
-  PROCESS_TREE_POLICY: 'protocol.process_tree_policy',
-  SPAWN_ERROR_CODE: 'install.spawn_error_code',
-} as const;
 
 /**
  * Owns connect/doctor onboarding template shaping and report-friendly matrix payloads.
  */
 export class CliAgentOnboardingRuntime {
   private readonly remoteApiAuthoringDefaultsService = new CliRemoteApiAuthoringDefaultsService();
+  private readonly launchDiagnosticsProjectionRuntime = new CliLaunchDiagnosticsProjectionRuntime();
 
   public resolveSelectedTools(options: {
     requestedTools: AdapterSurface[];
@@ -182,7 +179,7 @@ export class CliAgentOnboardingRuntime {
       (options.adaptersConfig.tools ?? []).map((tool) => [tool.toolId, tool]),
     );
     const verificationToolById = new Map(
-      options.verification.tools.map((tool) => [tool.toolId, tool]),
+      (options.verification.tools ?? []).map((tool) => [tool.toolId, tool]),
     );
     const enabledToolRows = this.createEnabledToolRowsPayload({
       enabledTools: (options.adaptersConfig.tools ?? []).map((tool) => tool.toolId),
@@ -193,7 +190,7 @@ export class CliAgentOnboardingRuntime {
       execution_id: options.executionId,
       summary: options.verification.overallStatus,
       tool_transport_matrix: this.createToolTransportMatrixPayload(enabledToolRows),
-      tool_matrix: options.verification.roleEvaluations.map((roleEvaluation) => {
+      tool_matrix: (options.verification.roleEvaluations ?? []).map((roleEvaluation) => {
         const resolvedSurface = roleEvaluation.selectedSurface ?? roleEvaluation.primarySurface;
         const verificationTool = verificationToolById.get(resolvedSurface);
         const toolHealthCheck = verificationTool?.healthCheck ?? roleEvaluation.healthCheck;
@@ -201,6 +198,16 @@ export class CliAgentOnboardingRuntime {
           verificationTool?.unavailableReasons ?? roleEvaluation.unavailableReasons;
         const toolFailureAttributions =
           verificationTool?.failureAttributions ?? roleEvaluation.failureAttributions;
+        const resolvedTransportKind = this.resolveToolTransportKind(
+          resolvedSurface,
+          configuredToolById.get(resolvedSurface),
+          toolHealthCheck?.transportKind,
+        );
+        const launchDiagnostics =
+          this.launchDiagnosticsProjectionRuntime.createLaunchDiagnosticsPayload({
+            transportKind: resolvedTransportKind,
+            healthCheck: toolHealthCheck,
+          });
 
         return {
           tool: resolvedSurface,
@@ -212,15 +219,15 @@ export class CliAgentOnboardingRuntime {
             null,
           binding_status: roleEvaluation.status,
           capability_support:
-            roleEvaluation.unsupportedCapabilities.length > 0
+            (roleEvaluation.unsupportedCapabilities ?? []).length > 0
               ? 'unsupported'
-              : roleEvaluation.degradedCapabilities.length > 0
+              : (roleEvaluation.degradedCapabilities ?? []).length > 0
                 ? 'degraded'
                 : 'supported',
           selected_by: roleEvaluation.selectedBy,
-          binding_unavailable_reasons: [...roleEvaluation.unavailableReasons],
-          binding_failure_attributions: [...roleEvaluation.failureAttributions],
-          capability_gap: [...roleEvaluation.unsupportedCapabilities],
+          binding_unavailable_reasons: [...(roleEvaluation.unavailableReasons ?? [])],
+          binding_failure_attributions: [...(roleEvaluation.failureAttributions ?? [])],
+          capability_gap: [...(roleEvaluation.unsupportedCapabilities ?? [])],
           route_coverage: [
             roleEvaluation.primarySurface,
             ...(options.adaptersConfig.routing.roleBindings[roleEvaluation.roleId]
@@ -234,26 +241,41 @@ export class CliAgentOnboardingRuntime {
             failureAttributions: toolFailureAttributions,
           }),
           next_action: options.verification.nextActions[0] ?? null,
+          ...(launchDiagnostics ? { launch_diagnostics: launchDiagnostics } : {}),
         };
       }),
-      role_binding_matrix: options.verification.roleEvaluations.map((roleEvaluation) => ({
-        role_profile_id: roleEvaluation.roleProfileId,
-        primary_tool: roleEvaluation.primarySurface,
-        fallback_tools: [
-          ...(options.adaptersConfig.routing.roleBindings[roleEvaluation.roleId]
-            ?.fallbackSurfaces ?? []),
-        ],
-        binding_status: roleEvaluation.status,
-        invoke_liveness_diagnostics: this.createInvokeLivenessDiagnosticsPayload({
-          toolId: roleEvaluation.selectedSurface ?? roleEvaluation.primarySurface,
-          configuredTool: configuredToolById.get(
-            roleEvaluation.selectedSurface ?? roleEvaluation.primarySurface,
-          ),
-          healthCheck: roleEvaluation.healthCheck,
-          unavailableReasons: roleEvaluation.unavailableReasons,
-          failureAttributions: roleEvaluation.failureAttributions,
-        }),
-      })),
+      role_binding_matrix: (options.verification.roleEvaluations ?? []).map((roleEvaluation) => {
+        const resolvedSurface = roleEvaluation.selectedSurface ?? roleEvaluation.primarySurface;
+        const roleToolHealthCheck =
+          verificationToolById.get(resolvedSurface)?.healthCheck ?? roleEvaluation.healthCheck;
+        const launchDiagnostics =
+          this.launchDiagnosticsProjectionRuntime.createLaunchDiagnosticsPayload({
+            transportKind: this.resolveToolTransportKind(
+              resolvedSurface,
+              configuredToolById.get(resolvedSurface),
+              roleToolHealthCheck?.transportKind,
+            ),
+            healthCheck: roleToolHealthCheck,
+          });
+
+        return {
+          role_profile_id: roleEvaluation.roleProfileId,
+          primary_tool: roleEvaluation.primarySurface,
+          fallback_tools: [
+            ...(options.adaptersConfig.routing.roleBindings[roleEvaluation.roleId]
+              ?.fallbackSurfaces ?? []),
+          ],
+          binding_status: roleEvaluation.status,
+          invoke_liveness_diagnostics: this.createInvokeLivenessDiagnosticsPayload({
+            toolId: resolvedSurface,
+            configuredTool: configuredToolById.get(resolvedSurface),
+            healthCheck: roleEvaluation.healthCheck,
+            unavailableReasons: roleEvaluation.unavailableReasons,
+            failureAttributions: roleEvaluation.failureAttributions,
+          }),
+          ...(launchDiagnostics ? { launch_diagnostics: launchDiagnostics } : {}),
+        };
+      }),
     };
   }
 
@@ -278,10 +300,11 @@ export class CliAgentOnboardingRuntime {
         configuredTool,
         verificationTool?.healthCheck?.transportKind,
       );
-      const launchDiagnostics = this.createLaunchDiagnosticsPayload({
-        transportKind: resolvedTransportKind,
-        healthCheck: verificationTool?.healthCheck,
-      });
+      const launchDiagnostics =
+        this.launchDiagnosticsProjectionRuntime.createLaunchDiagnosticsPayload({
+          transportKind: resolvedTransportKind,
+          healthCheck: verificationTool?.healthCheck,
+        });
       return {
         tool_id: toolId,
         enabled: configuredTool?.enabled ?? true,
@@ -425,48 +448,6 @@ export class CliAgentOnboardingRuntime {
       unavailable_reasons: [...(options.unavailableReasons ?? [])],
       failure_attributions: [...(options.failureAttributions ?? [])],
     };
-  }
-
-  private createLaunchDiagnosticsPayload(options: {
-    transportKind: unknown;
-    healthCheck?: CliAdapterVerificationResolution['tools'][number]['healthCheck'];
-  }): Record<string, unknown> | null {
-    if (options.transportKind !== AdapterTransportKind.CLI_EXEC || !options.healthCheck) {
-      return null;
-    }
-
-    const shellWrappedDetail = this.findHealthCheckDiagnosticDetail(
-      options.healthCheck,
-      CLI_EXEC_LAUNCH_DIAGNOSTIC_CODES.SHELL_WRAPPED,
-    );
-    const processTreePolicy = this.findHealthCheckDiagnosticDetail(
-      options.healthCheck,
-      CLI_EXEC_LAUNCH_DIAGNOSTIC_CODES.PROCESS_TREE_POLICY,
-    );
-    const spawnErrorCode = this.findHealthCheckDiagnosticDetail(
-      options.healthCheck,
-      CLI_EXEC_LAUNCH_DIAGNOSTIC_CODES.SPAWN_ERROR_CODE,
-    );
-    const shellWrapped =
-      shellWrappedDetail === 'true' ? true : shellWrappedDetail === 'false' ? false : null;
-
-    return {
-      selected_entrypoint: options.healthCheck.selectedEntrypoint,
-      request_cancellation_mode: options.healthCheck.requestCancellationMode,
-      ...(shellWrapped !== null ? { shell_wrapped: shellWrapped } : {}),
-      ...(processTreePolicy ? { process_tree_policy: processTreePolicy } : {}),
-      ...(spawnErrorCode ? { spawn_error_code: spawnErrorCode } : {}),
-    };
-  }
-
-  private findHealthCheckDiagnosticDetail(
-    healthCheck: NonNullable<CliAdapterVerificationResolution['tools'][number]['healthCheck']>,
-    code: string,
-  ): string | null {
-    const diagnostic = healthCheck.diagnostics.find((candidate) => candidate.code === code);
-    return typeof diagnostic?.detail === 'string' && diagnostic.detail.length > 0
-      ? diagnostic.detail
-      : null;
   }
 
   private resolveFallbackAvailabilityStatus(

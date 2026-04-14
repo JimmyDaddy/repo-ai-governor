@@ -61,6 +61,9 @@ export class CliDoctorCommand implements CliCommandExecutor {
     let onboardingContract: ReturnType<
       CliCommandExecutorContext['onboardingRuntime']['createOnboardingContractPayload']
     > | null = null;
+    let verificationMatrix: ReturnType<
+      CliCommandExecutorContext['onboardingRuntime']['createVerifyMatrixPayload']
+    > | null = null;
     let adapterStatus: CliGovernanceCheckStatus | null = null;
     let adapterVerificationSnapshot: CliAdapterVerificationResolution | null = null;
     const doctorId = `doctor-${Date.now()}`;
@@ -258,6 +261,11 @@ export class CliDoctorCommand implements CliCommandExecutor {
         repairScope: runtimeDebugOptions.fix ? 'safe_local' : 'manual_only',
         diagnosticSummary: `status=${adapterVerification.overallStatus} safe_local_fix=${safeLocalFixCount}`,
       });
+      verificationMatrix = context.onboardingRuntime.createVerifyMatrixPayload({
+        executionId: doctorId,
+        verification: adapterVerification,
+        adaptersConfig: context.options.adaptersConfig,
+      });
       this.emitProgress(context, {
         commandName: CliCommandName.DOCTOR,
         statusLine: this.translate(context, 'cli.reactShell.progress.doctor.writingArtifacts'),
@@ -339,6 +347,7 @@ export class CliDoctorCommand implements CliCommandExecutor {
         runtimeDebugOptions.fix,
       ),
       ...(onboardingContract ? { onboardingContract } : {}),
+      ...(verificationMatrix ? { verificationMatrix } : {}),
       ...(agentView ? { agentView } : {}),
       durableStorage: durableStorageDiagnostics,
       checks,

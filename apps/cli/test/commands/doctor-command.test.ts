@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, resolve } from 'node:path';
@@ -126,6 +126,10 @@ function createDoctorCommandContext(options: {
     onboardingRuntime: {
       createOnboardingContractPayload: () => ({
         commandName: 'doctor',
+      }),
+      createVerifyMatrixPayload: () => ({
+        commandName: 'doctor',
+        surface: 'verification',
       }),
       resolveSelectedTools: () => [],
     } as CliCommandExecutorContext['onboardingRuntime'],
@@ -281,6 +285,18 @@ describe('CliDoctorCommand', () => {
       });
 
       const result = await command.execute(context);
+      const diagnosticsArtifactPath = result.commandResult.artifacts?.find(
+        (artifact) => artifact.id === 'doctor_diagnostics',
+      )?.path;
+      expect(typeof diagnosticsArtifactPath).toBe('string');
+      const diagnosticsPayload = JSON.parse(
+        await readFile(String(diagnosticsArtifactPath), 'utf8'),
+      ) as {
+        verificationMatrix?: {
+          commandName?: string;
+          surface?: string;
+        };
+      };
       const defaultBackendCheck = result.commandResult.checks.find(
         (check) => check.id === 'secret_backend_default',
       );
@@ -293,6 +309,10 @@ describe('CliDoctorCommand', () => {
       });
       expect(defaultBackendCheck?.detail).toContain('unsafe-local-file');
       expect(defaultBackendCheck?.detail).toContain('plaintext fallback');
+      expect(diagnosticsPayload.verificationMatrix).toEqual({
+        commandName: 'doctor',
+        surface: 'verification',
+      });
       expect(unsafeBackendCheck).toMatchObject({
         status: CliGovernanceCheckStatus.WARN,
       });

@@ -13,6 +13,7 @@ import {
   ExecutionProgressStage,
   I18nRuntime,
 } from '@repo-ai-governor/shared';
+import { expectNativeCliExecPreservedFacts } from '../../../../test/native-cli-exec-compatibility-harness.js';
 import {
   CliAdapterRoleSelectionSource,
   CliGovernanceCheckStatus,
@@ -86,6 +87,104 @@ function createVerificationFixture(): CliAdapterVerificationResolution {
           credentialSource: null,
           endpointSource: AdapterEndpointSource.CONFIG_EXPLICIT,
           requestCancellationMode: AdapterRequestCancellationMode.LOCAL_ABORT_ONLY,
+        }),
+        status: CliGovernanceCheckStatus.WARN,
+      },
+    ],
+  };
+}
+
+function createCliExecVerificationFixture(options: {
+  unavailableReason: string;
+  shellWrapped: boolean;
+  processTreePolicy?: string;
+  spawnErrorCode?: string;
+}): CliAdapterVerificationResolution {
+  const diagnostics = [
+    {
+      layer: 'install' as const,
+      status: 'pass' as const,
+      code: 'install.entrypoint_resolution',
+      detail: AdapterSurface.CODEX,
+    },
+    {
+      layer: 'protocol' as const,
+      status: 'pass' as const,
+      code: 'protocol.shell_wrapped',
+      detail: String(options.shellWrapped),
+    },
+    ...(options.processTreePolicy
+      ? [
+          {
+            layer: 'protocol' as const,
+            status: 'pass' as const,
+            code: 'protocol.process_tree_policy',
+            detail: options.processTreePolicy,
+          },
+        ]
+      : []),
+    ...(options.spawnErrorCode
+      ? [
+          {
+            layer: 'install' as const,
+            status: 'fail' as const,
+            code: 'install.spawn_error_code',
+            detail: options.spawnErrorCode,
+          },
+        ]
+      : []),
+  ];
+
+  return {
+    overallStatus: CliGovernanceCheckStatus.WARN,
+    requiredRoleCount: 1,
+    requiredRoleFailedCount: 0,
+    degradedRoleCount: 1,
+    fallbackRoleCount: 0,
+    nextActions: ['Inspect cli_exec launch diagnostics before retrying.'],
+    tools: [
+      {
+        toolId: AdapterSurface.CODEX,
+        enabled: true,
+        configuredAvailability: AdapterAvailability.AVAILABLE,
+        availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+        unavailableReasons: [options.unavailableReason],
+        failureAttributions: ['execution_runtime'],
+        healthCheck: buildLayeredHealthCheckResult({
+          adapterId: 'codex-agent',
+          surfaceId: AdapterSurface.CODEX,
+          availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+          selectedEntrypoint: AdapterSurface.CODEX,
+          routeKey: 'cli.adapter.probe.codex',
+          unavailableReasons: [options.unavailableReason],
+          transportKind: AdapterTransportKind.CLI_EXEC,
+          requestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+          diagnostics,
+        }),
+        capabilitySupportByCapability: new Map(),
+      },
+    ],
+    roleEvaluations: [
+      {
+        roleId: 'reviewer',
+        roleProfileId: 'default.reviewer',
+        required: true,
+        primarySurface: AdapterSurface.CODEX,
+        selectedSurface: AdapterSurface.CODEX,
+        selectedBy: CliAdapterRoleSelectionSource.PRIMARY,
+        unsupportedCapabilities: [],
+        degradedCapabilities: [],
+        unavailableReasons: [options.unavailableReason],
+        failureAttributions: ['execution_runtime'],
+        healthCheck: buildLayeredHealthCheckResult({
+          adapterId: 'codex-agent',
+          surfaceId: AdapterSurface.CODEX,
+          availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+          selectedEntrypoint: AdapterSurface.CODEX,
+          routeKey: 'cli.adapter.role.reviewer',
+          unavailableReasons: [options.unavailableReason],
+          transportKind: AdapterTransportKind.CLI_EXEC,
+          requestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
         }),
         status: CliGovernanceCheckStatus.WARN,
       },
@@ -192,5 +291,85 @@ describe('Cli adapter diagnostics runtime', () => {
     expect(quotaExhaustedDetail).toContain(
       'surface "github-copilot" health check is blocked by exhausted quota',
     );
+  });
+
+  it('adds spawn_failed launch_diagnostics to verification report payload tool and role rows', async () => {
+    const i18nRuntime = new I18nRuntime();
+    await i18nRuntime.initialize(DEFAULT_I18N_RUNTIME_CONFIG, 'en-US');
+    const runtime = new CliAdapterDiagnosticsRuntime(
+      (key, interpolation) => i18nRuntime.t(key, interpolation),
+      () => ({
+        execution_runtime: 2,
+      }),
+    );
+    const verification = createCliExecVerificationFixture({
+      unavailableReason: 'spawn_failed:codex:ENOENT',
+      shellWrapped: true,
+      spawnErrorCode: 'ENOENT',
+    });
+
+    const payload = runtime.createAdapterVerificationArtifactPayload(verification) as {
+      tools?: Array<{ toolId?: string; launch_diagnostics?: Record<string, unknown> }>;
+      roles?: Array<{ roleId?: string; launch_diagnostics?: Record<string, unknown> }>;
+    };
+    const toolRow = payload.tools?.find((tool) => tool.toolId === AdapterSurface.CODEX);
+    const roleRow = payload.roles?.find((role) => role.roleId === 'reviewer');
+
+    expect(toolRow?.launch_diagnostics).toEqual({
+      selected_entrypoint: AdapterSurface.CODEX,
+      request_cancellation_mode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+      shell_wrapped: true,
+      spawn_error_code: 'ENOENT',
+    });
+    expect(roleRow?.launch_diagnostics).toEqual(toolRow?.launch_diagnostics);
+    expectNativeCliExecPreservedFacts('spawn_failed', {
+      launch_diagnostics_preserved:
+        toolRow?.launch_diagnostics?.selected_entrypoint === AdapterSurface.CODEX &&
+        toolRow?.launch_diagnostics?.spawn_error_code === 'ENOENT',
+      adapter_launch_truth_projected:
+        toolRow?.launch_diagnostics?.request_cancellation_mode ===
+          AdapterRequestCancellationMode.NOT_SUPPORTED &&
+        roleRow?.launch_diagnostics?.selected_entrypoint === AdapterSurface.CODEX,
+    });
+  });
+
+  it('adds parse-failure launch_diagnostics to verification report payload tool and role rows', async () => {
+    const i18nRuntime = new I18nRuntime();
+    await i18nRuntime.initialize(DEFAULT_I18N_RUNTIME_CONFIG, 'en-US');
+    const runtime = new CliAdapterDiagnosticsRuntime(
+      (key, interpolation) => i18nRuntime.t(key, interpolation),
+      () => ({
+        execution_runtime: 2,
+      }),
+    );
+    const verification = createCliExecVerificationFixture({
+      unavailableReason: 'health_check_invalid_response:codex:malformed_json',
+      shellWrapped: false,
+      processTreePolicy: 'process_group_best_effort',
+    });
+
+    const payload = runtime.createAdapterVerificationArtifactPayload(verification) as {
+      tools?: Array<{ toolId?: string; launch_diagnostics?: Record<string, unknown> }>;
+      roles?: Array<{ roleId?: string; launch_diagnostics?: Record<string, unknown> }>;
+    };
+    const toolRow = payload.tools?.find((tool) => tool.toolId === AdapterSurface.CODEX);
+    const roleRow = payload.roles?.find((role) => role.roleId === 'reviewer');
+
+    expect(toolRow?.launch_diagnostics).toEqual({
+      selected_entrypoint: AdapterSurface.CODEX,
+      request_cancellation_mode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+      shell_wrapped: false,
+      process_tree_policy: 'process_group_best_effort',
+    });
+    expect(roleRow?.launch_diagnostics).toEqual(toolRow?.launch_diagnostics);
+    expectNativeCliExecPreservedFacts('probe_protocol_parse_failed', {
+      launch_diagnostics_preserved:
+        toolRow?.launch_diagnostics?.selected_entrypoint === AdapterSurface.CODEX &&
+        toolRow?.launch_diagnostics?.process_tree_policy === 'process_group_best_effort',
+      adapter_launch_truth_projected:
+        toolRow?.launch_diagnostics?.request_cancellation_mode ===
+          AdapterRequestCancellationMode.NOT_SUPPORTED &&
+        roleRow?.launch_diagnostics?.selected_entrypoint === AdapterSurface.CODEX,
+    });
   });
 });

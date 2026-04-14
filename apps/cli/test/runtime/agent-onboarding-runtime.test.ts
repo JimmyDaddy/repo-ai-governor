@@ -1255,6 +1255,217 @@ describe('CliAgentOnboardingRuntime', () => {
     expect(onboardingTransportRow.launch_diagnostics).toEqual(codexRow.launch_diagnostics);
   });
 
+  it('projects cli_exec non-zero consumer launch diagnostics into verify tool and role matrices', () => {
+    const runtime = new CliAgentOnboardingRuntime();
+    const sourceConfig = createGovernorConfigFixture();
+    const verification = {
+      overallStatus: CliGovernanceCheckStatus.WARN,
+      tools: [
+        {
+          toolId: AdapterSurface.CODEX,
+          enabled: true,
+          configuredAvailability: AdapterAvailability.AVAILABLE,
+          availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+          unavailableReasons: ['non_zero_exit:codex:1'],
+          healthCheck: buildLayeredHealthCheckResult({
+            adapterId: 'codex-agent',
+            surfaceId: AdapterSurface.CODEX,
+            availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+            selectedEntrypoint: AdapterSurface.CODEX,
+            routeKey: 'cli.adapter.probe.codex',
+            unavailableReasons: ['non_zero_exit:codex:1'],
+            transportKind: AdapterTransportKind.CLI_EXEC,
+            requestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+            diagnostics: [
+              {
+                layer: 'install',
+                status: 'pass',
+                code: 'install.entrypoint_resolution',
+                detail: AdapterSurface.CODEX,
+              },
+              {
+                layer: 'protocol',
+                status: 'pass',
+                code: 'protocol.shell_wrapped',
+                detail: 'false',
+              },
+              {
+                layer: 'protocol',
+                status: 'pass',
+                code: 'protocol.process_tree_policy',
+                detail: 'process_group_best_effort',
+              },
+            ],
+          }),
+          capabilitySupportByCapability: new Map(),
+          failureAttributions: ['execution_runtime'],
+        },
+      ],
+      roleEvaluations: [
+        {
+          roleId: 'reviewer',
+          roleProfileId: 'default.reviewer',
+          required: true,
+          primarySurface: AdapterSurface.CODEX,
+          selectedSurface: AdapterSurface.CODEX,
+          selectedBy: CliAdapterRoleSelectionSource.PRIMARY,
+          unsupportedCapabilities: [],
+          degradedCapabilities: [],
+          unavailableReasons: ['non_zero_exit:codex:1'],
+          failureAttributions: ['execution_runtime'],
+          healthCheck: buildLayeredHealthCheckResult({
+            adapterId: 'codex-agent',
+            surfaceId: AdapterSurface.CODEX,
+            availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+            selectedEntrypoint: AdapterSurface.CODEX,
+            routeKey: 'cli.adapter.role.reviewer',
+            unavailableReasons: ['non_zero_exit:codex:1'],
+            transportKind: AdapterTransportKind.CLI_EXEC,
+            requestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+          }),
+          status: CliGovernanceCheckStatus.WARN,
+        },
+      ],
+      requiredRoleCount: 1,
+      requiredRoleFailedCount: 0,
+      degradedRoleCount: 1,
+      fallbackRoleCount: 0,
+      nextActions: ['Inspect non-zero cli_exec output before retrying.'],
+    };
+
+    const verifyPayload = runtime.createVerifyMatrixPayload({
+      executionId: 'verify-cli-exec-non-zero',
+      verification,
+      adaptersConfig: sourceConfig.adapters,
+    });
+    const toolMatrixRow = verifyPayload.tool_matrix[0] as Record<string, unknown>;
+    const roleBindingRow = verifyPayload.role_binding_matrix[0] as Record<string, unknown>;
+
+    expect(toolMatrixRow.launch_diagnostics).toEqual({
+      selected_entrypoint: AdapterSurface.CODEX,
+      request_cancellation_mode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+      shell_wrapped: false,
+      process_tree_policy: 'process_group_best_effort',
+    });
+    expect(roleBindingRow.launch_diagnostics).toEqual(toolMatrixRow.launch_diagnostics);
+    expectNativeCliExecPreservedFacts('non_zero_exit', {
+      launch_diagnostics_preserved:
+        (toolMatrixRow.launch_diagnostics as Record<string, unknown>).selected_entrypoint ===
+          AdapterSurface.CODEX &&
+        (roleBindingRow.launch_diagnostics as Record<string, unknown>).process_tree_policy ===
+          'process_group_best_effort',
+      adapter_launch_truth_projected:
+        (toolMatrixRow.launch_diagnostics as Record<string, unknown>).request_cancellation_mode ===
+        AdapterRequestCancellationMode.NOT_SUPPORTED,
+    });
+  });
+
+  it('projects cli_exec signal-exit launch diagnostics into verify tool and role matrices', () => {
+    const runtime = new CliAgentOnboardingRuntime();
+    const sourceConfig = createGovernorConfigFixture();
+    const verification = {
+      overallStatus: CliGovernanceCheckStatus.WARN,
+      tools: [
+        {
+          toolId: AdapterSurface.CODEX,
+          enabled: true,
+          configuredAvailability: AdapterAvailability.AVAILABLE,
+          availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+          unavailableReasons: ['signal_exit:codex:SIGTERM'],
+          healthCheck: buildLayeredHealthCheckResult({
+            adapterId: 'codex-agent',
+            surfaceId: AdapterSurface.CODEX,
+            availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+            selectedEntrypoint: AdapterSurface.CODEX,
+            routeKey: 'cli.adapter.probe.codex',
+            unavailableReasons: ['signal_exit:codex:SIGTERM'],
+            transportKind: AdapterTransportKind.CLI_EXEC,
+            requestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+            diagnostics: [
+              {
+                layer: 'install',
+                status: 'pass',
+                code: 'install.entrypoint_resolution',
+                detail: AdapterSurface.CODEX,
+              },
+              {
+                layer: 'protocol',
+                status: 'pass',
+                code: 'protocol.shell_wrapped',
+                detail: 'true',
+              },
+              {
+                layer: 'protocol',
+                status: 'pass',
+                code: 'protocol.process_tree_policy',
+                detail: 'process_group_best_effort',
+              },
+            ],
+          }),
+          capabilitySupportByCapability: new Map(),
+          failureAttributions: ['execution_runtime'],
+        },
+      ],
+      roleEvaluations: [
+        {
+          roleId: 'reviewer',
+          roleProfileId: 'default.reviewer',
+          required: true,
+          primarySurface: AdapterSurface.CODEX,
+          selectedSurface: AdapterSurface.CODEX,
+          selectedBy: CliAdapterRoleSelectionSource.PRIMARY,
+          unsupportedCapabilities: [],
+          degradedCapabilities: [],
+          unavailableReasons: ['signal_exit:codex:SIGTERM'],
+          failureAttributions: ['execution_runtime'],
+          healthCheck: buildLayeredHealthCheckResult({
+            adapterId: 'codex-agent',
+            surfaceId: AdapterSurface.CODEX,
+            availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+            selectedEntrypoint: AdapterSurface.CODEX,
+            routeKey: 'cli.adapter.role.reviewer',
+            unavailableReasons: ['signal_exit:codex:SIGTERM'],
+            transportKind: AdapterTransportKind.CLI_EXEC,
+            requestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+          }),
+          status: CliGovernanceCheckStatus.WARN,
+        },
+      ],
+      requiredRoleCount: 1,
+      requiredRoleFailedCount: 0,
+      degradedRoleCount: 1,
+      fallbackRoleCount: 0,
+      nextActions: ['Inspect signal-terminated cli_exec output before retrying.'],
+    };
+
+    const verifyPayload = runtime.createVerifyMatrixPayload({
+      executionId: 'verify-cli-exec-signal-exit',
+      verification,
+      adaptersConfig: sourceConfig.adapters,
+    });
+    const toolMatrixRow = verifyPayload.tool_matrix[0] as Record<string, unknown>;
+    const roleBindingRow = verifyPayload.role_binding_matrix[0] as Record<string, unknown>;
+
+    expect(toolMatrixRow.launch_diagnostics).toEqual({
+      selected_entrypoint: AdapterSurface.CODEX,
+      request_cancellation_mode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+      shell_wrapped: true,
+      process_tree_policy: 'process_group_best_effort',
+    });
+    expect(roleBindingRow.launch_diagnostics).toEqual(toolMatrixRow.launch_diagnostics);
+    expectNativeCliExecPreservedFacts('signal_exit', {
+      launch_diagnostics_preserved:
+        (toolMatrixRow.launch_diagnostics as Record<string, unknown>).shell_wrapped === true &&
+        (roleBindingRow.launch_diagnostics as Record<string, unknown>).selected_entrypoint ===
+          AdapterSurface.CODEX,
+      adapter_launch_truth_projected:
+        (toolMatrixRow.launch_diagnostics as Record<string, unknown>).selected_entrypoint ===
+          AdapterSurface.CODEX &&
+        (toolMatrixRow.launch_diagnostics as Record<string, unknown>).request_cancellation_mode ===
+          AdapterRequestCancellationMode.NOT_SUPPORTED,
+    });
+  });
+
   it('projects default cli_exec transport truth for Claude Code without explicit transport config', () => {
     const runtime = new CliAgentOnboardingRuntime();
     const sourceConfig = createGovernorConfigFixture();

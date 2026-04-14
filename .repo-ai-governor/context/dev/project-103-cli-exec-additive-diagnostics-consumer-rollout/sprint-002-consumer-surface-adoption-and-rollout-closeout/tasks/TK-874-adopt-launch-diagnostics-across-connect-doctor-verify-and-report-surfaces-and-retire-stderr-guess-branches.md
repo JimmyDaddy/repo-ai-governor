@@ -1,6 +1,6 @@
 # TK-874 adopt launch_diagnostics across connect doctor verify and report surfaces and retire stderr-guess branches
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-04-14
 - Owner: AI-Agent
 - Priority: P1
@@ -40,17 +40,31 @@
 
 ## 7. Development Verification
 
-1. 待激活后补充 consumer surface adoption verification。
+1. `pnpm exec vitest run apps/cli/test/runtime/agent-onboarding-runtime.test.ts apps/cli/test/runtime/adapter-diagnostics-runtime.test.ts apps/cli/test/commands/connect-command.test.ts apps/cli/test/commands/doctor-command.test.ts --maxWorkers=1 --maxConcurrency=1`
+2. `pnpm run build`
+3. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
 
 ## 8. Delivery Verification
 
-1. 待激活后补充 rollout-window delivery verification与治理检查。
+1. `pnpm exec vitest run apps/cli/test/runtime/agent-onboarding-runtime.test.ts apps/cli/test/runtime/adapter-diagnostics-runtime.test.ts apps/cli/test/commands/connect-command.test.ts apps/cli/test/commands/doctor-command.test.ts --maxWorkers=1 --maxConcurrency=1`
+2. `pnpm run build`
+3. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
+4. sprint closeout 前补跑 `node ./scripts/governance/check-task-ledger-sync.js`
+5. sprint closeout 前补跑 `node ./scripts/governance/check-sprint-plan-status-sync.js`
+6. sprint closeout 前补跑 `node ./scripts/governance/check-code-review-status-sync.js`
 
 ## 9. 执行记录
 
 1. 2026-04-14：任务创建，状态初始化为 `planned`。
 2. 2026-04-14：`TK-873` closeout 已将 `sprint-002` 激活为新的 primary execution surface；当前任务切换为 `in_progress`，下一步预留本地 `CR-001` 后开始 consumer-surface adoption implementation。
+3. 2026-04-14：新增 `CliLaunchDiagnosticsProjectionRuntime`，将同一份 snake_case `launch_diagnostics` companion 统一投影到 verify matrix 与 verification/report payload。
+4. 2026-04-14：`connect` / `doctor` diagnostics artifact 现已显式写出 `verificationMatrix`，`verification.tools[] / roles[]` 也已 materialize additive `launch_diagnostics`，不再要求 consumer 回退到 stderr/error-message 猜测路径。
+5. 2026-04-14：focused runtime/command tests、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 均通过；任务切换为 `completed`，等待本地 `CR-001` fresh reviewer loop。
 
 ## 10. 产出
 
-1. 待激活：consumer surface adoption artifacts to be defined in rollout window。
+1. `apps/cli/src/runtime/cli-launch-diagnostics-projection-runtime.ts`
+2. `apps/cli/src/runtime/agent-onboarding-runtime.ts`
+3. `apps/cli/src/runtime/adapter-diagnostics-runtime.ts`
+4. `apps/cli/src/commands/connect-command.ts`
+5. `apps/cli/src/commands/doctor-command.ts`

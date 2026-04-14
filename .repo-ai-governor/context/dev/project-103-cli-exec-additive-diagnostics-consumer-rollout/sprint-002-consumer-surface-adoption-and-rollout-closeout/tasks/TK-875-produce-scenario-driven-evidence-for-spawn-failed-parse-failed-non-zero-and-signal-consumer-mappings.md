@@ -1,6 +1,6 @@
 # TK-875 produce scenario-driven evidence for spawn-failed parse-failed non-zero and signal consumer mappings
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-14
 - Owner: AI-Agent
 - Priority: P1
@@ -40,16 +40,28 @@
 
 ## 7. Development Verification
 
-1. 待激活后补充 scenario-driven diagnostics verification。
+1. `pnpm exec vitest run apps/cli/test/runtime/agent-onboarding-runtime.test.ts apps/cli/test/runtime/adapter-diagnostics-runtime.test.ts apps/cli/test/commands/connect-command.test.ts apps/cli/test/commands/doctor-command.test.ts --maxWorkers=1 --maxConcurrency=1`
+2. `pnpm run build`
+3. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
 
 ## 8. Delivery Verification
 
-1. 待激活后补充 rollout-window delivery verification与治理检查。
+1. `pnpm exec vitest run apps/cli/test/runtime/agent-onboarding-runtime.test.ts apps/cli/test/runtime/adapter-diagnostics-runtime.test.ts apps/cli/test/commands/connect-command.test.ts apps/cli/test/commands/doctor-command.test.ts --maxWorkers=1 --maxConcurrency=1`
+2. `pnpm run build`
+3. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
+4. sprint closeout 前补跑 `node ./scripts/governance/check-task-ledger-sync.js`
+5. sprint closeout 前补跑 `node ./scripts/governance/check-sprint-plan-status-sync.js`
+6. sprint closeout 前补跑 `node ./scripts/governance/check-code-review-status-sync.js`
 
 ## 9. 执行记录
 
 1. 2026-04-14：任务创建，状态初始化为 `planned`。
+2. 2026-04-14：新增 unit/command evidence，固定 `spawn_failed`、`probe_protocol_parse_failed`、`non_zero_exit` 与 `signal_exit` 在 verify/report consumer surfaces 上的 `launch_diagnostics` 读法。
+3. 2026-04-14：focused runtime/command tests、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 均通过；任务切换为 `completed`，等待本地 `CR-001` fresh reviewer loop。
 
 ## 10. 产出
 
-1. 待激活：scenario-driven diagnostics evidence artifacts to be defined in rollout window。
+1. `apps/cli/test/runtime/agent-onboarding-runtime.test.ts`
+2. `apps/cli/test/runtime/adapter-diagnostics-runtime.test.ts`
+3. `apps/cli/test/commands/connect-command.test.ts`
+4. `apps/cli/test/commands/doctor-command.test.ts`
