@@ -19,8 +19,8 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-864 | wire focused compatibility verification profiles and trigger-matrix routing without promoting them to governance gates | TK-863 | in_progress |
-| TK-865 | capture compatibility baseline evidence pack and closeout guidance for future runtime windows | TK-864 | planned |
+| TK-864 | wire focused compatibility verification profiles and trigger-matrix routing without promoting them to governance gates | TK-863 | completed |
+| TK-865 | capture compatibility baseline evidence pack and closeout guidance for future runtime windows | TK-864 | completed |
 | TK-866 | finalize project-106 closeout and delivery evidence handoff | TK-864、TK-865、activation-time local CR-001 | planned |
 
 ## 3. Exit Criteria
@@ -35,3 +35,12 @@
 2. 当前 sprint 不得把 compatibility profile 变成新的 `governance.execution-gates` contract truth。
 3. `TK-866` 负责 project-106 final closeout，但只有在 sprint-002 local `CR-001` clean 后才允许完成。
 4. 2026-04-14：sprint-001 clean closeout 后，当前 sprint 已被激活为新的 primary execution surface，`TK-864` 进入执行前准备状态。
+5. 2026-04-14：`TK-864` 已落地 compatibility profile runner 与 trigger-matrix routing；`TK-865` 已形成 evidence pack / closeout guidance artifact。
+6. 2026-04-14：fresh reviewer round 4 暴露 shared `adapter-sdk` trigger surface 仍是目录级；当前已完成收窄修复与回归覆盖，下一步发起新的 clean recheck。
+7. 2026-04-14：fresh reviewer round 5 暴露 adapter-slice 仍包含 contract-only `constants / interfaces`；当前已将 adapter-slice 触发面收窄到真实 runtime entry 与 smoke test，并继续等待新的 clean recheck。
+8. 2026-04-14：fresh reviewer round 6 暴露 shared native `cli_exec` internal ACP seam 仍未进入 shared profile、且 `DA-865` 将 adapter-slice 入口写得过宽；当前已补 seam routing、explicit adapter invocation guidance 与回归覆盖，继续等待新的 clean recheck。
+9. 2026-04-14：fresh reviewer round 7 暴露 CI `git_range` 分支仍缺少回归保护；当前已补临时 git repo 的 deterministic routing regression，继续等待新的 clean recheck。
+10. 2026-04-14：fresh reviewer round 8 暴露 compatibility router 自身与 guarding integration suite 仍可能绕过 baseline；当前已将两者纳入 `cli_exec_compatibility_full` 触发面，并继续等待新的 clean recheck。
+11. 2026-04-14：fresh reviewer round 9 暴露显式无效 `--base-ref` 会静默降级到 working-tree mode；当前已改为 fail-fast，并补齐 invalid-base-ref regression coverage 与 handoff guidance。
+12. 2026-04-14：fresh reviewer round 10 继续暴露两个路由缺口：explicit invalid `--base-ref` 仍可能被 env base-ref 接管，且 `package.json` 中的 verify entrypoint 改动还不会命中 full profile；当前已补 explicit-ref 优先级修复、`package.json` full-profile routing 与两条 regression coverage。
+13. 2026-04-14：fresh reviewer round 11 clean recheck 未发现新的 actionable finding；当前 sprint-002 implementation boundary 已达到 closeout-ready，下一步继续在该 surface 上执行 project-final fresh review。

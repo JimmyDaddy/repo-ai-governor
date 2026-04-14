@@ -48,6 +48,7 @@
 pnpm exec vitest run \
   packages/adapter-sdk/test/native-cli-exec-process-runtime.unit.test.ts \
   packages/adapter-sdk/test/agent-cli-exec-operations-runtime.unit.test.ts \
+  packages/adapter-sdk/test/native-cli-exec-internal-acp-extension-seam.unit.test.ts \
   packages/adapters/codex/test/codex-agent-adapter.smoke.test.ts \
   packages/adapters/claude-code/test/claude-code-agent-adapter.smoke.test.ts \
   packages/adapters/github-copilot/test/github-copilot-agent-adapter.smoke.test.ts \
@@ -61,6 +62,7 @@ pnpm exec vitest run \
 pnpm exec vitest run \
   packages/adapter-sdk/test/native-cli-exec-process-runtime.unit.test.ts \
   packages/adapter-sdk/test/agent-cli-exec-operations-runtime.unit.test.ts \
+  packages/adapter-sdk/test/native-cli-exec-internal-acp-extension-seam.unit.test.ts \
   packages/adapters/codex/test/codex-agent-adapter.smoke.test.ts \
   packages/adapters/claude-code/test/claude-code-agent-adapter.smoke.test.ts \
   packages/adapters/github-copilot/test/github-copilot-agent-adapter.smoke.test.ts
@@ -72,10 +74,13 @@ pnpm exec vitest run \
 ```
 
 6. trigger matrix 固定为：
-   - shared runtime owner、shared lifecycle/termination logic、launch-diagnostics consumer 改动：`cli_exec_compatibility_full`
+   - shared runtime owner、shared lifecycle/termination logic、launch-diagnostics consumer、profile command entrypoint（含 `package.json` 中 `verify:cli-exec-compatibility`）改动：`cli_exec_compatibility_full`
+   - shared native `cli_exec` internal ACP extension seam source 改动：`cli_exec_compatibility_full`
+   - shared native `cli_exec` internal ACP extension seam unit-test 改动：`cli_exec_compatibility_runtime_foundation`
    - cross-adapter shared runtime / parser changes in the same window: `cli_exec_compatibility_runtime_foundation`
    - single-adapter parser / malformed-output branch changes，且 shared runtime 与 consumer projection 未改动：`cli_exec_compatibility_adapter_slice`
    - closeout / promotion claim 需要证明 native `cli_exec` baseline 仍健康：`cli_exec_compatibility_full`
+   - 显式 `--base-ref` / `--head-ref` git-range 路由若无法解析 explicit base ref：直接 fail-fast，不允许被 env base-ref 接管，也不允许静默降级到 working-tree mode
 7. additive boundary 保持不变：
    - `partial_output_preserved`
    - `selected_entrypoint`

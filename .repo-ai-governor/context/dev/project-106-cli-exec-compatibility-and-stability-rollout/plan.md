@@ -36,8 +36,8 @@
 | TK-861 | sprint-001 | establish native cli_exec scenario-class compatibility harness and preserved-facts assertions | runtime/compatibility | DA-842 | completed |
 | TK-862 | sprint-001 | align codex claude-code github-copilot smoke plus onboarding routing tests to the compatibility taxonomy | adapter/evidence | TK-861 | completed |
 | TK-863 | sprint-001 | sprint-001 exit acceptance and sprint-002 activation handoff | sprint/closeout | TK-861、TK-862、activation-time local CR-001 | completed |
-| TK-864 | sprint-002 | wire focused compatibility verification profiles and trigger-matrix routing without promoting them to governance gates | verification/profile | TK-863 | in_progress |
-| TK-865 | sprint-002 | capture compatibility baseline evidence pack and closeout guidance for future runtime windows | evidence/closeout | TK-864 | planned |
+| TK-864 | sprint-002 | wire focused compatibility verification profiles and trigger-matrix routing without promoting them to governance gates | verification/profile | TK-863 | completed |
+| TK-865 | sprint-002 | capture compatibility baseline evidence pack and closeout guidance for future runtime windows | evidence/closeout | TK-864 | completed |
 | TK-866 | sprint-002 | finalize project-106 closeout and delivery evidence handoff | closeout/delivery | TK-864、TK-865、activation-time local CR-001 | planned |
 
 ## 4. 依赖产物策略
@@ -59,6 +59,7 @@
 2. 2026-04-14：`TK-861 ~ TK-866` 已写入 execution-ready task package，并与 delivery/current-context 真值同步。
 3. 2026-04-14：preflight baseline 以 `d0b66f35` checkpoint commit 收口后，正式激活 `sprint-001` 进入 implementation + CR loop 窗口。
 4. 2026-04-14：`sprint-001` 已完成 compatibility harness 与 cross-adapter baseline 收口，并在 clean reviewer recheck 后切换到 `sprint-002` primary surface。
+5. 2026-04-14：`sprint-002` implementation boundary 已在 `CR-011` clean recheck 后达到 closeout-ready，下一步在同一 surface 上执行 project-final fresh review 与 `TK-866`。
 
 ## 7. 里程碑记录入口
 

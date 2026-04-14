@@ -1,9 +1,74 @@
 # checklist
 
-- [ ] TK-864 wire focused compatibility verification profiles and trigger-matrix routing without promoting them to governance gates
+- [x] TK-864 wire focused compatibility verification profiles and trigger-matrix routing without promoting them to governance gates
   - 2026-04-14：任务创建，状态初始化为 `planned`。
   - 2026-04-14：sprint-001 clean closeout 后，当前任务状态切换为 `in_progress`，当前 sprint 被激活为新的 primary execution surface；下一步先为 sprint-002 分配本地 `CR-001`，再开始 profile routing implementation。
-- [ ] TK-865 capture compatibility baseline evidence pack and closeout guidance for future runtime windows
+  - 2026-04-14：已新增 `scripts/ci/run-cli-exec-compatibility-profile.js` 与 `pnpm run verify:cli-exec-compatibility` 入口，把 `full / runtime_foundation / adapter_slice` 三档 profile 变成真实 execution route。
+  - 2026-04-14：已新增 `test/cli-exec-compatibility-profile.integration.test.ts`，并用 dry-run 样例验证 shared runtime owner、cross-adapter window 与 single-adapter window 的 trigger-matrix routing。
+  - 2026-04-14：fresh reviewer round 1 指出 adapter-slice 命中面过宽；当前已将触发面收窄到真实 `cli_exec` runtime/parser 文件，并补齐 README / host-renderer false-positive regression coverage。
+  - 2026-04-14：fresh reviewer round 2 指出 `shared_runtime_foundation_changed` 缺少自动化覆盖；当前已补齐 adapter-sdk test / shared harness 两条 runtime-foundation regression assertions。
+  - 2026-04-14：fresh reviewer round 4 指出 shared `adapter-sdk` trigger surface 仍是目录级；当前已将 shared source/test 触发面收窄到 `native-cli-exec-process-runtime`、`agent-cli-exec-operations-runtime` 与 shared harness，并补齐 `agent-capability-evaluator`、`agent-route-runner`、`layered-health-check-runtime` false-positive regression coverage。
+  - 2026-04-14：fresh reviewer round 5 指出 adapter-slice 仍包含 `constants / interfaces` contract-only 文件；当前已将 adapter-slice 触发面进一步收窄到各 adapter 的真实 runtime entry 与 smoke test，并补齐 constants/interface false-positive regression coverage。
+  - 2026-04-14：fresh reviewer round 6 指出 shared native `cli_exec` internal ACP seam 未进入 trigger matrix，且 handoff artifact 将 adapter-slice 调用方式写成了通用 `<profile-id>` 入口；当前已把 seam source/test 纳入 shared profile、补齐 seam routing 与 explicit adapter-slice invocation regression coverage，并刷新 `DA-865` closeout guidance。
+  - 2026-04-14：fresh reviewer round 7 指出 CI `git_range` 分支仍缺少自动化覆盖；当前已新增临时 git repo 的 deterministic regression，锁住 `--base-ref/--head-ref` 路由到 shared full profile 的行为。
+  - 2026-04-14：fresh reviewer round 8 指出 compatibility router 自身与 guarding integration suite 变更仍可能绕过 baseline；当前已将 router script 与 integration suite 一并纳入 `cli_exec_compatibility_full` 触发面，并补齐对应 regression coverage。
+  - 2026-04-14：fresh reviewer round 9 指出显式无效 `--base-ref` 会静默降级到 working-tree mode；当前已将 explicit base-ref 解析改为 fail-fast，并补齐 invalid-base-ref regression coverage。
+  - 2026-04-14：fresh reviewer round 10 指出 explicit invalid `--base-ref` 仍可能被 env base-ref 接管、且 `package.json` verify entrypoint 改动还不会命中 full profile；当前已将显式 ref 解析改为优先 fail-fast，并把 `package.json` 纳入 `cli_exec_compatibility_full` 触发面，同时补齐两条 regression coverage。
+  - 2026-04-14：build、full compatibility profile 与 `test:packages` 已在当前 change window 通过，当前任务收口为 `completed`。
+- [x] TK-865 capture compatibility baseline evidence pack and closeout guidance for future runtime windows
   - 2026-04-14：任务创建，状态初始化为 `planned`。
+  - 2026-04-14：已创建 `DA-865-cli-exec-compatibility-baseline-evidence-pack-and-closeout-guidance.md`，把三档 profile 的路由证据、当前窗口验证结果与 future closeout guidance 固定为可回链 handoff 面。
+  - 2026-04-14：fresh reviewer round 4 暴露 shared `adapter-sdk` false-positive trigger 后，当前已刷新 `DA-865` 的 trigger matrix 与验证证据，使 handoff artifact 与最新真实 routing 行为保持一致。
+  - 2026-04-14：fresh reviewer round 5 暴露 adapter-slice 仍把 contract-only `constants / interfaces` 当成触发面后，当前已再次刷新 `DA-865`，确保 handoff artifact 与 runtime/parser-only adapter boundary 保持一致。
+  - 2026-04-14：fresh reviewer round 6 暴露 shared native `cli_exec` internal ACP seam 未被 profile router 覆盖、且 adapter-slice 执行入口说明过宽后，当前已刷新 `DA-865` 的 seam guidance、adapter-slice invocation contract 与验证证据。
+  - 2026-04-14：fresh reviewer round 7 暴露 CI `git_range` 分支缺少回归保护后，当前已刷新 `DA-865` 的 targeted suite 统计，确保 handoff artifact 与最新 regression baseline 保持一致。
+  - 2026-04-14：fresh reviewer round 8 暴露 compatibility router 自身与 guarding integration suite 仍可能绕过 baseline 后，当前已刷新 `DA-865` 的 trigger guidance 与验证证据，确保“谁修改 trigger matrix，谁先跑 full”成为 handoff truth。
+  - 2026-04-14：fresh reviewer round 9 暴露显式无效 `--base-ref` 会静默降级到 working-tree mode 后，当前已刷新 `DA-865` 的 CI diff-routing guidance，确保 explicit git-range 输入在 ref 无法解析时 fail-fast。
+  - 2026-04-14：fresh reviewer round 10 暴露 explicit invalid `--base-ref` 仍可能被 env base-ref 接管、且 `package.json` verify entrypoint 改动仍可绕过 baseline 后，当前已刷新 `DA-865` 的 explicit-ref priority 与 full-profile trigger guidance。
+  - 2026-04-14：当前任务状态切换为 `completed`，下一步等待 sprint-002 fresh reviewer round 与 `TK-866` project-final closeout 收口。
 - [ ] TK-866 finalize project-106 closeout and delivery evidence handoff
   - 2026-04-14：任务创建，状态初始化为 `planned`。
+- [x] CR-001 sprint-002-verification-profiles-trigger-matrix-and-closeout delegated review loop round 1
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 1 返回 1 条 actionable finding；主 agent 复核后判定为 `accepted`，当前推进到 `verified` 并进入修复窗口。
+  - 2026-04-14：accepted finding 已完成修复，adapter-slice 触发面已收窄到真实 `cli_exec` runtime/parser 文件与对应 smoke tests；build、full compatibility profile、`test:packages` 与 false-positive targeted checks 已重跑通过，当前 round 收口为 `resolved`，下一步进入 fresh reviewer recheck round。
+- [x] CR-002 sprint-002-verification-profiles-trigger-matrix-and-closeout delegated recheck loop round 2
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 2 返回 1 条 actionable finding；主 agent 复核后判定为 `accepted`，当前推进到 `verified` 并进入修复窗口。
+  - 2026-04-14：accepted finding 已完成修复，新增 `shared_runtime_foundation_changed` 的 integration regression coverage；build、full compatibility profile、`test:packages` 与 targeted integration suite 已重跑通过，当前 round 收口为 `resolved`，下一步进入 fresh reviewer clean recheck。
+- [x] CR-003 sprint-002-verification-profiles-trigger-matrix-and-closeout delegated recheck loop round 3
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer clean recheck 返回 1 条 artifact evidence drift finding；主 agent 复核后判定为 `accepted`，当前推进到 `verified` 并进入修复窗口。
+  - 2026-04-14：accepted finding 已完成修复，`DA-865` 的 targeted suite 统计已刷新为当前真实结果；当前 round 收口为 `resolved`，下一步进入新的 fresh clean recheck。
+- [x] CR-004 sprint-002-verification-profiles-trigger-matrix-and-closeout delegated recheck loop round 4
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 4 发现 shared `adapter-sdk` trigger surface 仍是目录级，导致非 native `cli_exec` source/test 会被误路由到 `full` 或 `runtime_foundation` profile。
+  - 2026-04-14：主 agent 已将 shared `adapter-sdk` trigger 面收窄到真实 native `cli_exec` owner/foundation 文件，补齐 false-positive regression coverage，并用 `pnpm run build`、`pnpm run verify:cli-exec-compatibility -- --profile cli_exec_compatibility_full --execute`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 targeted dry-run 复核通过，当前状态推进为 `resolved`。
+- [x] CR-005 sprint-002-verification-profiles-trigger-matrix-and-closeout delegated recheck loop round 5
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 5 发现 adapter-slice 仍将 adapter `constants / interfaces` contract-only 文件当作 compatibility trigger，导致 runtime/parser-only closeout guidance 与实际 routing 行为不一致。
+  - 2026-04-14：主 agent 已将 adapter-slice 触发面收窄到各 adapter 的真实 runtime entry 与 smoke test，并补齐 constants/interface false-positive regression coverage；`pnpm run build`、`pnpm run verify:cli-exec-compatibility -- --profile cli_exec_compatibility_full --execute`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 targeted dry-run 已在同窗通过，当前状态推进为 `resolved`。
+- [x] CR-006 sprint-002-verification-profiles-trigger-matrix-and-closeout delegated recheck loop round 6
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 6 发现 shared native `cli_exec` internal ACP seam 未被 profile router 覆盖，且 `DA-865` 将 adapter-slice 执行入口写成了通用 `<profile-id>` 调用。
+  - 2026-04-14：主 agent 已将 internal ACP seam source/test 纳入 shared profile routing，补齐 seam 与 explicit adapter-slice invocation regression coverage，并刷新 `DA-865` 的调用文案与验证证据；`pnpm run build`、`pnpm run verify:cli-exec-compatibility -- --profile cli_exec_compatibility_full --execute`、`pnpm run verify:cli-exec-compatibility -- --profile cli_exec_compatibility_adapter_slice --adapter codex --execute`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 targeted dry-run 已在同窗通过，当前状态推进为 `resolved`。
+- [x] CR-007 sprint-002-verification-profiles-trigger-matrix-and-closeout delegated recheck loop round 7
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 7 发现 CI `git_range` 路径仍缺少自动化回归覆盖，`--base-ref/--head-ref` 与环境变量驱动的 diff 路由还没有被 integration suite 锁住。
+  - 2026-04-14：主 agent 已新增临时 git repo 的 deterministic regression，覆盖 `HEAD~1...HEAD` git-range shared-runtime 路由；`pnpm exec vitest run test/cli-exec-compatibility-profile.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run build`、`pnpm run verify:cli-exec-compatibility -- --profile cli_exec_compatibility_full --execute` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 已在同窗通过，当前状态推进为 `resolved`。
+- [x] CR-008 sprint-002-verification-profiles-trigger-matrix-and-closeout delegated recheck loop round 8
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 8 发现 compatibility router 自身与 guarding integration suite 的变更仍可能绕过 baseline，`scripts/ci/run-cli-exec-compatibility-profile.js` 与 `test/cli-exec-compatibility-profile.integration.test.ts` 当时都不会自动命中任何 compatibility profile。
+  - 2026-04-14：主 agent 已将 router script 与 guarding integration suite 纳入 `cli_exec_compatibility_full` 触发面，并补齐对应 regression coverage；`pnpm exec vitest run test/cli-exec-compatibility-profile.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run build`、`pnpm run verify:cli-exec-compatibility -- --profile cli_exec_compatibility_full --execute` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 已在同窗通过，当前状态推进为 `resolved`。
+- [x] CR-009 sprint-002-verification-profiles-trigger-matrix-and-closeout delegated recheck loop round 9
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 9 发现显式无效 `--base-ref` 会静默降级到 working-tree mode，导致 CI diff-routing 输入错误时仍可能误跑本地脏树。
+  - 2026-04-14：主 agent 已将 explicit invalid `--base-ref` 改为 fail-fast，并补齐 invalid-base-ref regression coverage；`pnpm exec vitest run test/cli-exec-compatibility-profile.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run build`、`pnpm run verify:cli-exec-compatibility -- --profile cli_exec_compatibility_full --execute` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 已在同窗通过，当前状态推进为 `resolved`。
+- [x] CR-010 sprint-002-verification-profiles-trigger-matrix-and-closeout delegated recheck loop round 10
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 10 发现两个剩余路由缺口：explicit invalid `--base-ref` 仍可能被 env base-ref 接管，且 `package.json` 中的 `verify:cli-exec-compatibility` entrypoint 改动仍不会命中 full profile。
+  - 2026-04-14：主 agent 已将 explicit `--base-ref` 校验调整为优先 fail-fast、把 `package.json` 纳入 `cli_exec_compatibility_full` 触发面，并补齐 env-fallback 与 package-entrypoint regression coverage；`pnpm exec vitest run test/cli-exec-compatibility-profile.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`node ./scripts/ci/run-cli-exec-compatibility-profile.js --changed-file package.json --output json`、`pnpm run build`、`pnpm run verify:cli-exec-compatibility -- --profile cli_exec_compatibility_full --execute` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 已在同窗通过，当前状态推进为 `resolved`。
+- [x] CR-011 sprint-002-verification-profiles-trigger-matrix-and-closeout delegated recheck loop round 11
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer clean recheck round 11 未发现新的 actionable finding；当前 sprint-002 implementation boundary 在最新 reviewer round 上达到 clean 状态。
+  - 2026-04-14：本地主 agent 复核了 `scripts/ci/run-cli-exec-compatibility-profile.js`、`package.json`、`test/cli-exec-compatibility-profile.integration.test.ts` 以及 `DA-865 / ADR` 的一致性，并确认 `pnpm exec vitest run test/cli-exec-compatibility-profile.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`node ./scripts/ci/run-cli-exec-compatibility-profile.js --changed-file package.json --output json`、`node ./scripts/ci/run-cli-exec-compatibility-profile.js --changed-file scripts/ci/run-cli-exec-compatibility-profile.js --output json`、`pnpm run build`、`pnpm run verify:cli-exec-compatibility -- --profile cli_exec_compatibility_full --execute` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 已在同窗通过，当前状态推进为 `resolved`。

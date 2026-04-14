@@ -318,49 +318,70 @@ describe('NativeCliExecProcessRuntime', () => {
     const runtime = createRuntime();
     const gracefulInterrupts: string[] = [];
     const hardInterrupts: string[] = [];
-    const command = process.platform === 'win32' ? process.execPath : '/bin/sh';
-    const commandArguments =
-      process.platform === 'win32'
-        ? [
-            '-e',
-            [
-              "process.on('SIGTERM', () => {});",
-              "process.stdout.write('partial');",
-              'setInterval(() => {}, 1000);',
-            ].join(' '),
-          ]
-        : ['-c', "trap '' TERM; printf partial; while :; do sleep 1; done"];
+    const command = process.execPath;
+    const commandArguments = [
+      '-e',
+      [
+        // Use Node here so TERM-ignore behavior stays deterministic across shells.
+        "process.on('SIGTERM', () => {});",
+        "process.stdout.write('partial');",
+        'setInterval(() => {}, 1000);',
+      ].join(' '),
+    ];
+    const runtimeWithPrivateTermination = runtime as unknown as {
+      terminateChildProcess: (
+        childProcess: ChildProcess,
+        processTreePolicy: 'process_only' | 'process_group_best_effort',
+        signal: NodeJS.Signals,
+      ) => void;
+    };
+    const originalTerminateChildProcess = runtimeWithPrivateTermination.terminateChildProcess.bind(
+      runtimeWithPrivateTermination,
+    );
+    const terminateChildProcessSpy = vi
+      .spyOn(runtimeWithPrivateTermination, 'terminateChildProcess')
+      .mockImplementation((childProcess, processTreePolicy, signal) => {
+        if (signal === 'SIGTERM') {
+          return;
+        }
+        originalTerminateChildProcess(childProcess, processTreePolicy, signal);
+      });
 
-    const thrownError = await runtime
-      .execute({
-        ...createLaunchPlan(),
-        command,
-        commandArguments,
-        timeoutMs: 40,
-        terminateGraceMs: 20,
-        onGracefulInterruptStart: (cancelMechanism) => gracefulInterrupts.push(cancelMechanism),
-        onHardTerminateStart: (cancelMechanism) => hardInterrupts.push(cancelMechanism),
-      })
-      .then(() => null)
-      .catch((error) => error as { details?: Record<string, unknown>; message: string });
+    try {
+      const thrownError = await runtime
+        .execute({
+          ...createLaunchPlan(),
+          command,
+          commandArguments,
+          timeoutMs: 40,
+          terminateGraceMs: 20,
+          onGracefulInterruptStart: (cancelMechanism) => gracefulInterrupts.push(cancelMechanism),
+          onHardTerminateStart: (cancelMechanism) => hardInterrupts.push(cancelMechanism),
+        })
+        .then(() => null)
+        .catch((error) => error as { details?: Record<string, unknown>; message: string });
 
-    expect(thrownError).not.toBeNull();
-    expect(thrownError?.message).toContain('timed out');
-    expect(gracefulInterrupts).toEqual(['process_signal']);
-    expect(hardInterrupts).toEqual(['process_signal']);
-    const details = thrownError?.details ?? {};
-    expectNativeCliExecPreservedFacts('timeout_hard_terminated', {
-      launch_diagnostics_preserved:
-        details.selectedEntrypoint === process.execPath &&
-        details.processTreePolicy === 'process_only',
-      adapter_launch_truth_projected:
-        details.selectedEntrypoint === process.execPath &&
-        details.shellWrapped === false &&
-        details.processTreePolicy === 'process_only',
-      terminate_phase_preserved:
-        gracefulInterrupts.includes('process_signal') && hardInterrupts.includes('process_signal'),
-      partial_output_preserved_when_available: details.stdout === 'partial',
-    });
+      expect(thrownError).not.toBeNull();
+      expect(thrownError?.message).toContain('timed out');
+      expect(gracefulInterrupts).toEqual(['process_signal']);
+      expect(hardInterrupts).toEqual(['process_signal']);
+      const details = thrownError?.details ?? {};
+      expectNativeCliExecPreservedFacts('timeout_hard_terminated', {
+        launch_diagnostics_preserved:
+          details.selectedEntrypoint === process.execPath &&
+          details.processTreePolicy === 'process_only',
+        adapter_launch_truth_projected:
+          details.selectedEntrypoint === process.execPath &&
+          details.shellWrapped === false &&
+          details.processTreePolicy === 'process_only',
+        terminate_phase_preserved:
+          gracefulInterrupts.includes('process_signal') &&
+          hardInterrupts.includes('process_signal'),
+        partial_output_preserved_when_available: details.stdout === 'partial',
+      });
+    } finally {
+      terminateChildProcessSpy.mockRestore();
+    }
   });
 
   it('preserves partial output and graceful termination semantics when abort exits cleanly', async () => {
