@@ -18,6 +18,7 @@ import {
 import {
   AdapterCredentialSource,
   AdapterProviderKind,
+  AdapterRequestCancellationMode,
   AdapterVendorBindingKind,
   GovernorErrorCode,
   RuntimeError,
@@ -26,6 +27,10 @@ import {
   expectNativeCliExecPreservedFacts,
   hasAgentHealthDiagnostic,
 } from '../../../../test/native-cli-exec-compatibility-harness.js';
+import {
+  expectInvokeLaunchTruthProjected,
+  expectProbeLaunchTruthProjected,
+} from '../../../../test/native-cli-exec-launch-authoring-harness.js';
 import {
   CodexAgentAdapter,
   CodexAgentAdapterExecutionMode,
@@ -121,6 +126,11 @@ describe('codex-agent-adapter smoke', () => {
       exitCode: 0,
       signal: null,
       elapsedMs: 12,
+      launchDiagnostics: {
+        selectedEntrypoint: 'codex',
+        shellWrapped: false,
+        processTreePolicy: 'process_group_best_effort',
+      },
     });
   };
 
@@ -180,6 +190,15 @@ describe('codex-agent-adapter smoke', () => {
     expect(probeResult.availabilityStatus).toBe('available');
     expect(probeResult.capabilityMatrix.cancellation.supportsCancel).toBe(false);
     expect(probeResult.capabilityMatrix.cancellation.supportsAbortSignal).toBe(false);
+    expectProbeLaunchTruthProjected({
+      selectedEntrypoint: probeResult.healthCheck?.selectedEntrypoint,
+      requestCancellationMode: probeResult.healthCheck?.requestCancellationMode,
+      diagnostics: probeResult.healthCheck?.diagnostics,
+      expectedEntrypoint: 'codex',
+      expectedRequestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+      expectedShellWrapped: false,
+      expectedProcessTreePolicy: 'process_group_best_effort',
+    });
     expect(invokeResult.output.responseText).toBe('implemented feature');
     expect(invokeResult.output.threadId).toBe('thread-1');
     expect(invokeResult.usage?.totalTokens).toBe(18);
@@ -225,19 +244,15 @@ describe('codex-agent-adapter smoke', () => {
     });
 
     expect(probeResult.availabilityStatus).toBe('unavailable');
-    expect(probeResult.healthCheck?.selectedEntrypoint).toBe('codex');
-    expect(probeResult.healthCheck?.diagnostics).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: 'install.entrypoint_resolution',
-          detail: 'codex',
-        }),
-        expect.objectContaining({
-          code: 'protocol.process_tree_policy',
-          detail: 'process_group_best_effort',
-        }),
-      ]),
-    );
+    expectProbeLaunchTruthProjected({
+      selectedEntrypoint: probeResult.healthCheck?.selectedEntrypoint,
+      requestCancellationMode: probeResult.healthCheck?.requestCancellationMode,
+      diagnostics: probeResult.healthCheck?.diagnostics,
+      expectedEntrypoint: 'codex',
+      expectedRequestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+      expectedShellWrapped: false,
+      expectedProcessTreePolicy: 'process_group_best_effort',
+    });
     expectNativeCliExecPreservedFacts('probe_protocol_parse_failed', {
       launch_diagnostics_preserved:
         probeResult.healthCheck?.selectedEntrypoint === 'codex' &&
@@ -275,6 +290,12 @@ describe('codex-agent-adapter smoke', () => {
       message: expect.stringContaining('malformed JSON output'),
     });
     const invokeDetails = invokeError?.details ?? {};
+    expectInvokeLaunchTruthProjected({
+      details: invokeDetails,
+      expectedEntrypoint: 'codex',
+      expectedShellWrapped: false,
+      expectedProcessTreePolicy: 'process_group_best_effort',
+    });
     expectNativeCliExecPreservedFacts('invoke_protocol_parse_failed', {
       launch_diagnostics_preserved:
         invokeDetails.selectedEntrypoint === 'codex' &&

@@ -1,6 +1,6 @@
 # TK-869 extend launch-authoring contract coverage across spawn parse non-zero signal timeout and abort paths
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-04-14
 - Owner: AI-Agent
 - Priority: P1
@@ -49,6 +49,7 @@
 ## 9. 执行记录
 
 1. 2026-04-14：任务创建，状态初始化为 `planned`。
+2. 2026-04-14：`sprint-001` 已在 clean `CR-001` 后完成 closeout，当前任务切换为 `in_progress`，并将 `sprint-002` 激活为新的 primary execution surface；下一步先本地预留 `CR-001`，再开始 failure-path coverage implementation。
 
 ## 10. 产出
 

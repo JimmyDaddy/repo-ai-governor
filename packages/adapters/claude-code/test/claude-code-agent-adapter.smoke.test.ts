@@ -21,6 +21,7 @@ import {
   AdapterCredentialSource,
   AdapterEndpointSource,
   AdapterProviderKind,
+  AdapterRequestCancellationMode,
   AdapterVendorBindingKind,
   GovernorErrorCode,
   RuntimeError,
@@ -29,6 +30,11 @@ import {
   expectNativeCliExecPreservedFacts,
   hasAgentHealthDiagnostic,
 } from '../../../../test/native-cli-exec-compatibility-harness.js';
+import {
+  expectFallbackEntrypointProjection,
+  expectInvokeLaunchTruthProjected,
+  expectProbeLaunchTruthProjected,
+} from '../../../../test/native-cli-exec-launch-authoring-harness.js';
 import {
   ClaudeCodeAgentAdapter,
   ClaudeCodeAgentAdapterExecutionMode,
@@ -163,24 +169,15 @@ describe('claude-code-agent-adapter smoke', () => {
     expect(probeResult.capabilityMatrix.timeout.minTimeoutMs).toBe(500);
     expect(probeResult.capabilityMatrix.timeout.maxTimeoutMs).toBe(600000);
     expect(probeResult.healthCheck?.transportKind).toBe('cli_exec');
-    expect(probeResult.healthCheck?.requestCancellationMode).toBe('not_supported');
-    expect(probeResult.healthCheck?.selectedEntrypoint).toBe('claude');
-    expect(probeResult.healthCheck?.diagnostics).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: 'install.entrypoint_resolution',
-          detail: 'claude',
-        }),
-        expect.objectContaining({
-          code: 'protocol.shell_wrapped',
-          detail: 'false',
-        }),
-        expect.objectContaining({
-          code: 'protocol.process_tree_policy',
-          detail: 'process_group_best_effort',
-        }),
-      ]),
-    );
+    expectProbeLaunchTruthProjected({
+      selectedEntrypoint: probeResult.healthCheck?.selectedEntrypoint,
+      requestCancellationMode: probeResult.healthCheck?.requestCancellationMode,
+      diagnostics: probeResult.healthCheck?.diagnostics,
+      expectedEntrypoint: 'claude',
+      expectedRequestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+      expectedShellWrapped: false,
+      expectedProcessTreePolicy: 'process_group_best_effort',
+    });
   });
 
   it('accepts trivial punctuation variants in probe health-check responses', async () => {
@@ -1167,6 +1164,11 @@ describe('claude-code-agent-adapter smoke', () => {
         exitCode: 0,
         signal: null,
         elapsedMs: 5,
+        launchDiagnostics: {
+          selectedEntrypoint: 'claude-code',
+          shellWrapped: false,
+          processTreePolicy: 'process_group_best_effort',
+        },
       };
     });
     const adapter = new ClaudeCodeAgentAdapter({
@@ -1179,6 +1181,11 @@ describe('claude-code-agent-adapter smoke', () => {
     });
 
     expect(probeResult.availabilityStatus).toBe('available');
+    expectFallbackEntrypointProjection({
+      attemptedEntrypoints: execRunner.mock.calls.map(([request]) => request.command),
+      expectedAttemptOrder: ['claude', 'claude-code'],
+      projectedEntrypoint: probeResult.healthCheck?.selectedEntrypoint,
+    });
     expect(execRunner).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
@@ -1228,19 +1235,15 @@ describe('claude-code-agent-adapter smoke', () => {
     });
 
     expect(probeResult.availabilityStatus).toBe('unavailable');
-    expect(probeResult.healthCheck?.selectedEntrypoint).toBe('claude-code');
-    expect(probeResult.healthCheck?.diagnostics).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: 'install.entrypoint_resolution',
-          detail: 'claude-code',
-        }),
-        expect.objectContaining({
-          code: 'protocol.process_tree_policy',
-          detail: 'process_group_best_effort',
-        }),
-      ]),
-    );
+    expectProbeLaunchTruthProjected({
+      selectedEntrypoint: probeResult.healthCheck?.selectedEntrypoint,
+      requestCancellationMode: probeResult.healthCheck?.requestCancellationMode,
+      diagnostics: probeResult.healthCheck?.diagnostics,
+      expectedEntrypoint: 'claude-code',
+      expectedRequestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+      expectedShellWrapped: false,
+      expectedProcessTreePolicy: 'process_group_best_effort',
+    });
     expectNativeCliExecPreservedFacts('probe_protocol_parse_failed', {
       launch_diagnostics_preserved:
         probeResult.healthCheck?.selectedEntrypoint === 'claude-code' &&
@@ -1306,6 +1309,12 @@ describe('claude-code-agent-adapter smoke', () => {
       message: expect.stringContaining('returned no response text'),
     });
     const invokeDetails = invokeError?.details ?? {};
+    expectInvokeLaunchTruthProjected({
+      details: invokeDetails,
+      expectedEntrypoint: 'claude-code',
+      expectedShellWrapped: false,
+      expectedProcessTreePolicy: 'process_group_best_effort',
+    });
     expectNativeCliExecPreservedFacts('invoke_protocol_parse_failed', {
       launch_diagnostics_preserved:
         invokeDetails.selectedEntrypoint === 'claude-code' &&

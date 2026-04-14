@@ -1,6 +1,6 @@
 # TK-857 implement cli-exec launch authoring contract tests rollout baseline
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-04-13
 - Owner: AI-Agent
 - Priority: P0
@@ -41,17 +41,27 @@
 
 ## 7. Development Verification
 
-1. 待激活后补充 implementation-window verification。
+1. `pnpm exec vitest run packages/adapter-sdk/test/native-cli-exec-process-runtime.unit.test.ts packages/adapters/codex/test/codex-agent-adapter.smoke.test.ts packages/adapters/claude-code/test/claude-code-agent-adapter.smoke.test.ts packages/adapters/github-copilot/test/github-copilot-agent-adapter.smoke.test.ts --maxWorkers=1 --maxConcurrency=1`
+2. `pnpm run build`
+3. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
 
 ## 8. Delivery Verification
 
-1. 待激活后补充 rollout-window delivery verification。
+1. `pnpm run build`
+2. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
+3. `node ./scripts/governance/check-task-ledger-sync.js`
+4. `node ./scripts/governance/check-sprint-plan-status-sync.js`
 
 ## 9. 执行记录
 
 1. 2026-04-13：任务创建，状态初始化为 `planned`，作为 `followup_required` rollout skeleton 的 canonical task。
 2. 2026-04-14：`project-106` final closeout 完成后，当前任务切换为 `in_progress`，并把 `project-102 / sprint-001` 激活为 primary execution surface；下一步先本地预留 `CR-001`，再开始 shared harness baseline implementation。
+3. 2026-04-14：已新增 shared `native-cli-exec-launch-authoring-harness`，并把 shared runtime unit test 与 `Codex / Claude Code / GitHub Copilot` smoke tests 接入 probe/invoke split 与 fallback entrypoint projection vocabulary；focused suites、`pnpm run build` 与 `pnpm run test:packages` 已在同窗通过，当前任务完成。
 
 ## 10. 产出
 
-1. 待激活：implementation artifacts to be defined in rollout window
+1. `test/native-cli-exec-launch-authoring-harness.ts`
+2. `packages/adapter-sdk/test/native-cli-exec-process-runtime.unit.test.ts`
+3. `packages/adapters/codex/test/codex-agent-adapter.smoke.test.ts`
+4. `packages/adapters/claude-code/test/claude-code-agent-adapter.smoke.test.ts`
+5. `packages/adapters/github-copilot/test/github-copilot-agent-adapter.smoke.test.ts`

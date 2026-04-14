@@ -21,6 +21,11 @@ import {
   hasAgentHealthDiagnostic,
 } from '../../../../test/native-cli-exec-compatibility-harness.js';
 import {
+  expectFallbackEntrypointProjection,
+  expectInvokeLaunchTruthProjected,
+  expectProbeLaunchTruthProjected,
+} from '../../../../test/native-cli-exec-launch-authoring-harness.js';
+import {
   GithubCopilotAgentAdapter,
   GithubCopilotAgentAdapterExecutionMode,
   type GithubCopilotExecRunner,
@@ -105,26 +110,15 @@ describe('github-copilot-agent-adapter smoke', () => {
     expect(cancellation?.supportLevel).toBe(AgentCapabilitySupportLevel.UNSUPPORTED);
     expect(probeResult.capabilityMatrix.cancellation.supportsCancel).toBe(false);
     expect(probeResult.healthCheck?.transportKind).toBe(AdapterTransportKind.CLI_EXEC);
-    expect(probeResult.healthCheck?.requestCancellationMode).toBe(
-      AdapterRequestCancellationMode.NOT_SUPPORTED,
-    );
-    expect(probeResult.healthCheck?.selectedEntrypoint).toBe('copilot');
-    expect(probeResult.healthCheck?.diagnostics).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: 'install.entrypoint_resolution',
-          detail: 'copilot',
-        }),
-        expect.objectContaining({
-          code: 'protocol.shell_wrapped',
-          detail: 'false',
-        }),
-        expect.objectContaining({
-          code: 'protocol.process_tree_policy',
-          detail: 'process_group_best_effort',
-        }),
-      ]),
-    );
+    expectProbeLaunchTruthProjected({
+      selectedEntrypoint: probeResult.healthCheck?.selectedEntrypoint,
+      requestCancellationMode: probeResult.healthCheck?.requestCancellationMode,
+      diagnostics: probeResult.healthCheck?.diagnostics,
+      expectedEntrypoint: 'copilot',
+      expectedRequestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+      expectedShellWrapped: false,
+      expectedProcessTreePolicy: 'process_group_best_effort',
+    });
   });
 
   it('accepts trivial punctuation variants in probe health-check responses', async () => {
@@ -449,6 +443,11 @@ describe('github-copilot-agent-adapter smoke', () => {
         exitCode: 0,
         signal: null,
         elapsedMs: 5,
+        launchDiagnostics: {
+          selectedEntrypoint: 'gh',
+          shellWrapped: false,
+          processTreePolicy: 'process_group_best_effort',
+        },
       };
     });
     const adapter = new GithubCopilotAgentAdapter({
@@ -461,6 +460,11 @@ describe('github-copilot-agent-adapter smoke', () => {
     });
 
     expect(probeResult.availabilityStatus).toBe('available');
+    expectFallbackEntrypointProjection({
+      attemptedEntrypoints: execRunner.mock.calls.map(([request]) => request.command),
+      expectedAttemptOrder: ['copilot', 'gh'],
+      projectedEntrypoint: probeResult.healthCheck?.selectedEntrypoint,
+    });
     expect(execRunner).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
@@ -512,19 +516,15 @@ describe('github-copilot-agent-adapter smoke', () => {
     });
 
     expect(probeResult.availabilityStatus).toBe('unavailable');
-    expect(probeResult.healthCheck?.selectedEntrypoint).toBe('gh');
-    expect(probeResult.healthCheck?.diagnostics).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: 'install.entrypoint_resolution',
-          detail: 'gh',
-        }),
-        expect.objectContaining({
-          code: 'protocol.process_tree_policy',
-          detail: 'process_group_best_effort',
-        }),
-      ]),
-    );
+    expectProbeLaunchTruthProjected({
+      selectedEntrypoint: probeResult.healthCheck?.selectedEntrypoint,
+      requestCancellationMode: probeResult.healthCheck?.requestCancellationMode,
+      diagnostics: probeResult.healthCheck?.diagnostics,
+      expectedEntrypoint: 'gh',
+      expectedRequestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+      expectedShellWrapped: false,
+      expectedProcessTreePolicy: 'process_group_best_effort',
+    });
     expectNativeCliExecPreservedFacts('probe_protocol_parse_failed', {
       launch_diagnostics_preserved:
         probeResult.healthCheck?.selectedEntrypoint === 'gh' &&
@@ -647,6 +647,12 @@ describe('github-copilot-agent-adapter smoke', () => {
       message: expect.stringContaining('malformed JSON output'),
     });
     const invokeDetails = invokeError?.details ?? {};
+    expectInvokeLaunchTruthProjected({
+      details: invokeDetails,
+      expectedEntrypoint: 'gh',
+      expectedShellWrapped: false,
+      expectedProcessTreePolicy: 'process_group_best_effort',
+    });
     expectNativeCliExecPreservedFacts('invoke_protocol_parse_failed', {
       launch_diagnostics_preserved:
         invokeDetails.selectedEntrypoint === 'gh' &&

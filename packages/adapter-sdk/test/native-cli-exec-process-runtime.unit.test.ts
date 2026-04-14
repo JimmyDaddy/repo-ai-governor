@@ -1,6 +1,7 @@
 import type { ChildProcess } from 'node:child_process';
 
 import { expectNativeCliExecPreservedFacts } from '../../../test/native-cli-exec-compatibility-harness.js';
+import { expectInvokeLaunchTruthProjected } from '../../../test/native-cli-exec-launch-authoring-harness.js';
 import {
   AgentCliExecOperation,
   AgentCliExecOperationsRuntime,
@@ -39,7 +40,7 @@ function createLaunchPlan(
 const PARTIAL_OUTPUT_TIMEOUT_MS = 700;
 const HARD_TERMINATION_TIMEOUT_MS = 300;
 const HARD_TERMINATION_GRACE_MS = 100;
-const ABORT_SIGNAL_DELAY_MS = 400;
+const ABORT_SIGNAL_DELAY_MS = 1000;
 
 describe('NativeCliExecProcessRuntime', () => {
   it('streams stdout and stderr through the shared runtime', async () => {
@@ -94,6 +95,12 @@ describe('NativeCliExecProcessRuntime', () => {
       }),
     });
     const details = thrownError?.details ?? {};
+    expectInvokeLaunchTruthProjected({
+      details,
+      expectedEntrypoint: process.execPath,
+      expectedShellWrapped: false,
+      expectedProcessTreePolicy: 'process_only',
+    });
     expectNativeCliExecPreservedFacts('non_zero_exit', {
       launch_diagnostics_preserved:
         details.selectedEntrypoint === process.execPath &&
@@ -134,6 +141,12 @@ describe('NativeCliExecProcessRuntime', () => {
       }),
     );
     const details = thrownError?.details ?? {};
+    expectInvokeLaunchTruthProjected({
+      details,
+      expectedEntrypoint: missingCommand,
+      expectedShellWrapped: false,
+      expectedProcessTreePolicy: 'process_only',
+    });
     expectNativeCliExecPreservedFacts('spawn_failed', {
       launch_diagnostics_preserved:
         details.selectedEntrypoint === missingCommand &&
@@ -172,6 +185,12 @@ describe('NativeCliExecProcessRuntime', () => {
         }),
       );
       const details = thrownError?.details ?? {};
+      expectInvokeLaunchTruthProjected({
+        details,
+        expectedEntrypoint: process.execPath,
+        expectedShellWrapped: false,
+        expectedProcessTreePolicy: 'process_only',
+      });
       expectNativeCliExecPreservedFacts('signal_exit', {
         launch_diagnostics_preserved:
           details.selectedEntrypoint === process.execPath &&
@@ -396,6 +415,7 @@ describe('NativeCliExecProcessRuntime', () => {
     const gracefulInterrupts: string[] = [];
     const hardInterrupts: string[] = [];
     const abortController = new AbortController();
+    let abortRequestedFromOutput = false;
     const command = process.execPath;
     const commandArguments = [
       '-e',
@@ -419,7 +439,17 @@ describe('NativeCliExecProcessRuntime', () => {
             processTreePolicy: 'process_only',
           },
           onStarted: () => {
-            setTimeout(() => abortController.abort(), ABORT_SIGNAL_DELAY_MS);
+            setTimeout(() => {
+              if (!abortRequestedFromOutput) {
+                abortController.abort();
+              }
+            }, ABORT_SIGNAL_DELAY_MS);
+          },
+          onStdoutChunk: () => {
+            if (!abortRequestedFromOutput) {
+              abortRequestedFromOutput = true;
+              abortController.abort();
+            }
           },
           onGracefulInterruptStart: (cancelMechanism) => gracefulInterrupts.push(cancelMechanism),
           onHardTerminateStart: (cancelMechanism) => hardInterrupts.push(cancelMechanism),
@@ -459,6 +489,7 @@ describe('NativeCliExecProcessRuntime', () => {
     const gracefulInterrupts: string[] = [];
     const hardInterrupts: string[] = [];
     const abortController = new AbortController();
+    let abortRequestedFromOutput = false;
     const command = process.platform === 'win32' ? process.execPath : '/bin/sh';
     const commandArguments =
       process.platform === 'win32'
@@ -486,7 +517,17 @@ describe('NativeCliExecProcessRuntime', () => {
             processTreePolicy: 'process_only',
           },
           onStarted: () => {
-            setTimeout(() => abortController.abort(), ABORT_SIGNAL_DELAY_MS);
+            setTimeout(() => {
+              if (!abortRequestedFromOutput) {
+                abortController.abort();
+              }
+            }, ABORT_SIGNAL_DELAY_MS);
+          },
+          onStdoutChunk: () => {
+            if (!abortRequestedFromOutput) {
+              abortRequestedFromOutput = true;
+              abortController.abort();
+            }
           },
           onGracefulInterruptStart: (cancelMechanism) => gracefulInterrupts.push(cancelMechanism),
           onHardTerminateStart: (cancelMechanism) => hardInterrupts.push(cancelMechanism),

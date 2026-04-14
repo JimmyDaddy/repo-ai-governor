@@ -3,20 +3,20 @@
 ## Primary Stream
 
 - Status: active
-- Stream: `stream-project-102-sprint-001`
+- Stream: `stream-project-102-sprint-002`
 - Project: `project-102-cli-exec-launch-authoring-contract-tests-rollout`
-- Sprint: `sprint-001-launch-authoring-contract-tests-rollout`
+- Sprint: `sprint-002-failure-path-coverage-and-rollout-closeout`
 - Docs: `.repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout`
-- Plan: `.repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout/sprint-001-launch-authoring-contract-tests-rollout/plan.md`
-- Tasks: `.repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout/sprint-001-launch-authoring-contract-tests-rollout/tasks/`
-- Checklist: `.repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout/sprint-001-launch-authoring-contract-tests-rollout/tasks/checklist.md`
-- CSV: `.repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout/sprint-001-launch-authoring-contract-tests-rollout/tasks/tasks.csv`
-- Review: `.repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout/sprint-001-launch-authoring-contract-tests-rollout/review/`
-- Note: `2026-04-14` `project-106` 已在 latest fresh clean recheck 与 final closeout 后完成；当前切换到 `project-102 / sprint-001` 作为新的 primary execution surface，下一步先本地预留 `CR-001`，再开始 `TK-857 / TK-867` implementation boundary。 
+- Plan: `.repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout/sprint-002-failure-path-coverage-and-rollout-closeout/plan.md`
+- Tasks: `.repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout/sprint-002-failure-path-coverage-and-rollout-closeout/tasks/`
+- Checklist: `.repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout/sprint-002-failure-path-coverage-and-rollout-closeout/tasks/checklist.md`
+- CSV: `.repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout/sprint-002-failure-path-coverage-and-rollout-closeout/tasks/tasks.csv`
+- Review: `.repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout/sprint-002-failure-path-coverage-and-rollout-closeout/review/`
+- Note: `2026-04-14` `sprint-001` 已在 local `CR-001` clean round 后完成 closeout；当前切换到 `project-102 / sprint-002` 作为新的 primary execution surface，下一步先本地预留 `CR-001`，再开始 `TK-869 / TK-870` failure-path coverage boundary。 
 
 ## Active Streams
 
-- `stream-project-102-sprint-001`: primary=`true`, project=`project-102-cli-exec-launch-authoring-contract-tests-rollout`, sprint=`sprint-001-launch-authoring-contract-tests-rollout`, docs=`.repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout`, plan=`.repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout/sprint-001-launch-authoring-contract-tests-rollout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout/sprint-001-launch-authoring-contract-tests-rollout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout/sprint-001-launch-authoring-contract-tests-rollout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout/sprint-001-launch-authoring-contract-tests-rollout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout/sprint-001-launch-authoring-contract-tests-rollout/review/`, status=`active`
+- `stream-project-102-sprint-002`: role=`primary`, primary=`true`, project=`project-102-cli-exec-launch-authoring-contract-tests-rollout`, sprint=`sprint-002-failure-path-coverage-and-rollout-closeout`, docs=`.repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout`, plan=`.repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout/sprint-002-failure-path-coverage-and-rollout-closeout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout/sprint-002-failure-path-coverage-and-rollout-closeout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout/sprint-002-failure-path-coverage-and-rollout-closeout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout/sprint-002-failure-path-coverage-and-rollout-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout/sprint-002-failure-path-coverage-and-rollout-closeout/review/`, status=`active`
 
 ## Planned Follow-Up Streams
 

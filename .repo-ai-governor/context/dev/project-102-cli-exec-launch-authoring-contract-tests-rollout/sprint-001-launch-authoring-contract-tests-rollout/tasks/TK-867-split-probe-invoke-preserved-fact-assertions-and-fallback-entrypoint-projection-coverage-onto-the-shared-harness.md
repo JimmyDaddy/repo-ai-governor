@@ -1,6 +1,6 @@
 # TK-867 split probe invoke preserved-fact assertions and fallback entrypoint projection coverage onto the shared harness
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-14
 - Owner: AI-Agent
 - Priority: P1
@@ -40,16 +40,26 @@
 
 ## 7. Development Verification
 
-1. 待激活后补充 shared harness focused verification。
+1. `pnpm exec vitest run packages/adapter-sdk/test/native-cli-exec-process-runtime.unit.test.ts packages/adapters/codex/test/codex-agent-adapter.smoke.test.ts packages/adapters/claude-code/test/claude-code-agent-adapter.smoke.test.ts packages/adapters/github-copilot/test/github-copilot-agent-adapter.smoke.test.ts --maxWorkers=1 --maxConcurrency=1`
+2. `pnpm run build`
+3. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
 
 ## 8. Delivery Verification
 
-1. 待激活后补充 rollout-window delivery verification与治理检查。
+1. `pnpm run build`
+2. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
+3. `node ./scripts/governance/check-task-ledger-sync.js`
+4. `node ./scripts/governance/check-sprint-plan-status-sync.js`
 
 ## 9. 执行记录
 
 1. 2026-04-14：任务创建，状态初始化为 `planned`。
+2. 2026-04-14：已把 probe launch truth projection、invoke launch truth projection 与 fallback entrypoint projection 收敛到 shared harness vocabulary，并补上 Codex CLI probe 的 `requestCancellationMode` ownership coverage；focused suites、`pnpm run build` 与 `pnpm run test:packages` 已在同窗通过，当前任务完成。
 
 ## 10. 产出
 
-1. 待激活：probe/invoke split coverage artifacts to be defined in rollout window。
+1. `test/native-cli-exec-launch-authoring-harness.ts`
+2. `packages/adapter-sdk/test/native-cli-exec-process-runtime.unit.test.ts`
+3. `packages/adapters/codex/test/codex-agent-adapter.smoke.test.ts`
+4. `packages/adapters/claude-code/test/claude-code-agent-adapter.smoke.test.ts`
+5. `packages/adapters/github-copilot/test/github-copilot-agent-adapter.smoke.test.ts`

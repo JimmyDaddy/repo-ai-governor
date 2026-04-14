@@ -20,13 +20,13 @@
 
 ## 2.1 sprint-001-launch-authoring-contract-tests-rollout
 
-- Status: active
+- Status: completed
 - Sprint Goal: 初始化 shared launch-authoring contract-test rollout baseline，并冻结第一阶段 implementation boundary。
 - Task Package: `TK-857`、`TK-867`、`TK-868`
 
 ## 2.2 sprint-002-failure-path-coverage-and-rollout-closeout
 
-- Status: planned
+- Status: active
 - Sprint Goal: 扩展 failure-path coverage，完成 compatibility-aligned evidence 与 rollout closeout。
 - Task Package: `TK-869`、`TK-870`、`TK-871`
 
@@ -34,10 +34,10 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 | --- | --- | --- | --- | --- | --- |
-| TK-857 | sprint-001 | implement cli-exec launch authoring contract tests rollout baseline | rollout/planned | DA-846 | in_progress |
-| TK-867 | sprint-001 | split probe invoke preserved-fact assertions and fallback entrypoint projection coverage onto the shared harness | harness/ownership | TK-857 | planned |
-| TK-868 | sprint-001 | sprint-001 exit acceptance and sprint-002 activation handoff | sprint/closeout | TK-857、TK-867、activation-time local CR-001 | planned |
-| TK-869 | sprint-002 | extend launch-authoring contract coverage across spawn parse non-zero signal timeout and abort paths | coverage/failure-path | TK-868 | planned |
+| TK-857 | sprint-001 | implement cli-exec launch authoring contract tests rollout baseline | rollout/planned | DA-846 | completed |
+| TK-867 | sprint-001 | split probe invoke preserved-fact assertions and fallback entrypoint projection coverage onto the shared harness | harness/ownership | TK-857 | completed |
+| TK-868 | sprint-001 | sprint-001 exit acceptance and sprint-002 activation handoff | sprint/closeout | TK-857、TK-867、activation-time local CR-001 | completed |
+| TK-869 | sprint-002 | extend launch-authoring contract coverage across spawn parse non-zero signal timeout and abort paths | coverage/failure-path | TK-868 | in_progress |
 | TK-870 | sprint-002 | prove compatibility-baseline alignment without widening scope into general adapter test strategy | evidence/alignment | TK-869 | planned |
 | TK-871 | sprint-002 | finalize project-102 closeout and delivery evidence handoff | closeout/delivery | TK-869、TK-870、activation-time local CR-001 | planned |
 
@@ -59,6 +59,8 @@
 1. 2026-04-13：由 `project-101 / TK-846` promotion cutover 创建为 planned follow-up stream。
 2. 2026-04-14：`project-102` 已扩展为两阶段 execution-ready scaffold，并与 `project-106` 的推荐前置顺序对齐。
 3. 2026-04-14：`project-106` final closeout 完成后，当前 project 已切换为 active，并将 `sprint-001` 激活为新的 primary implementation surface。
+4. 2026-04-14：`TK-857` 与 `TK-867` 已完成 shared launch-authoring harness baseline、probe/invoke split 与 fallback entrypoint projection coverage，当前 `sprint-001` implementation boundary 等待 `CR-001` fresh reviewer round。
+5. 2026-04-14：`CR-001` clean recheck 未发现新的 actionable finding；`sprint-001` 已完成 closeout 并切换到 `sprint-002`，当前开始 failure-path coverage implementation。
 
 ## 7. 里程碑记录入口
 

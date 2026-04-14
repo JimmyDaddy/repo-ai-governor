@@ -255,14 +255,14 @@ deliveries:
     rollout_status: not_required
     owner: runtime
     project_ref: project-102-cli-exec-launch-authoring-contract-tests-rollout
-    sprint_ref: sprint-001-launch-authoring-contract-tests-rollout
+    sprint_ref: sprint-002-failure-path-coverage-and-rollout-closeout
     task_ids:
-      - TK-857
-      - TK-867
-      - TK-868
+      - TK-869
+      - TK-870
+      - TK-871
     project_plan_path: .repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout/plan.md
-    sprint_plan_path: .repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout/sprint-001-launch-authoring-contract-tests-rollout/plan.md
-    task_csv_path: .repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout/sprint-001-launch-authoring-contract-tests-rollout/tasks/tasks.csv
+    sprint_plan_path: .repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout/sprint-002-failure-path-coverage-and-rollout-closeout/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-102-cli-exec-launch-authoring-contract-tests-rollout/sprint-002-failure-path-coverage-and-rollout-closeout/tasks/tasks.csv
     handoff_artifact_path: .repo-ai-governor/context/dev/project-101-cli-exec-followup-solution-review-and-promotion/sprint-001-launch-authoring-contract-tests/tasks/DA-846-cli-exec-launch-authoring-contract-tests-promotion-cutover.md
     rollout_artifacts: []
     accepted_at: 2026-04-13

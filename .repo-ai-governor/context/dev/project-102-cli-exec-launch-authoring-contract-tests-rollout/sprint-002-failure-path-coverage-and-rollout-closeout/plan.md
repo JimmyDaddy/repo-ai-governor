@@ -1,6 +1,6 @@
 # sprint-002-failure-path-coverage-and-rollout-closeout 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-14
 - Sprint Goal: 扩展 failure-path coverage，完成 compatibility-aligned evidence 与 rollout closeout。
 - Project: `project-102-cli-exec-launch-authoring-contract-tests-rollout`
@@ -19,7 +19,7 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-869 | extend launch-authoring contract coverage across spawn parse non-zero signal timeout and abort paths | TK-868 | planned |
+| TK-869 | extend launch-authoring contract coverage across spawn parse non-zero signal timeout and abort paths | TK-868 | in_progress |
 | TK-870 | prove compatibility-baseline alignment without widening scope into general adapter test strategy | TK-869 | planned |
 | TK-871 | finalize project-102 closeout and delivery evidence handoff | TK-869、TK-870、activation-time local CR-001 | planned |
 
@@ -34,3 +34,4 @@
 1. 激活后先预留本地 `CR-001`，再开始 implementation 与 reviewer loop。
 2. 当前 sprint 只承接 failure-path coverage、alignment evidence 与 closeout，不新增 general adapter test strategy 范围。
 3. `TK-871` 负责 `project-102` final closeout，但只有在 sprint-002 local `CR-001` clean 后才允许完成。
+4. 2026-04-14：`sprint-001` clean closeout 后，当前 sprint 已被激活为新的 primary execution surface；`TK-869` 进入执行前准备状态。
