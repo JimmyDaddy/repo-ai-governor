@@ -1,6 +1,6 @@
 # sprint-002-verification-profiles-trigger-matrix-and-closeout 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-14
 - Sprint Goal: 补齐 focused compatibility verification profile、trigger matrix 与 rollout closeout guidance。
 - Project: `project-106-cli-exec-compatibility-and-stability-rollout`
@@ -21,7 +21,7 @@
 | --- | --- | --- | --- |
 | TK-864 | wire focused compatibility verification profiles and trigger-matrix routing without promoting them to governance gates | TK-863 | completed |
 | TK-865 | capture compatibility baseline evidence pack and closeout guidance for future runtime windows | TK-864 | completed |
-| TK-866 | finalize project-106 closeout and delivery evidence handoff | TK-864、TK-865、activation-time local CR-001 | planned |
+| TK-866 | finalize project-106 closeout and delivery evidence handoff | TK-864、TK-865、activation-time local CR-001 | completed |
 
 ## 3. Exit Criteria
 
@@ -44,3 +44,5 @@
 11. 2026-04-14：fresh reviewer round 9 暴露显式无效 `--base-ref` 会静默降级到 working-tree mode；当前已改为 fail-fast，并补齐 invalid-base-ref regression coverage 与 handoff guidance。
 12. 2026-04-14：fresh reviewer round 10 继续暴露两个路由缺口：explicit invalid `--base-ref` 仍可能被 env base-ref 接管，且 `package.json` 中的 verify entrypoint 改动还不会命中 full profile；当前已补 explicit-ref 优先级修复、`package.json` full-profile routing 与两条 regression coverage。
 13. 2026-04-14：fresh reviewer round 11 clean recheck 未发现新的 actionable finding；当前 sprint-002 implementation boundary 已达到 closeout-ready，下一步继续在该 surface 上执行 project-final fresh review。
+14. 2026-04-14：native `cli_exec` timeout/abort partial-output preservation 的 full-gate flake 已通过 focused stabilization、`pnpm run build` 与 `pnpm run check` 重新转绿；当前继续保留 active closeout surface，并等待 latest fresh clean recheck 结论后再执行最终收口。
+15. 2026-04-14：project-final `CR-020` latest fresh clean recheck 未发现新的 actionable finding；`TK-866` 已完成 completion audit、delivery registry、completed stream history 与 next-project activation write-back，当前 sprint 正式收口为 `completed`。

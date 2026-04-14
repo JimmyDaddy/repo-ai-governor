@@ -26,8 +26,15 @@
   - 2026-04-14：fresh reviewer round 9 暴露显式无效 `--base-ref` 会静默降级到 working-tree mode 后，当前已刷新 `DA-865` 的 CI diff-routing guidance，确保 explicit git-range 输入在 ref 无法解析时 fail-fast。
   - 2026-04-14：fresh reviewer round 10 暴露 explicit invalid `--base-ref` 仍可能被 env base-ref 接管、且 `package.json` verify entrypoint 改动仍可绕过 baseline 后，当前已刷新 `DA-865` 的 explicit-ref priority 与 full-profile trigger guidance。
   - 2026-04-14：当前任务状态切换为 `completed`，下一步等待 sprint-002 fresh reviewer round 与 `TK-866` project-final closeout 收口。
-- [ ] TK-866 finalize project-106 closeout and delivery evidence handoff
+- [x] TK-866 finalize project-106 closeout and delivery evidence handoff
   - 2026-04-14：任务创建，状态初始化为 `planned`。
+  - 2026-04-14：`sprint-002` 已在 `CR-011` clean recheck 后完成 boundary commit `c1258aa2`；当前任务切换为 `in_progress`，并开始 project-final fresh reviewer round。
+  - 2026-04-14：project-final `CR-012` 发现 project plan DoD、`current-context` active note 与本任务 `产出` 仍停留在 bootstrap/待激活语义；当前已修正 closeout truth，使 final closeout 能与真实完成态保持一致。
+  - 2026-04-14：native `cli_exec` timeout/abort partial-output preservation 的 full-gate flake 已通过 focused stabilization、`pnpm run build` 与 `pnpm run check` 重新转绿；当前任务继续保持 `in_progress`，并等待 latest fresh clean recheck 结论后执行最终 closeout。
+  - 2026-04-14：project-final `CR-017` 暴露 current closeout narrative 仍停留在 `CR-016` 语义，且 canonical ledger 中残留一条误写成 `completed` 的 `TK-866` 历史 execution row；当前先修复 narrative 与 canonical audit trail，再继续进入下一轮 fresh clean recheck。
+  - 2026-04-14：higher-level closeout surface 已统一切到 round-agnostic 的 “latest fresh clean recheck” truth；当前补齐 `TK-866` 自身 execution record 与派生 checklist/tasks.csv 的同窗写回，避免 task-level summary 再滞后一轮具体 `CR` 编号。
+  - 2026-04-14：project-final `CR-020` latest fresh clean recheck 未发现新的 actionable finding；当前已写回 completion audit、delivery truth、completed stream history 与 `project-102` activation，并完成 `project-106` final closeout。
+  - 2026-04-14：project-final CR-020 latest fresh clean recheck 保持 clean；completion audit、delivery truth、completed stream history 与 project-102 activation 已写回，当前任务正式完成。
 - [x] CR-001 sprint-002-verification-profiles-trigger-matrix-and-closeout delegated review loop round 1
   - 2026-04-14：任务创建，状态初始化为 `review_pending`。
   - 2026-04-14：fresh reviewer round 1 返回 1 条 actionable finding；主 agent 复核后判定为 `accepted`，当前推进到 `verified` 并进入修复窗口。
@@ -72,3 +79,36 @@
   - 2026-04-14：任务创建，状态初始化为 `review_pending`。
   - 2026-04-14：fresh reviewer clean recheck round 11 未发现新的 actionable finding；当前 sprint-002 implementation boundary 在最新 reviewer round 上达到 clean 状态。
   - 2026-04-14：本地主 agent 复核了 `scripts/ci/run-cli-exec-compatibility-profile.js`、`package.json`、`test/cli-exec-compatibility-profile.integration.test.ts` 以及 `DA-865 / ADR` 的一致性，并确认 `pnpm exec vitest run test/cli-exec-compatibility-profile.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`node ./scripts/ci/run-cli-exec-compatibility-profile.js --changed-file package.json --output json`、`node ./scripts/ci/run-cli-exec-compatibility-profile.js --changed-file scripts/ci/run-cli-exec-compatibility-profile.js --output json`、`pnpm run build`、`pnpm run verify:cli-exec-compatibility -- --profile cli_exec_compatibility_full --execute` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 已在同窗通过，当前状态推进为 `resolved`。
+- [x] CR-012 project-106-cli-exec-compatibility-and-stability-rollout final delegated review loop round 12
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：project-final reviewer 发现 project plan DoD 仍停留在 decomposition/planned-stream 语义，且 active `current-context` note 还指向 `sprint-002` bootstrap 阶段；若直接 closeout，会让 canonical plan 与 active stream truth 和真实完成态脱节。
+  - 2026-04-14：主 agent 已将 project-level DoD、active `current-context` note 与 `TK-866` 产出/执行记录修正到 project-final closeout 阶段的真实语义；本轮仅触及 docs/ledger truth，不涉及新的可执行代码改动，下一步进入 fresh project-final clean recheck。
+- [x] CR-013 project-106-cli-exec-compatibility-and-stability-rollout final delegated review loop round 13
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer clean recheck 未发现新的 actionable finding；当前轮次直接写入 `resolved_code_review_working-tree-20260414-1120.md` 并将本任务推进为 `resolved`。
+- [x] CR-014 project-106-cli-exec-compatibility-and-stability-rollout final delegated review loop round 14
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 14 暴露 delivery truth、CR-012 verification text 与 project-level sprint summary 的治理漂移；accepted findings 已修复并写入 `resolved_code_review_working-tree-20260414-1147.md`，当前轮次推进为 `resolved`。
+- [x] CR-015 project-106-cli-exec-compatibility-and-stability-rollout final delegated review loop round 15
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 15 暴露 delivery truth 提前 completed 与 blocker 叙述过时两项治理漂移；accepted findings 已修复并写入 `resolved_code_review_working-tree-20260414-1158.md`，当前轮次推进为 `resolved`。
+- [x] CR-016 project-106-cli-exec-compatibility-and-stability-rollout final delegated review loop round 16
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 16 暴露 project-106 closeout-ready 语义里仍残留 “等待 gate blocker 清除” 的过时 truth；主 agent 复核后判定为 `accepted`。
+  - 2026-04-14：accepted finding 已完成修复，`current-context`、project-106 plan 与 `TK-866` 已统一改写为 “等待 latest fresh clean recheck 与 final closeout”；`check-technical-solution-delivery-registry`、`check-task-ledger-sync`、`check-sprint-plan-status-sync`、`check-code-review-status-sync` 与 `check-worktree-review-target` 已重跑通过，当前 round 收口为 `resolved`，下一步进入 fresh project-final clean recheck round。
+- [x] CR-017 project-106-cli-exec-compatibility-and-stability-rollout final delegated review loop round 17
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 17 暴露 2 条 accepted governance finding：`TK-866` canonical audit trail 中仍残留一条误写成 `completed` 的历史 execution row，且 active closeout surface 仍停留在 `CR-016` 语义。
+  - 2026-04-14：accepted findings 已完成修复；误写的 `TK-866` completed row 已从 sqlite canonical truth 与重渲染 `tasks.csv` 中移除，`current-context`、project plan、sprint plan 与 `TK-866` execution record 也已更新到当前 open `CR-017` 语义；delivery/task-ledger/sprint-plan/code-review/worktree checks 已重跑通过，当前 round 收口为 `resolved`，下一步进入 fresh project-final clean recheck round 18。
+- [x] CR-018 project-106-cli-exec-compatibility-and-stability-rollout final delegated review loop round 18
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 18 暴露 2 条 accepted governance finding：`CR-017` resolved row 未进入 rendered `tasks.csv`，且 active closeout narrative 仍停留在 `CR-017` 而不是当前 open `CR-018`。
+  - 2026-04-14：accepted findings 已完成修复；current closeout narrative 已推进到当前 open `CR-018`，并通过 source row 顺序重编号后重新串行写回 `CR-017 -> CR-018` canonical rows，消除了 `tasks.csv`/sqlite 漂移；task-ledger/sprint-plan/code-review/worktree/delivery checks 已重跑通过，当前 round 收口为 `resolved`，下一步进入 fresh project-final clean recheck round 19。
+- [x] CR-019 project-106-cli-exec-compatibility-and-stability-rollout final delegated review loop round 19
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 19 暴露 1 条 accepted risk-based finding：higher-level closeout surfaces 已切到 round-agnostic wording，但 `TK-866` 自身 execution record 与派生 checklist/tasks.csv 仍停留在旧 round 叙述。
+  - 2026-04-14：accepted finding 已完成修复；`TK-866` 已补一条 round-agnostic execution note，并已重渲染 checklist/tasks.csv 以移除 task-level summary 的旧 round 绑定；delivery/task-ledger/sprint-plan/code-review/worktree checks 已重跑通过，当前 round 收口为 `resolved`，下一步进入 fresh project-final clean recheck round 20。
+- [x] CR-020 project-106-cli-exec-compatibility-and-stability-rollout final delegated review loop round 20
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer clean recheck round 20 未发现新的 actionable finding；当前 project-106 final closeout boundary 在最新 reviewer round 上达到 clean 状态。
+  - 2026-04-14：delegated reviewer 已确认 focused runtime test、`pnpm run build`、`pnpm run check` 与 delivery/task-ledger/sprint-plan/code-review/worktree governance checks 全部通过，当前 round 收口为 `resolved`，下一步进入 project-106 final closeout 与 project-102 activation。

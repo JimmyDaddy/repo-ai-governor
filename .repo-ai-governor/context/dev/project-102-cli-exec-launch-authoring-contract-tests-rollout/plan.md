@@ -1,6 +1,6 @@
 # project-102-cli-exec-launch-authoring-contract-tests-rollout 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-14
 - Stage Mapping: cli_exec launch-authoring contract-tests rollout
 - Phase Mapping: shared harness baseline / probe-invoke preserved-fact split / failure-path coverage and closeout
@@ -20,7 +20,7 @@
 
 ## 2.1 sprint-001-launch-authoring-contract-tests-rollout
 
-- Status: planned
+- Status: active
 - Sprint Goal: 初始化 shared launch-authoring contract-test rollout baseline，并冻结第一阶段 implementation boundary。
 - Task Package: `TK-857`、`TK-867`、`TK-868`
 
@@ -34,7 +34,7 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 | --- | --- | --- | --- | --- | --- |
-| TK-857 | sprint-001 | implement cli-exec launch authoring contract tests rollout baseline | rollout/planned | DA-846 | planned |
+| TK-857 | sprint-001 | implement cli-exec launch authoring contract tests rollout baseline | rollout/planned | DA-846 | in_progress |
 | TK-867 | sprint-001 | split probe invoke preserved-fact assertions and fallback entrypoint projection coverage onto the shared harness | harness/ownership | TK-857 | planned |
 | TK-868 | sprint-001 | sprint-001 exit acceptance and sprint-002 activation handoff | sprint/closeout | TK-857、TK-867、activation-time local CR-001 | planned |
 | TK-869 | sprint-002 | extend launch-authoring contract coverage across spawn parse non-zero signal timeout and abort paths | coverage/failure-path | TK-868 | planned |
@@ -50,7 +50,7 @@
 
 ## 5. DoD（project-102）
 
-1. `project-102` 已扩展为两阶段 execution-ready scaffold，并保持 `planned` 状态等待显式激活。
+1. `project-102` 已激活为当前 primary execution stream，并开始推进 `sprint-001` 的 shared harness baseline。
 2. shared harness、fallback entrypoint projection 与 failure-path coverage 的 implementation boundary 已完整落到 task package。
 3. rollout 不得把 probe / invoke preserved facts 与 adapter-owned authoring truth 混淆，也不得扩面成 general adapter test strategy。
 
@@ -58,6 +58,7 @@
 
 1. 2026-04-13：由 `project-101 / TK-846` promotion cutover 创建为 planned follow-up stream。
 2. 2026-04-14：`project-102` 已扩展为两阶段 execution-ready scaffold，并与 `project-106` 的推荐前置顺序对齐。
+3. 2026-04-14：`project-106` final closeout 完成后，当前 project 已切换为 active，并将 `sprint-001` 激活为新的 primary implementation surface。
 
 ## 7. 里程碑记录入口
 

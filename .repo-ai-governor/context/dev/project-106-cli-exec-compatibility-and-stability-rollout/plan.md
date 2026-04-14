@@ -1,6 +1,6 @@
 # project-106-cli-exec-compatibility-and-stability-rollout 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-14
 - Stage Mapping: cli_exec compatibility and stability rollout
 - Phase Mapping: compatibility taxonomy and regression harness / verification profiles and trigger matrix / rollout closeout guidance
@@ -25,7 +25,7 @@
 
 ## 2.2 sprint-002-verification-profiles-trigger-matrix-and-closeout
 
-- Status: active
+- Status: completed
 - Sprint Goal: 补齐 focused compatibility verification profile、trigger matrix 与 rollout closeout guidance。
 - Task Package: `TK-864`、`TK-865`、`TK-866`
 
@@ -38,7 +38,7 @@
 | TK-863 | sprint-001 | sprint-001 exit acceptance and sprint-002 activation handoff | sprint/closeout | TK-861、TK-862、activation-time local CR-001 | completed |
 | TK-864 | sprint-002 | wire focused compatibility verification profiles and trigger-matrix routing without promoting them to governance gates | verification/profile | TK-863 | completed |
 | TK-865 | sprint-002 | capture compatibility baseline evidence pack and closeout guidance for future runtime windows | evidence/closeout | TK-864 | completed |
-| TK-866 | sprint-002 | finalize project-106 closeout and delivery evidence handoff | closeout/delivery | TK-864、TK-865、activation-time local CR-001 | planned |
+| TK-866 | sprint-002 | finalize project-106 closeout and delivery evidence handoff | closeout/delivery | TK-864、TK-865、activation-time local CR-001 | completed |
 
 ## 4. 依赖产物策略
 
@@ -49,9 +49,9 @@
 
 ## 5. DoD（project-106）
 
-1. `project-106` 已以两阶段 execution-ready scaffold 落地，并保持 `planned` 状态等待显式激活。
-2. compatibility/stability solution 的 delivery truth 已切到真实 follow-up rollout ownership。
-3. `current-context.md` 已把 `project-106` 挂为第一条 planned follow-up stream，且后续 `project-102 ~ project-105` 保持推荐顺序可见。
+1. `project-106` 已完成 preflight baseline、`sprint-001` compatibility harness、`sprint-002` verification profile / trigger matrix implementation，并在 latest sprint clean recheck 与 project-final clean recheck 后收口为 `completed`。
+2. `technical-solution.cli-exec-compatibility-and-stability-productization` 的 delivery truth 已切到 `execution_status=completed`、`rollout_status=not_required`，并回链 project completion audit、DA-842 promotion handoff 与本项目 closeout evidence。
+3. `current-context.md` 已将 `stream-project-106-sprint-002` 迁入 completed history，并激活 `stream-project-102-sprint-001` 作为新的 primary stream，同时保留后续 `project-103 ~ project-105` 的 planned order。
 
 ## 6. 里程碑记录
 
@@ -60,7 +60,10 @@
 3. 2026-04-14：preflight baseline 以 `d0b66f35` checkpoint commit 收口后，正式激活 `sprint-001` 进入 implementation + CR loop 窗口。
 4. 2026-04-14：`sprint-001` 已完成 compatibility harness 与 cross-adapter baseline 收口，并在 clean reviewer recheck 后切换到 `sprint-002` primary surface。
 5. 2026-04-14：`sprint-002` implementation boundary 已在 `CR-011` clean recheck 后达到 closeout-ready，下一步在同一 surface 上执行 project-final fresh review 与 `TK-866`。
+6. 2026-04-14：project-final `CR-012` 暴露 project plan DoD / current-context note 仍停留在 bootstrap truth；当前已进入 docs/ledger drift 修复并等待新的 clean recheck。
+7. 2026-04-14：native `cli_exec` timeout/abort partial-output preservation 的 full-gate flake 已通过 focused stabilization、`pnpm run build` 与 `pnpm run check` 重新转绿；当前继续保留 `project-106` 为 active closeout surface，并等待 latest fresh clean recheck 结论后再执行最终 closeout。
+8. 2026-04-14：project-final `CR-020` latest fresh clean recheck 未发现新的 actionable finding；当前已完成 project-106 final closeout、completion audit write-back 与 compatibility delivery execution completion，并切换到 `project-102 / sprint-001` 继续后续 rollout 顺序。
 
 ## 7. 里程碑记录入口
 
-1. 待 closeout 后补齐 completion audit summary。
+1. `./project-106-cli-exec-compatibility-and-stability-rollout-completion-audit-summary.md`

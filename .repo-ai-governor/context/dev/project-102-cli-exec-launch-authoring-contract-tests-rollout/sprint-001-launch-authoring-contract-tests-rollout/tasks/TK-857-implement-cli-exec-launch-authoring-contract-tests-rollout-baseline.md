@@ -1,6 +1,6 @@
 # TK-857 implement cli-exec launch authoring contract tests rollout baseline
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-04-13
 - Owner: AI-Agent
 - Priority: P0
@@ -50,6 +50,7 @@
 ## 9. 执行记录
 
 1. 2026-04-13：任务创建，状态初始化为 `planned`，作为 `followup_required` rollout skeleton 的 canonical task。
+2. 2026-04-14：`project-106` final closeout 完成后，当前任务切换为 `in_progress`，并把 `project-102 / sprint-001` 激活为 primary execution surface；下一步先本地预留 `CR-001`，再开始 shared harness baseline implementation。
 
 ## 10. 产出
 

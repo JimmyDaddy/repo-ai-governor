@@ -230,7 +230,7 @@ deliveries:
     consumer_surfaces:
       - internal_governance
     user_impact_level: none
-    execution_status: in_progress
+    execution_status: completed
     rollout_status: not_required
     owner: runtime
     project_ref: project-106-cli-exec-compatibility-and-stability-rollout
@@ -251,7 +251,7 @@ deliveries:
     consumer_surfaces:
       - internal_governance
     user_impact_level: none
-    execution_status: planned
+    execution_status: in_progress
     rollout_status: not_required
     owner: runtime
     project_ref: project-102-cli-exec-launch-authoring-contract-tests-rollout

@@ -34,6 +34,13 @@ function createLaunchPlan(
   };
 }
 
+// The full gate can briefly starve freshly spawned Node fixtures; give the child enough time to
+// boot and flush one partial chunk before timeout/abort assertions start evaluating preservation.
+const PARTIAL_OUTPUT_TIMEOUT_MS = 700;
+const HARD_TERMINATION_TIMEOUT_MS = 300;
+const HARD_TERMINATION_GRACE_MS = 100;
+const ABORT_SIGNAL_DELAY_MS = 400;
+
 describe('NativeCliExecProcessRuntime', () => {
   it('streams stdout and stderr through the shared runtime', async () => {
     const runtime = createRuntime();
@@ -275,7 +282,7 @@ describe('NativeCliExecProcessRuntime', () => {
         createLaunchPlan({
           command,
           commandArguments,
-          timeoutMs: 200,
+          timeoutMs: PARTIAL_OUTPUT_TIMEOUT_MS,
           launchDiagnostics: {
             selectedEntrypoint: command,
             shellWrapped: false,
@@ -353,8 +360,8 @@ describe('NativeCliExecProcessRuntime', () => {
           ...createLaunchPlan(),
           command,
           commandArguments,
-          timeoutMs: 40,
-          terminateGraceMs: 20,
+          timeoutMs: HARD_TERMINATION_TIMEOUT_MS,
+          terminateGraceMs: HARD_TERMINATION_GRACE_MS,
           onGracefulInterruptStart: (cancelMechanism) => gracefulInterrupts.push(cancelMechanism),
           onHardTerminateStart: (cancelMechanism) => hardInterrupts.push(cancelMechanism),
         })
@@ -412,7 +419,7 @@ describe('NativeCliExecProcessRuntime', () => {
             processTreePolicy: 'process_only',
           },
           onStarted: () => {
-            setTimeout(() => abortController.abort(), 200);
+            setTimeout(() => abortController.abort(), ABORT_SIGNAL_DELAY_MS);
           },
           onGracefulInterruptStart: (cancelMechanism) => gracefulInterrupts.push(cancelMechanism),
           onHardTerminateStart: (cancelMechanism) => hardInterrupts.push(cancelMechanism),
@@ -471,7 +478,7 @@ describe('NativeCliExecProcessRuntime', () => {
           command,
           commandArguments,
           timeoutMs: 5000,
-          terminateGraceMs: 20,
+          terminateGraceMs: HARD_TERMINATION_GRACE_MS,
           signal: abortController.signal,
           launchDiagnostics: {
             selectedEntrypoint: command,
@@ -479,7 +486,7 @@ describe('NativeCliExecProcessRuntime', () => {
             processTreePolicy: 'process_only',
           },
           onStarted: () => {
-            setTimeout(() => abortController.abort(), 120);
+            setTimeout(() => abortController.abort(), ABORT_SIGNAL_DELAY_MS);
           },
           onGracefulInterruptStart: (cancelMechanism) => gracefulInterrupts.push(cancelMechanism),
           onHardTerminateStart: (cancelMechanism) => hardInterrupts.push(cancelMechanism),

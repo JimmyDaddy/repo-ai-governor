@@ -1,6 +1,6 @@
 # sprint-001-launch-authoring-contract-tests-rollout 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-14
 - Sprint Goal: 初始化 shared launch-authoring contract-test rollout baseline，并冻结第一阶段 implementation boundary。
 - Project: `project-102-cli-exec-launch-authoring-contract-tests-rollout`
@@ -19,7 +19,7 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-857 | implement cli-exec launch authoring contract tests rollout baseline | DA-846 | planned |
+| TK-857 | implement cli-exec launch authoring contract tests rollout baseline | DA-846 | in_progress |
 | TK-867 | split probe invoke preserved-fact assertions and fallback entrypoint projection coverage onto the shared harness | TK-857 | planned |
 | TK-868 | sprint-001 exit acceptance and sprint-002 activation handoff | TK-857、TK-867、activation-time local CR-001 | planned |
 
@@ -34,3 +34,4 @@
 1. 激活后先预留本地 `CR-001`，再开始 implementation 与 reviewer loop。
 2. 推荐在 `project-106` compatibility baseline 起步后再激活 `project-102`。
 3. 当前 sprint 不得把 launch-authoring ownership guardrail 扩面成通用 adapter test strategy。
+4. 2026-04-14：`project-106` closeout 已完成，当前 sprint 已切换为 active primary surface；`TK-857` 进入 implementation 前准备状态，下一步先本地预留 `CR-001`。
