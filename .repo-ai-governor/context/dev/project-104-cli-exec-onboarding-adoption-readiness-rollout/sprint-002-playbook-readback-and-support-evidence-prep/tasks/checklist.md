@@ -9,9 +9,12 @@
   - 2026-04-14：任务创建，状态初始化为 `planned`。
   - 2026-04-14：已将 support-evidence handoff 最小包与“无证据不 uplift support truth”的 guardrail 写入 `docs/support-matrix*.md`，同时保持现有 support row 与 public support wording 不变。
   - 2026-04-14：当前任务与 `TK-879` 共享同一 docs-only rollout window，并复用 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 ledger/governance sync evidence；实现边界已完成，等待 fresh reviewer loop。
-- [ ] TK-881 finalize project-104 closeout and delivery evidence handoff
+- [x] TK-881 finalize project-104 closeout and delivery evidence handoff
   - 2026-04-14：任务创建，状态初始化为 `planned`。
   - 2026-04-14：`CR-001` accepted findings 已修复并收口，`CR-002` latest fresh reviewer round clean；当前任务切换为 `in_progress`，下一步完成 sprint boundary closeout、local commit、project-final fresh review 与最终 delivery write-back。
+  - 2026-04-14：本地 sprint boundary commit `feat(project-104-sprint-002): complete sprint and clear cr loop` 已创建；当前任务继续保持 `in_progress`，并在同一 sprint surface 上进入 project-final fresh review。
+  - 2026-04-15：project-final `CR-003 -> CR-006` 已全部收口，latest fresh reviewer round clean；completion audit summary、delivery registry `execution_status=completed` / `rollout_status=completed`、current-context idle write-back 与 completed-history 迁移已完成，当前任务收口为 `completed`。
+  - 2026-04-15：latest fresh reviewer round clean 后，已完成 project-104 completion audit、delivery registry completed write-back、current-context idle 恢复与 completed-history 迁移；TK-881 收口为 completed。
 - [x] CR-001 sprint-002-playbook-readback-and-support-evidence-prep delegated review loop round 1
   - 2026-04-14：任务创建，状态初始化为 `review_pending`。
   - 2026-04-14：fresh reviewer round 1 返回 2 条 accepted finding，指出 sprint-002 新增 docs guidance 把已删除的公开 `verify` 命令重新写回 playbook / support guardrail。
@@ -21,3 +24,22 @@
   - 2026-04-14：任务创建，状态初始化为 `review_pending`。
   - 2026-04-14：fresh reviewer clean recheck 未发现新的 actionable finding，确认 sprint-002 当前 docs boundary 已不再依赖 removed public `verify` 命令。
   - 2026-04-14：`pnpm run check`、公开命令边界 replay 与 governance sync checks 通过；当前 round 收口为 `resolved`，下一步进入 `TK-881` sprint/project closeout。
+- [x] CR-003 project-104-cli-exec-onboarding-adoption-readiness-rollout final delegated review loop round 3
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 3 返回 2 条 accepted docs finding，指出 support matrix 仍将 adapter-readiness 指向已删除的公开 `verify --adapters`，且 local adoption playbook 仍把首次排障导向 stale `context/diagnostics/verify/` 路径。
+  - 2026-04-14：main agent 已接受两条 finding，并同步修复 `docs/support-matrix*.md` 与 `docs/local-adoption-playbook*.md`，统一改为公开 `doctor --adapters` readback 与 `context/diagnostics/doctor/` diagnostics path。
+  - 2026-04-14：`pnpm exec vitest run apps/cli/test/runtime/agent-onboarding-runtime.test.ts apps/cli/test/runtime/adapter-diagnostics-runtime.test.ts apps/cli/test/commands/connect-command.test.ts apps/cli/test/commands/doctor-command.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm run check`、`node ./dist/bin/repo-ai-governor.js connect --help >/dev/null`、`node ./dist/bin/repo-ai-governor.js doctor --adapters --output json >/dev/null` 已通过；`node ./dist/bin/repo-ai-governor.js verify --adapters --output json` 按预期失败并继续证明 removed public command 未被重新暴露。当前 round 收口为 `resolved`，下一步新开 fresh `CR-004` recheck 后再允许 project closeout。
+- [x] CR-004 project-104-cli-exec-onboarding-adoption-readiness-rollout delegated recheck loop round 4
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 4 返回 1 条 accepted risk-based finding，指出 `docs/support-matrix*.md` 的活跃 support-truth 行仍用 `doctor/verify` 与 `verify --adapters` 描述当前 adapter-readiness warn 语义，容易继续让读者误判 removed public command 仍是 live guidance。
+  - 2026-04-14：main agent 已接受该 finding，并将 `docs/support-matrix*.md` 的相关活跃行统一改为 `doctor` / adapter-readiness diagnostics 语义，同时保留历史 artifact 文件名与既有 evidence packet 不变。
+  - 2026-04-14：`pnpm exec vitest run apps/cli/test/runtime/agent-onboarding-runtime.test.ts apps/cli/test/runtime/adapter-diagnostics-runtime.test.ts apps/cli/test/commands/connect-command.test.ts apps/cli/test/commands/doctor-command.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm run check`、`node ./dist/bin/repo-ai-governor.js connect --help >/dev/null`、`node ./dist/bin/repo-ai-governor.js doctor --adapters --output json >/dev/null` 已通过；`node ./dist/bin/repo-ai-governor.js verify --adapters --output json` 继续按预期失败。当前 round 收口为 `resolved`，下一步新开 fresh `CR-005` clean recheck 后再允许 project closeout。
+- [x] CR-005 project-104-cli-exec-onboarding-adoption-readiness-rollout delegated recheck loop round 5
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 5 返回 1 条 accepted docs finding，指出 `docs/support-matrix*.md` 的 active `remote_api` support-boundary 行仍把当前 warn 语义写成 `doctor / verify`，继续把 removed public command 混入 live readiness story。
+  - 2026-04-14：main agent 已接受该 finding，并将 `docs/support-matrix*.md` 的 `explicit remote_api transport boundary` active row 改为 `doctor`-only readiness wording，同时保留历史 artifact 文件名与 dated evidence row 不变。
+  - 2026-04-15：`pnpm exec vitest run apps/cli/test/runtime/agent-onboarding-runtime.test.ts apps/cli/test/runtime/adapter-diagnostics-runtime.test.ts apps/cli/test/commands/connect-command.test.ts apps/cli/test/commands/doctor-command.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm run check`、`node ./dist/bin/repo-ai-governor.js connect --help >/dev/null`、`node ./dist/bin/repo-ai-governor.js doctor --adapters --output json >/dev/null` 已通过；`node ./dist/bin/repo-ai-governor.js verify --adapters --output json` 继续按预期失败。当前 round 收口为 `resolved`，下一步新开 fresh `CR-006` clean recheck 后再允许 project closeout。
+- [x] CR-006 project-104-cli-exec-onboarding-adoption-readiness-rollout delegated recheck loop round 6
+  - 2026-04-15：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-15：fresh reviewer round 6 返回 clean 结论，未发现新的 actionable finding；active support wording 已稳定收敛到 `doctor`-anchored readiness story，playbook diagnostics path 也已统一指向 `context/diagnostics/doctor/`。
+  - 2026-04-15：`pnpm exec vitest run apps/cli/test/runtime/agent-onboarding-runtime.test.ts apps/cli/test/runtime/adapter-diagnostics-runtime.test.ts apps/cli/test/commands/connect-command.test.ts apps/cli/test/commands/doctor-command.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm run check`、`node ./dist/bin/repo-ai-governor.js connect --help >/dev/null`、`node ./dist/bin/repo-ai-governor.js doctor --adapters --output json >/dev/null` 已通过；`node ./dist/bin/repo-ai-governor.js verify --adapters --output json` 继续按预期失败。当前 round 收口为 `resolved`，project-104 可以进入 final closeout。

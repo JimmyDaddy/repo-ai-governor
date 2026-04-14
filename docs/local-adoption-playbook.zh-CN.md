@@ -182,7 +182,7 @@ pnpm exec repo-ai-governor review-verify --output json
 重点看活动 workspace 根下这些产物：
 
 1. `context/diagnostics/connect/`
-2. `context/diagnostics/verify/`
+2. `context/diagnostics/doctor/`
 3. `context/diagnostics/run/`
 4. `context/diagnostics/trace/`
 5. `context/review-queue/requests`

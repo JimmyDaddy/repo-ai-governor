@@ -1,6 +1,6 @@
 # project-104-cli-exec-onboarding-adoption-readiness-rollout 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-14
 - Stage Mapping: cli_exec onboarding and adoption readiness rollout
 - Phase Mapping: readiness composition baseline / playbook readback and support evidence prep / rollout closeout
@@ -26,7 +26,7 @@
 
 ## 2.2 sprint-002-playbook-readback-and-support-evidence-prep
 
-- Status: active
+- Status: completed
 - Sprint Goal: 推进 playbook readback、support evidence preparation，并完成 rollout closeout。
 - Task Package: `TK-879`、`TK-880`、`TK-881`
 
@@ -39,7 +39,7 @@
 | TK-878 | sprint-001 | sprint-001 exit acceptance and sprint-002 activation handoff | sprint/closeout | TK-859、TK-877、activation-time local CR-001 | completed |
 | TK-879 | sprint-002 | apply the readiness evidence chain to local adoption readback and playbook-consumer surfaces | docs/readback | TK-878 | completed |
 | TK-880 | sprint-002 | prepare support-evidence package and guardrails without uplifting support-matrix truth by default | support/evidence | TK-879 | completed |
-| TK-881 | sprint-002 | finalize project-104 closeout and delivery evidence handoff | closeout/delivery | TK-879、TK-880、activation-time local CR-001 | in_progress |
+| TK-881 | sprint-002 | finalize project-104 closeout and delivery evidence handoff | closeout/delivery | TK-879、TK-880、activation-time local CR-001 | completed |
 
 ## 4. 依赖产物策略
 
@@ -50,9 +50,9 @@
 
 ## 5. DoD（project-104）
 
-1. `project-104` 已扩展为两阶段 execution-ready scaffold，并保持 `planned` 状态等待显式激活。
-2. readiness composition、playbook readback 与 support-evidence prep 的 implementation boundary 已完整落到 task package。
-3. rollout 不得把 onboarding/probe additive clarification 升格为新的 minimum fields，也不得提前把 playbook/support wording 当作已完成 public truth。
+1. `project-104` 已完成两阶段 rollout、project-final clean review 与 delivery closeout。
+2. readiness composition、playbook readback 与 support-evidence prep 已在真实 rollout window 内落到 task package，并保持 machine-readable diagnostics / readiness truth 对齐。
+3. rollout 未把 onboarding/probe additive clarification 升格为新的 minimum fields，也未把无证据的 playbook/support wording 写成新的 public truth。
 
 ## 6. 里程碑记录
 
@@ -62,7 +62,9 @@
 4. 2026-04-14：`sprint-001` 已在 `CR-001` finding round + `CR-002` clean recheck 后完成 closeout，并将 `sprint-002` 激活为新的 primary execution surface。
 5. 2026-04-14：`sprint-002` 已预留本地 `CR-001`，并完成 playbook readback / support-evidence docs boundary；当前等待 fresh reviewer loop 进入 sprint clean 收口阶段。
 6. 2026-04-14：`CR-001` 已在 accepted docs fixes 后收口，`CR-002` latest fresh recheck clean；当前进入 sprint boundary closeout、local commit 与 project-final review activation 窗口。
+7. 2026-04-14：本地 sprint boundary commit `feat(project-104-sprint-002): complete sprint and clear cr loop` 已创建；当前在 `sprint-002` surface 上进入 project-final review。
+8. 2026-04-15：project-final `CR-003 -> CR-006` 已全部收口，latest fresh reviewer round clean；`TK-881` completion audit、delivery registry write-back 与 completed-history migration 已完成，project 状态切换为 `completed`。
 
 ## 7. 里程碑记录入口
 
-1. 待 closeout 后补齐 completion audit summary。
+1. `.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/project-104-cli-exec-onboarding-adoption-readiness-rollout-completion-audit-summary.md`

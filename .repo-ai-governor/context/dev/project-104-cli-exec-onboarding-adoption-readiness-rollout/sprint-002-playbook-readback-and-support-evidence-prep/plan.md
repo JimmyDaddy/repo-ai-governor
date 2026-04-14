@@ -1,6 +1,6 @@
 # sprint-002-playbook-readback-and-support-evidence-prep 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-14
 - Sprint Goal: 推进 playbook readback、support evidence preparation，并完成 rollout closeout。
 - Project: `project-104-cli-exec-onboarding-adoption-readiness-rollout`
@@ -21,7 +21,7 @@
 | --- | --- | --- | --- |
 | TK-879 | apply the readiness evidence chain to local adoption readback and playbook-consumer surfaces | TK-878 | completed |
 | TK-880 | prepare support-evidence package and guardrails without uplifting support-matrix truth by default | TK-879 | completed |
-| TK-881 | finalize project-104 closeout and delivery evidence handoff | TK-879、TK-880、activation-time local CR-001 | in_progress |
+| TK-881 | finalize project-104 closeout and delivery evidence handoff | TK-879、TK-880、activation-time local CR-001 | completed |
 
 ## 3. Exit Criteria
 
@@ -37,3 +37,5 @@
 4. 2026-04-14：`sprint-001` clean closeout 已完成，当前 sprint 已切换为 active primary surface；`TK-879` 进入 `in_progress`，并先本地预留 `CR-001` 再开始 playbook readback implementation。
 5. 2026-04-14：`TK-879` 与 `TK-880` 的 docs boundary 已完成，当前 sprint 已具备 `build`、`test:packages` 与 ledger/governance sync evidence，下一步进入 fresh reviewer loop。
 6. 2026-04-14：`CR-001` accepted findings 已修复、`CR-002` latest fresh reviewer round clean；当前 sprint 进入 closeout-ready 状态，并在同一 surface 上承接 project-final review。
+7. 2026-04-14：本地 sprint boundary commit `feat(project-104-sprint-002): complete sprint and clear cr loop` 已创建；当前在同一 sprint surface 上等待 project-final fresh reviewer round。
+8. 2026-04-15：project-final `CR-003 -> CR-006` 已全部 resolved，latest fresh reviewer round clean；`TK-881` 完成 delivery write-back 与 completion audit 后，本 sprint 切换为 `completed`。

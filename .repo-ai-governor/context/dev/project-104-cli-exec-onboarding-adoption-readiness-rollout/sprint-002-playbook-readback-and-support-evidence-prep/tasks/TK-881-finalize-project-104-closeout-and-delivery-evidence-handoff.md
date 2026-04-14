@@ -1,6 +1,6 @@
 # TK-881 finalize project-104 closeout and delivery evidence handoff
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-04-14
 - Owner: AI-Agent
 - Priority: P1
@@ -57,6 +57,8 @@
 
 1. 2026-04-14：任务创建，状态初始化为 `planned`。
 2. 2026-04-14：`CR-001` accepted findings 已修复并收口，`CR-002` latest fresh reviewer round clean；当前任务切换为 `in_progress`，下一步完成 sprint boundary closeout、local commit、project-final fresh review 与最终 delivery write-back。
+3. 2026-04-14：本地 sprint boundary commit `feat(project-104-sprint-002): complete sprint and clear cr loop` 已创建；当前任务继续保持 `in_progress`，并在同一 sprint surface 上进入 project-final fresh review。
+4. 2026-04-15：project-final `CR-003 -> CR-006` 已全部收口，latest fresh reviewer round clean；completion audit summary、delivery registry `execution_status=completed` / `rollout_status=completed`、current-context idle write-back 与 completed-history 迁移已完成，当前任务收口为 `completed`。
 
 ## 10. 产出
 

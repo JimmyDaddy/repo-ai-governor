@@ -2,21 +2,21 @@
 
 ## Primary Stream
 
-- Status: active
-- Stream: `stream-project-104-sprint-002`
-- Project: `project-104-cli-exec-onboarding-adoption-readiness-rollout`
-- Sprint: `sprint-002-playbook-readback-and-support-evidence-prep`
-- Docs: `.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout`
-- Plan: `.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-002-playbook-readback-and-support-evidence-prep/plan.md`
-- Tasks: `.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-002-playbook-readback-and-support-evidence-prep/tasks/`
-- Checklist: `.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-002-playbook-readback-and-support-evidence-prep/tasks/checklist.md`
-- CSV: `.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-002-playbook-readback-and-support-evidence-prep/tasks/tasks.csv`
-- Review: `.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-002-playbook-readback-and-support-evidence-prep/review/`
-- Note: `2026-04-14` `project-104 / sprint-001` 已在 `CR-001` finding round 与 `CR-002` clean recheck 后完成 closeout；当前 `sprint-002` 的 `CR-001` accepted findings 已修复、`CR-002` latest fresh recheck clean，下一步在同一 sprint surface 上完成 sprint boundary closeout、local commit 与 project-final review。
+- Status: idle
+- Stream: `idle`
+- Project: `(none)`
+- Sprint: `(none)`
+- Docs: `(none)`
+- Plan: `(none)`
+- Tasks: `(none)`
+- Checklist: `(none)`
+- CSV: `(none)`
+- Review: `(none)`
+- Note: `2026-04-15` `project-104-cli-exec-onboarding-adoption-readiness-rollout` 已完成 project-final clean closeout、delivery write-back 与 completed-history 迁移；`project-105` 继续保留为下一条 planned rollout stream，当前 primary 暂时恢复 `idle`，下一步再显式激活 ACP rollout。
 
 ## Active Streams
 
-- `stream-project-104-sprint-002`: role=`primary`, primary=`true`, project=`project-104-cli-exec-onboarding-adoption-readiness-rollout`, sprint=`sprint-002-playbook-readback-and-support-evidence-prep`, docs=`.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout`, plan=`.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-002-playbook-readback-and-support-evidence-prep/plan.md`, tasks=`.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-002-playbook-readback-and-support-evidence-prep/tasks/`, checklist=`.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-002-playbook-readback-and-support-evidence-prep/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-002-playbook-readback-and-support-evidence-prep/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-002-playbook-readback-and-support-evidence-prep/review/`, status=`active`, note=`2026-04-14 sprint-002 的 \`CR-001\` accepted findings 已修复，\`CR-002\` latest fresh recheck clean；当前在同一 sprint surface 上进入 boundary closeout、local commit 与 project-final review。`
+_None. Primary stream is currently idle._
 
 ## Planned Follow-Up Streams
 
