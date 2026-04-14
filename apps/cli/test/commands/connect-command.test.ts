@@ -338,6 +338,10 @@ describe('CliConnectCommand', () => {
       const diagnosticsPayload = JSON.parse(await readFile(diagnosticsArtifactPath, 'utf8')) as {
         verificationMatrix?: {
           execution_id?: string;
+          verification_status?: string;
+          diagnostic_summary?: string;
+          next_action?: string | null;
+          next_actions?: string[];
           tool_transport_matrix?: unknown[];
         };
       };
@@ -358,6 +362,18 @@ describe('CliConnectCommand', () => {
       ).toBe(true);
       expect(result.reactCliViewModel?.agentProjectionPanel?.title).toBe('Agent projection');
       expect(diagnosticsPayload.verificationMatrix?.execution_id).toBeDefined();
+      expect(diagnosticsPayload.verificationMatrix?.verification_status).toBe(
+        CliGovernanceCheckStatus.WARN,
+      );
+      expect(diagnosticsPayload.verificationMatrix?.diagnostic_summary).toBe(
+        'status=warn required_failures=0 fallback_roles=1 degraded_roles=1',
+      );
+      expect(diagnosticsPayload.verificationMatrix?.next_action).toBe(
+        'Install missing local command.',
+      );
+      expect(diagnosticsPayload.verificationMatrix?.next_actions).toEqual([
+        'Install missing local command.',
+      ]);
       expect(Array.isArray(diagnosticsPayload.verificationMatrix?.tool_transport_matrix)).toBe(
         true,
       );

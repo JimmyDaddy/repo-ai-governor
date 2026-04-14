@@ -233,7 +233,6 @@ describe('CliAgentOnboardingRuntime', () => {
       dryRun: false,
       overwrite: false,
       singleToolAllRoles: false,
-      diagnosticSummary: 'status=warn',
     });
     const verifyPayload = runtime.createVerifyMatrixPayload({
       executionId: 'doctor-123',
@@ -297,8 +296,69 @@ describe('CliAgentOnboardingRuntime', () => {
         }),
       }),
     ]);
+    expect(onboardingPayload).toMatchObject({
+      verification_status: CliGovernanceCheckStatus.WARN,
+      diagnostic_summary: 'status=warn required_failures=1 fallback_roles=0 degraded_roles=0',
+      next_action: 'Set OPENAI_API_KEY before doctor.',
+      next_actions: ['Set OPENAI_API_KEY before doctor.'],
+    });
+    expect(verifyPayload).toMatchObject({
+      verification_status: CliGovernanceCheckStatus.WARN,
+      diagnostic_summary: 'status=warn required_failures=1 fallback_roles=0 degraded_roles=0',
+      next_action: 'Set OPENAI_API_KEY before doctor.',
+      next_actions: ['Set OPENAI_API_KEY before doctor.'],
+    });
     expect(verifyPayload.tool_transport_matrix).toEqual(onboardingPayload.tool_transport_matrix);
     expect(verifyPayload.role_binding_matrix).toEqual([]);
+  });
+
+  it('adds safe_local fix counts to doctor readiness composition without mutating probe truth', () => {
+    const runtime = new CliAgentOnboardingRuntime();
+    const sourceConfig = createGovernorConfigFixture();
+    const verification = {
+      overallStatus: CliGovernanceCheckStatus.WARN,
+      tools: [],
+      roleEvaluations: [],
+      requiredRoleCount: 1,
+      requiredRoleFailedCount: 0,
+      degradedRoleCount: 1,
+      fallbackRoleCount: 0,
+      nextActions: ['Review adapter diagnostics before retrying doctor.'],
+    };
+
+    const onboardingPayload = runtime.createOnboardingContractPayload({
+      commandName: 'doctor',
+      executionId: 'doctor-safe-local',
+      workspaceId: 'workspace-1',
+      verificationStatus: CliGovernanceCheckStatus.WARN,
+      nextActions: verification.nextActions,
+      enabledTools: [AdapterSurface.CODEX],
+      adaptersConfig: sourceConfig.adapters,
+      verification,
+      dryRun: false,
+      overwrite: false,
+      singleToolAllRoles: false,
+      safeLocalFixCount: 2,
+    });
+    const verifyPayload = runtime.createVerifyMatrixPayload({
+      commandName: 'doctor',
+      executionId: 'doctor-safe-local',
+      verification,
+      adaptersConfig: sourceConfig.adapters,
+      nextActions: verification.nextActions,
+      safeLocalFixCount: 2,
+    });
+
+    expect(onboardingPayload.diagnostic_summary).toBe(
+      'status=warn required_failures=0 fallback_roles=0 degraded_roles=1 safe_local_fix=2',
+    );
+    expect(verifyPayload.diagnostic_summary).toBe(
+      'status=warn required_failures=0 fallback_roles=0 degraded_roles=1 safe_local_fix=2',
+    );
+    expect(verifyPayload.next_action).toBe('Review adapter diagnostics before retrying doctor.');
+    expect(verifyPayload.next_actions).toEqual([
+      'Review adapter diagnostics before retrying doctor.',
+    ]);
   });
 
   it('distinguishes inferred remote_api selection from an explicit transport lock', () => {
@@ -327,7 +387,6 @@ describe('CliAgentOnboardingRuntime', () => {
       dryRun: true,
       overwrite: false,
       singleToolAllRoles: false,
-      diagnosticSummary: 'status=pass',
     });
 
     expect(onboardingPayload.enabled_tools).toEqual([
@@ -379,7 +438,6 @@ describe('CliAgentOnboardingRuntime', () => {
       dryRun: true,
       overwrite: false,
       singleToolAllRoles: false,
-      diagnosticSummary: 'status=pass',
     });
 
     expect(onboardingPayload.enabled_tools).toEqual([
@@ -1114,7 +1172,6 @@ describe('CliAgentOnboardingRuntime', () => {
       dryRun: false,
       overwrite: false,
       singleToolAllRoles: false,
-      diagnosticSummary: 'status=fail',
     });
     const verifyPayload = runtime.createVerifyMatrixPayload({
       executionId: 'verify-cli-exec-preserved-facts',
@@ -1231,7 +1288,6 @@ describe('CliAgentOnboardingRuntime', () => {
       dryRun: false,
       overwrite: false,
       singleToolAllRoles: false,
-      diagnosticSummary: 'status=fail',
     });
     const verifyPayload = runtime.createVerifyMatrixPayload({
       executionId: 'verify-cli-exec-spawn-error',
@@ -1481,7 +1537,6 @@ describe('CliAgentOnboardingRuntime', () => {
       dryRun: true,
       overwrite: false,
       singleToolAllRoles: false,
-      diagnosticSummary: 'status=pass',
     });
 
     expect(onboardingPayload.tool_transport_matrix).toEqual([
@@ -1529,7 +1584,6 @@ describe('CliAgentOnboardingRuntime', () => {
       dryRun: true,
       overwrite: false,
       singleToolAllRoles: false,
-      diagnosticSummary: 'status=pass',
     });
 
     expect(onboardingPayload.enabled_tools).toEqual([

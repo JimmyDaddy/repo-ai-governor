@@ -3,20 +3,20 @@
 ## Primary Stream
 
 - Status: active
-- Stream: `stream-project-104-sprint-001`
+- Stream: `stream-project-104-sprint-002`
 - Project: `project-104-cli-exec-onboarding-adoption-readiness-rollout`
-- Sprint: `sprint-001-onboarding-adoption-readiness-rollout`
+- Sprint: `sprint-002-playbook-readback-and-support-evidence-prep`
 - Docs: `.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout`
-- Plan: `.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-001-onboarding-adoption-readiness-rollout/plan.md`
-- Tasks: `.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-001-onboarding-adoption-readiness-rollout/tasks/`
-- Checklist: `.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-001-onboarding-adoption-readiness-rollout/tasks/checklist.md`
-- CSV: `.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-001-onboarding-adoption-readiness-rollout/tasks/tasks.csv`
-- Review: `.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-001-onboarding-adoption-readiness-rollout/review/`
-- Note: `2026-04-14` `project-103` 已完成 final closeout；当前已激活 `project-104 / sprint-001` 作为新的 primary execution surface，下一步本地预留 `CR-001` 并开始 readiness rollout baseline。 
+- Plan: `.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-002-playbook-readback-and-support-evidence-prep/plan.md`
+- Tasks: `.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-002-playbook-readback-and-support-evidence-prep/tasks/`
+- Checklist: `.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-002-playbook-readback-and-support-evidence-prep/tasks/checklist.md`
+- CSV: `.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-002-playbook-readback-and-support-evidence-prep/tasks/tasks.csv`
+- Review: `.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-002-playbook-readback-and-support-evidence-prep/review/`
+- Note: `2026-04-14` `project-104 / sprint-001` 已在 `CR-001` finding round 与 `CR-002` clean recheck 后完成 closeout；当前已激活 `sprint-002` 作为新的 primary execution surface，下一步本地预留 `CR-001` 并开始 playbook readback rollout。
 
 ## Active Streams
 
-- `stream-project-104-sprint-001`: role=`primary`, primary=`true`, project=`project-104-cli-exec-onboarding-adoption-readiness-rollout`, sprint=`sprint-001-onboarding-adoption-readiness-rollout`, docs=`.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout`, plan=`.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-001-onboarding-adoption-readiness-rollout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-001-onboarding-adoption-readiness-rollout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-001-onboarding-adoption-readiness-rollout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-001-onboarding-adoption-readiness-rollout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-001-onboarding-adoption-readiness-rollout/review/`, status=`active`, note=`2026-04-14 project-103 final closeout 已完成；当前 sprint 已激活，下一步本地预留 `CR-001` 并开始 readiness rollout baseline implementation。`
+- `stream-project-104-sprint-002`: role=`primary`, primary=`true`, project=`project-104-cli-exec-onboarding-adoption-readiness-rollout`, sprint=`sprint-002-playbook-readback-and-support-evidence-prep`, docs=`.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout`, plan=`.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-002-playbook-readback-and-support-evidence-prep/plan.md`, tasks=`.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-002-playbook-readback-and-support-evidence-prep/tasks/`, checklist=`.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-002-playbook-readback-and-support-evidence-prep/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-002-playbook-readback-and-support-evidence-prep/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-002-playbook-readback-and-support-evidence-prep/review/`, status=`active`, note=`2026-04-14 sprint-001 已 clean closeout；当前 sprint 已激活，下一步本地预留 \`CR-001\` 并开始 playbook readback rollout implementation。`
 
 ## Planned Follow-Up Streams
 

@@ -4,6 +4,8 @@ import { tmpdir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 
 import {
+  AdapterAvailability,
+  AdapterSurface,
   ErrorOutputEnvironment,
   ExecutionProgressStatus,
   GovernorErrorCode,
@@ -11,6 +13,7 @@ import {
 } from '@repo-ai-governor/shared';
 import { CliDoctorCommand } from '../../src/commands/doctor-command.js';
 import { CliGovernanceCheckStatus } from '../../src/constants/cli-governance-runtime.constant.js';
+import { CliAgentOnboardingRuntime } from '../../src/runtime/agent-onboarding-runtime.js';
 import type {
   CliAdapterVerificationResolution,
   CliCommandExecutorContext,
@@ -65,6 +68,8 @@ function createDoctorCommandContext(options: {
   fixture: Awaited<ReturnType<typeof createDoctorCommandFixture>>;
   progressEvents: CliCommandProgressEvent[];
   adapterVerification?: CliAdapterVerificationResolution | null;
+  adaptersConfig?: CliCommandExecutorContext['options']['adaptersConfig'];
+  onboardingRuntime?: CliCommandExecutorContext['onboardingRuntime'];
   runtimeDebugOptions?: {
     adapters: boolean;
     fix: boolean;
@@ -84,6 +89,13 @@ function createDoctorCommandContext(options: {
     requestedTools: [],
     presetId: 'multi_tool_default',
   };
+  const adaptersConfig = options.adaptersConfig ?? {
+    roles: [],
+    routing: {
+      roleBindings: {},
+    },
+    tools: [],
+  };
 
   return {
     options: {
@@ -98,13 +110,7 @@ function createDoctorCommandContext(options: {
       profileId: null,
       memoryStoreProviderName: 'fs_csv',
       memoryStoreRoot: options.fixture.memoryStoreRoot,
-      adaptersConfig: {
-        roles: [],
-        routing: {
-          roleBindings: {},
-        },
-        tools: [],
-      },
+      adaptersConfig,
       outputMode: ErrorOutputEnvironment.PRETTY,
     },
     progressSink: {
@@ -123,16 +129,18 @@ function createDoctorCommandContext(options: {
       },
       safeReadJson: async () => null,
     },
-    onboardingRuntime: {
-      createOnboardingContractPayload: () => ({
-        commandName: 'doctor',
-      }),
-      createVerifyMatrixPayload: () => ({
-        commandName: 'doctor',
-        surface: 'verification',
-      }),
-      resolveSelectedTools: () => [],
-    } as CliCommandExecutorContext['onboardingRuntime'],
+    onboardingRuntime:
+      options.onboardingRuntime ??
+      ({
+        createOnboardingContractPayload: () => ({
+          commandName: 'doctor',
+        }),
+        createVerifyMatrixPayload: () => ({
+          commandName: 'doctor',
+          surface: 'verification',
+        }),
+        resolveSelectedTools: () => [],
+      } as CliCommandExecutorContext['onboardingRuntime']),
     agentProjectionRuntime: {
       createCliAgentView: () => ({
         descriptors: [],
@@ -198,6 +206,32 @@ function createDoctorCommandContext(options: {
 }
 
 describe('CliDoctorCommand', () => {
+  const doctorAdaptersConfig = {
+    roles: [],
+    routing: {
+      roleBindings: {},
+    },
+    tools: [
+      {
+        toolId: AdapterSurface.CODEX,
+        enabled: true,
+        availability: AdapterAvailability.AVAILABLE,
+      },
+    ],
+  } satisfies CliCommandExecutorContext['options']['adaptersConfig'];
+  const doctorReadinessVerification: CliAdapterVerificationResolution = {
+    overallStatus: CliGovernanceCheckStatus.WARN,
+    tools: [],
+    roleEvaluations: [],
+    requiredRoleCount: 1,
+    requiredRoleFailedCount: 0,
+    degradedRoleCount: 1,
+    fallbackRoleCount: 0,
+    nextActions: ['Review adapter diagnostics before retrying doctor.'],
+    secretBackends: null,
+    credentialReferences: [],
+  };
+
   it('emits workspace and diagnostics progress events before completing', async () => {
     const fixture = await createDoctorCommandFixture();
     const progressEvents: CliCommandProgressEvent[] = [];
@@ -325,6 +359,123 @@ describe('CliDoctorCommand', () => {
             event.row.status === ExecutionProgressStatus.WARNING,
         ),
       ).toBe(true);
+    } finally {
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('projects real readiness fields for doctor without safe_local_fix when --fix is disabled', async () => {
+    const fixture = await createDoctorCommandFixture();
+    const progressEvents: CliCommandProgressEvent[] = [];
+    const command = new CliDoctorCommand();
+
+    try {
+      const context = createDoctorCommandContext({
+        fixture,
+        progressEvents,
+        adapterVerification: doctorReadinessVerification,
+        adaptersConfig: doctorAdaptersConfig,
+        onboardingRuntime: new CliAgentOnboardingRuntime(),
+        runtimeDebugOptions: {
+          adapters: true,
+          fix: false,
+          dryRun: false,
+          overwrite: false,
+          singleToolAllRoles: false,
+          requestedTools: [],
+          presetId: 'multi_tool_default',
+        },
+      });
+
+      const result = await command.execute(context);
+      const diagnosticsArtifactPath = result.commandResult.artifacts?.find(
+        (artifact) => artifact.id === 'doctor_diagnostics',
+      )?.path;
+      const diagnosticsPayload = JSON.parse(
+        await readFile(String(diagnosticsArtifactPath), 'utf8'),
+      ) as {
+        onboardingContract?: {
+          diagnostic_summary?: string;
+          verification_status?: string;
+          next_action?: string | null;
+          next_actions?: string[];
+        };
+        verificationMatrix?: {
+          diagnostic_summary?: string;
+          verification_status?: string;
+          next_action?: string | null;
+          next_actions?: string[];
+        };
+      };
+
+      expect(diagnosticsPayload.onboardingContract).toMatchObject({
+        verification_status: CliGovernanceCheckStatus.WARN,
+        diagnostic_summary: 'status=warn required_failures=0 fallback_roles=0 degraded_roles=1',
+        next_action: 'Review adapter diagnostics before retrying doctor.',
+        next_actions: ['Review adapter diagnostics before retrying doctor.'],
+      });
+      expect(diagnosticsPayload.verificationMatrix).toMatchObject({
+        verification_status: CliGovernanceCheckStatus.WARN,
+        diagnostic_summary: 'status=warn required_failures=0 fallback_roles=0 degraded_roles=1',
+        next_action: 'Review adapter diagnostics before retrying doctor.',
+        next_actions: ['Review adapter diagnostics before retrying doctor.'],
+      });
+      expect(diagnosticsPayload.onboardingContract?.diagnostic_summary).not.toContain(
+        'safe_local_fix=',
+      );
+      expect(diagnosticsPayload.verificationMatrix?.diagnostic_summary).not.toContain(
+        'safe_local_fix=',
+      );
+    } finally {
+      await rm(fixture.tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('includes safe_local_fix counts in doctor readiness fields when safe-local repair runs', async () => {
+    const fixture = await createDoctorCommandFixture();
+    const progressEvents: CliCommandProgressEvent[] = [];
+    const command = new CliDoctorCommand();
+    await rm(fixture.workspaceRoot, { recursive: true, force: true });
+
+    try {
+      const context = createDoctorCommandContext({
+        fixture,
+        progressEvents,
+        adapterVerification: doctorReadinessVerification,
+        adaptersConfig: doctorAdaptersConfig,
+        onboardingRuntime: new CliAgentOnboardingRuntime(),
+        runtimeDebugOptions: {
+          adapters: true,
+          fix: true,
+          dryRun: false,
+          overwrite: false,
+          singleToolAllRoles: false,
+          requestedTools: [],
+          presetId: 'multi_tool_default',
+        },
+      });
+
+      const result = await command.execute(context);
+      const diagnosticsArtifactPath = result.commandResult.artifacts?.find(
+        (artifact) => artifact.id === 'doctor_diagnostics',
+      )?.path;
+      const diagnosticsPayload = JSON.parse(
+        await readFile(String(diagnosticsArtifactPath), 'utf8'),
+      ) as {
+        onboardingContract?: {
+          diagnostic_summary?: string;
+        };
+        verificationMatrix?: {
+          diagnostic_summary?: string;
+        };
+      };
+
+      expect(diagnosticsPayload.onboardingContract?.diagnostic_summary).toBe(
+        'status=warn required_failures=0 fallback_roles=0 degraded_roles=1 safe_local_fix=3',
+      );
+      expect(diagnosticsPayload.verificationMatrix?.diagnostic_summary).toBe(
+        'status=warn required_failures=0 fallback_roles=0 degraded_roles=1 safe_local_fix=3',
+      );
     } finally {
       await rm(fixture.tempRoot, { recursive: true, force: true });
     }

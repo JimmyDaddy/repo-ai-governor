@@ -1,6 +1,6 @@
 # TK-877 compose verification_status diagnostic_summary and next_action(s) from canonical onboarding probe truth
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-14
 - Owner: AI-Agent
 - Priority: P1
@@ -40,16 +40,27 @@
 
 ## 7. Development Verification
 
-1. 待激活后补充 readiness composition verification。
+1. `pnpm exec vitest run apps/cli/test/runtime/agent-onboarding-runtime.test.ts apps/cli/test/runtime/adapter-diagnostics-runtime.test.ts apps/cli/test/commands/connect-command.test.ts apps/cli/test/commands/doctor-command.test.ts --maxWorkers=1 --maxConcurrency=1`
+2. `pnpm run build`
+3. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
 
 ## 8. Delivery Verification
 
-1. 待激活后补充 rollout-window delivery verification与治理检查。
+1. `pnpm run build`
+2. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
+3. `node ./scripts/governance/check-task-ledger-sync.js`
+4. `node ./scripts/governance/check-sprint-plan-status-sync.js`
 
 ## 9. 执行记录
 
 1. 2026-04-14：任务创建，状态初始化为 `planned`。
+2. 2026-04-14：已将 `verification_status / diagnostic_summary / next_action(s)` 的组合责任固定到 onboarding runtime，统一基于 canonical verification/probe truth 计算 readiness summary，并为 `doctor` additive 带出 `safe_local_fix` 计数；同一逻辑已进入 `verificationMatrix` 顶层字段，避免 command surface 与 diagnostics artifact 漂移。focused readiness suites、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 已在同窗通过，当前任务完成。
+3. 2026-04-14：`CR-001` round 1 进一步要求 `doctor` 在 `manual_only` 路径省略虚假的 `safe_local_fix=0`，并补上真实命令边界断言；该 readiness composition chain 现已通过修复后重验并收口为 `resolved`。
 
 ## 10. 产出
 
-1. 待激活：readiness composition artifacts to be defined in rollout window。
+1. `apps/cli/src/runtime/agent-onboarding-runtime.ts`
+2. `apps/cli/src/commands/connect-command.ts`
+3. `apps/cli/src/commands/doctor-command.ts`
+4. `apps/cli/test/runtime/agent-onboarding-runtime.test.ts`
+5. `apps/cli/test/commands/connect-command.test.ts`

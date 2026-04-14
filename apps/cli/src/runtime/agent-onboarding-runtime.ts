@@ -121,6 +121,11 @@ export class CliAgentOnboardingRuntime {
     };
   }
 
+  /**
+   * Builds the canonical onboarding payload, including onboarding-owned readiness composition.
+   * @param options Onboarding command context and verification inputs.
+   * @returns Stable onboarding payload for connect/doctor surfaces.
+   */
   public createOnboardingContractPayload(options: {
     commandName: 'connect' | 'doctor';
     executionId: string;
@@ -135,12 +140,19 @@ export class CliAgentOnboardingRuntime {
     singleToolAllRoles: boolean;
     presetId?: CliAgentOnboardingPreset | null;
     repairScope?: 'safe_local' | 'manual_only' | null;
-    diagnosticSummary: string;
+    safeLocalFixCount?: number;
   }) {
     const enabledToolRows = this.createEnabledToolRowsPayload({
       enabledTools: options.enabledTools,
       adaptersConfig: options.adaptersConfig,
       verification: options.verification,
+    });
+    const readinessPayload = this.createReadinessCompositionPayload({
+      commandName: options.commandName,
+      verificationStatus: options.verificationStatus,
+      verification: options.verification,
+      nextActions: options.nextActions,
+      safeLocalFixCount: options.safeLocalFixCount,
     });
     return {
       schema_version: CLI_AGENT_ONBOARDING_SCHEMA_VERSION,
@@ -161,19 +173,28 @@ export class CliAgentOnboardingRuntime {
       overwrite: options.overwrite,
       single_tool_all_roles: options.singleToolAllRoles,
       repair_scope: options.repairScope ?? null,
-      verification_status: options.verificationStatus,
-      diagnostic_summary: options.diagnosticSummary,
-      next_action: options.nextActions[0] ?? null,
-      next_actions: [...options.nextActions],
+      verification_status: readinessPayload.verification_status,
+      diagnostic_summary: readinessPayload.diagnostic_summary,
+      next_action: readinessPayload.next_action,
+      next_actions: readinessPayload.next_actions,
       execution_id: options.executionId,
       workspace_id: options.workspaceId,
     };
   }
 
+  /**
+   * Builds the additive verify matrix companion, including readiness composition derived from
+   * canonical onboarding/probe truth.
+   * @param options Verify-matrix execution context.
+   * @returns Stable verify-matrix payload.
+   */
   public createVerifyMatrixPayload(options: {
+    commandName?: 'connect' | 'doctor' | 'verify';
     executionId: string;
     verification: CliAdapterVerificationResolution;
     adaptersConfig: AdaptersConfig;
+    nextActions?: string[];
+    safeLocalFixCount?: number;
   }) {
     const configuredToolById = new Map(
       (options.adaptersConfig.tools ?? []).map((tool) => [tool.toolId, tool]),
@@ -186,9 +207,20 @@ export class CliAgentOnboardingRuntime {
       adaptersConfig: options.adaptersConfig,
       verification: options.verification,
     });
+    const readinessPayload = this.createReadinessCompositionPayload({
+      commandName: options.commandName ?? 'verify',
+      verificationStatus: options.verification.overallStatus,
+      verification: options.verification,
+      nextActions: options.nextActions ?? options.verification.nextActions,
+      safeLocalFixCount: options.safeLocalFixCount,
+    });
     return {
       execution_id: options.executionId,
       summary: options.verification.overallStatus,
+      verification_status: readinessPayload.verification_status,
+      diagnostic_summary: readinessPayload.diagnostic_summary,
+      next_action: readinessPayload.next_action,
+      next_actions: readinessPayload.next_actions,
       tool_transport_matrix: this.createToolTransportMatrixPayload(enabledToolRows),
       tool_matrix: (options.verification.roleEvaluations ?? []).map((roleEvaluation) => {
         const resolvedSurface = roleEvaluation.selectedSurface ?? roleEvaluation.primarySurface;
@@ -276,6 +308,38 @@ export class CliAgentOnboardingRuntime {
           ...(launchDiagnostics ? { launch_diagnostics: launchDiagnostics } : {}),
         };
       }),
+    };
+  }
+
+  private createReadinessCompositionPayload(options: {
+    commandName: 'connect' | 'doctor' | 'verify';
+    verificationStatus: CliGovernanceCheckStatus;
+    verification?: CliAdapterVerificationResolution;
+    nextActions: string[];
+    safeLocalFixCount?: number;
+  }): {
+    verification_status: CliGovernanceCheckStatus;
+    diagnostic_summary: string;
+    next_action: string | null;
+    next_actions: string[];
+  } {
+    const diagnosticSummarySegments = [`status=${options.verificationStatus}`];
+    if (options.verification) {
+      diagnosticSummarySegments.push(
+        `required_failures=${options.verification.requiredRoleFailedCount}`,
+        `fallback_roles=${options.verification.fallbackRoleCount}`,
+        `degraded_roles=${options.verification.degradedRoleCount}`,
+      );
+    }
+    if (options.commandName === 'doctor' && options.safeLocalFixCount !== undefined) {
+      diagnosticSummarySegments.push(`safe_local_fix=${options.safeLocalFixCount}`);
+    }
+
+    return {
+      verification_status: options.verificationStatus,
+      diagnostic_summary: diagnosticSummarySegments.join(' '),
+      next_action: options.nextActions[0] ?? null,
+      next_actions: [...options.nextActions],
     };
   }
 

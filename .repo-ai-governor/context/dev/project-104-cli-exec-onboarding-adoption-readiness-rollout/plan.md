@@ -20,13 +20,13 @@
 
 ## 2.1 sprint-001-onboarding-adoption-readiness-rollout
 
-- Status: active
+- Status: completed
 - Sprint Goal: 初始化 onboarding/adoption readiness rollout baseline，并冻结第一阶段 implementation boundary。
 - Task Package: `TK-859`、`TK-877`、`TK-878`
 
 ## 2.2 sprint-002-playbook-readback-and-support-evidence-prep
 
-- Status: planned
+- Status: active
 - Sprint Goal: 推进 playbook readback、support evidence preparation，并完成 rollout closeout。
 - Task Package: `TK-879`、`TK-880`、`TK-881`
 
@@ -34,10 +34,10 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 | --- | --- | --- | --- | --- | --- |
-| TK-859 | sprint-001 | implement cli-exec onboarding and adoption readiness rollout baseline | rollout/planned | DA-852 | in_progress |
-| TK-877 | sprint-001 | compose verification_status diagnostic_summary and next_action(s) from canonical onboarding probe truth | readiness/composition | TK-859 | planned |
-| TK-878 | sprint-001 | sprint-001 exit acceptance and sprint-002 activation handoff | sprint/closeout | TK-859、TK-877、activation-time local CR-001 | planned |
-| TK-879 | sprint-002 | apply the readiness evidence chain to local adoption readback and playbook-consumer surfaces | docs/readback | TK-878 | planned |
+| TK-859 | sprint-001 | implement cli-exec onboarding and adoption readiness rollout baseline | rollout/planned | DA-852 | completed |
+| TK-877 | sprint-001 | compose verification_status diagnostic_summary and next_action(s) from canonical onboarding probe truth | readiness/composition | TK-859 | completed |
+| TK-878 | sprint-001 | sprint-001 exit acceptance and sprint-002 activation handoff | sprint/closeout | TK-859、TK-877、activation-time local CR-001 | completed |
+| TK-879 | sprint-002 | apply the readiness evidence chain to local adoption readback and playbook-consumer surfaces | docs/readback | TK-878 | in_progress |
 | TK-880 | sprint-002 | prepare support-evidence package and guardrails without uplifting support-matrix truth by default | support/evidence | TK-879 | planned |
 | TK-881 | sprint-002 | finalize project-104 closeout and delivery evidence handoff | closeout/delivery | TK-879、TK-880、activation-time local CR-001 | planned |
 
@@ -59,6 +59,7 @@
 1. 2026-04-13：由 `project-101 / TK-852` promotion cutover 创建为 planned follow-up stream。
 2. 2026-04-14：`project-104` 已扩展为两阶段 execution-ready scaffold，并与 `project-103` 的推荐前置顺序对齐。
 3. 2026-04-14：`project-103` final closeout 完成后，当前 project 已切换为 active，并将 `sprint-001` 激活为新的 primary implementation surface。
+4. 2026-04-14：`sprint-001` 已在 `CR-001` finding round + `CR-002` clean recheck 后完成 closeout，并将 `sprint-002` 激活为新的 primary execution surface。
 
 ## 7. 里程碑记录入口
 

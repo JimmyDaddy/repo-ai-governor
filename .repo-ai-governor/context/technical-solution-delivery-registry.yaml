@@ -304,14 +304,14 @@ deliveries:
     rollout_status: planned
     owner: runtime
     project_ref: project-104-cli-exec-onboarding-adoption-readiness-rollout
-    sprint_ref: sprint-001-onboarding-adoption-readiness-rollout
+    sprint_ref: sprint-002-playbook-readback-and-support-evidence-prep
     task_ids:
-      - TK-859
-      - TK-877
-      - TK-878
+      - TK-879
+      - TK-880
+      - TK-881
     project_plan_path: .repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/plan.md
-    sprint_plan_path: .repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-001-onboarding-adoption-readiness-rollout/plan.md
-    task_csv_path: .repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-001-onboarding-adoption-readiness-rollout/tasks/tasks.csv
+    sprint_plan_path: .repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-002-playbook-readback-and-support-evidence-prep/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-104-cli-exec-onboarding-adoption-readiness-rollout/sprint-002-playbook-readback-and-support-evidence-prep/tasks/tasks.csv
     handoff_artifact_path: .repo-ai-governor/context/dev/project-101-cli-exec-followup-solution-review-and-promotion/sprint-003-onboarding-adoption-readiness/tasks/DA-852-cli-exec-onboarding-and-adoption-readiness-promotion-cutover.md
     rollout_artifacts:
       - .repo-ai-governor/context/dev/project-101-cli-exec-followup-solution-review-and-promotion/plan.md

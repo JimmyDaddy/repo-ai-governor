@@ -1,6 +1,6 @@
 # TK-859 implement cli-exec onboarding and adoption readiness rollout baseline
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-04-13
 - Owner: AI-Agent
 - Priority: P0
@@ -57,7 +57,14 @@
 
 1. 2026-04-13：任务创建，状态初始化为 `planned`，作为 `followup_required` rollout skeleton 的 canonical task。
 2. 2026-04-14：`project-103` final closeout 完成后，当前任务切换为 `in_progress`，并把 `project-104 / sprint-001` 激活为 primary execution surface；下一步先本地预留 `CR-001`，再开始 readiness rollout baseline implementation。
+3. 2026-04-14：已把 readiness composition baseline 收敛到 `CliAgentOnboardingRuntime`，由 onboarding-owned logic 统一生成 `verification_status / diagnostic_summary / next_action(s)`，并将同一条 evidence chain additive 投影到 `verificationMatrix`；`connect`/`doctor` 不再手工拼接 `diagnostic_summary`。focused readiness suites、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 已在同窗通过，当前任务完成。
+4. 2026-04-14：`CR-001` round 1 findings 已全部修复并收口为 `resolved`；当前 baseline 已补齐 `doctor` 的 truthful `safe_local_fix` 边界和真实命令级 readiness artifact 覆盖，进入下一轮 fresh clean recheck 前状态稳定。
 
 ## 10. 产出
 
-1. 待激活：implementation artifacts to be defined in rollout window
+1. `apps/cli/src/runtime/agent-onboarding-runtime.ts`
+2. `apps/cli/src/commands/connect-command.ts`
+3. `apps/cli/src/commands/doctor-command.ts`
+4. `apps/cli/test/runtime/agent-onboarding-runtime.test.ts`
+5. `apps/cli/test/commands/connect-command.test.ts`
+6. `apps/cli/test/commands/doctor-command.test.ts`
