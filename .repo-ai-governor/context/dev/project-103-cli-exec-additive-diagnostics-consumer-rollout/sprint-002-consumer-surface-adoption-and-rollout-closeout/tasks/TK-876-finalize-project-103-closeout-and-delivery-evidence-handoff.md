@@ -1,6 +1,6 @@
 # TK-876 finalize project-103 closeout and delivery evidence handoff
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-14
 - Owner: AI-Agent
 - Priority: P1
@@ -41,16 +41,29 @@
 
 ## 7. Development Verification
 
-1. 待激活后补充 project-final verification。
+1. `pnpm exec vitest run apps/cli/test/runtime/agent-onboarding-runtime.test.ts apps/cli/test/runtime/adapter-diagnostics-runtime.test.ts apps/cli/test/commands/connect-command.test.ts apps/cli/test/commands/doctor-command.test.ts --maxWorkers=1 --maxConcurrency=1`
+2. `pnpm run build`
+3. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
+4. `pnpm run check`
 
 ## 8. Delivery Verification
 
-1. 待激活后补充 final closeout delivery verification与治理检查。
+1. `node ./scripts/governance/check-technical-solution-delivery-registry.js`
+2. `node ./scripts/governance/check-technical-solution-lifecycle-registry.js`
+3. `node ./scripts/governance/check-worktree-review-target.js`
+4. `node ./scripts/governance/check-artifact-registry-lifecycle.js`
+5. `node ./scripts/governance/check-task-ledger-sync.js`
+6. `node ./scripts/governance/check-sprint-plan-status-sync.js`
+7. `node ./scripts/governance/check-code-review-status-sync.js`
 
 ## 9. 执行记录
 
 1. 2026-04-14：任务创建，状态初始化为 `planned`。
+2. 2026-04-14：`sprint-002` boundary commit `feat(project-103-sprint-002): complete sprint and clear cr loop` 已创建；当前任务切换为 `in_progress`，下一步在同一 sprint surface 上执行 `project-103` final fresh review，并完成 delivery registry、completion audit 与 next-stream activation closeout。
+3. 2026-04-14：project-final `CR-003` latest fresh recheck 未发现新的 actionable finding；当前已完成 delivery registry `execution_status/rollout_status=completed` write-back、completion audit summary、`current-context` 切换到 `project-104 / sprint-001`，并将本任务收口为 `completed`。
 
 ## 10. 产出
 
-1. 待激活：project-103 closeout and delivery handoff artifacts to be defined in rollout window。
+1. `.repo-ai-governor/context/dev/project-103-cli-exec-additive-diagnostics-consumer-rollout/project-103-cli-exec-additive-diagnostics-consumer-rollout-completion-audit-summary.md`
+2. `.repo-ai-governor/context/technical-solution-delivery-registry.yaml`
+3. `.repo-ai-governor/context/current-context.md`

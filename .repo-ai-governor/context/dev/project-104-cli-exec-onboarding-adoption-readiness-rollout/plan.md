@@ -1,6 +1,6 @@
 # project-104-cli-exec-onboarding-adoption-readiness-rollout 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-14
 - Stage Mapping: cli_exec onboarding and adoption readiness rollout
 - Phase Mapping: readiness composition baseline / playbook readback and support evidence prep / rollout closeout
@@ -20,7 +20,7 @@
 
 ## 2.1 sprint-001-onboarding-adoption-readiness-rollout
 
-- Status: planned
+- Status: active
 - Sprint Goal: 初始化 onboarding/adoption readiness rollout baseline，并冻结第一阶段 implementation boundary。
 - Task Package: `TK-859`、`TK-877`、`TK-878`
 
@@ -34,7 +34,7 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 | --- | --- | --- | --- | --- | --- |
-| TK-859 | sprint-001 | implement cli-exec onboarding and adoption readiness rollout baseline | rollout/planned | DA-852 | planned |
+| TK-859 | sprint-001 | implement cli-exec onboarding and adoption readiness rollout baseline | rollout/planned | DA-852 | in_progress |
 | TK-877 | sprint-001 | compose verification_status diagnostic_summary and next_action(s) from canonical onboarding probe truth | readiness/composition | TK-859 | planned |
 | TK-878 | sprint-001 | sprint-001 exit acceptance and sprint-002 activation handoff | sprint/closeout | TK-859、TK-877、activation-time local CR-001 | planned |
 | TK-879 | sprint-002 | apply the readiness evidence chain to local adoption readback and playbook-consumer surfaces | docs/readback | TK-878 | planned |
@@ -58,6 +58,7 @@
 
 1. 2026-04-13：由 `project-101 / TK-852` promotion cutover 创建为 planned follow-up stream。
 2. 2026-04-14：`project-104` 已扩展为两阶段 execution-ready scaffold，并与 `project-103` 的推荐前置顺序对齐。
+3. 2026-04-14：`project-103` final closeout 完成后，当前 project 已切换为 active，并将 `sprint-001` 激活为新的 primary implementation surface。
 
 ## 7. 里程碑记录入口
 

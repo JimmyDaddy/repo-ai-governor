@@ -1,6 +1,6 @@
 # TK-859 implement cli-exec onboarding and adoption readiness rollout baseline
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-04-13
 - Owner: AI-Agent
 - Priority: P0
@@ -41,15 +41,22 @@
 
 ## 7. Development Verification
 
-1. 待激活后补充 implementation-window verification。
+1. `pnpm exec vitest run apps/cli/test/runtime/agent-onboarding-runtime.test.ts apps/cli/test/runtime/adapter-diagnostics-runtime.test.ts apps/cli/test/commands/connect-command.test.ts apps/cli/test/commands/doctor-command.test.ts --maxWorkers=1 --maxConcurrency=1`
+2. `pnpm run build`
+3. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
 
 ## 8. Delivery Verification
 
-1. 待激活后补充 rollout-window delivery verification。
+1. `pnpm run build`
+2. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
+3. `node ./scripts/governance/check-task-ledger-sync.js`
+4. `node ./scripts/governance/check-sprint-plan-status-sync.js`
+5. `node ./scripts/governance/check-code-review-status-sync.js`
 
 ## 9. 执行记录
 
 1. 2026-04-13：任务创建，状态初始化为 `planned`，作为 `followup_required` rollout skeleton 的 canonical task。
+2. 2026-04-14：`project-103` final closeout 完成后，当前任务切换为 `in_progress`，并把 `project-104 / sprint-001` 激活为 primary execution surface；下一步先本地预留 `CR-001`，再开始 readiness rollout baseline implementation。
 
 ## 10. 产出
 

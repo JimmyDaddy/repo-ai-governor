@@ -1,6 +1,6 @@
 # sprint-002-consumer-surface-adoption-and-rollout-closeout 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-14
 - Sprint Goal: 推进 consumer surface adoption，补齐 scenario-driven evidence 并完成 rollout closeout。
 - Project: `project-103-cli-exec-additive-diagnostics-consumer-rollout`
@@ -21,7 +21,7 @@
 | --- | --- | --- | --- |
 | TK-874 | adopt launch_diagnostics across connect doctor verify and report surfaces and retire stderr-guess branches | TK-873 | completed |
 | TK-875 | produce scenario-driven evidence for spawn-failed parse-failed non-zero and signal consumer mappings | TK-874 | completed |
-| TK-876 | finalize project-103 closeout and delivery evidence handoff | TK-874、TK-875、activation-time local CR-001 | planned |
+| TK-876 | finalize project-103 closeout and delivery evidence handoff | TK-874、TK-875、activation-time local CR-001 | completed |
 
 ## 3. Exit Criteria
 
@@ -36,4 +36,6 @@
 3. `TK-876` 负责 `project-103` final closeout，但只有在 sprint-002 local `CR-001` clean 后才允许完成。
 4. 2026-04-14：`TK-873` 已完成 sprint-001 closeout 与 activation handoff；当前 sprint 已切换为 active，`TK-874` 作为新的 implementation 入口切换为 `in_progress`。
 5. 2026-04-14：`TK-874 / TK-875` 已完成 shared projection runtime、verificationMatrix/report surface wiring 与 spawn/parse/non-zero/signal consumer evidence；下一步进入本地 `CR-001` fresh reviewer loop。
-6. 2026-04-14：`CR-001` accepted findings 已修复，并由 `CR-002` latest fresh clean recheck 收口为 `resolved`；当前 sprint boundary 已通过 focused vitest、`pnpm run build`、`pnpm run test:packages`、ledger/CR sync checks 与 `pnpm run check`，下一步执行本地 sprint commit，随后进入 project-final review。
+6. 2026-04-14：`CR-001` accepted findings 已修复，并由 `CR-002` latest fresh clean recheck 收口为 `resolved`；当前 sprint boundary 已通过 focused vitest、`pnpm run build`、`pnpm run test:packages`、ledger/CR sync checks 与 `pnpm run check`。
+7. 2026-04-14：本地 sprint boundary commit `feat(project-103-sprint-002): complete sprint and clear cr loop` 已创建；当前在同一 sprint surface 上进入 project-final review 与 closeout write-back。
+8. 2026-04-14：project-final `CR-003` latest fresh recheck 未发现新的 actionable finding；`TK-876` 已完成 delivery registry、completion audit 与 next-stream activation write-back，当前 sprint 收口为 `completed`。

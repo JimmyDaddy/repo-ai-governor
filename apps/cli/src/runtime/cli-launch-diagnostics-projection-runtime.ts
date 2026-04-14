@@ -1,11 +1,6 @@
 import type { AgentLayeredHealthCheckResult } from '@repo-ai-governor/adapter-sdk';
 import { AdapterTransportKind } from '@repo-ai-governor/shared';
-
-const CLI_EXEC_LAUNCH_DIAGNOSTIC_CODES = {
-  SHELL_WRAPPED: 'protocol.shell_wrapped',
-  PROCESS_TREE_POLICY: 'protocol.process_tree_policy',
-  SPAWN_ERROR_CODE: 'install.spawn_error_code',
-} as const;
+import { CliLaunchDiagnosticCode } from '../constants/cli-launch-diagnostics.constant.js';
 
 /**
  * Projects probe-visible native cli_exec launch facts into one additive consumer companion.
@@ -26,15 +21,15 @@ export class CliLaunchDiagnosticsProjectionRuntime {
 
     const shellWrappedDetail = this.findHealthCheckDiagnosticDetail(
       options.healthCheck,
-      CLI_EXEC_LAUNCH_DIAGNOSTIC_CODES.SHELL_WRAPPED,
+      CliLaunchDiagnosticCode.SHELL_WRAPPED,
     );
     const processTreePolicy = this.findHealthCheckDiagnosticDetail(
       options.healthCheck,
-      CLI_EXEC_LAUNCH_DIAGNOSTIC_CODES.PROCESS_TREE_POLICY,
+      CliLaunchDiagnosticCode.PROCESS_TREE_POLICY,
     );
     const spawnErrorCode = this.findHealthCheckDiagnosticDetail(
       options.healthCheck,
-      CLI_EXEC_LAUNCH_DIAGNOSTIC_CODES.SPAWN_ERROR_CODE,
+      CliLaunchDiagnosticCode.SPAWN_ERROR_CODE,
     );
     const shellWrapped =
       shellWrappedDetail === 'true' ? true : shellWrappedDetail === 'false' ? false : null;
@@ -56,7 +51,7 @@ export class CliLaunchDiagnosticsProjectionRuntime {
    */
   private findHealthCheckDiagnosticDetail(
     healthCheck: AgentLayeredHealthCheckResult,
-    code: string,
+    code: CliLaunchDiagnosticCode,
   ): string | null {
     const diagnostic = healthCheck.diagnostics.find((candidate) => candidate.code === code);
     return typeof diagnostic?.detail === 'string' && diagnostic.detail.length > 0

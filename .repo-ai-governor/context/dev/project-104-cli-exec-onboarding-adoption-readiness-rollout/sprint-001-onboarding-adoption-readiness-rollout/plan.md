@@ -1,6 +1,6 @@
 # sprint-001-onboarding-adoption-readiness-rollout 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-14
 - Sprint Goal: 初始化 onboarding/adoption readiness rollout baseline，并冻结第一阶段 implementation boundary。
 - Project: `project-104-cli-exec-onboarding-adoption-readiness-rollout`
@@ -19,7 +19,7 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-859 | implement cli-exec onboarding and adoption readiness rollout baseline | DA-852 | planned |
+| TK-859 | implement cli-exec onboarding and adoption readiness rollout baseline | DA-852 | in_progress |
 | TK-877 | compose verification_status diagnostic_summary and next_action(s) from canonical onboarding probe truth | TK-859 | planned |
 | TK-878 | sprint-001 exit acceptance and sprint-002 activation handoff | TK-859、TK-877、activation-time local CR-001 | planned |
 
@@ -34,3 +34,4 @@
 1. 激活后先预留本地 `CR-001`，再开始 implementation 与 reviewer loop。
 2. 推荐在 `project-103` diagnostics consumer truth 起步后再激活 `project-104`。
 3. 当前 sprint 不得让 playbook/support wording 反向成为新的 runtime truth source。
+4. 2026-04-14：`project-103` final closeout 完成后，当前 sprint 已切换为 active primary surface；`TK-859` 进入 implementation 前准备状态，下一步先本地预留 `CR-001`。

@@ -1,6 +1,6 @@
 # project-103-cli-exec-additive-diagnostics-consumer-rollout 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-14
 - Stage Mapping: cli_exec additive diagnostics consumer rollout
 - Phase Mapping: consumer projection baseline / connect-doctor-verify-report adoption / rollout closeout
@@ -26,7 +26,7 @@
 
 ## 2.2 sprint-002-consumer-surface-adoption-and-rollout-closeout
 
-- Status: active
+- Status: completed
 - Sprint Goal: 推进 consumer surface adoption，补齐 scenario-driven evidence 并完成 rollout closeout。
 - Task Package: `TK-874`、`TK-875`、`TK-876`
 
@@ -39,7 +39,7 @@
 | TK-873 | sprint-001 | sprint-001 exit acceptance and sprint-002 activation handoff | sprint/closeout | TK-858、TK-872、activation-time local CR-001 | completed |
 | TK-874 | sprint-002 | adopt launch_diagnostics across connect doctor verify and report surfaces and retire stderr-guess branches | surface/adoption | TK-873 | completed |
 | TK-875 | sprint-002 | produce scenario-driven evidence for spawn-failed parse-failed non-zero and signal consumer mappings | evidence/scenario | TK-874 | completed |
-| TK-876 | sprint-002 | finalize project-103 closeout and delivery evidence handoff | closeout/delivery | TK-874、TK-875、activation-time local CR-001 | planned |
+| TK-876 | sprint-002 | finalize project-103 closeout and delivery evidence handoff | closeout/delivery | TK-874、TK-875、activation-time local CR-001 | completed |
 
 ## 4. 依赖产物策略
 
@@ -50,9 +50,9 @@
 
 ## 5. DoD（project-103）
 
-1. `project-103` 已激活为当前 primary execution stream，并开始推进 `sprint-001` 的 diagnostics consumer baseline。
-2. consumer projection、surface adoption 与 scenario evidence 的 implementation boundary 已完整落到 task package。
-3. rollout 不得把 additive diagnostics 升格为新的 minimum fields，也不得重新回到 stderr/error-message 猜测路径。
+1. `project-103` 已完成 `sprint-001` consumer projection baseline、`sprint-002` consumer adoption/scenario evidence 与 project-final fresh reviewer clean recheck，并收口为 `completed`。
+2. `launch_diagnostics` 已稳定投影到 `connect / doctor / verify / report`，同时保持 additive-only contract，不把 diagnostics 升格为新的 minimum fields。
+3. `technical-solution.cli-exec-additive-diagnostics-consumer-productization` 的 delivery truth 已切到 `execution_status=completed`、`rollout_status=completed`，并回链本项目 completion audit 与 promotion handoff。
 
 ## 6. 里程碑记录
 
@@ -61,8 +61,10 @@
 3. 2026-04-14：`project-102` final closeout 完成后，当前 project 已切换为 active，并将 `sprint-001` 激活为新的 primary implementation surface。
 4. 2026-04-14：`sprint-001` 已完成 `TK-858 / TK-872 / TK-873` 与 `CR-001 / CR-002` clean 收口；当前已激活 `sprint-002` 并将 `TK-874` 切换为 `in_progress`。
 5. 2026-04-14：`TK-874 / TK-875` 已完成 implementation 与 scenario-driven evidence，当前进入 `sprint-002` 的 fresh reviewer loop 准备阶段。
-6. 2026-04-14：`sprint-002` 的 `CR-001` accepted findings 已修复完成，并由 `CR-002` latest fresh clean recheck 收口为 `resolved`；当前 sprint boundary 已通过 focused vitest、`pnpm run build`、`pnpm run test:packages`、ledger/CR sync checks 与 `pnpm run check`，下一步执行 local sprint commit，随后在同一 surface 上执行 project-final review。
+6. 2026-04-14：`sprint-002` 的 `CR-001` accepted findings 已修复完成，并由 `CR-002` latest fresh clean recheck 收口为 `resolved`；当前 sprint boundary 已通过 focused vitest、`pnpm run build`、`pnpm run test:packages`、ledger/CR sync checks 与 `pnpm run check`。
+7. 2026-04-14：本地 sprint boundary commit `feat(project-103-sprint-002): complete sprint and clear cr loop` 已创建；当前在 `sprint-002` surface 上进入 project-final review，随后收口 delivery registry、completion audit 与 next-stream activation。
+8. 2026-04-14：project-final `CR-003` latest fresh recheck 未发现新的 actionable finding；当前已完成 project-103 closeout、delivery registry write-back、completion audit 与 `project-104 / sprint-001` activation handoff。
 
 ## 7. 里程碑记录入口
 
-1. 待 closeout 后补齐 completion audit summary。
+1. `./project-103-cli-exec-additive-diagnostics-consumer-rollout-completion-audit-summary.md`
