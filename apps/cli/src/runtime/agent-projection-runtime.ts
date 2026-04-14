@@ -1,6 +1,7 @@
 import type { AdaptersConfig, ResolvedWorkspace } from '@repo-ai-governor/config';
 import {
   type AgentDescriptor,
+  type AgentDescriptorAcpHostCompanion,
   AgentProjectionService,
   type AgentSessionProjection,
 } from '@repo-ai-governor/core-agent-projection';
@@ -12,6 +13,12 @@ import {
   AdapterTransportKind,
   AdapterVendorBindingKind,
 } from '@repo-ai-governor/shared';
+import {
+  CLI_ACP_HOST_COMPANION_STATE_SUMMARY,
+  CliAcpHostDiagnosticCode,
+  CliAcpHostDistributionBoundary,
+  CliAcpHostReadinessStatus,
+} from '../constants/cli-acp-host.constant.js';
 import type { CliAdapterVerificationResolution } from '../types/interfaces/index.js';
 
 /**
@@ -36,14 +43,12 @@ export class CliAgentProjectionRuntime {
         if (!role) {
           return null;
         }
+        const referenceSurface = roleEvaluation.selectedSurface ?? roleEvaluation.primarySurface;
         const selectedToolConfig =
-          roleEvaluation.selectedSurface === null
-            ? null
-            : ((options.adaptersConfig.tools ?? []).find(
-                (tool) => tool.toolId === roleEvaluation.selectedSurface,
-              ) ?? null);
+          (options.adaptersConfig.tools ?? []).find((tool) => tool.toolId === referenceSurface) ??
+          null;
         const selectedTransport = this.resolveSelectedTransport(
-          roleEvaluation.selectedSurface,
+          referenceSurface,
           selectedToolConfig,
           roleEvaluation.healthCheck?.transportKind ?? null,
         );
@@ -72,7 +77,7 @@ export class CliAgentProjectionRuntime {
             selectedTransport,
           }),
           selectedVendorBindingKind: this.resolveSelectedVendorBindingKind({
-            selectedSurface: roleEvaluation.selectedSurface,
+            selectedSurface: referenceSurface,
             selectedToolConfig,
             healthCheck: roleEvaluation.healthCheck,
             selectedTransport,
@@ -83,9 +88,13 @@ export class CliAgentProjectionRuntime {
             selectedTransport,
           }),
           capabilitySnapshotSource: this.resolveCapabilitySnapshotSource(
-            roleEvaluation.selectedSurface,
+            referenceSurface,
             selectedToolConfig,
             roleEvaluation.healthCheck?.transportKind ?? null,
+          ),
+          acpHostCompanion: this.resolveAcpHostCompanion(
+            selectedTransport,
+            roleEvaluation.healthCheck,
           ),
         });
       })
@@ -185,6 +194,7 @@ export class CliAgentProjectionRuntime {
     if (
       healthCheckTransportKind === AdapterTransportKind.BASELINE ||
       healthCheckTransportKind === AdapterTransportKind.CLI_EXEC ||
+      healthCheckTransportKind === AdapterTransportKind.ACP_EXEC ||
       healthCheckTransportKind === AdapterTransportKind.REMOTE_API
     ) {
       return healthCheckTransportKind;
@@ -295,6 +305,7 @@ export class CliAgentProjectionRuntime {
     if (
       healthCheckTransportKind === AdapterTransportKind.BASELINE ||
       healthCheckTransportKind === AdapterTransportKind.CLI_EXEC ||
+      healthCheckTransportKind === AdapterTransportKind.ACP_EXEC ||
       healthCheckTransportKind === AdapterTransportKind.REMOTE_API
     ) {
       return AdapterCapabilitySnapshotSource.HEALTH_CHECK;
@@ -302,6 +313,43 @@ export class CliAgentProjectionRuntime {
     if (selectedToolConfig) {
       return AdapterCapabilitySnapshotSource.CONFIG;
     }
-    return AdapterCapabilitySnapshotSource.SURFACE_DEFAULT;
+    return selectedSurface ? AdapterCapabilitySnapshotSource.SURFACE_DEFAULT : null;
+  }
+
+  private resolveAcpHostCompanion(
+    selectedTransport: AdapterTransportKind | null,
+    healthCheck: CliAdapterVerificationResolution['roleEvaluations'][number]['healthCheck'],
+  ): AgentDescriptorAcpHostCompanion | null {
+    if (selectedTransport !== AdapterTransportKind.ACP_EXEC) {
+      return null;
+    }
+
+    return {
+      hostReadinessStatus:
+        this.findHealthCheckDiagnosticDetail(
+          healthCheck,
+          CliAcpHostDiagnosticCode.HOST_READINESS_STATUS,
+        ) ?? CliAcpHostReadinessStatus.BASELINE_ONLY,
+      distributionBoundary:
+        this.findHealthCheckDiagnosticDetail(
+          healthCheck,
+          CliAcpHostDiagnosticCode.DISTRIBUTION_BOUNDARY,
+        ) ?? CliAcpHostDistributionBoundary.PACKAGED_DISTRIBUTION_PENDING,
+      companionStateSummary:
+        this.findHealthCheckDiagnosticDetail(
+          healthCheck,
+          CliAcpHostDiagnosticCode.COMPANION_STATE_SUMMARY,
+        ) ?? CLI_ACP_HOST_COMPANION_STATE_SUMMARY,
+    };
+  }
+
+  private findHealthCheckDiagnosticDetail(
+    healthCheck: CliAdapterVerificationResolution['roleEvaluations'][number]['healthCheck'],
+    code: CliAcpHostDiagnosticCode,
+  ): string | null {
+    const diagnostic = healthCheck?.diagnostics.find((candidate) => candidate.code === code);
+    return typeof diagnostic?.detail === 'string' && diagnostic.detail.length > 0
+      ? diagnostic.detail
+      : null;
   }
 }

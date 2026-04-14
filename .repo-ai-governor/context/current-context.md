@@ -2,25 +2,25 @@
 
 ## Primary Stream
 
-- Status: idle
-- Stream: `idle`
-- Project: `(none)`
-- Sprint: `(none)`
-- Docs: `(none)`
-- Plan: `(none)`
-- Tasks: `(none)`
-- Checklist: `(none)`
-- CSV: `(none)`
-- Review: `(none)`
-- Note: `2026-04-15` `project-104-cli-exec-onboarding-adoption-readiness-rollout` 已完成 project-final clean closeout、delivery write-back 与 completed-history 迁移；`project-105` 继续保留为下一条 planned rollout stream，当前 primary 暂时恢复 `idle`，下一步再显式激活 ACP rollout。
+- Status: active
+- Stream: `stream-project-105-sprint-002`
+- Project: `project-105-acp-host-facing-transport-rollout`
+- Sprint: `sprint-002-distribution-and-runtime-service-enablement`
+- Docs: `.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout`
+- Plan: `.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-002-distribution-and-runtime-service-enablement/plan.md`
+- Tasks: `.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-002-distribution-and-runtime-service-enablement/tasks/`
+- Checklist: `.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-002-distribution-and-runtime-service-enablement/tasks/checklist.md`
+- CSV: `.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-002-distribution-and-runtime-service-enablement/tasks/tasks.csv`
+- Review: `.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-002-distribution-and-runtime-service-enablement/review/`
+- Note: `2026-04-15` `project-105 / sprint-001` 已在 `CR-001 ~ CR-009` 收口后完成 clean closeout；当前已激活 `project-105 / sprint-002` 作为新的 primary execution surface，`TK-885` 已切换为 `in_progress`，下一步先预留本地 `CR-001` 再开始 ACP readiness composition 与 runtime-service enablement implementation。
 
 ## Active Streams
 
-_None. Primary stream is currently idle._
+- `stream-project-105-sprint-002`: role=`primary`, primary=`true`, project=`project-105-acp-host-facing-transport-rollout`, sprint=`sprint-002-distribution-and-runtime-service-enablement`, docs=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout`, plan=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-002-distribution-and-runtime-service-enablement/plan.md`, tasks=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-002-distribution-and-runtime-service-enablement/tasks/`, checklist=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-002-distribution-and-runtime-service-enablement/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-002-distribution-and-runtime-service-enablement/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-002-distribution-and-runtime-service-enablement/review/`, status=`active`, note=`2026-04-15 `project-105 / sprint-001` clean closeout 已完成；当前 sprint 已激活为新的 primary execution surface，`TK-885` 进入 `in_progress`，下一步先本地预留 `CR-001` 再开始 ACP readiness composition 与 runtime-service enablement implementation。`
 
 ## Planned Follow-Up Streams
 
-- `stream-project-105-sprint-001`: primary=`false`, project=`project-105-acp-host-facing-transport-rollout`, sprint=`sprint-001-acp-host-facing-transport-rollout`, docs=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout`, plan=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-001-acp-host-facing-transport-rollout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-001-acp-host-facing-transport-rollout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-001-acp-host-facing-transport-rollout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-001-acp-host-facing-transport-rollout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-001-acp-host-facing-transport-rollout/review/`, status=`planned`, note=`2026-04-14 在保留 2026-04-13 TK-855 promotion handoff 来源的基础上扩展为多 sprint execution-ready scaffold；作为 technical-solution.acp-host-facing-transport-formalization 的 followup_required rollout stream，默认作为第 5 条执行流保留到前置 cli_exec 主链收口后再激活。`
+_None._
 
 ## Completed Stream History
 

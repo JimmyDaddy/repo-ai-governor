@@ -24,6 +24,8 @@ import { SessionMainProviderContinuationPolicyEnvelope } from '../constants/sess
 const SESSION_MAIN_PROVIDER_CONTINUATION_LANE_LABEL = 'session.main';
 const SESSION_MAIN_PROVIDER_CONTINUATION_UNSUPPORTED_CLEAR_REASON = 'adapter_reported_unsupported';
 const SESSION_MAIN_PROVIDER_CONTINUATION_INVALID_CLEAR_REASON = 'provider_handle_invalid';
+const SESSION_MAIN_PROVIDER_CONTINUATION_TRANSPORT_UNSUPPORTED_CLEAR_REASON =
+  'transport_not_continuation_capable';
 
 interface SessionMainProviderContinuationLane {
   laneKey: string;
@@ -40,7 +42,7 @@ interface SessionMainProviderContinuationLane {
 
 interface PreparedProviderContinuationRequest {
   lane: SessionMainProviderContinuationLane;
-  request: AgentStageContinuationRequest;
+  request?: AgentStageContinuationRequest;
   existingSlot?: SessionProviderContinuationSlot;
   preDispatchMutation?: SessionProviderContinuationMutation;
   suppressStreamRelay: boolean;
@@ -92,7 +94,8 @@ export class SessionMainProviderContinuationRuntime {
   /**
    * Builds one continuation request for a resolved lane when the selected surface supports it.
    * @param options Lane and session inputs for the upcoming adapter invocation.
-   * @returns Prepared request metadata or `null` when the surface is not continuation-capable.
+   * @returns Prepared request metadata, a pre-dispatch invalidation payload, or `null` when the
+   * surface neither supports continuation nor needs slot cleanup.
    */
   public prepareRequest(options: {
     sessionId: string;
@@ -104,9 +107,30 @@ export class SessionMainProviderContinuationRuntime {
     providerContinuationState?: SessionProviderContinuationSessionState;
     policyEnvelope: SessionMainProviderContinuationPolicyEnvelope;
   }): PreparedProviderContinuationRequest | null {
+    const laneKey = this.createLaneKey({
+      routeId: options.routeId,
+      stageId: options.stageId,
+      roleId: options.roleId,
+      selectedSurface: options.selectedSurface,
+      policyEnvelope: options.policyEnvelope,
+    });
+    const existingSlot = options.providerContinuationState?.slots[laneKey];
     const transportKind = this.resolveTransportKind(options.selectedSurface, options.toolConfig);
     if (!transportKind) {
-      return null;
+      if (!existingSlot) {
+        return null;
+      }
+      const lane = this.createLaneFromExistingSlot(existingSlot);
+      return {
+        lane,
+        existingSlot,
+        preDispatchMutation: this.createClearMutation(
+          lane,
+          SESSION_MAIN_PROVIDER_CONTINUATION_TRANSPORT_UNSUPPORTED_CLEAR_REASON,
+          AgentStageContinuationStatus.UNSUPPORTED,
+        ),
+        suppressStreamRelay: false,
+      };
     }
 
     const lane = this.createLane({
@@ -118,7 +142,6 @@ export class SessionMainProviderContinuationRuntime {
       toolConfig: options.toolConfig,
       policyEnvelope: options.policyEnvelope,
     });
-    const existingSlot = options.providerContinuationState?.slots[lane.laneKey];
     const preDispatchInvalidationReason = existingSlot
       ? this.resolvePreDispatchInvalidationReason(existingSlot, lane)
       : null;
@@ -232,10 +255,7 @@ export class SessionMainProviderContinuationRuntime {
     toolConfig?: NonNullable<AdaptersConfig['tools']>[number];
     policyEnvelope: SessionMainProviderContinuationPolicyEnvelope;
   }): SessionMainProviderContinuationLane {
-    const laneLabel =
-      typeof options.roleId === 'string' && options.roleId.trim().length > 0
-        ? options.roleId
-        : SESSION_MAIN_PROVIDER_CONTINUATION_LANE_LABEL;
+    const laneLabel = this.resolveLaneLabel(options.roleId);
     const providerId =
       options.transportKind === AgentStageContinuationTransportKind.REMOTE_API
         ? (options.toolConfig?.remoteApi?.provider ?? options.selectedSurface)
@@ -246,13 +266,13 @@ export class SessionMainProviderContinuationRuntime {
         : null;
 
     return {
-      laneKey: [
-        options.routeId,
-        options.stageId,
-        laneLabel,
-        options.selectedSurface,
-        options.policyEnvelope,
-      ].join('::'),
+      laneKey: this.createLaneKey({
+        routeId: options.routeId,
+        stageId: options.stageId,
+        roleId: options.roleId,
+        selectedSurface: options.selectedSurface,
+        policyEnvelope: options.policyEnvelope,
+      }),
       laneLabel,
       routeId: options.routeId,
       stageId: options.stageId,
@@ -265,12 +285,52 @@ export class SessionMainProviderContinuationRuntime {
     };
   }
 
+  private createLaneFromExistingSlot(
+    existingSlot: SessionProviderContinuationSlot,
+  ): SessionMainProviderContinuationLane {
+    return {
+      laneKey: existingSlot.laneKey,
+      laneLabel: this.resolveLaneLabel(existingSlot.roleId),
+      routeId: existingSlot.routeId,
+      stageId: existingSlot.stageId,
+      roleId: existingSlot.roleId,
+      selectedSurface: existingSlot.selectedSurface,
+      providerId: existingSlot.providerId,
+      transportKind: existingSlot.transportKind as AgentStageContinuationTransportKind,
+      model: existingSlot.model,
+      policyEnvelope: existingSlot.policyEnvelope,
+    };
+  }
+
+  private createLaneKey(options: {
+    routeId: string;
+    stageId: string;
+    roleId: string | null;
+    selectedSurface: AdapterSurface;
+    policyEnvelope: SessionMainProviderContinuationPolicyEnvelope;
+  }): string {
+    return [
+      options.routeId,
+      options.stageId,
+      this.resolveLaneLabel(options.roleId),
+      options.selectedSurface,
+      options.policyEnvelope,
+    ].join('::');
+  }
+
+  private resolveLaneLabel(roleId: string | null): string {
+    return typeof roleId === 'string' && roleId.trim().length > 0
+      ? roleId
+      : SESSION_MAIN_PROVIDER_CONTINUATION_LANE_LABEL;
+  }
+
   private resolveTransportKind(
     surface: AdapterSurface,
     toolConfig?: NonNullable<AdaptersConfig['tools']>[number],
   ): AgentStageContinuationTransportKind | null {
     if (
       toolConfig?.transport === AdapterTransportKind.BASELINE ||
+      toolConfig?.transport === AdapterTransportKind.ACP_EXEC ||
       surface === AdapterSurface.OLLAMA
     ) {
       return null;

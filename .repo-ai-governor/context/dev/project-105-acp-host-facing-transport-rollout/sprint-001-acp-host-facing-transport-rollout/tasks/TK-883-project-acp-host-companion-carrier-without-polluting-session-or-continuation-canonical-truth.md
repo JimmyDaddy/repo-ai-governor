@@ -1,6 +1,6 @@
 # TK-883 project acp_host_companion carrier without polluting session or continuation canonical truth
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-14
 - Owner: AI-Agent
 - Priority: P1
@@ -40,16 +40,28 @@
 
 ## 7. Development Verification
 
-1. 待激活后补充 companion-carrier verification。
+1. `pnpm exec vitest run packages/core-agent-projection/test/agent-projection-service.unit.test.ts apps/cli/test/runtime/agent-projection-runtime.test.ts apps/cli/test/runtime/agent-onboarding-runtime.test.ts apps/cli/test/runtime/session-main-provider-continuation-runtime.test.ts`
+2. `pnpm run build`
+3. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
 
 ## 8. Delivery Verification
 
-1. 待激活后补充 rollout-window delivery verification与治理检查。
+1. `pnpm run build`
+2. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
+3. `node ./scripts/governance/check-task-ledger-sync.js`
+4. `node ./scripts/governance/check-sprint-plan-status-sync.js`
 
 ## 9. 执行记录
 
 1. 2026-04-14：任务创建，状态初始化为 `planned`。
+2. 2026-04-15：已将 `acp_host_companion` 正式接入 `AgentDescriptor` additive carrier，并在 projection runtime 中为 `acp_exec` 提供稳定的 `hostReadinessStatus / distributionBoundary / companionStateSummary` companion；同时 provider continuation seam 对 `acp_exec` fail-closed 返回 `null`，确保 ACP-local truth 不污染 shared session / continuation canonical state。focused projection suites、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 已通过，当前任务完成。
 
 ## 10. 产出
 
-1. 待激活：acp_host_companion artifacts to be defined in rollout window。
+1. `packages/core-agent-projection/src/types/interfaces/agent-projection.interface.ts`
+2. `packages/core-agent-projection/src/agent-projection-service.ts`
+3. `apps/cli/src/runtime/agent-projection-runtime.ts`
+4. `apps/cli/src/runtime/session-main-provider-continuation-runtime.ts`
+5. `packages/core-agent-projection/test/agent-projection-service.unit.test.ts`
+6. `apps/cli/test/runtime/agent-projection-runtime.test.ts`
+7. `apps/cli/test/runtime/session-main-provider-continuation-runtime.test.ts`

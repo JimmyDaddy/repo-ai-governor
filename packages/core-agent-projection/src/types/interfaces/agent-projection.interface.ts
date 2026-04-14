@@ -9,6 +9,15 @@ import type {
   RoleSource,
 } from '@repo-ai-governor/shared';
 
+export interface AgentDescriptorAcpHostCompanion {
+  acpSessionId?: string | null;
+  permissionQueueId?: string | null;
+  terminalChannelId?: string | null;
+  hostReadinessStatus?: string | null;
+  distributionBoundary?: string | null;
+  companionStateSummary?: string | null;
+}
+
 export interface AgentProjectionInput {
   roleId: string;
   roleProfileId: string;
@@ -32,6 +41,7 @@ export interface AgentProjectionInput {
   selectedVendorBindingKind?: AdapterVendorBindingKind | null;
   selectedModel?: string | null;
   capabilitySnapshotSource?: AdapterCapabilitySnapshotSource | null;
+  acpHostCompanion?: AgentDescriptorAcpHostCompanion | null;
   inputSchemaRef?: string | null;
   outputSchemaRef?: string | null;
   errorContractRef?: string | null;
@@ -80,6 +90,7 @@ export interface AgentDescriptor {
   selectedVendorBindingKind?: AdapterVendorBindingKind | null;
   selectedModel?: string | null;
   capabilitySnapshotSource?: AdapterCapabilitySnapshotSource | null;
+  acpHostCompanion?: AgentDescriptorAcpHostCompanion | null;
 }
 
 export interface AgentSessionProjectionEntry {

@@ -5,6 +5,7 @@ import { AgentAvailabilityStatus } from '@repo-ai-governor/adapter-sdk';
 import type { AdaptersConfig } from '@repo-ai-governor/config';
 import {
   AdapterSurface,
+  AdapterTransportKind,
   GovernorErrorCode,
   LocalModelProvider,
   RuntimeError,
@@ -68,6 +69,13 @@ export class CliLocalModelProbeRuntime {
       return {
         availabilityStatus: overrideResolution.availabilityStatus,
         unavailableReasons: [...overrideResolution.unavailableReasons],
+      };
+    }
+
+    if (toolConfig?.transport === AdapterTransportKind.ACP_EXEC) {
+      return {
+        availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+        unavailableReasons: [],
       };
     }
 

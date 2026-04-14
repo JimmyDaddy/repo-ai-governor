@@ -1,6 +1,6 @@
 # project-105-acp-host-facing-transport-rollout 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-14
 - Stage Mapping: ACP host-facing transport rollout
 - Phase Mapping: explicit transport routing and companion carrier / packaged distribution and runtime-service enablement / clean-room verify support truth and closeout
@@ -20,13 +20,13 @@
 
 ## 2.1 sprint-001-acp-host-facing-transport-rollout
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 初始化 ACP host-facing transport rollout baseline，并冻结第一阶段 implementation boundary。
 - Task Package: `TK-860`、`TK-882`、`TK-883`、`TK-884`
 
 ## 2.2 sprint-002-distribution-and-runtime-service-enablement
 
-- Status: planned
+- Status: active
 - Sprint Goal: 推进 `acp_exec` readiness composition、packaged distribution 与 runtime-service enablement。
 - Task Package: `TK-885`、`TK-886`、`TK-887`
 
@@ -40,11 +40,11 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 | --- | --- | --- | --- | --- | --- |
-| TK-860 | sprint-001 | implement ACP host-facing transport rollout baseline | rollout/planned | DA-855 | planned |
-| TK-882 | sprint-001 | implement explicit acp_exec transport routing and fail-closed separation from cli_exec | transport/routing | TK-860 | planned |
-| TK-883 | sprint-001 | project acp_host_companion carrier without polluting session or continuation canonical truth | companion/carrier | TK-882 | planned |
-| TK-884 | sprint-001 | sprint-001 exit acceptance and sprint-002 activation handoff | sprint/closeout | TK-860、TK-882、TK-883、activation-time local CR-001 | planned |
-| TK-885 | sprint-002 | integrate connect doctor verify readiness composition for acp_exec and host next-actions | onboarding/readiness | TK-884 | planned |
+| TK-860 | sprint-001 | implement ACP host-facing transport rollout baseline | rollout/planned | DA-855 | completed |
+| TK-882 | sprint-001 | implement explicit acp_exec transport routing and fail-closed separation from cli_exec | transport/routing | TK-860 | completed |
+| TK-883 | sprint-001 | project acp_host_companion carrier without polluting session or continuation canonical truth | companion/carrier | TK-882 | completed |
+| TK-884 | sprint-001 | sprint-001 exit acceptance and sprint-002 activation handoff | sprint/closeout | TK-860、TK-882、TK-883、activation-time local CR-001 | completed |
+| TK-885 | sprint-002 | integrate connect doctor verify readiness composition for acp_exec and host next-actions | onboarding/readiness | TK-884 | in_progress |
 | TK-886 | sprint-002 | enable packaged-distribution and runtime-service surfaces behind explicit ACP boundaries | distribution/runtime-service | TK-885 | planned |
 | TK-887 | sprint-002 | sprint-002 exit acceptance and sprint-003 activation handoff | sprint/closeout | TK-885、TK-886、activation-time local CR-001 | planned |
 | TK-888 | sprint-003 | execute clean-room ACP verification and distribution runtime evidence capture | verify/evidence | TK-887 | planned |
@@ -60,7 +60,7 @@
 
 ## 5. DoD（project-105）
 
-1. `project-105` 已扩展为三阶段 execution-ready scaffold，并保持 `planned` 状态等待显式激活。
+1. `project-105` 已激活为三阶段 ACP rollout stream，当前 `sprint-001` 是新的 primary implementation surface。
 2. `acp_exec` routing、`acp_host_companion`、packaged distribution/runtime-service、clean-room verify 与 support/docs uplift 的 implementation boundary 已完整落到 task package。
 3. rollout 不得把 ACP 回写成 `cli_exec` success，也不得在 evidence clean 前把 packaged distribution、runtime-service 或 support wording 写成已完成。
 
@@ -68,6 +68,8 @@
 
 1. 2026-04-13：由 `project-101 / TK-855` promotion cutover 创建为 planned follow-up stream。
 2. 2026-04-14：`project-105` 已扩展为三阶段 execution-ready scaffold，并固定为 5 方向 rollout 的最后一条默认执行流。
+3. 2026-04-15：`project-104` final closeout 完成后，当前 project 已切换为 active，并将 `sprint-001` 激活为新的 primary execution surface。
+4. 2026-04-15：`CR-001 ~ CR-009` 已全部收口，latest fresh reviewer round clean；`sprint-001` 完成 closeout，并将 `sprint-002` 激活为新的 primary execution surface，`TK-885` 进入 `in_progress`。
 
 ## 7. 里程碑记录入口
 

@@ -74,6 +74,11 @@ export class AgentProjectionService {
       selectedVendorBindingKind: input.selectedVendorBindingKind ?? null,
       selectedModel: input.selectedModel ?? null,
       capabilitySnapshotSource: input.capabilitySnapshotSource ?? null,
+      acpHostCompanion: input.acpHostCompanion
+        ? {
+            ...input.acpHostCompanion,
+          }
+        : null,
     };
   }
 

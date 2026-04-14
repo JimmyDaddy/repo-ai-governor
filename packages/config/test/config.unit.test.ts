@@ -383,6 +383,41 @@ describe('config unit', () => {
     expect(codexTool?.remoteApi?.vendorBinding).toBe(AdapterVendorBindingKind.OPENAI_RESPONSES);
   });
 
+  it('accepts explicit acp_exec transport while preserving configured remote_api truth', () => {
+    const validator = new SchemaValidator();
+    const baseConfig = createConfigFixture();
+    const baseAdapters = requireAdaptersFixture(baseConfig);
+    const configWithExplicitAcpExec: GovernorConfig = {
+      ...baseConfig,
+      adapters: {
+        ...baseAdapters,
+        tools: [
+          {
+            toolId: AdapterSurface.CODEX,
+            enabled: true,
+            availability: AdapterAvailability.AVAILABLE,
+            transport: AdapterTransportKind.ACP_EXEC,
+            remoteApi: {
+              provider: AdapterProviderKind.OPENAI,
+              vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+              model: 'gpt-5',
+              credentialEnvVar: 'OPENAI_API_KEY',
+            },
+          },
+        ],
+      },
+    };
+
+    const validatedConfig = validator.validateOrThrow(configWithExplicitAcpExec);
+    const codexTool = validatedConfig.adapters?.tools?.find(
+      (tool) => tool.toolId === AdapterSurface.CODEX,
+    );
+
+    expect(codexTool?.transport).toBe(AdapterTransportKind.ACP_EXEC);
+    expect(codexTool?.remoteApi?.provider).toBe(AdapterProviderKind.OPENAI);
+    expect(codexTool?.remoteApi?.vendorBinding).toBe(AdapterVendorBindingKind.OPENAI_RESPONSES);
+  });
+
   it('rejects non-canonical acp transport authoring for adapter tools', () => {
     const validator = new SchemaValidator();
     const baseConfig = createConfigFixture();

@@ -1,6 +1,6 @@
 # TK-885 integrate connect doctor verify readiness composition for acp_exec and host next-actions
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-04-14
 - Owner: AI-Agent
 - Priority: P1
@@ -49,6 +49,7 @@
 ## 9. 执行记录
 
 1. 2026-04-14：任务创建，状态初始化为 `planned`。
+2. 2026-04-15：`sprint-001` clean closeout 完成后，当前任务切换为 `in_progress`，并作为 `project-105 / sprint-002` 的 implementation 入口；下一步先本地预留 `CR-001`，再开始 ACP readiness composition 与 host next-actions implementation。
 
 ## 10. 产出
 

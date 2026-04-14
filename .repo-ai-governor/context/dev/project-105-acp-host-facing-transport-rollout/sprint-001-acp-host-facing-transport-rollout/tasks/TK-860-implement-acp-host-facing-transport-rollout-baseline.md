@@ -1,6 +1,6 @@
 # TK-860 implement ACP host-facing transport rollout baseline
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-13
 - Owner: AI-Agent
 - Priority: P0
@@ -41,16 +41,30 @@
 
 ## 7. Development Verification
 
-1. 待激活后补充 implementation-window verification。
+1. `pnpm exec vitest run packages/config/test/config.unit.test.ts packages/core-agent-projection/test/agent-projection-service.unit.test.ts apps/cli/test/runtime/agent-projection-runtime.test.ts apps/cli/test/runtime/adapter-routing-runtime.test.ts apps/cli/test/runtime/agent-onboarding-runtime.test.ts apps/cli/test/runtime/adapter-verification-runtime.test.ts apps/cli/test/runtime/session-main-provider-continuation-runtime.test.ts`
+2. `pnpm run build`
+3. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
 
 ## 8. Delivery Verification
 
-1. 待激活后补充 rollout-window delivery verification。
+1. `pnpm run build`
+2. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
+3. `node ./scripts/governance/check-task-ledger-sync.js`
+4. `node ./scripts/governance/check-sprint-plan-status-sync.js`
 
 ## 9. 执行记录
 
 1. 2026-04-13：任务创建，状态初始化为 `planned`，作为 `followup_required` rollout skeleton 的 canonical task。
+2. 2026-04-15：`project-104` final closeout 完成后，当前任务切换为 `in_progress`，并作为 `project-105 / sprint-001` 的 implementation 入口；下一步先本地预留 `CR-001`，再开始 `acp_exec` distinct transport 与 `acp_host_companion` carrier 实现。
+3. 2026-04-15：已将 `acp_exec` 正式加入 shared transport truth，并在 CLI runtime 落下 fail-closed ACP host protocol baseline：routing 会显式返回 `acp_exec` protocol、local probe 不再把 ACP 误当 `cli_exec` 命令检查、projection 会保留 `acp_host_companion`、continuation seam 会对 ACP 直接返回 `null`。同窗 focused suites、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 已通过，当前 baseline implementation 完成并进入 `CR-001` review loop。
 
 ## 10. 产出
 
-1. 待激活：implementation artifacts to be defined in rollout window
+1. `packages/shared/src/constants/adapter-runtime.constant.ts`
+2. `apps/cli/src/constants/cli-acp-host.constant.ts`
+3. `apps/cli/src/runtime/cli-acp-host-protocol.ts`
+4. `apps/cli/src/runtime/adapter-routing-runtime.ts`
+5. `apps/cli/src/runtime/local-model-probe-runtime.ts`
+6. `apps/cli/src/runtime/agent-projection-runtime.ts`
+7. `apps/cli/src/runtime/agent-onboarding-runtime.ts`
+8. `apps/cli/src/runtime/session-main-provider-continuation-runtime.ts`

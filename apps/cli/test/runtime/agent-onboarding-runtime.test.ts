@@ -361,6 +361,96 @@ describe('CliAgentOnboardingRuntime', () => {
     ]);
   });
 
+  it('keeps explicit acp_exec onboarding truth separate from configured remote_api fields', () => {
+    const runtime = new CliAgentOnboardingRuntime();
+    const sourceConfig = createGovernorConfigFixture();
+    sourceConfig.adapters.tools = [
+      {
+        toolId: AdapterSurface.CODEX,
+        enabled: true,
+        availability: AdapterAvailability.AVAILABLE,
+        transport: AdapterTransportKind.ACP_EXEC,
+        remoteApi: {
+          provider: AdapterProviderKind.OPENAI,
+          vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+          model: 'gpt-5',
+          credentialEnvVar: 'OPENAI_API_KEY',
+        },
+      },
+    ];
+    const verification = {
+      overallStatus: CliGovernanceCheckStatus.WARN,
+      tools: [
+        {
+          toolId: AdapterSurface.CODEX,
+          enabled: true,
+          configuredAvailability: AdapterAvailability.AVAILABLE,
+          availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+          unavailableReasons: ['health_check_failed:codex:acp_host_transport_not_ready'],
+          healthCheck: buildLayeredHealthCheckResult({
+            adapterId: 'codex-acp-host-protocol',
+            surfaceId: AdapterSurface.CODEX,
+            availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+            selectedEntrypoint: AdapterSurface.CODEX,
+            routeKey: 'cli.adapter.probe.codex',
+            unavailableReasons: ['health_check_failed:codex:acp_host_transport_not_ready'],
+            transportKind: AdapterTransportKind.ACP_EXEC,
+            requestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+          }),
+          capabilitySupportByCapability: new Map(),
+          failureAttributions: ['environment_precondition'],
+        },
+      ],
+      roleEvaluations: [],
+      requiredRoleCount: 1,
+      requiredRoleFailedCount: 1,
+      degradedRoleCount: 0,
+      fallbackRoleCount: 0,
+      nextActions: ['Investigate ACP host enablement before doctor.'],
+    };
+
+    const onboardingPayload = runtime.createOnboardingContractPayload({
+      commandName: 'doctor',
+      executionId: 'doctor-acp-123',
+      workspaceId: 'workspace-1',
+      verificationStatus: CliGovernanceCheckStatus.WARN,
+      nextActions: verification.nextActions,
+      enabledTools: [AdapterSurface.CODEX],
+      adaptersConfig: sourceConfig.adapters,
+      verification,
+      dryRun: false,
+      overwrite: false,
+      singleToolAllRoles: false,
+    });
+
+    expect(onboardingPayload.enabled_tools).toEqual([
+      expect.objectContaining({
+        tool_id: AdapterSurface.CODEX,
+        transport_kind: AdapterTransportKind.ACP_EXEC,
+        provider_kind: AdapterProviderKind.OPENAI,
+        vendor_binding_kind: AdapterVendorBindingKind.OPENAI_RESPONSES,
+        model: 'gpt-5',
+        credential_mode: AdapterCredentialSource.ENV_EXPLICIT,
+        endpoint_source: AdapterEndpointSource.VENDOR_DEFAULT,
+      }),
+    ]);
+    expect(onboardingPayload.tool_transport_matrix).toEqual([
+      expect.objectContaining({
+        tool_id: AdapterSurface.CODEX,
+        transport: AdapterTransportKind.ACP_EXEC,
+        transport_kind: AdapterTransportKind.ACP_EXEC,
+        provider_kind: AdapterProviderKind.OPENAI,
+        vendor_binding_kind: AdapterVendorBindingKind.OPENAI_RESPONSES,
+        model: 'gpt-5',
+        credential_mode: AdapterCredentialSource.ENV_EXPLICIT,
+        endpoint_source: AdapterEndpointSource.VENDOR_DEFAULT,
+      }),
+    ]);
+    expect(
+      (onboardingPayload.enabled_tools[0] as Record<string, unknown>).launch_diagnostics,
+    ).toBeUndefined();
+  });
+
   it('distinguishes inferred remote_api selection from an explicit transport lock', () => {
     const runtime = new CliAgentOnboardingRuntime();
     const sourceConfig = createGovernorConfigFixture();

@@ -236,6 +236,65 @@ describe('Cli adapter verification runtime', () => {
     );
   });
 
+  it('skips cli_exec command probing and preserves acp_exec probe truth as its own surface', async () => {
+    const i18nRuntime = new I18nRuntime();
+    await i18nRuntime.initialize(DEFAULT_I18N_RUNTIME_CONFIG, 'en-US');
+    const commandProbeExecutor = vi.fn(async () => undefined);
+    const adaptersConfig: AdaptersConfig = {
+      roles: [
+        {
+          roleId: 'coder',
+          roleProfileId: DefaultRoleProfileId.CODER,
+          requiredCapabilities: [AgentCapability.TOOL_CALLING],
+          required: true,
+        },
+      ],
+      routing: {
+        roleBindings: {
+          coder: {
+            primarySurface: AdapterSurface.CODEX,
+          },
+        },
+      },
+      tools: [
+        {
+          toolId: AdapterSurface.CODEX,
+          enabled: true,
+          availability: AdapterAvailability.AVAILABLE,
+          transport: AdapterTransportKind.ACP_EXEC,
+        },
+      ],
+    };
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(adaptersConfig);
+    const localProbeRuntime = new CliLocalModelProbeRuntime(
+      undefined,
+      commandProbeExecutor,
+      (error) => standardizeError(error).message,
+    );
+    const runtime = new CliAdapterVerificationRuntime(
+      adaptersConfig,
+      (key, interpolation) => i18nRuntime.t(key, interpolation),
+      (error) => standardizeError(error).message,
+      adapterRoutingRuntime,
+      localProbeRuntime,
+      createMockSecretService(),
+      (english: string) => english,
+      {},
+    );
+
+    const verification = await runtime.resolveAdapterVerification();
+    const codexTool = verification.tools.find((tool) => tool.toolId === AdapterSurface.CODEX);
+
+    expect(commandProbeExecutor).not.toHaveBeenCalled();
+    expect(codexTool?.healthCheck?.transportKind).toBe(AdapterTransportKind.ACP_EXEC);
+    expect(codexTool?.unavailableReasons).toContain(
+      'health_check_failed:codex:acp_host_transport_not_ready',
+    );
+    expect(
+      codexTool?.unavailableReasons.some((reason) => reason.startsWith('command_missing:')),
+    ).toBe(false);
+  });
+
   it('aggregates configuration_missing attribution from extracted verification runtime', async () => {
     const i18nRuntime = new I18nRuntime();
     await i18nRuntime.initialize(DEFAULT_I18N_RUNTIME_CONFIG, 'en-US');

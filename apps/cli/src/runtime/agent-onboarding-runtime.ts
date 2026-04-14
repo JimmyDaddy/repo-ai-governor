@@ -539,6 +539,7 @@ export class CliAgentOnboardingRuntime {
     if (
       healthCheckTransportKind === AdapterTransportKind.BASELINE ||
       healthCheckTransportKind === AdapterTransportKind.CLI_EXEC ||
+      healthCheckTransportKind === AdapterTransportKind.ACP_EXEC ||
       healthCheckTransportKind === AdapterTransportKind.REMOTE_API
     ) {
       return healthCheckTransportKind;
@@ -624,7 +625,7 @@ export class CliAgentOnboardingRuntime {
     if (options.healthCheck?.providerKind) {
       return options.healthCheck.providerKind;
     }
-    if (options.resolvedTransportKind === AdapterTransportKind.REMOTE_API) {
+    if (this.shouldExposeConfiguredRemoteApiSelection(options.resolvedTransportKind)) {
       return options.configuredTool?.remoteApi?.provider ?? null;
     }
     return null;
@@ -639,7 +640,7 @@ export class CliAgentOnboardingRuntime {
     if (options.healthCheck?.vendorBindingKind) {
       return options.healthCheck.vendorBindingKind;
     }
-    if (options.resolvedTransportKind !== AdapterTransportKind.REMOTE_API) {
+    if (!this.shouldExposeConfiguredRemoteApiSelection(options.resolvedTransportKind)) {
       return null;
     }
     return this.resolveConfiguredVendorBindingKind(
@@ -657,13 +658,22 @@ export class CliAgentOnboardingRuntime {
     if (options.healthCheck?.model) {
       return options.healthCheck.model;
     }
-    if (options.resolvedTransportKind === AdapterTransportKind.REMOTE_API) {
+    if (this.shouldExposeConfiguredRemoteApiSelection(options.resolvedTransportKind)) {
       return options.configuredTool?.remoteApi?.model ?? null;
     }
     if (options.resolvedTransportKind === AdapterTransportKind.BASELINE) {
       return options.configuredTool?.localModel?.model ?? null;
     }
     return null;
+  }
+
+  private shouldExposeConfiguredRemoteApiSelection(
+    resolvedTransportKind: AdapterTransportKind | null,
+  ): boolean {
+    return (
+      resolvedTransportKind === AdapterTransportKind.REMOTE_API ||
+      resolvedTransportKind === AdapterTransportKind.ACP_EXEC
+    );
   }
 
   private resolveSelectedCredentialMode(options: {
@@ -674,7 +684,7 @@ export class CliAgentOnboardingRuntime {
     if (options.healthCheck?.credentialSource) {
       return options.healthCheck.credentialSource;
     }
-    if (options.resolvedTransportKind !== AdapterTransportKind.REMOTE_API) {
+    if (!this.shouldExposeConfiguredRemoteApiSelection(options.resolvedTransportKind)) {
       return null;
     }
     return this.resolveConfiguredCredentialMode(options.configuredTool);
@@ -688,7 +698,7 @@ export class CliAgentOnboardingRuntime {
     if (options.healthCheck?.endpointSource) {
       return options.healthCheck.endpointSource;
     }
-    if (options.resolvedTransportKind !== AdapterTransportKind.REMOTE_API) {
+    if (!this.shouldExposeConfiguredRemoteApiSelection(options.resolvedTransportKind)) {
       return null;
     }
     return this.resolveConfiguredEndpointSource(options.configuredTool);

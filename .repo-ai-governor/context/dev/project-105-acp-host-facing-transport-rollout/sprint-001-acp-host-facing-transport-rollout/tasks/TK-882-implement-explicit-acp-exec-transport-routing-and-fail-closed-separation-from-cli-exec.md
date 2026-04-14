@@ -1,6 +1,6 @@
 # TK-882 implement explicit acp_exec transport routing and fail-closed separation from cli_exec
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-14
 - Owner: AI-Agent
 - Priority: P1
@@ -40,16 +40,30 @@
 
 ## 7. Development Verification
 
-1. 待激活后补充 transport-routing verification。
+1. `pnpm exec vitest run apps/cli/test/runtime/adapter-routing-runtime.test.ts apps/cli/test/runtime/adapter-verification-runtime.test.ts apps/cli/test/runtime/agent-onboarding-runtime.test.ts apps/cli/test/runtime/session-main-provider-continuation-runtime.test.ts`
+2. `pnpm run build`
+3. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
 
 ## 8. Delivery Verification
 
-1. 待激活后补充 rollout-window delivery verification与治理检查。
+1. `pnpm run build`
+2. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
+3. `node ./scripts/governance/check-task-ledger-sync.js`
+4. `node ./scripts/governance/check-sprint-plan-status-sync.js`
 
 ## 9. 执行记录
 
 1. 2026-04-14：任务创建，状态初始化为 `planned`。
+2. 2026-04-15：已将 `acp_exec` 作为显式 transport 纳入 routing/runtime truth，并通过 CLI-local synthetic ACP protocol 保持 fail-closed 分离：`createProtocolBySurface()` 在 `acp_exec` 下不再复用 `cli_exec` adapter，verification/local probe 不再要求 `codex` 命令存在，health check 会稳定保留 `transportKind=acp_exec` 与 ACP baseline diagnostics，避免 same-surface transport rewrite。focused routing suites、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 已在同窗通过，当前任务完成。
 
 ## 10. 产出
 
-1. 待激活：acp_exec routing artifacts to be defined in rollout window。
+1. `packages/shared/src/constants/adapter-runtime.constant.ts`
+2. `apps/cli/src/runtime/adapter-routing-runtime.ts`
+3. `apps/cli/src/runtime/local-model-probe-runtime.ts`
+4. `apps/cli/src/runtime/cli-acp-host-protocol.ts`
+5. `apps/cli/src/runtime/agent-onboarding-runtime.ts`
+6. `apps/cli/src/runtime/session-main-provider-continuation-runtime.ts`
+7. `apps/cli/test/runtime/adapter-routing-runtime.test.ts`
+8. `apps/cli/test/runtime/adapter-verification-runtime.test.ts`
+9. `apps/cli/test/runtime/session-main-provider-continuation-runtime.test.ts`

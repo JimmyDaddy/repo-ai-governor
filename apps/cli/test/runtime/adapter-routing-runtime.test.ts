@@ -1,3 +1,4 @@
+import { AgentAvailabilityStatus } from '@repo-ai-governor/adapter-sdk';
 import type { AdaptersConfig } from '@repo-ai-governor/config';
 import {
   AdapterAvailability,
@@ -135,5 +136,88 @@ describe('Cli adapter routing runtime', () => {
     expect(protocolBySurfaceB[AdapterSurface.GITHUB_COPILOT]).toBe(
       protocolBySurfaceA[AdapterSurface.GITHUB_COPILOT],
     );
+  });
+
+  it('uses explicit acp_exec protocol truth without reinterpreting it as cli_exec', async () => {
+    const acpAdaptersConfig: AdaptersConfig = {
+      ...adaptersConfig,
+      tools: [
+        {
+          toolId: AdapterSurface.CODEX,
+          enabled: true,
+          availability: AdapterAvailability.AVAILABLE,
+          transport: AdapterTransportKind.ACP_EXEC,
+        },
+      ],
+    };
+    const runtime = new CliAdapterRoutingRuntime(acpAdaptersConfig);
+    const protocolBySurface = runtime.createProtocolBySurface(
+      runtime.createToolConfigBySurfaceMap(),
+    );
+    const probeResult = await protocolBySurface[AdapterSurface.CODEX]?.probe({
+      routeKey: 'cli.adapter.probe.codex',
+      requiredCapabilities: [],
+    });
+
+    expect(probeResult?.availabilityStatus).toBe(AgentAvailabilityStatus.UNAVAILABLE);
+    expect(probeResult?.unavailableReasons).toContain(
+      'health_check_failed:codex:acp_host_transport_not_ready',
+    );
+    expect(probeResult?.healthCheck?.transportKind).toBe(AdapterTransportKind.ACP_EXEC);
+    expect(probeResult?.healthCheck?.reasonCodes).toContain('protocol.health_check_failed');
+  });
+
+  it('localizes the acp_exec fail-closed runtime error through the routing bridge', async () => {
+    const acpAdaptersConfig: AdaptersConfig = {
+      ...adaptersConfig,
+      tools: [
+        {
+          toolId: AdapterSurface.CODEX,
+          enabled: true,
+          availability: AdapterAvailability.AVAILABLE,
+          transport: AdapterTransportKind.ACP_EXEC,
+        },
+      ],
+    };
+    const runtime = new CliAdapterRoutingRuntime(acpAdaptersConfig, {
+      localizeText: (_english, chinese) => chinese,
+    });
+    const protocolBySurface = runtime.createProtocolBySurface(
+      runtime.createToolConfigBySurfaceMap(),
+    );
+
+    await expect(
+      protocolBySurface[AdapterSurface.CODEX]?.invokeStage({} as never),
+    ).rejects.toMatchObject({
+      message:
+        'ACP host-facing transport 尚未为 codex 就绪；在 rollout enablement 完成前，调用 将保持 fail-closed。',
+    });
+  });
+
+  it('preserves config-disabled ACP probe truth instead of rewriting it as host-not-ready', async () => {
+    const acpAdaptersConfig: AdaptersConfig = {
+      ...adaptersConfig,
+      tools: [
+        {
+          toolId: AdapterSurface.CODEX,
+          enabled: false,
+          availability: AdapterAvailability.AVAILABLE,
+          transport: AdapterTransportKind.ACP_EXEC,
+        },
+      ],
+    };
+    const runtime = new CliAdapterRoutingRuntime(acpAdaptersConfig);
+    const protocolBySurface = runtime.createProtocolBySurface(
+      runtime.createToolConfigBySurfaceMap(),
+    );
+    const probeResult = await protocolBySurface[AdapterSurface.CODEX]?.probe({
+      routeKey: 'cli.adapter.probe.codex',
+      requiredCapabilities: [],
+    });
+
+    expect(probeResult?.availabilityStatus).toBe(AgentAvailabilityStatus.UNAVAILABLE);
+    expect(probeResult?.unavailableReasons).toContain('disabled_by_config:codex');
+    expect(probeResult?.healthCheck?.reasonCodes).toContain('route.disabled_by_config');
+    expect(probeResult?.healthCheck?.reasonCodes).not.toContain('protocol.health_check_failed');
   });
 });
