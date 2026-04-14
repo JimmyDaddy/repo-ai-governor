@@ -1,6 +1,6 @@
 # project-102-cli-exec-launch-authoring-contract-tests-rollout 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-14
 - Stage Mapping: cli_exec launch-authoring contract-tests rollout
 - Phase Mapping: shared harness baseline / probe-invoke preserved-fact split / failure-path coverage and closeout
@@ -26,7 +26,7 @@
 
 ## 2.2 sprint-002-failure-path-coverage-and-rollout-closeout
 
-- Status: active
+- Status: completed
 - Sprint Goal: 扩展 failure-path coverage，完成 compatibility-aligned evidence 与 rollout closeout。
 - Task Package: `TK-869`、`TK-870`、`TK-871`
 
@@ -37,9 +37,9 @@
 | TK-857 | sprint-001 | implement cli-exec launch authoring contract tests rollout baseline | rollout/planned | DA-846 | completed |
 | TK-867 | sprint-001 | split probe invoke preserved-fact assertions and fallback entrypoint projection coverage onto the shared harness | harness/ownership | TK-857 | completed |
 | TK-868 | sprint-001 | sprint-001 exit acceptance and sprint-002 activation handoff | sprint/closeout | TK-857、TK-867、activation-time local CR-001 | completed |
-| TK-869 | sprint-002 | extend launch-authoring contract coverage across spawn parse non-zero signal timeout and abort paths | coverage/failure-path | TK-868 | in_progress |
-| TK-870 | sprint-002 | prove compatibility-baseline alignment without widening scope into general adapter test strategy | evidence/alignment | TK-869 | planned |
-| TK-871 | sprint-002 | finalize project-102 closeout and delivery evidence handoff | closeout/delivery | TK-869、TK-870、activation-time local CR-001 | planned |
+| TK-869 | sprint-002 | extend launch-authoring contract coverage across spawn parse non-zero signal timeout and abort paths | coverage/failure-path | TK-868 | completed |
+| TK-870 | sprint-002 | prove compatibility-baseline alignment without widening scope into general adapter test strategy | evidence/alignment | TK-869 | completed |
+| TK-871 | sprint-002 | finalize project-102 closeout and delivery evidence handoff | closeout/delivery | TK-869、TK-870、activation-time local CR-001 | completed |
 
 ## 4. 依赖产物策略
 
@@ -50,9 +50,9 @@
 
 ## 5. DoD（project-102）
 
-1. `project-102` 已激活为当前 primary execution stream，并开始推进 `sprint-001` 的 shared harness baseline。
-2. shared harness、fallback entrypoint projection 与 failure-path coverage 的 implementation boundary 已完整落到 task package。
-3. rollout 不得把 probe / invoke preserved facts 与 adapter-owned authoring truth 混淆，也不得扩面成 general adapter test strategy。
+1. `project-102` 已完成 `sprint-001` shared harness baseline、`sprint-002` failure-path coverage 与 project-final fresh reviewer clean recheck，并收口为 `completed`。
+2. shared harness、fallback entrypoint projection、failure-path coverage 与 compatibility alignment evidence 已形成可回放 implementation / evidence boundary。
+3. `technical-solution.cli-exec-adapter-launch-authoring-contract-tests` 的 delivery truth 已切到 `execution_status=completed`、`rollout_status=not_required`，并回链本项目 completion audit 与 promotion handoff。
 
 ## 6. 里程碑记录
 
@@ -62,7 +62,8 @@
 4. 2026-04-14：`TK-857` 与 `TK-867` 已完成 shared launch-authoring harness baseline、probe/invoke split 与 fallback entrypoint projection coverage，当前 `sprint-001` implementation boundary 等待 `CR-001` fresh reviewer round。
 5. 2026-04-14：`CR-001` clean recheck 未发现新的 actionable finding；`sprint-001` 已完成 closeout 并切换到 `sprint-002`，当前开始 failure-path coverage implementation。
 6. 2026-04-14：`sprint-002` implementation boundary 已完成 failure-path launch truth backfill与 compatibility alignment evidence；`CR-001` 因两次 fresh reviewer timeout 改走 main-agent clean recheck fallback 收口为 `resolved`，当前准备进入 project-final review。
+7. 2026-04-14：project-final `CR-002` latest fresh clean recheck 未发现新的 actionable finding；当前已完成 project-102 final closeout、completion audit write-back 与 launch-authoring delivery execution completion，并切换到 `project-103 / sprint-001`。
 
 ## 7. 里程碑记录入口
 
-1. 待 closeout 后补齐 completion audit summary。
+1. `./project-102-cli-exec-launch-authoring-contract-tests-rollout-completion-audit-summary.md`

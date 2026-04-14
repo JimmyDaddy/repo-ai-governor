@@ -821,6 +821,32 @@ export class CodexAgentAdapter extends AgentProtocol {
     executionResult: CodexExecRunnerResult,
     operation: AgentCliExecOperation,
   ): CodexCliParsedOutput {
+    if (executionResult.signal !== null) {
+      throw new RuntimeError(
+        operation === AgentCliExecOperation.PROBE
+          ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
+          : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+        `Codex ${operation} exited due to signal ${executionResult.signal}.`,
+        this.createCodexCliFailureDetails(executionResult, operation, {
+          exitCode: executionResult.exitCode,
+          signal: executionResult.signal,
+        }),
+      );
+    }
+
+    if (typeof executionResult.exitCode === 'number' && executionResult.exitCode !== 0) {
+      throw new RuntimeError(
+        operation === AgentCliExecOperation.PROBE
+          ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
+          : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+        `Codex ${operation} failed with exit code ${executionResult.exitCode}.`,
+        this.createCodexCliFailureDetails(executionResult, operation, {
+          exitCode: executionResult.exitCode,
+          signal: executionResult.signal,
+        }),
+      );
+    }
+
     let jsonEvents: CodexCliJsonEvent[];
     try {
       jsonEvents = executionResult.stdout

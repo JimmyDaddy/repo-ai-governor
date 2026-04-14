@@ -1,6 +1,6 @@
 # TK-858 implement cli-exec additive diagnostics consumer rollout baseline
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-04-13
 - Owner: AI-Agent
 - Priority: P0
@@ -50,6 +50,7 @@
 ## 9. 执行记录
 
 1. 2026-04-13：任务创建，状态初始化为 `planned`，作为 `followup_required` rollout skeleton 的 canonical task。
+2. 2026-04-14：`project-102` final closeout 后，当前任务切换为 `in_progress`，作为 `project-103 / sprint-001` 激活后的 baseline implementation 入口。
 
 ## 10. 产出
 

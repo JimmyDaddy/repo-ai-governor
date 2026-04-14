@@ -1,6 +1,6 @@
 # sprint-002-failure-path-coverage-and-rollout-closeout 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-14
 - Sprint Goal: 扩展 failure-path coverage，完成 compatibility-aligned evidence 与 rollout closeout。
 - Project: `project-102-cli-exec-launch-authoring-contract-tests-rollout`
@@ -21,7 +21,7 @@
 | --- | --- | --- | --- |
 | TK-869 | extend launch-authoring contract coverage across spawn parse non-zero signal timeout and abort paths | TK-868 | completed |
 | TK-870 | prove compatibility-baseline alignment without widening scope into general adapter test strategy | TK-869 | completed |
-| TK-871 | finalize project-102 closeout and delivery evidence handoff | TK-869、TK-870、activation-time local CR-001 | planned |
+| TK-871 | finalize project-102 closeout and delivery evidence handoff | TK-869、TK-870、activation-time local CR-001 | completed |
 
 ## 3. Exit Criteria
 
@@ -37,3 +37,4 @@
 4. 2026-04-14：`sprint-001` clean closeout 后，当前 sprint 已被激活为新的 primary execution surface；`TK-869` 进入执行前准备状态。
 5. 2026-04-14：`TK-869 / TK-870` implementation boundary 已完成，failure-path launch truth coverage 与 compatibility alignment evidence 已写回；下一步在当前 sprint surface 上执行 `CR-001` fresh reviewer loop。
 6. 2026-04-14：`CR-001` 在两次 fresh reviewer timeout 后由主 agent clean recheck 收口为 `resolved`；当前 sprint boundary 已通过 focused suites、`pnpm run build`、`pnpm run test:packages` 与 `pnpm run check`，下一步在同一 surface 上进入 project-final review。
+7. 2026-04-14：project-final `CR-002` latest fresh clean recheck 未发现新的 actionable finding；`TK-871` 已完成 project-102 closeout、delivery write-back 与 next-stream activation handoff，当前 sprint 收口为 `completed`。

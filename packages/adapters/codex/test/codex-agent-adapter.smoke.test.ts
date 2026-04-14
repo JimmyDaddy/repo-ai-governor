@@ -36,6 +36,7 @@ import {
   CodexAgentAdapter,
   CodexAgentAdapterExecutionMode,
   type CodexExecRunner,
+  type CodexExecRunnerResult,
 } from '../src/index.js';
 
 function createStreamRequest(): AgentStreamEventsRequest {
@@ -116,24 +117,223 @@ function createSseResponse(
 }
 
 describe('codex-agent-adapter smoke', () => {
-  const createExecRunner = (responseText = 'OK'): CodexExecRunner => {
-    return async () => ({
-      stdout: [
-        '{"type":"thread.started","thread_id":"thread-1"}',
-        `{"type":"item.completed","item":{"id":"item-1","type":"agent_message","text":"${responseText}"}}`,
-        '{"type":"turn.completed","usage":{"input_tokens":11,"output_tokens":7}}',
-      ].join('\n'),
-      stderr: '',
-      exitCode: 0,
-      signal: null,
-      elapsedMs: 12,
-      launchDiagnostics: {
-        selectedEntrypoint: 'codex',
-        shellWrapped: false,
-        processTreePolicy: 'process_group_best_effort',
-      },
-    });
+  const createExecRunnerResult = (
+    responseText = 'OK',
+    overrides: Partial<CodexExecRunnerResult> = {},
+  ): CodexExecRunnerResult => ({
+    stdout: [
+      '{"type":"thread.started","thread_id":"thread-1"}',
+      `{"type":"item.completed","item":{"id":"item-1","type":"agent_message","text":"${responseText}"}}`,
+      '{"type":"turn.completed","usage":{"input_tokens":11,"output_tokens":7}}',
+    ].join('\n'),
+    stderr: '',
+    exitCode: 0,
+    signal: null,
+    elapsedMs: 12,
+    launchDiagnostics: {
+      selectedEntrypoint: 'codex',
+      shellWrapped: false,
+      processTreePolicy: 'process_group_best_effort',
+    },
+    ...overrides,
+  });
+
+  const createExecRunner = (
+    responseText = 'OK',
+    overrides: Partial<CodexExecRunnerResult> = {},
+  ): CodexExecRunner => {
+    return async () => createExecRunnerResult(responseText, overrides);
   };
+
+  it('treats non-zero process exit as protocol failure even when completed JSON is present', async () => {
+    const adapter = new CodexAgentAdapter({
+      executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner: createExecRunner('partial response', {
+        stderr: 'process failed',
+        exitCode: 7,
+      }),
+      currentWorkingDirectory: process.cwd(),
+    });
+
+    const invokeError = await adapter
+      .invokeStage(createInvokeRequest())
+      .then(() => null)
+      .catch((error) => error as RuntimeError);
+
+    expect(invokeError).toMatchObject({
+      code: GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+      message: expect.stringContaining('exit code 7'),
+    });
+    const invokeDetails = invokeError?.details ?? {};
+    expect(invokeDetails.exitCode).toBe(7);
+    expect(invokeDetails.signal).toBeNull();
+    expectInvokeLaunchTruthProjected({
+      details: invokeDetails,
+      expectedEntrypoint: 'codex',
+      expectedShellWrapped: false,
+      expectedProcessTreePolicy: 'process_group_best_effort',
+    });
+    expectNativeCliExecPreservedFacts('non_zero_exit', {
+      launch_diagnostics_preserved:
+        invokeDetails.selectedEntrypoint === 'codex' &&
+        invokeDetails.processTreePolicy === 'process_group_best_effort',
+      adapter_launch_truth_projected:
+        invokeDetails.selectedEntrypoint === 'codex' &&
+        invokeDetails.shellWrapped === false &&
+        invokeDetails.processTreePolicy === 'process_group_best_effort',
+    });
+  });
+
+  it('treats signal-terminated process output as protocol failure even when completed JSON is present', async () => {
+    const adapter = new CodexAgentAdapter({
+      executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner: createExecRunner('partial response', {
+        stderr: 'terminated by signal',
+        exitCode: null,
+        signal: 'SIGTERM',
+      }),
+      currentWorkingDirectory: process.cwd(),
+    });
+
+    const invokeError = await adapter
+      .invokeStage(createInvokeRequest())
+      .then(() => null)
+      .catch((error) => error as RuntimeError);
+
+    expect(invokeError).toMatchObject({
+      code: GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+      message: expect.stringContaining('signal SIGTERM'),
+    });
+    const invokeDetails = invokeError?.details ?? {};
+    expect(invokeDetails.exitCode).toBeNull();
+    expect(invokeDetails.signal).toBe('SIGTERM');
+    expectInvokeLaunchTruthProjected({
+      details: invokeDetails,
+      expectedEntrypoint: 'codex',
+      expectedShellWrapped: false,
+      expectedProcessTreePolicy: 'process_group_best_effort',
+    });
+    expectNativeCliExecPreservedFacts('signal_exit', {
+      launch_diagnostics_preserved:
+        invokeDetails.selectedEntrypoint === 'codex' &&
+        invokeDetails.processTreePolicy === 'process_group_best_effort',
+      adapter_launch_truth_projected:
+        invokeDetails.selectedEntrypoint === 'codex' &&
+        invokeDetails.shellWrapped === false &&
+        invokeDetails.processTreePolicy === 'process_group_best_effort',
+    });
+  });
+
+  it('treats non-zero probe process exit as unavailable even when completed JSON is present', async () => {
+    const adapter = new CodexAgentAdapter({
+      executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner: createExecRunner('OK', {
+        stderr: 'process failed',
+        exitCode: 7,
+      }),
+      currentWorkingDirectory: process.cwd(),
+    });
+
+    const probeResult = await adapter.probe({
+      routeKey: 'cli.adapter.probe.codex',
+    });
+
+    expect(probeResult.availabilityStatus).toBe('unavailable');
+    expect(probeResult.unavailableReasons).toEqual(
+      expect.arrayContaining([expect.stringContaining('health_check_failed:codex')]),
+    );
+    expectProbeLaunchTruthProjected({
+      selectedEntrypoint: probeResult.healthCheck?.selectedEntrypoint,
+      requestCancellationMode: probeResult.healthCheck?.requestCancellationMode,
+      diagnostics: probeResult.healthCheck?.diagnostics,
+      expectedEntrypoint: 'codex',
+      expectedRequestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+      expectedShellWrapped: false,
+      expectedProcessTreePolicy: 'process_group_best_effort',
+    });
+    expectNativeCliExecPreservedFacts('non_zero_exit', {
+      launch_diagnostics_preserved:
+        probeResult.healthCheck?.selectedEntrypoint === 'codex' &&
+        hasAgentHealthDiagnostic(
+          probeResult.healthCheck?.diagnostics,
+          'install.entrypoint_resolution',
+          'codex',
+        ) &&
+        hasAgentHealthDiagnostic(
+          probeResult.healthCheck?.diagnostics,
+          'protocol.process_tree_policy',
+          'process_group_best_effort',
+        ),
+      adapter_launch_truth_projected:
+        probeResult.healthCheck?.selectedEntrypoint === 'codex' &&
+        hasAgentHealthDiagnostic(
+          probeResult.healthCheck?.diagnostics,
+          'protocol.shell_wrapped',
+          'false',
+        ) &&
+        hasAgentHealthDiagnostic(
+          probeResult.healthCheck?.diagnostics,
+          'protocol.process_tree_policy',
+          'process_group_best_effort',
+        ),
+    });
+  });
+
+  it('treats signal-terminated probe output as unavailable even when completed JSON is present', async () => {
+    const adapter = new CodexAgentAdapter({
+      executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner: createExecRunner('OK', {
+        stderr: 'terminated by signal',
+        exitCode: null,
+        signal: 'SIGTERM',
+      }),
+      currentWorkingDirectory: process.cwd(),
+    });
+
+    const probeResult = await adapter.probe({
+      routeKey: 'cli.adapter.probe.codex',
+    });
+
+    expect(probeResult.availabilityStatus).toBe('unavailable');
+    expect(probeResult.unavailableReasons).toEqual(
+      expect.arrayContaining([expect.stringContaining('health_check_failed:codex')]),
+    );
+    expectProbeLaunchTruthProjected({
+      selectedEntrypoint: probeResult.healthCheck?.selectedEntrypoint,
+      requestCancellationMode: probeResult.healthCheck?.requestCancellationMode,
+      diagnostics: probeResult.healthCheck?.diagnostics,
+      expectedEntrypoint: 'codex',
+      expectedRequestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+      expectedShellWrapped: false,
+      expectedProcessTreePolicy: 'process_group_best_effort',
+    });
+    expectNativeCliExecPreservedFacts('signal_exit', {
+      launch_diagnostics_preserved:
+        probeResult.healthCheck?.selectedEntrypoint === 'codex' &&
+        hasAgentHealthDiagnostic(
+          probeResult.healthCheck?.diagnostics,
+          'install.entrypoint_resolution',
+          'codex',
+        ) &&
+        hasAgentHealthDiagnostic(
+          probeResult.healthCheck?.diagnostics,
+          'protocol.process_tree_policy',
+          'process_group_best_effort',
+        ),
+      adapter_launch_truth_projected:
+        probeResult.healthCheck?.selectedEntrypoint === 'codex' &&
+        hasAgentHealthDiagnostic(
+          probeResult.healthCheck?.diagnostics,
+          'protocol.shell_wrapped',
+          'false',
+        ) &&
+        hasAgentHealthDiagnostic(
+          probeResult.healthCheck?.diagnostics,
+          'protocol.process_tree_policy',
+          'process_group_best_effort',
+        ),
+    });
+  });
 
   it('returns Codex capability matrix via probe', async () => {
     const adapter = new CodexAgentAdapter();
