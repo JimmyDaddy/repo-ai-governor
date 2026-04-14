@@ -759,21 +759,25 @@ export class CodexAgentAdapter extends AgentProtocol {
       return await this.cliExecOperationsRuntime.executeWithRetry(
         request.operation,
         async (remainingTimeoutMs) => {
-          return await this.execRunner({
-            command: this.options.command,
-            commandArguments:
-              request.commandArguments ?? this.resolveCommandArguments(request.executionPolicy),
-            cwd: this.options.currentWorkingDirectory,
-            env: this.resolveEnvironment(),
-            prompt: request.prompt,
-            timeoutMs: remainingTimeoutMs ?? request.timeoutMs,
-            signal: request.signal,
-            operation: request.operation,
-            onStdoutChunk: request.onStdoutChunk,
-            onStderrChunk: request.onStderrChunk,
-            onGracefulInterruptStart: request.onGracefulInterruptStart,
-            onHardTerminateStart: request.onHardTerminateStart,
-          });
+          const launchDiagnostics = this.createCliLaunchDiagnostics(this.options.command);
+          return this.ensureCliLaunchDiagnostics(
+            await this.execRunner({
+              command: this.options.command,
+              commandArguments:
+                request.commandArguments ?? this.resolveCommandArguments(request.executionPolicy),
+              cwd: this.options.currentWorkingDirectory,
+              env: this.resolveEnvironment(),
+              prompt: request.prompt,
+              timeoutMs: remainingTimeoutMs ?? request.timeoutMs,
+              signal: request.signal,
+              operation: request.operation,
+              onStdoutChunk: request.onStdoutChunk,
+              onStderrChunk: request.onStderrChunk,
+              onGracefulInterruptStart: request.onGracefulInterruptStart,
+              onHardTerminateStart: request.onHardTerminateStart,
+            }),
+            launchDiagnostics,
+          );
         },
         {
           signal: request.signal,
@@ -784,7 +788,8 @@ export class CodexAgentAdapter extends AgentProtocol {
       if (
         error instanceof RuntimeError &&
         (error.code === GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED ||
-          error.code === GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED)
+          error.code === GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED) &&
+        this.readCliLaunchDiagnosticsFromError(error)
       ) {
         throw error;
       }
@@ -795,10 +800,13 @@ export class CodexAgentAdapter extends AgentProtocol {
           ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
           : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
         `Codex ${request.operation} failed: ${standardizedError.message}`,
-        {
+        this.cliExecOperationsRuntime.createRedactedProcessDetails({
+          ...(standardizedError.details ?? {}),
           surface: CODEX_SURFACE,
           operation: request.operation,
-        },
+          ...this.resolveCliLaunchDiagnosticsForCommand(error, this.options.command),
+        }),
+        error,
       );
     }
   }
@@ -898,6 +906,32 @@ export class CodexAgentAdapter extends AgentProtocol {
           }
         : {}),
     });
+  }
+
+  private createCliLaunchDiagnostics(
+    command: string,
+    spawnErrorCode: string | null = null,
+  ): AgentCliLaunchDiagnostics {
+    return {
+      selectedEntrypoint: command,
+      shellWrapped: false,
+      processTreePolicy: this.resolveCliProcessTreePolicy(),
+      ...(spawnErrorCode ? { spawnErrorCode } : {}),
+    };
+  }
+
+  private ensureCliLaunchDiagnostics(
+    executionResult: CodexExecRunnerResult,
+    launchDiagnostics: AgentCliLaunchDiagnostics,
+  ): CodexExecRunnerResult {
+    if (executionResult.launchDiagnostics) {
+      return executionResult;
+    }
+
+    return {
+      ...executionResult,
+      launchDiagnostics,
+    };
   }
 
   private resolveRemoteApiOptions(): ResolvedCodexRemoteApiOptions | null {
@@ -3169,6 +3203,25 @@ export class CodexAgentAdapter extends AgentProtocol {
         ? { spawnErrorCode: detailsRecord.spawnErrorCode }
         : {}),
     };
+  }
+
+  private resolveCliLaunchDiagnosticsForCommand(
+    error: unknown,
+    command: string,
+  ): AgentCliLaunchDiagnostics {
+    return (
+      this.readCliLaunchDiagnosticsFromError(error) ??
+      this.createCliLaunchDiagnostics(command, this.resolveSpawnErrorCode(error))
+    );
+  }
+
+  private resolveSpawnErrorCode(error: unknown): string | null {
+    if (!error || typeof error !== 'object') {
+      return null;
+    }
+
+    const code = (error as { code?: unknown }).code;
+    return typeof code === 'string' ? code : null;
   }
 
   private normalizeCliOutputLine(line: string): string | undefined {

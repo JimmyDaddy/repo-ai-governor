@@ -19,8 +19,8 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-869 | extend launch-authoring contract coverage across spawn parse non-zero signal timeout and abort paths | TK-868 | in_progress |
-| TK-870 | prove compatibility-baseline alignment without widening scope into general adapter test strategy | TK-869 | planned |
+| TK-869 | extend launch-authoring contract coverage across spawn parse non-zero signal timeout and abort paths | TK-868 | completed |
+| TK-870 | prove compatibility-baseline alignment without widening scope into general adapter test strategy | TK-869 | completed |
 | TK-871 | finalize project-102 closeout and delivery evidence handoff | TK-869、TK-870、activation-time local CR-001 | planned |
 
 ## 3. Exit Criteria
@@ -35,3 +35,5 @@
 2. 当前 sprint 只承接 failure-path coverage、alignment evidence 与 closeout，不新增 general adapter test strategy 范围。
 3. `TK-871` 负责 `project-102` final closeout，但只有在 sprint-002 local `CR-001` clean 后才允许完成。
 4. 2026-04-14：`sprint-001` clean closeout 后，当前 sprint 已被激活为新的 primary execution surface；`TK-869` 进入执行前准备状态。
+5. 2026-04-14：`TK-869 / TK-870` implementation boundary 已完成，failure-path launch truth coverage 与 compatibility alignment evidence 已写回；下一步在当前 sprint surface 上执行 `CR-001` fresh reviewer loop。
+6. 2026-04-14：`CR-001` 在两次 fresh reviewer timeout 后由主 agent clean recheck 收口为 `resolved`；当前 sprint boundary 已通过 focused suites、`pnpm run build`、`pnpm run test:packages` 与 `pnpm run check`，下一步在同一 surface 上进入 project-final review。

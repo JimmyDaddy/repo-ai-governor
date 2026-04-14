@@ -1,6 +1,6 @@
 # TK-870 prove compatibility-baseline alignment without widening scope into general adapter test strategy
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-14
 - Owner: AI-Agent
 - Priority: P1
@@ -40,16 +40,21 @@
 
 ## 7. Development Verification
 
-1. 待激活后补充 compatibility-alignment verification。
+1. `pnpm exec vitest run packages/adapter-sdk/test/native-cli-exec-process-runtime.unit.test.ts --maxWorkers=1 --maxConcurrency=1`
+2. `pnpm exec vitest run packages/adapters/codex/test/codex-agent-adapter.smoke.test.ts --maxWorkers=1 --maxConcurrency=1`
+3. `pnpm exec vitest run packages/adapters/claude-code/test/claude-code-agent-adapter.smoke.test.ts --maxWorkers=1 --maxConcurrency=1`
+4. `pnpm exec vitest run packages/adapters/github-copilot/test/github-copilot-agent-adapter.smoke.test.ts --maxWorkers=1 --maxConcurrency=1`
 
 ## 8. Delivery Verification
 
-1. 待激活后补充 rollout-window delivery verification与治理检查。
+1. `pnpm run build`
+2. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
 
 ## 9. 执行记录
 
 1. 2026-04-14：任务创建，状态初始化为 `planned`。
+2. 2026-04-14：已新增 `launch-authoring-compatibility-alignment-evidence.md`，把 `project-102` 的 shared harness vocabulary 明确映射到 `project-106` 的 scenario-class compatibility taxonomy，并将 `spawn / parse / non_zero / signal / timeout / abort` 的 coverage anchors、preserved facts 与 scope guardrail 固化为可复用 evidence；focused suites、`pnpm run build` 与 `pnpm run test:packages` 已在同窗通过，当前任务完成。
 
 ## 10. 产出
 
-1. 待激活：compatibility alignment artifacts to be defined in rollout window。
+1. `launch-authoring-compatibility-alignment-evidence.md`

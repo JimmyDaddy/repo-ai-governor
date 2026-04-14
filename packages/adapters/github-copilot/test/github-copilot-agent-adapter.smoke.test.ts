@@ -17,6 +17,7 @@ import {
   RuntimeError,
 } from '@repo-ai-governor/shared';
 import {
+  collectStreamEventStatuses,
   expectNativeCliExecPreservedFacts,
   hasAgentHealthDiagnostic,
 } from '../../../../test/native-cli-exec-compatibility-harness.js';
@@ -810,6 +811,7 @@ describe('github-copilot-agent-adapter smoke', () => {
       .catch((error) => error);
 
     const [events, thrownError] = await Promise.all([streamEventsPromise, invokeErrorPromise]);
+    const statuses = collectStreamEventStatuses(events);
 
     expect(thrownError).toBeInstanceOf(RuntimeError);
     expect((thrownError as RuntimeError).message).toContain('timed out');
@@ -855,6 +857,25 @@ describe('github-copilot-agent-adapter smoke', () => {
         }),
       }),
     );
+    const invokeDetails = (thrownError as RuntimeError).details ?? {};
+    expectInvokeLaunchTruthProjected({
+      details: invokeDetails,
+      expectedEntrypoint: 'copilot',
+      expectedShellWrapped: false,
+      expectedProcessTreePolicy: 'process_group_best_effort',
+    });
+    expectNativeCliExecPreservedFacts('timeout_hard_terminated', {
+      launch_diagnostics_preserved:
+        invokeDetails.selectedEntrypoint === 'copilot' &&
+        invokeDetails.processTreePolicy === 'process_group_best_effort',
+      adapter_launch_truth_projected:
+        invokeDetails.selectedEntrypoint === 'copilot' &&
+        invokeDetails.shellWrapped === false &&
+        invokeDetails.processTreePolicy === 'process_group_best_effort',
+      terminate_phase_preserved:
+        statuses.includes('graceful_interrupting') && statuses.includes('hard_terminating'),
+      partial_output_preserved_when_available: events[4]?.payload.accumulatedText === 'partial',
+    });
   });
 
   it('streams status and completed events', async () => {

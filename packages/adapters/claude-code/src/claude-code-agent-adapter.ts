@@ -1195,6 +1195,79 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
     };
   }
 
+  private createCliLaunchDiagnostics(
+    command: string,
+    spawnErrorCode: string | null = null,
+  ): AgentCliLaunchDiagnostics {
+    return {
+      selectedEntrypoint: command,
+      shellWrapped: false,
+      processTreePolicy: this.resolveCliProcessTreePolicy(),
+      ...(spawnErrorCode ? { spawnErrorCode } : {}),
+    };
+  }
+
+  private ensureCliLaunchDiagnostics(
+    executionResult: ClaudeCodeExecRunnerResult,
+    launchDiagnostics: AgentCliLaunchDiagnostics,
+  ): ClaudeCodeExecRunnerResult {
+    if (executionResult.launchDiagnostics) {
+      return executionResult;
+    }
+
+    return {
+      ...executionResult,
+      launchDiagnostics,
+    };
+  }
+
+  private resolveCliLaunchDiagnosticsForCommand(
+    error: unknown,
+    command: string,
+  ): AgentCliLaunchDiagnostics {
+    return (
+      this.readCliLaunchDiagnosticsFromError(error) ??
+      this.createCliLaunchDiagnostics(command, this.resolveSpawnErrorCode(error))
+    );
+  }
+
+  private wrapCliOperationError(
+    error: unknown,
+    operation: AgentCliExecOperation,
+    launchDiagnostics: AgentCliLaunchDiagnostics,
+  ): RuntimeError {
+    const standardizedError = standardizeError(error);
+    return new RuntimeError(
+      error instanceof RuntimeError
+        ? error.code
+        : operation === AgentCliExecOperation.PROBE
+          ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
+          : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+      standardizedError.message,
+      this.cliExecOperationsRuntime.createRedactedProcessDetails({
+        ...(standardizedError.details ?? {}),
+        surface: CLAUDE_CODE_SURFACE,
+        operation,
+        selectedEntrypoint: launchDiagnostics.selectedEntrypoint,
+        shellWrapped: launchDiagnostics.shellWrapped,
+        processTreePolicy: launchDiagnostics.processTreePolicy,
+        ...(launchDiagnostics.spawnErrorCode
+          ? { spawnErrorCode: launchDiagnostics.spawnErrorCode }
+          : {}),
+      }),
+      error,
+    );
+  }
+
+  private resolveSpawnErrorCode(error: unknown): string | null {
+    if (!error || typeof error !== 'object') {
+      return null;
+    }
+
+    const code = (error as { code?: unknown }).code;
+    return typeof code === 'string' ? code : null;
+  }
+
   /**
    * Requests confirmation through Claude Code adapter flow.
    * @param _request Confirmation request payload.
@@ -1412,36 +1485,44 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
         async (remainingTimeoutMs) => {
           let lastError: unknown;
           for (const commandSpec of this.resolveCommandCandidates()) {
+            const launchDiagnostics = this.createCliLaunchDiagnostics(commandSpec.command);
             try {
-              return await this.execRunner({
-                command: commandSpec.command,
-                commandArgumentsPrefix:
-                  request.commandArgumentsPrefixResolver?.(
-                    commandSpec.commandArgumentsPrefix,
-                    request.executionPolicy,
-                  ) ??
-                  this.resolveCommandArgumentsPrefix(
-                    commandSpec.commandArgumentsPrefix,
-                    request.executionPolicy,
-                  ),
-                cwd: this.options.currentWorkingDirectory,
-                env: this.resolveEnvironment(),
-                prompt: request.prompt,
-                timeoutMs: remainingTimeoutMs ?? request.timeoutMs,
-                signal: request.signal,
-                operation: request.operation,
-                onStdoutChunk: request.onStdoutChunk,
-                onStderrChunk: request.onStderrChunk,
-                onGracefulInterruptStart: request.onGracefulInterruptStart,
-                onHardTerminateStart: request.onHardTerminateStart,
-              });
+              return this.ensureCliLaunchDiagnostics(
+                await this.execRunner({
+                  command: commandSpec.command,
+                  commandArgumentsPrefix:
+                    request.commandArgumentsPrefixResolver?.(
+                      commandSpec.commandArgumentsPrefix,
+                      request.executionPolicy,
+                    ) ??
+                    this.resolveCommandArgumentsPrefix(
+                      commandSpec.commandArgumentsPrefix,
+                      request.executionPolicy,
+                    ),
+                  cwd: this.options.currentWorkingDirectory,
+                  env: this.resolveEnvironment(),
+                  prompt: request.prompt,
+                  timeoutMs: remainingTimeoutMs ?? request.timeoutMs,
+                  signal: request.signal,
+                  operation: request.operation,
+                  onStdoutChunk: request.onStdoutChunk,
+                  onStderrChunk: request.onStderrChunk,
+                  onGracefulInterruptStart: request.onGracefulInterruptStart,
+                  onHardTerminateStart: request.onHardTerminateStart,
+                }),
+                launchDiagnostics,
+              );
             } catch (error) {
-              lastError = error;
+              lastError = this.wrapCliOperationError(
+                error,
+                request.operation,
+                this.resolveCliLaunchDiagnosticsForCommand(error, commandSpec.command),
+              );
               const detail = this.cliExecOperationsRuntime
-                .collectErrorDetail(error, standardizeError(error).message)
+                .collectErrorDetail(lastError, standardizeError(lastError).message)
                 .toLowerCase();
-              if (!this.isMissingCommandFailure(error, detail)) {
-                throw error;
+              if (!this.isMissingCommandFailure(lastError, detail)) {
+                throw lastError;
               }
             }
           }
@@ -1456,7 +1537,8 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
       if (
         error instanceof RuntimeError &&
         (error.code === GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED ||
-          error.code === GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED)
+          error.code === GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED) &&
+        this.readCliLaunchDiagnosticsFromError(error)
       ) {
         throw error;
       }
@@ -1467,10 +1549,16 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
           ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
           : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
         `Claude Code ${request.operation} failed: ${standardizedError.message}`,
-        {
+        this.cliExecOperationsRuntime.createRedactedProcessDetails({
+          ...(standardizedError.details ?? {}),
           surface: CLAUDE_CODE_SURFACE,
           operation: request.operation,
-        },
+          ...this.resolveCliLaunchDiagnosticsForCommand(
+            error,
+            this.resolveCommandCandidates().at(-1)?.command ?? this.options.command,
+          ),
+        }),
+        error,
       );
     }
   }

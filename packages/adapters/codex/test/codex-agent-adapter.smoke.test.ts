@@ -24,6 +24,7 @@ import {
   RuntimeError,
 } from '@repo-ai-governor/shared';
 import {
+  collectStreamEventStatuses,
   expectNativeCliExecPreservedFacts,
   hasAgentHealthDiagnostic,
 } from '../../../../test/native-cli-exec-compatibility-harness.js';
@@ -1553,6 +1554,7 @@ describe('codex-agent-adapter smoke', () => {
       .catch((error) => error);
 
     const [events, thrownError] = await Promise.all([streamEventsPromise, invokeErrorPromise]);
+    const statuses = collectStreamEventStatuses(events);
 
     expect(thrownError).toBeInstanceOf(RuntimeError);
     expect((thrownError as RuntimeError).message).toContain('timed out');
@@ -1603,6 +1605,25 @@ describe('codex-agent-adapter smoke', () => {
         }),
       }),
     );
+    const invokeDetails = (thrownError as RuntimeError).details ?? {};
+    expectInvokeLaunchTruthProjected({
+      details: invokeDetails,
+      expectedEntrypoint: 'codex',
+      expectedShellWrapped: false,
+      expectedProcessTreePolicy: 'process_group_best_effort',
+    });
+    expectNativeCliExecPreservedFacts('timeout_hard_terminated', {
+      launch_diagnostics_preserved:
+        invokeDetails.selectedEntrypoint === 'codex' &&
+        invokeDetails.processTreePolicy === 'process_group_best_effort',
+      adapter_launch_truth_projected:
+        invokeDetails.selectedEntrypoint === 'codex' &&
+        invokeDetails.shellWrapped === false &&
+        invokeDetails.processTreePolicy === 'process_group_best_effort',
+      terminate_phase_preserved:
+        statuses.includes('graceful_interrupting') && statuses.includes('hard_terminating'),
+      partial_output_preserved_when_available: events[5]?.payload.accumulatedText === 'partial',
+    });
   });
 
   it('keeps the hard-terminate fuse alive for real-spawn aborts until the child actually exits', async () => {
@@ -1671,6 +1692,7 @@ describe('codex-agent-adapter smoke', () => {
       abortController.abort();
 
       const [events, thrownError] = await Promise.all([streamEventsPromise, invokeErrorPromise]);
+      const statuses = collectStreamEventStatuses(events);
 
       expect(thrownError).toBeInstanceOf(RuntimeError);
       expect((thrownError as RuntimeError).message).toContain('aborted');
@@ -1717,6 +1739,25 @@ describe('codex-agent-adapter smoke', () => {
           }),
         }),
       );
+      const invokeDetails = (thrownError as RuntimeError).details ?? {};
+      expectInvokeLaunchTruthProjected({
+        details: invokeDetails,
+        expectedEntrypoint: commandPath,
+        expectedShellWrapped: false,
+        expectedProcessTreePolicy: 'process_group_best_effort',
+      });
+      expectNativeCliExecPreservedFacts('abort_hard_terminated', {
+        launch_diagnostics_preserved:
+          invokeDetails.selectedEntrypoint === commandPath &&
+          invokeDetails.processTreePolicy === 'process_group_best_effort',
+        adapter_launch_truth_projected:
+          invokeDetails.selectedEntrypoint === commandPath &&
+          invokeDetails.shellWrapped === false &&
+          invokeDetails.processTreePolicy === 'process_group_best_effort',
+        terminate_phase_preserved:
+          statuses.includes('graceful_interrupting') && statuses.includes('hard_terminating'),
+        partial_output_preserved_when_available: events[5]?.payload.accumulatedText === 'partial',
+      });
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }

@@ -27,6 +27,7 @@ import {
   RuntimeError,
 } from '@repo-ai-governor/shared';
 import {
+  collectStreamEventStatuses,
   expectNativeCliExecPreservedFacts,
   hasAgentHealthDiagnostic,
 } from '../../../../test/native-cli-exec-compatibility-harness.js';
@@ -1131,8 +1132,8 @@ describe('claude-code-agent-adapter smoke', () => {
       }),
     });
 
-    await expect(
-      adapter.invokeStage({
+    const invokeError = await adapter
+      .invokeStage({
         processId: 'process-1',
         executionId: 'execution-1',
         stageId: 'stage-1',
@@ -1140,9 +1141,28 @@ describe('claude-code-agent-adapter smoke', () => {
         input: {
           prompt: 'implement feature',
         },
-      }),
-    ).rejects.toMatchObject({
+      })
+      .then(() => null)
+      .catch((error) => error as RuntimeError);
+
+    expect(invokeError).toMatchObject({
       code: GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+    });
+    const invokeDetails = invokeError?.details ?? {};
+    expectInvokeLaunchTruthProjected({
+      details: invokeDetails,
+      expectedEntrypoint: 'claude',
+      expectedShellWrapped: false,
+      expectedProcessTreePolicy: 'process_group_best_effort',
+    });
+    expectNativeCliExecPreservedFacts('non_zero_exit', {
+      launch_diagnostics_preserved:
+        invokeDetails.selectedEntrypoint === 'claude' &&
+        invokeDetails.processTreePolicy === 'process_group_best_effort',
+      adapter_launch_truth_projected:
+        invokeDetails.selectedEntrypoint === 'claude' &&
+        invokeDetails.shellWrapped === false &&
+        invokeDetails.processTreePolicy === 'process_group_best_effort',
     });
   });
 
@@ -1549,6 +1569,7 @@ describe('claude-code-agent-adapter smoke', () => {
       .catch((error) => error);
 
     const [events, thrownError] = await Promise.all([streamEventsPromise, invokeErrorPromise]);
+    const statuses = collectStreamEventStatuses(events);
 
     expect(thrownError).toBeInstanceOf(RuntimeError);
     expect((thrownError as RuntimeError).message).toContain('timed out');
@@ -1594,6 +1615,25 @@ describe('claude-code-agent-adapter smoke', () => {
         }),
       }),
     );
+    const invokeDetails = (thrownError as RuntimeError).details ?? {};
+    expectInvokeLaunchTruthProjected({
+      details: invokeDetails,
+      expectedEntrypoint: 'claude',
+      expectedShellWrapped: false,
+      expectedProcessTreePolicy: 'process_group_best_effort',
+    });
+    expectNativeCliExecPreservedFacts('timeout_hard_terminated', {
+      launch_diagnostics_preserved:
+        invokeDetails.selectedEntrypoint === 'claude' &&
+        invokeDetails.processTreePolicy === 'process_group_best_effort',
+      adapter_launch_truth_projected:
+        invokeDetails.selectedEntrypoint === 'claude' &&
+        invokeDetails.shellWrapped === false &&
+        invokeDetails.processTreePolicy === 'process_group_best_effort',
+      terminate_phase_preserved:
+        statuses.includes('graceful_interrupting') && statuses.includes('hard_terminating'),
+      partial_output_preserved_when_available: events[4]?.payload.accumulatedText === 'partial',
+    });
   });
 
   it('streams status and completed events', async () => {

@@ -327,6 +327,12 @@ describe('NativeCliExecProcessRuntime', () => {
     expect(gracefulInterrupts).toEqual(['process_signal']);
     expect(hardInterrupts).toEqual([]);
     const details = thrownError?.details ?? {};
+    expectInvokeLaunchTruthProjected({
+      details,
+      expectedEntrypoint: command,
+      expectedShellWrapped: false,
+      expectedProcessTreePolicy: 'process_only',
+    });
     expectNativeCliExecPreservedFacts('timeout_soft_terminated', {
       launch_diagnostics_preserved:
         details.selectedEntrypoint === command && details.processTreePolicy === 'process_only',
@@ -392,6 +398,12 @@ describe('NativeCliExecProcessRuntime', () => {
       expect(gracefulInterrupts).toEqual(['process_signal']);
       expect(hardInterrupts).toEqual(['process_signal']);
       const details = thrownError?.details ?? {};
+      expectInvokeLaunchTruthProjected({
+        details,
+        expectedEntrypoint: process.execPath,
+        expectedShellWrapped: false,
+        expectedProcessTreePolicy: 'process_only',
+      });
       expectNativeCliExecPreservedFacts('timeout_hard_terminated', {
         launch_diagnostics_preserved:
           details.selectedEntrypoint === process.execPath &&
@@ -471,6 +483,12 @@ describe('NativeCliExecProcessRuntime', () => {
     expect(gracefulInterrupts).toEqual(['abort_signal']);
     expect(hardInterrupts).toEqual([]);
     const details = thrownError?.details ?? {};
+    expectInvokeLaunchTruthProjected({
+      details,
+      expectedEntrypoint: command,
+      expectedShellWrapped: false,
+      expectedProcessTreePolicy: 'process_only',
+    });
     expectNativeCliExecPreservedFacts('abort_soft_terminated', {
       launch_diagnostics_preserved:
         details.selectedEntrypoint === command && details.processTreePolicy === 'process_only',
@@ -550,6 +568,12 @@ describe('NativeCliExecProcessRuntime', () => {
     expect(gracefulInterrupts).toEqual(['abort_signal']);
     expect(hardInterrupts).toEqual(['abort_signal']);
     const details = thrownError?.details ?? {};
+    expectInvokeLaunchTruthProjected({
+      details,
+      expectedEntrypoint: command,
+      expectedShellWrapped: false,
+      expectedProcessTreePolicy: 'process_only',
+    });
     expectNativeCliExecPreservedFacts('abort_hard_terminated', {
       launch_diagnostics_preserved:
         details.selectedEntrypoint === command && details.processTreePolicy === 'process_only',

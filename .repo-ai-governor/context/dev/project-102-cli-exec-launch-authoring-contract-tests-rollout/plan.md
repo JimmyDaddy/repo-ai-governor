@@ -61,6 +61,7 @@
 3. 2026-04-14：`project-106` final closeout 完成后，当前 project 已切换为 active，并将 `sprint-001` 激活为新的 primary implementation surface。
 4. 2026-04-14：`TK-857` 与 `TK-867` 已完成 shared launch-authoring harness baseline、probe/invoke split 与 fallback entrypoint projection coverage，当前 `sprint-001` implementation boundary 等待 `CR-001` fresh reviewer round。
 5. 2026-04-14：`CR-001` clean recheck 未发现新的 actionable finding；`sprint-001` 已完成 closeout 并切换到 `sprint-002`，当前开始 failure-path coverage implementation。
+6. 2026-04-14：`sprint-002` implementation boundary 已完成 failure-path launch truth backfill与 compatibility alignment evidence；`CR-001` 因两次 fresh reviewer timeout 改走 main-agent clean recheck fallback 收口为 `resolved`，当前准备进入 project-final review。
 
 ## 7. 里程碑记录入口
 

@@ -1,6 +1,6 @@
 # TK-869 extend launch-authoring contract coverage across spawn parse non-zero signal timeout and abort paths
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-04-14
 - Owner: AI-Agent
 - Priority: P1
@@ -40,17 +40,28 @@
 
 ## 7. Development Verification
 
-1. 待激活后补充 failure-path coverage verification。
+1. `pnpm exec vitest run packages/adapter-sdk/test/native-cli-exec-process-runtime.unit.test.ts --maxWorkers=1 --maxConcurrency=1`
+2. `pnpm exec vitest run packages/adapters/codex/test/codex-agent-adapter.smoke.test.ts --maxWorkers=1 --maxConcurrency=1`
+3. `pnpm exec vitest run packages/adapters/claude-code/test/claude-code-agent-adapter.smoke.test.ts --maxWorkers=1 --maxConcurrency=1`
+4. `pnpm exec vitest run packages/adapters/github-copilot/test/github-copilot-agent-adapter.smoke.test.ts --maxWorkers=1 --maxConcurrency=1`
 
 ## 8. Delivery Verification
 
-1. 待激活后补充 rollout-window delivery verification与治理检查。
+1. `pnpm run build`
+2. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
 
 ## 9. 执行记录
 
 1. 2026-04-14：任务创建，状态初始化为 `planned`。
 2. 2026-04-14：`sprint-001` 已在 clean `CR-001` 后完成 closeout，当前任务切换为 `in_progress`，并将 `sprint-002` 激活为新的 primary execution surface；下一步先本地预留 `CR-001`，再开始 failure-path coverage implementation。
+3. 2026-04-14：已为 `Codex / Claude Code / GitHub Copilot` 的 `cli_exec` adapter 补齐 adapter-authored launch truth 回填逻辑，保证 exec runner 即使未显式带回 `launchDiagnostics`，returned execution result 与 thrown failure details 仍会投影 `selectedEntrypoint / shellWrapped / processTreePolicy`；shared runtime timeout/abort tests 与 adapter smoke tests 已同步扩展到统一 failure-path vocabulary，focused suites、`pnpm run build` 与 `pnpm run test:packages` 已在同窗通过，当前任务完成。
 
 ## 10. 产出
 
-1. 待激活：failure-path coverage artifacts to be defined in rollout window。
+1. `packages/adapters/codex/src/codex-agent-adapter.ts`
+2. `packages/adapters/codex/test/codex-agent-adapter.smoke.test.ts`
+3. `packages/adapters/claude-code/src/claude-code-agent-adapter.ts`
+4. `packages/adapters/claude-code/test/claude-code-agent-adapter.smoke.test.ts`
+5. `packages/adapters/github-copilot/src/github-copilot-agent-adapter.ts`
+6. `packages/adapters/github-copilot/test/github-copilot-agent-adapter.smoke.test.ts`
+7. `packages/adapter-sdk/test/native-cli-exec-process-runtime.unit.test.ts`
