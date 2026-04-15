@@ -2,25 +2,25 @@
 
 ## Primary Stream
 
-- Status: idle
-- Stream: `none`
-- Project: `none`
-- Sprint: `none`
-- Docs: `none`
-- Plan: `none`
-- Tasks: `none`
-- Checklist: `none`
-- CSV: `none`
-- Review: `none`
-- Note: `2026-04-15` `project-105 / sprint-003` reopened closeout 已在 latest project-final `CR-012` clean recheck 后重新收口；`TK-890`、completion audit、completed history 与 idle 恢复已按 canonical truth 写回。
+- Status: active
+- Stream: `stream-project-107-sprint-002`
+- Project: `project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout`
+- Sprint: `sprint-002-generated-projection-and-placeholder-boundaries`
+- Docs: `.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout`
+- Plan: `.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-002-generated-projection-and-placeholder-boundaries/plan.md`
+- Tasks: `.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-002-generated-projection-and-placeholder-boundaries/tasks/`
+- Checklist: `.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-002-generated-projection-and-placeholder-boundaries/tasks/checklist.md`
+- CSV: `.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-002-generated-projection-and-placeholder-boundaries/tasks/tasks.csv`
+- Review: `.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-002-generated-projection-and-placeholder-boundaries/review`
+- Note: `2026-04-15` `project-107 / sprint-001` 已在 clean delegated CR loop 后完成 closeout，并按顺序将 `project-107 / sprint-002` 登记为新的 primary stream；由于 `TK-894` 尚未起步，sprint-002 task aggregate 仍保持 `planned`，待下一执行窗口正式开工时再切换 sprint plan 为 `active`。`project-107 / sprint-003` 与 `project-108 / sprint-001` 继续保留为 planned follow-up，不与本轮实现和 CR 循环交错。
 
 ## Active Streams
 
-- none
+- `stream-project-107-sprint-002`: project=`project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout`, sprint=`sprint-002-generated-projection-and-placeholder-boundaries`, docs=`.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout`, plan=`.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-002-generated-projection-and-placeholder-boundaries/plan.md`, tasks=`.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-002-generated-projection-and-placeholder-boundaries/tasks/`, checklist=`.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-002-generated-projection-and-placeholder-boundaries/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-002-generated-projection-and-placeholder-boundaries/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-002-generated-projection-and-placeholder-boundaries/review/`, status=`active`, role=`primary`
 
 ## Planned Follow-Up Streams
 
-- project=`project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout`, sprint=`sprint-001-parity-catalog-and-readiness-foundation`, status=`planned`, plan=`.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-001-parity-catalog-and-readiness-foundation/plan.md`, tasks=`.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-001-parity-catalog-and-readiness-foundation/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-001-parity-catalog-and-readiness-foundation/review`
+- project=`project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout`, sprint=`sprint-003-self-host-readiness-integration-and-consumer-truthfulness`, status=`planned`, plan=`.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-003-self-host-readiness-integration-and-consumer-truthfulness/plan.md`, tasks=`.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-003-self-host-readiness-integration-and-consumer-truthfulness/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-003-self-host-readiness-integration-and-consumer-truthfulness/review`
 - project=`project-108-adopter-quickstart-bootstrap-rollout`, sprint=`sprint-001-quickstart-contract-and-bootstrap-runtime-baseline`, status=`planned`, plan=`.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-001-quickstart-contract-and-bootstrap-runtime-baseline/plan.md`, tasks=`.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-001-quickstart-contract-and-bootstrap-runtime-baseline/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-001-quickstart-contract-and-bootstrap-runtime-baseline/review`
 
 ## Completed Stream History

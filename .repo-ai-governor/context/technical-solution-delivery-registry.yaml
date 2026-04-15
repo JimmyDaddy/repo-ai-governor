@@ -842,14 +842,14 @@ deliveries:
     rollout_status: not_required
     owner: runtime
     project_ref: project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout
-    sprint_ref: sprint-001-parity-catalog-and-readiness-foundation
+    sprint_ref: sprint-002-generated-projection-and-placeholder-boundaries
     task_ids:
-      - TK-891
-      - TK-892
-      - TK-893
+      - TK-894
+      - TK-895
+      - TK-896
     project_plan_path: .repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/plan.md
-    sprint_plan_path: .repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-001-parity-catalog-and-readiness-foundation/plan.md
-    task_csv_path: .repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-001-parity-catalog-and-readiness-foundation/tasks/tasks.csv
+    sprint_plan_path: .repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-002-generated-projection-and-placeholder-boundaries/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-002-generated-projection-and-placeholder-boundaries/tasks/tasks.csv
     handoff_artifact_path: .repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-001-parity-catalog-and-readiness-foundation/tasks/DA-891-built-in-adoption-pack-parity-promotion-and-rollout-handoff.md
     rollout_artifacts: []
     accepted_at: 2026-04-15

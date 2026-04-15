@@ -1,6 +1,6 @@
 # TK-891 establish built-in pack parity catalog and source model foundation
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-15
 - Owner: AI-Agent
 - Priority: P1
@@ -56,9 +56,11 @@
 ## 9. 执行记录
 
 1. 2026-04-15：任务创建，状态初始化为 `planned`。
+2. 2026-04-15：`project-107 / sprint-001` 激活，任务切换为 `in_progress`，开始收敛 built-in pack parity inventory 与 source catalog foundation。
+3. 2026-04-15：已在 `packages/standards` 落下 source-catalog / readiness foundation 类型与 built-in pack inventory baseline，并通过 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`。
 
 ## 10. 产出
 
-1. 待执行：built-in pack parity inventory baseline
-2. 待执行：source catalog field model
-3. 待执行：`packages/standards` first-wave touchpoint mapping / sprint-002 activation recommendation
+1. 已完成：`ResolvedAdoptionPackDefinition.sourceCatalogRecords` 覆盖 workflow、template 与 runtime-bootstrap seams 的 built-in pack parity inventory baseline。
+2. 已完成：`packages/standards/src/constants/adoption-pack.constant.ts` 与 `packages/standards/src/types/interfaces/adoption-pack.interface.ts` formalize `parity_class / source_mode / structure-instance split / placeholder policy` field model。
+3. 已完成：`packages/standards/src/built-in-adoption-pack-catalog.ts` 与 `packages/standards/src/adoption-pack-registry.ts` 明确了 sprint-002 继续推进 catalog-driven assembly 与 override merge 的 touchpoint。

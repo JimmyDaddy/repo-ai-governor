@@ -1,8 +1,16 @@
 import type { WorkspaceMode } from '@repo-ai-governor/shared';
 import type {
+  AdoptionPackApplicabilityScope,
+  AdoptionPackCompositionPolicy,
   AdoptionPackManagedAssetGroup,
+  AdoptionPackParityClass,
+  AdoptionPackPlaceholderPolicy,
+  AdoptionPackReadinessGroup,
+  AdoptionPackReadinessSink,
   AdoptionPackRemovePolicy,
   AdoptionPackSourceKind,
+  AdoptionPackSourceMode,
+  AdoptionPackSurfaceKind,
   AdoptionPackUpgradePolicy,
   AdoptionPackWorkspaceModePolicy,
 } from '../../constants/adoption-pack.constant.js';
@@ -71,6 +79,43 @@ export interface AdoptionPackTemplateRecord {
   assetGroup: AdoptionPackManagedAssetGroup;
   profileIds: string[];
   description: string;
+  sourceCatalogId?: string;
+}
+
+/**
+ * Defines one machine-readable built-in source-catalog record for parity/readiness inventory.
+ */
+export interface AdoptionPackSourceCatalogRecord {
+  surfaceId: string;
+  surfaceKind: AdoptionPackSurfaceKind;
+  description: string;
+  profileIds: string[];
+  assetGroup: AdoptionPackManagedAssetGroup;
+  parityClass: AdoptionPackParityClass;
+  sourceMode: AdoptionPackSourceMode;
+  sourceRef: string;
+  compositionPolicy: AdoptionPackCompositionPolicy;
+  placeholderPolicy: AdoptionPackPlaceholderPolicy;
+  applicabilityScope: AdoptionPackApplicabilityScope;
+  readinessGroup: AdoptionPackReadinessGroup;
+  readinessSinkIds: AdoptionPackReadinessSink[];
+  relativePath?: string;
+  workflowId?: string;
+  structureSourceRef?: string;
+  instanceSourceMode?: AdoptionPackSourceMode;
+  instanceSourceRef?: string;
+  instancePlaceholderPolicy?: AdoptionPackPlaceholderPolicy;
+}
+
+/**
+ * Defines one grouped readiness matrix row built from the source-catalog inventory.
+ */
+export interface AdoptionPackReadinessMatrixRecord {
+  readinessGroup: AdoptionPackReadinessGroup;
+  applicabilityScope: AdoptionPackApplicabilityScope;
+  sinkIds: AdoptionPackReadinessSink[];
+  surfaceIds: string[];
+  note: string;
 }
 
 /**
@@ -80,6 +125,8 @@ export interface ResolvedAdoptionPackDefinition {
   manifest: ResolvedAdoptionPackManifest;
   workflowRecords: StructuredWorkflowAssetRecord[];
   templateRecords: AdoptionPackTemplateRecord[];
+  sourceCatalogRecords: AdoptionPackSourceCatalogRecord[];
+  readinessMatrixRecords: AdoptionPackReadinessMatrixRecord[];
   capabilityCoverage: Record<string, string[]>;
 }
 

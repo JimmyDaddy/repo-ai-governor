@@ -1,6 +1,6 @@
 # project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-15
 - Stage Mapping: built-in adoption pack parity and self-host readiness rollout
 - Phase Mapping: sprint-001 parity inventory and source-catalog foundation / sprint-002 generated projection and placeholder-boundary implementation / sprint-003 readiness integration and consumer truthfulness follow-through
@@ -20,9 +20,9 @@
 
 ## 2.1 sprint-001-parity-catalog-and-readiness-foundation
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 冻结 built-in adoption pack parity inventory、source catalog shape、self-host readiness applicability 与 first-wave verification strategy。
-- Task Package: `TK-891`、`TK-892`、`TK-893`
+- Task Package: `TK-891`、`TK-892`、`TK-893`、`TK-909`
 
 ## 2.2 sprint-002-generated-projection-and-placeholder-boundaries
 
@@ -40,9 +40,10 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 | --- | --- | --- | --- | --- | --- |
-| TK-891 | sprint-001 | establish built-in pack parity catalog and source model foundation | parity/foundation | formal module docs | planned |
-| TK-892 | sprint-001 | formalize self-host placeholder readiness applicability and diagnostics integration | readiness/policy | TK-891 | planned |
-| TK-893 | sprint-001 | add first-wave parity tests and docs truthfulness follow-up plan | verification/docs | TK-892 | planned |
+| TK-891 | sprint-001 | establish built-in pack parity catalog and source model foundation | parity/foundation | formal module docs | completed |
+| TK-892 | sprint-001 | formalize self-host placeholder readiness applicability and diagnostics integration | readiness/policy | TK-891 | completed |
+| TK-893 | sprint-001 | add first-wave parity tests and docs truthfulness follow-up plan | verification/docs | TK-892 | completed |
+| TK-909 | sprint-001 | finalize sprint-001 closeout and activate sprint-002 | closeout/handoff | CR-001 | completed |
 | TK-894 | sprint-002 | build built-in pack source catalog and generated assembly baseline | source-catalog/assembly | TK-891 | planned |
 | TK-895 | sprint-002 | implement structured template projection and adopter-owned placeholder boundaries | projection/placeholder | TK-894、TK-892 | planned |
 | TK-896 | sprint-002 | close sprint-002 standards parity coverage and sprint-003 handoff readiness | closeout/handoff | TK-894、TK-895、TK-893 | planned |
@@ -58,13 +59,14 @@
 4. `sprint-002` 与 `sprint-003` 只在 `sprint-001` 冻结 source model、readiness sink 与 docs evidence 入口后再继续细化任务卡，避免提前拆出错误 ownership 边界。
 5. `sprint-002` 先在 `packages/standards` 落 source catalog、projection 与 placeholder boundary，再通过 `TK-896` 把 runtime-facing handoff 压缩成 `sprint-003` 的首跳输入。
 6. `sprint-003` 是 project-final execution surface；只有在 readiness integration、tests 与 consumer docs truthfulness 证据闭环后，才允许进入 completion audit。
+7. `TK-909` 只在 `CR-001` clean `resolved` 后推进，用于把 sprint-001 的完成态、completed history 与 `sprint-002` 激活一次性写回。
 
 ## 5. DoD（project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout）
 
-1. built-in pack parity inventory、source catalog shape 与 self-host applicability boundary 已 materialize 为可执行 follow-up scope。
-2. planned task ledger、project/sprint plan 与 `current-context -> Planned Follow-Up Streams` 保持同步。
-3. 后续 implementation window 可以直接基于该 planned stream 激活 execution，而不需要重新解释 formal direction。
-4. `sprint-002` 与 `sprint-003` 的排队顺序已在 project-level plan 中冻结，且 `sprint-001 ~ sprint-003` 的 planned scaffold 已就位；当前 `current-context` 仍只登记 `sprint-001` 为默认 planned follow-up stream。
+1. built-in pack parity inventory、source catalog shape 与 self-host applicability boundary 已 materialize 为可执行 rollout scope，并由 active sprint 承接当前实现窗口。
+2. active/planned task ledger、project/sprint plan 与 `current-context` 保持同步：`sprint-001` 已完成并进入 completed history，`current-context` 已将 `sprint-002` 登记为下一条 primary stream，但在 `TK-894` 开工前 sprint-002 task aggregate 与 sprint plan 仍保持 `planned`；`sprint-003` 与 `project-108 / sprint-001` 仍保持 planned follow-up。
+3. 后续 implementation window 可以直接沿用冻结的 formal direction 与分 sprint ownership，而不需要在切换窗口时重新解释范围。
+4. `sprint-002` 与 `sprint-003` 的排队顺序已在 project-level plan 中冻结，且 `sprint-001 ~ sprint-003` 的 scaffold 已就位。
 
 ## 6. 里程碑记录
 
@@ -72,6 +74,8 @@
 2. 2026-04-15：`sprint-001-parity-catalog-and-readiness-foundation` 已登记到 `current-context.md -> Planned Follow-Up Streams`，不占用当前 idle primary stream。
 3. 2026-04-15：project-level sprint queue 已扩展到 `sprint-002` / `sprint-003`，并已补齐对应 task scaffold 与 planned ledger。
 4. 2026-04-15：`sprint-002` / `sprint-003` 虽已补齐 planned scaffold，但仍未登记到 `current-context` 的默认 planned follow-up stream，且未切换为 active execution surface。
+5. 2026-04-15：`sprint-001-parity-catalog-and-readiness-foundation` 已切换为 active primary stream，后续严格按 `sprint-001 -> sprint-002 -> sprint-003 -> project-final CR` 顺序推进。
+6. 2026-04-15：`CR-001` clean `resolved` 后，`TK-909` 已完成 sprint-001 closeout write-back；`current-context` 已切换到 `sprint-002` 作为下一条 primary stream，而 sprint-002 plan 在 `TK-894` 开工前继续保持 `planned`，`sprint-003` 与 `project-108 / sprint-001` 继续保留为 planned follow-up。
 
 ## 7. 里程碑记录入口
 

@@ -1,8 +1,22 @@
 # checklist
 
-- [ ] TK-891 establish built-in pack parity catalog and source model foundation
+- [x] TK-891 establish built-in pack parity catalog and source model foundation
   - 2026-04-15：任务创建，状态初始化为 `planned`。
-- [ ] TK-892 formalize self-host placeholder readiness applicability and diagnostics integration
+  - 2026-04-15：`project-107 / sprint-001` 激活，任务切换为 `in_progress`，开始收敛 built-in pack parity inventory 与 source catalog foundation。
+  - 2026-04-15：已在 `packages/standards` 落下 source-catalog / readiness foundation 类型与 built-in pack inventory baseline，并通过 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`。
+- [x] TK-892 formalize self-host placeholder readiness applicability and diagnostics integration
   - 2026-04-15：任务创建，状态初始化为 `planned`。
-- [ ] TK-893 add first-wave parity tests and docs truthfulness follow-up plan
+  - 2026-04-15：依托 built-in source catalog 开始收敛 `governance_rules_ready / product_direction_ready / execution_surface_ready` 的 self-host-only applicability 与 sink mapping。
+  - 2026-04-15：已在 `ResolvedAdoptionPackDefinition.readinessMatrixRecords` formalize self-host-only readiness applicability，并通过 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 验证默认 adopter path 不受误伤。
+- [x] TK-893 add first-wave parity tests and docs truthfulness follow-up plan
   - 2026-04-15：任务创建，状态初始化为 `planned`。
+  - 2026-04-15：开始将首批 parity/applicability tests、consumer docs truthfulness follow-up 与 sprint-002/003 activation recommendation 写回语义主源。
+  - 2026-04-15：已补齐 `packages/standards` 首批 parity/applicability tests，并把 docs truthfulness refresh 与 runtime sink evidence gating 收敛为 sprint-002/003 follow-up plan；验证通过 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`。
+- [x] CR-001 sprint-001-parity-catalog-and-readiness-foundation delegated review loop round 1
+  - 2026-04-15：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-15：已复核 round-1 findings，两个问题均判定为 `accepted`，并完成对应修复与验证准备。
+  - 2026-04-15：accepted findings 已全部修复并重跑验证，CR-001 收口为 `resolved`。
+- [x] TK-909 finalize sprint-001 closeout and activate sprint-002
+  - 2026-04-15：任务创建，状态初始化为 `planned`。
+  - 2026-04-15：状态切换为 `in_progress`，开始关闭 sprint-001 并把 sprint-002 切换为 primary execution surface。
+  - 2026-04-15：已完成 sprint-001 closeout、DA-909 handoff、completed history / delivery registry write-back、project/sprint plan 状态写回与 current-context primary stream 切换。

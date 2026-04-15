@@ -1,6 +1,6 @@
 # TK-892 formalize self-host placeholder readiness applicability and diagnostics integration
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-15
 - Owner: AI-Agent
 - Priority: P1
@@ -57,9 +57,11 @@
 ## 9. 执行记录
 
 1. 2026-04-15：任务创建，状态初始化为 `planned`。
+2. 2026-04-15：依托 built-in source catalog 开始收敛 `governance_rules_ready / product_direction_ready / execution_surface_ready` 的 self-host-only applicability 与 sink mapping。
+3. 2026-04-15：已在 `ResolvedAdoptionPackDefinition.readinessMatrixRecords` formalize self-host-only readiness applicability，并通过 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 验证默认 adopter path 不受误伤。
 
 ## 10. 产出
 
-1. 待执行：readiness applicability matrix
-2. 待执行：stable sink mapping / check-result proposal
-3. 待执行：self-host-only boundary note / runtime touchpoint list
+1. 已完成：`governance_rules_ready / product_direction_ready / execution_surface_ready` 三组 readiness applicability matrix，统一收敛到 `ResolvedAdoptionPackDefinition.readinessMatrixRecords`。
+2. 已完成：`doctor_diagnostics / adopt_verify / execution_preflight` sink mapping 与 self-host repo-local applicability scope 已进入 machine-readable metadata。
+3. 已完成：self-host-only boundary 与 runtime follow-up touchpoint 已压缩到 `apps/cli/src/runtime/adoption-pack-runtime.ts`、`agent-onboarding-runtime.ts`、`adapter-verification-runtime.ts` 的 sprint-003 handoff note。

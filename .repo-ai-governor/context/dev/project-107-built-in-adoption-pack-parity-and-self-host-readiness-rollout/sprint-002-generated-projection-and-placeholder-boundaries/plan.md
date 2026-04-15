@@ -30,7 +30,7 @@
 
 ## 4. Sprint Notes
 
-1. 本 sprint 当前只创建 planned scaffold，不切换当前 primary stream。
+1. 本 sprint 已在 sprint-001 closeout 同窗登记到 `current-context` 的 primary stream 槽位；待 `TK-894` 正式开工后，再把 sprint plan 切换为 `active` 并按 `TK-894 -> TK-895 -> TK-896` 顺序推进，再进入 delegated sprint CR loop。
 2. review surface 仅保留 `.gitkeep`，正式 `code_review_*` 生命周期文件待真实 execution 激活后再创建。
-3. 若后续窗口直接激活本 sprint，先执行 `node ./scripts/governance/sync-task-ledger.js --tasks-dir "<tasks-dir>"` 完成 canonical sqlite 对齐。
+3. 当前激活窗口继续遵循 task-card 语义主源，按状态切换执行 `node ./scripts/governance/sync-task-ledger.js` 回写 canonical sqlite 与派生视图。
 4. `sprint-003` 虽已 scaffold，但仍不能跳过 `sprint-002` 直接启动，因为 runtime integration 依赖 standards-side source model 与 placeholder boundary 先稳定。

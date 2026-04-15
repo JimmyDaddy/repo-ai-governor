@@ -1,6 +1,6 @@
 # TK-893 add first-wave parity tests and docs truthfulness follow-up plan
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-15
 - Owner: AI-Agent
 - Priority: P1
@@ -57,9 +57,11 @@
 ## 9. 执行记录
 
 1. 2026-04-15：任务创建，状态初始化为 `planned`。
+2. 2026-04-15：开始将首批 parity/applicability tests、consumer docs truthfulness follow-up 与 sprint-002/003 activation recommendation 写回语义主源。
+3. 2026-04-15：已补齐 `packages/standards` 首批 parity/applicability tests，并把 docs truthfulness refresh 与 runtime sink evidence gating 收敛为 sprint-002/003 follow-up plan；验证通过 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`。
 
 ## 10. 产出
 
-1. 待执行：parity/applicability test matrix
-2. 待执行：docs truthfulness refresh matrix
-3. 待执行：`sprint-002 / sprint-003` activation recommendation / evidence gating note
+1. 已完成：首批 automated checks 已由 `packages/standards/test/adoption-pack-registry.unit.test.ts` 锁住 workflow/generated-projection、current-context structure-instance split、runtime-bootstrap placeholder 与 self-host-only applicability boundary。
+2. 已完成：consumer docs truthfulness refresh matrix 已明确推迟到 sprint-003，目标面固定为 `README.md`、`docs/local-adoption-playbook.md` 与 `docs/support-matrix.md`，避免在 runtime sink 未落地前过早改写用户文案。
+3. 已完成：activation recommendation 已冻结为 `sprint-002` 继续做 catalog-driven assembly 与 structured-template projection，`sprint-003` 再落 `doctor/adopt verify/execution preflight` sinks、补 CLI/runtime tests 并刷新 consumer docs truthfulness evidence。
