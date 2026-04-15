@@ -1036,7 +1036,9 @@ function toResolvedDefinition(): ResolvedAdoptionPackDefinition {
     },
     workflowRecords: definition.workflowRecords.map((record) => ({ ...record })),
     templateRecords: definition.templateRecords.map((record) => ({ ...record })),
-    runtimeBootstrapRecords: definition.runtimeBootstrapRecords.map((record) => ({ ...record })),
+    runtimeBootstrapRecords: definition.runtimeBootstrapRecords.map((record) =>
+      cloneRuntimeBootstrapRecord(record),
+    ),
     sourceCatalogRecords: definition.sourceCatalogRecords.map((record) => ({
       ...record,
       profileIds: [...record.profileIds],
@@ -1326,5 +1328,14 @@ function createRuntimeBootstrapTemplateRecord(
     profileIds: [BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE],
     description,
     sourceCatalogId: buildRuntimeBootstrapSurfaceId(relativePath),
+  };
+}
+
+function cloneRuntimeBootstrapRecord(
+  record: AdoptionPackRuntimeBootstrapRecord,
+): AdoptionPackRuntimeBootstrapRecord {
+  return {
+    ...record,
+    profileIds: [...record.profileIds],
   };
 }

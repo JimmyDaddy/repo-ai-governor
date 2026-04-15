@@ -77,10 +77,9 @@ export class SessionMainProviderContinuationRuntime {
       return SessionMainProviderContinuationPolicyEnvelope.READ_ONLY;
     }
 
-    if (typeof roleId === 'string' && roleId.trim().length > 0) {
-      return roleId === 'reviewer'
-        ? SessionMainProviderContinuationPolicyEnvelope.READ_ONLY
-        : SessionMainProviderContinuationPolicyEnvelope.MUTATION_CAPABLE;
+    const normalizedRoleId = typeof roleId === 'string' ? roleId.trim() : '';
+    if (normalizedRoleId === 'reviewer') {
+      return SessionMainProviderContinuationPolicyEnvelope.READ_ONLY;
     }
 
     const executionPolicy = this.readRecord(input[AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY]);

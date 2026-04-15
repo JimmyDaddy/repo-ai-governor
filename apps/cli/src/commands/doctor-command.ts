@@ -10,7 +10,10 @@ import {
   MemoryStoreEngine,
   RuntimeError,
 } from '@repo-ai-governor/shared';
-import type { AdoptionPackVerificationCheck } from '@repo-ai-governor/standards';
+import {
+  HostVerificationStatus,
+  type AdoptionPackVerificationCheck,
+} from '@repo-ai-governor/standards';
 import {
   CLI_ADAPTER_TOOL_CHECK_ID_PREFIX,
   CliCommandResultCheckId,
@@ -560,15 +563,20 @@ export class CliDoctorCommand implements CliCommandExecutor {
     };
   }
 
-  private toCliCheckStatus(status: string): CliGovernanceCheckStatus {
+  private toCliCheckStatus(
+    status: AdoptionPackVerificationCheck['status'],
+  ): CliGovernanceCheckStatus {
     switch (status) {
-      case 'pass':
+      case HostVerificationStatus.PASS:
         return CliGovernanceCheckStatus.PASS;
-      case 'warn':
+      case HostVerificationStatus.WARN:
         return CliGovernanceCheckStatus.WARN;
-      default:
+      case HostVerificationStatus.FAIL:
         return CliGovernanceCheckStatus.FAIL;
     }
+
+    const exhaustiveStatus: never = status;
+    return exhaustiveStatus;
   }
 
   private resolveDoctorBaselineStatus(options: {

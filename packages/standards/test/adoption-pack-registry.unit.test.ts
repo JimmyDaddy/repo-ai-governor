@@ -21,6 +21,7 @@ import {
   BUILT_IN_ADOPTION_PACK_PROFILE_IDS,
   HostDistributionHandoffBridge,
   HostDistributionTarget,
+  resolveBuiltInAdoptionPackDefinition,
 } from '../src/index.js';
 
 describe('AdoptionPackRegistry', () => {
@@ -241,6 +242,43 @@ describe('AdoptionPackRegistry', () => {
     expect(maintenanceBootstrap?.sourceCatalogId).toBe(
       'runtime_bootstrap:.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md',
     );
+  });
+
+  it('deep-clones runtime bootstrap profile ids for built-in and registry views', async () => {
+    const runtimeBootstrapRelativePath =
+      '.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md';
+    const builtInDefinition = resolveBuiltInAdoptionPackDefinition(BUILT_IN_ADOPTION_PACK_ID);
+    const builtInBootstrap = builtInDefinition?.runtimeBootstrapRecords.find(
+      (record) => record.relativePath === runtimeBootstrapRelativePath,
+    );
+
+    expect(builtInBootstrap?.profileIds).toEqual([
+      BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE,
+    ]);
+    builtInBootstrap?.profileIds.push(BUILT_IN_ADOPTION_PACK_PROFILE_IDS.ADOPTER_COMPLETE);
+
+    expect(
+      resolveBuiltInAdoptionPackDefinition(BUILT_IN_ADOPTION_PACK_ID)?.runtimeBootstrapRecords.find(
+        (record) => record.relativePath === runtimeBootstrapRelativePath,
+      )?.profileIds,
+    ).toEqual([BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE]);
+
+    const registry = new AdoptionPackRegistry();
+    const firstDefinition = await registry.resolveDefinition(BUILT_IN_ADOPTION_PACK_ID);
+    const firstBootstrap = firstDefinition.runtimeBootstrapRecords.find(
+      (record) => record.relativePath === runtimeBootstrapRelativePath,
+    );
+
+    expect(firstBootstrap?.profileIds).toEqual([
+      BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE,
+    ]);
+    firstBootstrap?.profileIds.push(BUILT_IN_ADOPTION_PACK_PROFILE_IDS.ADOPTER_COMPLETE);
+
+    expect(
+      (await registry.resolveDefinition(BUILT_IN_ADOPTION_PACK_ID)).runtimeBootstrapRecords.find(
+        (record) => record.relativePath === runtimeBootstrapRelativePath,
+      )?.profileIds,
+    ).toEqual([BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE]);
   });
 
   it('wraps invalid manifest JSON with source-aware runtime diagnostics', async () => {

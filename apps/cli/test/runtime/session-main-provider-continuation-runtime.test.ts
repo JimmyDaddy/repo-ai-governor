@@ -1,7 +1,10 @@
 import {
+  AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY,
   AgentStageContinuationHandleKind,
   AgentStageContinuationStatus,
   AgentStageContinuationTransportKind,
+  AgentStageExecutionMode,
+  AgentStageToolUsePolicy,
 } from '@repo-ai-governor/adapter-sdk';
 import type { AdaptersConfig } from '@repo-ai-governor/config';
 import { AdapterSurface, AdapterTransportKind } from '@repo-ai-governor/shared';
@@ -9,6 +12,26 @@ import { SessionMainProviderContinuationPolicyEnvelope } from '../../src/constan
 import { SessionMainProviderContinuationRuntime } from '../../src/runtime/session-main-provider-continuation-runtime.js';
 
 describe('SessionMainProviderContinuationRuntime', () => {
+  it('keeps delegated chat-only turns in chat-only continuation lanes', () => {
+    const runtime = new SessionMainProviderContinuationRuntime({
+      workspaceRoot: '/tmp/workspace',
+      currentWorkingDirectory: '/tmp/workspace',
+    });
+    const chatOnlyInput = {
+      [AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY]: {
+        interactionMode: AgentStageExecutionMode.CHAT_ONLY,
+        toolUsePolicy: AgentStageToolUsePolicy.FORBIDDEN,
+      },
+    };
+
+    expect(runtime.resolvePolicyEnvelopeFromInput(chatOnlyInput, 'planner')).toBe(
+      SessionMainProviderContinuationPolicyEnvelope.CHAT_ONLY,
+    );
+    expect(runtime.resolvePolicyEnvelopeFromInput(chatOnlyInput, 'reviewer')).toBe(
+      SessionMainProviderContinuationPolicyEnvelope.READ_ONLY,
+    );
+  });
+
   it('keeps acp_exec out of provider continuation truth', () => {
     const runtime = new SessionMainProviderContinuationRuntime({
       workspaceRoot: '/tmp/workspace',
