@@ -43,10 +43,13 @@
    - `rg '^DA-002,' .repo-ai-governor/context/artifact-registry/archive/artifacts.archive.csv`
 4. 后续任务消费产物时，优先引用 `artifact_id + artifact_path` 双键，避免只靠文件名检索。
 5. 若 CSV 视图与 sqlite canonical truth 可能漂移，先执行 `node ./scripts/governance/render-artifact-registry-view.js` 重新渲染，再进行人工检查。
+6. 当 task decomposition 需要为新任务挑选候选 DA 时，优先运行：
+   - `node ./scripts/governance/query-artifact-candidates.js --project <project-xxx> --task-title "<title>" --goal "<goal>" --limit 5`
+7. decomposition 阶段只建议把首跳正式 DA 输入放进 `Required Inputs`；其他历史/补充材料移到 `Traceback References`，避免默认上下文爆炸。
 
 ## Sync Requirements
 
-1. 产物登记后，仍需同步相关任务卡的 `Depends On` 与 `Input References`。
+1. 产物登记后，仍需同步相关任务卡的 `Depends On`、`Required Inputs` 与 `Traceback References`。
 2. 依赖任务变更后，执行 `node ./scripts/governance/reconcile-artifact-dependencies.js` 回填 `dependent_tasks`。
 3. 生命周期与归档清理遵循 `node ./scripts/governance/check-artifact-registry-lifecycle.js` 与 `node ./scripts/governance/compact-artifact-registry.js`。
 4. `.repo-ai-governor/context/dev/index.md` 只保留检索入口，不再镜像完整 artifact 列表。

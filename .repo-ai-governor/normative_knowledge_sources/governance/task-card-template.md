@@ -16,11 +16,13 @@
 1. 生成新的 `TK-xxx` 或 `CR-xxx` 时，默认从本模板实例化，而不是自由发挥章节结构。
 2. 顶部元数据至少填写 `Status/Date/Owner/Priority/Project/Sprint`；`task_id` 由 `# <TASK-ID> <title>` heading 承担。
 3. `## 4. Required Inputs` 只放执行当前任务必需阅读的输入，建议控制在 `3-5` 条。
-4. `## 5. Traceback References` 只放追溯、handoff、review、历史计划或 audit 资料，不进入默认执行输入面。
-5. `## 7. Development Verification` 默认记录 fast/targeted verification；`## 8. Delivery Verification` 记录切换到终态前必须满足的 gate、release 或 closeout 验证。
-6. `## 9. 执行记录` 采用时间顺序追加；任务创建时至少写入一条“状态初始化为 `planned` / `review_pending`”或“切换为进行中状态”记录。
-7. `## 10. 产出` 对 `planned` / `review_pending` / `verified` 任务允许写“待执行：…”占位；切到 `completed` / `resolved` 后应补齐实际产物路径或明确产物名称。
-8. 实现任务使用 `TK-xxx` 与 `planned / in_progress / completed`；评审任务使用 `CR-xxx` 与 `review_pending / verified / resolved`。
+4. `## 4. Required Inputs` 中直接 `DA-*` 输入建议控制在 `1-3` 条，只保留首跳正式消费项；额外候选 DA、旧 handoff 和历史材料移到 `## 5. Traceback References`。
+5. 新建任务前，优先使用 `node ./scripts/governance/query-artifact-candidates.js --project <project-xxx> --task-title "<title>" --goal "<goal>" --limit 5` 缩小候选 DA 集，而不是手工浏览完整 artifact corpus。
+6. `## 5. Traceback References` 只放追溯、handoff、review、历史计划或 audit 资料，不进入默认执行输入面。
+7. `## 7. Development Verification` 默认记录 fast/targeted verification；`## 8. Delivery Verification` 记录切换到终态前必须满足的 gate、release 或 closeout 验证。
+8. `## 9. 执行记录` 采用时间顺序追加；任务创建时至少写入一条“状态初始化为 `planned` / `review_pending`”或“切换为进行中状态”记录。
+9. `## 10. 产出` 对 `planned` / `review_pending` / `verified` 任务允许写“待执行：…”占位；切到 `completed` / `resolved` 后应补齐实际产物路径或明确产物名称。
+10. 实现任务使用 `TK-xxx` 与 `planned / in_progress / completed`；评审任务使用 `CR-xxx` 与 `review_pending / verified / resolved`。
 
 ## 3. Concrete Template
 
@@ -92,3 +94,4 @@
 2. `TK` 任务用于实现、closeout、activation、治理收口等执行项；`CR` 任务用于 review / recheck / fix 的独立管理。
 3. 若任务属于 exit acceptance / closeout / completion audit 类，可在 `## 6. 实施计划` 与 `## 8. Delivery Verification` 中展开验收矩阵，但仍保留本模板的章节骨架。
 4. 若任务确实不需要 `Traceback References`，章节可保留并写明 `不适用`，避免后续再次出现章节缺失导致的结构漂移。
+5. 若确有充分理由突破 `Required Inputs` 默认上限，可在任务卡中添加 `required-input-limit-allowed: <reason>` 说明，并在同一 change set 记录原因。

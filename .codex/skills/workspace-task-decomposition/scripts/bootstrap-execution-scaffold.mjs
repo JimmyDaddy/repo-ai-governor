@@ -28,6 +28,7 @@ function parseArgs(argv) {
     upstream: [],
     tasks: [],
     crs: [],
+    taskInputs: [],
     owner: DEFAULT_OWNER,
     date: DEFAULT_DATE,
     projectStatus: 'planned',
@@ -92,6 +93,9 @@ function parseArgs(argv) {
       case '--cr':
         options.crs.push(nextValue);
         break;
+      case '--task-input':
+        options.taskInputs.push(nextValue);
+        break;
       case '--owner':
         options.owner = nextValue;
         break;
@@ -137,6 +141,8 @@ function printHelp() {
       '                              Repeatable TK seed item',
       '  --cr "<title>|<priority>|<goal>|<depends_on>|<deliverable_type>"',
       '                              Repeatable CR seed item',
+      '  --task-input "<task-title-or-slug>|<required|traceback>|<value>"',
+      '                              Repeatable task-card input assignment',
       '  --owner <name>               Default: AI-Agent',
       '  --date <YYYY-MM-DD>          Default: today',
       '  --project-status <status>    planned|active|completed',
@@ -220,6 +226,8 @@ function parseWorkItemSpec(rawValue, kind) {
     dependsOn,
     deliverableType,
     initialStatus: kind === 'CR' ? 'review_pending' : 'planned',
+    requiredInputs: [],
+    tracebackReferences: [],
   };
 }
 
@@ -282,6 +290,35 @@ function reserveTaskIds({ workspaceRoot, tasksDir, type, count }) {
   return parsedOutput.reservedIds ?? [];
 }
 
+function parseTaskInputSpec(rawValue) {
+  const parts = String(rawValue ?? '')
+    .split('|')
+    .map((part) => part.trim());
+  const selector = parts[0] ?? '';
+  const inputType = (parts[1] ?? '').toLowerCase();
+  const value = parts.slice(2).join('|').trim();
+
+  if (!selector) {
+    throw new Error(`Missing task selector in --task-input: ${rawValue}`);
+  }
+
+  if (inputType !== 'required' && inputType !== 'traceback') {
+    throw new Error(
+      `Invalid task-input type "${parts[1] ?? ''}" in --task-input: ${rawValue}. Expected required or traceback.`,
+    );
+  }
+
+  if (!value) {
+    throw new Error(`Missing task-input value in --task-input: ${rawValue}`);
+  }
+
+  return {
+    selector,
+    inputType,
+    value,
+  };
+}
+
 function buildSeedItems(options) {
   const tkItems = options.tasks.map((rawTask) => parseWorkItemSpec(rawTask, 'TK'));
   const crItems = options.crs.map((rawTask) => parseWorkItemSpec(rawTask, 'CR'));
@@ -299,6 +336,37 @@ function buildSeedItems(options) {
     tkItems,
     crItems,
   };
+}
+
+function applyTaskInputAssignments(items, rawAssignments) {
+  const assignments = rawAssignments.map((rawAssignment) => parseTaskInputSpec(rawAssignment));
+
+  return items.map((item) => {
+    const itemSlug = slugify(item.title);
+    const matchingAssignments = assignments.filter(
+      (assignment) => assignment.selector === item.title || assignment.selector === itemSlug,
+    );
+
+    if (matchingAssignments.length === 0) {
+      return item;
+    }
+
+    const requiredInputs = [];
+    const tracebackReferences = [];
+    for (const assignment of matchingAssignments) {
+      if (assignment.inputType === 'required') {
+        requiredInputs.push(assignment.value);
+      } else {
+        tracebackReferences.push(assignment.value);
+      }
+    }
+
+    return {
+      ...item,
+      requiredInputs,
+      tracebackReferences,
+    };
+  });
 }
 
 function finalizeDependencies(items, fallbackFactory) {
@@ -330,14 +398,20 @@ function renderTaskCard({
     .split(';')
     .map((dependency) => dependency.trim())
     .filter((dependency) => dependency.length > 0);
-  const requiredInputs = [
-    'AGENTS.md',
-    '.repo-ai-governor/context/current-context.md',
-    '.repo-ai-governor/normative_knowledge_sources/normative-loading-manifest.yaml',
-    '.repo-ai-governor/normative_knowledge_sources/governance/decomposition-protocol-template.md',
-    sprintPlanPath,
-  ];
-  const tracebackReferences = [projectPlanPath, sprintPlanPath];
+  const requiredInputs = Array.from(
+    new Set([
+      ...item.requiredInputs,
+      '.repo-ai-governor/context/current-context.md',
+      sprintPlanPath,
+    ]),
+  );
+  const tracebackReferences = Array.from(
+    new Set([
+      ...item.tracebackReferences,
+      projectPlanPath,
+      '.repo-ai-governor/normative_knowledge_sources/governance/task-card-template.md',
+    ]),
+  );
   const developmentVerification =
     item.kind === 'CR'
       ? [
@@ -350,6 +424,7 @@ function renderTaskCard({
         ];
   const deliveryVerification = [
     `node ./scripts/governance/sync-task-ledger.js --tasks-dir "${tasksDirPath}" --task-id ${taskId}`,
+    `node ./scripts/governance/check-task-required-inputs.js --tasks-dir "${tasksDirPath}" --task-id ${taskId}`,
     'node ./scripts/governance/check-task-ledger-sync.js',
     'node ./scripts/governance/check-sprint-plan-status-sync.js',
   ];
@@ -679,17 +754,23 @@ function main() {
   });
 
   const tkItems = finalizeDependencies(
-    seedItems.tkItems.map((item, index) => ({
-      ...item,
-      taskId: tkIds[index],
-    })),
+    applyTaskInputAssignments(
+      seedItems.tkItems.map((item, index) => ({
+        ...item,
+        taskId: tkIds[index],
+      })),
+      options.taskInputs,
+    ),
     (index, items) => (index === 0 ? ['scaffold baseline'] : [items[index - 1].taskId]),
   );
   const crItems = finalizeDependencies(
-    seedItems.crItems.map((item, index) => ({
-      ...item,
-      taskId: crIds[index],
-    })),
+    applyTaskInputAssignments(
+      seedItems.crItems.map((item, index) => ({
+        ...item,
+        taskId: crIds[index],
+      })),
+      options.taskInputs,
+    ),
     () => (tkItems.length > 0 ? tkItems.map((item) => item.taskId) : ['sprint execution surface']),
   );
   const allSeedItems = [...tkItems, ...crItems];
@@ -783,6 +864,7 @@ function main() {
 
   const suggestedNextSteps = [
     `node ./scripts/governance/sync-task-ledger.js --tasks-dir "${tasksDirPath}"`,
+    `node ./scripts/governance/check-task-required-inputs.js --tasks-dir "${tasksDirPath}" --task-id ${allSeedItems.map((item) => item.taskId).join(' --task-id ')}`,
     'node ./scripts/governance/check-task-ledger-sync.js',
     'node ./scripts/governance/check-sprint-plan-status-sync.js',
   ];

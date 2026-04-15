@@ -48,7 +48,9 @@ Read these before doing anything else:
 12. `.repo-ai-governor/normative_knowledge_sources/governance/task-ledger-single-write-source-contract.md`
 13. `scripts/governance/reserve-task-id.js`
 14. `scripts/governance/sync-task-ledger.js`
-15. `.codex/skills/workspace-code-review-workflow/SKILL.md`（当拆解结果包含 CR workflow 时）
+15. `scripts/governance/query-artifact-candidates.js`
+16. `scripts/governance/check-task-required-inputs.js`
+17. `.codex/skills/workspace-code-review-workflow/SKILL.md`（当拆解结果包含 CR workflow 时）
 
 ## Phase 1: Resolve Mode And Canonical Output Path
 
@@ -81,6 +83,22 @@ Always resolve at least:
 
 Add `CR` items when the sprint is expected to track code-review lifecycle in the ledger.
 
+Before writing new task cards, resolve only the first-hop artifact inputs needed for decomposition:
+
+1. query candidate DA artifacts from canonical registry instead of manually browsing the full DA corpus
+2. keep `Required Inputs` narrow: prefer `1-3` direct DA / handoff inputs plus current sprint context
+3. move historical plans, completion audits, superseded handoff notes, and extra background into `Traceback References`
+
+Recommended candidate query:
+
+```bash
+node ./scripts/governance/query-artifact-candidates.js \
+  --project project-097-meaningful-name \
+  --task-title "implement core change" \
+  --goal "完成本轮主要实现" \
+  --limit 5
+```
+
 When the user gives only a broad request, use the smallest safe first sprint:
 
 1. one bootstrap / baseline task
@@ -112,8 +130,16 @@ node ./.codex/skills/workspace-task-decomposition/scripts/bootstrap-execution-sc
   --sprint-goal "完成首个 sprint 的任务拆解与骨架落盘。" \
   --task "bootstrap stream scaffold|P1|创建标准目录、plan 与 task ledger seed" \
   --task "implement core change|P1|完成本轮主要实现" \
+  --task-input "implement-core-change|required|.repo-ai-governor/context/dev/project-096-previous-stream/sprint-004/tasks/DA-812-followup-handoff.md" \
+  --task-input "implement-core-change|traceback|.repo-ai-governor/context/dev/project-096-previous-stream/project-096-completion-audit-summary.md" \
   --task "validate and close bootstrap|P1|补齐验证与交付检查"
 ```
+
+Input assignment rules:
+
+1. `--task-input` selector can be the exact task title or its slugified form.
+2. Use `required` only for execution-entry inputs that should be read by default.
+3. Use `traceback` for history, audit, extra handoff material, and overflow references that should not bloat default context.
 
 When the request targets an existing stream:
 
@@ -130,6 +156,7 @@ Bootstrap seeds are not the end state. Before the stream is treated as the activ
 2. run `node ./scripts/governance/check-task-ledger-sync.js`
 3. run `node ./scripts/governance/check-sprint-plan-status-sync.js`
 4. if CR tasks were created, also run `node ./scripts/governance/check-code-review-status-sync.js`
+5. when new task cards were created or normalized, run `node ./scripts/governance/check-task-required-inputs.js --tasks-dir <...>`
 
 Only after that should you:
 
@@ -148,6 +175,7 @@ Run the checks that match what changed:
 - `node ./scripts/governance/run-normative-loading-manifest-gate.js`
 
 3. When a real project/sprint scaffold was created or repaired in the repo workspace:
+- `node ./scripts/governance/check-task-required-inputs.js --tasks-dir <...>`
 - `node ./scripts/governance/check-task-ledger-sync.js`
 - `node ./scripts/governance/check-sprint-plan-status-sync.js`
 - `node ./scripts/governance/check-code-review-status-sync.js`（if CR tasks were involved）
@@ -163,6 +191,8 @@ Run the checks that match what changed:
 4. Never reuse guessed task ids; reserve them first.
 5. Never create `code_review_*` lifecycle files during pure decomposition/bootstrap.
 6. Never mark a bootstrap-only stream as `completed` just because the scaffold exists; completion still requires real task execution and closeout artifacts.
+7. Never manually browse every DA file just to fill a new task card; use `query-artifact-candidates.js` to narrow to a small candidate set first.
+8. Never stuff all candidate DA into `Required Inputs`; keep only first-hop execution inputs there and move overflow to `Traceback References`.
 
 ## Result Template
 

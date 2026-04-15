@@ -27,6 +27,14 @@
 2. `acceptance_signals`
 3. `rollback_point`
 
+依赖解析补充规则：
+
+1. task decomposition 阶段只解析“首跳正式输入”，不要求把所有潜在 DA 一次性塞进新任务。
+2. 优先通过 canonical artifact registry 的候选查询收敛小集合，再决定哪些输入进入 `Required Inputs`。
+3. 推荐命令：
+   - `node ./scripts/governance/query-artifact-candidates.js --project <project-xxx> --task-title "<title>" --goal "<goal>" --limit 5`
+4. 额外历史背景、audit、旧 handoff 与补充线索优先进入 `Traceback References`，而不是膨胀默认执行输入面。
+
 ## 3. Output Contract
 
 每次拆解至少输出：
@@ -75,8 +83,9 @@ Concrete template source of truth:
 1. 既有任务卡允许继续使用 `## 4. Input References`。
 2. 新任务默认采用 `Required Inputs + Traceback References`，把执行必需输入与追溯输入分开。
 3. `Required Inputs` 建议控制在 `3-5` 条；超出时优先把历史规划、handoff、completion audit 移到 `Traceback References`。
-4. `Development Verification` 默认写 Fast Gate 级验证；`Delivery Verification` 默认写 Release Gate 或切换为 `completed` 时必须补齐的交付验证。
-5. 若任务暂无 `Traceback References` 或 `产出` 实际路径，章节仍需保留，并显式写 `不适用` / `待执行后补齐`，避免生成结果再次出现结构漂移。
+4. `Required Inputs` 中直接 `DA-*` 输入建议控制在 `1-3` 条，只保留首跳正式消费项。
+5. `Development Verification` 默认写 Fast Gate 级验证；`Delivery Verification` 默认写 Release Gate 或切换为 `completed` 时必须补齐的交付验证。
+6. 若任务暂无 `Traceback References` 或 `产出` 实际路径，章节仍需保留，并显式写 `不适用` / `待执行后补齐`，避免生成结果再次出现结构漂移。
 
 ## 5. Ledger Rules
 
@@ -88,6 +97,7 @@ Concrete template source of truth:
 6. bootstrap 阶段允许先生成 `checklist.md` / `tasks.csv` 的 scaffold seed；但在 stream 正式进入 active execution 前，必须执行一次 `node ./scripts/governance/sync-task-ledger.js --tasks-dir <...>` 完成 canonical sqlite 对齐。
 7. 多人并发拆解同一 `sprint` 时，应先通过 `node ./scripts/governance/reserve-task-id.js --tasks-dir <...> --type <TK|CR> --count <n>` 预留连续号段，再创建对应任务卡，避免多人同时猜测“下一个编号”。
 8. 当某 sprint 下所有 `TK` 与 `CR` 均进入终态时，必须立即补入 closeout 任务，避免 active sprint 处于“全终态无 closeout”的悬空状态。
+9. 新建或归一化 task card 后，建议运行 `node ./scripts/governance/check-task-required-inputs.js --tasks-dir <...>`，确保默认执行输入面没有被过量 DA/背景资料撑爆。
 
 ## 6. Exit Checklist
 
