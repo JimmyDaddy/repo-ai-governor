@@ -1,3 +1,4 @@
+import { PUBLIC_SERVICE_HOST_PACKAGE_EXPORT } from '@repo-ai-governor/shared';
 import {
   HostDistributionHandoffBridge,
   StructuredWorkflowAssetRegistry,
@@ -5,6 +6,15 @@ import {
 import { GithubCopilotHostRenderer } from '../src/github-copilot-host-renderer.js';
 
 describe('GithubCopilotHostRenderer', () => {
+  function readProjectedJson(
+    projectedFiles: Array<{ relativePath: string; content: string }>,
+    relativePath: string,
+  ): Record<string, unknown> {
+    const file = projectedFiles.find((entry) => entry.relativePath === relativePath);
+    expect(file).toBeDefined();
+    return JSON.parse(file?.content ?? '{}') as Record<string, unknown>;
+  }
+
   function createRegistry(
     target:
       | 'github_copilot.repo_local'
@@ -94,6 +104,15 @@ describe('GithubCopilotHostRenderer', () => {
     expect(result.projectedFiles.some((file) => file.relativePath === '.github/mcp.json')).toBe(
       true,
     );
+    expect(readProjectedJson(result.projectedFiles, '.github/mcp.json')).toEqual(
+      expect.objectContaining({
+        mcpServers: expect.objectContaining({
+          'repo-ai-governor': expect.objectContaining({
+            packageExport: PUBLIC_SERVICE_HOST_PACKAGE_EXPORT,
+          }),
+        }),
+      }),
+    );
   });
 
   it('renders Copilot CLI plugin assets with plugin manifest, hooks, and mcp', () => {
@@ -127,6 +146,20 @@ describe('GithubCopilotHostRenderer', () => {
       true,
     );
     expect(result.projectedFiles.some((file) => file.relativePath === '.mcp.json')).toBe(true);
+    expect(readProjectedJson(result.projectedFiles, 'plugin.json')).toEqual(
+      expect.objectContaining({
+        serviceHostPackageExport: PUBLIC_SERVICE_HOST_PACKAGE_EXPORT,
+      }),
+    );
+    expect(readProjectedJson(result.projectedFiles, '.mcp.json')).toEqual(
+      expect.objectContaining({
+        mcpServers: expect.objectContaining({
+          'repo-ai-governor': expect.objectContaining({
+            packageExport: PUBLIC_SERVICE_HOST_PACKAGE_EXPORT,
+          }),
+        }),
+      }),
+    );
   });
 
   it('renders GitHub.com agent assets without plugin packaging assumptions', () => {
@@ -159,6 +192,15 @@ describe('GithubCopilotHostRenderer', () => {
     ).toBe(true);
     expect(result.projectedFiles.some((file) => file.relativePath === '.github/mcp.json')).toBe(
       true,
+    );
+    expect(readProjectedJson(result.projectedFiles, '.github/mcp.json')).toEqual(
+      expect.objectContaining({
+        mcpServers: expect.objectContaining({
+          'repo-ai-governor': expect.objectContaining({
+            packageExport: PUBLIC_SERVICE_HOST_PACKAGE_EXPORT,
+          }),
+        }),
+      }),
     );
   });
 });

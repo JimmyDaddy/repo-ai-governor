@@ -1,0 +1,53 @@
+{
+  "schemaVersion": "acp-cleanroom-verification-summary-v1",
+  "verifiedAt": "2026-04-15T01:55:10.213Z",
+  "sourceReportPath": "/Users/jimmydaddy/study/ai-governor/.tmp/project-105-sprint-003-acp-cleanroom-report.json",
+  "distributionMode": "default",
+  "surfaces": [
+    {
+      "surfaceId": "claude-code",
+      "status": "pass",
+      "verifiedModes": ["link", "path", "tgz"],
+      "runtimeServiceVerificationSummaryPaths": [
+        "/private/var/folders/6_/_ffnz6q91dddz6wchgxcblsw0000gn/T/repo-ai-governor-cleanroom-KPuWnX/acp-host-transport-link/target-repo/.repo-ai-governor/generated/hosts/claude-code/host-verification.summary.json",
+        "/private/var/folders/6_/_ffnz6q91dddz6wchgxcblsw0000gn/T/repo-ai-governor-cleanroom-KPuWnX/acp-host-transport-path/target-repo/.repo-ai-governor/generated/hosts/claude-code/host-verification.summary.json",
+        "/private/var/folders/6_/_ffnz6q91dddz6wchgxcblsw0000gn/T/repo-ai-governor-cleanroom-KPuWnX/acp-host-transport-tgz/target-repo/.repo-ai-governor/generated/hosts/claude-code/host-verification.summary.json"
+      ],
+      "packagedDistributionVerificationSummaryPaths": [
+        "/private/var/folders/6_/_ffnz6q91dddz6wchgxcblsw0000gn/T/repo-ai-governor-cleanroom-KPuWnX/acp-host-transport-link/target-repo/.repo-ai-governor/generated/hosts/claude-code-plugin/host-verification.summary.json",
+        "/private/var/folders/6_/_ffnz6q91dddz6wchgxcblsw0000gn/T/repo-ai-governor-cleanroom-KPuWnX/acp-host-transport-path/target-repo/.repo-ai-governor/generated/hosts/claude-code-plugin/host-verification.summary.json",
+        "/private/var/folders/6_/_ffnz6q91dddz6wchgxcblsw0000gn/T/repo-ai-governor-cleanroom-KPuWnX/acp-host-transport-tgz/target-repo/.repo-ai-governor/generated/hosts/claude-code-plugin/host-verification.summary.json"
+      ]
+    },
+    {
+      "surfaceId": "codex",
+      "status": "pass",
+      "verifiedModes": ["link", "path", "tgz"],
+      "runtimeServiceVerificationSummaryPaths": [
+        "/private/var/folders/6_/_ffnz6q91dddz6wchgxcblsw0000gn/T/repo-ai-governor-cleanroom-KPuWnX/acp-host-transport-link/target-repo/.repo-ai-governor/generated/hosts/codex/host-verification.summary.json",
+        "/private/var/folders/6_/_ffnz6q91dddz6wchgxcblsw0000gn/T/repo-ai-governor-cleanroom-KPuWnX/acp-host-transport-path/target-repo/.repo-ai-governor/generated/hosts/codex/host-verification.summary.json",
+        "/private/var/folders/6_/_ffnz6q91dddz6wchgxcblsw0000gn/T/repo-ai-governor-cleanroom-KPuWnX/acp-host-transport-tgz/target-repo/.repo-ai-governor/generated/hosts/codex/host-verification.summary.json"
+      ],
+      "packagedDistributionVerificationSummaryPaths": [
+        "/private/var/folders/6_/_ffnz6q91dddz6wchgxcblsw0000gn/T/repo-ai-governor-cleanroom-KPuWnX/acp-host-transport-link/target-repo/.repo-ai-governor/generated/hosts/codex-plugin/host-verification.summary.json",
+        "/private/var/folders/6_/_ffnz6q91dddz6wchgxcblsw0000gn/T/repo-ai-governor-cleanroom-KPuWnX/acp-host-transport-path/target-repo/.repo-ai-governor/generated/hosts/codex-plugin/host-verification.summary.json",
+        "/private/var/folders/6_/_ffnz6q91dddz6wchgxcblsw0000gn/T/repo-ai-governor-cleanroom-KPuWnX/acp-host-transport-tgz/target-repo/.repo-ai-governor/generated/hosts/codex-plugin/host-verification.summary.json"
+      ]
+    },
+    {
+      "surfaceId": "github-copilot",
+      "status": "pass",
+      "verifiedModes": ["link", "path", "tgz"],
+      "runtimeServiceVerificationSummaryPaths": [
+        "/private/var/folders/6_/_ffnz6q91dddz6wchgxcblsw0000gn/T/repo-ai-governor-cleanroom-KPuWnX/acp-host-transport-link/target-repo/.repo-ai-governor/generated/hosts/github-copilot-repo-local/host-verification.summary.json",
+        "/private/var/folders/6_/_ffnz6q91dddz6wchgxcblsw0000gn/T/repo-ai-governor-cleanroom-KPuWnX/acp-host-transport-path/target-repo/.repo-ai-governor/generated/hosts/github-copilot-repo-local/host-verification.summary.json",
+        "/private/var/folders/6_/_ffnz6q91dddz6wchgxcblsw0000gn/T/repo-ai-governor-cleanroom-KPuWnX/acp-host-transport-tgz/target-repo/.repo-ai-governor/generated/hosts/github-copilot-repo-local/host-verification.summary.json"
+      ],
+      "packagedDistributionVerificationSummaryPaths": [
+        "/private/var/folders/6_/_ffnz6q91dddz6wchgxcblsw0000gn/T/repo-ai-governor-cleanroom-KPuWnX/acp-host-transport-link/target-repo/.repo-ai-governor/generated/hosts/github-copilot-cli-plugin/host-verification.summary.json",
+        "/private/var/folders/6_/_ffnz6q91dddz6wchgxcblsw0000gn/T/repo-ai-governor-cleanroom-KPuWnX/acp-host-transport-path/target-repo/.repo-ai-governor/generated/hosts/github-copilot-cli-plugin/host-verification.summary.json",
+        "/private/var/folders/6_/_ffnz6q91dddz6wchgxcblsw0000gn/T/repo-ai-governor-cleanroom-KPuWnX/acp-host-transport-tgz/target-repo/.repo-ai-governor/generated/hosts/github-copilot-cli-plugin/host-verification.summary.json"
+      ]
+    }
+  ]
+}

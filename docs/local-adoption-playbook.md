@@ -273,6 +273,22 @@ pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/ho
 ```
 
 Treat `host export`, `host verify`, and `host pack` as lower-level follow-up surfaces beneath the main `adopt apply` installation story.
+For packaged local host bootstrap, import the sidecar only from `repo-ai-governor/service-host`.
+
+### ACP host-facing readiness
+
+```bash
+pnpm exec repo-ai-governor host export --host codex --mode project-local --output-dir .repo-ai-governor/generated/hosts/codex --apply-to-repo /absolute/path/to/<target-repo>
+pnpm exec repo-ai-governor host pack --host codex --mode plugin-bundle --output-dir .repo-ai-governor/generated/hosts/codex-plugin --bundle-dir .repo-ai-governor/generated/bundles/codex-plugin
+pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/codex/host-export.manifest.json
+pnpm exec repo-ai-governor doctor --adapters --output json
+```
+
+Read this surface conservatively:
+
+1. `acp_exec` is explicit host-facing transport truth. It is never an alias or silent fallback of `cli_exec`.
+2. Treat ACP as support-ready only when `doctor` or `verify` projects `acp_host_companion` with runtime-service readiness, packaged-distribution readiness, and the clean-room verified summary.
+3. If ACP invoke, stream, or confirm still reports a blocked/fail-closed state, keep it blocked. Do not reinterpret that result as same-surface `cli_exec` success.
 
 ## 10. Troubleshooting And Known Boundaries
 

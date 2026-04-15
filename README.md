@@ -24,7 +24,7 @@ With the current public CLI surface you can:
 | Run a governed delivery loop | `plan`, `run`, `review`, `review-verify` |
 | Use a conversation-first shell instead of one-shot commands | `repo-ai-governor`, `resume` |
 | Preview workflows and manage workspace or schema changes | `workflow`, `workspace`, `set-ui-theme`, `upgrade` |
-| Generate lower-level host assets and service-host integrations | `host export`, `host verify`, `host pack`, `@cjhdev/repo-ai-governor/service-host` |
+| Generate lower-level host assets and service-host integrations | `host export`, `host verify`, `host pack`, `repo-ai-governor/service-host` |
 
 If you only remember one thing: most adopters should start with `init`, `doctor`, and `adopt apply`, then move to `connect` and a traced `run --dry-run`.
 

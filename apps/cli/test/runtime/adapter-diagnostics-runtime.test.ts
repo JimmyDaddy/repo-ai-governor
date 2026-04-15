@@ -15,6 +15,7 @@ import {
 } from '@repo-ai-governor/shared';
 import { expectNativeCliExecPreservedFacts } from '../../../../test/native-cli-exec-compatibility-harness.js';
 import {
+  CLI_ACP_HOST_CLEAN_ROOM_VERIFIED_STATE_SUMMARY,
   CliAcpHostDistributionBoundary,
   CliAcpHostReadinessStatus,
 } from '../../src/constants/cli-acp-host.constant.js';
@@ -214,7 +215,7 @@ function createAcpVerificationFixture(): CliAdapterVerificationResolution {
       layer: 'protocol' as const,
       status: 'pass' as const,
       code: 'protocol.acp_companion_state_summary',
-      detail: 'runtime_service_and_distribution_ready',
+      detail: CLI_ACP_HOST_CLEAN_ROOM_VERIFIED_STATE_SUMMARY,
     },
   ];
 
@@ -478,11 +479,11 @@ describe('Cli adapter diagnostics runtime', () => {
     expect(toolRow?.acp_host_companion).toEqual({
       hostReadinessStatus: CliAcpHostReadinessStatus.RUNTIME_SERVICE_READY,
       distributionBoundary: CliAcpHostDistributionBoundary.PACKAGED_DISTRIBUTION_READY,
-      companionStateSummary: 'runtime_service_and_distribution_ready',
+      companionStateSummary: CLI_ACP_HOST_CLEAN_ROOM_VERIFIED_STATE_SUMMARY,
     });
     expect(roleRow?.acp_host_companion).toEqual(toolRow?.acp_host_companion);
     expect(toolDetail).toContain('acp_runtime=runtime_service_ready');
     expect(toolDetail).toContain('acp_distribution=packaged_distribution_ready');
-    expect(toolDetail).toContain('acp_state=runtime_service_and_distribution_ready');
+    expect(toolDetail).toContain(`acp_state=${CLI_ACP_HOST_CLEAN_ROOM_VERIFIED_STATE_SUMMARY}`);
   });
 });

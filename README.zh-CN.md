@@ -24,7 +24,7 @@
 | 跑一条受治理的交付闭环 | `plan`、`run`、`review`、`review-verify` |
 | 使用对话式 shell，而不是一次性子命令 | 无子命令执行 `repo-ai-governor`、`resume` |
 | 预览 workflow、处理 workspace 或 schema 变更 | `workflow`、`workspace`、`set-ui-theme`、`upgrade` |
-| 生成更低层的宿主资产与 service-host 集成 | `host export`、`host verify`、`host pack`、`@cjhdev/repo-ai-governor/service-host` |
+| 生成更低层的宿主资产与 service-host 集成 | `host export`、`host verify`、`host pack`、`repo-ai-governor/service-host` |
 
 如果你只想记一条最重要的路径：大多数 adopter 应先跑 `init`、`doctor`、`adopt apply`，然后再进入 `connect` 和带 trace 的 `run --dry-run`。
 

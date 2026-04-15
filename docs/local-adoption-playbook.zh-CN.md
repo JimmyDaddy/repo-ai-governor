@@ -273,6 +273,22 @@ pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/ho
 ```
 
 把 `host export`、`host verify`、`host pack` 理解成主安装路径 `adopt apply` 之下的 lower-level follow-up surface，而不是默认安装方式。
+如果你需要 packaged local host bootstrap，请只通过 `repo-ai-governor/service-host` 导入 sidecar。
+
+### ACP 宿主向 readiness
+
+```bash
+pnpm exec repo-ai-governor host export --host codex --mode project-local --output-dir .repo-ai-governor/generated/hosts/codex --apply-to-repo /absolute/path/to/<target-repo>
+pnpm exec repo-ai-governor host pack --host codex --mode plugin-bundle --output-dir .repo-ai-governor/generated/hosts/codex-plugin --bundle-dir .repo-ai-governor/generated/bundles/codex-plugin
+pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/codex/host-export.manifest.json
+pnpm exec repo-ai-governor doctor --adapters --output json
+```
+
+这条 surface 要保守读取：
+
+1. `acp_exec` 是显式的 host-facing transport truth，绝不是 `cli_exec` 的 alias 或静默 fallback。
+2. 只有当 `doctor` 或 `verify` 投影出的 `acp_host_companion` 同时具备 runtime-service ready、packaged-distribution ready 与 clean-room verified summary 时，才把 ACP 视作 evidence-backed supported surface。
+3. 如果 ACP 的 invoke、stream 或 confirm 仍然报告 blocked/fail-closed，就保持阻断；不要把它重新解释成同 surface 的 `cli_exec` 成功。
 
 ## 10. 排障与常见边界
 

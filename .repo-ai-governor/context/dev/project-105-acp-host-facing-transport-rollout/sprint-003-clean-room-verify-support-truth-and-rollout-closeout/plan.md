@@ -19,8 +19,8 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-888 | execute clean-room ACP verification and distribution runtime evidence capture | TK-887 | in_progress |
-| TK-889 | uplift ACP adopter-facing support docs truth only for evidence-backed surfaces while preserving cli_exec separation | TK-888 | planned |
+| TK-888 | execute clean-room ACP verification and distribution runtime evidence capture | TK-887 | completed |
+| TK-889 | uplift ACP adopter-facing support docs truth only for evidence-backed surfaces while preserving cli_exec separation | TK-888 | completed |
 | TK-890 | finalize project-105 closeout and delivery evidence handoff | TK-888、TK-889、activation-time local CR-001 | planned |
 
 ## 3. Exit Criteria
@@ -35,3 +35,6 @@
 2. 当前 sprint 才允许处理 adopter-facing support/docs truth uplift；前置 sprint 不得提前宣称完成。
 3. `TK-890` 负责 `project-105` final closeout，但只有在 sprint-003 local `CR-001` clean 后才允许完成。
 4. 2026-04-15：`sprint-002` clean closeout 已完成，当前 sprint 已切换为 active primary surface；`TK-888` 进入 `in_progress`，下一步先本地预留 `CR-001`，再开始 clean-room ACP verify 与 evidence capture implementation。
+5. 2026-04-15：`TK-888` 与 `TK-889` implementation boundary 已完成；clean-room ACP report、aggregated ACP evidence summary、support-matrix/playbook truth uplift 已写回，随后 `CR-001` fresh reviewer round 返回 1 条被认可的 P2 finding。
+6. 2026-04-15：`CR-001` 已在 stricter clean-room scope gate 与 regression coverage 修复后收口为 `resolved`；当前已激活 fresh `CR-002` clean recheck，只有最新 reviewer round clean 后才允许进入 sprint closeout。
+7. 2026-04-15：`CR-002` clean recheck 未发现新的 actionable finding；host renderer `serviceHostPackageExport/packageExport` contract tests 已补齐，focused vitest、`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 ACP clean-room verify 通过，下一步进入 project-final fresh review。

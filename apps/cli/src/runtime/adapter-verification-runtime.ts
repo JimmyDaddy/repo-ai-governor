@@ -15,6 +15,7 @@ import {
   standardizeError,
 } from '@repo-ai-governor/shared';
 import {
+  CLI_ACP_HOST_CLEAN_ROOM_VERIFIED_STATE_SUMMARY,
   CLI_ACP_HOST_HEALTH_CHECK_FAILURE_DETAIL,
   CliAcpHostDistributionBoundary,
   CliAcpHostReadinessStatus,
@@ -477,7 +478,8 @@ export class CliAdapterVerificationRuntime {
       if (
         companion.hostReadinessStatus === CliAcpHostReadinessStatus.RUNTIME_SERVICE_READY &&
         companion.distributionBoundary ===
-          CliAcpHostDistributionBoundary.PACKAGED_DISTRIBUTION_READY
+          CliAcpHostDistributionBoundary.PACKAGED_DISTRIBUTION_READY &&
+        companion.companionStateSummary !== CLI_ACP_HOST_CLEAN_ROOM_VERIFIED_STATE_SUMMARY
       ) {
         cleanRoomVerifyPendingToolIds.push(snapshot.toolId);
       }

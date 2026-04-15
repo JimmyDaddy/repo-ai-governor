@@ -7,7 +7,7 @@
 1. desktop execution surface 只能消费 `@repo-ai-governor/orchestration-service-client` 的 DTO / event contract。
 2. 当前唯一推荐的本地 host / transport 组合是 `sidecar + ipc`。
 3. `daemon + http` 仍只保留为后续选项，不进入当前产品化承诺。
-4. 已发布根包如需在 clean-room 或桌面宿主中启动本地 service host，只能通过 `@cjhdev/repo-ai-governor/service-host` 这个公开入口；不允许深导入内部打包目录结构。
+4. 已发布根包如需在 clean-room 或桌面宿主中启动本地 service host，只能通过 `repo-ai-governor/service-host` 这个公开入口；不允许深导入内部打包目录结构。
 5. richer UI / desktop surface 如果要展示 agent projection，不应重新格式化原始 `agentView`；应优先复用 transport-neutral `AgentProjectionPanelViewModel` seam。当前第一正式 consumer 是 `connect` 的 command-level React shell。
 6. 当前桌面端正式实现入口已经冻结到 `apps/desktop`：它负责 shell bootstrap、typed preload bridge、session bridge、governance console transport-neutral view-model，以及 lifecycle / restart / artifact-pane gate baseline。
 

@@ -47,8 +47,8 @@
 | TK-885 | sprint-002 | integrate connect doctor verify readiness composition for acp_exec and host next-actions | onboarding/readiness | TK-884 | completed |
 | TK-886 | sprint-002 | enable packaged-distribution and runtime-service surfaces behind explicit ACP boundaries | distribution/runtime-service | TK-885 | completed |
 | TK-887 | sprint-002 | sprint-002 exit acceptance and sprint-003 activation handoff | sprint/closeout | TK-885、TK-886、latest fresh reviewer clean round | completed |
-| TK-888 | sprint-003 | execute clean-room ACP verification and distribution runtime evidence capture | verify/evidence | TK-887 | in_progress |
-| TK-889 | sprint-003 | uplift ACP adopter-facing support docs truth only for evidence-backed surfaces while preserving cli_exec separation | support/docs | TK-888 | planned |
+| TK-888 | sprint-003 | execute clean-room ACP verification and distribution runtime evidence capture | verify/evidence | TK-887 | completed |
+| TK-889 | sprint-003 | uplift ACP adopter-facing support docs truth only for evidence-backed surfaces while preserving cli_exec separation | support/docs | TK-888 | completed |
 | TK-890 | sprint-003 | finalize project-105 closeout and delivery evidence handoff | closeout/delivery | TK-888、TK-889、activation-time local CR-001 | planned |
 
 ## 4. 依赖产物策略
@@ -71,6 +71,9 @@
 3. 2026-04-15：`project-104` final closeout 完成后，当前 project 已切换为 active，并将 `sprint-001` 激活为新的 primary execution surface。
 4. 2026-04-15：`CR-001 ~ CR-009` 已全部收口，latest fresh reviewer round clean；`sprint-001` 完成 closeout，并将 `sprint-002` 激活为新的 primary execution surface，`TK-885` 进入 `in_progress`。
 5. 2026-04-15：`CR-001` repair round 与 `CR-002` clean recheck 已全部 resolved；`sprint-002` 完成 closeout，并将 `sprint-003` 激活为新的 primary execution surface，`TK-888` 进入 `in_progress`。
+6. 2026-04-15：`TK-888` clean-room ACP verification / evidence capture 与 `TK-889` support/docs truth uplift implementation boundary 已完成；`.tmp/project-105-sprint-003-acp-cleanroom-report.json` 与 `.repo-ai-governor/generated/acp/acp-cleanroom-verification.summary.json` 已写回，随后 `CR-001` 修复 round 已收口为 `resolved`。
+7. 2026-04-15：`sprint-003 / CR-002` 已作为 fresh clean recheck round 激活；只有当最新 reviewer round 无 actionable finding 后，才允许进入 sprint closeout 与 project-final review。
+8. 2026-04-15：`sprint-003 / CR-002` clean recheck 已收口为 `resolved`；current sprint boundary 现已 clean，下一步在同一 surface 上执行 project-final fresh review，clean 后再完成 `TK-890` 与 project closeout。
 
 ## 7. 里程碑记录入口
 

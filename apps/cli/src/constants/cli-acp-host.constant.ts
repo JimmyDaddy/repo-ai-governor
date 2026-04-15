@@ -49,6 +49,13 @@ export const CLI_ACP_HOST_RUNTIME_AND_DISTRIBUTION_READY_STATE_SUMMARY =
   'runtime_service_and_distribution_ready';
 
 /**
+ * Defines the presenter-safe summary emitted once runtime-service, packaged-distribution, and
+ * clean-room verification evidence all exist for one ACP host surface.
+ */
+export const CLI_ACP_HOST_CLEAN_ROOM_VERIFIED_STATE_SUMMARY =
+  'runtime_service_and_distribution_cleanroom_verified';
+
+/**
  * Defines one generic health-check failure detail reused by ACP baseline diagnostics.
  */
 export const CLI_ACP_HOST_HEALTH_CHECK_FAILURE_DETAIL = 'acp_host_transport_not_ready';

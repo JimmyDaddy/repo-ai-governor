@@ -11,6 +11,7 @@ import {
   AdapterTransportKind,
 } from '@repo-ai-governor/shared';
 import { HOST_VERIFICATION_SUMMARY_SCHEMA_VERSION } from '@repo-ai-governor/standards';
+import { CLI_ACP_HOST_CLEAN_ROOM_VERIFIED_STATE_SUMMARY } from '../../src/constants/cli-acp-host.constant.js';
 import { CliAdapterRoutingRuntime } from '../../src/runtime/adapter-routing-runtime.js';
 
 describe('Cli adapter routing runtime', () => {
@@ -228,9 +229,40 @@ describe('Cli adapter routing runtime', () => {
         )}\n`,
         'utf8',
       );
+      await mkdir(resolve(workspaceRoot, 'generated', 'acp'), { recursive: true });
+      await writeFile(
+        resolve(workspaceRoot, 'generated', 'acp', 'acp-cleanroom-verification.summary.json'),
+        `${JSON.stringify(
+          {
+            schemaVersion: 'acp-cleanroom-verification-summary-v1',
+            distributionMode: 'default',
+            surfaces: [
+              {
+                surfaceId: AdapterSurface.CODEX,
+                status: 'pass',
+                verifiedModes: ['path', 'link', 'tgz'],
+                runtimeServiceVerificationSummaryPaths: [
+                  '/tmp/codex-runtime-path.summary.json',
+                  '/tmp/codex-runtime-link.summary.json',
+                  '/tmp/codex-runtime-tgz.summary.json',
+                ],
+                packagedDistributionVerificationSummaryPaths: [
+                  '/tmp/codex-distribution-path.summary.json',
+                  '/tmp/codex-distribution-link.summary.json',
+                  '/tmp/codex-distribution-tgz.summary.json',
+                ],
+              },
+            ],
+          },
+          null,
+          2,
+        )}\n`,
+        'utf8',
+      );
 
       const runtime = new CliAdapterRoutingRuntime(acpAdaptersConfig, {
         acpHostEvidenceSearchRoot: repoRoot,
+        sharedProtocolCacheNamespace: `test-acp-host-positive:${Date.now().toString()}`,
       });
       const protocolBySurface = runtime.createProtocolBySurface(
         runtime.createToolConfigBySurfaceMap(),
@@ -254,12 +286,141 @@ describe('Cli adapter routing runtime', () => {
           }),
           expect.objectContaining({
             code: 'protocol.acp_companion_state_summary',
-            detail: 'runtime_service_and_distribution_ready',
+            detail: CLI_ACP_HOST_CLEAN_ROOM_VERIFIED_STATE_SUMMARY,
           }),
         ]),
       );
       expect(probeResult?.unavailableReasons).toContain(
         'health_check_failed:codex:acp_host_transport_not_ready',
+      );
+    } finally {
+      await rm(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps ACP clean-room projection gated when the summary scope is partial or plugin-enabled', async () => {
+    const acpAdaptersConfig: AdaptersConfig = {
+      roles: [
+        {
+          roleId: 'reviewer',
+          roleProfileId: 'reviewer-default',
+          requiredCapabilities: [],
+          required: true,
+        },
+      ],
+      routing: {
+        roleBindings: {
+          reviewer: {
+            primarySurface: AdapterSurface.CODEX,
+          },
+        },
+      },
+      tools: [
+        {
+          toolId: AdapterSurface.CODEX,
+          enabled: true,
+          availability: AdapterAvailability.AVAILABLE,
+          transport: AdapterTransportKind.ACP_EXEC,
+        },
+      ],
+    };
+    const repoRoot = await mkdtemp(resolve(tmpdir(), 'repo-ai-governor-acp-host-routing-'));
+    const workspaceRoot = resolve(repoRoot, '.repo-ai-governor');
+    const runtimeExportRoot = resolve(workspaceRoot, 'generated', 'hosts', 'codex');
+    const pluginExportRoot = resolve(workspaceRoot, 'generated', 'hosts', 'codex-plugin');
+    await mkdir(runtimeExportRoot, { recursive: true });
+    await mkdir(pluginExportRoot, { recursive: true });
+
+    try {
+      await writeFile(
+        resolve(runtimeExportRoot, 'host-export.manifest.json'),
+        `${JSON.stringify({ host: 'codex', target: 'codex.project-local' }, null, 2)}\n`,
+        'utf8',
+      );
+      await writeFile(
+        resolve(runtimeExportRoot, 'host-verification.summary.json'),
+        `${JSON.stringify(
+          {
+            schemaVersion: HOST_VERIFICATION_SUMMARY_SCHEMA_VERSION,
+            status: 'pass',
+            verifiedAt: '2026-04-15T06:30:00.000Z',
+          },
+          null,
+          2,
+        )}\n`,
+        'utf8',
+      );
+      await writeFile(
+        resolve(pluginExportRoot, 'host-export.manifest.json'),
+        `${JSON.stringify({ host: 'codex', target: 'codex.plugin' }, null, 2)}\n`,
+        'utf8',
+      );
+      await writeFile(
+        resolve(pluginExportRoot, 'host-verification.summary.json'),
+        `${JSON.stringify(
+          {
+            schemaVersion: HOST_VERIFICATION_SUMMARY_SCHEMA_VERSION,
+            status: 'pass',
+            verifiedAt: '2026-04-15T06:35:00.000Z',
+          },
+          null,
+          2,
+        )}\n`,
+        'utf8',
+      );
+      await mkdir(resolve(workspaceRoot, 'generated', 'acp'), { recursive: true });
+      await writeFile(
+        resolve(workspaceRoot, 'generated', 'acp', 'acp-cleanroom-verification.summary.json'),
+        `${JSON.stringify(
+          {
+            schemaVersion: 'acp-cleanroom-verification-summary-v1',
+            distributionMode: 'plugin-enabled',
+            surfaces: [
+              {
+                surfaceId: AdapterSurface.CODEX,
+                status: 'pass',
+                verifiedModes: ['path'],
+                runtimeServiceVerificationSummaryPaths: ['/tmp/codex-runtime-path.summary.json'],
+                packagedDistributionVerificationSummaryPaths: [
+                  '/tmp/codex-distribution-path.summary.json',
+                ],
+              },
+            ],
+          },
+          null,
+          2,
+        )}\n`,
+        'utf8',
+      );
+
+      const runtime = new CliAdapterRoutingRuntime(acpAdaptersConfig, {
+        acpHostEvidenceSearchRoot: repoRoot,
+        sharedProtocolCacheNamespace: `test-acp-host-negative:${Date.now().toString()}`,
+      });
+      const protocolBySurface = runtime.createProtocolBySurface(
+        runtime.createToolConfigBySurfaceMap(),
+      );
+      const probeResult = await protocolBySurface[AdapterSurface.CODEX]?.probe({
+        routeKey: 'cli.adapter.probe.codex',
+        requiredCapabilities: [],
+      });
+      const companionSummaryDiagnostic = probeResult?.healthCheck?.diagnostics?.find(
+        (diagnostic) => diagnostic.code === 'protocol.acp_companion_state_summary',
+      );
+
+      expect(probeResult?.availabilityStatus).toBe(AgentAvailabilityStatus.UNAVAILABLE);
+      expect(probeResult?.healthCheck?.transportKind).toBe(AdapterTransportKind.ACP_EXEC);
+      expect(probeResult?.healthCheck?.diagnostics).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            code: 'protocol.acp_distribution_boundary',
+            detail: 'packaged_distribution_ready',
+          }),
+        ]),
+      );
+      expect(companionSummaryDiagnostic?.detail).toBeDefined();
+      expect(companionSummaryDiagnostic?.detail).not.toBe(
+        CLI_ACP_HOST_CLEAN_ROOM_VERIFIED_STATE_SUMMARY,
       );
     } finally {
       await rm(repoRoot, { recursive: true, force: true });

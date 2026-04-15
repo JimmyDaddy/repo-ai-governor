@@ -30,9 +30,97 @@ const DEFAULT_ITERATIONS = 3;
 const DEFAULT_REQUIRED_CHAIN = ['--help', 'init', 'doctor', 'check'];
 const DEFAULT_DISTRIBUTION_MODE = 'default';
 const PLUGIN_ENABLED_DISTRIBUTION_MODE = 'plugin-enabled';
-const PUBLISHED_PACKAGE_NAME = '@cjhdev/repo-ai-governor';
+const PUBLISHED_PACKAGE_NAME = 'repo-ai-governor';
 const WORKSPACE_ROLLBACK_BASELINE_MODE = 'path';
 const READ_ONLY_ATTACH_PRECHECK_MODE = 'path';
+const ACP_CLEANROOM_VERIFICATION_SCHEMA_VERSION = 'acp-cleanroom-verification-summary-v1';
+const ACP_HOST_TRANSPORT_SCENARIOS = [
+  {
+    surfaceId: 'codex',
+    runtimeArgs: [
+      'host',
+      'export',
+      '--host',
+      'codex',
+      '--mode',
+      'project-local',
+      '--output-dir',
+      '.repo-ai-governor/generated/hosts/codex',
+      '--apply-to-repo',
+      '.repo-ai-governor/generated/applied/codex',
+    ],
+    distributionArgs: [
+      'host',
+      'pack',
+      '--host',
+      'codex',
+      '--mode',
+      'plugin-bundle',
+      '--output-dir',
+      '.repo-ai-governor/generated/hosts/codex-plugin',
+      '--bundle-dir',
+      '.repo-ai-governor/generated/bundles/codex-plugin',
+    ],
+  },
+  {
+    surfaceId: 'claude-code',
+    runtimeArgs: [
+      'host',
+      'export',
+      '--host',
+      'claude-code',
+      '--mode',
+      'project-local',
+      '--output-dir',
+      '.repo-ai-governor/generated/hosts/claude-code',
+      '--apply-to-repo',
+      '.repo-ai-governor/generated/applied/claude-code',
+    ],
+    distributionArgs: [
+      'host',
+      'pack',
+      '--host',
+      'claude-code',
+      '--mode',
+      'plugin-bundle',
+      '--output-dir',
+      '.repo-ai-governor/generated/hosts/claude-code-plugin',
+      '--bundle-dir',
+      '.repo-ai-governor/generated/bundles/claude-code-plugin',
+    ],
+  },
+  {
+    surfaceId: 'github-copilot',
+    runtimeArgs: [
+      'host',
+      'export',
+      '--host',
+      'github-copilot',
+      '--mode',
+      'project-local',
+      '--copilot-target',
+      'repo-local',
+      '--output-dir',
+      '.repo-ai-governor/generated/hosts/github-copilot-repo-local',
+      '--apply-to-repo',
+      '.repo-ai-governor/generated/applied/github-copilot-repo-local',
+    ],
+    distributionArgs: [
+      'host',
+      'pack',
+      '--host',
+      'github-copilot',
+      '--mode',
+      'plugin-bundle',
+      '--copilot-target',
+      'cli-plugin',
+      '--output-dir',
+      '.repo-ai-governor/generated/hosts/github-copilot-cli-plugin',
+      '--bundle-dir',
+      '.repo-ai-governor/generated/bundles/github-copilot-cli-plugin',
+    ],
+  },
+];
 
 const DEFAULT_REPO_LOCAL_CONFIG_CONTENT = [
   'schemaVersion: "1.1"',
@@ -61,6 +149,9 @@ const DEFAULT_REPO_LOCAL_CONFIG_CONTENT = [
  *   iterations: number;
  *   outputPath: string;
  *   keepTemp: boolean;
+ *   includeAcpHostVerify: boolean;
+ *   emitAcpEvidencePath: string | null;
+ *   distributionMode: "default" | "plugin-enabled";
  * }}
  */
 function parseCliOptions() {
@@ -70,6 +161,8 @@ function parseCliOptions() {
   let outputPath = DEFAULT_REPORT_PATH;
   let keepTemp = false;
   let distributionMode = DEFAULT_DISTRIBUTION_MODE;
+  let includeAcpHostVerify = false;
+  let emitAcpEvidencePath = null;
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
@@ -122,6 +215,21 @@ function parseCliOptions() {
       continue;
     }
 
+    if (arg === '--acp-host-verify') {
+      includeAcpHostVerify = true;
+      continue;
+    }
+
+    if (arg === '--emit-acp-evidence') {
+      const value = args[index + 1];
+      if (typeof value !== 'string' || value.trim().length === 0) {
+        throw new Error('Expected a non-empty value after "--emit-acp-evidence".');
+      }
+      emitAcpEvidencePath = value.trim();
+      index += 1;
+      continue;
+    }
+
     throw new Error(`Unsupported option: ${arg}`);
   }
 
@@ -142,11 +250,17 @@ function parseCliOptions() {
     }
   }
 
+  if (emitAcpEvidencePath && !includeAcpHostVerify) {
+    throw new Error('"--emit-acp-evidence" requires "--acp-host-verify".');
+  }
+
   return {
     modes: dedupedModes,
     iterations,
     outputPath,
     keepTemp,
+    includeAcpHostVerify,
+    emitAcpEvidencePath,
     distributionMode,
   };
 }
@@ -360,6 +474,37 @@ function initializeCleanroomRepository(repositoryPath, repositoryName) {
 }
 
 /**
+ * Seeds one minimal repository-local skill tree so installed-package host export/pack commands can
+ * generate truthful host artifacts inside clean-room target repositories.
+ * @param {string} repositoryPath Absolute repository path.
+ */
+function seedHostDistributionFixtureRepository(repositoryPath) {
+  mkdirSync(resolve(repositoryPath, '.codex', 'skills', 'sample-host-skill'), {
+    recursive: true,
+  });
+  writeFileSync(
+    resolve(repositoryPath, 'AGENTS.md'),
+    '# Clean-room Host Fixture\n\nThis repository exists for ACP host-facing clean-room verification.\n',
+    'utf8',
+  );
+  writeFileSync(
+    resolve(repositoryPath, '.codex', 'skills', 'sample-host-skill', 'SKILL.md'),
+    [
+      '---',
+      'name: sample-host-skill',
+      'description: Sample host skill used by ACP clean-room verification.',
+      '---',
+      '',
+      '# Sample Host Skill',
+      '',
+      'This fixture proves installed-package host export/pack/verify behavior in clean-room repos.',
+      '',
+    ].join('\n'),
+    'utf8',
+  );
+}
+
+/**
  * Resolves install specifier for one mode.
  * @param {string} mode Install mode.
  * @param {{repositoryRoot: string; tarballPath: string | null}} installAssets Install assets.
@@ -538,6 +683,37 @@ function resolveArtifactPath(payload, artifactId, label) {
     throw new Error(`${label} did not produce artifact "${artifactId}".`);
   }
   return artifact.path;
+}
+
+/**
+ * Reads one JSON file and asserts it is parseable.
+ * @param {string} filePath Absolute file path.
+ * @param {string} label Human-readable label.
+ * @returns {Record<string, unknown>}
+ */
+function readJsonFile(filePath, label) {
+  try {
+    return JSON.parse(readFileSync(filePath, 'utf8'));
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`${label} is not valid JSON. path=${filePath} detail=${detail}`);
+  }
+}
+
+/**
+ * Ensures one host verification summary ended in pass.
+ * @param {string} summaryPath Absolute verification summary path.
+ * @param {string} label Human-readable label.
+ * @returns {Record<string, unknown>}
+ */
+function assertHostVerificationPass(summaryPath, label) {
+  const summary = readJsonFile(summaryPath, label);
+  if (summary.status !== 'pass') {
+    throw new Error(
+      `${label} expected host verification status=pass. actual=${String(summary.status)}`,
+    );
+  }
+  return summary;
 }
 
 /**
@@ -1218,6 +1394,214 @@ function createServiceHostMemoryProviderCheckScript(distributionMode) {
 }
 
 /**
+ * Executes clean-room installed-package host export/pack/verify across ACP-capable surfaces and
+ * captures a machine-readable evidence packet per mode.
+ * @param {{
+ *   mode: string;
+ *   workingRoot: string;
+ *   installAssets: {repositoryRoot: string; tarballPath: string | null};
+ * }} options Scenario options.
+ * @returns {Record<string, unknown>}
+ */
+function runAcpHostTransportScenario(options) {
+  const scenarioRoot = resolve(options.workingRoot, `acp-host-transport-${options.mode}`);
+  const repositoryPath = resolve(scenarioRoot, 'target-repo');
+  const homePath = resolve(scenarioRoot, 'home');
+  const runtimeEnv = buildIsolatedRuntimeEnv(homePath);
+  initializeCleanroomRepository(repositoryPath, `cleanroom-acp-host-transport-${options.mode}`);
+  seedHostDistributionFixtureRepository(repositoryPath);
+  const install = installCleanroomPackage({
+    mode: options.mode,
+    repositoryPath,
+    runtimeEnv,
+    installAssets: options.installAssets,
+  });
+
+  const surfaces = ACP_HOST_TRANSPORT_SCENARIOS.map((scenario) => {
+    const runtimeLabel = `host-export(acp/${scenario.surfaceId}/${options.mode})`;
+    const runtimeStep = runCleanroomCliCommand({
+      repositoryPath,
+      runtimeEnv,
+      args: ['--output', 'json', ...scenario.runtimeArgs],
+      label: runtimeLabel,
+    });
+    const runtimePayload = parseJsonOutput(runtimeStep.stdout, runtimeLabel);
+    assertCliSuccessPayload(runtimePayload, runtimeLabel);
+    const runtimeManifestPath = resolveArtifactPath(
+      runtimePayload,
+      'host_export_manifest',
+      runtimeLabel,
+    );
+    const runtimeSummaryPath = resolveArtifactPath(
+      runtimePayload,
+      'host_verification_summary',
+      runtimeLabel,
+    );
+    assertHostVerificationPass(runtimeSummaryPath, `${runtimeLabel}/summary`);
+
+    const runtimeVerifyLabel = `host-verify(acp/${scenario.surfaceId}/${options.mode}/runtime)`;
+    const runtimeVerifyStep = runCleanroomCliCommand({
+      repositoryPath,
+      runtimeEnv,
+      args: ['--output', 'json', 'host', 'verify', '--manifest', runtimeManifestPath],
+      label: runtimeVerifyLabel,
+    });
+    const runtimeVerifyPayload = parseJsonOutput(runtimeVerifyStep.stdout, runtimeVerifyLabel);
+    assertCliSuccessPayload(runtimeVerifyPayload, runtimeVerifyLabel);
+    const runtimeVerifiedSummaryPath = resolveArtifactPath(
+      runtimeVerifyPayload,
+      'host_verification_summary',
+      runtimeVerifyLabel,
+    );
+    assertHostVerificationPass(runtimeVerifiedSummaryPath, `${runtimeVerifyLabel}/summary`);
+
+    const distributionLabel = `host-pack(acp/${scenario.surfaceId}/${options.mode})`;
+    const distributionStep = runCleanroomCliCommand({
+      repositoryPath,
+      runtimeEnv,
+      args: ['--output', 'json', ...scenario.distributionArgs],
+      label: distributionLabel,
+    });
+    const distributionPayload = parseJsonOutput(distributionStep.stdout, distributionLabel);
+    assertCliSuccessPayload(distributionPayload, distributionLabel);
+    const distributionManifestPath = resolveArtifactPath(
+      distributionPayload,
+      'host_export_manifest',
+      distributionLabel,
+    );
+    const distributionSummaryPath = resolveArtifactPath(
+      distributionPayload,
+      'host_verification_summary',
+      distributionLabel,
+    );
+    assertHostVerificationPass(distributionSummaryPath, `${distributionLabel}/summary`);
+
+    const distributionVerifyLabel = `host-verify(acp/${scenario.surfaceId}/${options.mode}/distribution)`;
+    const distributionVerifyStep = runCleanroomCliCommand({
+      repositoryPath,
+      runtimeEnv,
+      args: ['--output', 'json', 'host', 'verify', '--manifest', distributionManifestPath],
+      label: distributionVerifyLabel,
+    });
+    const distributionVerifyPayload = parseJsonOutput(
+      distributionVerifyStep.stdout,
+      distributionVerifyLabel,
+    );
+    assertCliSuccessPayload(distributionVerifyPayload, distributionVerifyLabel);
+    const distributionVerifiedSummaryPath = resolveArtifactPath(
+      distributionVerifyPayload,
+      'host_verification_summary',
+      distributionVerifyLabel,
+    );
+    assertHostVerificationPass(
+      distributionVerifiedSummaryPath,
+      `${distributionVerifyLabel}/summary`,
+    );
+
+    return {
+      surfaceId: scenario.surfaceId,
+      runtimeService: {
+        exportCommand: runtimeStep.command,
+        exportDurationMs: runtimeStep.durationMs,
+        verifyCommand: runtimeVerifyStep.command,
+        verifyDurationMs: runtimeVerifyStep.durationMs,
+        exportManifestPath: runtimeManifestPath,
+        verificationSummaryPath: runtimeVerifiedSummaryPath,
+        status: 'pass',
+      },
+      packagedDistribution: {
+        packCommand: distributionStep.command,
+        packDurationMs: distributionStep.durationMs,
+        verifyCommand: distributionVerifyStep.command,
+        verifyDurationMs: distributionVerifyStep.durationMs,
+        exportManifestPath: distributionManifestPath,
+        verificationSummaryPath: distributionVerifiedSummaryPath,
+        status: 'pass',
+      },
+    };
+  });
+
+  return {
+    mode: options.mode,
+    status: 'passed',
+    repositoryPath,
+    install,
+    surfaces,
+  };
+}
+
+/**
+ * Writes one aggregated ACP clean-room evidence summary for runtime consumption.
+ * @param {{
+ *   outputPath: string;
+ *   sourceReportPath: string;
+ *   distributionMode: "default" | "plugin-enabled";
+ *   scenarios: Array<Record<string, unknown>>;
+ * }} options Summary options.
+ */
+function writeAcpCleanroomEvidenceSummary(options) {
+  /** @type {Map<string, {
+   *   surfaceId: string;
+   *   status: "pass";
+   *   verifiedModes: string[];
+   *   runtimeServiceVerificationSummaryPaths: string[];
+   *   packagedDistributionVerificationSummaryPaths: string[];
+   * }>} */
+  const summaryBySurface = new Map();
+
+  for (const scenario of options.scenarios) {
+    const mode = typeof scenario.mode === 'string' ? scenario.mode : null;
+    const surfaces = Array.isArray(scenario.surfaces) ? scenario.surfaces : [];
+    for (const surface of surfaces) {
+      const surfaceId = typeof surface.surfaceId === 'string' ? surface.surfaceId : null;
+      if (!surfaceId || !mode) {
+        continue;
+      }
+      const current = summaryBySurface.get(surfaceId) ?? {
+        surfaceId,
+        status: 'pass',
+        verifiedModes: [],
+        runtimeServiceVerificationSummaryPaths: [],
+        packagedDistributionVerificationSummaryPaths: [],
+      };
+      current.verifiedModes.push(mode);
+      if (typeof surface.runtimeService?.verificationSummaryPath === 'string') {
+        current.runtimeServiceVerificationSummaryPaths.push(
+          surface.runtimeService.verificationSummaryPath,
+        );
+      }
+      if (typeof surface.packagedDistribution?.verificationSummaryPath === 'string') {
+        current.packagedDistributionVerificationSummaryPaths.push(
+          surface.packagedDistribution.verificationSummaryPath,
+        );
+      }
+      summaryBySurface.set(surfaceId, current);
+    }
+  }
+
+  const payload = {
+    schemaVersion: ACP_CLEANROOM_VERIFICATION_SCHEMA_VERSION,
+    verifiedAt: new Date().toISOString(),
+    sourceReportPath: options.sourceReportPath,
+    distributionMode: options.distributionMode,
+    surfaces: Array.from(summaryBySurface.values())
+      .map((surface) => ({
+        ...surface,
+        verifiedModes: Array.from(new Set(surface.verifiedModes)).sort(),
+        runtimeServiceVerificationSummaryPaths: Array.from(
+          new Set(surface.runtimeServiceVerificationSummaryPaths),
+        ).sort(),
+        packagedDistributionVerificationSummaryPaths: Array.from(
+          new Set(surface.packagedDistributionVerificationSummaryPaths),
+        ).sort(),
+      }))
+      .sort((left, right) => left.surfaceId.localeCompare(right.surfaceId)),
+  };
+
+  writeReport(options.outputPath, payload);
+}
+
+/**
  * Runs one installed-package service-host memory-provider scenario.
  * @param {{
  *   mode: string;
@@ -1426,6 +1810,8 @@ async function main() {
   let serviceHostMemoryProviderScenarios = [];
   /** @type {Array<Record<string, unknown>>} */
   const remoteApiScenarios = [];
+  /** @type {Array<Record<string, unknown>>} */
+  let acpHostTransportScenarios = [];
 
   try {
     for (const mode of options.modes) {
@@ -1500,6 +1886,18 @@ async function main() {
       remoteApiScenarios.push(scenario);
     }
 
+    if (options.includeAcpHostVerify) {
+      acpHostTransportScenarios = options.modes.map((mode) => {
+        const scenario = runAcpHostTransportScenario({
+          mode,
+          workingRoot: createdTempRoot,
+          installAssets,
+        });
+        gateInfo(GATE_NAME, `ACP host transport clean-room scenario passed for mode=${mode}.`);
+        return scenario;
+      });
+    }
+
     if (options.distributionMode === PLUGIN_ENABLED_DISTRIBUTION_MODE) {
       pluginEnabledMemoryProviderScenarios = options.modes.map((mode) => {
         const scenario = runPluginEnabledMemoryProviderScenario({
@@ -1531,6 +1929,7 @@ async function main() {
     readOnlyAttachPrecheck,
     serviceHostMemoryProviderScenarios,
     remoteApiScenarios,
+    acpHostTransportScenarios,
     pluginEnabledMemoryProviderScenarios,
     stage9aHardExit: {
       requiredModeMinimum: 2,
@@ -1554,6 +1953,15 @@ async function main() {
   try {
     writeReport(options.outputPath, reportPayload);
     gateInfo(GATE_NAME, `report generated at ${options.outputPath}`);
+    if (options.includeAcpHostVerify && options.emitAcpEvidencePath) {
+      writeAcpCleanroomEvidenceSummary({
+        outputPath: options.emitAcpEvidencePath,
+        sourceReportPath: resolve(process.cwd(), options.outputPath),
+        distributionMode: options.distributionMode,
+        scenarios: acpHostTransportScenarios,
+      });
+      gateInfo(GATE_NAME, `ACP evidence generated at ${options.emitAcpEvidencePath}`);
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     gateFail(GATE_NAME, `failed to persist report: ${message}`);

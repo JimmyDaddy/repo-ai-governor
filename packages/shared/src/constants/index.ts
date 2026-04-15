@@ -53,3 +53,4 @@ export {
   RoleProfileStatus,
   RoleSource,
 } from './role-profile.constant.js';
+export { PUBLIC_SERVICE_HOST_PACKAGE_EXPORT } from './service-host-package.constant.js';

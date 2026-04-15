@@ -11,6 +11,7 @@ import {
   type HostVerificationSummary,
 } from '@repo-ai-governor/standards';
 import {
+  CLI_ACP_HOST_CLEAN_ROOM_VERIFIED_STATE_SUMMARY,
   CLI_ACP_HOST_COMPANION_STATE_SUMMARY,
   CLI_ACP_HOST_DISTRIBUTION_READY_STATE_SUMMARY,
   CLI_ACP_HOST_RUNTIME_AND_DISTRIBUTION_READY_STATE_SUMMARY,
@@ -30,6 +31,28 @@ interface CliAcpHostVerificationRecord {
   status: string;
   verifiedAt: string;
 }
+
+interface CliAcpCleanRoomVerificationSummary {
+  schemaVersion: string;
+  distributionMode?: string;
+  surfaces?: Array<{
+    surfaceId?: string;
+    status?: string;
+    verifiedModes?: string[];
+    runtimeServiceVerificationSummaryPaths?: string[];
+    packagedDistributionVerificationSummaryPaths?: string[];
+  }>;
+}
+
+const ACP_CLEAN_ROOM_VERIFICATION_SUMMARY_SCHEMA_VERSION = 'acp-cleanroom-verification-summary-v1';
+const ACP_CLEAN_ROOM_VERIFICATION_REQUIRED_DISTRIBUTION_MODE = 'default';
+const ACP_CLEAN_ROOM_VERIFICATION_REQUIRED_MODES = ['link', 'path', 'tgz'] as const;
+const ACP_CLEAN_ROOM_VERIFICATION_SUMMARY_RELATIVE_PATH = [
+  '.repo-ai-governor',
+  'generated',
+  'acp',
+  'acp-cleanroom-verification.summary.json',
+];
 
 const ACP_HOST_CONFIG_BY_SURFACE: Partial<
   Record<
@@ -78,6 +101,7 @@ export class CliAcpHostEvidenceRuntime {
     const packagedDistributionReady = config.distributionTargets.some(
       (target) => latestRecordByTarget.get(target)?.status === HostVerificationStatus.PASS,
     );
+    const cleanRoomVerified = this.resolveCleanRoomVerification(surface);
 
     if (!runtimeServiceReady && !packagedDistributionReady) {
       return null;
@@ -93,6 +117,7 @@ export class CliAcpHostEvidenceRuntime {
       companionStateSummary: this.resolveCompanionStateSummary({
         runtimeServiceReady,
         packagedDistributionReady,
+        cleanRoomVerified,
       }),
     };
   }
@@ -167,7 +192,15 @@ export class CliAcpHostEvidenceRuntime {
   private resolveCompanionStateSummary(options: {
     runtimeServiceReady: boolean;
     packagedDistributionReady: boolean;
+    cleanRoomVerified: boolean;
   }): string {
+    if (
+      options.runtimeServiceReady &&
+      options.packagedDistributionReady &&
+      options.cleanRoomVerified
+    ) {
+      return CLI_ACP_HOST_CLEAN_ROOM_VERIFIED_STATE_SUMMARY;
+    }
     if (options.runtimeServiceReady && options.packagedDistributionReady) {
       return CLI_ACP_HOST_RUNTIME_AND_DISTRIBUTION_READY_STATE_SUMMARY;
     }
@@ -178,6 +211,58 @@ export class CliAcpHostEvidenceRuntime {
       return CLI_ACP_HOST_DISTRIBUTION_READY_STATE_SUMMARY;
     }
     return CLI_ACP_HOST_COMPANION_STATE_SUMMARY;
+  }
+
+  private resolveCleanRoomVerification(surface: AdapterSurface): boolean {
+    const summaryPath = resolve(
+      this.workspaceRoot,
+      ...ACP_CLEAN_ROOM_VERIFICATION_SUMMARY_RELATIVE_PATH,
+    );
+    if (!existsSync(summaryPath)) {
+      return false;
+    }
+
+    const summary = this.readJsonFile<CliAcpCleanRoomVerificationSummary>(summaryPath);
+    if (
+      !summary ||
+      summary.schemaVersion !== ACP_CLEAN_ROOM_VERIFICATION_SUMMARY_SCHEMA_VERSION ||
+      summary.distributionMode !== ACP_CLEAN_ROOM_VERIFICATION_REQUIRED_DISTRIBUTION_MODE ||
+      !Array.isArray(summary.surfaces)
+    ) {
+      return false;
+    }
+
+    return summary.surfaces.some(
+      (record) =>
+        record.surfaceId === surface &&
+        record.status === HostVerificationStatus.PASS &&
+        this.hasRequiredCleanRoomModes(record.verifiedModes) &&
+        this.hasRequiredCleanRoomReceipts(record.runtimeServiceVerificationSummaryPaths) &&
+        this.hasRequiredCleanRoomReceipts(record.packagedDistributionVerificationSummaryPaths),
+    );
+  }
+
+  private hasRequiredCleanRoomModes(verifiedModes: string[] | undefined): boolean {
+    if (!Array.isArray(verifiedModes)) {
+      return false;
+    }
+
+    const verifiedModeSet = new Set(verifiedModes);
+    return ACP_CLEAN_ROOM_VERIFICATION_REQUIRED_MODES.every((mode) => verifiedModeSet.has(mode));
+  }
+
+  private hasRequiredCleanRoomReceipts(summaryPaths: string[] | undefined): boolean {
+    if (!Array.isArray(summaryPaths)) {
+      return false;
+    }
+
+    const uniqueSummaryPaths = new Set(
+      summaryPaths.filter(
+        (summaryPath): summaryPath is string =>
+          typeof summaryPath === 'string' && summaryPath.trim().length > 0,
+      ),
+    );
+    return uniqueSummaryPaths.size >= ACP_CLEAN_ROOM_VERIFICATION_REQUIRED_MODES.length;
   }
 
   private readJsonFile<T>(filePath: string): T | null {

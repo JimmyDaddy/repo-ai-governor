@@ -27,7 +27,10 @@ import {
   expectNativeCliExecPreservedFacts,
   hasAgentHealthDiagnostic,
 } from '../../../../test/native-cli-exec-compatibility-harness.js';
-import { CLI_ACP_HOST_HEALTH_CHECK_FAILURE_DETAIL } from '../../src/constants/cli-acp-host.constant.js';
+import {
+  CLI_ACP_HOST_CLEAN_ROOM_VERIFIED_STATE_SUMMARY,
+  CLI_ACP_HOST_HEALTH_CHECK_FAILURE_DETAIL,
+} from '../../src/constants/cli-acp-host.constant.js';
 import {
   CliAdapterRoleSelectionSource,
   CliGovernanceCheckStatus,
@@ -354,6 +357,154 @@ describe('Cli adapter verification runtime', () => {
     );
     expect(verification.nextActions).not.toContain(
       `Investigate remote adapter health checks before unattended execution: ${CLI_ACP_HOST_HEALTH_CHECK_FAILURE_DETAIL}.`,
+    );
+  });
+
+  it('stops asking for ACP clean-room verify once clean-room evidence is already projected', async () => {
+    const i18nRuntime = new I18nRuntime();
+    await i18nRuntime.initialize(DEFAULT_I18N_RUNTIME_CONFIG, 'en-US');
+    const adaptersConfig: AdaptersConfig = {
+      roles: [
+        {
+          roleId: 'coder',
+          roleProfileId: DefaultRoleProfileId.CODER,
+          requiredCapabilities: [AgentCapability.TOOL_CALLING],
+          required: true,
+        },
+      ],
+      routing: {
+        roleBindings: {
+          coder: {
+            primarySurface: AdapterSurface.CODEX,
+          },
+        },
+      },
+      tools: [
+        {
+          toolId: AdapterSurface.CODEX,
+          enabled: true,
+          availability: AdapterAvailability.AVAILABLE,
+          transport: AdapterTransportKind.ACP_EXEC,
+        },
+      ],
+    };
+    const healthCheck = buildLayeredHealthCheckResult({
+      adapterId: 'codex-acp-host-protocol',
+      surfaceId: AdapterSurface.CODEX,
+      availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+      selectedEntrypoint: AdapterSurface.CODEX,
+      routeKey: 'cli.adapter.probe.codex',
+      unavailableReasons: ['health_check_failed:codex:acp_host_transport_not_ready'],
+      transportKind: AdapterTransportKind.ACP_EXEC,
+      requestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+      diagnostics: [
+        {
+          layer: 'protocol',
+          status: 'warn',
+          code: 'protocol.acp_host_readiness_status',
+          detail: 'runtime_service_ready',
+        },
+        {
+          layer: 'protocol',
+          status: 'warn',
+          code: 'protocol.acp_distribution_boundary',
+          detail: 'packaged_distribution_ready',
+        },
+        {
+          layer: 'protocol',
+          status: 'warn',
+          code: 'protocol.acp_companion_state_summary',
+          detail: CLI_ACP_HOST_CLEAN_ROOM_VERIFIED_STATE_SUMMARY,
+        },
+      ],
+    });
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      adaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+      createToolConfigBySurfaceMap: () => Map<
+        AdapterSurface,
+        NonNullable<AdaptersConfig['tools']>[number]
+      >;
+      resolveRoleBindingCandidateSurfaces: (
+        roleBinding: AdaptersConfig['routing']['roleBindings'][string],
+      ) => AdapterSurface[];
+      resolveTrackedAdapterSurfaces: (
+        trackedToolConfigBySurface?: Map<
+          AdapterSurface,
+          NonNullable<AdaptersConfig['tools']>[number]
+        >,
+      ) => AdapterSurface[];
+    };
+    const toolConfigBySurface = new Map([
+      [
+        AdapterSurface.CODEX,
+        adaptersConfig.tools?.[0] as NonNullable<AdaptersConfig['tools']>[number],
+      ],
+    ]);
+    adapterRoutingRuntime.createToolConfigBySurfaceMap = () => toolConfigBySurface;
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: {
+        probe: async () => ({
+          identity: {
+            agentId: 'codex-acp-host-agent',
+            role: 'coder',
+            surface: AdapterSurface.CODEX,
+            roleProfileId: DefaultRoleProfileId.CODER,
+            roleSource: 'default',
+          },
+          availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+          capabilityMatrix: {
+            capabilityStates: Object.values(AgentCapability).map((capability) => ({
+              capability,
+              supportLevel:
+                capability === AgentCapability.TOOL_CALLING
+                  ? AgentCapabilitySupportLevel.SUPPORTED
+                  : AgentCapabilitySupportLevel.UNSUPPORTED,
+            })),
+            timeout: {
+              supportsAgentInvocationTimeout: true,
+              supportsStageTimeoutSignal: true,
+              supportsFlowTimeoutSignal: false,
+            },
+            cancellation: {
+              supportsCancel: false,
+              supportsReasonPropagation: false,
+              supportsAbortSignal: false,
+            },
+            contextWindow: {
+              supportsAutoTruncation: true,
+            },
+          },
+          unavailableReasons: ['health_check_failed:codex:acp_host_transport_not_ready'],
+          healthCheck,
+        }),
+      } as AgentProtocolContract,
+    });
+    adapterRoutingRuntime.resolveRoleBindingCandidateSurfaces = (roleBinding) => [
+      roleBinding.primarySurface,
+    ];
+    adapterRoutingRuntime.resolveTrackedAdapterSurfaces = (trackedToolConfigBySurface) =>
+      Array.from((trackedToolConfigBySurface ?? new Map()).keys());
+    const runtime = new CliAdapterVerificationRuntime(
+      adaptersConfig,
+      (key, interpolation) => i18nRuntime.t(key, interpolation),
+      (error) => standardizeError(error).message,
+      adapterRoutingRuntime,
+      new CliLocalModelProbeRuntime(
+        undefined,
+        async () => undefined,
+        (error) => standardizeError(error).message,
+      ),
+      createMockSecretService(),
+      (english: string) => english,
+      {},
+    );
+
+    const verification = await runtime.resolveAdapterVerification();
+
+    expect(verification.nextActions).not.toContain(
+      'ACP runtime-service and packaged-distribution evidence exist for codex; run clean-room verify and keep support wording gated to evidence-backed surfaces.',
     );
   });
 
