@@ -1,6 +1,6 @@
 # TK-902 plan implementation sequencing and consumer truthfulness follow-up
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-15
 - Owner: AI-Agent
 - Priority: P1
@@ -53,9 +53,12 @@
 ## 9. 执行记录
 
 1. 2026-04-15：任务创建，状态初始化为 `planned`。
+2. 2026-04-15：已明确 `sprint-002` 负责 command/runtime/help/docs baseline，`sprint-003` 负责 tests/evidence/closeout，不在 sprint-001 抢跑实现。
+3. 2026-04-15：已将 consumer truthfulness sequencing 固化为“docs/help 不得先于 runtime behavior 宣称”，并保留 `check` 作为 explicit broader governance follow-up。
+4. 2026-04-15：已将上述 sequencing notes 回写到 `DA-900`、`sprint-002` plan 与 `sprint-003` plan，作为后续激活输入。
 
 ## 10. 产出
 
-1. 待执行：sprint-002 activation input
-2. 待执行：sprint-003 evidence / closeout input
-3. 待执行：consumer truthfulness sequencing notes
+1. 已完成：sprint-002 activation input
+2. 已完成：sprint-003 evidence / closeout input
+3. 已完成：consumer truthfulness sequencing notes

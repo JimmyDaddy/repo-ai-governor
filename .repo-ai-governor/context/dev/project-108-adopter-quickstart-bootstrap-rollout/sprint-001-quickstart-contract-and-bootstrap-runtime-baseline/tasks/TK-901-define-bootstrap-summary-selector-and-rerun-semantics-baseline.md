@@ -1,6 +1,6 @@
 # TK-901 define bootstrap summary selector and rerun semantics baseline
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-15
 - Owner: AI-Agent
 - Priority: P1
@@ -53,9 +53,12 @@
 ## 9. 执行记录
 
 1. 2026-04-15：任务创建，状态初始化为 `planned`。
+2. 2026-04-15：已冻结 omitted selector 只回落官方 built-in、explicit selector 复用 `adopt apply` fallback 且 ambiguity fail-closed 的 selector matrix。
+3. 2026-04-15：已冻结 bootstrap summary 仅作为 additive handoff artifact 记录 stage result / selector resolution / reentry mode，install receipt 与 verification summary 继续保持 canonical truth。
+4. 2026-04-15：已冻结 clean rerun 只允许匹配且干净的现有安装复用；drift、pack mismatch 与 profile mismatch 必须显式回到 `adopt diff/upgrade/remove`。
 
 ## 10. 产出
 
-1. 待执行：bootstrap summary field baseline
-2. 待执行：selector resolution matrix
-3. 待执行：rerun / drift redirect rule set
+1. 已完成：bootstrap summary field baseline
+2. 已完成：selector resolution matrix
+3. 已完成：rerun / drift redirect rule set

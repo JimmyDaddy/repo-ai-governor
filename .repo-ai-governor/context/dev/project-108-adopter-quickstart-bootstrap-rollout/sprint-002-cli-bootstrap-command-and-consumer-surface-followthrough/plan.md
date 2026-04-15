@@ -12,7 +12,7 @@
 ## 1. Scope
 
 1. 在 `apps/cli` 落 `adopt bootstrap` orchestrator、default built-in resolution 与 fail-closed rerun redirect。
-2. 接入 bootstrap summary output、help copy 与 user-facing guidance，保持 `check` explicit follow-up wording。
+2. 接入 additive bootstrap summary output、help copy 与 user-facing guidance，保持 `check` explicit follow-up wording，并明确 selector resolution / rerun mode 只是 handoff diagnostics 而不是新的 canonical install truth。
 3. 将 adopter-facing docs truth refresh 压缩成同一 sprint 的 consumer baseline，而不是另起平行 quickstart narrative。
 
 ## 2. 任务拆解矩阵（WBS）
@@ -33,3 +33,5 @@
 
 1. docs truth refresh 必须跟随 runtime/help baseline，而不是先于命令行为单独对外宣称。
 2. 若后续直接激活 `sprint-002`，仍需先完成 `sprint-001` 的 scope freeze 与 first-hop handoff。
+3. omitted selector 只允许回落官方 built-in pack；explicit selector ambiguity 必须保持 fail-closed，不得在 sprint-002 重新发明 resolver 语义。
+4. 2026-04-15：`TK-911 / DA-901` 已完成 sprint-001 closeout write-back；当前 sprint 已登记为 `current-context` 的 primary execution surface，但在 `TK-903` 正式开工前，sprint plan 与 task aggregate 继续保持 `planned`。

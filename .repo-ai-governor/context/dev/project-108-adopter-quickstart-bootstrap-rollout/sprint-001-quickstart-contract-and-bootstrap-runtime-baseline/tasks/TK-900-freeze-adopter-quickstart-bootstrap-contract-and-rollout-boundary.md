@@ -1,6 +1,6 @@
 # TK-900 freeze adopter quickstart bootstrap contract and rollout boundary
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-15
 - Owner: AI-Agent
 - Priority: P1
@@ -53,9 +53,11 @@
 ## 9. 执行记录
 
 1. 2026-04-15：任务创建，状态初始化为 `planned`。
+2. 2026-04-15：`project-108 / sprint-001` 激活为 active primary stream 后，状态切换为 `in_progress`，开始冻结 quickstart boundary、non-goal matrix 与 rollout handoff 真值。
+3. 2026-04-15：已将 quickstart 与 baseline bootstrap / `check` follow-up 的职责分层、rollout scope 与 non-goal matrix 固化到 `DA-900`，并将该 handoff 推进为 `completed`。
 
 ## 10. 产出
 
-1. 待执行：quickstart boundary freeze
-2. 待执行：rollout scope / non-goal matrix
-3. 待执行：`DA-900`
+1. 已完成：quickstart boundary freeze
+2. 已完成：rollout scope / non-goal matrix
+3. 已完成：`DA-900`

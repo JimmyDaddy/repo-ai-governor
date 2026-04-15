@@ -1,8 +1,25 @@
 # checklist
 
-- [ ] TK-900 freeze adopter quickstart bootstrap contract and rollout boundary
+- [x] TK-900 freeze adopter quickstart bootstrap contract and rollout boundary
   - 2026-04-15：任务创建，状态初始化为 `planned`。
-- [ ] TK-901 define bootstrap summary selector and rerun semantics baseline
+  - 2026-04-15：`project-108 / sprint-001` 激活为 active primary stream 后，状态切换为 `in_progress`，开始冻结 quickstart boundary、non-goal matrix 与 rollout handoff 真值。
+  - 2026-04-15：已将 quickstart 与 baseline bootstrap / `check` follow-up 的职责分层、rollout scope 与 non-goal matrix 固化到 `DA-900`，并将该 handoff 推进为 `completed`。
+- [x] TK-901 define bootstrap summary selector and rerun semantics baseline
   - 2026-04-15：任务创建，状态初始化为 `planned`。
-- [ ] TK-902 plan implementation sequencing and consumer truthfulness follow-up
+  - 2026-04-15：已冻结 omitted selector 只回落官方 built-in、explicit selector 复用 `adopt apply` fallback 且 ambiguity fail-closed 的 selector matrix。
+  - 2026-04-15：已冻结 bootstrap summary 仅作为 additive handoff artifact 记录 stage result / selector resolution / reentry mode，install receipt 与 verification summary 继续保持 canonical truth。
+  - 2026-04-15：已冻结 clean rerun 只允许匹配且干净的现有安装复用；drift、pack mismatch 与 profile mismatch 必须显式回到 `adopt diff/upgrade/remove`。
+- [x] TK-902 plan implementation sequencing and consumer truthfulness follow-up
   - 2026-04-15：任务创建，状态初始化为 `planned`。
+  - 2026-04-15：已明确 `sprint-002` 负责 command/runtime/help/docs baseline，`sprint-003` 负责 tests/evidence/closeout，不在 sprint-001 抢跑实现。
+  - 2026-04-15：已将 consumer truthfulness sequencing 固化为“docs/help 不得先于 runtime behavior 宣称”，并保留 `check` 作为 explicit broader governance follow-up。
+  - 2026-04-15：已将上述 sequencing notes 回写到 `DA-900`、`sprint-002` plan 与 `sprint-003` plan，作为后续激活输入。
+- [x] CR-001 sprint-001-quickstart-contract-and-bootstrap-runtime-baseline delegated review loop round 1
+  - 2026-04-15：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-15：补充 quickstart ADR、install contract 与 delivery-registry contract 到 task card required inputs，确保后续重跑继续按 sprint-001 真实审查边界执行。
+  - 2026-04-15：reviewer round 1 返回 `DA-900` delivery-state summary 漂移；主 agent 已接受该 finding，并将当前任务推进为 `verified`。
+  - 2026-04-15：已修复 `DA-900` delivery-state summary truth drift，复跑 delivery/ledger/review lifecycle checks 后无剩余 actionable findings，当前任务推进为 `resolved`。
+- [x] TK-911 finalize sprint-001 closeout and activate sprint-002
+  - 2026-04-15：任务创建，状态初始化为 `planned`。
+  - 2026-04-15：状态切换为 `in_progress`，开始执行 sprint-001 closeout write-back，并准备将 `sprint-002` 切换为新的 primary execution surface。
+  - 2026-04-15：已完成 sprint-001 closeout、DA-901 handoff、completed history write-back、project/sprint plan 状态写回与 current-context primary stream 切换。

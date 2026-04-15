@@ -11,8 +11,8 @@
 
 ## 1. Scope
 
-1. 补齐 `adopt bootstrap` orchestration tests、selector ambiguity coverage 与 rerun redirect verification。
-2. 形成 clean-room evidence 与 consumer docs truthfulness closeout，证明 quickstart path 没有误报 broader audit completion。
+1. 补齐 `adopt bootstrap` orchestration tests、selector ambiguity coverage、omitted-selector default coverage 与 rerun/drift redirect verification。
+2. 形成 clean-room evidence 与 consumer docs truthfulness closeout，证明 quickstart path 没有误报 broader audit completion，且 `check` 继续作为 explicit broader follow-up。
 3. 完成 project-level completion audit 与 rollout closeout handoff。
 
 ## 2. 任务拆解矩阵（WBS）
@@ -33,3 +33,4 @@
 
 1. 若 `sprint-002` 尚未给出稳定 help/docs wording，本 sprint 不得提前制造最终 truthfulness 结论。
 2. project final audit 只能在 `TK-906` 与 `TK-907` 完成后推进。
+3. sprint-003 必须复用 sprint-001 已冻结的 selector/rerun boundary，而不是在 clean-room evidence 阶段重新放宽 fail-closed semantics。

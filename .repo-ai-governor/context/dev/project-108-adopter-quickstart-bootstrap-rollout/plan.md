@@ -1,6 +1,6 @@
 # project-108-adopter-quickstart-bootstrap-rollout 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-15
 - Stage Mapping: adopter quickstart bootstrap rollout
 - Phase Mapping: sprint-001 contract and runtime baseline / sprint-002 command implementation and consumer surface follow-through / sprint-003 clean-room evidence and rollout closeout
@@ -20,9 +20,9 @@
 
 ## 2.1 sprint-001-quickstart-contract-and-bootstrap-runtime-baseline
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 冻结 quickstart contract、selector and rerun semantics、bootstrap summary boundary 与 rollout execution plan。
-- Task Package: `TK-900`、`TK-901`、`TK-902`
+- Task Package: `TK-900`、`TK-901`、`TK-902`、`TK-911`
 
 ## 2.2 sprint-002-cli-bootstrap-command-and-consumer-surface-followthrough
 
@@ -40,9 +40,10 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 | --- | --- | --- | --- | --- | --- |
-| TK-900 | sprint-001 | freeze adopter quickstart bootstrap contract and rollout boundary | contract/boundary | formal module docs | planned |
-| TK-901 | sprint-001 | define bootstrap summary selector and rerun semantics baseline | runtime/summary | TK-900 | planned |
-| TK-902 | sprint-001 | plan implementation sequencing and consumer truthfulness follow-up | planning/docs | TK-900、TK-901 | planned |
+| TK-900 | sprint-001 | freeze adopter quickstart bootstrap contract and rollout boundary | contract/boundary | formal module docs | completed |
+| TK-901 | sprint-001 | define bootstrap summary selector and rerun semantics baseline | runtime/summary | TK-900 | completed |
+| TK-902 | sprint-001 | plan implementation sequencing and consumer truthfulness follow-up | planning/docs | TK-900、TK-901 | completed |
+| TK-911 | sprint-001 | finalize sprint-001 closeout and activate sprint-002 | closeout/activation | CR-001 | completed |
 | TK-903 | sprint-002 | implement adopt bootstrap orchestrator and default built-in resolution | cli/runtime | TK-901 | planned |
 | TK-904 | sprint-002 | integrate bootstrap summary output help copy and fail-closed rerun guidance | presenter/help | TK-903 | planned |
 | TK-905 | sprint-002 | refresh adopter docs truth for quickstart versus check follow-up | docs_playbook | TK-904 | planned |
@@ -70,6 +71,9 @@
 1. 2026-04-15：基于 `technical-solution.adopter-quickstart-bootstrap-command` promotion cutover 创建 `project-108` planned rollout skeleton。
 2. 2026-04-15：`sprint-001-quickstart-contract-and-bootstrap-runtime-baseline` 已登记到 `current-context.md -> Planned Follow-Up Streams`，不占用当前 idle primary stream。
 3. 2026-04-15：project-level sprint queue 已冻结到 `sprint-003`，并补齐对应 planned scaffold 与 task cards。
+4. 2026-04-15：`project-107` 完成最终 closeout 并本地提交后，`sprint-001-quickstart-contract-and-bootstrap-runtime-baseline` 已切换为 active primary stream，开始执行 quickstart contract freeze。
+5. 2026-04-15：`TK-900`、`TK-901`、`TK-902` 已完成 quickstart boundary freeze、selector/rerun baseline 与 sprint-002/003 sequencing notes；下一步进入 sprint-001 delegated CR round，再决定 closeout 和 commit。
+6. 2026-04-15：`CR-001` 已 clean `resolved`，`TK-911 / DA-901` 已完成 sprint-001 closeout write-back；`current-context` 已切换到 `sprint-002` 作为新的 primary execution surface，`sprint-003` 保持 planned follow-up。
 
 ## 7. 里程碑记录入口
 
