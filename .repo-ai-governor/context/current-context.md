@@ -2,21 +2,21 @@
 
 ## Primary Stream
 
-- Status: active
-- Stream: `stream-project-105-sprint-003`
-- Project: `project-105-acp-host-facing-transport-rollout`
-- Sprint: `sprint-003-clean-room-verify-support-truth-and-rollout-closeout`
-- Docs: `.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout`
-- Plan: `.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-003-clean-room-verify-support-truth-and-rollout-closeout/plan.md`
-- Tasks: `.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-003-clean-room-verify-support-truth-and-rollout-closeout/tasks/`
-- Checklist: `.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-003-clean-room-verify-support-truth-and-rollout-closeout/tasks/checklist.md`
-- CSV: `.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-003-clean-room-verify-support-truth-and-rollout-closeout/tasks/tasks.csv`
-- Review: `.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-003-clean-room-verify-support-truth-and-rollout-closeout/review/`
-- Note: `2026-04-15` `project-105 / sprint-002` 已在 `CR-001` 修复收口与 `CR-002` clean recheck 后完成 clean closeout；当前 `project-105 / sprint-003` 仍是 primary execution surface，`TK-888` 与 `TK-889` implementation boundary 已完成，`CR-001` 与 `CR-002` 均已收口为 `resolved`，下一步进入 project-final fresh review，再决定 `TK-890` closeout。
+- Status: idle
+- Stream: `idle`
+- Project: `_None_`
+- Sprint: `_None_`
+- Docs: `_None_`
+- Plan: `_None_`
+- Tasks: `_None_`
+- Checklist: `_None_`
+- CSV: `_None_`
+- Review: `_None_`
+- Note: `2026-04-15` `project-105 / sprint-003` 与 project-final `CR-003` 已 clean 收口，`TK-890` 已完成，当前工作区恢复 `idle`。
 
 ## Active Streams
 
-- `stream-project-105-sprint-003`: role=`primary`, primary=`true`, project=`project-105-acp-host-facing-transport-rollout`, sprint=`sprint-003-clean-room-verify-support-truth-and-rollout-closeout`, docs=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout`, plan=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-003-clean-room-verify-support-truth-and-rollout-closeout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-003-clean-room-verify-support-truth-and-rollout-closeout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-003-clean-room-verify-support-truth-and-rollout-closeout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-003-clean-room-verify-support-truth-and-rollout-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-003-clean-room-verify-support-truth-and-rollout-closeout/review/`, status=`active`, note=`2026-04-15 `project-105 / sprint-002` clean closeout 已完成；当前 sprint 仍是 primary execution surface，`TK-888` 与 `TK-889` implementation boundary 已完成，`CR-001` 与 `CR-002` 均已收口为 `resolved`，下一步进入 project-final fresh review，再决定 `TK-890` closeout。`
+_None._
 
 ## Planned Follow-Up Streams
 

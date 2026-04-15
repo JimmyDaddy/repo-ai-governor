@@ -1,5 +1,5 @@
 schema_version: 1
-generated_at: 2026-04-14
+generated_at: 2026-04-15
 status: active
 owner: architecture
 
@@ -329,8 +329,8 @@ deliveries:
       - packaged_distribution
       - runtime_service
     user_impact_level: high
-    execution_status: planned
-    rollout_status: planned
+    execution_status: completed
+    rollout_status: completed
     owner: runtime
     project_ref: project-105-acp-host-facing-transport-rollout
     sprint_ref: sprint-003-clean-room-verify-support-truth-and-rollout-closeout

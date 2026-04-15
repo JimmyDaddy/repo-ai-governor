@@ -7,8 +7,9 @@
 - [x] TK-889 uplift ACP adopter-facing support docs truth only for evidence-backed surfaces while preserving cli_exec separation
   - 2026-04-14：任务创建，状态初始化为 `planned`。
   - 2026-04-15：已基于 clean-room ACP report 与 aggregated ACP evidence summary 收口 adopter-facing support/docs truth。`docs/support-matrix*.md`、`docs/local-adoption-playbook*.md` 现已只对 evidence-backed `acp_exec` readiness / host surfaces uplift 正式口径，并显式保留 ACP 与 `cli_exec` 的 fail-closed separation；同时已把 `repo-ai-governor/service-host` 修正为唯一 supported root-package import path。当前实现边界完成，进入 `CR-001` fresh reviewer loop。
-- [ ] TK-890 finalize project-105 closeout and delivery evidence handoff
+- [x] TK-890 finalize project-105 closeout and delivery evidence handoff
   - 2026-04-14：任务创建，状态初始化为 `planned`。
+  - 2026-04-15：project-final `CR-003` clean 后，已将 `technical-solution.acp-host-facing-transport-formalization` 的 delivery `execution_status` / `rollout_status` 推进到 `completed`，写回 project completion audit、completed-stream history 与 idle `current-context`，`TK-890` 收口为 `completed`。
 - [x] CR-001 sprint-003-clean-room-verify-support-truth-and-rollout-closeout delegated review loop round 1
   - 2026-04-15：任务创建，状态初始化为 `review_pending`。
   - 2026-04-15：sprint-003 implementation boundary 已完成，ACP clean-room report、aggregated summary、support/docs uplift 与 focused tests 已落账，当前进入 fresh reviewer round 1。
@@ -18,3 +19,6 @@
 - [x] CR-002 sprint-003-clean-room-verify-support-truth-and-rollout-closeout delegated review loop round 2
   - 2026-04-15：任务创建，状态初始化为 `review_pending`。
   - 2026-04-15：在 clean-room summary scope gate 修复与 host renderer `serviceHostPackageExport/packageExport` contract tests 补齐后，round 2 clean recheck 未发现新的 actionable finding；focused vitest、`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 ACP clean-room verify 全部通过，`CR-002` 收口为 `resolved`。
+- [x] CR-003 project-105-acp-host-facing-transport-rollout project delegated review loop round 3
+  - 2026-04-15：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-15：project-final clean recheck 未发现新的 actionable finding；`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、ACP clean-room verify 与 `pnpm run check` 在同一 closeout window 通过，`CR-003` 收口为 `resolved`。

@@ -1,6 +1,6 @@
 # project-105-acp-host-facing-transport-rollout 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-14
 - Stage Mapping: ACP host-facing transport rollout
 - Phase Mapping: explicit transport routing and companion carrier / packaged distribution and runtime-service enablement / clean-room verify support truth and closeout
@@ -32,7 +32,7 @@
 
 ## 2.3 sprint-003-clean-room-verify-support-truth-and-rollout-closeout
 
-- Status: active
+- Status: completed
 - Sprint Goal: 执行 clean-room verify、support/docs truth uplift，并完成 rollout closeout。
 - Task Package: `TK-888`、`TK-889`、`TK-890`
 
@@ -49,7 +49,7 @@
 | TK-887 | sprint-002 | sprint-002 exit acceptance and sprint-003 activation handoff | sprint/closeout | TK-885、TK-886、latest fresh reviewer clean round | completed |
 | TK-888 | sprint-003 | execute clean-room ACP verification and distribution runtime evidence capture | verify/evidence | TK-887 | completed |
 | TK-889 | sprint-003 | uplift ACP adopter-facing support docs truth only for evidence-backed surfaces while preserving cli_exec separation | support/docs | TK-888 | completed |
-| TK-890 | sprint-003 | finalize project-105 closeout and delivery evidence handoff | closeout/delivery | TK-888、TK-889、activation-time local CR-001 | planned |
+| TK-890 | sprint-003 | finalize project-105 closeout and delivery evidence handoff | closeout/delivery | TK-888、TK-889、project-final CR-003 | completed |
 
 ## 4. 依赖产物策略
 
@@ -74,7 +74,8 @@
 6. 2026-04-15：`TK-888` clean-room ACP verification / evidence capture 与 `TK-889` support/docs truth uplift implementation boundary 已完成；`.tmp/project-105-sprint-003-acp-cleanroom-report.json` 与 `.repo-ai-governor/generated/acp/acp-cleanroom-verification.summary.json` 已写回，随后 `CR-001` 修复 round 已收口为 `resolved`。
 7. 2026-04-15：`sprint-003 / CR-002` 已作为 fresh clean recheck round 激活；只有当最新 reviewer round 无 actionable finding 后，才允许进入 sprint closeout 与 project-final review。
 8. 2026-04-15：`sprint-003 / CR-002` clean recheck 已收口为 `resolved`；current sprint boundary 现已 clean，下一步在同一 surface 上执行 project-final fresh review，clean 后再完成 `TK-890` 与 project closeout。
+9. 2026-04-15：project-final `CR-003` 已 clean 收口，`TK-890` 已完成 delivery / audit / idle closeout；`project-105` 正式完成。
 
 ## 7. 里程碑记录入口
 
-1. 待 closeout 后补齐 completion audit summary。
+1. `.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/project-105-acp-host-facing-transport-rollout-completion-audit-summary.md`
