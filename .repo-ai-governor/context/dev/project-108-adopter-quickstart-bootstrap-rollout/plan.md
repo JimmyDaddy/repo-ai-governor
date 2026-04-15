@@ -26,9 +26,9 @@
 
 ## 2.2 sprint-002-cli-bootstrap-command-and-consumer-surface-followthrough
 
-- Status: planned
+- Status: completed
 - Sprint Goal: materialize `adopt bootstrap` runtime orchestrator、summary output、help copy 与 consumer docs baseline。
-- Task Package: `TK-903`、`TK-904`、`TK-905`
+- Task Package: `TK-903`、`TK-904`、`TK-905`、`TK-912`
 
 ## 2.3 sprint-003-cleanroom-evidence-and-rollout-closeout
 
@@ -44,9 +44,10 @@
 | TK-901 | sprint-001 | define bootstrap summary selector and rerun semantics baseline | runtime/summary | TK-900 | completed |
 | TK-902 | sprint-001 | plan implementation sequencing and consumer truthfulness follow-up | planning/docs | TK-900、TK-901 | completed |
 | TK-911 | sprint-001 | finalize sprint-001 closeout and activate sprint-002 | closeout/activation | CR-001 | completed |
-| TK-903 | sprint-002 | implement adopt bootstrap orchestrator and default built-in resolution | cli/runtime | TK-901 | planned |
-| TK-904 | sprint-002 | integrate bootstrap summary output help copy and fail-closed rerun guidance | presenter/help | TK-903 | planned |
-| TK-905 | sprint-002 | refresh adopter docs truth for quickstart versus check follow-up | docs_playbook | TK-904 | planned |
+| TK-903 | sprint-002 | implement adopt bootstrap orchestrator and default built-in resolution | cli/runtime | TK-901 | completed |
+| TK-904 | sprint-002 | integrate bootstrap summary output help copy and fail-closed rerun guidance | presenter/help | TK-903 | completed |
+| TK-905 | sprint-002 | refresh adopter docs truth for quickstart versus check follow-up | docs_playbook | TK-904 | completed |
+| TK-912 | sprint-002 | finalize sprint-002 closeout and activate sprint-003 | closeout/activation | CR-001 | completed |
 | TK-906 | sprint-003 | add bootstrap orchestration tests and clean-room rehearsal baseline | verification/tests | TK-903、TK-904 | planned |
 | TK-907 | sprint-003 | collect rollout evidence and verify installer quickstart truthfulness | evidence/rollout | TK-905、TK-906 | planned |
 | TK-908 | sprint-003 | finalize project-108 rollout closeout and completion audit | closeout/final-audit | TK-906、TK-907 | planned |
@@ -74,6 +75,10 @@
 4. 2026-04-15：`project-107` 完成最终 closeout 并本地提交后，`sprint-001-quickstart-contract-and-bootstrap-runtime-baseline` 已切换为 active primary stream，开始执行 quickstart contract freeze。
 5. 2026-04-15：`TK-900`、`TK-901`、`TK-902` 已完成 quickstart boundary freeze、selector/rerun baseline 与 sprint-002/003 sequencing notes；下一步进入 sprint-001 delegated CR round，再决定 closeout 和 commit。
 6. 2026-04-15：`CR-001` 已 clean `resolved`，`TK-911 / DA-901` 已完成 sprint-001 closeout write-back；`current-context` 已切换到 `sprint-002` 作为新的 primary execution surface，`sprint-003` 保持 planned follow-up。
+7. 2026-04-15：`TK-903` 已切到 `in_progress`，`sprint-002` 计划状态同步提升为 `active`，进入 `adopt bootstrap` command/runtime 实施窗口。
+8. 2026-04-16：`TK-903`、`TK-904`、`TK-905` 已完成 `adopt bootstrap` quickstart、help/i18n 文案与 adopter-facing docs truth refresh；下一步进入 sprint-002 delegated CR round。
+9. 2026-04-16：`CR-001` 已 clean `resolved`；`TK-912` 已创建并切换为 `in_progress`，开始执行 sprint-002 closeout write-back、delivery registry 前移与 sprint-003 activation。
+10. 2026-04-16：`TK-912 / DA-912` 已完成 sprint-002 closeout write-back；`current-context` 已切换到 `sprint-003` 作为新的 primary execution surface，delivery registry 已前移到 sprint-003 closeout surface。
 
 ## 7. 里程碑记录入口
 

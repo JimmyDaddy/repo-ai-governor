@@ -112,8 +112,11 @@ export const ZH_CN_TRANSLATIONS = {
       doctor: { description: '执行环境诊断基线。' },
       check: { description: '执行治理质量检查基线。' },
       adopt: {
-        description: '列出、安装、对比、校验、升级或移除目标仓库中的受管 adoption pack。',
+        description:
+          '列出、bootstrap、安装、对比、校验、升级或移除目标仓库中的受管 adoption pack。',
         listDescription: '列出解析后的 adoption packs 及其支持的 profiles。',
+        bootstrapDescription:
+          '按固定顺序执行 installer quickstart：init、doctor --fix、adopt apply 与 adopt verify。',
         applyDescription: '把一个 adoption pack 应用到目标仓库，并写入受管 ownership receipt。',
         diffDescription: '对比当前仓库状态与 active adoption install receipt 的差异。',
         verifyDescription:
@@ -124,6 +127,8 @@ export const ZH_CN_TRANSLATIONS = {
         packArgument: '可选 pack 选择器；也支持直接传入 adopter-complete 这类 profile id。',
         actionGuideTitle: '动作说明：',
         actionGuideList: '查看 built-in/global/repo-local 的 pack 解析结果，以及可用 profiles。',
+        actionGuideBootstrap:
+          '按固定顺序运行 installer quickstart，并把 `check` 保留为显式的更广治理 follow-up。',
         actionGuideApply:
           '把 project-local host assets、self-host templates 与 managed metadata 物化进一个仓库。',
         actionGuideDiff: '显示当前仓库与已保存 install receipt 之间的受管文件漂移。',
@@ -133,8 +138,14 @@ export const ZH_CN_TRANSLATIONS = {
           '只删除 install receipt 跟踪的受管文件；移除始终需要显式确认并保持 fail-closed。',
         examplesTitle: '示例：',
         subcommandRequired:
-          'adopt 需要显式子命令；请使用 `adopt list`、`adopt apply`、`adopt diff`、`adopt verify`、`adopt upgrade` 或 `adopt remove`。',
+          'adopt 需要显式子命令；请使用 `adopt list`、`adopt bootstrap`、`adopt apply`、`adopt diff`、`adopt verify`、`adopt upgrade` 或 `adopt remove`。',
         listCompleted: 'adoption pack catalog 已成功列出。',
+        bootstrapBlockedGeneric:
+          'adopt bootstrap 因存在可执行阻塞项而停止；请按需改用 adopt diff/upgrade/remove，并把 `check` 保留为更广的 follow-up。',
+        bootstrapBlocked:
+          'adoption pack {{packId}} bootstrap 因存在可执行阻塞项而停止；请按需改用 adopt diff/upgrade/remove，并把 `check` 保留为更广的 follow-up。',
+        bootstrapCompleted:
+          'adoption pack {{packId}} bootstrap 已完成；如需更广的治理审计，请显式运行 `check`。',
         applyCompleted: 'adoption pack {{packId}} 已成功应用。',
         diffCompleted: 'adoption pack {{packId}} diff 已完成。',
         verifyCompleted: 'adoption pack {{packId}} 校验已完成。',

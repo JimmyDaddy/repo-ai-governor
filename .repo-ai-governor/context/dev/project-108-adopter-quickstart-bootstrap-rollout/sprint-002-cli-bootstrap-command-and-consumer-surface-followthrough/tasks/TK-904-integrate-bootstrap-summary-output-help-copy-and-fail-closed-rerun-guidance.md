@@ -1,6 +1,6 @@
 # TK-904 integrate bootstrap summary output help copy and fail-closed rerun guidance
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-15
 - Owner: AI-Agent
 - Priority: P1
@@ -54,9 +54,12 @@
 ## 9. 执行记录
 
 1. 2026-04-15：任务创建，状态初始化为 `planned`。
+2. 2026-04-15：进入实现窗口，开始把 bootstrap summary output、help copy 与 rerun guidance 对齐到 `adopt bootstrap` 的真实行为与 fail-closed 语义。
+3. 2026-04-16：已完成 CLI presenter 与 i18n 接入；`adopt bootstrap` 子命令、result payload、help copy、blocker wording 与 bootstrap summary artifact 路径已经统一对齐到 quickstart contract，并保留 `check` 为显式 broader follow-up。
+4. 2026-04-16：验证结果已记录：`pnpm exec vitest run apps/cli/test/cli-skeleton.integration.test.ts apps/cli/test/adopt-command.integration.test.ts apps/cli/test/commands/adopt-command.test.ts --maxWorkers=1 --maxConcurrency=1` 通过，`pnpm run build` 通过；根级 `pnpm -s tsc -p tsconfig.json --noEmit` 继续受既有仓库测试类型漂移影响而失败，未见本任务新引入的 presenter/runtime 类型错误。
 
 ## 10. 产出
 
-1. 待执行：bootstrap summary presenter baseline
-2. 待执行：help / result copy
-3. 待执行：explicit `check` follow-up guidance
+1. `adopt bootstrap` 已在 CLI help 与 command dispatch 中成为公开 quickstart 子命令。
+2. bootstrap summary presenter 已输出 selector resolution、reentry mode 与 init/doctor/bootstrap artifact 路径。
+3. help/result copy 与 blocker messaging 已保留 `check` 作为显式 broader governance follow-up。

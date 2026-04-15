@@ -99,6 +99,7 @@ describe('CLI command integration', () => {
     expect(exitCode).toBe(0);
     expect(stderrBuffer.join('')).toBe('');
     expect(stdoutBuffer.join('')).toContain('list');
+    expect(stdoutBuffer.join('')).toContain('bootstrap');
     expect(stdoutBuffer.join('')).toContain('apply');
     expect(stdoutBuffer.join('')).toContain('diff');
     expect(stdoutBuffer.join('')).toContain('verify');

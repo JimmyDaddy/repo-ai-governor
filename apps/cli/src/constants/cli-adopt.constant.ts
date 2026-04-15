@@ -6,6 +6,7 @@ import { HostDistributionHost } from '@repo-ai-governor/standards';
  */
 export enum CliAdoptAction {
   LIST = 'list',
+  BOOTSTRAP = 'bootstrap',
   APPLY = 'apply',
   DIFF = 'diff',
   VERIFY = 'verify',

@@ -3,23 +3,24 @@
 ## Primary Stream
 
 - Status: active
-- Stream: `stream-project-108-sprint-002`
+- Stream: `stream-project-108-sprint-003`
 - Project: `project-108-adopter-quickstart-bootstrap-rollout`
-- Sprint: `sprint-002-cli-bootstrap-command-and-consumer-surface-followthrough`
+- Sprint: `sprint-003-cleanroom-evidence-and-rollout-closeout`
 - Docs: `.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout`
-- Plan: `.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-002-cli-bootstrap-command-and-consumer-surface-followthrough/plan.md`
-- Tasks: `.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-002-cli-bootstrap-command-and-consumer-surface-followthrough/tasks/`
-- Checklist: `.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-002-cli-bootstrap-command-and-consumer-surface-followthrough/tasks/checklist.md`
-- CSV: `.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-002-cli-bootstrap-command-and-consumer-surface-followthrough/tasks/tasks.csv`
-- Review: `.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-002-cli-bootstrap-command-and-consumer-surface-followthrough/review`
-- Note: `2026-04-15` `project-108 / sprint-001` 已完成 quickstart baseline freeze、`CR-001` clean resolve 与 `TK-911 / DA-901` closeout write-back；当前 primary surface 切换到 `project-108 / sprint-002`，待 `TK-903` 开工后再将 sprint-002 plan 切到 `active`。
+- Plan: `.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/plan.md`
+- Tasks: `.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/tasks/`
+- Checklist: `.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/tasks/checklist.md`
+- CSV: `.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/tasks/tasks.csv`
+- Review: `.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/review`
+- Note: `2026-04-16` `CR-001` 已 clean `resolved`，`TK-912 / DA-912` 已完成 sprint-002 closeout write-back、delivery registry 前移与 sprint-003 activation。当前 primary surface 为 `sprint-003-cleanroom-evidence-and-rollout-closeout`，但在 `TK-906` 正式开工前，sprint plan 继续保持 `planned`。
 
 ## Active Streams
 
-- `stream-project-108-sprint-002`: project=`project-108-adopter-quickstart-bootstrap-rollout`, sprint=`sprint-002-cli-bootstrap-command-and-consumer-surface-followthrough`, docs=`.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout`, plan=`.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-002-cli-bootstrap-command-and-consumer-surface-followthrough/plan.md`, tasks=`.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-002-cli-bootstrap-command-and-consumer-surface-followthrough/tasks/`, checklist=`.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-002-cli-bootstrap-command-and-consumer-surface-followthrough/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-002-cli-bootstrap-command-and-consumer-surface-followthrough/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-002-cli-bootstrap-command-and-consumer-surface-followthrough/review/`, status=`active`, role=`primary`
+- `stream-project-108-sprint-003`: project=`project-108-adopter-quickstart-bootstrap-rollout`, sprint=`sprint-003-cleanroom-evidence-and-rollout-closeout`, docs=`.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout`, plan=`.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/review/`, status=`active`, role=`primary`
 
 ## Planned Follow-Up Streams
 
+- none
 
 ## Completed Stream History
 
@@ -38,4 +39,3 @@
 7. `Worktree Review Target` 只在“已完成 stream 仍持有未收口 CR”时使用；不需要 CR 的 completed stream 直接进入 history，不占用该槽位。
 8. `Worktree Review Target` 只允许保留一个默认 target；若同一 worktree 同时存在多个 completed stream 的 CR 尾项，必须显式指定 report 路径，或先收完一个再切换另一个。
 9. 当最后一个 pending/verified CR 收口为 `resolved` 后，必须在同一工作流中自动移除 `Worktree Review Target`，避免悬挂 override 持续污染默认上下文。
-- project=`project-108-adopter-quickstart-bootstrap-rollout`, sprint=`sprint-003-cleanroom-evidence-and-rollout-closeout`, status=`planned`, plan=`.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/review`

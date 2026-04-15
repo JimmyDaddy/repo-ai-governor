@@ -71,34 +71,45 @@ Notes for external adopters:
 2. Treat those as informational unless you are intentionally vendoring this repository's own governance docs and scripts.
 3. `init` defaults to `tool_managed`, so a fresh target repo may not create `.repo-ai-governor/` immediately.
 
-## 3. Prefer Managed Installation With `adopt`
+## 3. Prefer Managed Installation With `adopt bootstrap`
 
-Once bootstrap succeeds, use the managed installer path before reaching for lower-level host export commands.
+Once the basic environment bootstrap (`init` + `doctor`) succeeds, use the managed installer quickstart before reaching for lower-level host export commands.
 
 ```bash
 pnpm exec repo-ai-governor adopt list --output json
-pnpm exec repo-ai-governor adopt apply adopter-complete --repo . --hosts codex,claude-code,github-copilot --output json
-pnpm exec repo-ai-governor adopt verify --repo . --output json
+pnpm exec repo-ai-governor adopt bootstrap --repo . --hosts codex,claude-code,github-copilot --output json
+pnpm exec repo-ai-governor check --output json
 ```
 
 Why this is the default path:
 
-1. `adopt apply` materializes managed host-facing assets, install metadata, and adoption guides under `.repo-ai-governor/adoption/installations/**`.
-2. Built-in adoption packs do not require a pre-existing source-local `.codex/skills/**` tree in the target repository.
-3. `adopt verify`, `adopt diff`, `adopt upgrade`, and `adopt remove` become the supported lifecycle path after installation.
+1. `adopt bootstrap` runs `init -> doctor --fix -> adopt apply -> adopt verify` in one fixed installer quickstart.
+2. If you omit the selector, bootstrap defaults to the official built-in pack; explicit selectors reuse the current pack-id/profile-alias rules and stay fail-closed on ambiguity.
+3. Bootstrap summary artifacts are additive hand-off diagnostics only; the install receipt and `adopt verify` summary remain the canonical install truth under `.repo-ai-governor/adoption/installations/**`.
+4. Clean reruns may reuse one matching clean installation, while drift or pack/profile mismatch redirects back to `adopt diff/upgrade/remove`.
+5. `check` remains the explicit broader governance follow-up after installation instead of being absorbed into the install result.
+
+After the quickstart succeeds, keep using the managed lifecycle commands for later rechecks or changes:
+
+```bash
+pnpm exec repo-ai-governor adopt verify --repo . --output json
+pnpm exec repo-ai-governor adopt diff --repo . --output json
+pnpm exec repo-ai-governor adopt upgrade --repo . --output json
+pnpm exec repo-ai-governor adopt remove --repo . --output json
+```
 
 Use the self-host profile only if the target repository should own a repo-local governance workspace template:
 
 ```bash
-pnpm exec repo-ai-governor adopt apply adopter-complete --adoption-profile self-host-complete --repo . --workspace-mode repo_local --hosts codex --output json
-pnpm exec repo-ai-governor adopt verify --repo . --output json
+pnpm exec repo-ai-governor adopt bootstrap --adoption-profile self-host-complete --repo . --workspace-mode repo_local --hosts codex --output json
+pnpm exec repo-ai-governor check --output json
 ```
 
 That path seeds empty or template-backed governance surfaces. It does not copy live execution state from this repository.
 
 Read the self-host verification result conservatively:
 
-1. A fresh `self-host-complete + repo_local` install is expected to return `warn` from `adopt verify` while starter governance, product-direction, or execution placeholders are still untouched.
+1. A fresh `self-host-complete + repo_local` bootstrap or follow-up `adopt verify` is expected to return `warn` while starter governance, product-direction, or execution placeholders are still untouched.
 2. Those warnings are self-host-only readiness signals; the default `adopter-complete` install path does not inherit them.
 3. `adopt verify` now surfaces an `execution_preflight_signal=blocked` warning for untouched self-host starter placeholders; treat that signal as a hard blocker before unattended self-host execution, because the current public contract does not expose a separate automatic preflight command yet.
 4. After the repository authors its own repo-local surfaces, use `check` as the explicit broader governance audit instead of treating `adopt verify` as a substitute for full workspace readiness.

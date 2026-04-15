@@ -1,6 +1,6 @@
 # TK-903 implement adopt bootstrap orchestrator and default built-in resolution
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-15
 - Owner: AI-Agent
 - Priority: P1
@@ -55,9 +55,12 @@
 ## 9. 执行记录
 
 1. 2026-04-15：任务创建，状态初始化为 `planned`。
+2. 2026-04-15：开始进入实现窗口，状态切换为 `in_progress`，准备落 `adopt bootstrap` runtime orchestration、selector resolution 与 fail-closed boundary。
+3. 2026-04-16：已完成 runtime 实现；`adopt bootstrap` 现在按固定顺序编排 `init -> doctor --fix -> adopt apply -> adopt verify`，在省略 selector 时默认回落官方 built-in pack，对显式 profile-alias 歧义保持 fail-closed，并把 clean rerun / drift redirect 语义收口到 `reuse_existing_installation` 与 `adopt diff/upgrade/remove`。
+4. 2026-04-16：验证结果已记录：`pnpm exec vitest run apps/cli/test/cli-skeleton.integration.test.ts apps/cli/test/adopt-command.integration.test.ts apps/cli/test/commands/adopt-command.test.ts --maxWorkers=1 --maxConcurrency=1` 通过，`pnpm run build` 通过；`pnpm -s tsc -p tsconfig.json --noEmit` 仍失败，但失败点分布在本任务变更面外的既有测试文件，未观察到新的 sprint-002 source-surface 类型错误。
 
 ## 10. 产出
 
-1. 待执行：bootstrap orchestrator runtime
-2. 待执行：default built-in selector behavior
-3. 待执行：fail-closed ambiguous resolution baseline
+1. `apps/cli/src/runtime/adoption-pack-bootstrap-runtime.ts` 已提供 bootstrap orchestrator runtime 与 additive summary artifact。
+2. `apps/cli/src/runtime/adoption-pack-runtime.ts` 已收口 omitted selector 默认 built-in 与 explicit profile-alias ambiguity fail-closed 语义。
+3. clean rerun、drift redirect 与 lifecycle handoff 已固定回 `adopt diff/upgrade/remove`。

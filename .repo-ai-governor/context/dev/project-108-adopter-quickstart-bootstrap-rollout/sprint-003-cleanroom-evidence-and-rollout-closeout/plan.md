@@ -34,3 +34,5 @@
 1. 若 `sprint-002` 尚未给出稳定 help/docs wording，本 sprint 不得提前制造最终 truthfulness 结论。
 2. project final audit 只能在 `TK-906` 与 `TK-907` 完成后推进。
 3. sprint-003 必须复用 sprint-001 已冻结的 selector/rerun boundary，而不是在 clean-room evidence 阶段重新放宽 fail-closed semantics。
+4. 2026-04-16：`CR-001` 已 clean `resolved`；`TK-912 / DA-912` 已将本 sprint 提升为新的 primary execution surface，但在 `TK-906` 正式开工前，sprint plan 继续保持 `planned`。
+5. 2026-04-16：`TK-912` 已完成 sprint-002 closeout write-back 与 delivery registry 前移；当前 sprint 成为唯一 active primary surface，等待 `TK-906` 开工。

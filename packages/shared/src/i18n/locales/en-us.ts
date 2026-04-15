@@ -136,8 +136,10 @@ export const EN_US_TRANSLATIONS = {
       check: { description: 'Run governance quality checks baseline.' },
       adopt: {
         description:
-          'List, apply, diff, verify, upgrade, or remove one managed adoption pack from a target repository.',
+          'List, bootstrap, apply, diff, verify, upgrade, or remove one managed adoption pack from a target repository.',
         listDescription: 'List resolved adoption packs and their supported profiles.',
+        bootstrapDescription:
+          'Run the installer quickstart path: init, doctor --fix, adopt apply, and adopt verify.',
         applyDescription:
           'Apply one adoption pack into the target repository and write managed ownership receipts.',
         diffDescription:
@@ -153,6 +155,8 @@ export const EN_US_TRANSLATIONS = {
         actionGuideTitle: 'Action guide:',
         actionGuideList:
           'Inspect built-in/global/repo-local pack resolution and available profiles.',
+        actionGuideBootstrap:
+          'Run the installer quickstart in fixed order and keep `check` as the explicit broader governance follow-up.',
         actionGuideApply:
           'Materialize project-local host assets, self-host templates, and managed metadata into one repository.',
         actionGuideDiff:
@@ -165,8 +169,14 @@ export const EN_US_TRANSLATIONS = {
           'Delete only managed files tracked by the install receipt; removal remains explicit and fail-closed.',
         examplesTitle: 'Examples:',
         subcommandRequired:
-          'adopt requires an explicit subcommand; use `adopt list`, `adopt apply`, `adopt diff`, `adopt verify`, `adopt upgrade`, or `adopt remove`.',
+          'adopt requires an explicit subcommand; use `adopt list`, `adopt bootstrap`, `adopt apply`, `adopt diff`, `adopt verify`, `adopt upgrade`, or `adopt remove`.',
         listCompleted: 'Adoption pack catalog listed successfully.',
+        bootstrapBlockedGeneric:
+          'Adoption bootstrap stopped with actionable blockers. Use adopt diff/upgrade/remove as needed, and keep `check` as the broader follow-up.',
+        bootstrapBlocked:
+          'Adoption pack {{packId}} bootstrap stopped with actionable blockers. Use adopt diff/upgrade/remove as needed, and keep `check` as the broader follow-up.',
+        bootstrapCompleted:
+          'Adoption pack {{packId}} bootstrap completed. Run `check` for broader governance audit.',
         applyCompleted: 'Adoption pack {{packId}} applied successfully.',
         diffCompleted: 'Adoption pack {{packId}} diff completed.',
         verifyCompleted: 'Adoption pack {{packId}} verification completed.',

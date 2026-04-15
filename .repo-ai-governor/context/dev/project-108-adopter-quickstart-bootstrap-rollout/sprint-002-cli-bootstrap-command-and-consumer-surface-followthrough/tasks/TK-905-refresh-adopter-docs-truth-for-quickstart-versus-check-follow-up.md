@@ -1,6 +1,6 @@
 # TK-905 refresh adopter docs truth for quickstart versus check follow-up
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-15
 - Owner: AI-Agent
 - Priority: P1
@@ -54,9 +54,12 @@
 ## 9. 执行记录
 
 1. 2026-04-15：任务创建，状态初始化为 `planned`。
+2. 2026-04-15：进入实现窗口，开始刷新 README、adoption playbook 与 support matrix，使 quickstart、verify 与 `check` 的边界表述回到运行时真值。
+3. 2026-04-16：已完成 adopter-facing docs truth refresh；README、local adoption playbook 与 support matrix 现已把 `adopt bootstrap` 表述为 installer quickstart convenience surface，并明确 `adopt verify` 仍是 canonical install truth、`check` 仍是显式 broader governance follow-up。
+4. 2026-04-16：文档验证结果已记录：`node ./scripts/governance/check-normative-loading-manifest.js --mode block` 与 `node ./scripts/governance/check-docs-triad-sync.js` 通过；同窗口 `pnpm run build` 与定向 vitest 已提供代码变更所需的 build/test 证据。
 
 ## 10. 产出
 
-1. 待执行：README truth refresh
-2. 待执行：local adoption playbook refresh
-3. 待执行：support matrix wording update
+1. `README.md` 已切到 `adopt bootstrap` quickstart，并保留 `check` 为显式 broader governance follow-up。
+2. `docs/local-adoption-playbook.md` 已补齐 quickstart、rerun redirect 与 lifecycle handoff 说明。
+3. `docs/support-matrix.md` 已同步 public command surface truth 与 bootstrap convenience boundary。

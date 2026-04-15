@@ -26,6 +26,7 @@ import {
   type AdoptionPackVerificationCheck,
   type AdoptionPackVerificationSummary,
   AdoptionPackWorkspaceModePolicy,
+  BUILT_IN_ADOPTION_PACK_ID,
   BUILT_IN_ADOPTION_PACK_PROFILE_IDS,
   DEFAULT_ADOPTION_METADATA_ROOT_SEGMENTS,
   HostDistributionHost,
@@ -36,6 +37,7 @@ import {
   HostVerificationStatus,
   type ResolvedAdoptionPackDefinition,
   StructuredWorkflowAssetRegistry,
+  resolveBuiltInAdoptionPackDefinition,
 } from '@repo-ai-governor/standards';
 import { CliAdoptAction } from '../constants/cli-adopt.constant.js';
 import type { CliAdoptCommandOptions } from '../types/interfaces/cli-adopt-command.interface.js';
@@ -51,7 +53,7 @@ interface AdoptionListItem {
   installSupported: boolean;
 }
 
-interface AdoptionOperationResult {
+export interface AdoptionOperationResult {
   action: CliAdoptAction;
   repoRoot: string;
   packId: string | null;
@@ -67,6 +69,12 @@ interface AdoptionOperationResult {
   diffReportPath: string | null;
   writtenArtifacts: string[];
   checks: AdoptionPackVerificationCheck[];
+  initManifestPath?: string | null;
+  doctorDiagnosticsPath?: string | null;
+  bootstrapSummaryPath?: string | null;
+  selectorResolution?: string | null;
+  reentryMode?: string | null;
+  userFacingMessage?: string | null;
   availablePacks?: AdoptionListItem[];
 }
 
@@ -138,6 +146,67 @@ export class CliAdoptionPackRuntime {
   }
 
   /**
+   * Resolves one explicit install selection using pack-id first, then unique profile-id fallback.
+   * @param options Normalized adopt command options.
+   * @returns Resolved definition/profile pair plus selector-resolution metadata.
+   */
+  public async resolveInstallSelection(options: CliAdoptCommandOptions): Promise<{
+    definition: ResolvedAdoptionPackDefinition;
+    profile: AdoptionPackProfile;
+    selectorResolution: 'explicit_pack' | 'explicit_profile_alias';
+  }> {
+    return this.resolveExplicitInstallSelection(options);
+  }
+
+  /**
+   * Resolves bootstrap install selection, defaulting omitted selectors to the official built-in pack.
+   * @param options Normalized adopt command options.
+   * @returns Resolved definition/profile pair plus selector-resolution metadata.
+   */
+  public async resolveBootstrapSelection(options: CliAdoptCommandOptions): Promise<{
+    definition: ResolvedAdoptionPackDefinition;
+    profile: AdoptionPackProfile;
+    selectorResolution: 'default_built_in' | 'explicit_pack' | 'explicit_profile_alias';
+  }> {
+    if (options.packSelector) {
+      return this.resolveExplicitInstallSelection(options);
+    }
+
+    const builtInDefinition = resolveBuiltInAdoptionPackDefinition(BUILT_IN_ADOPTION_PACK_ID);
+    if (!builtInDefinition) {
+      throw new RuntimeError(
+        GovernorErrorCode.STANDARDS_PACK_INVALID,
+        this.localizeText(
+          'The official built-in adoption pack is unavailable for bootstrap defaulting.',
+          '官方内置 adoption pack 不可用，无法作为 bootstrap 的默认选择。',
+        ),
+        {
+          packId: BUILT_IN_ADOPTION_PACK_ID,
+        },
+      );
+    }
+
+    return {
+      definition: builtInDefinition,
+      profile: this.resolveProfile(builtInDefinition, options.adoptionProfileId, null),
+      selectorResolution: 'default_built_in',
+    };
+  }
+
+  /**
+   * Resolves the effective workspace mode for one selected adoption profile.
+   * @param profile Resolved adoption profile.
+   * @param requestedWorkspaceMode Optional CLI override.
+   * @returns Effective workspace mode after policy enforcement.
+   */
+  public resolveEffectiveWorkspaceMode(
+    profile: AdoptionPackProfile,
+    requestedWorkspaceMode: WorkspaceMode | null,
+  ): WorkspaceMode {
+    return this.resolveWorkspaceMode(profile, requestedWorkspaceMode, true);
+  }
+
+  /**
    * Lists available adoption packs after layered precedence has been applied.
    */
   public async list(options: CliAdoptCommandOptions): Promise<AdoptionOperationResult> {
@@ -181,9 +250,33 @@ export class CliAdoptionPackRuntime {
    * Applies one resolved adoption pack into the target repository.
    */
   public async apply(options: CliAdoptCommandOptions): Promise<AdoptionOperationResult> {
-    const repoRoot = this.resolveRepoRoot(options.repoPath);
     const resolvedTarget = await this.resolveInstallTarget(options);
-    const existingReceipt = await this.readExistingReceipt(repoRoot, options.packSelector);
+    return this.applyResolvedTarget(options, resolvedTarget);
+  }
+
+  /**
+   * Applies one pre-resolved adoption target into the target repository.
+   * @param options Normalized adopt command options.
+   * @param resolvedTarget Definition/profile pair chosen by selector resolution.
+   * @returns Canonical adoption operation result.
+   */
+  public async applyResolvedTarget(
+    options: CliAdoptCommandOptions,
+    resolvedTarget: ResolvedInstallTarget,
+  ): Promise<AdoptionOperationResult> {
+    const repoRoot = this.resolveRepoRoot(options.repoPath);
+    return this.applyResolvedInstallTarget(options, repoRoot, resolvedTarget);
+  }
+
+  private async applyResolvedInstallTarget(
+    options: CliAdoptCommandOptions,
+    repoRoot: string,
+    resolvedTarget: ResolvedInstallTarget,
+  ): Promise<AdoptionOperationResult> {
+    const existingReceipt = await this.readExistingReceipt(
+      repoRoot,
+      options.packSelector ?? resolvedTarget.definition.manifest.packId,
+    );
     const selectedTargets = this.resolveSelectedHostTargets(resolvedTarget.profile, options.hosts);
     const workspaceMode = this.resolveWorkspaceMode(
       resolvedTarget.profile,
@@ -609,25 +702,64 @@ export class CliAdoptionPackRuntime {
       );
     }
 
+    const resolvedSelection = await this.resolveExplicitInstallSelection(options);
+    return {
+      definition: resolvedSelection.definition,
+      profile: resolvedSelection.profile,
+    };
+  }
+
+  private async resolveExplicitInstallSelection(options: CliAdoptCommandOptions): Promise<{
+    definition: ResolvedAdoptionPackDefinition;
+    profile: AdoptionPackProfile;
+    selectorResolution: 'explicit_pack' | 'explicit_profile_alias';
+  }> {
+    if (!options.packSelector) {
+      throw new RuntimeError(
+        GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+        this.localizeText(
+          'adopt apply/upgrade/remove requires one pack selector.',
+          'adopt apply/upgrade/remove 需要提供 pack 选择器。',
+        ),
+      );
+    }
+
     try {
       const definition = await this.adoptionPackRegistry.resolveDefinition(options.packSelector);
       return {
         definition,
         profile: this.resolveProfile(definition, options.adoptionProfileId, null),
+        selectorResolution: 'explicit_pack',
       };
     } catch (error) {
       const manifests = await this.adoptionPackRegistry.list();
-      const manifest = manifests.find((candidate) =>
+      const matchingManifests = manifests.filter((candidate) =>
         candidate.profiles.some((profile) => profile.profileId === options.packSelector),
       );
-      if (!manifest) {
+      if (matchingManifests.length === 0) {
         throw error;
       }
 
+      if (matchingManifests.length > 1) {
+        throw new RuntimeError(
+          GovernorErrorCode.STANDARDS_PACK_INVALID,
+          this.localizeText(
+            `Pack selector "${options.packSelector}" is ambiguous across multiple adoption packs; use an explicit pack id.`,
+            `pack 选择器 "${options.packSelector}" 同时命中多个 adoption pack；请改用显式 pack id。`,
+          ),
+          {
+            selector: options.packSelector,
+            matchingPackIds: matchingManifests.map((manifest) => manifest.packId),
+          },
+        );
+      }
+
+      const manifest = matchingManifests[0] as (typeof matchingManifests)[number];
       const definition = await this.adoptionPackRegistry.resolveDefinition(manifest.packId);
       return {
         definition,
         profile: this.resolveProfile(definition, options.adoptionProfileId, options.packSelector),
+        selectorResolution: 'explicit_profile_alias',
       };
     }
   }

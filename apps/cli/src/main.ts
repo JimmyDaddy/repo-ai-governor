@@ -1021,6 +1021,18 @@ export async function runCli(
         await executeCliCommand(CliCommandName.ADOPT);
       });
     adoptCommand
+      .command(CliAdoptAction.BOOTSTRAP)
+      .description(runtimeI18n.t('cli.commands.adopt.bootstrapDescription'))
+      .argument('[packId]', runtimeI18n.t('cli.commands.adopt.packArgument'))
+      .option('--repo <path>', runtimeI18n.t('cli.options.adoptRepo'))
+      .option('--adoption-profile <profileId>', runtimeI18n.t('cli.options.adoptProfile'))
+      .option('--hosts <hosts>', runtimeI18n.t('cli.options.adoptHosts'))
+      .option('--workspace-mode <mode>', runtimeI18n.t('cli.options.workspaceMode'))
+      .option('--force', runtimeI18n.t('cli.options.force'))
+      .action(async () => {
+        await executeCliCommand(CliCommandName.ADOPT);
+      });
+    adoptCommand
       .command(CliAdoptAction.APPLY)
       .description(runtimeI18n.t('cli.commands.adopt.applyDescription'))
       .argument('[packId]', runtimeI18n.t('cli.commands.adopt.packArgument'))
@@ -1452,6 +1464,7 @@ function buildAdoptHelpText(i18n: I18nRuntime): string {
     '',
     i18n.t('cli.commands.adopt.actionGuideTitle'),
     `  ${CliAdoptAction.LIST.padEnd(12)} ${i18n.t('cli.commands.adopt.actionGuideList')}`,
+    `  ${CliAdoptAction.BOOTSTRAP.padEnd(12)} ${i18n.t('cli.commands.adopt.actionGuideBootstrap')}`,
     `  ${CliAdoptAction.APPLY.padEnd(12)} ${i18n.t('cli.commands.adopt.actionGuideApply')}`,
     `  ${CliAdoptAction.DIFF.padEnd(12)} ${i18n.t('cli.commands.adopt.actionGuideDiff')}`,
     `  ${CliAdoptAction.VERIFY.padEnd(12)} ${i18n.t('cli.commands.adopt.actionGuideVerify')}`,
@@ -1460,6 +1473,8 @@ function buildAdoptHelpText(i18n: I18nRuntime): string {
     '',
     i18n.t('cli.commands.adopt.examplesTitle'),
     `  ${CLI_PROGRAM_NAME} adopt list`,
+    `  ${CLI_PROGRAM_NAME} adopt bootstrap --repo .`,
+    `  ${CLI_PROGRAM_NAME} adopt bootstrap adopter-complete --repo . --hosts codex,claude-code`,
     `  ${CLI_PROGRAM_NAME} adopt apply adopter-complete --repo . --hosts codex,claude-code,github-copilot`,
     `  ${CLI_PROGRAM_NAME} adopt apply adopter-complete --adoption-profile self-host-complete --repo . --workspace-mode repo_local`,
     `  ${CLI_PROGRAM_NAME} adopt diff --repo .`,

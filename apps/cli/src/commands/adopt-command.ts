@@ -6,6 +6,7 @@ import {
   CLI_RUNTIME_OPERATION,
   CliGovernanceCheckStatus,
 } from '../constants/cli-governance-runtime.constant.js';
+import { CliAdoptionPackBootstrapRuntime } from '../runtime/adoption-pack-bootstrap-runtime.js';
 import { CliAdoptionPackRuntime } from '../runtime/adoption-pack-runtime.js';
 import type {
   CliCommandExecutorContext,
@@ -26,6 +27,11 @@ export class CliAdoptCommand implements CliCommandExecutor {
       localizeText: (english: string, chinese: string) => string,
     ) => CliAdoptionPackRuntime = (currentWorkingDirectory, localizeText) =>
       new CliAdoptionPackRuntime(currentWorkingDirectory, localizeText),
+    private readonly bootstrapRuntimeFactory: (
+      currentWorkingDirectory: string,
+      localizeText: (english: string, chinese: string) => string,
+    ) => CliAdoptionPackBootstrapRuntime = (currentWorkingDirectory, localizeText) =>
+      new CliAdoptionPackBootstrapRuntime(currentWorkingDirectory, localizeText),
   ) {}
 
   public async execute(context: CliCommandExecutorContext) {
@@ -41,18 +47,24 @@ export class CliAdoptCommand implements CliCommandExecutor {
       context.options.currentWorkingDirectory,
       context.localizeText,
     );
+    const bootstrapRuntime = this.bootstrapRuntimeFactory(
+      context.options.currentWorkingDirectory,
+      context.localizeText,
+    );
     const operationResult =
       options.action === CliAdoptAction.LIST
         ? await runtime.list(options)
-        : options.action === CliAdoptAction.APPLY
-          ? await runtime.apply(options)
-          : options.action === CliAdoptAction.DIFF
-            ? await runtime.diff(options)
-            : options.action === CliAdoptAction.VERIFY
-              ? await runtime.verify(options)
-              : options.action === CliAdoptAction.UPGRADE
-                ? await runtime.upgrade(options)
-                : await runtime.remove(options);
+        : options.action === CliAdoptAction.BOOTSTRAP
+          ? await bootstrapRuntime.bootstrap(options)
+          : options.action === CliAdoptAction.APPLY
+            ? await runtime.apply(options)
+            : options.action === CliAdoptAction.DIFF
+              ? await runtime.diff(options)
+              : options.action === CliAdoptAction.VERIFY
+                ? await runtime.verify(options)
+                : options.action === CliAdoptAction.UPGRADE
+                  ? await runtime.upgrade(options)
+                  : await runtime.remove(options);
     const checks: CliCommandResultCheck[] = [
       {
         id: CliCommandResultCheckId.ADOPT_ACTION,
@@ -107,8 +119,38 @@ export class CliAdoptCommand implements CliCommandExecutor {
             },
           ]
         : []),
+      ...(operationResult.initManifestPath
+        ? [
+            {
+              id: 'init_manifest',
+              path: operationResult.initManifestPath,
+            },
+          ]
+        : []),
+      ...(operationResult.doctorDiagnosticsPath
+        ? [
+            {
+              id: 'doctor_diagnostics',
+              path: operationResult.doctorDiagnosticsPath,
+            },
+          ]
+        : []),
+      ...(operationResult.bootstrapSummaryPath
+        ? [
+            {
+              id: 'adoption_bootstrap_summary',
+              path: operationResult.bootstrapSummaryPath,
+            },
+          ]
+        : []),
     ];
-    const message = this.resolveMessage(context, operationResult.action, operationResult.packId);
+    const message = this.resolveMessage(
+      context,
+      operationResult.action,
+      operationResult.packId,
+      operationResult.verificationStatus,
+      operationResult.userFacingMessage ?? null,
+    );
     const checkTotals = context.calculateCheckTotals(checks);
     const blockingChecks = checks
       .filter((check) => check.status === CliGovernanceCheckStatus.FAIL)
@@ -126,6 +168,15 @@ export class CliAdoptCommand implements CliCommandExecutor {
           : {}),
         ...(operationResult.diffReportPath
           ? { diffReportPath: operationResult.diffReportPath }
+          : {}),
+        ...(operationResult.initManifestPath
+          ? { initManifestPath: operationResult.initManifestPath }
+          : {}),
+        ...(operationResult.doctorDiagnosticsPath
+          ? { doctorDiagnosticsPath: operationResult.doctorDiagnosticsPath }
+          : {}),
+        ...(operationResult.bootstrapSummaryPath
+          ? { bootstrapSummaryPath: operationResult.bootstrapSummaryPath }
           : {}),
         checks,
         blockingChecks,
@@ -154,6 +205,19 @@ export class CliAdoptCommand implements CliCommandExecutor {
           ...(operationResult.availablePacks
             ? { available_pack_count: String(operationResult.availablePacks.length) }
             : {}),
+          ...(operationResult.selectorResolution
+            ? { selector_resolution: operationResult.selectorResolution }
+            : {}),
+          ...(operationResult.reentryMode ? { reentry_mode: operationResult.reentryMode } : {}),
+          ...(operationResult.initManifestPath
+            ? { init_manifest_path: operationResult.initManifestPath }
+            : {}),
+          ...(operationResult.doctorDiagnosticsPath
+            ? { doctor_diagnostics_path: operationResult.doctorDiagnosticsPath }
+            : {}),
+          ...(operationResult.bootstrapSummaryPath
+            ? { bootstrap_summary_path: operationResult.bootstrapSummaryPath }
+            : {}),
         },
       },
     };
@@ -163,6 +227,8 @@ export class CliAdoptCommand implements CliCommandExecutor {
     switch (action) {
       case CliAdoptAction.LIST:
         return CLI_RUNTIME_OPERATION.ADOPTION_LIST;
+      case CliAdoptAction.BOOTSTRAP:
+        return CLI_RUNTIME_OPERATION.ADOPTION_BOOTSTRAP;
       case CliAdoptAction.APPLY:
         return CLI_RUNTIME_OPERATION.ADOPTION_APPLY;
       case CliAdoptAction.DIFF:
@@ -191,11 +257,24 @@ export class CliAdoptCommand implements CliCommandExecutor {
     context: CliCommandExecutorContext,
     action: CliAdoptAction,
     packId: string | null,
+    verificationStatus: string,
+    userFacingMessage: string | null,
   ): string {
+    if (userFacingMessage) {
+      return userFacingMessage;
+    }
     const packInterpolation = packId ? { packId } : undefined;
+    if (verificationStatus === 'fail' && action === CliAdoptAction.BOOTSTRAP) {
+      if (!packInterpolation) {
+        return context.translate('cli.commands.adopt.bootstrapBlockedGeneric');
+      }
+      return context.translate('cli.commands.adopt.bootstrapBlocked', packInterpolation);
+    }
     switch (action) {
       case CliAdoptAction.LIST:
         return context.translate('cli.commands.adopt.listCompleted');
+      case CliAdoptAction.BOOTSTRAP:
+        return context.translate('cli.commands.adopt.bootstrapCompleted', packInterpolation);
       case CliAdoptAction.APPLY:
         return context.translate('cli.commands.adopt.applyCompleted', packInterpolation);
       case CliAdoptAction.DIFF:
