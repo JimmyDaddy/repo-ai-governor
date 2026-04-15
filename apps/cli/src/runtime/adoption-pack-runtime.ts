@@ -70,7 +70,7 @@ export interface AdoptionOperationResult {
   writtenArtifacts: string[];
   checks: AdoptionPackVerificationCheck[];
   initManifestPath?: string | null;
-  doctorDiagnosticsPath?: string | null;
+  bootstrapDoctorDiagnosticsPath?: string | null;
   bootstrapSummaryPath?: string | null;
   selectorResolution?: string | null;
   reentryMode?: string | null;

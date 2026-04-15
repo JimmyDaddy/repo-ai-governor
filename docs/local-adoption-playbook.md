@@ -83,9 +83,9 @@ pnpm exec repo-ai-governor check --output json
 
 Why this is the default path:
 
-1. `adopt bootstrap` runs `init -> doctor --fix -> adopt apply -> adopt verify` in one fixed installer quickstart.
+1. `adopt bootstrap` runs `init -> bootstrap doctor preflight -> adopt apply -> adopt verify` in one fixed installer quickstart.
 2. If you omit the selector, bootstrap defaults to the official built-in pack; explicit selectors reuse the current pack-id/profile-alias rules and stay fail-closed on ambiguity.
-3. Bootstrap summary artifacts are additive hand-off diagnostics only; the install receipt and `adopt verify` summary remain the canonical install truth under `.repo-ai-governor/adoption/installations/**`.
+3. Bootstrap init/bootstrap-doctor/bootstrap-summary artifacts are additive hand-off diagnostics only; the install receipt and `adopt verify` summary remain the canonical install truth under `.repo-ai-governor/adoption/installations/**`.
 4. Clean reruns may reuse one matching clean installation, while drift or pack/profile mismatch redirects back to `adopt diff/upgrade/remove`.
 5. `check` remains the explicit broader governance follow-up after installation instead of being absorbed into the install result.
 
@@ -290,7 +290,7 @@ pnpm exec repo-ai-governor host export --host codex --mode project-local --outpu
 pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/codex/host-export.manifest.json
 ```
 
-Treat `host export`, `host verify`, and `host pack` as lower-level follow-up surfaces beneath the main `adopt apply` installation story.
+Treat built-in `adopt bootstrap` as the preferred whole-repository quickstart, keep `adopt apply` as the explicit lower-level install surface, and use `host export`, `host verify`, and `host pack` as lower-level follow-up surfaces.
 For packaged local host bootstrap, import the sidecar only from `repo-ai-governor/service-host`.
 
 ### ACP host-facing readiness

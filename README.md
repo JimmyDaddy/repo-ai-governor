@@ -81,9 +81,9 @@ pnpm exec repo-ai-governor check --output json
 
 What you should expect after this:
 
-1. `adopt bootstrap` runs `init -> doctor --fix -> adopt apply -> adopt verify` in a fixed order.
+1. `adopt bootstrap` runs `init -> bootstrap doctor preflight -> adopt apply -> adopt verify` in a fixed order.
 2. If you omit the selector, bootstrap defaults to the official built-in pack; explicit selectors reuse the existing pack-id/profile-alias rules and stay fail-closed on ambiguity.
-3. Bootstrap writes additive init/doctor/bootstrap-summary artifacts, but the install receipt plus `adopt verify` summary remain the canonical install truth.
+3. Bootstrap writes additive init/bootstrap-doctor/bootstrap-summary artifacts, but the install receipt plus `adopt verify` summary remain the canonical install truth.
 4. Clean reruns only reuse one matching clean installation; drift or pack/profile mismatches redirect you back to `adopt diff/upgrade/remove`.
 5. `check` remains the explicit broader governance follow-up after installation; it is not folded into install success.
 

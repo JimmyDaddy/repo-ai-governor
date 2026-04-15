@@ -1,6 +1,6 @@
 # project-108-adopter-quickstart-bootstrap-rollout 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-15
 - Stage Mapping: adopter quickstart bootstrap rollout
 - Phase Mapping: sprint-001 contract and runtime baseline / sprint-002 command implementation and consumer surface follow-through / sprint-003 clean-room evidence and rollout closeout
@@ -32,7 +32,7 @@
 
 ## 2.3 sprint-003-cleanroom-evidence-and-rollout-closeout
 
-- Status: active
+- Status: completed
 - Sprint Goal: 补齐 orchestration tests、clean-room evidence、consumer truthfulness closeout 与 project final audit。
 - Task Package: `TK-906`、`TK-907`、`TK-908`
 
@@ -50,7 +50,7 @@
 | TK-912 | sprint-002 | finalize sprint-002 closeout and activate sprint-003 | closeout/activation | CR-001 | completed |
 | TK-906 | sprint-003 | add bootstrap orchestration tests and clean-room rehearsal baseline | verification/tests | TK-903、TK-904 | completed |
 | TK-907 | sprint-003 | collect rollout evidence and verify installer quickstart truthfulness | evidence/rollout | TK-905、TK-906 | completed |
-| TK-908 | sprint-003 | finalize project-108 rollout closeout and completion audit | closeout/final-audit | TK-906、TK-907 | in_progress |
+| TK-908 | sprint-003 | finalize project-108 rollout closeout and completion audit | closeout/final-audit | TK-906、TK-907 | completed |
 
 ## 4. 依赖产物策略
 
@@ -63,9 +63,9 @@
 ## 5. DoD（project-108-adopter-quickstart-bootstrap-rollout）
 
 1. `adopt bootstrap` 的 convenience boundary、selector resolution、rerun redirect 与 additive summary model 已 materialize 为可执行 rollout scope。
-2. planned task ledger、project/sprint plan 与 `current-context -> Planned Follow-Up Streams` 保持同步。
+2. project/sprint plan、task ledger、review artifacts、`current-context`、completed history 与 delivery registry 已同步到最终 completed / idle 真值。
 3. adopter-facing CLI/docs rollout ownership 已被固定到单一 project queue，而不是继续散落在 runtime notes 或 draft handoff 里。
-4. 后续 implementation window 可以直接基于该 planned stream 激活 execution，而不需要重新解释 formal quickstart direction。
+4. `sprint-003` 已在 final clean recheck 与 `TK-908 / DA-908` closeout write-back 后恢复为最终 `completed` 真值，当前默认 primary stream 已清空为 `idle`，且不再保留 planned follow-up stream。
 
 ## 6. 里程碑记录
 
@@ -85,7 +85,9 @@
 14. 2026-04-16：`TK-907 / DA-907` 已完成 clean-room evidence packet、help surface 验证与 README/playbook/support-matrix truthfulness 复核；`sprint-003` 当前进入统一验证与 delegated CR round 准备窗口。
 15. 2026-04-16：`CR-001` 已完成 accepted findings 修复并 `resolved`；fresh clean recheck `CR-002` 未发现新的 actionable findings，当前 sprint-level delegated CR loop 已 clean 收口。
 16. 2026-04-16：`TK-908` 已切换为 `in_progress`，开始承接 sprint boundary `pnpm run check`、local commit 与 project-final closeout 输入准备。
+17. 2026-04-16：project-final delegated rounds `CR-003` 至 `CR-009` 已完成 accepted finding 修复并 `resolved`，`CR-010` 作为 fresh clean recheck 已确认 project-final boundary 无新的 actionable findings。
+18. 2026-04-16：`TK-908 / DA-908` 已完成 final closeout write-back；`project-108` 正式进入 `completed`，并在此里程碑回链 [project-108 completion audit summary](./project-108-adopter-quickstart-bootstrap-rollout-completion-audit-summary.md)。
 
 ## 7. 里程碑记录入口
 
-1. 待 closeout 后补齐。
+1. [project-108-adopter-quickstart-bootstrap-rollout-completion-audit-summary.md](./project-108-adopter-quickstart-bootstrap-rollout-completion-audit-summary.md)

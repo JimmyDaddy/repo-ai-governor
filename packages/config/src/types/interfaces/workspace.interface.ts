@@ -20,6 +20,7 @@ export interface ResolvedWorkspace {
  */
 export interface WorkspaceResolverOptions {
   currentWorkingDirectory: string;
+  repositoryRootOverride?: string;
   config?: GovernorConfig;
   runtimeOverrides?: WorkspaceRuntimeOverrides;
 }

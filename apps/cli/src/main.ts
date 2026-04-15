@@ -425,12 +425,25 @@ export async function runCli(
       hasClaudeCodeExecFixture: Boolean(claudeCodeExecRunner),
       hasGithubCopilotExecFixture: Boolean(githubCopilotExecRunner),
     });
+    const adoptCommandOptions = resolveAdoptCommandOptions(rawArgs);
+    const runtimeRepositoryRootOverride = resolveRuntimeRepositoryRootOverride(
+      io.cwd(),
+      commandName,
+      adoptCommandOptions,
+    );
+    const runtimeWorkspaceModeOverride = resolveRuntimeWorkspaceModeOverride(
+      commandName,
+      adoptCommandOptions,
+    );
     const runtimeContext = resolveRuntimeContext(
       io.cwd(),
       requestedProfileId ?? undefined,
       environment,
       globalCliThemePreferenceService,
       cliUserConfigService,
+      undefined,
+      runtimeRepositoryRootOverride,
+      runtimeWorkspaceModeOverride,
     );
     const configCommandOptions = resolveConfigCommandOptions(rawArgs);
     const secretCommandOptions = resolveSecretCommandOptions(rawArgs);
@@ -450,7 +463,6 @@ export async function runCli(
     );
     const workflowCommandOptions = resolveWorkflowCommandOptions(rawArgs);
     const planCommandOptions = resolvePlanCommandOptions(rawArgs);
-    const adoptCommandOptions = resolveAdoptCommandOptions(rawArgs);
     const hostCommandOptions = resolveHostCommandOptions(rawArgs);
     const upgradeCommandOptions = resolveUpgradeCommandOptions(rawArgs);
 
@@ -1646,18 +1658,36 @@ function resolveRuntimeContext(
   cliUserConfigProjectionService = new CliUserConfigProjectionService({
     userConfigService: cliUserConfigService,
   }),
+  repositoryRootOverride?: string,
+  workspaceModeOverride?: ResolvedWorkspace['mode'],
 ): ResolvedCliRuntimeContext {
   const configLoader = new ConfigLoader();
   const profileResolver = new ProfileResolver();
   const workspaceResolver = new WorkspaceResolver();
-  const defaultWorkspace = workspaceResolver.resolve({ currentWorkingDirectory });
+  const runtimeRepositoryRoot = repositoryRootOverride
+    ? resolve(repositoryRootOverride)
+    : resolve(currentWorkingDirectory);
+  const explicitRuntimeWorkspaceOverrides = workspaceModeOverride
+    ? {
+        runtimeOverrides: {
+          mode: workspaceModeOverride,
+        },
+      }
+    : {};
+  const defaultWorkspace = workspaceResolver.resolve({
+    currentWorkingDirectory: runtimeRepositoryRoot,
+    repositoryRootOverride,
+    ...explicitRuntimeWorkspaceOverrides,
+  });
   const preferredWorkspaceMode = cliUserConfigService.loadWorkspaceModePreference({
     environment,
   });
+  const effectiveRuntimeWorkspaceMode =
+    workspaceModeOverride ?? preferredWorkspaceMode ?? undefined;
   const globalThemePreference = globalCliThemePreferenceService.loadThemePreference({
     environment,
   });
-  const repoLocalConfigPath = resolve(currentWorkingDirectory, '.repo-ai-governor/governor.yaml');
+  const repoLocalConfigPath = resolve(runtimeRepositoryRoot, '.repo-ai-governor/governor.yaml');
   const configPathCandidates = Array.from(
     new Set([repoLocalConfigPath, defaultWorkspace.configPath]),
   );
@@ -1674,8 +1704,10 @@ function resolveRuntimeContext(
       environment,
     });
     const resolvedWorkspace = workspaceResolver.resolve({
-      currentWorkingDirectory,
+      currentWorkingDirectory: runtimeRepositoryRoot,
+      repositoryRootOverride,
       config: effectiveConfig,
+      ...explicitRuntimeWorkspaceOverrides,
     });
     const workspaceThemePreference = resolveWorkspaceThemePreference({
       configLoader,
@@ -1701,11 +1733,12 @@ function resolveRuntimeContext(
   }
 
   const fallbackWorkspace = workspaceResolver.resolve({
-    currentWorkingDirectory,
-    ...(preferredWorkspaceMode
+    currentWorkingDirectory: runtimeRepositoryRoot,
+    repositoryRootOverride,
+    ...(effectiveRuntimeWorkspaceMode
       ? {
           runtimeOverrides: {
-            mode: preferredWorkspaceMode,
+            mode: effectiveRuntimeWorkspaceMode,
           },
         }
       : {}),
@@ -1726,6 +1759,29 @@ function resolveRuntimeContext(
     configSource: 'default',
     workspace: fallbackWorkspace,
   };
+}
+
+function resolveRuntimeRepositoryRootOverride(
+  currentWorkingDirectory: string,
+  commandName: string,
+  adoptCommandOptions: CliAdoptCommandOptions,
+): string | undefined {
+  if (commandName !== CliCommandName.ADOPT || adoptCommandOptions.action === null) {
+    return undefined;
+  }
+
+  return resolve(currentWorkingDirectory, adoptCommandOptions.repoPath ?? '.');
+}
+
+function resolveRuntimeWorkspaceModeOverride(
+  commandName: string,
+  adoptCommandOptions: CliAdoptCommandOptions,
+): ResolvedWorkspace['mode'] | undefined {
+  if (commandName !== CliCommandName.ADOPT || adoptCommandOptions.action === null) {
+    return undefined;
+  }
+
+  return adoptCommandOptions.workspaceMode ?? undefined;
 }
 
 function buildDefaultGovernorConfig(workspaceMode: ResolvedWorkspace['mode']): GovernorConfig {

@@ -61,7 +61,7 @@ interface BootstrapInitStageResult {
 
 interface BootstrapDoctorStageResult {
   stage: BootstrapStageResult;
-  doctorDiagnosticsPath: string;
+  bootstrapDoctorDiagnosticsPath: string;
   checks: AdoptionPackVerificationCheck[];
 }
 
@@ -83,7 +83,8 @@ export class CliAdoptionPackBootstrapRuntime {
   ) {}
 
   /**
-   * Executes the fixed `init -> doctor --fix -> adopt apply -> adopt verify` bootstrap order.
+   * Executes the fixed `init -> bootstrap doctor preflight -> adopt apply -> adopt verify`
+   * bootstrap order.
    * @param options Normalized adopt command options.
    * @returns Aggregated bootstrap operation result plus additive summary artifacts.
    */
@@ -114,6 +115,7 @@ export class CliAdoptionPackBootstrapRuntime {
         schemaVersion: 'adoption-bootstrap-summary-v1',
         generatedAt: new Date().toISOString(),
         repoRoot,
+        workspaceRoot: fallbackWorkspace.workspaceRoot,
         packId: null,
         profileId: options.adoptionProfileId,
         workspaceMode: fallbackWorkspace.workspaceMode,
@@ -129,7 +131,7 @@ export class CliAdoptionPackBootstrapRuntime {
           },
         ],
         initManifestPath: null,
-        doctorDiagnosticsPath: null,
+        bootstrapDoctorDiagnosticsPath: null,
         receiptPath: null,
         verificationSummaryPath: null,
         diffReportPath: null,
@@ -169,7 +171,10 @@ export class CliAdoptionPackBootstrapRuntime {
     const initStage = await this.runInitStage(workspace);
     const doctorStage = await this.runDoctorStage(workspace, initStage);
     const stageResults: BootstrapStageResult[] = [initStage.stage, doctorStage.stage];
-    const writtenArtifacts = [initStage.initManifestPath, doctorStage.doctorDiagnosticsPath];
+    const writtenArtifacts = [
+      initStage.initManifestPath,
+      doctorStage.bootstrapDoctorDiagnosticsPath,
+    ];
     let reentryMode: BootstrapReentryMode = 'fresh_install';
     let existingReceipt: AdoptionPackInstallReceipt | null = null;
     let applyResult: AdoptionOperationResult | null = null;
@@ -207,7 +212,7 @@ export class CliAdoptionPackBootstrapRuntime {
           reentryMode,
           writtenArtifacts,
           initManifestPath: initStage.initManifestPath,
-          doctorDiagnosticsPath: doctorStage.doctorDiagnosticsPath,
+          bootstrapDoctorDiagnosticsPath: doctorStage.bootstrapDoctorDiagnosticsPath,
           receiptPath: null,
           verificationSummaryPath: null,
           diffReportPath: null,
@@ -249,7 +254,7 @@ export class CliAdoptionPackBootstrapRuntime {
             reentryMode,
             writtenArtifacts,
             initManifestPath: initStage.initManifestPath,
-            doctorDiagnosticsPath: doctorStage.doctorDiagnosticsPath,
+            bootstrapDoctorDiagnosticsPath: doctorStage.bootstrapDoctorDiagnosticsPath,
             receiptPath: existingReceipt.receiptPath,
             verificationSummaryPath: existingReceipt.verificationSummary.verificationSummaryPath,
             diffReportPath: null,
@@ -295,7 +300,7 @@ export class CliAdoptionPackBootstrapRuntime {
             reentryMode,
             writtenArtifacts: [...writtenArtifacts, ...(diffResult.writtenArtifacts ?? [])],
             initManifestPath: initStage.initManifestPath,
-            doctorDiagnosticsPath: doctorStage.doctorDiagnosticsPath,
+            bootstrapDoctorDiagnosticsPath: doctorStage.bootstrapDoctorDiagnosticsPath,
             receiptPath: existingReceipt.receiptPath,
             verificationSummaryPath: existingReceipt.verificationSummary.verificationSummaryPath,
             diffReportPath: diffResult.diffReportPath,
@@ -371,7 +376,7 @@ export class CliAdoptionPackBootstrapRuntime {
       reentryMode,
       writtenArtifacts,
       initManifestPath: initStage.initManifestPath,
-      doctorDiagnosticsPath: doctorStage.doctorDiagnosticsPath,
+      bootstrapDoctorDiagnosticsPath: doctorStage.bootstrapDoctorDiagnosticsPath,
       receiptPath: applyResult?.receiptPath ?? existingReceipt?.receiptPath ?? null,
       verificationSummaryPath:
         verifyResult?.verificationSummaryPath ??
@@ -479,16 +484,17 @@ export class CliAdoptionPackBootstrapRuntime {
     ];
     const doctorStatus =
       workspaceWritable && configExists ? HostVerificationStatus.PASS : HostVerificationStatus.FAIL;
-    const doctorId = `doctor-${Date.now()}`;
-    const doctorDiagnosticsPath = resolve(
+    const bootstrapDoctorId = `bootstrap-doctor-${Date.now()}`;
+    const bootstrapDoctorDiagnosticsPath = resolve(
       workspace.workspaceRoot,
       'context',
       'diagnostics',
+      'adoption-bootstrap',
       'doctor',
-      `${doctorId}.json`,
+      `${bootstrapDoctorId}.json`,
     );
-    await this.writeJsonFile(doctorDiagnosticsPath, {
-      schemaVersion: 'adoption-bootstrap-doctor-diagnostics-v1',
+    await this.writeJsonFile(bootstrapDoctorDiagnosticsPath, {
+      schemaVersion: 'adoption-bootstrap-doctor-stage-diagnostics-v1',
       generatedAt: new Date().toISOString(),
       workspace: {
         workspaceId: workspace.workspaceId,
@@ -506,9 +512,9 @@ export class CliAdoptionPackBootstrapRuntime {
         stageId: 'doctor',
         status: doctorStatus,
         detail: `workspace_write_access=${workspaceWritable} config_exists=${configExists}`,
-        artifactPath: doctorDiagnosticsPath,
+        artifactPath: bootstrapDoctorDiagnosticsPath,
       },
-      doctorDiagnosticsPath,
+      bootstrapDoctorDiagnosticsPath,
       checks,
     };
   }
@@ -521,7 +527,7 @@ export class CliAdoptionPackBootstrapRuntime {
     reentryMode: BootstrapReentryMode;
     writtenArtifacts: string[];
     initManifestPath: string | null;
-    doctorDiagnosticsPath: string | null;
+    bootstrapDoctorDiagnosticsPath: string | null;
     receiptPath: string | null;
     verificationSummaryPath: string | null;
     diffReportPath: string | null;
@@ -573,6 +579,7 @@ export class CliAdoptionPackBootstrapRuntime {
       schemaVersion: 'adoption-bootstrap-summary-v1',
       generatedAt: new Date().toISOString(),
       repoRoot: options.repoRoot,
+      workspaceRoot: options.workspace.workspaceRoot,
       packId: options.selection.definition.manifest.packId,
       profileId: options.selection.profile.profileId,
       workspaceMode: options.workspace.workspaceMode,
@@ -581,7 +588,7 @@ export class CliAdoptionPackBootstrapRuntime {
       reentryMode: options.reentryMode,
       stages: options.stageResults,
       initManifestPath: options.initManifestPath,
-      doctorDiagnosticsPath: options.doctorDiagnosticsPath,
+      bootstrapDoctorDiagnosticsPath: options.bootstrapDoctorDiagnosticsPath,
       receiptPath: options.receiptPath,
       verificationSummaryPath: options.verificationSummaryPath,
       diffReportPath: options.diffReportPath,
@@ -611,7 +618,7 @@ export class CliAdoptionPackBootstrapRuntime {
       writtenArtifacts: [...options.writtenArtifacts, bootstrapSummaryPath],
       checks,
       initManifestPath: options.initManifestPath,
-      doctorDiagnosticsPath: options.doctorDiagnosticsPath,
+      bootstrapDoctorDiagnosticsPath: options.bootstrapDoctorDiagnosticsPath,
       bootstrapSummaryPath,
       selectorResolution: options.selectorResolution ?? options.selection.selectorResolution,
       reentryMode: options.reentryMode,
@@ -622,11 +629,24 @@ export class CliAdoptionPackBootstrapRuntime {
     repoRoot: string,
     workspaceMode: WorkspaceMode,
   ): BootstrapWorkspaceContext {
+    const runtimeOverrides: {
+      mode: WorkspaceMode;
+      repoLocalRoot?: string;
+    } = {
+      mode: workspaceMode,
+    };
+
+    // Bootstrap can target a clean-room repo nested under the current governor checkout, so
+    // repo_local must stay anchored to the explicit target repo instead of walking up to the
+    // nearest parent `.git` boundary.
+    if (workspaceMode === WorkspaceMode.REPO_LOCAL) {
+      runtimeOverrides.repoLocalRoot = resolve(repoRoot, '.repo-ai-governor');
+    }
+
     const workspace = this.workspaceResolver.resolve({
       currentWorkingDirectory: repoRoot,
-      runtimeOverrides: {
-        mode: workspaceMode,
-      },
+      repositoryRootOverride: repoRoot,
+      runtimeOverrides,
     });
 
     return {

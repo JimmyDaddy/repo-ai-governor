@@ -859,8 +859,8 @@ deliveries:
       - adopter_cli
       - docs_playbook
     user_impact_level: medium
-    execution_status: in_progress
-    rollout_status: in_progress
+    execution_status: completed
+    rollout_status: completed
     owner: runtime
     project_ref: project-108-adopter-quickstart-bootstrap-rollout
     sprint_ref: sprint-003-cleanroom-evidence-and-rollout-closeout
@@ -871,7 +871,7 @@ deliveries:
     project_plan_path: .repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/plan.md
     sprint_plan_path: .repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/plan.md
     task_csv_path: .repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/tasks/tasks.csv
-    handoff_artifact_path: .repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-002-cli-bootstrap-command-and-consumer-surface-followthrough/tasks/DA-912-sprint-002-closeout-and-sprint-003-activation-handoff.md
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/tasks/DA-908-project-108-final-closeout-and-idle-primary-stream-handoff.md
     rollout_artifacts:
       - .repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/plan.md
       - .repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-001-quickstart-contract-and-bootstrap-runtime-baseline/plan.md
@@ -881,6 +881,10 @@ deliveries:
       - .repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-002-cli-bootstrap-command-and-consumer-surface-followthrough/review/resolved_code_review_working-tree-20260416-0043.md
       - .repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-002-cli-bootstrap-command-and-consumer-surface-followthrough/tasks/DA-912-sprint-002-closeout-and-sprint-003-activation-handoff.md
       - .repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/plan.md
+      - .repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/tasks/DA-907-adopt-bootstrap-clean-room-and-truthfulness-evidence.md
+      - .repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/review/resolved_code_review_working-tree-20260416-0426.md
+      - .repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/tasks/DA-908-project-108-final-closeout-and-idle-primary-stream-handoff.md
+      - .repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/project-108-adopter-quickstart-bootstrap-rollout-completion-audit-summary.md
     accepted_at: 2026-04-15
 
   - solution_id: technical-solution.transport-selection-authority-and-strict-routing

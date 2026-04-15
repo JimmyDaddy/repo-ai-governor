@@ -127,11 +127,11 @@ export class CliAdoptCommand implements CliCommandExecutor {
             },
           ]
         : []),
-      ...(operationResult.doctorDiagnosticsPath
+      ...(operationResult.bootstrapDoctorDiagnosticsPath
         ? [
             {
-              id: 'doctor_diagnostics',
-              path: operationResult.doctorDiagnosticsPath,
+              id: 'bootstrap_doctor_diagnostics',
+              path: operationResult.bootstrapDoctorDiagnosticsPath,
             },
           ]
         : []),
@@ -172,8 +172,8 @@ export class CliAdoptCommand implements CliCommandExecutor {
         ...(operationResult.initManifestPath
           ? { initManifestPath: operationResult.initManifestPath }
           : {}),
-        ...(operationResult.doctorDiagnosticsPath
-          ? { doctorDiagnosticsPath: operationResult.doctorDiagnosticsPath }
+        ...(operationResult.bootstrapDoctorDiagnosticsPath
+          ? { bootstrapDoctorDiagnosticsPath: operationResult.bootstrapDoctorDiagnosticsPath }
           : {}),
         ...(operationResult.bootstrapSummaryPath
           ? { bootstrapSummaryPath: operationResult.bootstrapSummaryPath }
@@ -212,8 +212,10 @@ export class CliAdoptCommand implements CliCommandExecutor {
           ...(operationResult.initManifestPath
             ? { init_manifest_path: operationResult.initManifestPath }
             : {}),
-          ...(operationResult.doctorDiagnosticsPath
-            ? { doctor_diagnostics_path: operationResult.doctorDiagnosticsPath }
+          ...(operationResult.bootstrapDoctorDiagnosticsPath
+            ? {
+                bootstrap_doctor_diagnostics_path: operationResult.bootstrapDoctorDiagnosticsPath,
+              }
             : {}),
           ...(operationResult.bootstrapSummaryPath
             ? { bootstrap_summary_path: operationResult.bootstrapSummaryPath }

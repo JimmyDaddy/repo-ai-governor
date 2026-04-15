@@ -139,7 +139,7 @@ export const EN_US_TRANSLATIONS = {
           'List, bootstrap, apply, diff, verify, upgrade, or remove one managed adoption pack from a target repository.',
         listDescription: 'List resolved adoption packs and their supported profiles.',
         bootstrapDescription:
-          'Run the installer quickstart path: init, doctor --fix, adopt apply, and adopt verify.',
+          'Run the installer quickstart path: init, bootstrap doctor preflight, adopt apply, and adopt verify.',
         applyDescription:
           'Apply one adoption pack into the target repository and write managed ownership receipts.',
         diffDescription:

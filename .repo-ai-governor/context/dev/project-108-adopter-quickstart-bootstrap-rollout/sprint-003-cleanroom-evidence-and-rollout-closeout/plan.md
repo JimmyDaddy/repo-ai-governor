@@ -1,6 +1,6 @@
 # sprint-003-cleanroom-evidence-and-rollout-closeout 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-15
 - Sprint Goal: 补齐 orchestration tests、clean-room evidence、consumer truthfulness closeout 与 project final audit。
 - Project: `project-108-adopter-quickstart-bootstrap-rollout`
@@ -21,13 +21,13 @@
 | --- | --- | --- | --- |
 | TK-906 | add bootstrap orchestration tests and clean-room rehearsal baseline | TK-903、TK-904 | completed |
 | TK-907 | collect rollout evidence and verify installer quickstart truthfulness | TK-905、TK-906 | completed |
-| TK-908 | finalize project-108 rollout closeout and completion audit | TK-906、TK-907 | in_progress |
+| TK-908 | finalize project-108 rollout closeout and completion audit | TK-906、TK-907 | completed |
 
 ## 3. Exit Criteria
 
-1. tests、clean-room evidence 与 docs truthfulness 都已被固定为同一 sprint 的 closeout surface。
-2. `project-108` completion audit 入口已在 project plan 中预留，后续 closeout 无需再补做结构化接缝。
-3. `TK-908` 只能在当前 delegated CR round clean 收口后推进；在此之前，本 sprint 保持 active closeout surface 并继续承接 review lifecycle 与最终 completion audit 输入。
+1. `TK-906`、`TK-907`、`TK-908` 最新状态均为 `completed`，且 `CR-001` 至 `CR-010` 最新状态均为 `resolved`。
+2. tests、clean-room evidence、docs truthfulness、project-final CR loop 与 completion audit 已全部通过 canonical task cards、review artifacts、checklist 与 `tasks.csv` 同步到完成态。
+3. 本 sprint 已完成 project-final closeout write-back，并在 `current-context` 中迁出 active execution surface。
 
 ## 4. Sprint Notes
 
@@ -42,3 +42,5 @@
 9. 2026-04-16：`TK-907 / DA-907` 已完成 clean-room evidence packet、help surface 验证与 docs/support truthfulness 复核；当前 sprint 进入统一验证与 delegated CR round 准备窗口。
 10. 2026-04-16：`CR-001` 已完成 accepted findings 修复并 `resolved`；fresh clean recheck `CR-002` 未发现新的 actionable findings，当前 sprint-level delegated CR loop 已 clean 收口。
 11. 2026-04-16：`TK-908` 已切换为 `in_progress`，开始承接 sprint boundary `pnpm run check`、local commit 与 project-final closeout 输入准备。
+12. 2026-04-16：`CR-010` fresh clean recheck 已 `resolved`，当前 project-final boundary 已满足进入正式 closeout 的条件。
+13. 2026-04-16：`TK-908 / DA-908` 已完成 final closeout write-back；当前 sprint 已恢复为最终 `completed` 真值，并迁出 active execution surface。

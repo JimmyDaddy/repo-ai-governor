@@ -5,13 +5,17 @@ import { resolve } from 'node:path';
 
 import { runCli } from '../src/main.js';
 
-function createBufferedIo(currentWorkingDirectory: string): {
+function createBufferedIo(
+  currentWorkingDirectory: string,
+  environment: NodeJS.ProcessEnv = process.env,
+): {
   stdoutBuffer: string[];
   stderrBuffer: string[];
   io: {
     stdout: (value: string) => void;
     stderr: (value: string) => void;
     cwd: () => string;
+    env: () => NodeJS.ProcessEnv;
   };
 } {
   const stdoutBuffer: string[] = [];
@@ -28,6 +32,7 @@ function createBufferedIo(currentWorkingDirectory: string): {
         stderrBuffer.push(value);
       },
       cwd: () => currentWorkingDirectory,
+      env: () => environment,
     },
   };
 }
@@ -38,8 +43,31 @@ async function createAdoptionFixtureRepository(): Promise<string> {
   return repositoryRoot;
 }
 
+async function createBootstrapInvokerWorkspace(): Promise<{
+  invokerRoot: string;
+  targetRepositoryRoot: string;
+}> {
+  const invokerRoot = await mkdtemp(resolve(tmpdir(), 'repo-ai-governor-adopt-invoker-'));
+  await mkdir(resolve(invokerRoot, '.git'), { recursive: true });
+  const targetRepositoryRoot = resolve(invokerRoot, 'target-repo');
+  await mkdir(targetRepositoryRoot, { recursive: true });
+  await writeFile(
+    resolve(targetRepositoryRoot, 'README.md'),
+    '# Target Fixture Repository\n',
+    'utf8',
+  );
+  return {
+    invokerRoot,
+    targetRepositoryRoot,
+  };
+}
+
 interface CliJsonOutput {
   command?: string;
+  diagnostics?: {
+    workspaceMode?: string;
+    workspaceRoot?: string;
+  };
   command_result?: {
     operation?: string;
     summary?: string;
@@ -50,10 +78,13 @@ interface CliJsonOutput {
 }
 
 interface BootstrapSummaryPayload {
+  repoRoot?: string;
+  workspaceRoot?: string;
   selectorResolution?: string;
   reentryMode?: string;
   stageOrder?: string[];
   broaderGovernanceAuditFollowUp?: string;
+  bootstrapDoctorDiagnosticsPath?: string | null;
   redirectCommands?: string[];
   diffReportPath?: string | null;
   finalStatus?: string;
@@ -442,8 +473,8 @@ describe('adopt command integration', () => {
       const initManifestPath = bootstrapPayload.command_result?.artifacts?.find(
         (artifact) => artifact.id === 'init_manifest',
       )?.path;
-      const doctorDiagnosticsPath = bootstrapPayload.command_result?.artifacts?.find(
-        (artifact) => artifact.id === 'doctor_diagnostics',
+      const bootstrapDoctorDiagnosticsPath = bootstrapPayload.command_result?.artifacts?.find(
+        (artifact) => artifact.id === 'bootstrap_doctor_diagnostics',
       )?.path;
       const bootstrapSummaryPath = bootstrapPayload.command_result?.artifacts?.find(
         (artifact) => artifact.id === 'adoption_bootstrap_summary',
@@ -451,6 +482,7 @@ describe('adopt command integration', () => {
       const bootstrapSummary = JSON.parse(
         await readFile(String(bootstrapSummaryPath), 'utf8'),
       ) as BootstrapSummaryPayload;
+      const expectedWorkspaceRoot = resolve(repositoryRoot, '.repo-ai-governor');
 
       expect(bootstrapExitCode).toBe(0);
       expect(bootstrapIo.stderrBuffer.join('')).toBe('');
@@ -462,11 +494,19 @@ describe('adopt command integration', () => {
       expect(bootstrapPayload.command_result?.details?.host_target_count).toBe('1');
       expect(bootstrapPayload.command_result?.summary).toContain('check');
       expect(existsSync(String(initManifestPath))).toBe(true);
-      expect(existsSync(String(doctorDiagnosticsPath))).toBe(true);
+      expect(String(initManifestPath)).toContain(expectedWorkspaceRoot);
+      expect(existsSync(String(bootstrapDoctorDiagnosticsPath))).toBe(true);
+      expect(String(bootstrapDoctorDiagnosticsPath)).toContain(expectedWorkspaceRoot);
       expect(existsSync(String(bootstrapSummaryPath))).toBe(true);
+      expect(String(bootstrapSummaryPath)).toContain(expectedWorkspaceRoot);
+      expect(bootstrapSummary.repoRoot).toBe(repositoryRoot);
+      expect(bootstrapSummary.workspaceRoot).toBe(expectedWorkspaceRoot);
       expect(bootstrapSummary.selectorResolution).toBe('default_built_in');
       expect(bootstrapSummary.reentryMode).toBe('fresh_install');
       expect(bootstrapSummary.stageOrder).toEqual(['init', 'doctor', 'apply', 'verify']);
+      expect(bootstrapSummary.bootstrapDoctorDiagnosticsPath).toBe(
+        String(bootstrapDoctorDiagnosticsPath),
+      );
       expect(bootstrapSummary.broaderGovernanceAuditFollowUp).toBe('check');
       expect(
         existsSync(
@@ -498,6 +538,71 @@ describe('adopt command integration', () => {
       expect(bootstrapReceipt.hostTargets).toEqual(['codex.project_local']);
     } finally {
       await rm(repositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('anchors bootstrap auto-bootstrap artifacts to the explicit --repo target instead of the invoker repo', async () => {
+    const { invokerRoot, targetRepositoryRoot } = await createBootstrapInvokerWorkspace();
+    const isolatedHome = await mkdtemp(resolve(tmpdir(), 'repo-ai-governor-home-'));
+
+    try {
+      const bootstrapIo = createBufferedIo(invokerRoot, {
+        ...process.env,
+        HOME: isolatedHome,
+      });
+      const bootstrapExitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--output',
+          'json',
+          'adopt',
+          'bootstrap',
+          '--repo',
+          'target-repo',
+          '--hosts',
+          'codex',
+          '--workspace-mode',
+          'repo_local',
+        ],
+        bootstrapIo.io,
+      );
+      const bootstrapPayload = parseJsonOutput(bootstrapIo.stdoutBuffer);
+      const initManifestPath = bootstrapPayload.command_result?.artifacts?.find(
+        (artifact) => artifact.id === 'init_manifest',
+      )?.path;
+      const bootstrapDoctorDiagnosticsPath = bootstrapPayload.command_result?.artifacts?.find(
+        (artifact) => artifact.id === 'bootstrap_doctor_diagnostics',
+      )?.path;
+      const bootstrapSummaryPath = bootstrapPayload.command_result?.artifacts?.find(
+        (artifact) => artifact.id === 'adoption_bootstrap_summary',
+      )?.path;
+      const bootstrapSummary = JSON.parse(
+        await readFile(String(bootstrapSummaryPath), 'utf8'),
+      ) as BootstrapSummaryPayload;
+      const expectedWorkspaceRoot = resolve(targetRepositoryRoot, '.repo-ai-governor');
+
+      expect(bootstrapExitCode).toBe(0);
+      expect(existsSync(String(initManifestPath))).toBe(true);
+      expect(existsSync(String(bootstrapDoctorDiagnosticsPath))).toBe(true);
+      expect(existsSync(String(bootstrapSummaryPath))).toBe(true);
+      expect(String(initManifestPath)).toContain(expectedWorkspaceRoot);
+      expect(String(bootstrapDoctorDiagnosticsPath)).toContain(expectedWorkspaceRoot);
+      expect(String(bootstrapSummaryPath)).toContain(expectedWorkspaceRoot);
+      expect(bootstrapPayload.diagnostics?.workspaceMode).toBe('repo_local');
+      expect(bootstrapPayload.diagnostics?.workspaceRoot).toBe(expectedWorkspaceRoot);
+      expect(bootstrapSummary.workspaceRoot).toBe(expectedWorkspaceRoot);
+      expect(existsSync(resolve(invokerRoot, '.repo-ai-governor', 'context', 'bootstrap'))).toBe(
+        false,
+      );
+      expect(existsSync(resolve(invokerRoot, '.repo-ai-governor', 'context', 'diagnostics'))).toBe(
+        false,
+      );
+      expect(existsSync(resolve(invokerRoot, '.repo-ai-governor', 'governor.yaml'))).toBe(false);
+      expect(existsSync(resolve(isolatedHome, '.repo-ai-governor'))).toBe(false);
+    } finally {
+      await rm(isolatedHome, { recursive: true, force: true });
+      await rm(invokerRoot, { recursive: true, force: true });
     }
   });
 
@@ -539,6 +644,9 @@ describe('adopt command integration', () => {
       );
       expect(bootstrapPayload.command_result?.details?.reentry_mode).toBe('fresh_install');
       expect(bootstrapPayload.command_result?.details?.host_target_count).toBe('1');
+      expect(bootstrapPayload.command_result?.details?.bootstrap_doctor_diagnostics_path).toContain(
+        '.repo-ai-governor/context/diagnostics/adoption-bootstrap/doctor/bootstrap-doctor-',
+      );
       expect(bootstrapSummary.selectorResolution).toBe('explicit_profile_alias');
       expect(bootstrapSummary.reentryMode).toBe('fresh_install');
     } finally {

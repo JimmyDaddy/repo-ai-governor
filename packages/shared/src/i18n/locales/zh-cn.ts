@@ -116,7 +116,7 @@ export const ZH_CN_TRANSLATIONS = {
           '列出、bootstrap、安装、对比、校验、升级或移除目标仓库中的受管 adoption pack。',
         listDescription: '列出解析后的 adoption packs 及其支持的 profiles。',
         bootstrapDescription:
-          '按固定顺序执行 installer quickstart：init、doctor --fix、adopt apply 与 adopt verify。',
+          '按固定顺序执行 installer quickstart：init、bootstrap doctor 预检、adopt apply 与 adopt verify。',
         applyDescription: '把一个 adoption pack 应用到目标仓库，并写入受管 ownership receipt。',
         diffDescription: '对比当前仓库状态与 active adoption install receipt 的差异。',
         verifyDescription:

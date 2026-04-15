@@ -2,21 +2,21 @@
 
 ## Primary Stream
 
-- Status: active
-- Stream: `stream-project-108-sprint-003`
-- Project: `project-108-adopter-quickstart-bootstrap-rollout`
-- Sprint: `sprint-003-cleanroom-evidence-and-rollout-closeout`
-- Docs: `.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout`
-- Plan: `.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/plan.md`
-- Tasks: `.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/tasks/`
-- Checklist: `.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/tasks/checklist.md`
-- CSV: `.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/tasks/tasks.csv`
-- Review: `.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/review`
-- Note: `2026-04-16` `sprint-002 / CR-001` 已 clean `resolved`，`TK-912 / DA-912` 已完成 sprint-002 closeout write-back、delivery registry 前移与 sprint-003 activation。当前 primary surface 为 `sprint-003-cleanroom-evidence-and-rollout-closeout`；`TK-906` 与 `TK-907` 已完成 orchestration regression coverage、clean-room rehearsal 与 truthfulness evidence 固化，`sprint-003 / CR-001` 与 `CR-002` 均已 `resolved`，当前 sprint-level delegated CR loop 已 clean 收口；`TK-908` 现进入 `in_progress`，开始承接 sprint boundary `pnpm run check`、local commit 与 project-final closeout 输入准备。
+- Status: idle
+- Stream: `none`
+- Project: `none`
+- Sprint: `none`
+- Docs: `none`
+- Plan: `none`
+- Tasks: `none`
+- Checklist: `none`
+- CSV: `none`
+- Review: `none`
+- Note: `2026-04-16` `project-108 / sprint-003` 已完成 project-final delegated CR loop（`CR-003` 至 `CR-010` 全部 `resolved`）与 `TK-908 / DA-908` final closeout write-back；当前 worktree 暂无 active primary stream，也不保留 planned follow-up stream，等待下一次显式激活。
 
 ## Active Streams
 
-- `stream-project-108-sprint-003`: project=`project-108-adopter-quickstart-bootstrap-rollout`, sprint=`sprint-003-cleanroom-evidence-and-rollout-closeout`, docs=`.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout`, plan=`.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/review/`, status=`active`, role=`primary`
+- `none`
 
 ## Planned Follow-Up Streams
 

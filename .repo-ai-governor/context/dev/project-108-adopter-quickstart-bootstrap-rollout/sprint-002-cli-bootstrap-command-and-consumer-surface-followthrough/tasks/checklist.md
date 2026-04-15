@@ -3,7 +3,7 @@
 - [x] TK-903 implement adopt bootstrap orchestrator and default built-in resolution
   - 2026-04-15：任务创建，状态初始化为 `planned`。
   - 2026-04-15：开始进入实现窗口，状态切换为 `in_progress`，准备落 `adopt bootstrap` runtime orchestration、selector resolution 与 fail-closed boundary。
-  - 2026-04-16：已完成 runtime 实现；`adopt bootstrap` 现在按固定顺序编排 `init -> doctor --fix -> adopt apply -> adopt verify`，在省略 selector 时默认回落官方 built-in pack，对显式 profile-alias 歧义保持 fail-closed，并把 clean rerun / drift redirect 语义收口到 `reuse_existing_installation` 与 `adopt diff/upgrade/remove`。
+  - 2026-04-16：已完成 runtime 实现；`adopt bootstrap` 现在先执行 bootstrap 专属 doctor preflight，再进入 convenience install orchestration 与 additive diagnostics summary；在省略 selector 时默认回落官方 built-in pack，对显式 profile-alias 歧义保持 fail-closed，并把 clean rerun / drift redirect 语义收口到 `reuse_existing_installation` 与 `adopt diff/upgrade/remove`，而不是重回旧的 `doctor --fix -> adopt apply -> adopt verify` 固定编排口径。
   - 2026-04-16：验证结果已记录：`pnpm exec vitest run apps/cli/test/cli-skeleton.integration.test.ts apps/cli/test/adopt-command.integration.test.ts apps/cli/test/commands/adopt-command.test.ts --maxWorkers=1 --maxConcurrency=1` 通过，`pnpm run build` 通过；`pnpm -s tsc -p tsconfig.json --noEmit` 仍失败，但失败点分布在本任务变更面外的既有测试文件，未观察到新的 sprint-002 source-surface 类型错误。
 - [x] TK-904 integrate bootstrap summary output help copy and fail-closed rerun guidance
   - 2026-04-15：任务创建，状态初始化为 `planned`。

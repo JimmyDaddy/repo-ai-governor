@@ -71,30 +71,48 @@ pnpm exec repo-ai-governor check --output json
 2. 除非你本来就要 vendoring 本仓库的治理文档和脚本，否则应把它们视为提示，而不是失败。
 3. `init` 默认是 `tool_managed`，因此新的目标仓库未必会立刻生成 `.repo-ai-governor/`。
 
-## 3. 优先使用 `adopt` 的受管安装路径
+## 3. 优先使用 `adopt bootstrap` 的受管安装路径
 
-当 bootstrap 成功后，优先走 managed installer，而不是直接切到更低层的 host export。
+当基础环境 bootstrap（`init` + `doctor`）成功后，优先走受管安装 quickstart，而不是直接切到更低层的 host export。
 
 ```bash
 pnpm exec repo-ai-governor adopt list --output json
-pnpm exec repo-ai-governor adopt apply adopter-complete --repo . --hosts codex,claude-code,github-copilot --output json
-pnpm exec repo-ai-governor adopt verify --repo . --output json
+pnpm exec repo-ai-governor adopt bootstrap --repo . --hosts codex,claude-code,github-copilot --output json
+pnpm exec repo-ai-governor check --output json
 ```
 
 为什么这是默认路径：
 
-1. `adopt apply` 会把受管宿主资产、安装元数据和 adoption guides 落到 `.repo-ai-governor/adoption/installations/**`。
-2. 内置 adoption pack 不要求目标仓库预先存在 source-local `.codex/skills/**`。
-3. 安装之后，`adopt verify`、`adopt diff`、`adopt upgrade`、`adopt remove` 就成为正式支持的生命周期路径。
+1. `adopt bootstrap` 会按固定顺序执行 `init -> bootstrap doctor preflight -> adopt apply -> adopt verify`。
+2. 如果你省略 selector，bootstrap 会默认选用官方内置 pack；显式 selector 则复用当前的 pack-id/profile-alias 规则，并在歧义时保持 fail-closed。
+3. bootstrap 产生的 init/bootstrap-doctor/bootstrap-summary 产物只是增量 hand-off diagnostics；install receipt 与 `adopt verify` summary 仍然是 `.repo-ai-governor/adoption/installations/**` 下的 canonical install truth。
+4. 只有匹配且干净的旧安装会被 clean rerun 复用；一旦出现 drift 或 pack/profile mismatch，就会导回 `adopt diff/upgrade/remove`。
+5. `check` 仍然是安装后的显式更广治理 follow-up，而不是 install 结果的一部分。
+
+quickstart 成功后，后续的复验或变更仍然走这组受管生命周期命令：
+
+```bash
+pnpm exec repo-ai-governor adopt verify --repo . --output json
+pnpm exec repo-ai-governor adopt diff --repo . --output json
+pnpm exec repo-ai-governor adopt upgrade --repo . --output json
+pnpm exec repo-ai-governor adopt remove --repo . --output json
+```
 
 只有当目标仓库本身要承载一套 repo-local governance workspace 模板时，才使用 self-host profile：
 
 ```bash
-pnpm exec repo-ai-governor adopt apply adopter-complete --adoption-profile self-host-complete --repo . --workspace-mode repo_local --hosts codex --output json
-pnpm exec repo-ai-governor adopt verify --repo . --output json
+pnpm exec repo-ai-governor adopt bootstrap --adoption-profile self-host-complete --repo . --workspace-mode repo_local --hosts codex --output json
+pnpm exec repo-ai-governor check --output json
 ```
 
 这条路径只会 seed 空白或模板化的治理 surface，不会复制本仓库的 live execution state。
+
+对 self-host 验证结果要保守解读：
+
+1. 新鲜的 `self-host-complete + repo_local` bootstrap 或后续 `adopt verify`，在 starter governance、product-direction 或 execution placeholder 仍未触碰时，预期会返回 `warn`。
+2. 这些 warning 只属于 self-host readiness signal；默认的 `adopter-complete` 安装路径不会继承它们。
+3. `adopt verify` 现在会对未触碰的 self-host starter placeholder 暴露 `execution_preflight_signal=blocked` warning；在无人值守的 self-host 执行前，应把它视为硬阻断，因为当前公开契约还没有单独的自动 preflight 命令。
+4. 当仓库开始编写自己的 repo-local surface 之后，应继续把 `check` 当成显式的更广治理审计，而不是用 `adopt verify` 代替完整 workspace readiness。
 
 ## 4. 先接工具，再去执行
 
@@ -272,7 +290,7 @@ pnpm exec repo-ai-governor host export --host codex --mode project-local --outpu
 pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/codex/host-export.manifest.json
 ```
 
-把 `host export`、`host verify`、`host pack` 理解成主安装路径 `adopt apply` 之下的 lower-level follow-up surface，而不是默认安装方式。
+把 `host export`、`host verify`、`host pack` 理解成首选安装 quickstart `adopt bootstrap` 之下、并与显式 `adopt apply` 安装 surface 并列存在的 lower-level follow-up surface，而不是默认安装方式。
 如果你需要 packaged local host bootstrap，请只通过 `repo-ai-governor/service-host` 导入 sidecar。
 
 ### ACP 宿主向 readiness
