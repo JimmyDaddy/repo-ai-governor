@@ -9,13 +9,13 @@
 
 ## 1. 任务目标
 
-在 `sprint-003` implementation、clean recheck 与 project-final `CR-003` clean 后，完成 `project-105` final closeout 与 delivery evidence handoff。
+在 `sprint-003` implementation、latest sprint clean recheck 与 latest project-final clean round 后，完成 `project-105` final closeout 与 delivery evidence handoff。
 
 ## 2. Depends On
 
 1. `TK-888`
 2. `TK-889`
-3. `CR-003` project-final clean review
+3. latest project-final clean review
 
 ## 3. 预期产物
 
@@ -66,9 +66,12 @@
 ## 9. 执行记录
 
 1. 2026-04-14：任务创建，状态初始化为 `planned`。
-2. 2026-04-15：project-final `CR-003` clean 后，已将 `technical-solution.acp-host-facing-transport-formalization` 的 delivery `execution_status` / `rollout_status` 推进到 `completed`，写回 project completion audit、completed-stream history 与 idle `current-context`，`TK-890` 收口为 `completed`。
+2. 2026-04-15：并发流程曾提前写入 project-final `CR-003` 与 `TK-890 completed` closeout 结论；用户随后明确选择继续 active CR loop 作为 canonical truth，因此该 closeout 被视为历史痕迹而非当前执行依据，`TK-890` 已重新打开为 `planned`，需等待新的 sprint/project clean rounds 后再执行真正 closeout。
+3. 2026-04-15：latest project-final `CR-012` clean recheck 已收口为 `resolved`；当前 closeout 重新取得 canonical clean 依据，因此任务切换为真正执行窗口。
+4. 2026-04-15：已写回 reopened closeout 的 completion audit summary、project/sprint completed 状态、completed-stream history 与 idle `current-context`；`check-code-review-status-sync`、`check-task-ledger-sync`、`check-sprint-plan-status-sync`、`check-technical-solution-delivery-registry`、`check-technical-solution-lifecycle-registry`、`check-worktree-review-target`、`check-artifact-registry-lifecycle` 与 `pnpm run check` 通过，`TK-890` 收口为 `completed`。
 
 ## 10. 产出
 
-1. `.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/project-105-acp-host-facing-transport-rollout-completion-audit-summary.md`
-2. `.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-003-clean-room-verify-support-truth-and-rollout-closeout/review/resolved_code_review_working-tree-20260415-1002.md`
+1. `.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/project-105-acp-host-facing-transport-rollout-completion-audit-summary-sprint-003-clean-room-verify-support-truth-and-rollout-closeout.md`
+2. `.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/sprint-003-clean-room-verify-support-truth-and-rollout-closeout/review/resolved_code_review_working-tree-20260415-1334.md`
+3. `.repo-ai-governor/context/current-context.md`

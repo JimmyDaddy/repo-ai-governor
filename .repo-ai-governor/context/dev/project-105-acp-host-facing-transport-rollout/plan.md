@@ -49,7 +49,7 @@
 | TK-887 | sprint-002 | sprint-002 exit acceptance and sprint-003 activation handoff | sprint/closeout | TK-885、TK-886、latest fresh reviewer clean round | completed |
 | TK-888 | sprint-003 | execute clean-room ACP verification and distribution runtime evidence capture | verify/evidence | TK-887 | completed |
 | TK-889 | sprint-003 | uplift ACP adopter-facing support docs truth only for evidence-backed surfaces while preserving cli_exec separation | support/docs | TK-888 | completed |
-| TK-890 | sprint-003 | finalize project-105 closeout and delivery evidence handoff | closeout/delivery | TK-888、TK-889、project-final CR-003 | completed |
+| TK-890 | sprint-003 | finalize project-105 closeout and delivery evidence handoff | closeout/delivery | TK-888、TK-889、latest project-final clean round (`CR-012`) | completed |
 
 ## 4. 依赖产物策略
 
@@ -73,9 +73,17 @@
 5. 2026-04-15：`CR-001` repair round 与 `CR-002` clean recheck 已全部 resolved；`sprint-002` 完成 closeout，并将 `sprint-003` 激活为新的 primary execution surface，`TK-888` 进入 `in_progress`。
 6. 2026-04-15：`TK-888` clean-room ACP verification / evidence capture 与 `TK-889` support/docs truth uplift implementation boundary 已完成；`.tmp/project-105-sprint-003-acp-cleanroom-report.json` 与 `.repo-ai-governor/generated/acp/acp-cleanroom-verification.summary.json` 已写回，随后 `CR-001` 修复 round 已收口为 `resolved`。
 7. 2026-04-15：`sprint-003 / CR-002` 已作为 fresh clean recheck round 激活；只有当最新 reviewer round 无 actionable finding 后，才允许进入 sprint closeout 与 project-final review。
-8. 2026-04-15：`sprint-003 / CR-002` clean recheck 已收口为 `resolved`；current sprint boundary 现已 clean，下一步在同一 surface 上执行 project-final fresh review，clean 后再完成 `TK-890` 与 project closeout。
-9. 2026-04-15：project-final `CR-003` 已 clean 收口，`TK-890` 已完成 delivery / audit / idle closeout；`project-105` 正式完成。
+8. 2026-04-15：`sprint-003 / CR-002` 第二轮修复已收口为 `resolved`；由于 accepted finding 在该 round 内继续落地，当前仍需新的 sprint-level fresh clean recheck 才能进入 project-final review。
+9. 2026-04-15：并发流程曾提前写入 project-final `CR-003`、`TK-890` 与 idle closeout，但用户随后明确选择继续 active CR loop 作为 canonical truth；因此 `project-105` 已重新打开为 `active`，当前需以新的 fresh clean round 重新取得 sprint/project closeout 依据。
+10. 2026-04-15：`CR-004` 已修复并收口一条关于 durable ACP receipt evidence 的 P1 finding；当前已激活 fresh `CR-005` sprint clean recheck，只有 latest sprint clean round clean 后才允许重新进入 project-final review。
+11. 2026-04-15：`CR-005` 已修复并收口一条关于 repaired ACP gating branch 负向 coverage 的 P2 finding；当前已激活 fresh `CR-006` sprint clean recheck。
+12. 2026-04-15：`CR-006` 已 clean 收口，`sprint-003` implementation boundary 已达到 latest fresh clean round 要求；当前已进入新的 project-final `CR-007`。
+13. 2026-04-15：project-final `CR-007`、`CR-008` 与 `CR-009` 的 accepted findings 已全部修复并收口；最新一轮修复把 tracked ACP receipt payload 内部路径也裁成 portable `.repo-ai-governor/...` strings。由于 `CR-009` 继续带来了新的 script/evidence 变更，随后已激活 fresh `CR-010` 作为 project-final clean recheck。
+14. 2026-04-15：`CR-010` 又返回 1 条被认可的 provenance dead-path finding，指出 portable tracked receipt JSON 仍指向不会持久保存 clean-room fixture 的 repo-relative path；当前已将 clean-room source provenance 复制到 `.repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/**` 并收口 `CR-010`，随后激活 fresh `CR-011` 作为最新 project-final clean recheck。
+15. 2026-04-15：`CR-011` 又返回 2 条被认可的 P2 finding，分别补齐了 tracked receipt consumer 的 fail-closed 边界与 whitespace portability；当前已修复并收口 `CR-011`，随后激活 fresh `CR-012` 作为最新 project-final clean recheck。
+16. 2026-04-15：`CR-012` latest fresh project-final clean recheck clean 收口后，已完成 reopened `TK-890` closeout、completion audit summary、completed-stream history 与 idle `current-context` 写回；`project-105` 当前恢复为真正的 `completed`。
 
 ## 7. 里程碑记录入口
 
-1. `.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/project-105-acp-host-facing-transport-rollout-completion-audit-summary.md`
+1. 已存在一次并发 closeout 产生的审计摘要：`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/project-105-acp-host-facing-transport-rollout-completion-audit-summary.md`
+2. reopened canonical closeout 的完成态审计摘要：`.repo-ai-governor/context/dev/project-105-acp-host-facing-transport-rollout/project-105-acp-host-facing-transport-rollout-completion-audit-summary-sprint-003-clean-room-verify-support-truth-and-rollout-closeout.md`

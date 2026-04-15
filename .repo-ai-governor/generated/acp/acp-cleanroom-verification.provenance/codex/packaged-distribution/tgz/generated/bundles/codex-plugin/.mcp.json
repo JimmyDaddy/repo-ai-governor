@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "repo-ai-governor": {
+      "packageExport": "repo-ai-governor/service-host",
+      "hostClass": "LocalOrchestrationServiceSidecarHost",
+      "host": "codex",
+      "target": "codex.plugin",
+      "mode": "plugin-bundle",
+      "bridge": "cli_wrapper",
+      "workflowIds": ["sample-host-skill"]
+    }
+  }
+}

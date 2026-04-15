@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { dirname, isAbsolute, relative, resolve } from 'node:path';
 
 import { AdapterSurface } from '@repo-ai-governor/shared';
 import {
@@ -34,6 +34,7 @@ interface CliAcpHostVerificationRecord {
 
 interface CliAcpCleanRoomVerificationSummary {
   schemaVersion: string;
+  overallStatus?: string;
   distributionMode?: string;
   surfaces?: Array<{
     surfaceId?: string;
@@ -45,8 +46,10 @@ interface CliAcpCleanRoomVerificationSummary {
 }
 
 const ACP_CLEAN_ROOM_VERIFICATION_SUMMARY_SCHEMA_VERSION = 'acp-cleanroom-verification-summary-v1';
+const ACP_CLEAN_ROOM_VERIFICATION_REQUIRED_STATUS = 'passed';
 const ACP_CLEAN_ROOM_VERIFICATION_REQUIRED_DISTRIBUTION_MODE = 'default';
 const ACP_CLEAN_ROOM_VERIFICATION_REQUIRED_MODES = ['link', 'path', 'tgz'] as const;
+const ACP_CLEAN_ROOM_TRACKED_RECEIPTS_DIRECTORY = 'acp-cleanroom-verification.receipts';
 const ACP_CLEAN_ROOM_VERIFICATION_SUMMARY_RELATIVE_PATH = [
   '.repo-ai-governor',
   'generated',
@@ -226,6 +229,7 @@ export class CliAcpHostEvidenceRuntime {
     if (
       !summary ||
       summary.schemaVersion !== ACP_CLEAN_ROOM_VERIFICATION_SUMMARY_SCHEMA_VERSION ||
+      summary.overallStatus !== ACP_CLEAN_ROOM_VERIFICATION_REQUIRED_STATUS ||
       summary.distributionMode !== ACP_CLEAN_ROOM_VERIFICATION_REQUIRED_DISTRIBUTION_MODE ||
       !Array.isArray(summary.surfaces)
     ) {
@@ -237,8 +241,14 @@ export class CliAcpHostEvidenceRuntime {
         record.surfaceId === surface &&
         record.status === HostVerificationStatus.PASS &&
         this.hasRequiredCleanRoomModes(record.verifiedModes) &&
-        this.hasRequiredCleanRoomReceipts(record.runtimeServiceVerificationSummaryPaths) &&
-        this.hasRequiredCleanRoomReceipts(record.packagedDistributionVerificationSummaryPaths),
+        this.hasRequiredCleanRoomReceipts(
+          record.runtimeServiceVerificationSummaryPaths,
+          summaryPath,
+        ) &&
+        this.hasRequiredCleanRoomReceipts(
+          record.packagedDistributionVerificationSummaryPaths,
+          summaryPath,
+        ),
     );
   }
 
@@ -251,18 +261,66 @@ export class CliAcpHostEvidenceRuntime {
     return ACP_CLEAN_ROOM_VERIFICATION_REQUIRED_MODES.every((mode) => verifiedModeSet.has(mode));
   }
 
-  private hasRequiredCleanRoomReceipts(summaryPaths: string[] | undefined): boolean {
+  private hasRequiredCleanRoomReceipts(
+    summaryPaths: string[] | undefined,
+    summaryFilePath: string,
+  ): boolean {
     if (!Array.isArray(summaryPaths)) {
       return false;
     }
 
-    const uniqueSummaryPaths = new Set(
-      summaryPaths.filter(
-        (summaryPath): summaryPath is string =>
-          typeof summaryPath === 'string' && summaryPath.trim().length > 0,
+    const uniqueSummaryPaths = Array.from(
+      new Set(
+        summaryPaths.filter(
+          (summaryPath): summaryPath is string =>
+            typeof summaryPath === 'string' && summaryPath.trim().length > 0,
+        ),
       ),
     );
-    return uniqueSummaryPaths.size >= ACP_CLEAN_ROOM_VERIFICATION_REQUIRED_MODES.length;
+    if (uniqueSummaryPaths.length < ACP_CLEAN_ROOM_VERIFICATION_REQUIRED_MODES.length) {
+      return false;
+    }
+
+    return uniqueSummaryPaths.every((summaryPath) => {
+      const receiptSummaryPath = this.resolveTrackedCleanRoomReceiptPath(
+        summaryFilePath,
+        summaryPath,
+      );
+      if (!receiptSummaryPath) {
+        return false;
+      }
+      const receiptSummary = this.readJsonFile<HostVerificationSummary>(receiptSummaryPath);
+      return (
+        receiptSummary?.schemaVersion === HOST_VERIFICATION_SUMMARY_SCHEMA_VERSION &&
+        receiptSummary.status === HostVerificationStatus.PASS
+      );
+    });
+  }
+
+  private resolveTrackedCleanRoomReceiptPath(
+    summaryFilePath: string,
+    summaryPath: string,
+  ): string | null {
+    const normalizedSummaryPath = summaryPath.trim();
+    if (normalizedSummaryPath.length === 0 || isAbsolute(normalizedSummaryPath)) {
+      return null;
+    }
+
+    const trackedReceiptRoot = resolve(
+      dirname(summaryFilePath),
+      ACP_CLEAN_ROOM_TRACKED_RECEIPTS_DIRECTORY,
+    );
+    const trackedReceiptPath = resolve(dirname(summaryFilePath), normalizedSummaryPath);
+    const trackedReceiptRelativePath = relative(trackedReceiptRoot, trackedReceiptPath);
+    if (
+      trackedReceiptRelativePath.length === 0 ||
+      trackedReceiptRelativePath.startsWith('..') ||
+      isAbsolute(trackedReceiptRelativePath)
+    ) {
+      return null;
+    }
+
+    return trackedReceiptPath;
   }
 
   private readJsonFile<T>(filePath: string): T | null {

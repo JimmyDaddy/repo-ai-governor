@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "repo-ai-governor": {
+      "packageExport": "repo-ai-governor/service-host",
+      "hostClass": "LocalOrchestrationServiceSidecarHost",
+      "host": "github-copilot",
+      "target": "github_copilot.repo_local",
+      "mode": "project-local",
+      "bridge": "cli_wrapper",
+      "workflowIds": ["sample-host-skill"]
+    }
+  }
+}

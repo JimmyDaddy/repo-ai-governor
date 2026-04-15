@@ -12,7 +12,7 @@
 - Checklist: `_None_`
 - CSV: `_None_`
 - Review: `_None_`
-- Note: `2026-04-15` `project-105 / sprint-003` 与 project-final `CR-003` 已 clean 收口，`TK-890` 已完成，当前工作区恢复 `idle`。
+- Note: `2026-04-15` `project-105 / sprint-003` reopened closeout 已在 latest project-final `CR-012` clean recheck 后重新收口；`TK-890`、completion audit、completed history 与 idle 恢复已按 canonical truth 写回。
 
 ## Active Streams
 

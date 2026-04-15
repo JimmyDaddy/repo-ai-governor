@@ -1,0 +1,14 @@
+{
+  "host": "codex",
+  "target": "codex.plugin",
+  "mode": "plugin-bundle",
+  "handoffBridge": "cli_wrapper",
+  "serviceHostPackageExport": "repo-ai-governor/service-host",
+  "workflowIds": ["sample-host-skill"],
+  "canonicalSourceRefs": [".codex/skills/sample-host-skill/SKILL.md"],
+  "sourcePackRefs": ["repo-local-skill:sample-host-skill"],
+  "entrypoints": {
+    "skills": ["skills/sample-host-skill/SKILL.md"],
+    "agents": ["agents/sample-host-skill.agent.md"]
+  }
+}

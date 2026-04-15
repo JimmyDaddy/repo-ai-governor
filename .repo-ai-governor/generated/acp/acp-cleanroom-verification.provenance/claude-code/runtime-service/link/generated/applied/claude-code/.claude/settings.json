@@ -1,0 +1,8 @@
+{
+  "host": "claude-code",
+  "target": "claude_code.project_local",
+  "mode": "project-local",
+  "handoffBridge": "cli_wrapper",
+  "workflowIds": ["sample-host-skill"],
+  "canonicalSourceRefs": [".codex/skills/sample-host-skill/SKILL.md"]
+}

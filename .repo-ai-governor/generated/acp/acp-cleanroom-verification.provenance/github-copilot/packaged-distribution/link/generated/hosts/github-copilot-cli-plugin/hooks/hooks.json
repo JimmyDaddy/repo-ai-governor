@@ -1,0 +1,12 @@
+{
+  "host": "github-copilot",
+  "target": "github_copilot.cli_plugin",
+  "mode": "plugin-bundle",
+  "handoffBridge": "cli_wrapper",
+  "hooks": [
+    {
+      "hookName": "sample-host-skill",
+      "path": "hooks/sample-host-skill.hook.json"
+    }
+  ]
+}
