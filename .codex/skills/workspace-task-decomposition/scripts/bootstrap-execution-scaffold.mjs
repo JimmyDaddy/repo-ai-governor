@@ -22,6 +22,7 @@ function parseArgs(argv) {
     phaseMapping: '待补充',
     projectGoals: [],
     sprintGoal: null,
+    sprintSpecs: [],
     sprintScopes: [],
     exitCriteria: [],
     sprintNotes: [],
@@ -75,6 +76,9 @@ function parseArgs(argv) {
       case '--sprint-goal':
         options.sprintGoal = nextValue;
         break;
+      case '--sprint-spec':
+        options.sprintSpecs.push(nextValue);
+        break;
       case '--sprint-scope':
         options.sprintScopes.push(nextValue);
         break;
@@ -125,30 +129,41 @@ function printHelp() {
       '',
       'Required options:',
       '  --project <project-xxx-meaningful-name>',
-      '  --sprint <sprint-xxx-meaningful-name>',
-      '  --sprint-goal <text>',
+      '  Either:',
+      '    --sprint <sprint-xxx-meaningful-name> --sprint-goal <text>',
+      '  Or one or more:',
+      '    --sprint-spec "<sprint-xxx>|<sprint-goal>|<planned|active|completed>"',
       '',
       'Optional options:',
       '  --workspace-root <path>      Workspace root (default: .repo-ai-governor)',
       '  --stage-mapping <text>       Project stage mapping',
       '  --phase-mapping <text>       Project phase mapping',
       '  --project-goal <text>        Repeatable project-level goals',
-      '  --sprint-scope <text>        Repeatable sprint scope lines',
-      '  --exit-criterion <text>      Repeatable sprint exit criteria',
-      '  --sprint-note <text>         Repeatable sprint notes',
+      '  --sprint-scope "<sprint-id>|<text>"',
+      '                              Repeatable sprint scope lines; single-sprint "<text>" still works',
+      '  --exit-criterion "<sprint-id>|<text>"',
+      '                              Repeatable sprint exit criteria; single-sprint "<text>" still works',
+      '  --sprint-note "<sprint-id>|<text>"',
+      '                              Repeatable sprint notes; single-sprint "<text>" still works',
       '  --upstream <path-or-note>    Repeatable upstream inputs',
-      '  --task "<title>|<priority>|<goal>|<depends_on>|<deliverable_type>"',
-      '                              Repeatable TK seed item',
-      '  --cr "<title>|<priority>|<goal>|<depends_on>|<deliverable_type>"',
-      '                              Repeatable CR seed item',
-      '  --task-input "<task-title-or-slug>|<required|traceback>|<value>"',
-      '                              Repeatable task-card input assignment',
+      '  --task "<sprint-id>|<title>|<priority>|<goal>|<depends_on>|<deliverable_type>"',
+      '                              Repeatable TK seed item; single-sprint legacy form still works',
+      '  --cr "<sprint-id>|<title>|<priority>|<goal>|<depends_on>|<deliverable_type>"',
+      '                              Repeatable CR seed item; single-sprint legacy form still works',
+      '  --task-input "<sprint-id>|<task-title-or-slug>|<required|traceback>|<value>"',
+      '                              Repeatable task-card input assignment; single-sprint legacy form still works',
       '  --owner <name>               Default: AI-Agent',
       '  --date <YYYY-MM-DD>          Default: today',
       '  --project-status <status>    planned|active|completed',
       '  --sprint-status <status>     planned|active|completed',
     ].join('\n'),
   );
+}
+
+function splitSpecParts(rawValue) {
+  return String(rawValue ?? '')
+    .split('|')
+    .map((part) => part.trim());
 }
 
 function normalizeDate(value) {
@@ -200,15 +215,82 @@ function normalizePriority(value) {
   return normalizedValue;
 }
 
-function parseWorkItemSpec(rawValue, kind) {
-  const parts = String(rawValue ?? '')
-    .split('|')
-    .map((part) => part.trim());
-  const title = parts[0] ?? '';
-  const priority = normalizePriority(parts[1] || 'P1');
-  const goal = parts[2] ?? '';
-  const dependsOn = parts[3] ?? '';
-  const deliverableType = parts[4] || (kind === 'CR' ? 'review' : 'implementation');
+function parseSprintSpec(rawValue, defaultSprintStatus) {
+  const parts = splitSpecParts(rawValue);
+  const sprintId = normalizeSprintId(parts[0] ?? '');
+  const sprintGoal = parts[1] ?? '';
+  const sprintStatus = parts[2]
+    ? normalizeStatus(parts[2], SPRINT_STATUS_PATTERN, 'sprint status')
+    : defaultSprintStatus;
+
+  if (!sprintGoal) {
+    throw new Error(`Missing sprint goal in --sprint-spec: ${rawValue}`);
+  }
+
+  return {
+    sprintId,
+    sprintGoal,
+    sprintStatus,
+  };
+}
+
+function resolveSprintDefinitions(options) {
+  const defaultSprintStatus = normalizeStatus(
+    options.sprintStatus,
+    SPRINT_STATUS_PATTERN,
+    'sprint status',
+  );
+
+  if (options.sprintSpecs.length > 0) {
+    if (options.sprint || options.sprintGoal) {
+      throw new Error('Do not mix --sprint-spec with legacy --sprint/--sprint-goal options.');
+    }
+
+    const seenSprintIds = new Set();
+    return options.sprintSpecs.map((rawSprintSpec) => {
+      const sprintSpec = parseSprintSpec(rawSprintSpec, defaultSprintStatus);
+      if (seenSprintIds.has(sprintSpec.sprintId)) {
+        throw new Error(`Duplicate sprint id in --sprint-spec: ${sprintSpec.sprintId}`);
+      }
+
+      seenSprintIds.add(sprintSpec.sprintId);
+      return sprintSpec;
+    });
+  }
+
+  const sprintId = normalizeSprintId(options.sprint);
+  if (!options.sprintGoal) {
+    throw new Error('Missing required option: --sprint-goal');
+  }
+
+  return [
+    {
+      sprintId,
+      sprintGoal: String(options.sprintGoal).trim(),
+      sprintStatus: defaultSprintStatus,
+    },
+  ];
+}
+
+function parseWorkItemSpec(rawValue, kind, sprintIds, defaultSprintId) {
+  const parts = splitSpecParts(rawValue);
+  let sprintId = defaultSprintId;
+  let offset = 0;
+
+  if (parts.length >= 2 && sprintIds.has(parts[0])) {
+    sprintId = parts[0];
+    offset = 1;
+  } else if (sprintIds.size > 1) {
+    throw new Error(
+      `Missing sprint selector in ${kind} item: ${rawValue}. Multi-sprint mode requires "<sprint-id>|<title>|<priority>|<goal>|...".`,
+    );
+  }
+
+  const title = parts[offset] ?? '';
+  const priority = normalizePriority(parts[offset + 1] || 'P1');
+  const goal = parts[offset + 2] ?? '';
+  const dependsOn = parts[offset + 3] ?? '';
+  const deliverableType = parts[offset + 4] || (kind === 'CR' ? 'review' : 'implementation');
 
   if (!title) {
     throw new Error(`Missing title in ${kind} item: ${rawValue}`);
@@ -220,6 +302,7 @@ function parseWorkItemSpec(rawValue, kind) {
 
   return {
     kind,
+    sprintId,
     title,
     priority,
     goal,
@@ -290,13 +373,26 @@ function reserveTaskIds({ workspaceRoot, tasksDir, type, count }) {
   return parsedOutput.reservedIds ?? [];
 }
 
-function parseTaskInputSpec(rawValue) {
-  const parts = String(rawValue ?? '')
-    .split('|')
-    .map((part) => part.trim());
-  const selector = parts[0] ?? '';
-  const inputType = (parts[1] ?? '').toLowerCase();
-  const value = parts.slice(2).join('|').trim();
+function parseTaskInputSpec(rawValue, sprintIds, defaultSprintId) {
+  const parts = splitSpecParts(rawValue);
+  let sprintId = defaultSprintId;
+  let offset = 0;
+
+  if (parts.length >= 4 && sprintIds.has(parts[0])) {
+    sprintId = parts[0];
+    offset = 1;
+  } else if (sprintIds.size > 1) {
+    throw new Error(
+      `Missing sprint selector in --task-input: ${rawValue}. Multi-sprint mode requires "<sprint-id>|<task-title-or-slug>|<required|traceback>|<value>".`,
+    );
+  }
+
+  const selector = parts[offset] ?? '';
+  const inputType = (parts[offset + 1] ?? '').toLowerCase();
+  const value = parts
+    .slice(offset + 2)
+    .join('|')
+    .trim();
 
   if (!selector) {
     throw new Error(`Missing task selector in --task-input: ${rawValue}`);
@@ -304,7 +400,7 @@ function parseTaskInputSpec(rawValue) {
 
   if (inputType !== 'required' && inputType !== 'traceback') {
     throw new Error(
-      `Invalid task-input type "${parts[1] ?? ''}" in --task-input: ${rawValue}. Expected required or traceback.`,
+      `Invalid task-input type "${parts[offset + 1] ?? ''}" in --task-input: ${rawValue}. Expected required or traceback.`,
     );
   }
 
@@ -313,23 +409,46 @@ function parseTaskInputSpec(rawValue) {
   }
 
   return {
+    sprintId,
     selector,
     inputType,
     value,
   };
 }
 
-function buildSeedItems(options) {
-  const tkItems = options.tasks.map((rawTask) => parseWorkItemSpec(rawTask, 'TK'));
-  const crItems = options.crs.map((rawTask) => parseWorkItemSpec(rawTask, 'CR'));
+function createDefaultTkItem(sprintDefinition, sprintIndex) {
+  return {
+    kind: 'TK',
+    sprintId: sprintDefinition.sprintId,
+    title: `bootstrap ${sprintDefinition.sprintId} scaffold`,
+    priority: 'P1',
+    goal:
+      sprintIndex === 0
+        ? '创建标准 project/sprint/task 骨架并写入初始 plan/task ledger seed'
+        : `为 ${sprintDefinition.sprintId} 创建标准 sprint 执行骨架，便于后续按计划直接进入实施`,
+    dependsOn: '',
+    deliverableType: 'implementation',
+    initialStatus: 'planned',
+    requiredInputs: [],
+    tracebackReferences: [],
+  };
+}
 
-  if (tkItems.length === 0) {
-    tkItems.push(
-      parseWorkItemSpec(
-        'bootstrap execution scaffold|P1|创建标准 project/sprint/task 骨架并写入初始 plan/task ledger seed',
-        'TK',
-      ),
-    );
+function buildSeedItems(options, sprintDefinitions) {
+  const defaultSprintId = sprintDefinitions[0]?.sprintId ?? null;
+  const sprintIds = new Set(sprintDefinitions.map((sprintDefinition) => sprintDefinition.sprintId));
+  const tkItems = options.tasks.map((rawTask) =>
+    parseWorkItemSpec(rawTask, 'TK', sprintIds, defaultSprintId),
+  );
+  const crItems = options.crs.map((rawTask) =>
+    parseWorkItemSpec(rawTask, 'CR', sprintIds, defaultSprintId),
+  );
+
+  for (const [sprintIndex, sprintDefinition] of sprintDefinitions.entries()) {
+    const hasTkItem = tkItems.some((item) => item.sprintId === sprintDefinition.sprintId);
+    if (!hasTkItem) {
+      tkItems.push(createDefaultTkItem(sprintDefinition, sprintIndex));
+    }
   }
 
   return {
@@ -338,13 +457,17 @@ function buildSeedItems(options) {
   };
 }
 
-function applyTaskInputAssignments(items, rawAssignments) {
-  const assignments = rawAssignments.map((rawAssignment) => parseTaskInputSpec(rawAssignment));
+function applyTaskInputAssignments(items, assignments) {
+  if (assignments.length === 0) {
+    return items;
+  }
 
   return items.map((item) => {
     const itemSlug = slugify(item.title);
     const matchingAssignments = assignments.filter(
-      (assignment) => assignment.selector === item.title || assignment.selector === itemSlug,
+      (assignment) =>
+        assignment.sprintId === item.sprintId &&
+        (assignment.selector === item.title || assignment.selector === itemSlug),
     );
 
     if (matchingAssignments.length === 0) {
@@ -381,6 +504,58 @@ function finalizeDependencies(items, fallbackFactory) {
       dependsOn: fallbackDependencies.join('; '),
     };
   });
+}
+
+function parseScopedTextSpec(rawValue, sprintIds, label) {
+  const parts = splitSpecParts(rawValue);
+  if (parts.length >= 2 && sprintIds.has(parts[0])) {
+    const text = parts.slice(1).join('|').trim();
+    if (!text) {
+      throw new Error(`Missing scoped text in ${label}: ${rawValue}`);
+    }
+
+    return {
+      sprintId: parts[0],
+      text,
+    };
+  }
+
+  const text = String(rawValue ?? '').trim();
+  if (!text) {
+    throw new Error(`Missing text in ${label}: ${rawValue}`);
+  }
+
+  return {
+    sprintId: null,
+    text,
+  };
+}
+
+function resolveScopedTexts(rawValues, sprintDefinitions, label) {
+  const sprintIds = new Set(sprintDefinitions.map((sprintDefinition) => sprintDefinition.sprintId));
+  return rawValues.map((rawValue) => parseScopedTextSpec(rawValue, sprintIds, label));
+}
+
+function selectScopedTexts(scopedTexts, sprintId) {
+  const globalTexts = [];
+  const targetedTexts = [];
+
+  for (const scopedText of scopedTexts) {
+    if (scopedText.sprintId === null) {
+      globalTexts.push(scopedText.text);
+      continue;
+    }
+
+    if (scopedText.sprintId === sprintId) {
+      targetedTexts.push(scopedText.text);
+    }
+  }
+
+  return [...globalTexts, ...targetedTexts];
+}
+
+function describeSprintSequence(sprintDefinitions) {
+  return sprintDefinitions.map((sprintDefinition) => sprintDefinition.sprintId).join('、');
 }
 
 function renderTaskCard({
@@ -571,18 +746,24 @@ function renderTasksCsv(seedItems, project, sprint, owner, date) {
 
 function renderProjectPlan({
   project,
-  sprint,
   stageMapping,
   phaseMapping,
   upstream,
   projectGoals,
-  sprintGoal,
-  sprintStatus,
-  taskPackage,
+  sprintDefinitions,
   wbsRows,
   date,
   projectStatus,
 }) {
+  const sprintSections = sprintDefinitions.flatMap((sprintDefinition, index) => [
+    `## 2.${index + 1} ${sprintDefinition.sprintId}`,
+    '',
+    `- Status: ${sprintDefinition.sprintStatus}`,
+    `- Sprint Goal: ${sprintDefinition.sprintGoal}`,
+    `- Task Package: ${sprintDefinition.taskPackage}`,
+    '',
+  ]);
+
   return [
     `# ${project} 计划`,
     '',
@@ -596,24 +777,19 @@ function renderProjectPlan({
     '',
     renderOrderedList(
       projectGoals,
-      `围绕 ${sprint} 完成标准化 project/sprint/task 拆解与执行面落盘。`,
+      `围绕 ${describeSprintSequence(sprintDefinitions)} 完成标准化 project/sprint/task 拆解与执行面落盘。`,
     ),
     '',
     '## 2. Sprint 细化',
     '',
-    `## 2.1 ${sprint}`,
-    '',
-    `- Status: ${sprintStatus}`,
-    `- Sprint Goal: ${sprintGoal}`,
-    `- Task Package: ${taskPackage}`,
-    '',
+    ...sprintSections,
     '## 3. 任务拆解矩阵（WBS）',
     '',
     '| task_id | sprint | title | 目标产出类型 | depends_on | status |',
     '| --- | --- | --- | --- | --- | --- |',
     ...wbsRows.map(
       (row) =>
-        `| ${row.taskId} | ${sprint} | ${row.title} | ${row.deliverableType} | ${row.dependsOn} | ${row.initialStatus} |`,
+        `| ${row.taskId} | ${row.sprintId} | ${row.title} | ${row.deliverableType} | ${row.dependsOn} | ${row.initialStatus} |`,
     ),
     '',
     '## 4. 依赖产物策略',
@@ -631,16 +807,16 @@ function renderProjectPlan({
     '',
     renderOrderedList(
       [
-        'project/sprint plan、task cards、checklist、tasks.csv 与 review scaffold 已标准化落盘。',
+        `${sprintDefinitions.length} 个 sprint 的 plan、task cards、checklist、tasks.csv 与 review scaffold 已标准化落盘。`,
         '任务编号、目录结构与命名规则符合 AGENTS 与 governance template 约束。',
-        '在正式激活前已有明确的 task-ledger canonicalization 路径。',
+        '在正式激活前已有明确的 task-ledger canonicalization 路径，且只需要按顺序激活执行面。',
       ],
       '待补充',
     ),
     '',
     '## 6. 里程碑记录',
     '',
-    `1. ${date}：创建 ${project} / ${sprint} 标准执行流骨架。`,
+    `1. ${date}：创建 ${project} 全量执行流骨架，覆盖 ${describeSprintSequence(sprintDefinitions)}。`,
     '',
     '## 7. 里程碑记录入口',
     '',
@@ -650,7 +826,7 @@ function renderProjectPlan({
 }
 
 function renderSprintPlan({
-  sprint,
+  sprintId,
   project,
   upstream,
   sprintGoal,
@@ -662,7 +838,7 @@ function renderSprintPlan({
   sprintStatus,
 }) {
   return [
-    `# ${sprint} 计划`,
+    `# ${sprintId} 计划`,
     '',
     `- Status: ${sprintStatus}`,
     `- Date: ${date}`,
@@ -699,6 +875,24 @@ function renderSprintPlan({
   ].join('\n');
 }
 
+function buildDefaultExitCriteria() {
+  return [
+    'project/sprint plan 已按标准模板落盘。',
+    'canonical TK/CR task cards、checklist、tasks.csv 与 review scaffold 已创建。',
+    '正式执行前的 task-ledger canonicalization 命令已明确。',
+  ];
+}
+
+function buildDefaultSprintNotes(sprintRecords, sprintIndex) {
+  return [
+    'bootstrap 阶段不预生成 code_review 生命周期文件。',
+    '若用户只要求拆解，不自动修改 current-context.md。',
+    sprintIndex === 0
+      ? '默认将该 sprint 作为首个 activation candidate，但只有在用户显式要求时才切为 active。'
+      : `该 sprint 默认保持 planned，等待 ${sprintRecords[sprintIndex - 1].sprintId} handoff 或用户显式激活。`,
+  ];
+}
+
 function main() {
   const options = parseArgs(process.argv.slice(2));
   if (options.help) {
@@ -707,182 +901,252 @@ function main() {
   }
 
   const project = normalizeProjectId(options.project);
-  const sprint = normalizeSprintId(options.sprint);
   const date = normalizeDate(options.date);
   const projectStatus = normalizeStatus(
     options.projectStatus,
     PROJECT_STATUS_PATTERN,
     'project status',
   );
-  const sprintStatus = normalizeStatus(
-    options.sprintStatus,
-    SPRINT_STATUS_PATTERN,
-    'sprint status',
-  );
-
-  if (!options.sprintGoal) {
-    throw new Error('Missing required option: --sprint-goal');
-  }
+  const sprintDefinitions = resolveSprintDefinitions(options);
 
   const workspaceRootPath = resolve(process.cwd(), options.workspaceRoot);
   const projectDirPath = resolve(workspaceRootPath, 'context', 'dev', project);
-  const sprintDirPath = resolve(projectDirPath, sprint);
-  const tasksDirPath = resolve(sprintDirPath, 'tasks');
-  const reviewDirPath = resolve(sprintDirPath, 'review');
   const projectPlanPath = resolve(projectDirPath, 'plan.md');
-  const sprintPlanPath = resolve(sprintDirPath, 'plan.md');
 
-  if (existsSync(projectDirPath) || existsSync(sprintDirPath)) {
-    throw new Error(`Project or sprint path already exists: ${projectDirPath} / ${sprintDirPath}`);
+  if (existsSync(projectDirPath)) {
+    throw new Error(`Project path already exists: ${projectDirPath}`);
   }
 
-  mkdirSync(tasksDirPath, { recursive: true });
-  mkdirSync(reviewDirPath, { recursive: true });
-
-  const seedItems = buildSeedItems(options);
-  const tkIds = reserveTaskIds({
-    workspaceRoot: options.workspaceRoot,
-    tasksDir: tasksDirPath,
-    type: 'TK',
-    count: seedItems.tkItems.length,
-  });
-  const crIds = reserveTaskIds({
-    workspaceRoot: options.workspaceRoot,
-    tasksDir: tasksDirPath,
-    type: 'CR',
-    count: seedItems.crItems.length,
+  const sprintRecords = sprintDefinitions.map((sprintDefinition) => {
+    const sprintDirPath = resolve(projectDirPath, sprintDefinition.sprintId);
+    return {
+      ...sprintDefinition,
+      sprintDirPath,
+      tasksDirPath: resolve(sprintDirPath, 'tasks'),
+      reviewDirPath: resolve(sprintDirPath, 'review'),
+      sprintPlanPath: resolve(sprintDirPath, 'plan.md'),
+    };
   });
 
-  const tkItems = finalizeDependencies(
-    applyTaskInputAssignments(
-      seedItems.tkItems.map((item, index) => ({
-        ...item,
-        taskId: tkIds[index],
-      })),
-      options.taskInputs,
-    ),
-    (index, items) => (index === 0 ? ['scaffold baseline'] : [items[index - 1].taskId]),
+  for (const sprintRecord of sprintRecords) {
+    if (existsSync(sprintRecord.sprintDirPath)) {
+      throw new Error(`Sprint path already exists: ${sprintRecord.sprintDirPath}`);
+    }
+  }
+
+  mkdirSync(projectDirPath, { recursive: true });
+  for (const sprintRecord of sprintRecords) {
+    mkdirSync(sprintRecord.tasksDirPath, { recursive: true });
+    mkdirSync(sprintRecord.reviewDirPath, { recursive: true });
+  }
+
+  const seedItems = buildSeedItems(options, sprintDefinitions);
+  const sprintIds = new Set(sprintDefinitions.map((sprintDefinition) => sprintDefinition.sprintId));
+  const scopedSprintScopes = resolveScopedTexts(
+    options.sprintScopes,
+    sprintDefinitions,
+    '--sprint-scope',
   );
-  const crItems = finalizeDependencies(
-    applyTaskInputAssignments(
-      seedItems.crItems.map((item, index) => ({
-        ...item,
-        taskId: crIds[index],
-      })),
-      options.taskInputs,
-    ),
-    () => (tkItems.length > 0 ? tkItems.map((item) => item.taskId) : ['sprint execution surface']),
+  const scopedExitCriteria = resolveScopedTexts(
+    options.exitCriteria,
+    sprintDefinitions,
+    '--exit-criterion',
   );
-  const allSeedItems = [...tkItems, ...crItems];
+  const scopedSprintNotes = resolveScopedTexts(
+    options.sprintNotes,
+    sprintDefinitions,
+    '--sprint-note',
+  );
+  const taskInputAssignments = options.taskInputs.map((rawAssignment) =>
+    parseTaskInputSpec(rawAssignment, sprintIds, sprintDefinitions[0]?.sprintId ?? null),
+  );
+
+  const allSeedItems = [];
+
+  for (const [sprintIndex, sprintRecord] of sprintRecords.entries()) {
+    const rawTkItems = seedItems.tkItems.filter((item) => item.sprintId === sprintRecord.sprintId);
+    const rawCrItems = seedItems.crItems.filter((item) => item.sprintId === sprintRecord.sprintId);
+    const sprintTaskInputAssignments = taskInputAssignments.filter(
+      (assignment) => assignment.sprintId === sprintRecord.sprintId,
+    );
+
+    const tkIds = reserveTaskIds({
+      workspaceRoot: options.workspaceRoot,
+      tasksDir: sprintRecord.tasksDirPath,
+      type: 'TK',
+      count: rawTkItems.length,
+    });
+    const crIds = reserveTaskIds({
+      workspaceRoot: options.workspaceRoot,
+      tasksDir: sprintRecord.tasksDirPath,
+      type: 'CR',
+      count: rawCrItems.length,
+    });
+
+    const tkItems = finalizeDependencies(
+      applyTaskInputAssignments(
+        rawTkItems.map((item, index) => ({
+          ...item,
+          taskId: tkIds[index],
+        })),
+        sprintTaskInputAssignments,
+      ),
+      (index, items) => {
+        if (index > 0) {
+          return [items[index - 1].taskId];
+        }
+
+        if (sprintIndex === 0) {
+          return ['scaffold baseline'];
+        }
+
+        return [`${sprintRecords[sprintIndex - 1].sprintId} planned handoff`];
+      },
+    );
+    const crItems = finalizeDependencies(
+      applyTaskInputAssignments(
+        rawCrItems.map((item, index) => ({
+          ...item,
+          taskId: crIds[index],
+        })),
+        sprintTaskInputAssignments,
+      ),
+      () =>
+        tkItems.length > 0
+          ? tkItems.map((item) => item.taskId)
+          : [`${sprintRecord.sprintId} execution surface`],
+    );
+    const sprintSeedItems = [...tkItems, ...crItems];
+    const scopedSprintScopeItems = selectScopedTexts(scopedSprintScopes, sprintRecord.sprintId);
+    const scopedExitCriteriaItems = selectScopedTexts(scopedExitCriteria, sprintRecord.sprintId);
+    const scopedSprintNoteItems = selectScopedTexts(scopedSprintNotes, sprintRecord.sprintId);
+
+    sprintRecord.tkItems = tkItems;
+    sprintRecord.crItems = crItems;
+    sprintRecord.seedItems = sprintSeedItems;
+    sprintRecord.taskPackage =
+      sprintSeedItems.length > 0
+        ? `\`${sprintSeedItems.map((item) => item.taskId).join('、')}\``
+        : '`none`';
+    sprintRecord.sprintScopes =
+      scopedSprintScopeItems.length > 0
+        ? scopedSprintScopeItems
+        : sprintSeedItems.map((item) => item.goal);
+    sprintRecord.exitCriteria =
+      scopedExitCriteriaItems.length > 0 ? scopedExitCriteriaItems : buildDefaultExitCriteria();
+    sprintRecord.sprintNotes =
+      scopedSprintNoteItems.length > 0
+        ? scopedSprintNoteItems
+        : buildDefaultSprintNotes(sprintRecords, sprintIndex);
+
+    allSeedItems.push(...sprintSeedItems);
+  }
 
   const projectGoals =
     options.projectGoals.length > 0
       ? options.projectGoals
       : [
           `围绕 ${project} 建立标准化 execution surface。`,
-          `完成 ${sprint} 的 project/sprint/task 拆解与模板落盘。`,
-        ];
-  const sprintScopes =
-    options.sprintScopes.length > 0 ? options.sprintScopes : allSeedItems.map((item) => item.goal);
-  const exitCriteria =
-    options.exitCriteria.length > 0
-      ? options.exitCriteria
-      : [
-          'project/sprint plan 已按标准模板落盘。',
-          'canonical TK/CR task cards、checklist、tasks.csv 与 review scaffold 已创建。',
-          '正式执行前的 task-ledger canonicalization 命令已明确。',
-        ];
-  const sprintNotes =
-    options.sprintNotes.length > 0
-      ? options.sprintNotes
-      : [
-          'bootstrap 阶段不预生成 code_review 生命周期文件。',
-          '若用户只要求拆解，不自动修改 current-context.md。',
+          `完成 ${describeSprintSequence(sprintDefinitions)} 的 project/sprint/task 拆解与模板落盘。`,
         ];
 
   writeFileSync(
     projectPlanPath,
     renderProjectPlan({
       project,
-      sprint,
       stageMapping: options.stageMapping,
       phaseMapping: options.phaseMapping,
       upstream: options.upstream,
       projectGoals,
-      sprintGoal: options.sprintGoal,
-      sprintStatus,
-      taskPackage: allSeedItems.map((item) => item.taskId).join('、'),
+      sprintDefinitions: sprintRecords,
       wbsRows: allSeedItems,
       date,
       projectStatus,
     }),
     'utf8',
   );
-  writeFileSync(
-    sprintPlanPath,
-    renderSprintPlan({
-      sprint,
-      project,
-      upstream: options.upstream,
-      sprintGoal: options.sprintGoal,
-      sprintScopes,
-      wbsRows: allSeedItems,
-      exitCriteria,
-      sprintNotes,
-      date,
-      sprintStatus,
-    }),
-    'utf8',
-  );
 
-  for (const item of allSeedItems) {
-    const filePath = resolve(tasksDirPath, `${item.taskId}-${slugify(item.title)}.md`);
+  for (const sprintRecord of sprintRecords) {
     writeFileSync(
-      filePath,
-      renderTaskCard({
-        item,
-        taskId: item.taskId,
+      sprintRecord.sprintPlanPath,
+      renderSprintPlan({
+        sprintId: sprintRecord.sprintId,
         project,
-        sprint,
-        owner: options.owner,
+        upstream: options.upstream,
+        sprintGoal: sprintRecord.sprintGoal,
+        sprintScopes: sprintRecord.sprintScopes,
+        wbsRows: sprintRecord.seedItems,
+        exitCriteria: sprintRecord.exitCriteria,
+        sprintNotes: sprintRecord.sprintNotes,
         date,
-        projectPlanPath,
-        sprintPlanPath,
-        tasksDirPath,
+        sprintStatus: sprintRecord.sprintStatus,
       }),
       'utf8',
     );
-  }
 
-  writeFileSync(resolve(tasksDirPath, 'checklist.md'), renderChecklist(allSeedItems, date), 'utf8');
-  writeFileSync(
-    resolve(tasksDirPath, 'tasks.csv'),
-    renderTasksCsv(allSeedItems, project, sprint, options.owner, date),
-    'utf8',
-  );
-  writeFileSync(resolve(reviewDirPath, '.gitkeep'), '', 'utf8');
+    for (const item of sprintRecord.seedItems) {
+      const filePath = resolve(
+        sprintRecord.tasksDirPath,
+        `${item.taskId}-${slugify(item.title)}.md`,
+      );
+      writeFileSync(
+        filePath,
+        renderTaskCard({
+          item,
+          taskId: item.taskId,
+          project,
+          sprint: sprintRecord.sprintId,
+          owner: options.owner,
+          date,
+          projectPlanPath,
+          sprintPlanPath: sprintRecord.sprintPlanPath,
+          tasksDirPath: sprintRecord.tasksDirPath,
+        }),
+        'utf8',
+      );
+    }
 
-  const suggestedNextSteps = [
-    `node ./scripts/governance/sync-task-ledger.js --tasks-dir "${tasksDirPath}"`,
-    `node ./scripts/governance/check-task-required-inputs.js --tasks-dir "${tasksDirPath}" --task-id ${allSeedItems.map((item) => item.taskId).join(' --task-id ')}`,
-    'node ./scripts/governance/check-task-ledger-sync.js',
-    'node ./scripts/governance/check-sprint-plan-status-sync.js',
-  ];
-  if (crItems.length > 0) {
-    suggestedNextSteps.push('node ./scripts/governance/check-code-review-status-sync.js');
+    writeFileSync(
+      resolve(sprintRecord.tasksDirPath, 'checklist.md'),
+      renderChecklist(sprintRecord.seedItems, date),
+      'utf8',
+    );
+    writeFileSync(
+      resolve(sprintRecord.tasksDirPath, 'tasks.csv'),
+      renderTasksCsv(sprintRecord.seedItems, project, sprintRecord.sprintId, options.owner, date),
+      'utf8',
+    );
+    writeFileSync(resolve(sprintRecord.reviewDirPath, '.gitkeep'), '', 'utf8');
+
+    sprintRecord.suggestedNextSteps = [
+      `node ./scripts/governance/sync-task-ledger.js --tasks-dir "${sprintRecord.tasksDirPath}"`,
+      `node ./scripts/governance/check-task-required-inputs.js --tasks-dir "${sprintRecord.tasksDirPath}" --task-id ${sprintRecord.seedItems.map((item) => item.taskId).join(' --task-id ')}`,
+      'node ./scripts/governance/check-task-ledger-sync.js',
+      'node ./scripts/governance/check-sprint-plan-status-sync.js',
+    ];
+    if (sprintRecord.crItems.length > 0) {
+      sprintRecord.suggestedNextSteps.push(
+        'node ./scripts/governance/check-code-review-status-sync.js',
+      );
+    }
   }
 
   process.stdout.write(
     `${JSON.stringify(
       {
         projectDirPath,
-        sprintDirPath,
-        tasksDirPath,
-        reviewDirPath,
         projectPlanPath,
-        sprintPlanPath,
-        taskIds: allSeedItems.map((item) => item.taskId),
-        suggestedNextSteps,
+        sprintOutputs: sprintRecords.map((sprintRecord) => ({
+          sprintId: sprintRecord.sprintId,
+          sprintDirPath: sprintRecord.sprintDirPath,
+          tasksDirPath: sprintRecord.tasksDirPath,
+          reviewDirPath: sprintRecord.reviewDirPath,
+          sprintPlanPath: sprintRecord.sprintPlanPath,
+          taskIds: sprintRecord.seedItems.map((item) => item.taskId),
+          suggestedNextSteps: sprintRecord.suggestedNextSteps,
+        })),
+        activationCandidate: sprintRecords[0]?.sprintId ?? null,
+        plannedFollowUps: sprintRecords.slice(1).map((sprintRecord) => sprintRecord.sprintId),
       },
       null,
       2,

@@ -20,7 +20,8 @@
 
 ## Planned Follow-Up Streams
 
-- none
+- project=`project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout`, sprint=`sprint-001-parity-catalog-and-readiness-foundation`, status=`planned`, plan=`.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-001-parity-catalog-and-readiness-foundation/plan.md`, tasks=`.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-001-parity-catalog-and-readiness-foundation/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-001-parity-catalog-and-readiness-foundation/review`
+- project=`project-108-adopter-quickstart-bootstrap-rollout`, sprint=`sprint-001-quickstart-contract-and-bootstrap-runtime-baseline`, status=`planned`, plan=`.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-001-quickstart-contract-and-bootstrap-runtime-baseline/plan.md`, tasks=`.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-001-quickstart-contract-and-bootstrap-runtime-baseline/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-001-quickstart-contract-and-bootstrap-runtime-baseline/review`
 
 ## Completed Stream History
 

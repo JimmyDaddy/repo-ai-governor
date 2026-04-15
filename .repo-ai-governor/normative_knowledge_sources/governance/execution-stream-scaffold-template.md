@@ -27,6 +27,15 @@
         tasks.csv
         TK-xxx-meaningful-slug.md
         CR-xxx.md
+    sprint-002-meaningful-name/
+      plan.md
+      review/
+        .gitkeep
+      tasks/
+        checklist.md
+        tasks.csv
+        TK-xxx-meaningful-slug.md
+        CR-xxx.md
 ```
 
 ## 3. Bootstrap Contract
@@ -51,13 +60,14 @@
 ## 5. Bootstrap Rules
 
 1. 新建 stream 时，先创建目录骨架与 canonical task cards，再生成 `checklist.md` / `tasks.csv` 的初始 scaffold view。
-2. `TK` 编号默认使用 workspace-scope reservation；`CR` 编号默认使用 sprint `tasks/` 目录局部 reservation。
-3. 推荐使用 `node ./scripts/governance/reserve-task-id.js --tasks-dir <...> --type <TK|CR> --count <n>` 预留号段，避免并行拆解碰撞。
-4. 初始 scaffold 允许先写入 `checklist.md` / `tasks.csv` 的 seed 内容；但在 stream 正式进入 `active` 前，必须执行 `node ./scripts/governance/sync-task-ledger.js --tasks-dir <...>` 完成 sqlite canonicalization 与 rendered view 对齐。
-5. `current-context.md` 只在以下场景更新：
+2. 若 scope baseline 已经覆盖多个 sprint，默认应在同一拆解窗口把所有已知 sprint scaffold 一次落盘，而不是只生成首个 sprint。
+3. `TK` 编号默认使用 workspace-scope reservation；`CR` 编号默认使用 sprint `tasks/` 目录局部 reservation。
+4. 推荐使用 `node ./scripts/governance/reserve-task-id.js --tasks-dir <...> --type <TK|CR> --count <n>` 预留号段，避免并行拆解碰撞。
+5. 初始 scaffold 允许先写入 `checklist.md` / `tasks.csv` 的 seed 内容；但在 stream 正式进入 `active` 前，必须执行 `node ./scripts/governance/sync-task-ledger.js --tasks-dir <...>` 完成 sqlite canonicalization 与 rendered view 对齐。
+6. `current-context.md` 只在以下场景更新：
    - 用户明确要求把新 stream 激活为当前执行入口。
    - 当前任务已经从“规划/拆解”切换到“开始执行”。
-6. `review/` 目录在 bootstrap 阶段必须创建，但不应预生成 `code_review_*` 生命周期文件。
+7. `review/` 目录在 bootstrap 阶段必须创建，但不应预生成 `code_review_*` 生命周期文件。
 
 ## 6. Minimal Seed Views
 
@@ -80,6 +90,6 @@ seed-yyyymmdd-tk-xxx,TK-xxx,<title>,AI-Agent,P1,YYYY-MM-DD,planned,<project>,<sp
 ## 7. Guardrails
 
 1. 不要在 `project/sprint plan` 里重复维护 task-level status 真值矩阵；task-level status 仍以 `TK/CR + sqlite canonical ledger + rendered views` 为准。
-2. 不要在同一个 bootstrap 动作里同时创建多个 `active` sprint；若一次拆出多个 sprint，只激活第一个执行面，其余保持 `planned`。
+2. 不要在同一个 bootstrap 动作里同时创建多个 `active` sprint；若一次拆出多个 sprint，只激活第一个执行面，其余保持 `planned` 或显式声明的非激活状态。
 3. 不要跳过 `review/.gitkeep`；即使当前还未进入 CR 生命周期，也要保持 review surface 可用。
 4. 不要把 closeout summary 或 completion audit 提前写成已完成；这些产物只在终态窗口创建。

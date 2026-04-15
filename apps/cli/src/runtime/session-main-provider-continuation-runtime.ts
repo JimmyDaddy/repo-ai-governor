@@ -73,11 +73,14 @@ export class SessionMainProviderContinuationRuntime {
     input: Record<string, unknown>,
     roleId: string | null,
   ): SessionMainProviderContinuationPolicyEnvelope {
-    if (
-      typeof input.reviewScope === 'string' ||
-      (typeof roleId === 'string' && roleId.trim().length > 0 && roleId === 'reviewer')
-    ) {
+    if (typeof input.reviewScope === 'string') {
       return SessionMainProviderContinuationPolicyEnvelope.READ_ONLY;
+    }
+
+    if (typeof roleId === 'string' && roleId.trim().length > 0) {
+      return roleId === 'reviewer'
+        ? SessionMainProviderContinuationPolicyEnvelope.READ_ONLY
+        : SessionMainProviderContinuationPolicyEnvelope.MUTATION_CAPABLE;
     }
 
     const executionPolicy = this.readRecord(input[AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY]);

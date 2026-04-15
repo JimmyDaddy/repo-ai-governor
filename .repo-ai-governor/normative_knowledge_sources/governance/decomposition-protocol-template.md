@@ -8,8 +8,9 @@
 ## 1. Purpose
 
 1. 标准化“总纲 -> project -> sprint -> task”拆解路径。
-2. 让拆解结果可直接落到 `plan/checklist/tasks.csv/TK/CR/review`。
-3. 避免任务卡、checklist 和 CSV 因自由发挥而持续漂移。
+2. 默认支持“已定稿方案 -> 全量 sprint queue -> per-sprint task card”拆解路径。
+3. 让拆解结果可直接落到 `plan/checklist/tasks.csv/TK/CR/review`。
+4. 避免任务卡、checklist 和 CSV 因自由发挥而持续漂移。
 
 ## 2. Input Contract
 
@@ -20,6 +21,7 @@
 3. `goal`
 4. `constraints`
 5. `dependencies`
+6. `ordered sprint queue`（当 scope 跨多个 sprint 时必填）
 
 推荐输入：
 
@@ -34,18 +36,19 @@
 3. 推荐命令：
    - `node ./scripts/governance/query-artifact-candidates.js --project <project-xxx> --task-title "<title>" --goal "<goal>" --limit 5`
 4. 额外历史背景、audit、旧 handoff 与补充线索优先进入 `Traceback References`，而不是膨胀默认执行输入面。
+5. 若上游是已批准/已定稿的技术方案，默认应覆盖完整 sprint queue；只有在范围仍不稳定时才回退为“首个最小安全 sprint”。
 
 ## 3. Output Contract
 
 每次拆解至少输出：
 
 1. `project-xxx/plan.md`
-2. `sprint-xxx/plan.md`
-3. `sprint-xxx/tasks/checklist.md`
-4. `sprint-xxx/tasks/tasks.csv`
-5. `sprint-xxx/tasks/TK-xxx-*.md`
-6. `sprint-xxx/tasks/CR-xxx-*.md`（命中 review workflow 时）
-7. `sprint-xxx/review/.gitkeep`
+2. 每个 in-scope `sprint-xxx/plan.md`
+3. 每个 in-scope `sprint-xxx/tasks/checklist.md`
+4. 每个 in-scope `sprint-xxx/tasks/tasks.csv`
+5. 每个 in-scope `sprint-xxx/tasks/TK-xxx-*.md`
+6. 每个 in-scope `sprint-xxx/tasks/CR-xxx-*.md`（命中 review workflow 时）
+7. 每个 in-scope `sprint-xxx/review/.gitkeep`
 
 Concrete scaffold/template sources:
 
@@ -98,6 +101,7 @@ Concrete template source of truth:
 7. 多人并发拆解同一 `sprint` 时，应先通过 `node ./scripts/governance/reserve-task-id.js --tasks-dir <...> --type <TK|CR> --count <n>` 预留连续号段，再创建对应任务卡，避免多人同时猜测“下一个编号”。
 8. 当某 sprint 下所有 `TK` 与 `CR` 均进入终态时，必须立即补入 closeout 任务，避免 active sprint 处于“全终态无 closeout”的悬空状态。
 9. 新建或归一化 task card 后，建议运行 `node ./scripts/governance/check-task-required-inputs.js --tasks-dir <...>`，确保默认执行输入面没有被过量 DA/背景资料撑爆。
+10. 一次拆解多个 sprint 时，允许所有 sprint 先落 `planned` scaffold；真正进入执行时仍只逐个激活，默认先激活第一个 sprint。
 
 ## 6. Exit Checklist
 

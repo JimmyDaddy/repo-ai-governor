@@ -1,5 +1,5 @@
 schema_version: 2
-generated_at: 2026-04-13
+generated_at: 2026-04-15
 status: active
 owner: architecture
 
@@ -558,6 +558,10 @@ modules:
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/current-surface-baseline-classification-and-followup-decomposition.md
         kind: adr
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/adoption-pack-installer-and-self-host-template-bootstrap.md
+        kind: adr
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/built-in-adoption-pack-parity-and-self-host-readiness-sync.md
+        kind: adr
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/adopter-quickstart-bootstrap-command-and-install-convenience-surface.md
         kind: adr
     north_star_refs:
       - prd.multi-agent-orchestration
