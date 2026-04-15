@@ -11,8 +11,8 @@ import {
   RuntimeError,
 } from '@repo-ai-governor/shared';
 import {
-  HostVerificationStatus,
   type AdoptionPackVerificationCheck,
+  HostVerificationStatus,
 } from '@repo-ai-governor/standards';
 import {
   CLI_ADAPTER_TOOL_CHECK_ID_PREFIX,
