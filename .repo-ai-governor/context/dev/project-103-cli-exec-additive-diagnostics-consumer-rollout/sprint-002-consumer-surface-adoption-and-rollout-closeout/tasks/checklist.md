@@ -1,0 +1,28 @@
+# checklist
+
+- [x] TK-874 adopt launch_diagnostics across connect doctor verify and report surfaces and retire stderr-guess branches
+  - 2026-04-14：任务创建，状态初始化为 `planned`。
+  - 2026-04-14：`TK-873` closeout 已将 `sprint-002` 激活为新的 primary execution surface；当前任务切换为 `in_progress`，下一步预留本地 `CR-001` 后开始 consumer-surface adoption implementation。
+  - 2026-04-14：新增 `CliLaunchDiagnosticsProjectionRuntime`，将同一份 snake_case `launch_diagnostics` companion 统一投影到 verify matrix 与 verification/report payload。
+  - 2026-04-14：`connect` / `doctor` diagnostics artifact 现已显式写出 `verificationMatrix`，`verification.tools[] / roles[]` 也已 materialize additive `launch_diagnostics`，不再要求 consumer 回退到 stderr/error-message 猜测路径。
+  - 2026-04-14：focused runtime/command tests、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 均通过；任务切换为 `completed`，等待本地 `CR-001` fresh reviewer loop。
+- [x] TK-875 produce scenario-driven evidence for spawn-failed parse-failed non-zero and signal consumer mappings
+  - 2026-04-14：任务创建，状态初始化为 `planned`。
+  - 2026-04-14：新增 unit/command evidence，固定 `spawn_failed`、`probe_protocol_parse_failed`、`non_zero_exit` 与 `signal_exit` 在 verify/report consumer surfaces 上的 `launch_diagnostics` 读法。
+  - 2026-04-14：focused runtime/command tests、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 均通过；任务切换为 `completed`，等待本地 `CR-001` fresh reviewer loop。
+- [x] TK-876 finalize project-103 closeout and delivery evidence handoff
+  - 2026-04-14：任务创建，状态初始化为 `planned`。
+  - 2026-04-14：`sprint-002` boundary commit `feat(project-103-sprint-002): complete sprint and clear cr loop` 已创建；当前任务切换为 `in_progress`，下一步在同一 sprint surface 上执行 `project-103` final fresh review，并完成 delivery registry、completion audit 与 next-stream activation closeout。
+  - 2026-04-14：project-final `CR-003` latest fresh recheck 未发现新的 actionable finding；当前已完成 delivery registry `execution_status/rollout_status=completed` write-back、completion audit summary、`current-context` 切换到 `project-104 / sprint-001`，并将本任务收口为 `completed`。
+  - 2026-04-14: project-103 closeout completed; delivery truth updated and project-104 activated.
+- [x] CR-001 sprint-002-consumer-surface-adoption-and-rollout-closeout delegated review loop round 1
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 1 返回 2 条 actionable finding；主 agent 复核后全部判定为 `accepted`，确认 role-level `launch_diagnostics` 必须优先消费 resolved tool snapshot，而不是直接读取 production-shaped role health check。
+  - 2026-04-14：accepted findings 已完成修复，并把新增 scenario tests 改成真实 runtime 会产出的 role health check shape；同窗 focused vitest、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 已通过，当前 round 收口为 `resolved`。
+- [x] CR-002 sprint-002-consumer-surface-adoption-and-rollout-closeout delegated recheck loop round 2
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer clean recheck 未发现新的 actionable finding；reviewer 明确确认 role-level `launch_diagnostics` fallback 修复与 production-shaped regression tests 已覆盖前一轮 accepted finding，允许沿用同窗 focused vitest、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 证据收口当前 round。
+- [x] CR-003 project-103-cli-exec-additive-diagnostics-consumer-rollout final delegated review loop round 3
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 3 返回 2 条低优先级 finding；主 agent 逐条复核后均判定为 `accepted`，分别要求将 `launch_diagnostics` 的 closed-set code 提取到 `apps/cli/src/constants`，以及将 project/sprint WBS 中 `TK-876` 的状态与 canonical task truth 对齐为 `in_progress`。
+  - 2026-04-14：accepted findings 已完成修复，并由 fresh reviewer recheck 确认当前 project-final scope 未发现新的 actionable finding；同窗 focused vitest、`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm run check` 与 ledger/CR sync checks 均已通过，当前 round 收口为 `resolved`。

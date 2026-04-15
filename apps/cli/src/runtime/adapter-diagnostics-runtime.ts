@@ -12,17 +12,25 @@ import type {
   CliInteractionPrompt,
   CliRoleStageProgress,
 } from '../types/index.js';
+import { CliAcpHostCompanionRuntime } from './cli-acp-host-companion-runtime.js';
+import { CliLaunchDiagnosticsProjectionRuntime } from './cli-launch-diagnostics-projection-runtime.js';
 
 /**
  * Owns CLI-local adapter diagnostics shaping so payload/progress/prompt builders stay outside the facade.
  */
 export class CliAdapterDiagnosticsRuntime {
+  private readonly launchDiagnosticsProjectionRuntime: CliLaunchDiagnosticsProjectionRuntime;
+
   public constructor(
     private readonly translate: (key: string, interpolation?: Record<string, string>) => string,
     private readonly createFailureAttributionSummary: (
       verification: CliAdapterVerificationResolution,
     ) => Record<string, number>,
-  ) {}
+    launchDiagnosticsProjectionRuntime = new CliLaunchDiagnosticsProjectionRuntime(),
+    private readonly acpHostCompanionRuntime: CliAcpHostCompanionRuntime = new CliAcpHostCompanionRuntime(),
+  ) {
+    this.launchDiagnosticsProjectionRuntime = launchDiagnosticsProjectionRuntime;
+  }
 
   /**
    * Resolves adapter tool-level check status from one probe snapshot.
@@ -102,6 +110,8 @@ export class CliAdapterDiagnosticsRuntime {
   public createAdapterVerificationArtifactPayload(
     verification: CliAdapterVerificationResolution,
   ): Record<string, unknown> {
+    const toolSnapshotBySurface = new Map(verification.tools.map((tool) => [tool.toolId, tool]));
+
     return {
       overallStatus: verification.overallStatus,
       requiredRoleCount: verification.requiredRoleCount,
@@ -112,32 +122,63 @@ export class CliAdapterDiagnosticsRuntime {
       nextActions: [...verification.nextActions],
       secretBackends: verification.secretBackends,
       credentialReferences: verification.credentialReferences,
-      tools: verification.tools.map((tool) => ({
-        toolId: tool.toolId,
-        enabled: tool.enabled,
-        configuredAvailability: tool.configuredAvailability,
-        availabilityStatus: tool.availabilityStatus,
-        unavailableReasons: tool.unavailableReasons,
-        healthCheck: tool.healthCheck,
-        failureAttributions: tool.failureAttributions,
-        capabilitySupportByCapability: Object.fromEntries(
-          tool.capabilitySupportByCapability.entries(),
-        ),
-      })),
-      roles: verification.roleEvaluations.map((role) => ({
-        roleId: role.roleId,
-        roleProfileId: role.roleProfileId,
-        required: role.required,
-        primarySurface: role.primarySurface,
-        selectedSurface: role.selectedSurface,
-        selectedBy: role.selectedBy,
-        unsupportedCapabilities: role.unsupportedCapabilities,
-        degradedCapabilities: role.degradedCapabilities,
-        unavailableReasons: role.unavailableReasons,
-        healthCheck: role.healthCheck,
-        failureAttributions: role.failureAttributions,
-        status: role.status,
-      })),
+      tools: verification.tools.map((tool) => {
+        const launchDiagnostics =
+          this.launchDiagnosticsProjectionRuntime.createLaunchDiagnosticsPayload({
+            transportKind: tool.healthCheck?.transportKind ?? null,
+            healthCheck: tool.healthCheck,
+          });
+        const acpHostCompanion = this.acpHostCompanionRuntime.createCompanionPayload({
+          transportKind: tool.healthCheck?.transportKind,
+          healthCheck: tool.healthCheck,
+        });
+
+        return {
+          toolId: tool.toolId,
+          enabled: tool.enabled,
+          configuredAvailability: tool.configuredAvailability,
+          availabilityStatus: tool.availabilityStatus,
+          unavailableReasons: tool.unavailableReasons,
+          healthCheck: tool.healthCheck,
+          failureAttributions: tool.failureAttributions,
+          capabilitySupportByCapability: Object.fromEntries(
+            tool.capabilitySupportByCapability.entries(),
+          ),
+          ...(acpHostCompanion ? { acp_host_companion: acpHostCompanion } : {}),
+          ...(launchDiagnostics ? { launch_diagnostics: launchDiagnostics } : {}),
+        };
+      }),
+      roles: verification.roleEvaluations.map((role) => {
+        const resolvedSurface = role.selectedSurface ?? role.primarySurface;
+        const roleToolHealthCheck =
+          toolSnapshotBySurface.get(resolvedSurface)?.healthCheck ?? role.healthCheck;
+        const launchDiagnostics =
+          this.launchDiagnosticsProjectionRuntime.createLaunchDiagnosticsPayload({
+            transportKind: roleToolHealthCheck?.transportKind ?? null,
+            healthCheck: roleToolHealthCheck,
+          });
+        const acpHostCompanion = this.acpHostCompanionRuntime.createCompanionPayload({
+          transportKind: roleToolHealthCheck?.transportKind,
+          healthCheck: roleToolHealthCheck,
+        });
+
+        return {
+          roleId: role.roleId,
+          roleProfileId: role.roleProfileId,
+          required: role.required,
+          primarySurface: role.primarySurface,
+          selectedSurface: role.selectedSurface,
+          selectedBy: role.selectedBy,
+          unsupportedCapabilities: role.unsupportedCapabilities,
+          degradedCapabilities: role.degradedCapabilities,
+          unavailableReasons: role.unavailableReasons,
+          healthCheck: role.healthCheck,
+          failureAttributions: role.failureAttributions,
+          status: role.status,
+          ...(acpHostCompanion ? { acp_host_companion: acpHostCompanion } : {}),
+          ...(launchDiagnostics ? { launch_diagnostics: launchDiagnostics } : {}),
+        };
+      }),
     };
   }
 
@@ -256,6 +297,10 @@ export class CliAdapterDiagnosticsRuntime {
       return '';
     }
 
+    const acpHostCompanion = this.acpHostCompanionRuntime.createCompanionPayload({
+      transportKind: healthCheck.transportKind,
+      healthCheck,
+    });
     const reasonCodes =
       healthCheck.reasonCodes.length > 0 ? healthCheck.reasonCodes.join('|') : 'none';
     return [
@@ -266,6 +311,9 @@ export class CliAdapterDiagnosticsRuntime {
       `cancel=${healthCheck.requestCancellationMode}`,
       `route=${healthCheck.routeKey}`,
       `reason_codes=${reasonCodes}`,
+      acpHostCompanion ? `acp_runtime=${acpHostCompanion.hostReadinessStatus}` : '',
+      acpHostCompanion ? `acp_distribution=${acpHostCompanion.distributionBoundary}` : '',
+      acpHostCompanion ? `acp_state=${acpHostCompanion.companionStateSummary}` : '',
     ]
       .filter((part) => part.length > 0)
       .join(' ');

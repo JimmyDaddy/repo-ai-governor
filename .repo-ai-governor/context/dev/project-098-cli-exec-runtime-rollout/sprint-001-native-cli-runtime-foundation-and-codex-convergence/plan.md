@@ -1,6 +1,6 @@
 # sprint-001-native-cli-runtime-foundation-and-codex-convergence 计划
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-13
 - Project: `project-098-cli-exec-runtime-rollout`
 - Sprint Goal: 建立 shared native `cli_exec` runtime、adapter-authored launch-plan seam 与 Codex lifecycle observer baseline。
@@ -22,3 +22,5 @@
 
 1. 2026-04-13：作为 `project-098` 的第一阶段 execution surface 创建，当前保持 `planned`。
 2. 2026-04-13：当前 sprint 只冻结 `shared runtime + Codex baseline`，不提前抢跑 cross-adapter cutover。
+3. 2026-04-13：已激活 `project-098 / sprint-001` 作为 primary execution surface；`TK-821 ~ TK-823` 的代码与 focused verification 已完成，当前进入 fresh reviewer CR loop。
+4. 2026-04-13：`CR-001` 已 resolved，shared runtime 非零退出失败路径与 regression coverage 已补齐；`TK-821 ~ TK-824` 已全部完成，当前 sprint 已收口并将 primary execution surface 切换到 `sprint-002`。

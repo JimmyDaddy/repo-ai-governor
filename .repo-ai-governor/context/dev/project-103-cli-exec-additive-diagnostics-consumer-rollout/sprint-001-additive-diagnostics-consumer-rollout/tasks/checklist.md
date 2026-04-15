@@ -1,0 +1,22 @@
+# checklist
+
+- [x] TK-858 implement cli-exec additive diagnostics consumer rollout baseline
+  - 2026-04-13：任务创建，状态初始化为 `planned`，作为 `followup_required` rollout skeleton 的 canonical task。
+  - 2026-04-14：`project-102` final closeout 后，当前任务切换为 `in_progress`，作为 `project-103 / sprint-001` 激活后的 baseline implementation 入口。
+  - 2026-04-14：已在 `CliAgentOnboardingRuntime` 为 `enabled_tools[]` canonical carrier 落地 CLI-exec additive `launch_diagnostics` companion，并让 `tool_transport_matrix` 仅做机械派生；同时补上 parse-failed / spawn-failed runtime coverage、canonical/alias parity 断言与命令级 `cli-output-contract` integration 证据。focused suites、`pnpm run build` 与 `pnpm run test:packages` 已在同窗通过，当前任务完成。
+- [x] TK-872 project snake_case launch_diagnostics companion from shared producer truth without adding minimum fields
+  - 2026-04-14：任务创建，状态初始化为 `planned`。
+  - 2026-04-14：已把 snake_case `launch_diagnostics` companion 固定为从 CLI-exec producer truth 单向投影的 optional canonical carrier，由 `enabled_tools[]` materialize 后再机械派生到 `tool_transport_matrix`；仅承载 `selected_entrypoint / request_cancellation_mode / shell_wrapped / process_tree_policy / spawn_error_code`，未新增 minimum fields。focused suites、命令级 `cli-output-contract` integration、`pnpm run build` 与 `pnpm run test:packages` 已在同窗通过，当前任务完成。
+- [x] TK-873 sprint-001 exit acceptance and sprint-002 activation handoff
+  - 2026-04-14：任务创建，状态初始化为 `planned`。
+  - 2026-04-14：`TK-858`、`TK-872`、`CR-001` 与 `CR-002` 已全部 clean 收口；当前已将 `sprint-001` 标记为 `completed`，并把 `sprint-002` 激活为新的 primary execution surface。
+  - 2026-04-14：`TK-874` 已切换为 `in_progress` 作为 `sprint-002` implementation 入口；下一步在 active sprint surface 预留本地 `CR-001` 后进入 consumer adoption rollout。
+  - 2026-04-14: sprint-001 closeout completed after two clean CR rounds; sprint-002 is now the active project-103 execution surface.
+- [x] CR-001 sprint-001-additive-diagnostics-consumer-rollout delegated review loop round 1
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 1 返回 1 条 actionable finding；主 agent 复核后判定为 `accepted`，确认 `launch_diagnostics` 必须先 materialize 到 canonical `enabled_tools[]` carrier，再机械派生到 `tool_transport_matrix` alias。
+  - 2026-04-14：accepted finding 已完成修复，并补上 canonical/alias parity 断言；同窗 `pnpm exec vitest run apps/cli/test/runtime/agent-onboarding-runtime.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm exec vitest run apps/cli/test/runtime/adapter-verification-runtime.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 已通过，当前 round 收口为 `resolved`。
+- [x] CR-002 sprint-001-additive-diagnostics-consumer-rollout delegated recheck loop round 2
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 2（sub-agent `019d8b57-3e37-7333-bc7e-6a1fefc1bb11` / `Beauvoir`）在 `wait_agent(timeout_ms=900000)` 下连续两次未返回可消费结论；按 rollout timeout 兜底策略记录 timeout evidence，并执行 main-agent clean recheck。
+  - 2026-04-14：main-agent clean recheck 结合 focused runtime suites、命令级 `cli-output-contract` integration、`pnpm run build` 与 `pnpm run test:packages` 未发现新的 actionable finding，当前 round 收口为 `resolved`。

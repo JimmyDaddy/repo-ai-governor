@@ -2,17 +2,20 @@
 
 import { spawn, spawnSync } from 'node:child_process';
 import {
+  copyFileSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
   readdirSync,
   rmSync,
+  statSync,
   unlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, resolve } from 'node:path';
+import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { gateFail, gateInfo, gatePass } from '../governance/gate-output.js';
 import {
@@ -30,9 +33,99 @@ const DEFAULT_ITERATIONS = 3;
 const DEFAULT_REQUIRED_CHAIN = ['--help', 'init', 'doctor', 'check'];
 const DEFAULT_DISTRIBUTION_MODE = 'default';
 const PLUGIN_ENABLED_DISTRIBUTION_MODE = 'plugin-enabled';
-const PUBLISHED_PACKAGE_NAME = '@cjhdev/repo-ai-governor';
+const PUBLISHED_PACKAGE_NAME = 'repo-ai-governor';
 const WORKSPACE_ROLLBACK_BASELINE_MODE = 'path';
 const READ_ONLY_ATTACH_PRECHECK_MODE = 'path';
+const ACP_CLEANROOM_VERIFICATION_SCHEMA_VERSION = 'acp-cleanroom-verification-summary-v1';
+const ACP_CLEANROOM_VERIFICATION_RECEIPTS_DIRECTORY = 'acp-cleanroom-verification.receipts';
+const ACP_CLEANROOM_VERIFICATION_PROVENANCE_DIRECTORY = 'acp-cleanroom-verification.provenance';
+const ACP_HOST_TRANSPORT_SCENARIOS = [
+  {
+    surfaceId: 'codex',
+    runtimeArgs: [
+      'host',
+      'export',
+      '--host',
+      'codex',
+      '--mode',
+      'project-local',
+      '--output-dir',
+      '.repo-ai-governor/generated/hosts/codex',
+      '--apply-to-repo',
+      '.repo-ai-governor/generated/applied/codex',
+    ],
+    distributionArgs: [
+      'host',
+      'pack',
+      '--host',
+      'codex',
+      '--mode',
+      'plugin-bundle',
+      '--output-dir',
+      '.repo-ai-governor/generated/hosts/codex-plugin',
+      '--bundle-dir',
+      '.repo-ai-governor/generated/bundles/codex-plugin',
+    ],
+  },
+  {
+    surfaceId: 'claude-code',
+    runtimeArgs: [
+      'host',
+      'export',
+      '--host',
+      'claude-code',
+      '--mode',
+      'project-local',
+      '--output-dir',
+      '.repo-ai-governor/generated/hosts/claude-code',
+      '--apply-to-repo',
+      '.repo-ai-governor/generated/applied/claude-code',
+    ],
+    distributionArgs: [
+      'host',
+      'pack',
+      '--host',
+      'claude-code',
+      '--mode',
+      'plugin-bundle',
+      '--output-dir',
+      '.repo-ai-governor/generated/hosts/claude-code-plugin',
+      '--bundle-dir',
+      '.repo-ai-governor/generated/bundles/claude-code-plugin',
+    ],
+  },
+  {
+    surfaceId: 'github-copilot',
+    runtimeArgs: [
+      'host',
+      'export',
+      '--host',
+      'github-copilot',
+      '--mode',
+      'project-local',
+      '--copilot-target',
+      'repo-local',
+      '--output-dir',
+      '.repo-ai-governor/generated/hosts/github-copilot-repo-local',
+      '--apply-to-repo',
+      '.repo-ai-governor/generated/applied/github-copilot-repo-local',
+    ],
+    distributionArgs: [
+      'host',
+      'pack',
+      '--host',
+      'github-copilot',
+      '--mode',
+      'plugin-bundle',
+      '--copilot-target',
+      'cli-plugin',
+      '--output-dir',
+      '.repo-ai-governor/generated/hosts/github-copilot-cli-plugin',
+      '--bundle-dir',
+      '.repo-ai-governor/generated/bundles/github-copilot-cli-plugin',
+    ],
+  },
+];
 
 const DEFAULT_REPO_LOCAL_CONFIG_CONTENT = [
   'schemaVersion: "1.1"',
@@ -61,6 +154,9 @@ const DEFAULT_REPO_LOCAL_CONFIG_CONTENT = [
  *   iterations: number;
  *   outputPath: string;
  *   keepTemp: boolean;
+ *   includeAcpHostVerify: boolean;
+ *   emitAcpEvidencePath: string | null;
+ *   distributionMode: "default" | "plugin-enabled";
  * }}
  */
 function parseCliOptions() {
@@ -70,6 +166,8 @@ function parseCliOptions() {
   let outputPath = DEFAULT_REPORT_PATH;
   let keepTemp = false;
   let distributionMode = DEFAULT_DISTRIBUTION_MODE;
+  let includeAcpHostVerify = false;
+  let emitAcpEvidencePath = null;
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
@@ -122,6 +220,21 @@ function parseCliOptions() {
       continue;
     }
 
+    if (arg === '--acp-host-verify') {
+      includeAcpHostVerify = true;
+      continue;
+    }
+
+    if (arg === '--emit-acp-evidence') {
+      const value = args[index + 1];
+      if (typeof value !== 'string' || value.trim().length === 0) {
+        throw new Error('Expected a non-empty value after "--emit-acp-evidence".');
+      }
+      emitAcpEvidencePath = value.trim();
+      index += 1;
+      continue;
+    }
+
     throw new Error(`Unsupported option: ${arg}`);
   }
 
@@ -142,11 +255,17 @@ function parseCliOptions() {
     }
   }
 
+  if (emitAcpEvidencePath && !includeAcpHostVerify) {
+    throw new Error('"--emit-acp-evidence" requires "--acp-host-verify".');
+  }
+
   return {
     modes: dedupedModes,
     iterations,
     outputPath,
     keepTemp,
+    includeAcpHostVerify,
+    emitAcpEvidencePath,
     distributionMode,
   };
 }
@@ -360,6 +479,37 @@ function initializeCleanroomRepository(repositoryPath, repositoryName) {
 }
 
 /**
+ * Seeds one minimal repository-local skill tree so installed-package host export/pack commands can
+ * generate truthful host artifacts inside clean-room target repositories.
+ * @param {string} repositoryPath Absolute repository path.
+ */
+function seedHostDistributionFixtureRepository(repositoryPath) {
+  mkdirSync(resolve(repositoryPath, '.codex', 'skills', 'sample-host-skill'), {
+    recursive: true,
+  });
+  writeFileSync(
+    resolve(repositoryPath, 'AGENTS.md'),
+    '# Clean-room Host Fixture\n\nThis repository exists for ACP host-facing clean-room verification.\n',
+    'utf8',
+  );
+  writeFileSync(
+    resolve(repositoryPath, '.codex', 'skills', 'sample-host-skill', 'SKILL.md'),
+    [
+      '---',
+      'name: sample-host-skill',
+      'description: Sample host skill used by ACP clean-room verification.',
+      '---',
+      '',
+      '# Sample Host Skill',
+      '',
+      'This fixture proves installed-package host export/pack/verify behavior in clean-room repos.',
+      '',
+    ].join('\n'),
+    'utf8',
+  );
+}
+
+/**
  * Resolves install specifier for one mode.
  * @param {string} mode Install mode.
  * @param {{repositoryRoot: string; tarballPath: string | null}} installAssets Install assets.
@@ -538,6 +688,37 @@ function resolveArtifactPath(payload, artifactId, label) {
     throw new Error(`${label} did not produce artifact "${artifactId}".`);
   }
   return artifact.path;
+}
+
+/**
+ * Reads one JSON file and asserts it is parseable.
+ * @param {string} filePath Absolute file path.
+ * @param {string} label Human-readable label.
+ * @returns {Record<string, unknown>}
+ */
+function readJsonFile(filePath, label) {
+  try {
+    return JSON.parse(readFileSync(filePath, 'utf8'));
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`${label} is not valid JSON. path=${filePath} detail=${detail}`);
+  }
+}
+
+/**
+ * Ensures one host verification summary ended in pass.
+ * @param {string} summaryPath Absolute verification summary path.
+ * @param {string} label Human-readable label.
+ * @returns {Record<string, unknown>}
+ */
+function assertHostVerificationPass(summaryPath, label) {
+  const summary = readJsonFile(summaryPath, label);
+  if (summary.status !== 'pass') {
+    throw new Error(
+      `${label} expected host verification status=pass. actual=${String(summary.status)}`,
+    );
+  }
+  return summary;
 }
 
 /**
@@ -1218,6 +1399,651 @@ function createServiceHostMemoryProviderCheckScript(distributionMode) {
 }
 
 /**
+ * Executes clean-room installed-package host export/pack/verify across ACP-capable surfaces and
+ * captures a machine-readable evidence packet per mode.
+ * @param {{
+ *   mode: string;
+ *   workingRoot: string;
+ *   installAssets: {repositoryRoot: string; tarballPath: string | null};
+ * }} options Scenario options.
+ * @returns {Record<string, unknown>}
+ */
+function runAcpHostTransportScenario(options) {
+  const scenarioRoot = resolve(options.workingRoot, `acp-host-transport-${options.mode}`);
+  const repositoryPath = resolve(scenarioRoot, 'target-repo');
+  const homePath = resolve(scenarioRoot, 'home');
+  const runtimeEnv = buildIsolatedRuntimeEnv(homePath);
+  initializeCleanroomRepository(repositoryPath, `cleanroom-acp-host-transport-${options.mode}`);
+  seedHostDistributionFixtureRepository(repositoryPath);
+  const install = installCleanroomPackage({
+    mode: options.mode,
+    repositoryPath,
+    runtimeEnv,
+    installAssets: options.installAssets,
+  });
+
+  const surfaces = ACP_HOST_TRANSPORT_SCENARIOS.map((scenario) => {
+    const runtimeLabel = `host-export(acp/${scenario.surfaceId}/${options.mode})`;
+    const runtimeStep = runCleanroomCliCommand({
+      repositoryPath,
+      runtimeEnv,
+      args: ['--output', 'json', ...scenario.runtimeArgs],
+      label: runtimeLabel,
+    });
+    const runtimePayload = parseJsonOutput(runtimeStep.stdout, runtimeLabel);
+    assertCliSuccessPayload(runtimePayload, runtimeLabel);
+    const runtimeManifestPath = resolveArtifactPath(
+      runtimePayload,
+      'host_export_manifest',
+      runtimeLabel,
+    );
+    const runtimeSummaryPath = resolveArtifactPath(
+      runtimePayload,
+      'host_verification_summary',
+      runtimeLabel,
+    );
+    assertHostVerificationPass(runtimeSummaryPath, `${runtimeLabel}/summary`);
+
+    const runtimeVerifyLabel = `host-verify(acp/${scenario.surfaceId}/${options.mode}/runtime)`;
+    const runtimeVerifyStep = runCleanroomCliCommand({
+      repositoryPath,
+      runtimeEnv,
+      args: ['--output', 'json', 'host', 'verify', '--manifest', runtimeManifestPath],
+      label: runtimeVerifyLabel,
+    });
+    const runtimeVerifyPayload = parseJsonOutput(runtimeVerifyStep.stdout, runtimeVerifyLabel);
+    assertCliSuccessPayload(runtimeVerifyPayload, runtimeVerifyLabel);
+    const runtimeVerifiedSummaryPath = resolveArtifactPath(
+      runtimeVerifyPayload,
+      'host_verification_summary',
+      runtimeVerifyLabel,
+    );
+    assertHostVerificationPass(runtimeVerifiedSummaryPath, `${runtimeVerifyLabel}/summary`);
+
+    const distributionLabel = `host-pack(acp/${scenario.surfaceId}/${options.mode})`;
+    const distributionStep = runCleanroomCliCommand({
+      repositoryPath,
+      runtimeEnv,
+      args: ['--output', 'json', ...scenario.distributionArgs],
+      label: distributionLabel,
+    });
+    const distributionPayload = parseJsonOutput(distributionStep.stdout, distributionLabel);
+    assertCliSuccessPayload(distributionPayload, distributionLabel);
+    const distributionManifestPath = resolveArtifactPath(
+      distributionPayload,
+      'host_export_manifest',
+      distributionLabel,
+    );
+    const distributionSummaryPath = resolveArtifactPath(
+      distributionPayload,
+      'host_verification_summary',
+      distributionLabel,
+    );
+    assertHostVerificationPass(distributionSummaryPath, `${distributionLabel}/summary`);
+
+    const distributionVerifyLabel = `host-verify(acp/${scenario.surfaceId}/${options.mode}/distribution)`;
+    const distributionVerifyStep = runCleanroomCliCommand({
+      repositoryPath,
+      runtimeEnv,
+      args: ['--output', 'json', 'host', 'verify', '--manifest', distributionManifestPath],
+      label: distributionVerifyLabel,
+    });
+    const distributionVerifyPayload = parseJsonOutput(
+      distributionVerifyStep.stdout,
+      distributionVerifyLabel,
+    );
+    assertCliSuccessPayload(distributionVerifyPayload, distributionVerifyLabel);
+    const distributionVerifiedSummaryPath = resolveArtifactPath(
+      distributionVerifyPayload,
+      'host_verification_summary',
+      distributionVerifyLabel,
+    );
+    assertHostVerificationPass(
+      distributionVerifiedSummaryPath,
+      `${distributionVerifyLabel}/summary`,
+    );
+
+    return {
+      surfaceId: scenario.surfaceId,
+      runtimeService: {
+        exportCommand: runtimeStep.command,
+        exportDurationMs: runtimeStep.durationMs,
+        verifyCommand: runtimeVerifyStep.command,
+        verifyDurationMs: runtimeVerifyStep.durationMs,
+        exportManifestPath: runtimeManifestPath,
+        verificationSummaryPath: runtimeVerifiedSummaryPath,
+        status: 'pass',
+      },
+      packagedDistribution: {
+        packCommand: distributionStep.command,
+        packDurationMs: distributionStep.durationMs,
+        verifyCommand: distributionVerifyStep.command,
+        verifyDurationMs: distributionVerifyStep.durationMs,
+        exportManifestPath: distributionManifestPath,
+        verificationSummaryPath: distributionVerifiedSummaryPath,
+        status: 'pass',
+      },
+    };
+  });
+
+  return {
+    mode: options.mode,
+    status: 'passed',
+    repositoryPath,
+    install,
+    surfaces,
+  };
+}
+
+/**
+ * Writes one aggregated ACP clean-room evidence summary for runtime consumption.
+ * @param {{
+ *   outputPath: string;
+ *   sourceReportPath: string;
+ *   overallStatus: "passed" | "failed";
+ *   distributionMode: "default" | "plugin-enabled";
+ *   scenarios: Array<Record<string, unknown>>;
+ * }} options Summary options.
+ */
+function writeAcpCleanroomEvidenceSummary(options) {
+  /** @type {Map<string, {
+   *   surfaceId: string;
+   *   status: "pass";
+   *   verifiedModes: string[];
+   *   runtimeServiceVerificationSummaryPaths: string[];
+   *   packagedDistributionVerificationSummaryPaths: string[];
+   * }>} */
+  const summaryBySurface = new Map();
+
+  for (const scenario of options.scenarios) {
+    const mode = typeof scenario.mode === 'string' ? scenario.mode : null;
+    const surfaces = Array.isArray(scenario.surfaces) ? scenario.surfaces : [];
+    for (const surface of surfaces) {
+      const surfaceId = typeof surface.surfaceId === 'string' ? surface.surfaceId : null;
+      if (!surfaceId || !mode) {
+        continue;
+      }
+      const current = summaryBySurface.get(surfaceId) ?? {
+        surfaceId,
+        status: 'pass',
+        verifiedModes: [],
+        runtimeServiceVerificationSummaryPaths: [],
+        packagedDistributionVerificationSummaryPaths: [],
+      };
+      current.verifiedModes.push(mode);
+      if (typeof surface.runtimeService?.verificationSummaryPath === 'string') {
+        current.runtimeServiceVerificationSummaryPaths.push(
+          persistAcpCleanroomReceipt({
+            summaryOutputPath: options.outputPath,
+            surfaceId,
+            mode,
+            receiptKind: 'runtime-service',
+            sourcePath: surface.runtimeService.verificationSummaryPath,
+          }),
+        );
+      }
+      if (typeof surface.packagedDistribution?.verificationSummaryPath === 'string') {
+        current.packagedDistributionVerificationSummaryPaths.push(
+          persistAcpCleanroomReceipt({
+            summaryOutputPath: options.outputPath,
+            surfaceId,
+            mode,
+            receiptKind: 'packaged-distribution',
+            sourcePath: surface.packagedDistribution.verificationSummaryPath,
+          }),
+        );
+      }
+      summaryBySurface.set(surfaceId, current);
+    }
+  }
+
+  const payload = {
+    schemaVersion: ACP_CLEANROOM_VERIFICATION_SCHEMA_VERSION,
+    overallStatus: options.overallStatus,
+    verifiedAt: new Date().toISOString(),
+    sourceReportPath: toPortableWorkspacePath(options.sourceReportPath),
+    distributionMode: options.distributionMode,
+    surfaces: Array.from(summaryBySurface.values())
+      .map((surface) => ({
+        ...surface,
+        verifiedModes: Array.from(new Set(surface.verifiedModes)).sort(),
+        runtimeServiceVerificationSummaryPaths: Array.from(
+          new Set(surface.runtimeServiceVerificationSummaryPaths),
+        ).sort(),
+        packagedDistributionVerificationSummaryPaths: Array.from(
+          new Set(surface.packagedDistributionVerificationSummaryPaths),
+        ).sort(),
+      }))
+      .sort((left, right) => left.surfaceId.localeCompare(right.surfaceId)),
+  };
+
+  writeReport(options.outputPath, payload);
+}
+
+/**
+ * Copies one ACP clean-room receipt into a workspace-owned durable path before temp cleanup.
+ * @param {{
+ *   summaryOutputPath: string;
+ *   surfaceId: string;
+ *   mode: string;
+ *   receiptKind: "runtime-service" | "packaged-distribution";
+ *   sourcePath: string;
+ * }} options Receipt copy options.
+ * @returns {string}
+ */
+function persistAcpCleanroomReceipt(options) {
+  const sourcePath = resolve(process.cwd(), options.sourcePath);
+  if (!existsSync(sourcePath)) {
+    throw new Error(`ACP clean-room receipt missing: ${sourcePath}`);
+  }
+
+  const summaryOutputAbsolutePath = resolve(process.cwd(), options.summaryOutputPath);
+  const receiptDirectory = resolve(
+    dirname(summaryOutputAbsolutePath),
+    ACP_CLEANROOM_VERIFICATION_RECEIPTS_DIRECTORY,
+    sanitizeReceiptPathSegment(options.surfaceId),
+    options.receiptKind,
+  );
+  mkdirSync(receiptDirectory, { recursive: true });
+
+  const targetPath = resolve(
+    receiptDirectory,
+    `${sanitizeReceiptPathSegment(options.mode)}.host-verification.summary.json`,
+  );
+  const receiptPayload = JSON.parse(readFileSync(sourcePath, 'utf8'));
+  const provenanceRoot = resolve(
+    dirname(summaryOutputAbsolutePath),
+    ACP_CLEANROOM_VERIFICATION_PROVENANCE_DIRECTORY,
+    sanitizeReceiptPathSegment(options.surfaceId),
+    options.receiptKind,
+    sanitizeReceiptPathSegment(options.mode),
+  );
+  const receiptPathRewrites = persistTrackedReceiptProvenance({
+    receiptPayload,
+    provenanceRoot,
+  });
+  const portableReceiptPayload = sanitizeTrackedReceiptPayload(receiptPayload, receiptPathRewrites);
+  assertTrackedReceiptPayloadPathsExist(portableReceiptPayload, targetPath);
+  writeFileSync(targetPath, `${JSON.stringify(portableReceiptPayload, null, 2)}\n`, 'utf8');
+  formatRepoJsonReportIfNeeded(targetPath);
+  return toPortableRelativePath(dirname(summaryOutputAbsolutePath), targetPath);
+}
+
+/**
+ * Sanitizes one filesystem path segment for durable ACP receipt storage.
+ * @param {string} value Raw segment value.
+ * @returns {string}
+ */
+function sanitizeReceiptPathSegment(value) {
+  const sanitized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/gu, '-')
+    .replace(/^-+|-+$/gu, '');
+  return sanitized.length > 0 ? sanitized : 'unknown';
+}
+
+/**
+ * Converts one filesystem path into a portable relative path string for tracked JSON evidence.
+ * @param {string} fromDirectory Base directory for relative emission.
+ * @param {string} targetPath Target file path.
+ * @returns {string}
+ */
+function toPortableRelativePath(fromDirectory, targetPath) {
+  return relative(fromDirectory, targetPath).split(sep).join('/');
+}
+
+/**
+ * Converts one workspace-owned path into a portable repo-relative JSON value when possible.
+ * @param {string} pathValue Raw path value.
+ * @returns {string}
+ */
+function toPortableWorkspacePath(pathValue) {
+  const workspaceRoot = resolve(process.cwd());
+  const absolutePath = resolve(workspaceRoot, pathValue);
+  const workspaceRelativePath = relative(workspaceRoot, absolutePath);
+  if (
+    workspaceRelativePath.length === 0 ||
+    workspaceRelativePath.startsWith('..') ||
+    isAbsolute(workspaceRelativePath)
+  ) {
+    return pathValue.replaceAll('\\', '/');
+  }
+  return workspaceRelativePath.split(sep).join('/');
+}
+
+/**
+ * Recursively sanitizes one copied receipt payload so tracked evidence does not retain temp-root paths.
+ * @param {unknown} value Raw JSON payload fragment.
+ * @param {{from: string; to: string}[]} receiptPathRewrites Path rewrite rules.
+ * @returns {unknown}
+ */
+export function sanitizeTrackedReceiptPayload(value, receiptPathRewrites) {
+  if (Array.isArray(value)) {
+    return value.map((entry) => sanitizeTrackedReceiptPayload(entry, receiptPathRewrites));
+  }
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [
+        key,
+        sanitizeTrackedReceiptPayload(entry, receiptPathRewrites),
+      ]),
+    );
+  }
+  if (typeof value === 'string') {
+    return sanitizeTrackedReceiptString(value, receiptPathRewrites);
+  }
+  return value;
+}
+
+/**
+ * Rewrites temp-root absolute paths embedded in tracked receipt JSON into portable repo-relative strings.
+ * @param {string} value Raw string value.
+ * @param {{from: string; to: string}[]} receiptPathRewrites Path rewrite rules.
+ * @returns {string}
+ */
+function sanitizeTrackedReceiptString(value, receiptPathRewrites) {
+  const normalizedValue = value.replaceAll('\\', '/');
+  let rewrittenValue = normalizedValue;
+  for (const rewrite of receiptPathRewrites) {
+    rewrittenValue = rewrittenValue.replaceAll(rewrite.from, rewrite.to);
+  }
+  return rewrittenValue;
+}
+
+/**
+ * Copies one receipt's source provenance files into a workspace-owned durable snapshot and returns
+ * the rewrite rules needed to retarget tracked receipt JSON onto that snapshot.
+ * @param {{
+ *   receiptPayload: unknown;
+ *   provenanceRoot: string;
+ * }} options Provenance persistence options.
+ * @returns {{from: string; to: string}[]}
+ */
+export function persistTrackedReceiptProvenance(options) {
+  const provenanceRoot = options.provenanceRoot;
+  mkdirSync(provenanceRoot, { recursive: true });
+  const provenanceRootRelativePath = toPortableWorkspacePath(provenanceRoot);
+  const discoveredAbsolutePaths = new Set(
+    collectTrackedReceiptAbsolutePaths(options.receiptPayload),
+  );
+  const pendingAbsolutePaths = Array.from(discoveredAbsolutePaths);
+
+  for (let index = 0; index < pendingAbsolutePaths.length; index += 1) {
+    const absolutePath = pendingAbsolutePaths[index];
+    if (!absolutePath.endsWith('.json')) {
+      continue;
+    }
+
+    for (const nestedPath of collectTrackedAbsolutePathsFromJsonFile(absolutePath)) {
+      if (discoveredAbsolutePaths.has(nestedPath)) {
+        continue;
+      }
+      discoveredAbsolutePaths.add(nestedPath);
+      pendingAbsolutePaths.push(nestedPath);
+    }
+  }
+
+  const pathRewriteMap = new Map();
+  for (const absolutePath of discoveredAbsolutePaths) {
+    const portablePath = extractPortableWorkspacePath(absolutePath);
+    if (!portablePath) {
+      continue;
+    }
+
+    const portableSuffix = stripPortableWorkspacePrefix(portablePath);
+    const targetRelativePath = `${provenanceRootRelativePath}/${portableSuffix}`.replaceAll(
+      '\\',
+      '/',
+    );
+    pathRewriteMap.set(absolutePath.replaceAll('\\', '/'), targetRelativePath);
+    pathRewriteMap.set(portablePath, targetRelativePath);
+  }
+
+  const pathRewrites = Array.from(pathRewriteMap.entries())
+    .map(([from, to]) => ({ from, to }))
+    .sort((left, right) => right.from.length - left.from.length);
+
+  const copiedJsonPayloads = [];
+  for (const absolutePath of discoveredAbsolutePaths) {
+    const portablePath = extractPortableWorkspacePath(absolutePath);
+    if (!portablePath) {
+      continue;
+    }
+
+    const portableSuffix = stripPortableWorkspacePrefix(portablePath);
+    const targetPath = resolve(provenanceRoot, portableSuffix);
+    mkdirSync(dirname(targetPath), { recursive: true });
+    const sourceStats = statSync(absolutePath);
+
+    if (sourceStats.isDirectory()) {
+      mkdirSync(targetPath, { recursive: true });
+      continue;
+    }
+
+    if (absolutePath.endsWith('.json')) {
+      const sanitizedPayload = sanitizeTrackedReceiptPayload(
+        JSON.parse(readFileSync(absolutePath, 'utf8')),
+        pathRewrites,
+      );
+      writeFileSync(targetPath, `${JSON.stringify(sanitizedPayload, null, 2)}\n`, 'utf8');
+      formatRepoJsonReportIfNeeded(targetPath);
+      copiedJsonPayloads.push({ payload: sanitizedPayload, targetPath });
+      continue;
+    }
+
+    copyFileSync(absolutePath, targetPath);
+  }
+
+  for (const copiedJsonPayload of copiedJsonPayloads) {
+    assertTrackedReceiptPayloadPathsExist(copiedJsonPayload.payload, copiedJsonPayload.targetPath);
+  }
+
+  return pathRewrites;
+}
+
+/**
+ * Collects nested absolute repo-owned source paths from one JSON provenance file.
+ * @param {string} filePath Absolute JSON file path.
+ * @returns {Set<string>}
+ */
+function collectTrackedAbsolutePathsFromJsonFile(filePath) {
+  return collectTrackedReceiptAbsolutePaths(JSON.parse(readFileSync(filePath, 'utf8')));
+}
+
+/**
+ * Collects absolute repo-owned source paths from one receipt payload.
+ * @param {unknown} value Receipt payload fragment.
+ * @returns {Set<string>}
+ */
+export function collectTrackedReceiptAbsolutePaths(value) {
+  const collectedPaths = new Set();
+
+  if (Array.isArray(value)) {
+    for (const entry of value) {
+      for (const pathValue of collectTrackedReceiptAbsolutePaths(entry)) {
+        collectedPaths.add(pathValue);
+      }
+    }
+    return collectedPaths;
+  }
+
+  if (value && typeof value === 'object') {
+    for (const entry of Object.values(value)) {
+      for (const pathValue of collectTrackedReceiptAbsolutePaths(entry)) {
+        collectedPaths.add(pathValue);
+      }
+    }
+    return collectedPaths;
+  }
+
+  if (typeof value !== 'string') {
+    return collectedPaths;
+  }
+
+  for (const matchedPath of collectRepoOwnedAbsolutePathMatches(value)) {
+    if (!existsSync(matchedPath)) {
+      continue;
+    }
+    collectedPaths.add(matchedPath);
+  }
+
+  return collectedPaths;
+}
+
+/**
+ * Extracts one portable repo-relative path from an absolute or portable workspace-owned path.
+ * @param {string} value Raw path value.
+ * @returns {string | null}
+ */
+function extractPortableWorkspacePath(value) {
+  const normalizedValue = value.replaceAll('\\', '/');
+  if (normalizedValue === '.repo-ai-governor' || normalizedValue.startsWith('.repo-ai-governor/')) {
+    return normalizedValue;
+  }
+
+  const repoDirectoryMarker = '/.repo-ai-governor/';
+  const repoDirectoryMarkerIndex = normalizedValue.lastIndexOf(repoDirectoryMarker);
+  if (repoDirectoryMarkerIndex >= 0) {
+    return normalizedValue.slice(repoDirectoryMarkerIndex + 1);
+  }
+
+  const repoRootMarker = '/.repo-ai-governor';
+  const repoRootMarkerIndex = normalizedValue.lastIndexOf(repoRootMarker);
+  if (repoRootMarkerIndex >= 0) {
+    return normalizedValue.slice(repoRootMarkerIndex + 1);
+  }
+
+  const repoMarkerIndex = normalizedValue.indexOf('.repo-ai-governor/');
+  if (repoMarkerIndex >= 0) {
+    return normalizedValue.slice(repoMarkerIndex);
+  }
+
+  return null;
+}
+
+/**
+ * Removes the leading `.repo-ai-governor/` prefix so provenance snapshots can keep tidy relative
+ * paths beneath their own durable root.
+ * @param {string} portablePath Portable repo-relative path.
+ * @returns {string}
+ */
+function stripPortableWorkspacePrefix(portablePath) {
+  if (portablePath === '.repo-ai-governor') {
+    return '.repo-ai-governor';
+  }
+
+  return portablePath.startsWith('.repo-ai-governor/')
+    ? portablePath.slice('.repo-ai-governor/'.length)
+    : portablePath;
+}
+
+/**
+ * Asserts that all repo-relative provenance paths embedded in one tracked receipt payload resolve
+ * inside the current worktree.
+ * @param {unknown} value Sanitized tracked receipt payload.
+ * @param {string} receiptPath Durable tracked receipt path.
+ */
+export function assertTrackedReceiptPayloadPathsExist(value, receiptPath) {
+  const workspaceRoot = resolve(process.cwd());
+  const missingPaths = Array.from(collectTrackedReceiptWorkspacePaths(value)).filter(
+    (pathValue) => !existsSync(resolve(workspaceRoot, pathValue)),
+  );
+  if (missingPaths.length === 0) {
+    return;
+  }
+
+  throw new Error(
+    `ACP tracked receipt ${receiptPath} still references missing repo-relative path(s): ${missingPaths.join(', ')}`,
+  );
+}
+
+/**
+ * Collects repo-relative provenance paths from one tracked receipt payload fragment.
+ * @param {unknown} value Receipt payload fragment.
+ * @returns {Set<string>}
+ */
+function collectTrackedReceiptWorkspacePaths(value) {
+  const collectedPaths = new Set();
+
+  if (Array.isArray(value)) {
+    for (const entry of value) {
+      for (const pathValue of collectTrackedReceiptWorkspacePaths(entry)) {
+        collectedPaths.add(pathValue);
+      }
+    }
+    return collectedPaths;
+  }
+
+  if (value && typeof value === 'object') {
+    for (const entry of Object.values(value)) {
+      for (const pathValue of collectTrackedReceiptWorkspacePaths(entry)) {
+        collectedPaths.add(pathValue);
+      }
+    }
+    return collectedPaths;
+  }
+
+  if (typeof value !== 'string') {
+    return collectedPaths;
+  }
+
+  for (const matchedPath of collectRepoOwnedWorkspacePathMatches(value)) {
+    collectedPaths.add(matchedPath);
+  }
+
+  return collectedPaths;
+}
+
+/**
+ * Collects absolute repo-owned path matches from one string value while preserving spaces inside
+ * the path itself.
+ * @param {string} value Raw string value.
+ * @returns {Set<string>}
+ */
+function collectRepoOwnedAbsolutePathMatches(value) {
+  const normalizedValue = value.replaceAll('\\', '/');
+  const collectedPaths = new Set();
+  const absolutePathPatterns = [
+    /[A-Za-z]:\/[^"',`\r\n]*\.repo-ai-governor(?:\/[^"',`\r\n]*)?/gu,
+    /\/[^"',`\r\n]*\.repo-ai-governor(?:\/[^"',`\r\n]*)?/gu,
+  ];
+
+  for (const pattern of absolutePathPatterns) {
+    for (const match of normalizedValue.matchAll(pattern)) {
+      const matchedPath = match[0]?.trim();
+      if (!matchedPath) {
+        continue;
+      }
+      collectedPaths.add(matchedPath);
+    }
+  }
+
+  return collectedPaths;
+}
+
+/**
+ * Collects repo-relative workspace path matches from one string value while preserving spaces
+ * inside the path itself.
+ * @param {string} value Raw string value.
+ * @returns {Set<string>}
+ */
+function collectRepoOwnedWorkspacePathMatches(value) {
+  const collectedPaths = new Set();
+  const pathPattern = /\.repo-ai-governor(?:\/[^"',`\r\n]*)?/gu;
+
+  for (const match of value.matchAll(pathPattern)) {
+    const matchedPath = match[0]?.trim();
+    if (!matchedPath) {
+      continue;
+    }
+    collectedPaths.add(matchedPath);
+  }
+
+  return collectedPaths;
+}
+
+/**
  * Runs one installed-package service-host memory-provider scenario.
  * @param {{
  *   mode: string;
@@ -1405,6 +2231,39 @@ function writeReport(reportPath, reportPayload) {
   const absolutePath = resolve(process.cwd(), reportPath);
   mkdirSync(dirname(absolutePath), { recursive: true });
   writeFileSync(absolutePath, `${JSON.stringify(reportPayload, null, 2)}\n`, 'utf8');
+  formatRepoJsonReportIfNeeded(absolutePath);
+}
+
+/**
+ * Formats one governed repo-local JSON report with Biome so tracked governance outputs stay stable after regeneration.
+ * @param {string} absolutePath Absolute report path.
+ */
+function formatRepoJsonReportIfNeeded(absolutePath) {
+  const workspaceRoot = resolve(process.cwd());
+  const governedReportRoot = resolve(workspaceRoot, '.repo-ai-governor');
+  const governedRelativePath = relative(governedReportRoot, absolutePath);
+  if (
+    !absolutePath.endsWith('.json') ||
+    governedRelativePath.length === 0 ||
+    governedRelativePath.startsWith('..') ||
+    isAbsolute(governedRelativePath)
+  ) {
+    return;
+  }
+
+  const result = spawnSync('pnpm', ['exec', 'biome', 'format', '--write', absolutePath], {
+    cwd: workspaceRoot,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  if (result.error) {
+    throw new Error(`failed to format JSON report ${absolutePath}: ${result.error.message}`);
+  }
+  if (result.status !== 0) {
+    throw new Error(
+      `failed to format JSON report ${absolutePath}: ${(result.stderr || result.stdout || '').trim()}`,
+    );
+  }
 }
 
 async function main() {
@@ -1426,6 +2285,8 @@ async function main() {
   let serviceHostMemoryProviderScenarios = [];
   /** @type {Array<Record<string, unknown>>} */
   const remoteApiScenarios = [];
+  /** @type {Array<Record<string, unknown>>} */
+  let acpHostTransportScenarios = [];
 
   try {
     for (const mode of options.modes) {
@@ -1500,6 +2361,18 @@ async function main() {
       remoteApiScenarios.push(scenario);
     }
 
+    if (options.includeAcpHostVerify) {
+      acpHostTransportScenarios = options.modes.map((mode) => {
+        const scenario = runAcpHostTransportScenario({
+          mode,
+          workingRoot: createdTempRoot,
+          installAssets,
+        });
+        gateInfo(GATE_NAME, `ACP host transport clean-room scenario passed for mode=${mode}.`);
+        return scenario;
+      });
+    }
+
     if (options.distributionMode === PLUGIN_ENABLED_DISTRIBUTION_MODE) {
       pluginEnabledMemoryProviderScenarios = options.modes.map((mode) => {
         const scenario = runPluginEnabledMemoryProviderScenario({
@@ -1531,6 +2404,7 @@ async function main() {
     readOnlyAttachPrecheck,
     serviceHostMemoryProviderScenarios,
     remoteApiScenarios,
+    acpHostTransportScenarios,
     pluginEnabledMemoryProviderScenarios,
     stage9aHardExit: {
       requiredModeMinimum: 2,
@@ -1554,6 +2428,16 @@ async function main() {
   try {
     writeReport(options.outputPath, reportPayload);
     gateInfo(GATE_NAME, `report generated at ${options.outputPath}`);
+    if (options.includeAcpHostVerify && options.emitAcpEvidencePath) {
+      writeAcpCleanroomEvidenceSummary({
+        outputPath: options.emitAcpEvidencePath,
+        sourceReportPath: resolve(process.cwd(), options.outputPath),
+        overallStatus,
+        distributionMode: options.distributionMode,
+        scenarios: acpHostTransportScenarios,
+      });
+      gateInfo(GATE_NAME, `ACP evidence generated at ${options.emitAcpEvidencePath}`);
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     gateFail(GATE_NAME, `failed to persist report: ${message}`);
@@ -1581,10 +2465,16 @@ async function main() {
   process.exit(1);
 }
 
-try {
-  await main();
-} catch (error) {
-  const message = error instanceof Error ? error.message : String(error);
-  gateFail(GATE_NAME, message);
-  process.exit(1);
+const IS_DIRECT_EXECUTION =
+  typeof process.argv[1] === 'string' &&
+  resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url));
+
+if (IS_DIRECT_EXECUTION) {
+  try {
+    await main();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    gateFail(GATE_NAME, message);
+    process.exit(1);
+  }
 }

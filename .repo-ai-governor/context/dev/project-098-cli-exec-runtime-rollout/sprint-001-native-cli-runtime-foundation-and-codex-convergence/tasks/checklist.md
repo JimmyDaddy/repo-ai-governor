@@ -1,10 +1,25 @@
 # checklist
 
-- [ ] TK-821 establish shared native cli_exec process runtime and adapter-authored resolved launch plan seam
+- [x] TK-821 establish shared native cli_exec process runtime and adapter-authored resolved launch plan seam
   - 2026-04-13：任务通过 `DA-819` 创建，当前保持 `planned`，等待 `project-098 / sprint-001` 激活后执行。
-- [ ] TK-822 project codex lifecycle observer partial-output and terminate-phase semantics onto the shared runtime
+  - 2026-04-13：任务状态切换为 `active`；`project-098 / sprint-001` 已激活，并在 `packages/adapter-sdk` 新增 shared `NativeCliExecProcessRuntime`、launch-plan contract 与 focused runtime unit coverage，shared runtime owner 从 helper 演进为真正的 native process lifecycle owner。
+  - 2026-04-13：已完成 `pnpm run build`、`pnpm exec vitest run packages/adapter-sdk/test/native-cli-exec-process-runtime.unit.test.ts packages/adapter-sdk/test/agent-cli-exec-operations-runtime.unit.test.ts packages/adapters/codex/test/codex-agent-adapter.smoke.test.ts`；当前等待 sprint-001 fresh reviewer 对 shared runtime foundation 做 clean recheck。
+  - 2026-04-13：fresh reviewer 返回 shared runtime 非零退出成功化与缺少 failing-exit regression 两条 actionable findings；主 agent 已全部认可并修复 `NativeCliExecProcessRuntime` 的 close-path 失败语义、补充 `exitCode=7` regression case，并通过 `pnpm run build`、focused Codex/runtime suite、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run check`，任务收口为 `completed`。
+- [x] TK-822 project codex lifecycle observer partial-output and terminate-phase semantics onto the shared runtime
   - 2026-04-13：任务通过 `DA-819` 创建，当前保持 `planned`，等待 `TK-821` 完成后执行。
-- [ ] TK-823 preserve adapter-owned entrypoint shell and process-tree policies while adding baseline launch diagnostics
+  - 2026-04-13：任务状态切换为 `active`；已将 `Codex` 的 streaming / non-streaming CLI 执行切到 shared runtime，同时保留 adapter parser-side semantic progress owner，并把 `graceful_interrupting` / `hard_terminating` / partial snapshot preservation 继续投影到现有 liveness contract。
+  - 2026-04-13：已通过 `pnpm run build` 与 Codex/adapter-sdk focused smoke + unit suite；当前等待 sprint-001 delegated CR 对 lifecycle observer 收敛与 terminate-phase 语义做 clean recheck。
+  - 2026-04-13：`CR-001` resolved 后，reviewer 未对 `Codex` lifecycle observer、partial snapshot preservation 或 terminate-phase 投影提出新增 actionable finding；当前 boundary 已通过 `pnpm run build`、focused Codex/runtime suite、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run check` 复核，任务收口为 `completed`。
+- [x] TK-823 preserve adapter-owned entrypoint shell and process-tree policies while adding baseline launch diagnostics
   - 2026-04-13：任务通过 `DA-819` 创建，当前保持 `planned`，等待 `TK-822` 完成后执行。
-- [ ] TK-824 sprint-001 exit acceptance and sprint-002 activation handoff
+  - 2026-04-13：任务状态切换为 `active`；已把 `entrypoint_resolution / shell_wrapped / process_tree_policy / spawn_error_code` 固定为 additive launch diagnostics，并在 Codex / Claude Code / GitHub Copilot health-check surfaces 上对齐 shared runtime ownership 与 adapter-authored process-tree policy truth。
+  - 2026-04-13：已通过 `pnpm run build`、adapter focused smoke suites 与 public-boundary regression suite；当前等待 sprint-001 delegated CR 对 diagnostics ownership 与 no-god-object boundary 做 clean recheck。
+  - 2026-04-13：`CR-001` resolved 后，reviewer 未发现 adapter-owned launch authoring、process-tree policy truth 或 additive diagnostics 升格为 minimum contract 的问题；当前已通过 `pnpm run build`、focused Codex/runtime suite、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run check`，任务收口为 `completed`。
+- [x] TK-824 sprint-001 exit acceptance and sprint-002 activation handoff
   - 2026-04-13：任务通过 `DA-819` 创建，当前保持 `planned`，等待 sprint-001 clean 收口后执行。
+  - 2026-04-13：`CR-001` 已 resolved，`TK-821 ~ TK-823` clean 收口完成；当前开始执行 sprint-001 exit acceptance，并准备将 primary execution surface 切换到 `sprint-002`。
+  - 2026-04-13：已完成 sprint-001 exit acceptance 与 sprint-002 activation handoff；`current-context.md`、project/sprint `plan.md` 与 completed-streams-history 已同步切换到 `sprint-002` primary surface，并通过 `node ./scripts/governance/check-task-ledger-sync.js`、`node ./scripts/governance/check-sprint-plan-status-sync.js` 与 `node ./scripts/governance/check-technical-solution-delivery-registry.js`，任务收口为 `completed`。
+- [x] CR-001 sprint-001-native-cli-runtime-foundation-and-codex-convergence delegated review loop round 1
+  - 2026-04-13：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-13：fresh reviewer 返回 2 条 actionable findings；主 agent 已完成复核并全部认可，review artifact 已补充 `复核结论`。
+  - 2026-04-13：已完成 shared runtime 非零退出失败语义与 failing-exit regression coverage 修复，并将 review artifact 推进到 `resolved_code_review_working-tree-20260413-1400.md`。

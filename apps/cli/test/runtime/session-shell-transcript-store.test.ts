@@ -245,11 +245,14 @@ describe('CliSessionShellTranscriptStore', () => {
         if (key === 'cli.sessionShell.responses.providerContinuationTitle') {
           return 'Provider continuation';
         }
+        if (key === 'cli.sessionShell.responses.providerContinuationTransportSummary') {
+          return ` transport=${interpolation?.transportKind ?? ''}`;
+        }
         if (key === 'cli.sessionShell.responses.providerContinuationModelSummary') {
           return ` model=${interpolation?.model ?? ''}`;
         }
         if (key === 'cli.sessionShell.responses.providerContinuationReused') {
-          return `${interpolation?.laneLabel ?? ''} reused on ${interpolation?.surface ?? ''}${interpolation?.modelSummary ?? ''}`;
+          return `${interpolation?.laneLabel ?? ''} reused on ${interpolation?.surface ?? ''}${interpolation?.transportSummary ?? ''}${interpolation?.modelSummary ?? ''}`;
         }
         return key;
       },
@@ -259,7 +262,7 @@ describe('CliSessionShellTranscriptStore', () => {
     expect(items[0]?.renderKind).toBe('markdown');
     expect(items[0]?.providerContinuationBlock).toEqual({
       title: 'Provider continuation',
-      lines: ['session.main reused on codex model=gpt-5'],
+      lines: ['session.main reused on codex transport=remote_api model=gpt-5'],
     });
   });
 
@@ -307,6 +310,9 @@ describe('CliSessionShellTranscriptStore', () => {
         if (key === 'cli.sessionShell.responses.providerContinuationTitle') {
           return 'Provider continuation';
         }
+        if (key === 'cli.sessionShell.responses.providerContinuationTransportSummary') {
+          return ` transport=${interpolation?.transportKind ?? ''}`;
+        }
         if (key === 'cli.sessionShell.responses.providerContinuationModelSummary') {
           return ` model=${interpolation?.model ?? ''}`;
         }
@@ -314,10 +320,10 @@ describe('CliSessionShellTranscriptStore', () => {
           return ` reason=${interpolation?.reason ?? ''}`;
         }
         if (key === 'cli.sessionShell.responses.providerContinuationFallbackActive') {
-          return `${interpolation?.laneLabel ?? ''} continuity preserved via session-note; ${interpolation?.surface ?? ''}${interpolation?.modelSummary ?? ''} backend reuse unavailable${interpolation?.reasonSummary ?? ''}`;
+          return `${interpolation?.laneLabel ?? ''} continuity preserved via session-note; ${interpolation?.surface ?? ''}${interpolation?.transportSummary ?? ''}${interpolation?.modelSummary ?? ''} backend reuse unavailable${interpolation?.reasonSummary ?? ''}`;
         }
         if (key === 'cli.sessionShell.responses.providerContinuationUnsupported') {
-          return `${interpolation?.laneLabel ?? ''} backend reuse unsupported on ${interpolation?.surface ?? ''}${interpolation?.modelSummary ?? ''}; no-lightweight-fallback${interpolation?.reasonSummary ?? ''}`;
+          return `${interpolation?.laneLabel ?? ''} backend reuse unsupported on ${interpolation?.surface ?? ''}${interpolation?.transportSummary ?? ''}${interpolation?.modelSummary ?? ''}; no-lightweight-fallback${interpolation?.reasonSummary ?? ''}`;
         }
         return key;
       },
@@ -328,7 +334,7 @@ describe('CliSessionShellTranscriptStore', () => {
     expect(items[0]?.providerContinuationBlock).toEqual({
       title: 'Provider continuation',
       lines: [
-        'session.main continuity preserved via session-note; codex model=gpt-5 backend reuse unavailable reason=provider_session_not_supported',
+        'session.main continuity preserved via session-note; codex transport=remote_api model=gpt-5 backend reuse unavailable reason=provider_session_not_supported',
       ],
     });
   });
@@ -358,8 +364,8 @@ describe('CliSessionShellTranscriptStore', () => {
                 status: 'unsupported',
                 surface: 'codex',
                 providerId: 'openai',
-                transportKind: 'remote_api',
-                model: 'gpt-5',
+                transportKind: 'cli_exec',
+                model: null,
                 stageId: 'stage-answer',
                 roleId: null,
                 policyEnvelope: 'chat_only',
@@ -376,6 +382,9 @@ describe('CliSessionShellTranscriptStore', () => {
         if (key === 'cli.sessionShell.responses.providerContinuationTitle') {
           return 'Provider continuation';
         }
+        if (key === 'cli.sessionShell.responses.providerContinuationTransportSummary') {
+          return ` transport=${interpolation?.transportKind ?? ''}`;
+        }
         if (key === 'cli.sessionShell.responses.providerContinuationModelSummary') {
           return ` model=${interpolation?.model ?? ''}`;
         }
@@ -383,7 +392,7 @@ describe('CliSessionShellTranscriptStore', () => {
           return ` reason=${interpolation?.reason ?? ''}`;
         }
         if (key === 'cli.sessionShell.responses.providerContinuationUnsupported') {
-          return `${interpolation?.laneLabel ?? ''} backend reuse unsupported on ${interpolation?.surface ?? ''}${interpolation?.modelSummary ?? ''}; no-lightweight-fallback${interpolation?.reasonSummary ?? ''}`;
+          return `${interpolation?.laneLabel ?? ''} backend reuse unsupported on ${interpolation?.surface ?? ''}${interpolation?.transportSummary ?? ''}${interpolation?.modelSummary ?? ''}; no-lightweight-fallback${interpolation?.reasonSummary ?? ''}`;
         }
         return key;
       },
@@ -392,7 +401,7 @@ describe('CliSessionShellTranscriptStore', () => {
     expect(items[0]?.providerContinuationBlock).toEqual({
       title: 'Provider continuation',
       lines: [
-        'session.main backend reuse unsupported on codex model=gpt-5; no-lightweight-fallback reason=provider_session_not_supported',
+        'session.main backend reuse unsupported on codex transport=cli_exec; no-lightweight-fallback reason=provider_session_not_supported',
       ],
     });
   });

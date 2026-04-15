@@ -286,6 +286,12 @@ export const ZH_CN_TRANSLATIONS = {
         '当前不会自动物化 remote-api credentialRef；请手动解析以下引用：{{credentials}}。',
       authenticateAdapters:
         '请先为以下远端 adapter 完成认证或刷新登录状态，再执行 connect/doctor：{{credentials}}。',
+      enableAcpRuntimeService:
+        '请先完成以下 ACP surface 的 runtime-service enablement 与 host handoff 验证，再依赖其执行：{{toolIds}}。',
+      verifyAcpPackagedDistribution:
+        '请先为以下 ACP surface 补齐 packaged-distribution 证据，并保持 transport-scoped 边界：{{toolIds}}。',
+      runAcpCleanRoomVerify:
+        '以下 ACP surface 已具备 runtime-service 与 packaged-distribution 证据；下一步请执行 clean-room verify，并仅在 evidence-backed surface 上提升支持口径：{{toolIds}}。',
       investigateHealthChecks:
         '请先排查以下远端 adapter 的健康检查结果，再进行无人值守执行：{{healthChecks}}。',
       pullLocalModels: '请先拉取或修正以下缺失的本地模型，再进行无人值守执行：{{models}}。',
@@ -547,20 +553,21 @@ export const ZH_CN_TRANSLATIONS = {
         mainTurnBacklink: '回链：kind={{kind}} label={{label}} target={{target}}',
         mainTurnSuggestedActionsTitle: '建议下一步',
         providerContinuationTitle: 'Provider 会话连续性',
+        providerContinuationTransportSummary: '，transport={{transportKind}}',
         providerContinuationModelSummary: '，model={{model}}',
         providerContinuationReasonSummary: '，原因={{reason}}',
         providerContinuationCreated:
-          '{{laneLabel}}：已在 {{surface}}{{modelSummary}} 上启动后端会话。',
+          '{{laneLabel}}：已在 {{surface}}{{transportSummary}}{{modelSummary}} 上启动后端会话。',
         providerContinuationReused:
-          '{{laneLabel}}：已在 {{surface}}{{modelSummary}} 上复用后端会话。',
+          '{{laneLabel}}：已在 {{surface}}{{transportSummary}}{{modelSummary}} 上复用后端会话。',
         providerContinuationRefreshed:
-          '{{laneLabel}}：已在 {{surface}}{{modelSummary}} 上刷新后端会话{{reasonSummary}}。',
+          '{{laneLabel}}：已在 {{surface}}{{transportSummary}}{{modelSummary}} 上刷新后端会话{{reasonSummary}}。',
         providerContinuationCleared:
-          '{{laneLabel}}：已清理 {{surface}}{{modelSummary}} 的后端会话状态{{reasonSummary}}。',
+          '{{laneLabel}}：已清理 {{surface}}{{transportSummary}}{{modelSummary}} 的后端会话状态{{reasonSummary}}。',
         providerContinuationFallbackActive:
-          '{{laneLabel}}：已通过轻量会话摘要保持连续性；{{surface}}{{modelSummary}} 未提供后端会话复用{{reasonSummary}}。',
+          '{{laneLabel}}：已通过轻量会话摘要保持连续性；{{surface}}{{transportSummary}}{{modelSummary}} 未提供后端会话复用{{reasonSummary}}。',
         providerContinuationUnsupported:
-          '{{laneLabel}}：{{surface}}{{modelSummary}} 当前不支持后端会话复用，且没有轻量会话摘要可用于保持连续性{{reasonSummary}}。',
+          '{{laneLabel}}：{{surface}}{{transportSummary}}{{modelSummary}} 当前不支持后端会话复用，且没有轻量会话摘要可用于保持连续性{{reasonSummary}}。',
         mainTurnFollowUpPrompt: '主 agent 在 handoff 前还需要一次补充说明：',
         sessionStarted: '已在 {{routeId}} 上启动 service-backed session {{sessionId}}。',
         sessionResumed: '已通过 selector={{resumeSelector}} 恢复 session {{sessionId}}。',

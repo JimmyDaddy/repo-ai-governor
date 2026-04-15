@@ -1,0 +1,145 @@
+{
+  "schemaVersion": "host-verification-summary-v1",
+  "status": "pass",
+  "verifiedAt": "2026-04-15T05:26:54.927Z",
+  "verificationSummaryPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/claude-code/runtime-service/path/generated/hosts/claude-code/host-verification.summary.json",
+  "exportManifestPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/claude-code/runtime-service/path/generated/hosts/claude-code/host-export.manifest.json",
+  "checks": [
+    {
+      "checkId": "schema-version",
+      "status": "pass",
+      "detail": "schema_version=host-export-manifest-v1",
+      "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/claude-code/runtime-service/path/generated/hosts/claude-code/host-export.manifest.json",
+      "expectedValue": "host-export-manifest-v1",
+      "actualValue": "host-export-manifest-v1"
+    },
+    {
+      "checkId": "canonical-source-refs",
+      "status": "pass",
+      "detail": "canonical_source_refs=2",
+      "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/claude-code/runtime-service/path/generated/hosts/claude-code/host-export.manifest.json",
+      "expectedValue": "all canonical source refs exist",
+      "actualValue": "2"
+    },
+    {
+      "checkId": "target-capability",
+      "status": "pass",
+      "detail": "mvp_target=true",
+      "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/claude-code/runtime-service/path/generated/hosts/claude-code/host-export.manifest.json",
+      "expectedValue": "true",
+      "actualValue": "true"
+    },
+    {
+      "checkId": "deprecated-github-app-path",
+      "status": "pass",
+      "detail": "github_app_copilot_extension_path_blocked=true",
+      "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/claude-code/runtime-service/path/generated/hosts/claude-code/host-export.manifest.json",
+      "expectedValue": "no deprecated GitHub App Copilot Extension path",
+      "actualValue": "deprecated path absent"
+    },
+    {
+      "checkId": "required-target-paths",
+      "status": "pass",
+      "detail": "required_paths_checked=claude_code.project_local",
+      "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/claude-code/runtime-service/path/generated/hosts/claude-code/host-export.manifest.json",
+      "expectedValue": "required paths present",
+      "actualValue": "claude_code.project_local"
+    },
+    {
+      "checkId": "staged:.claude/skills/sample-host-skill/SKILL.md",
+      "status": "pass",
+      "detail": "staged_file=.claude/skills/sample-host-skill/SKILL.md",
+      "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/claude-code/runtime-service/path/generated/hosts/claude-code/.claude/skills/sample-host-skill/SKILL.md",
+      "expectedValue": "staged file content matches manifest",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "staged:.claude/agents/sample-host-skill.agent.md",
+      "status": "pass",
+      "detail": "staged_file=.claude/agents/sample-host-skill.agent.md",
+      "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/claude-code/runtime-service/path/generated/hosts/claude-code/.claude/agents/sample-host-skill.agent.md",
+      "expectedValue": "staged file content matches manifest",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "staged:.claude/settings.json",
+      "status": "pass",
+      "detail": "staged_file=.claude/settings.json",
+      "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/claude-code/runtime-service/path/generated/hosts/claude-code/.claude/settings.json",
+      "expectedValue": "staged file content matches manifest",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "staged:.claude/hooks/hooks.json",
+      "status": "pass",
+      "detail": "staged_file=.claude/hooks/hooks.json",
+      "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/claude-code/runtime-service/path/generated/hosts/claude-code/.claude/hooks/hooks.json",
+      "expectedValue": "staged file content matches manifest",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "staged:.mcp.json",
+      "status": "pass",
+      "detail": "staged_file=.mcp.json",
+      "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/claude-code/runtime-service/path/generated/hosts/claude-code/.mcp.json",
+      "expectedValue": "staged file content matches manifest",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "apply-report-presence",
+      "status": "pass",
+      "detail": "apply_report=.repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/claude-code/runtime-service/path/generated/hosts/claude-code/host-apply.report.json",
+      "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/claude-code/runtime-service/path/generated/hosts/claude-code/host-apply.report.json",
+      "expectedValue": "apply report exists when manifest declares apply report path",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "applied:.claude/skills/sample-host-skill/SKILL.md",
+      "status": "pass",
+      "detail": "applied_file=.claude/skills/sample-host-skill/SKILL.md",
+      "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/claude-code/runtime-service/path/generated/applied/claude-code/.claude/skills/sample-host-skill/SKILL.md",
+      "expectedValue": "applied file content matches staged export",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "applied:.claude/agents/sample-host-skill.agent.md",
+      "status": "pass",
+      "detail": "applied_file=.claude/agents/sample-host-skill.agent.md",
+      "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/claude-code/runtime-service/path/generated/applied/claude-code/.claude/agents/sample-host-skill.agent.md",
+      "expectedValue": "applied file content matches staged export",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "applied:.claude/settings.json",
+      "status": "pass",
+      "detail": "applied_file=.claude/settings.json",
+      "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/claude-code/runtime-service/path/generated/applied/claude-code/.claude/settings.json",
+      "expectedValue": "applied file content matches staged export",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "applied:.claude/hooks/hooks.json",
+      "status": "pass",
+      "detail": "applied_file=.claude/hooks/hooks.json",
+      "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/claude-code/runtime-service/path/generated/applied/claude-code/.claude/hooks/hooks.json",
+      "expectedValue": "applied file content matches staged export",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "applied:.mcp.json",
+      "status": "pass",
+      "detail": "applied_file=.mcp.json",
+      "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/claude-code/runtime-service/path/generated/applied/claude-code/.mcp.json",
+      "expectedValue": "applied file content matches staged export",
+      "actualValue": "present"
+    }
+  ],
+  "inspectedPaths": [
+    ".claude/skills/sample-host-skill/SKILL.md",
+    ".claude/agents/sample-host-skill.agent.md",
+    ".claude/settings.json",
+    ".claude/hooks/hooks.json",
+    ".mcp.json"
+  ],
+  "driftDetected": false
+}

@@ -1,6 +1,6 @@
 # TK-821 establish shared native cli_exec process runtime and adapter-authored resolved launch plan seam
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-13
 - Owner: AI-Agent
 - Priority: P0
@@ -45,3 +45,6 @@
 ## 8. 执行记录
 
 1. 2026-04-13：任务通过 `DA-819` 创建，当前保持 `planned`，等待 `project-098 / sprint-001` 激活后执行。
+2. 2026-04-13：任务状态切换为 `active`；`project-098 / sprint-001` 已激活，并在 `packages/adapter-sdk` 新增 shared `NativeCliExecProcessRuntime`、launch-plan contract 与 focused runtime unit coverage，shared runtime owner 从 helper 演进为真正的 native process lifecycle owner。
+3. 2026-04-13：已完成 `pnpm run build`、`pnpm exec vitest run packages/adapter-sdk/test/native-cli-exec-process-runtime.unit.test.ts packages/adapter-sdk/test/agent-cli-exec-operations-runtime.unit.test.ts packages/adapters/codex/test/codex-agent-adapter.smoke.test.ts`；当前等待 sprint-001 fresh reviewer 对 shared runtime foundation 做 clean recheck。
+4. 2026-04-13：fresh reviewer 返回 shared runtime 非零退出成功化与缺少 failing-exit regression 两条 actionable findings；主 agent 已全部认可并修复 `NativeCliExecProcessRuntime` 的 close-path 失败语义、补充 `exitCode=7` regression case，并通过 `pnpm run build`、focused Codex/runtime suite、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run check`，任务收口为 `completed`。

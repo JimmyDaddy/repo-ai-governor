@@ -1,4 +1,5 @@
 export type {
+  AgentDescriptorAcpHostCompanion,
   AgentDescriptor,
   AgentProjectionInput,
   AgentSessionProjection,

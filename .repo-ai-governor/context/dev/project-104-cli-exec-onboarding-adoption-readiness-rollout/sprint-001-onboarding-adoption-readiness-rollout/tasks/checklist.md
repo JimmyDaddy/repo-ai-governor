@@ -1,0 +1,23 @@
+# checklist
+
+- [x] TK-859 implement cli-exec onboarding and adoption readiness rollout baseline
+  - 2026-04-13：任务创建，状态初始化为 `planned`，作为 `followup_required` rollout skeleton 的 canonical task。
+  - 2026-04-14：`project-103` final closeout 完成后，当前任务切换为 `in_progress`，并把 `project-104 / sprint-001` 激活为 primary execution surface；下一步先本地预留 `CR-001`，再开始 readiness rollout baseline implementation。
+  - 2026-04-14：已把 readiness composition baseline 收敛到 `CliAgentOnboardingRuntime`，由 onboarding-owned logic 统一生成 `verification_status / diagnostic_summary / next_action(s)`，并将同一条 evidence chain additive 投影到 `verificationMatrix`；`connect`/`doctor` 不再手工拼接 `diagnostic_summary`。focused readiness suites、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 已在同窗通过，当前任务完成。
+  - 2026-04-14：`CR-001` round 1 findings 已全部修复并收口为 `resolved`；当前 baseline 已补齐 `doctor` 的 truthful `safe_local_fix` 边界和真实命令级 readiness artifact 覆盖，进入下一轮 fresh clean recheck 前状态稳定。
+- [x] TK-877 compose verification_status diagnostic_summary and next_action(s) from canonical onboarding probe truth
+  - 2026-04-14：任务创建，状态初始化为 `planned`。
+  - 2026-04-14：已将 `verification_status / diagnostic_summary / next_action(s)` 的组合责任固定到 onboarding runtime，统一基于 canonical verification/probe truth 计算 readiness summary，并为 `doctor` additive 带出 `safe_local_fix` 计数；同一逻辑已进入 `verificationMatrix` 顶层字段，避免 command surface 与 diagnostics artifact 漂移。focused readiness suites、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 已在同窗通过，当前任务完成。
+  - 2026-04-14：`CR-001` round 1 进一步要求 `doctor` 在 `manual_only` 路径省略虚假的 `safe_local_fix=0`，并补上真实命令边界断言；该 readiness composition chain 现已通过修复后重验并收口为 `resolved`。
+- [x] TK-878 sprint-001 exit acceptance and sprint-002 activation handoff
+  - 2026-04-14：任务创建，状态初始化为 `planned`。
+  - 2026-04-14：`TK-859`、`TK-877`、`CR-001` 与 `CR-002` 已全部 clean 收口；当前已将 `sprint-001` 标记为 `completed`，并把 `sprint-002` 激活为新的 primary execution surface。
+  - 2026-04-14：`TK-879` 已切换为 `in_progress` 作为 `sprint-002` implementation 入口；下一步在 active sprint surface 预留本地 `CR-001` 后进入 playbook readback rollout。
+- [x] CR-001 sprint-001-onboarding-adoption-readiness-rollout delegated review loop round 1
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 1 返回 2 条 actionable findings；主 agent 复核后全部判定为 `accepted`，分别指向 `doctor` readiness summary 在 `manual_only` 路径错误追加 `safe_local_fix=0`，以及 `doctor-command` 缺少真实 readiness artifact 覆盖。
+  - 2026-04-14：accepted findings 已修复，并补上 `doctor` 的 `fix=false / fix=true` 命令边界断言；同窗 `pnpm exec vitest run apps/cli/test/runtime/agent-onboarding-runtime.test.ts apps/cli/test/runtime/adapter-diagnostics-runtime.test.ts apps/cli/test/commands/connect-command.test.ts apps/cli/test/commands/doctor-command.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 已通过，当前 round 收口为 `resolved`。
+- [x] CR-002 sprint-001-onboarding-adoption-readiness-rollout delegated review loop round 2
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 2（sub-agent `019d8c23-9b2c-7300-bdab-a9a8b35fe52e` / `Epicurus`）对 `doctor` readiness composition 修复点做 clean recheck，未发现新的 actionable finding。
+  - 2026-04-14：当前 round 结合既有 focused suites、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 证据收口为 `resolved`；sprint-001 已满足 closeout 前置 CR 条件。

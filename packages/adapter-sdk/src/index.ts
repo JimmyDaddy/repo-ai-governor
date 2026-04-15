@@ -26,6 +26,7 @@ export {
 } from './constants/index.js';
 export { AgentCapabilityEvaluator } from './agent-capability-evaluator.js';
 export { AgentCliExecOperationsRuntime } from './agent-cli-exec-operations-runtime.js';
+export { NativeCliExecProcessRuntime } from './native-cli-exec-process-runtime.js';
 export {
   buildLayeredHealthCheckResult,
   createLayeredHealthCheckFromLegacyReasons,
@@ -38,9 +39,12 @@ export { AgentRouteRegistry } from './agent-route-registry.js';
 export { AgentRouteRunner } from './agent-route-runner.js';
 export type {
   AgentCliAdapterOptions,
+  AgentCliLaunchDiagnostics,
+  AgentCliProcessTreePolicy,
   AgentCliExecRunner,
   AgentCliExecRunnerRequest,
   AgentCliExecRunnerResult,
+  AgentCliResolvedLaunchPlan,
   AgentCapabilityEvaluatorContract,
   AgentCancelRequest,
   AgentCancelResult,

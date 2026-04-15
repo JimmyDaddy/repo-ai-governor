@@ -38,6 +38,7 @@ export {
   Locale,
   LocalModelProvider,
   MemoryStoreEngine,
+  PUBLIC_SERVICE_HOST_PACKAGE_EXPORT,
   ROLE_PROFILE_ID_PATTERN,
   ROLE_PROFILE_VERSION_PATTERN,
   RoleProfileStatus,

@@ -17,6 +17,16 @@ import {
   RuntimeError,
 } from '@repo-ai-governor/shared';
 import {
+  collectStreamEventStatuses,
+  expectNativeCliExecPreservedFacts,
+  hasAgentHealthDiagnostic,
+} from '../../../../test/native-cli-exec-compatibility-harness.js';
+import {
+  expectFallbackEntrypointProjection,
+  expectInvokeLaunchTruthProjected,
+  expectProbeLaunchTruthProjected,
+} from '../../../../test/native-cli-exec-launch-authoring-harness.js';
+import {
   GithubCopilotAgentAdapter,
   GithubCopilotAgentAdapterExecutionMode,
   type GithubCopilotExecRunner,
@@ -51,6 +61,11 @@ describe('github-copilot-agent-adapter smoke', () => {
       exitCode: 0,
       signal: null,
       elapsedMs: 7,
+      launchDiagnostics: {
+        selectedEntrypoint: 'copilot',
+        shellWrapped: false,
+        processTreePolicy: 'process_group_best_effort',
+      },
     });
   }
 
@@ -96,9 +111,15 @@ describe('github-copilot-agent-adapter smoke', () => {
     expect(cancellation?.supportLevel).toBe(AgentCapabilitySupportLevel.UNSUPPORTED);
     expect(probeResult.capabilityMatrix.cancellation.supportsCancel).toBe(false);
     expect(probeResult.healthCheck?.transportKind).toBe(AdapterTransportKind.CLI_EXEC);
-    expect(probeResult.healthCheck?.requestCancellationMode).toBe(
-      AdapterRequestCancellationMode.NOT_SUPPORTED,
-    );
+    expectProbeLaunchTruthProjected({
+      selectedEntrypoint: probeResult.healthCheck?.selectedEntrypoint,
+      requestCancellationMode: probeResult.healthCheck?.requestCancellationMode,
+      diagnostics: probeResult.healthCheck?.diagnostics,
+      expectedEntrypoint: 'copilot',
+      expectedRequestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+      expectedShellWrapped: false,
+      expectedProcessTreePolicy: 'process_group_best_effort',
+    });
   });
 
   it('accepts trivial punctuation variants in probe health-check responses', async () => {
@@ -423,6 +444,11 @@ describe('github-copilot-agent-adapter smoke', () => {
         exitCode: 0,
         signal: null,
         elapsedMs: 5,
+        launchDiagnostics: {
+          selectedEntrypoint: 'gh',
+          shellWrapped: false,
+          processTreePolicy: 'process_group_best_effort',
+        },
       };
     });
     const adapter = new GithubCopilotAgentAdapter({
@@ -435,6 +461,11 @@ describe('github-copilot-agent-adapter smoke', () => {
     });
 
     expect(probeResult.availabilityStatus).toBe('available');
+    expectFallbackEntrypointProjection({
+      attemptedEntrypoints: execRunner.mock.calls.map(([request]) => request.command),
+      expectedAttemptOrder: ['copilot', 'gh'],
+      projectedEntrypoint: probeResult.healthCheck?.selectedEntrypoint,
+    });
     expect(execRunner).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
@@ -449,6 +480,189 @@ describe('github-copilot-agent-adapter smoke', () => {
         commandArgumentsPrefix: ['copilot', '--'],
       }),
     );
+  });
+
+  it('preserves fallback launch diagnostics when probe parsing fails after gh fallback launch', async () => {
+    const execRunner = vi.fn<GithubCopilotExecRunner>(async (request) => {
+      if (request.command === 'copilot') {
+        throw new RuntimeError(
+          GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED,
+          'spawn copilot ENOENT',
+          {
+            stderr: 'spawn copilot ENOENT',
+          },
+        );
+      }
+
+      return {
+        stdout: '{"type":"result","exitCode":0}',
+        stderr: '',
+        exitCode: 0,
+        signal: null,
+        elapsedMs: 5,
+        launchDiagnostics: {
+          selectedEntrypoint: 'gh',
+          shellWrapped: false,
+          processTreePolicy: 'process_group_best_effort',
+        },
+      };
+    });
+    const adapter = new GithubCopilotAgentAdapter({
+      executionMode: GithubCopilotAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner,
+    });
+
+    const probeResult = await adapter.probe({
+      routeKey: 'codegen',
+    });
+
+    expect(probeResult.availabilityStatus).toBe('unavailable');
+    expectProbeLaunchTruthProjected({
+      selectedEntrypoint: probeResult.healthCheck?.selectedEntrypoint,
+      requestCancellationMode: probeResult.healthCheck?.requestCancellationMode,
+      diagnostics: probeResult.healthCheck?.diagnostics,
+      expectedEntrypoint: 'gh',
+      expectedRequestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+      expectedShellWrapped: false,
+      expectedProcessTreePolicy: 'process_group_best_effort',
+    });
+    expectNativeCliExecPreservedFacts('probe_protocol_parse_failed', {
+      launch_diagnostics_preserved:
+        probeResult.healthCheck?.selectedEntrypoint === 'gh' &&
+        hasAgentHealthDiagnostic(
+          probeResult.healthCheck?.diagnostics,
+          'install.entrypoint_resolution',
+          'gh',
+        ) &&
+        hasAgentHealthDiagnostic(
+          probeResult.healthCheck?.diagnostics,
+          'protocol.process_tree_policy',
+          'process_group_best_effort',
+        ),
+      adapter_launch_truth_projected:
+        probeResult.healthCheck?.selectedEntrypoint === 'gh' &&
+        hasAgentHealthDiagnostic(
+          probeResult.healthCheck?.diagnostics,
+          'protocol.shell_wrapped',
+          'false',
+        ) &&
+        hasAgentHealthDiagnostic(
+          probeResult.healthCheck?.diagnostics,
+          'protocol.process_tree_policy',
+          'process_group_best_effort',
+        ),
+    });
+  });
+
+  it('preserves fallback launch diagnostics and standardized errors on malformed gh fallback output', async () => {
+    const malformedStdout = '{"type":"assistant.message","data":{"content":"OK"}';
+    const execRunner = vi.fn<GithubCopilotExecRunner>(async (request) => {
+      if (request.command === 'copilot') {
+        throw new RuntimeError(
+          GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED,
+          'spawn copilot ENOENT',
+          {
+            stderr: 'spawn copilot ENOENT',
+          },
+        );
+      }
+
+      return {
+        stdout: malformedStdout,
+        stderr: '',
+        exitCode: 0,
+        signal: null,
+        elapsedMs: 5,
+        launchDiagnostics: {
+          selectedEntrypoint: 'gh',
+          shellWrapped: false,
+          processTreePolicy: 'process_group_best_effort',
+        },
+      };
+    });
+    const adapter = new GithubCopilotAgentAdapter({
+      executionMode: GithubCopilotAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner,
+    });
+
+    const probeResult = await adapter.probe({
+      routeKey: 'codegen',
+    });
+
+    expect(probeResult.availabilityStatus).toBe('unavailable');
+    expect(probeResult.healthCheck?.selectedEntrypoint).toBe('gh');
+    expect(probeResult.healthCheck?.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'install.entrypoint_resolution',
+          detail: 'gh',
+        }),
+        expect.objectContaining({
+          code: 'protocol.process_tree_policy',
+          detail: 'process_group_best_effort',
+        }),
+      ]),
+    );
+    expectNativeCliExecPreservedFacts('probe_protocol_parse_failed', {
+      launch_diagnostics_preserved:
+        probeResult.healthCheck?.selectedEntrypoint === 'gh' &&
+        hasAgentHealthDiagnostic(
+          probeResult.healthCheck?.diagnostics,
+          'install.entrypoint_resolution',
+          'gh',
+        ) &&
+        hasAgentHealthDiagnostic(
+          probeResult.healthCheck?.diagnostics,
+          'protocol.process_tree_policy',
+          'process_group_best_effort',
+        ),
+      adapter_launch_truth_projected:
+        probeResult.healthCheck?.selectedEntrypoint === 'gh' &&
+        hasAgentHealthDiagnostic(
+          probeResult.healthCheck?.diagnostics,
+          'protocol.shell_wrapped',
+          'false',
+        ) &&
+        hasAgentHealthDiagnostic(
+          probeResult.healthCheck?.diagnostics,
+          'protocol.process_tree_policy',
+          'process_group_best_effort',
+        ),
+    });
+
+    const invokeError = await adapter
+      .invokeStage({
+        processId: 'process-1',
+        executionId: 'execution-1',
+        stageId: 'stage-1',
+        routeKey: 'codegen',
+        input: {
+          prompt: 'implement feature',
+        },
+      })
+      .then(() => null)
+      .catch((error) => error as RuntimeError);
+
+    expect(invokeError).toMatchObject({
+      code: GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+      message: expect.stringContaining('malformed JSON output'),
+    });
+    const invokeDetails = invokeError?.details ?? {};
+    expectInvokeLaunchTruthProjected({
+      details: invokeDetails,
+      expectedEntrypoint: 'gh',
+      expectedShellWrapped: false,
+      expectedProcessTreePolicy: 'process_group_best_effort',
+    });
+    expectNativeCliExecPreservedFacts('invoke_protocol_parse_failed', {
+      launch_diagnostics_preserved:
+        invokeDetails.selectedEntrypoint === 'gh' &&
+        invokeDetails.processTreePolicy === 'process_group_best_effort',
+      adapter_launch_truth_projected:
+        invokeDetails.selectedEntrypoint === 'gh' &&
+        invokeDetails.shellWrapped === false &&
+        invokeDetails.processTreePolicy === 'process_group_best_effort',
+    });
   });
 
   it('reuses one cli_exec invocation across streamEvents and invokeStage and relays token/status output incrementally', async () => {
@@ -567,6 +781,7 @@ describe('github-copilot-agent-adapter smoke', () => {
       execRunner: async (request) => {
         request.onStdoutChunk?.('{"type":"assistant.delta","data":{"delta":"partial"}}\n');
         request.onGracefulInterruptStart?.('process_signal');
+        request.onHardTerminateStart?.('process_signal');
         throw new RuntimeError(
           GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
           'GitHub Copilot invoke timed out after 30ms.',
@@ -596,12 +811,14 @@ describe('github-copilot-agent-adapter smoke', () => {
       .catch((error) => error);
 
     const [events, thrownError] = await Promise.all([streamEventsPromise, invokeErrorPromise]);
+    const statuses = collectStreamEventStatuses(events);
 
     expect(thrownError).toBeInstanceOf(RuntimeError);
     expect((thrownError as RuntimeError).message).toContain('timed out');
     expect(events.map((event) => event.type)).toEqual([
       AgentStreamEventType.STATUS,
       AgentStreamEventType.TOKEN,
+      AgentStreamEventType.STATUS,
       AgentStreamEventType.STATUS,
       AgentStreamEventType.FAILED,
     ]);
@@ -617,6 +834,16 @@ describe('github-copilot-agent-adapter smoke', () => {
     );
     expect(events[3]?.payload).toEqual(
       expect.objectContaining({
+        status: 'hard_terminating',
+        invokeLiveness: expect.objectContaining({
+          status: 'hard_terminating',
+          cancelMechanism: 'process_signal',
+          suspectReasonCodes: expect.arrayContaining(['invoke_graceful_interrupt_exceeded']),
+        }),
+      }),
+    );
+    expect(events[4]?.payload).toEqual(
+      expect.objectContaining({
         accumulatedText: 'partial',
         responseText: 'partial',
         invokeLiveness: expect.objectContaining({
@@ -630,6 +857,25 @@ describe('github-copilot-agent-adapter smoke', () => {
         }),
       }),
     );
+    const invokeDetails = (thrownError as RuntimeError).details ?? {};
+    expectInvokeLaunchTruthProjected({
+      details: invokeDetails,
+      expectedEntrypoint: 'copilot',
+      expectedShellWrapped: false,
+      expectedProcessTreePolicy: 'process_group_best_effort',
+    });
+    expectNativeCliExecPreservedFacts('timeout_hard_terminated', {
+      launch_diagnostics_preserved:
+        invokeDetails.selectedEntrypoint === 'copilot' &&
+        invokeDetails.processTreePolicy === 'process_group_best_effort',
+      adapter_launch_truth_projected:
+        invokeDetails.selectedEntrypoint === 'copilot' &&
+        invokeDetails.shellWrapped === false &&
+        invokeDetails.processTreePolicy === 'process_group_best_effort',
+      terminate_phase_preserved:
+        statuses.includes('graceful_interrupting') && statuses.includes('hard_terminating'),
+      partial_output_preserved_when_available: events[4]?.payload.accumulatedText === 'partial',
+    });
   });
 
   it('streams status and completed events', async () => {

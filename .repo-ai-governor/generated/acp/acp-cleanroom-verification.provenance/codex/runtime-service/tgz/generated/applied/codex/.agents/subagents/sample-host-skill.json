@@ -1,0 +1,10 @@
+{
+  "host": "codex",
+  "target": "codex.project_local",
+  "mode": "project-local",
+  "workflowId": "sample-host-skill",
+  "displayName": "Sample Host Skill",
+  "semanticOwnerModule": "runtime.governance-clients",
+  "canonicalSourceRefs": [".codex/skills/sample-host-skill/SKILL.md"],
+  "serviceHostPackageExport": "repo-ai-governor/service-host"
+}

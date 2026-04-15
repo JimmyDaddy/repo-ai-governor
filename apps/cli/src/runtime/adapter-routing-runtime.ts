@@ -29,6 +29,7 @@ import {
   GovernorErrorCode,
   RuntimeError,
 } from '@repo-ai-governor/shared';
+import { CliAcpHostProtocol } from './cli-acp-host-protocol.js';
 
 /**
  * Owns CLI-local adapter surface resolution, protocol construction, and restricted fallback wiring.
@@ -61,6 +62,8 @@ export class CliAdapterRoutingRuntime {
       githubCopilotExecRunner?: GithubCopilotExecRunner;
       resolveCredentialRef?: (selector: string) => Promise<string | null>;
       sharedProtocolCacheNamespace?: string;
+      localizeText?: (english: string, chinese: string) => string;
+      acpHostEvidenceSearchRoot?: string | null;
     } = {},
   ) {}
 
@@ -322,6 +325,16 @@ export class CliAdapterRoutingRuntime {
     },
   ): AgentProtocolContract {
     const transportKind = this.resolveSurfaceTransportKind(surface, toolConfig);
+    if (transportKind === AdapterTransportKind.ACP_EXEC) {
+      return new CliAcpHostProtocol({
+        availabilityStatus: adapterOptions.availabilityStatus,
+        surfaceId: surface,
+        localizeText: this.options.localizeText,
+        unavailableReasons: adapterOptions.unavailableReasons,
+        acpHostEvidenceSearchRoot: this.options.acpHostEvidenceSearchRoot,
+      });
+    }
+
     if (surface === AdapterSurface.CODEX) {
       return new CodexAgentAdapter({
         ...adapterOptions,
@@ -406,6 +419,13 @@ export class CliAdapterRoutingRuntime {
       availabilityStatus: adapterOptions.availabilityStatus,
       unavailableReasons: [...adapterOptions.unavailableReasons].sort(),
       transportKind: this.resolveSurfaceTransportKind(surface, toolConfig),
+      localizationFingerprint: this.options.localizeText
+        ? this.options.localizeText(
+            '__adapter-routing-runtime-en__',
+            '__adapter-routing-runtime-zh__',
+          )
+        : null,
+      acpHostEvidenceSearchRoot: this.options.acpHostEvidenceSearchRoot ?? null,
       remoteApi: toolConfig?.remoteApi ?? null,
       localModel: toolConfig?.localModel ?? null,
     });
@@ -420,6 +440,9 @@ export class CliAdapterRoutingRuntime {
     }
     if (toolConfig?.remoteApi) {
       return AdapterTransportKind.REMOTE_API;
+    }
+    if (toolConfig?.transport === AdapterTransportKind.ACP_EXEC) {
+      return AdapterTransportKind.ACP_EXEC;
     }
     if (surface === AdapterSurface.CODEX || surface === AdapterSurface.GITHUB_COPILOT) {
       return AdapterTransportKind.CLI_EXEC;

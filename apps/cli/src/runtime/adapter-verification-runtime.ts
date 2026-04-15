@@ -15,6 +15,12 @@ import {
   standardizeError,
 } from '@repo-ai-governor/shared';
 import {
+  CLI_ACP_HOST_CLEAN_ROOM_VERIFIED_STATE_SUMMARY,
+  CLI_ACP_HOST_HEALTH_CHECK_FAILURE_DETAIL,
+  CliAcpHostDistributionBoundary,
+  CliAcpHostReadinessStatus,
+} from '../constants/cli-acp-host.constant.js';
+import {
   CLI_ADAPTER_FAILURE_ATTRIBUTION,
   CliAdapterRoleSelectionSource,
   CliGovernanceCheckStatus,
@@ -26,6 +32,7 @@ import type {
   CliAdapterVerificationResolution,
 } from '../types/index.js';
 import type { CliAdapterRoutingRuntime } from './adapter-routing-runtime.js';
+import { CliAcpHostCompanionRuntime } from './cli-acp-host-companion-runtime.js';
 import type { CliLocalModelProbeRuntime } from './local-model-probe-runtime.js';
 import { CliSecretService } from './secrets/cli-secret-service.js';
 
@@ -35,6 +42,7 @@ import { CliSecretService } from './secrets/cli-secret-service.js';
 export class CliAdapterVerificationRuntime {
   private readonly secretService: CliSecretService;
   private readonly environment: NodeJS.ProcessEnv;
+  private readonly acpHostCompanionRuntime = new CliAcpHostCompanionRuntime();
 
   public constructor(
     private readonly adaptersConfig: AdaptersConfig,
@@ -271,12 +279,16 @@ export class CliAdapterVerificationRuntime {
     const unavailableToolIds = toolSnapshots
       .filter((tool) => tool.availabilityStatus === AgentAvailabilityStatus.UNAVAILABLE)
       .map((tool) => tool.toolId);
+    const acpActionBuckets = this.collectAcpHostActionBuckets(toolSnapshots);
+    const genericUnavailableToolIds = unavailableToolIds.filter(
+      (toolId) => !acpActionBuckets.acpToolIds.includes(toolId),
+    );
     const missingCommands = this.collectMissingCommandsFromToolSnapshots(toolSnapshots);
     const failedProbeCommands = this.collectFailedProbeCommandsFromToolSnapshots(toolSnapshots);
     const missingCredentials = this.collectMissingCredentialsFromToolSnapshots(toolSnapshots);
     const failedHealthChecks = this.collectFailedHealthChecksFromToolSnapshots(toolSnapshots);
     if (
-      unavailableToolIds.length > 0 &&
+      genericUnavailableToolIds.length > 0 &&
       missingCommands.length === 0 &&
       failedProbeCommands.length === 0 &&
       missingCredentials.length === 0 &&
@@ -284,7 +296,7 @@ export class CliAdapterVerificationRuntime {
     ) {
       nextActions.push(
         this.translate('cli.adapterVerification.probeUnavailable', {
-          toolIds: unavailableToolIds.join(', '),
+          toolIds: genericUnavailableToolIds.join(', '),
         }),
       );
     }
@@ -356,10 +368,34 @@ export class CliAdapterVerificationRuntime {
         );
       }
     }
-    if (failedHealthChecks.length > 0) {
+    if (acpActionBuckets.runtimeServicePendingToolIds.length > 0) {
+      nextActions.push(
+        this.translate('cli.adapterVerification.enableAcpRuntimeService', {
+          toolIds: acpActionBuckets.runtimeServicePendingToolIds.join(', '),
+        }),
+      );
+    }
+    if (acpActionBuckets.packagedDistributionPendingToolIds.length > 0) {
+      nextActions.push(
+        this.translate('cli.adapterVerification.verifyAcpPackagedDistribution', {
+          toolIds: acpActionBuckets.packagedDistributionPendingToolIds.join(', '),
+        }),
+      );
+    }
+    if (acpActionBuckets.cleanRoomVerifyPendingToolIds.length > 0) {
+      nextActions.push(
+        this.translate('cli.adapterVerification.runAcpCleanRoomVerify', {
+          toolIds: acpActionBuckets.cleanRoomVerifyPendingToolIds.join(', '),
+        }),
+      );
+    }
+    const genericFailedHealthChecks = failedHealthChecks.filter(
+      (detail) => detail !== CLI_ACP_HOST_HEALTH_CHECK_FAILURE_DETAIL,
+    );
+    if (genericFailedHealthChecks.length > 0) {
       nextActions.push(
         this.translate('cli.adapterVerification.investigateHealthChecks', {
-          healthChecks: failedHealthChecks.join(', '),
+          healthChecks: genericFailedHealthChecks.join(', '),
         }),
       );
     }
@@ -391,6 +427,9 @@ export class CliAdapterVerificationRuntime {
     if (fallbackRoleCount > 0 || degradedRoleCount > 0) {
       nextActions.push(this.translate('cli.adapterVerification.reviewRoutingPriorities'));
     }
+    const normalizedNextActions = nextActions.filter(
+      (action, index, list) => action.length > 0 && list.indexOf(action) === index,
+    );
 
     return {
       overallStatus,
@@ -400,9 +439,57 @@ export class CliAdapterVerificationRuntime {
       requiredRoleFailedCount,
       degradedRoleCount,
       fallbackRoleCount,
-      nextActions,
+      nextActions: normalizedNextActions,
       secretBackends,
       credentialReferences,
+    };
+  }
+
+  private collectAcpHostActionBuckets(toolSnapshots: CliAdapterToolProbeSnapshot[]): {
+    acpToolIds: AdapterSurface[];
+    runtimeServicePendingToolIds: AdapterSurface[];
+    packagedDistributionPendingToolIds: AdapterSurface[];
+    cleanRoomVerifyPendingToolIds: AdapterSurface[];
+  } {
+    const acpToolIds: AdapterSurface[] = [];
+    const runtimeServicePendingToolIds: AdapterSurface[] = [];
+    const packagedDistributionPendingToolIds: AdapterSurface[] = [];
+    const cleanRoomVerifyPendingToolIds: AdapterSurface[] = [];
+
+    for (const snapshot of toolSnapshots) {
+      const companion = this.acpHostCompanionRuntime.createCompanionPayload({
+        transportKind: snapshot.healthCheck?.transportKind,
+        healthCheck: snapshot.healthCheck,
+      });
+      if (!companion) {
+        continue;
+      }
+
+      acpToolIds.push(snapshot.toolId);
+      if (companion.hostReadinessStatus !== CliAcpHostReadinessStatus.RUNTIME_SERVICE_READY) {
+        runtimeServicePendingToolIds.push(snapshot.toolId);
+      }
+      if (
+        companion.distributionBoundary !==
+        CliAcpHostDistributionBoundary.PACKAGED_DISTRIBUTION_READY
+      ) {
+        packagedDistributionPendingToolIds.push(snapshot.toolId);
+      }
+      if (
+        companion.hostReadinessStatus === CliAcpHostReadinessStatus.RUNTIME_SERVICE_READY &&
+        companion.distributionBoundary ===
+          CliAcpHostDistributionBoundary.PACKAGED_DISTRIBUTION_READY &&
+        companion.companionStateSummary !== CLI_ACP_HOST_CLEAN_ROOM_VERIFIED_STATE_SUMMARY
+      ) {
+        cleanRoomVerifyPendingToolIds.push(snapshot.toolId);
+      }
+    }
+
+    return {
+      acpToolIds,
+      runtimeServicePendingToolIds,
+      packagedDistributionPendingToolIds,
+      cleanRoomVerifyPendingToolIds,
     };
   }
 

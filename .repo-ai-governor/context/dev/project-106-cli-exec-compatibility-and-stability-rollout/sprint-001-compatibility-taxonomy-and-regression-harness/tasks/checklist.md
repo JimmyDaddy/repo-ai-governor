@@ -1,0 +1,25 @@
+# checklist
+
+- [x] TK-861 establish native cli_exec scenario-class compatibility harness and preserved-facts assertions
+  - 2026-04-14：任务创建，状态初始化为 `planned`。
+  - 2026-04-14：`project-106 / sprint-001` 激活，当前任务切换为 `in_progress`，开始收敛 scenario-class harness 与 preserved-facts assertion entrypoint。
+  - 2026-04-14：新增 shared `test/native-cli-exec-compatibility-harness.ts`，将 scenario class x preserved-facts matrix 固化为可复用断言入口，并补齐 shared runtime 的 `spawn_failed / signal_exit / timeout_soft_terminated / timeout_hard_terminated / abort_soft_terminated / abort_hard_terminated` 覆盖。
+  - 2026-04-14：focused compatibility tests、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 已通过，当前实现面进入 sprint-level `CR-001` 前置状态。
+  - 2026-04-14：`CR-001` 已完成修复并 resolved，`CR-002` clean recheck 无 actionable finding；当前任务边界已满足 sprint-001 closeout 条件并推进为 `completed`。
+- [x] TK-862 align codex claude-code github-copilot smoke plus onboarding routing tests to the compatibility taxonomy
+  - 2026-04-14：任务创建，状态初始化为 `planned`。
+  - 2026-04-14：任务切换为 `in_progress`，开始把 Codex / Claude Code / GitHub Copilot 的 malformed-probe / malformed-invoke preserved-facts 断言接到同一 compatibility harness。
+  - 2026-04-14：新增 onboarding / verification consumer-side preserved-facts checks，并补跑 `adapter-routing-runtime` 与 `connect-phase2` 集成切片，确认 cross-surface baseline 未回退。
+  - 2026-04-14：已补齐 reviewer round 1 接受的 3 个 coverage gaps，并在 `CR-002` clean recheck 后确认当前 cross-surface alignment 无新的 actionable finding；当前任务推进为 `completed`。
+- [x] TK-863 sprint-001 exit acceptance and sprint-002 activation handoff
+  - 2026-04-14：任务创建，状态初始化为 `planned`。
+  - 2026-04-14：`TK-861`、`TK-862` 与 `CR-001`/`CR-002` 已全部进入终态，开始执行 sprint-001 closeout 与 sprint-002 activation handoff。
+  - 2026-04-14：已将 sprint-001 写回 `completed`，激活 sprint-002 为新的 primary execution surface，并把 `stream-project-106-sprint-001` 迁入 completed stream history。
+  - 2026-04-14：`pnpm run check` 已在当前 sprint closeout window 通过，当前 handoff task 正式完成。
+- [x] CR-001 sprint-001-compatibility-taxonomy-and-regression-harness delegated review loop round 1
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 1 返回 3 条 actionable findings；主 agent 逐条复核后全部判定为 `accepted`，当前推进到 `verified` 并进入修复窗口。
+  - 2026-04-14：3 条 accepted findings 已完成修复并重跑 build / focused vitest / package tests，当前 round 收口为 `resolved`，下一步进入 fresh reviewer recheck round。
+- [x] CR-002 sprint-001-compatibility-taxonomy-and-regression-harness delegated recheck loop round 2
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 2 对 post-fix scope 复核后未发现新的 actionable finding；当前 round 直接以 clean recheck 收口为 `resolved`。

@@ -128,6 +128,7 @@
     "check:full": "node ./scripts/ci/run-gate-check.js --profile full",
     "check:package-local:pilot:incremental": "tsc -b tsconfig.package-local-pilot.build.json",
     "check:package-local:pilot": "pnpm turbo run typecheck test build --filter=@repo-ai-governor/core-memory-semantics...",
+    "verify:cli-exec-compatibility": "node ./scripts/ci/run-cli-exec-compatibility-profile.js",
     "ci:quality": "pnpm run typecheck && pnpm run check && pnpm run check:coverage",
     "smoke:automation": "bash ./scripts/ci/run-automation-smoke.sh",
     "release": "release-it",

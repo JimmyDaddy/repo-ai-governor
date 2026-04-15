@@ -1,6 +1,7 @@
 import type { AdaptersConfig, ResolvedWorkspace } from '@repo-ai-governor/config';
 import {
   type AgentDescriptor,
+  type AgentDescriptorAcpHostCompanion,
   AgentProjectionService,
   type AgentSessionProjection,
 } from '@repo-ai-governor/core-agent-projection';
@@ -13,6 +14,10 @@ import {
   AdapterVendorBindingKind,
 } from '@repo-ai-governor/shared';
 import type { CliAdapterVerificationResolution } from '../types/interfaces/index.js';
+import {
+  type CliAcpHostCompanionPayload,
+  CliAcpHostCompanionRuntime,
+} from './cli-acp-host-companion-runtime.js';
 
 /**
  * Adapts core agent projection services into CLI/report-friendly view payloads.
@@ -20,6 +25,7 @@ import type { CliAdapterVerificationResolution } from '../types/interfaces/index
 export class CliAgentProjectionRuntime {
   public constructor(
     private readonly projectionService: AgentProjectionService = new AgentProjectionService(),
+    private readonly acpHostCompanionRuntime: CliAcpHostCompanionRuntime = new CliAcpHostCompanionRuntime(),
   ) {}
 
   public createDescriptorsFromRoleEvaluations(options: {
@@ -36,14 +42,12 @@ export class CliAgentProjectionRuntime {
         if (!role) {
           return null;
         }
+        const referenceSurface = roleEvaluation.selectedSurface ?? roleEvaluation.primarySurface;
         const selectedToolConfig =
-          roleEvaluation.selectedSurface === null
-            ? null
-            : ((options.adaptersConfig.tools ?? []).find(
-                (tool) => tool.toolId === roleEvaluation.selectedSurface,
-              ) ?? null);
+          (options.adaptersConfig.tools ?? []).find((tool) => tool.toolId === referenceSurface) ??
+          null;
         const selectedTransport = this.resolveSelectedTransport(
-          roleEvaluation.selectedSurface,
+          referenceSurface,
           selectedToolConfig,
           roleEvaluation.healthCheck?.transportKind ?? null,
         );
@@ -72,7 +76,7 @@ export class CliAgentProjectionRuntime {
             selectedTransport,
           }),
           selectedVendorBindingKind: this.resolveSelectedVendorBindingKind({
-            selectedSurface: roleEvaluation.selectedSurface,
+            selectedSurface: referenceSurface,
             selectedToolConfig,
             healthCheck: roleEvaluation.healthCheck,
             selectedTransport,
@@ -83,9 +87,13 @@ export class CliAgentProjectionRuntime {
             selectedTransport,
           }),
           capabilitySnapshotSource: this.resolveCapabilitySnapshotSource(
-            roleEvaluation.selectedSurface,
+            referenceSurface,
             selectedToolConfig,
             roleEvaluation.healthCheck?.transportKind ?? null,
+          ),
+          acpHostCompanion: this.resolveAcpHostCompanion(
+            selectedTransport,
+            roleEvaluation.healthCheck,
           ),
         });
       })
@@ -185,6 +193,7 @@ export class CliAgentProjectionRuntime {
     if (
       healthCheckTransportKind === AdapterTransportKind.BASELINE ||
       healthCheckTransportKind === AdapterTransportKind.CLI_EXEC ||
+      healthCheckTransportKind === AdapterTransportKind.ACP_EXEC ||
       healthCheckTransportKind === AdapterTransportKind.REMOTE_API
     ) {
       return healthCheckTransportKind;
@@ -295,6 +304,7 @@ export class CliAgentProjectionRuntime {
     if (
       healthCheckTransportKind === AdapterTransportKind.BASELINE ||
       healthCheckTransportKind === AdapterTransportKind.CLI_EXEC ||
+      healthCheckTransportKind === AdapterTransportKind.ACP_EXEC ||
       healthCheckTransportKind === AdapterTransportKind.REMOTE_API
     ) {
       return AdapterCapabilitySnapshotSource.HEALTH_CHECK;
@@ -302,6 +312,27 @@ export class CliAgentProjectionRuntime {
     if (selectedToolConfig) {
       return AdapterCapabilitySnapshotSource.CONFIG;
     }
-    return AdapterCapabilitySnapshotSource.SURFACE_DEFAULT;
+    return selectedSurface ? AdapterCapabilitySnapshotSource.SURFACE_DEFAULT : null;
+  }
+
+  private resolveAcpHostCompanion(
+    selectedTransport: AdapterTransportKind | null,
+    healthCheck: CliAdapterVerificationResolution['roleEvaluations'][number]['healthCheck'],
+  ): AgentDescriptorAcpHostCompanion | null {
+    const companion = this.acpHostCompanionRuntime.createCompanionPayload({
+      transportKind: selectedTransport,
+      healthCheck,
+    });
+    return companion ? this.toDescriptorAcpHostCompanion(companion) : null;
+  }
+
+  private toDescriptorAcpHostCompanion(
+    companion: CliAcpHostCompanionPayload,
+  ): AgentDescriptorAcpHostCompanion {
+    return {
+      hostReadinessStatus: companion.hostReadinessStatus,
+      distributionBoundary: companion.distributionBoundary,
+      companionStateSummary: companion.companionStateSummary,
+    };
   }
 }

@@ -1,6 +1,6 @@
 # TK-829 isolate a provisional ACP extension seam behind non-canonical internal runtime boundaries
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-13
 - Owner: AI-Agent
 - Priority: P0
@@ -44,3 +44,5 @@
 ## 8. 执行记录
 
 1. 2026-04-13：任务通过 `DA-819` 创建，当前保持 `planned`，等待 sprint-003 激活后执行。
+2. 2026-04-13：随着 `TK-828` 完成，任务状态切换为 `active`；当前围绕 internal-only ACP seam 推进实现与收口，并保持其不进入 adapter-sdk public surface；当前等待 sprint-003 delegated CR。
+3. 2026-04-13：`CR-001` clean 收口后，internal ACP seam 已证明保持在 non-canonical internal boundary 内，本任务收口为 `completed`。

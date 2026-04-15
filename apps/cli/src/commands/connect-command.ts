@@ -253,7 +253,6 @@ export class CliConnectCommand implements CliCommandExecutor {
       candidateArtifacts.mergeExplain,
     );
 
-    const diagnosticSummary = `status=${adapterVerification.overallStatus} required_failures=${adapterVerification.requiredRoleFailedCount} fallback_roles=${adapterVerification.fallbackRoleCount} degraded_roles=${adapterVerification.degradedRoleCount}`;
     const onboardingContract = context.onboardingRuntime.createOnboardingContractPayload({
       commandName: 'connect',
       executionId: connectId,
@@ -267,7 +266,13 @@ export class CliConnectCommand implements CliCommandExecutor {
       overwrite: runtimeDebugOptions.overwrite,
       singleToolAllRoles: runtimeDebugOptions.singleToolAllRoles,
       presetId: runtimeDebugOptions.presetId,
-      diagnosticSummary,
+    });
+    const verificationMatrix = context.onboardingRuntime.createVerifyMatrixPayload({
+      commandName: 'connect',
+      executionId: connectId,
+      verification: adapterVerification,
+      adaptersConfig: effectiveCandidateConfig.adapters ?? context.options.adaptersConfig,
+      nextActions: adapterVerification.nextActions,
     });
     this.emitProgress(context, {
       commandName: CliCommandName.CONNECT,
@@ -328,6 +333,7 @@ export class CliConnectCommand implements CliCommandExecutor {
       candidateDiff: candidateArtifacts.diffSummary,
       mergeExplain: candidateArtifacts.mergeExplain,
       onboardingContract,
+      verificationMatrix,
       agentView,
       verification:
         context.adapterDiagnosticsRuntime.createAdapterVerificationArtifactPayload(

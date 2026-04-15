@@ -17,6 +17,10 @@ import {
   RuntimeError,
 } from '@repo-ai-governor/shared';
 import {
+  CliAcpHostDistributionBoundary,
+  CliAcpHostReadinessStatus,
+} from '../constants/cli-acp-host.constant.js';
+import {
   CLI_AGENT_ONBOARDING_SCHEMA_VERSION,
   CliAgentOnboardingPreset,
 } from '../constants/cli-agent-onboarding.constant.js';
@@ -31,6 +35,8 @@ import type {
   CliConnectToolTransportOverride,
 } from '../types/interfaces/cli-runtime-debug.interface.js';
 import type { CliAdapterVerificationResolution } from '../types/interfaces/index.js';
+import { CliAcpHostCompanionRuntime } from './cli-acp-host-companion-runtime.js';
+import { CliLaunchDiagnosticsProjectionRuntime } from './cli-launch-diagnostics-projection-runtime.js';
 import { CliRemoteApiAuthoringDefaultsService } from './cli-remote-api-authoring-defaults-service.js';
 
 const MINIMAL_ROLE_IDS = new Set(['planner', 'coder', 'reviewer']);
@@ -41,6 +47,8 @@ const CLI_EXEC_DEFAULT_REQUEST_TIMEOUT_MS = 30000;
  */
 export class CliAgentOnboardingRuntime {
   private readonly remoteApiAuthoringDefaultsService = new CliRemoteApiAuthoringDefaultsService();
+  private readonly launchDiagnosticsProjectionRuntime = new CliLaunchDiagnosticsProjectionRuntime();
+  private readonly acpHostCompanionRuntime = new CliAcpHostCompanionRuntime();
 
   public resolveSelectedTools(options: {
     requestedTools: AdapterSurface[];
@@ -119,6 +127,11 @@ export class CliAgentOnboardingRuntime {
     };
   }
 
+  /**
+   * Builds the canonical onboarding payload, including onboarding-owned readiness composition.
+   * @param options Onboarding command context and verification inputs.
+   * @returns Stable onboarding payload for connect/doctor surfaces.
+   */
   public createOnboardingContractPayload(options: {
     commandName: 'connect' | 'doctor';
     executionId: string;
@@ -133,12 +146,19 @@ export class CliAgentOnboardingRuntime {
     singleToolAllRoles: boolean;
     presetId?: CliAgentOnboardingPreset | null;
     repairScope?: 'safe_local' | 'manual_only' | null;
-    diagnosticSummary: string;
+    safeLocalFixCount?: number;
   }) {
     const enabledToolRows = this.createEnabledToolRowsPayload({
       enabledTools: options.enabledTools,
       adaptersConfig: options.adaptersConfig,
       verification: options.verification,
+    });
+    const readinessPayload = this.createReadinessCompositionPayload({
+      commandName: options.commandName,
+      verificationStatus: options.verificationStatus,
+      verification: options.verification,
+      nextActions: options.nextActions,
+      safeLocalFixCount: options.safeLocalFixCount,
     });
     return {
       schema_version: CLI_AGENT_ONBOARDING_SCHEMA_VERSION,
@@ -159,36 +179,56 @@ export class CliAgentOnboardingRuntime {
       overwrite: options.overwrite,
       single_tool_all_roles: options.singleToolAllRoles,
       repair_scope: options.repairScope ?? null,
-      verification_status: options.verificationStatus,
-      diagnostic_summary: options.diagnosticSummary,
-      next_action: options.nextActions[0] ?? null,
-      next_actions: [...options.nextActions],
+      verification_status: readinessPayload.verification_status,
+      diagnostic_summary: readinessPayload.diagnostic_summary,
+      next_action: readinessPayload.next_action,
+      next_actions: readinessPayload.next_actions,
       execution_id: options.executionId,
       workspace_id: options.workspaceId,
     };
   }
 
+  /**
+   * Builds the additive verify matrix companion, including readiness composition derived from
+   * canonical onboarding/probe truth.
+   * @param options Verify-matrix execution context.
+   * @returns Stable verify-matrix payload.
+   */
   public createVerifyMatrixPayload(options: {
+    commandName?: 'connect' | 'doctor' | 'verify';
     executionId: string;
     verification: CliAdapterVerificationResolution;
     adaptersConfig: AdaptersConfig;
+    nextActions?: string[];
+    safeLocalFixCount?: number;
   }) {
     const configuredToolById = new Map(
       (options.adaptersConfig.tools ?? []).map((tool) => [tool.toolId, tool]),
     );
     const verificationToolById = new Map(
-      options.verification.tools.map((tool) => [tool.toolId, tool]),
+      (options.verification.tools ?? []).map((tool) => [tool.toolId, tool]),
     );
     const enabledToolRows = this.createEnabledToolRowsPayload({
       enabledTools: (options.adaptersConfig.tools ?? []).map((tool) => tool.toolId),
       adaptersConfig: options.adaptersConfig,
       verification: options.verification,
     });
+    const readinessPayload = this.createReadinessCompositionPayload({
+      commandName: options.commandName ?? 'verify',
+      verificationStatus: options.verification.overallStatus,
+      verification: options.verification,
+      nextActions: options.nextActions ?? options.verification.nextActions,
+      safeLocalFixCount: options.safeLocalFixCount,
+    });
     return {
       execution_id: options.executionId,
       summary: options.verification.overallStatus,
+      verification_status: readinessPayload.verification_status,
+      diagnostic_summary: readinessPayload.diagnostic_summary,
+      next_action: readinessPayload.next_action,
+      next_actions: readinessPayload.next_actions,
       tool_transport_matrix: this.createToolTransportMatrixPayload(enabledToolRows),
-      tool_matrix: options.verification.roleEvaluations.map((roleEvaluation) => {
+      tool_matrix: (options.verification.roleEvaluations ?? []).map((roleEvaluation) => {
         const resolvedSurface = roleEvaluation.selectedSurface ?? roleEvaluation.primarySurface;
         const verificationTool = verificationToolById.get(resolvedSurface);
         const toolHealthCheck = verificationTool?.healthCheck ?? roleEvaluation.healthCheck;
@@ -196,6 +236,20 @@ export class CliAgentOnboardingRuntime {
           verificationTool?.unavailableReasons ?? roleEvaluation.unavailableReasons;
         const toolFailureAttributions =
           verificationTool?.failureAttributions ?? roleEvaluation.failureAttributions;
+        const resolvedTransportKind = this.resolveToolTransportKind(
+          resolvedSurface,
+          configuredToolById.get(resolvedSurface),
+          toolHealthCheck?.transportKind,
+        );
+        const launchDiagnostics =
+          this.launchDiagnosticsProjectionRuntime.createLaunchDiagnosticsPayload({
+            transportKind: resolvedTransportKind,
+            healthCheck: toolHealthCheck,
+          });
+        const acpHostCompanion = this.acpHostCompanionRuntime.createCompanionPayload({
+          transportKind: resolvedTransportKind,
+          healthCheck: toolHealthCheck,
+        });
 
         return {
           tool: resolvedSurface,
@@ -207,15 +261,15 @@ export class CliAgentOnboardingRuntime {
             null,
           binding_status: roleEvaluation.status,
           capability_support:
-            roleEvaluation.unsupportedCapabilities.length > 0
+            (roleEvaluation.unsupportedCapabilities ?? []).length > 0
               ? 'unsupported'
-              : roleEvaluation.degradedCapabilities.length > 0
+              : (roleEvaluation.degradedCapabilities ?? []).length > 0
                 ? 'degraded'
                 : 'supported',
           selected_by: roleEvaluation.selectedBy,
-          binding_unavailable_reasons: [...roleEvaluation.unavailableReasons],
-          binding_failure_attributions: [...roleEvaluation.failureAttributions],
-          capability_gap: [...roleEvaluation.unsupportedCapabilities],
+          binding_unavailable_reasons: [...(roleEvaluation.unavailableReasons ?? [])],
+          binding_failure_attributions: [...(roleEvaluation.failureAttributions ?? [])],
+          capability_gap: [...(roleEvaluation.unsupportedCapabilities ?? [])],
           route_coverage: [
             roleEvaluation.primarySurface,
             ...(options.adaptersConfig.routing.roleBindings[roleEvaluation.roleId]
@@ -229,26 +283,90 @@ export class CliAgentOnboardingRuntime {
             failureAttributions: toolFailureAttributions,
           }),
           next_action: options.verification.nextActions[0] ?? null,
+          ...(acpHostCompanion ? { acp_host_companion: acpHostCompanion } : {}),
+          ...(launchDiagnostics ? { launch_diagnostics: launchDiagnostics } : {}),
         };
       }),
-      role_binding_matrix: options.verification.roleEvaluations.map((roleEvaluation) => ({
-        role_profile_id: roleEvaluation.roleProfileId,
-        primary_tool: roleEvaluation.primarySurface,
-        fallback_tools: [
-          ...(options.adaptersConfig.routing.roleBindings[roleEvaluation.roleId]
-            ?.fallbackSurfaces ?? []),
-        ],
-        binding_status: roleEvaluation.status,
-        invoke_liveness_diagnostics: this.createInvokeLivenessDiagnosticsPayload({
-          toolId: roleEvaluation.selectedSurface ?? roleEvaluation.primarySurface,
-          configuredTool: configuredToolById.get(
-            roleEvaluation.selectedSurface ?? roleEvaluation.primarySurface,
+      role_binding_matrix: (options.verification.roleEvaluations ?? []).map((roleEvaluation) => {
+        const resolvedSurface = roleEvaluation.selectedSurface ?? roleEvaluation.primarySurface;
+        const roleToolHealthCheck =
+          verificationToolById.get(resolvedSurface)?.healthCheck ?? roleEvaluation.healthCheck;
+        const launchDiagnostics =
+          this.launchDiagnosticsProjectionRuntime.createLaunchDiagnosticsPayload({
+            transportKind: this.resolveToolTransportKind(
+              resolvedSurface,
+              configuredToolById.get(resolvedSurface),
+              roleToolHealthCheck?.transportKind,
+            ),
+            healthCheck: roleToolHealthCheck,
+          });
+        const acpHostCompanion = this.acpHostCompanionRuntime.createCompanionPayload({
+          transportKind: this.resolveToolTransportKind(
+            resolvedSurface,
+            configuredToolById.get(resolvedSurface),
+            roleToolHealthCheck?.transportKind,
           ),
-          healthCheck: roleEvaluation.healthCheck,
-          unavailableReasons: roleEvaluation.unavailableReasons,
-          failureAttributions: roleEvaluation.failureAttributions,
-        }),
-      })),
+          healthCheck: roleToolHealthCheck,
+        });
+
+        return {
+          role_profile_id: roleEvaluation.roleProfileId,
+          primary_tool: roleEvaluation.primarySurface,
+          fallback_tools: [
+            ...(options.adaptersConfig.routing.roleBindings[roleEvaluation.roleId]
+              ?.fallbackSurfaces ?? []),
+          ],
+          binding_status: roleEvaluation.status,
+          invoke_liveness_diagnostics: this.createInvokeLivenessDiagnosticsPayload({
+            toolId: resolvedSurface,
+            configuredTool: configuredToolById.get(resolvedSurface),
+            healthCheck: roleEvaluation.healthCheck,
+            unavailableReasons: roleEvaluation.unavailableReasons,
+            failureAttributions: roleEvaluation.failureAttributions,
+          }),
+          ...(acpHostCompanion ? { acp_host_companion: acpHostCompanion } : {}),
+          ...(launchDiagnostics ? { launch_diagnostics: launchDiagnostics } : {}),
+        };
+      }),
+    };
+  }
+
+  private createReadinessCompositionPayload(options: {
+    commandName: 'connect' | 'doctor' | 'verify';
+    verificationStatus: CliGovernanceCheckStatus;
+    verification?: CliAdapterVerificationResolution;
+    nextActions: string[];
+    safeLocalFixCount?: number;
+  }): {
+    verification_status: CliGovernanceCheckStatus;
+    diagnostic_summary: string;
+    next_action: string | null;
+    next_actions: string[];
+  } {
+    const diagnosticSummarySegments = [`status=${options.verificationStatus}`];
+    if (options.verification) {
+      diagnosticSummarySegments.push(
+        `required_failures=${options.verification.requiredRoleFailedCount}`,
+        `fallback_roles=${options.verification.fallbackRoleCount}`,
+        `degraded_roles=${options.verification.degradedRoleCount}`,
+      );
+      const acpRolloutSummary = this.createAcpRolloutSummary(options.verification);
+      if (acpRolloutSummary) {
+        diagnosticSummarySegments.push(
+          `acp_runtime_ready=${acpRolloutSummary.runtimeServiceReadyCount}/${acpRolloutSummary.trackedToolCount}`,
+          `acp_distribution_ready=${acpRolloutSummary.distributionReadyCount}/${acpRolloutSummary.trackedToolCount}`,
+        );
+      }
+    }
+    if (options.commandName === 'doctor' && options.safeLocalFixCount !== undefined) {
+      diagnosticSummarySegments.push(`safe_local_fix=${options.safeLocalFixCount}`);
+    }
+
+    return {
+      verification_status: options.verificationStatus,
+      diagnostic_summary: diagnosticSummarySegments.join(' '),
+      next_action: options.nextActions[0] ?? null,
+      next_actions: [...options.nextActions],
     };
   }
 
@@ -273,6 +391,15 @@ export class CliAgentOnboardingRuntime {
         configuredTool,
         verificationTool?.healthCheck?.transportKind,
       );
+      const launchDiagnostics =
+        this.launchDiagnosticsProjectionRuntime.createLaunchDiagnosticsPayload({
+          transportKind: resolvedTransportKind,
+          healthCheck: verificationTool?.healthCheck,
+        });
+      const acpHostCompanion = this.acpHostCompanionRuntime.createCompanionPayload({
+        transportKind: resolvedTransportKind,
+        healthCheck: verificationTool?.healthCheck,
+      });
       return {
         tool_id: toolId,
         enabled: configuredTool?.enabled ?? true,
@@ -333,6 +460,8 @@ export class CliAgentOnboardingRuntime {
           unavailableReasons: verificationTool?.unavailableReasons,
           failureAttributions: verificationTool?.failureAttributions,
         }),
+        ...(acpHostCompanion ? { acp_host_companion: acpHostCompanion } : {}),
+        ...(launchDiagnostics ? { launch_diagnostics: launchDiagnostics } : {}),
       };
     });
   }
@@ -358,7 +487,40 @@ export class CliAgentOnboardingRuntime {
       remote_api_candidate: row.configured_remote_api,
       probe_truth: row.probe_truth,
       invoke_liveness_diagnostics: row.invoke_liveness_diagnostics,
+      ...(row.acp_host_companion ? { acp_host_companion: row.acp_host_companion } : {}),
+      ...(row.launch_diagnostics ? { launch_diagnostics: row.launch_diagnostics } : {}),
     }));
+  }
+
+  private createAcpRolloutSummary(verification: CliAdapterVerificationResolution): {
+    trackedToolCount: number;
+    runtimeServiceReadyCount: number;
+    distributionReadyCount: number;
+  } | null {
+    const companions = verification.tools
+      .map((tool) =>
+        this.acpHostCompanionRuntime.createCompanionPayload({
+          transportKind: tool.healthCheck?.transportKind,
+          healthCheck: tool.healthCheck,
+        }),
+      )
+      .filter((companion): companion is NonNullable<typeof companion> => companion !== null);
+    if (companions.length === 0) {
+      return null;
+    }
+
+    return {
+      trackedToolCount: companions.length,
+      runtimeServiceReadyCount: companions.filter(
+        (companion) =>
+          companion.hostReadinessStatus === CliAcpHostReadinessStatus.RUNTIME_SERVICE_READY,
+      ).length,
+      distributionReadyCount: companions.filter(
+        (companion) =>
+          companion.distributionBoundary ===
+          CliAcpHostDistributionBoundary.PACKAGED_DISTRIBUTION_READY,
+      ).length,
+    };
   }
 
   private createInvokeLivenessDiagnosticsPayload(options: {
@@ -441,6 +603,7 @@ export class CliAgentOnboardingRuntime {
     if (
       healthCheckTransportKind === AdapterTransportKind.BASELINE ||
       healthCheckTransportKind === AdapterTransportKind.CLI_EXEC ||
+      healthCheckTransportKind === AdapterTransportKind.ACP_EXEC ||
       healthCheckTransportKind === AdapterTransportKind.REMOTE_API
     ) {
       return healthCheckTransportKind;
@@ -526,7 +689,7 @@ export class CliAgentOnboardingRuntime {
     if (options.healthCheck?.providerKind) {
       return options.healthCheck.providerKind;
     }
-    if (options.resolvedTransportKind === AdapterTransportKind.REMOTE_API) {
+    if (this.shouldExposeConfiguredRemoteApiSelection(options.resolvedTransportKind)) {
       return options.configuredTool?.remoteApi?.provider ?? null;
     }
     return null;
@@ -541,7 +704,7 @@ export class CliAgentOnboardingRuntime {
     if (options.healthCheck?.vendorBindingKind) {
       return options.healthCheck.vendorBindingKind;
     }
-    if (options.resolvedTransportKind !== AdapterTransportKind.REMOTE_API) {
+    if (!this.shouldExposeConfiguredRemoteApiSelection(options.resolvedTransportKind)) {
       return null;
     }
     return this.resolveConfiguredVendorBindingKind(
@@ -559,13 +722,22 @@ export class CliAgentOnboardingRuntime {
     if (options.healthCheck?.model) {
       return options.healthCheck.model;
     }
-    if (options.resolvedTransportKind === AdapterTransportKind.REMOTE_API) {
+    if (this.shouldExposeConfiguredRemoteApiSelection(options.resolvedTransportKind)) {
       return options.configuredTool?.remoteApi?.model ?? null;
     }
     if (options.resolvedTransportKind === AdapterTransportKind.BASELINE) {
       return options.configuredTool?.localModel?.model ?? null;
     }
     return null;
+  }
+
+  private shouldExposeConfiguredRemoteApiSelection(
+    resolvedTransportKind: AdapterTransportKind | null,
+  ): boolean {
+    return (
+      resolvedTransportKind === AdapterTransportKind.REMOTE_API ||
+      resolvedTransportKind === AdapterTransportKind.ACP_EXEC
+    );
   }
 
   private resolveSelectedCredentialMode(options: {
@@ -576,7 +748,7 @@ export class CliAgentOnboardingRuntime {
     if (options.healthCheck?.credentialSource) {
       return options.healthCheck.credentialSource;
     }
-    if (options.resolvedTransportKind !== AdapterTransportKind.REMOTE_API) {
+    if (!this.shouldExposeConfiguredRemoteApiSelection(options.resolvedTransportKind)) {
       return null;
     }
     return this.resolveConfiguredCredentialMode(options.configuredTool);
@@ -590,7 +762,7 @@ export class CliAgentOnboardingRuntime {
     if (options.healthCheck?.endpointSource) {
       return options.healthCheck.endpointSource;
     }
-    if (options.resolvedTransportKind !== AdapterTransportKind.REMOTE_API) {
+    if (!this.shouldExposeConfiguredRemoteApiSelection(options.resolvedTransportKind)) {
       return null;
     }
     return this.resolveConfiguredEndpointSource(options.configuredTool);

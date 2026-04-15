@@ -1,3 +1,4 @@
+import { PUBLIC_SERVICE_HOST_PACKAGE_EXPORT } from '@repo-ai-governor/shared';
 import {
   HostDistributionHandoffBridge,
   StructuredWorkflowAssetRegistry,
@@ -5,6 +6,15 @@ import {
 import { ClaudeCodeHostRenderer } from '../src/claude-code-host-renderer.js';
 
 describe('ClaudeCodeHostRenderer', () => {
+  function readProjectedJson(
+    projectedFiles: Array<{ relativePath: string; content: string }>,
+    relativePath: string,
+  ): Record<string, unknown> {
+    const file = projectedFiles.find((entry) => entry.relativePath === relativePath);
+    expect(file).toBeDefined();
+    return JSON.parse(file?.content ?? '{}') as Record<string, unknown>;
+  }
+
   function createRegistry(target: 'claude_code.project_local' | 'claude_code.plugin') {
     return new StructuredWorkflowAssetRegistry({
       records: [
@@ -75,6 +85,15 @@ describe('ClaudeCodeHostRenderer', () => {
       ),
     ).toBe(true);
     expect(result.projectedFiles.some((file) => file.relativePath === '.mcp.json')).toBe(true);
+    expect(readProjectedJson(result.projectedFiles, '.mcp.json')).toEqual(
+      expect.objectContaining({
+        mcpServers: expect.objectContaining({
+          'repo-ai-governor': expect.objectContaining({
+            packageExport: PUBLIC_SERVICE_HOST_PACKAGE_EXPORT,
+          }),
+        }),
+      }),
+    );
   });
 
   it('renders a plugin bundle with plugin manifest, skills, agents, and hooks', () => {
@@ -109,5 +128,19 @@ describe('ClaudeCodeHostRenderer', () => {
       true,
     );
     expect(result.projectedFiles.some((file) => file.relativePath === '.mcp.json')).toBe(true);
+    expect(readProjectedJson(result.projectedFiles, '.claude-plugin/plugin.json')).toEqual(
+      expect.objectContaining({
+        serviceHostPackageExport: PUBLIC_SERVICE_HOST_PACKAGE_EXPORT,
+      }),
+    );
+    expect(readProjectedJson(result.projectedFiles, '.mcp.json')).toEqual(
+      expect.objectContaining({
+        mcpServers: expect.objectContaining({
+          'repo-ai-governor': expect.objectContaining({
+            packageExport: PUBLIC_SERVICE_HOST_PACKAGE_EXPORT,
+          }),
+        }),
+      }),
+    );
   });
 });

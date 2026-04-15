@@ -1429,6 +1429,107 @@ describe('Cli session-main supervisor runtime', () => {
     );
   });
 
+  it('clears stale continuation state when acp_exec is rejected during direct-answer preflight', async () => {
+    const laneKey = 'session.main::stage-session-main-answer::session.main::codex::chat_only';
+    const providerContinuationState: SessionProviderContinuationSessionState = {
+      version: 1,
+      slots: {
+        [laneKey]: {
+          laneKey,
+          routeId: 'session.main',
+          stageId: 'stage-session-main-answer',
+          roleId: null,
+          selectedSurface: AdapterSurface.CODEX,
+          providerId: AdapterProviderKind.OPENAI,
+          transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+          model: 'gpt-5',
+          policyEnvelope: SessionMainProviderContinuationPolicyEnvelope.CHAT_ONLY,
+          workspaceRoot: '/workspace/repo/.repo-ai-governor',
+          currentWorkingDirectory: '/workspace/repo',
+          handle: {
+            providerId: AdapterProviderKind.OPENAI,
+            surface: AdapterSurface.CODEX,
+            transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+            handleKind: AgentStageContinuationHandleKind.RESPONSE_ID,
+            value: 'resp-existing',
+            model: 'gpt-5',
+            acquiredAt: '2026-04-04T12:00:00.000Z',
+          },
+          updatedAt: '2026-04-04T12:00:00.000Z',
+        },
+      },
+    };
+    const continuationAdaptersConfig: AdaptersConfig = {
+      ...adaptersConfig,
+      tools:
+        adaptersConfig.tools?.map((tool) =>
+          tool.toolId === AdapterSurface.CODEX
+            ? {
+                ...tool,
+                transport: AdapterTransportKind.ACP_EXEC,
+              }
+            : tool,
+        ) ?? [],
+    };
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      continuationAdaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createUnavailableProtocol(AdapterSurface.CODEX),
+      [AdapterSurface.CLAUDE_CODE]: createUnavailableProtocol(AdapterSurface.CLAUDE_CODE),
+      [AdapterSurface.OLLAMA]: createUnavailableProtocol(AdapterSurface.OLLAMA),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'en-US',
+      adaptersConfig: continuationAdaptersConfig,
+      adapterRoutingRuntime,
+    });
+    const outcome = await runtime.resolveTurn({
+      sessionId: 'session-continuation-acp-preflight-001',
+      routeId: 'session.main',
+      turnId: 'turn-continuation-acp-preflight-001',
+      turnIndex: 4,
+      userMessage: 'follow up using the configured codex surface',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+      providerContinuationState,
+    });
+
+    expect(outcome.selectedBy).toBe('session.main.answer.guard');
+    expect(outcome.providerContinuationMutations).toEqual([
+      expect.objectContaining({
+        laneKey,
+        summary: expect.objectContaining({
+          status: AgentStageContinuationStatus.UNSUPPORTED,
+          invalidationReason: 'transport_not_continuation_capable',
+          providerId: AdapterProviderKind.OPENAI,
+          transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+          model: 'gpt-5',
+        }),
+      }),
+    ]);
+    expect(outcome.providerContinuationMutations?.[0]?.slot).toBeUndefined();
+    expect(outcome.providerContinuationSummaries).toEqual([
+      expect.objectContaining({
+        laneKey,
+        laneLabel: 'session.main',
+        status: AgentStageContinuationStatus.UNSUPPORTED,
+        surface: AdapterSurface.CODEX,
+        providerId: AdapterProviderKind.OPENAI,
+        transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+        model: 'gpt-5',
+        invalidationReason: 'transport_not_continuation_capable',
+      }),
+    ]);
+  });
+
   it('publishes mapped direct-answer stream events while preserving empty invoked-role truth', async () => {
     const publishedStreamEvents: Array<Record<string, unknown>> = [];
     const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
@@ -1936,6 +2037,36 @@ describe('Cli session-main supervisor runtime', () => {
   });
 
   it('delegates explicit @planner turns through a single-role safe fallback path', async () => {
+    const plannerLaneKey =
+      'session.main::stage-session-main-role-planner::planner::codex::mutation_capable';
+    const providerContinuationState: SessionProviderContinuationSessionState = {
+      version: 1,
+      slots: {
+        [plannerLaneKey]: {
+          laneKey: plannerLaneKey,
+          routeId: 'session.main',
+          stageId: 'stage-session-main-role-planner',
+          roleId: 'planner',
+          selectedSurface: AdapterSurface.CODEX,
+          providerId: AdapterProviderKind.OPENAI,
+          transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+          model: 'gpt-5',
+          policyEnvelope: SessionMainProviderContinuationPolicyEnvelope.MUTATION_CAPABLE,
+          workspaceRoot: '/workspace/repo/.repo-ai-governor',
+          currentWorkingDirectory: '/workspace/repo',
+          handle: {
+            providerId: AdapterProviderKind.OPENAI,
+            surface: AdapterSurface.CODEX,
+            transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+            handleKind: AgentStageContinuationHandleKind.RESPONSE_ID,
+            value: 'planner-resp-existing',
+            model: 'gpt-5',
+            acquiredAt: '2026-04-04T12:00:00.000Z',
+          },
+          updatedAt: '2026-04-04T12:00:00.000Z',
+        },
+      },
+    };
     const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
       adaptersConfig,
     ) as CliAdapterRoutingRuntime & {
@@ -1976,6 +2107,7 @@ describe('Cli session-main supervisor runtime', () => {
       selectedSurface: AdapterSurface.CODEX,
       selectedBy: 'session.main.default',
       sessionRoutingPreferenceApplied: false,
+      providerContinuationState,
     });
 
     expect(outcome.responseMode).toBe('role_collaboration');
@@ -1996,6 +2128,138 @@ describe('Cli session-main supervisor runtime', () => {
       }),
     ]);
     expect(outcome.subagentCount).toBe(1);
+    expect(outcome.providerContinuationMutations).toEqual([
+      expect.objectContaining({
+        laneKey: plannerLaneKey,
+        summary: expect.objectContaining({
+          status: AgentStageContinuationStatus.CLEARED,
+          invalidationReason: 'provider_changed',
+          providerId: AdapterSurface.CODEX,
+          transportKind: AgentStageContinuationTransportKind.CLI_EXEC,
+          model: null,
+        }),
+      }),
+    ]);
+  });
+
+  it('clears stale planner continuation state when acp_exec falls back to a no-tool single-role surface', async () => {
+    const plannerLaneKey =
+      'session.main::stage-session-main-role-planner::planner::codex::mutation_capable';
+    const providerContinuationState: SessionProviderContinuationSessionState = {
+      version: 1,
+      slots: {
+        [plannerLaneKey]: {
+          laneKey: plannerLaneKey,
+          routeId: 'session.main',
+          stageId: 'stage-session-main-role-planner',
+          roleId: 'planner',
+          selectedSurface: AdapterSurface.CODEX,
+          providerId: AdapterProviderKind.OPENAI,
+          transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+          model: 'gpt-5',
+          policyEnvelope: SessionMainProviderContinuationPolicyEnvelope.MUTATION_CAPABLE,
+          workspaceRoot: '/workspace/repo/.repo-ai-governor',
+          currentWorkingDirectory: '/workspace/repo',
+          handle: {
+            providerId: AdapterProviderKind.OPENAI,
+            surface: AdapterSurface.CODEX,
+            transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+            handleKind: AgentStageContinuationHandleKind.RESPONSE_ID,
+            value: 'planner-acp-fallback-existing',
+            model: 'gpt-5',
+            acquiredAt: '2026-04-04T12:00:00.000Z',
+          },
+          updatedAt: '2026-04-04T12:00:00.000Z',
+        },
+      },
+    };
+    const acpRoleDelegateAdaptersConfig: AdaptersConfig = {
+      ...adaptersConfig,
+      tools:
+        adaptersConfig.tools?.map((tool) =>
+          tool.toolId === AdapterSurface.CODEX
+            ? {
+                ...tool,
+                transport: AdapterTransportKind.ACP_EXEC,
+                remoteApi: {
+                  provider: AdapterProviderKind.OPENAI,
+                  vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+                  model: 'gpt-5',
+                },
+              }
+            : tool,
+        ) ?? [],
+    };
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      acpRoleDelegateAdaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createAvailableProtocol(
+        AdapterSurface.CODEX,
+        'unsafe planner answer',
+      ),
+      [AdapterSurface.CLAUDE_CODE]: createAvailableProtocol(
+        AdapterSurface.CLAUDE_CODE,
+        'unsafe fallback answer',
+      ),
+      [AdapterSurface.OLLAMA]: createAvailableProtocol(
+        AdapterSurface.OLLAMA,
+        '## Planner perspective\n\n- break work into two checkpoints',
+        {
+          toolCallingSupportLevel: AgentCapabilitySupportLevel.UNSUPPORTED,
+        },
+      ),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'en-US',
+      adaptersConfig: acpRoleDelegateAdaptersConfig,
+      adapterRoutingRuntime,
+    });
+    const outcome = await runtime.resolveTurn({
+      sessionId: 'session-planner-acp-fallback-001',
+      routeId: 'session.main',
+      turnId: 'turn-planner-acp-fallback-001',
+      turnIndex: 5,
+      userMessage: '@planner help me break this delivery into milestones',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+      providerContinuationState,
+    });
+
+    expect(outcome.selectedSurface).toBe(AdapterSurface.OLLAMA);
+    expect(outcome.selectedBy).toBe('session.main.role_delegate.safe_fallback');
+    expect(outcome.providerContinuationMutations).toEqual([
+      expect.objectContaining({
+        laneKey: plannerLaneKey,
+        summary: expect.objectContaining({
+          status: AgentStageContinuationStatus.UNSUPPORTED,
+          invalidationReason: 'transport_not_continuation_capable',
+          providerId: AdapterProviderKind.OPENAI,
+          transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+          model: 'gpt-5',
+        }),
+      }),
+    ]);
+    expect(outcome.providerContinuationMutations?.[0]?.slot).toBeUndefined();
+    expect(outcome.providerContinuationSummaries).toEqual([
+      expect.objectContaining({
+        laneKey: plannerLaneKey,
+        laneLabel: 'planner',
+        status: AgentStageContinuationStatus.UNSUPPORTED,
+        surface: AdapterSurface.CODEX,
+        providerId: AdapterProviderKind.OPENAI,
+        transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+        model: 'gpt-5',
+        invalidationReason: 'transport_not_continuation_capable',
+      }),
+    ]);
   });
 
   it('delegates explicit @reviewer turns through one governed single-role path instead of collapsing into /review', async () => {
@@ -2058,6 +2322,61 @@ describe('Cli session-main supervisor runtime', () => {
   });
 
   it('routes explicit @planner @reviewer turns through one serial collaboration path', async () => {
+    const plannerLaneKey =
+      'session.main::stage-session-main-role-planner::planner::codex::mutation_capable';
+    const reviewerLaneKey =
+      'session.main::stage-session-main-role-reviewer::reviewer::codex::read_only';
+    const providerContinuationState: SessionProviderContinuationSessionState = {
+      version: 1,
+      slots: {
+        [plannerLaneKey]: {
+          laneKey: plannerLaneKey,
+          routeId: 'session.main',
+          stageId: 'stage-session-main-role-planner',
+          roleId: 'planner',
+          selectedSurface: AdapterSurface.CODEX,
+          providerId: AdapterProviderKind.OPENAI,
+          transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+          model: 'gpt-5',
+          policyEnvelope: SessionMainProviderContinuationPolicyEnvelope.MUTATION_CAPABLE,
+          workspaceRoot: '/workspace/repo/.repo-ai-governor',
+          currentWorkingDirectory: '/workspace/repo',
+          handle: {
+            providerId: AdapterProviderKind.OPENAI,
+            surface: AdapterSurface.CODEX,
+            transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+            handleKind: AgentStageContinuationHandleKind.RESPONSE_ID,
+            value: 'planner-resp-existing',
+            model: 'gpt-5',
+            acquiredAt: '2026-04-04T12:00:00.000Z',
+          },
+          updatedAt: '2026-04-04T12:00:00.000Z',
+        },
+        [reviewerLaneKey]: {
+          laneKey: reviewerLaneKey,
+          routeId: 'session.main',
+          stageId: 'stage-session-main-role-reviewer',
+          roleId: 'reviewer',
+          selectedSurface: AdapterSurface.CODEX,
+          providerId: AdapterProviderKind.OPENAI,
+          transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+          model: 'gpt-5',
+          policyEnvelope: SessionMainProviderContinuationPolicyEnvelope.READ_ONLY,
+          workspaceRoot: '/workspace/repo/.repo-ai-governor',
+          currentWorkingDirectory: '/workspace/repo',
+          handle: {
+            providerId: AdapterProviderKind.OPENAI,
+            surface: AdapterSurface.CODEX,
+            transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+            handleKind: AgentStageContinuationHandleKind.RESPONSE_ID,
+            value: 'reviewer-resp-existing',
+            model: 'gpt-5',
+            acquiredAt: '2026-04-04T12:00:00.000Z',
+          },
+          updatedAt: '2026-04-04T12:00:00.000Z',
+        },
+      },
+    };
     const serialInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
       if (request.stageId === 'stage-session-main-role-planner') {
         return {
@@ -2126,6 +2445,7 @@ describe('Cli session-main supervisor runtime', () => {
       selectedSurface: AdapterSurface.CODEX,
       selectedBy: 'session.main.default',
       sessionRoutingPreferenceApplied: false,
+      providerContinuationState,
     });
 
     expect(serialInvokeStage).toHaveBeenCalledTimes(2);
@@ -2158,6 +2478,205 @@ describe('Cli session-main supervisor runtime', () => {
       }),
     ]);
     expect(outcome.subagentCount).toBe(2);
+    expect(outcome.providerContinuationMutations).toEqual([
+      expect.objectContaining({
+        laneKey: plannerLaneKey,
+        summary: expect.objectContaining({
+          status: AgentStageContinuationStatus.CLEARED,
+          invalidationReason: 'provider_changed',
+          providerId: AdapterSurface.CODEX,
+          transportKind: AgentStageContinuationTransportKind.CLI_EXEC,
+          model: null,
+        }),
+      }),
+      expect.objectContaining({
+        laneKey: reviewerLaneKey,
+        summary: expect.objectContaining({
+          status: AgentStageContinuationStatus.CLEARED,
+          invalidationReason: 'provider_changed',
+          providerId: AdapterSurface.CODEX,
+          transportKind: AgentStageContinuationTransportKind.CLI_EXEC,
+          model: null,
+        }),
+      }),
+    ]);
+  });
+
+  it('clears stale planner/reviewer continuation state when acp_exec falls back during serial collaboration', async () => {
+    const plannerLaneKey =
+      'session.main::stage-session-main-role-planner::planner::codex::mutation_capable';
+    const reviewerLaneKey =
+      'session.main::stage-session-main-role-reviewer::reviewer::codex::read_only';
+    const providerContinuationState: SessionProviderContinuationSessionState = {
+      version: 1,
+      slots: {
+        [plannerLaneKey]: {
+          laneKey: plannerLaneKey,
+          routeId: 'session.main',
+          stageId: 'stage-session-main-role-planner',
+          roleId: 'planner',
+          selectedSurface: AdapterSurface.CODEX,
+          providerId: AdapterProviderKind.OPENAI,
+          transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+          model: 'gpt-5',
+          policyEnvelope: SessionMainProviderContinuationPolicyEnvelope.MUTATION_CAPABLE,
+          workspaceRoot: '/workspace/repo/.repo-ai-governor',
+          currentWorkingDirectory: '/workspace/repo',
+          handle: {
+            providerId: AdapterProviderKind.OPENAI,
+            surface: AdapterSurface.CODEX,
+            transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+            handleKind: AgentStageContinuationHandleKind.RESPONSE_ID,
+            value: 'planner-acp-serial-existing',
+            model: 'gpt-5',
+            acquiredAt: '2026-04-04T12:00:00.000Z',
+          },
+          updatedAt: '2026-04-04T12:00:00.000Z',
+        },
+        [reviewerLaneKey]: {
+          laneKey: reviewerLaneKey,
+          routeId: 'session.main',
+          stageId: 'stage-session-main-role-reviewer',
+          roleId: 'reviewer',
+          selectedSurface: AdapterSurface.CODEX,
+          providerId: AdapterProviderKind.OPENAI,
+          transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+          model: 'gpt-5',
+          policyEnvelope: SessionMainProviderContinuationPolicyEnvelope.READ_ONLY,
+          workspaceRoot: '/workspace/repo/.repo-ai-governor',
+          currentWorkingDirectory: '/workspace/repo',
+          handle: {
+            providerId: AdapterProviderKind.OPENAI,
+            surface: AdapterSurface.CODEX,
+            transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+            handleKind: AgentStageContinuationHandleKind.RESPONSE_ID,
+            value: 'reviewer-acp-serial-existing',
+            model: 'gpt-5',
+            acquiredAt: '2026-04-04T12:00:00.000Z',
+          },
+          updatedAt: '2026-04-04T12:00:00.000Z',
+        },
+      },
+    };
+    const acpRoleDelegateAdaptersConfig: AdaptersConfig = {
+      ...adaptersConfig,
+      tools:
+        adaptersConfig.tools?.map((tool) =>
+          tool.toolId === AdapterSurface.CODEX
+            ? {
+                ...tool,
+                transport: AdapterTransportKind.ACP_EXEC,
+                remoteApi: {
+                  provider: AdapterProviderKind.OPENAI,
+                  vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+                  model: 'gpt-5',
+                },
+              }
+            : tool,
+        ) ?? [],
+    };
+    const serialInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+      if (request.stageId === 'stage-session-main-role-planner') {
+        return {
+          output: {
+            responseText: '## Planner perspective\n\n- milestone 1\n- milestone 2',
+          },
+          elapsedMs: 1,
+        };
+      }
+
+      return {
+        output: {
+          responseText: '## Reviewer perspective\n\n- sequencing looks safe',
+        },
+        elapsedMs: 1,
+      };
+    });
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      acpRoleDelegateAdaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createAvailableProtocol(
+        AdapterSurface.CODEX,
+        'unsafe collaborative answer',
+      ),
+      [AdapterSurface.CLAUDE_CODE]: createAvailableProtocol(
+        AdapterSurface.CLAUDE_CODE,
+        'unsafe fallback answer',
+      ),
+      [AdapterSurface.OLLAMA]: createAvailableProtocol(AdapterSurface.OLLAMA, 'unused', {
+        invokeStageSpy: serialInvokeStage,
+        toolCallingSupportLevel: AgentCapabilitySupportLevel.UNSUPPORTED,
+      }),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'en-US',
+      adaptersConfig: acpRoleDelegateAdaptersConfig,
+      adapterRoutingRuntime,
+    });
+    const outcome = await runtime.resolveTurn({
+      sessionId: 'session-serial-acp-fallback-001',
+      routeId: 'session.main',
+      turnId: 'turn-serial-acp-fallback-001',
+      turnIndex: 5,
+      userMessage: '@planner @reviewer collaborate on this rollout plan',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+      providerContinuationState,
+    });
+
+    expect(outcome.selectedSurface).toBe('planner:ollama -> reviewer:ollama');
+    expect(outcome.providerContinuationMutations).toEqual([
+      expect.objectContaining({
+        laneKey: plannerLaneKey,
+        summary: expect.objectContaining({
+          status: AgentStageContinuationStatus.UNSUPPORTED,
+          invalidationReason: 'transport_not_continuation_capable',
+          providerId: AdapterProviderKind.OPENAI,
+          transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+          model: 'gpt-5',
+        }),
+      }),
+      expect.objectContaining({
+        laneKey: reviewerLaneKey,
+        summary: expect.objectContaining({
+          status: AgentStageContinuationStatus.UNSUPPORTED,
+          invalidationReason: 'transport_not_continuation_capable',
+          providerId: AdapterProviderKind.OPENAI,
+          transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+          model: 'gpt-5',
+        }),
+      }),
+    ]);
+    expect(outcome.providerContinuationSummaries).toEqual([
+      expect.objectContaining({
+        laneKey: plannerLaneKey,
+        laneLabel: 'planner',
+        status: AgentStageContinuationStatus.UNSUPPORTED,
+        surface: AdapterSurface.CODEX,
+        providerId: AdapterProviderKind.OPENAI,
+        transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+        model: 'gpt-5',
+        invalidationReason: 'transport_not_continuation_capable',
+      }),
+      expect.objectContaining({
+        laneKey: reviewerLaneKey,
+        laneLabel: 'reviewer',
+        status: AgentStageContinuationStatus.UNSUPPORTED,
+        surface: AdapterSurface.CODEX,
+        providerId: AdapterProviderKind.OPENAI,
+        transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+        model: 'gpt-5',
+        invalidationReason: 'transport_not_continuation_capable',
+      }),
+    ]);
   });
 
   it('routes implicit reviewer delegation through one single-role collaboration path for natural-language review requests', async () => {
@@ -2386,6 +2905,36 @@ describe('Cli session-main supervisor runtime', () => {
   });
 
   it('guards repository-review reviewer delegation when only local-model fallback remains', async () => {
+    const reviewerLaneKey =
+      'session.main::stage-session-main-role-reviewer::reviewer::codex::read_only';
+    const providerContinuationState: SessionProviderContinuationSessionState = {
+      version: 1,
+      slots: {
+        [reviewerLaneKey]: {
+          laneKey: reviewerLaneKey,
+          routeId: 'session.main',
+          stageId: 'stage-session-main-role-reviewer',
+          roleId: 'reviewer',
+          selectedSurface: AdapterSurface.CODEX,
+          providerId: AdapterProviderKind.OPENAI,
+          transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+          model: 'gpt-5',
+          policyEnvelope: SessionMainProviderContinuationPolicyEnvelope.READ_ONLY,
+          workspaceRoot: '/workspace/repo/.repo-ai-governor',
+          currentWorkingDirectory: '/workspace/repo',
+          handle: {
+            providerId: AdapterProviderKind.OPENAI,
+            surface: AdapterSurface.CODEX,
+            transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+            handleKind: AgentStageContinuationHandleKind.RESPONSE_ID,
+            value: 'reviewer-resp-existing',
+            model: 'gpt-5',
+            acquiredAt: '2026-04-04T12:00:00.000Z',
+          },
+          updatedAt: '2026-04-04T12:00:00.000Z',
+        },
+      },
+    };
     const localReviewInvokeStage = vi.fn(async () => ({
       output: {
         responseText: 'unsafe local reviewer answer',
@@ -2426,6 +2975,7 @@ describe('Cli session-main supervisor runtime', () => {
       metadata: {
         [SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY]: 'reviewer',
       },
+      providerContinuationState,
     });
 
     expect(localReviewInvokeStage).not.toHaveBeenCalled();
@@ -2436,9 +2986,196 @@ describe('Cli session-main supervisor runtime', () => {
     expect(outcome.selectedBy).toBe('session.main.role_delegate.guard');
     expect(outcome.assistantMessage).toContain('repository-review preflight checks');
     expect(outcome.invokedRoleIds).toEqual([]);
+    expect(outcome.providerContinuationMutations).toEqual([
+      expect.objectContaining({
+        laneKey: reviewerLaneKey,
+        summary: expect.objectContaining({
+          status: AgentStageContinuationStatus.CLEARED,
+          invalidationReason: 'provider_changed',
+          providerId: AdapterSurface.CODEX,
+          transportKind: AgentStageContinuationTransportKind.CLI_EXEC,
+          model: null,
+        }),
+      }),
+    ]);
+  });
+
+  it('clears stale reviewer continuation state when repository-review guard rejects acp_exec preferred surfaces', async () => {
+    const reviewerLaneKey =
+      'session.main::stage-session-main-role-reviewer::reviewer::codex::read_only';
+    const providerContinuationState: SessionProviderContinuationSessionState = {
+      version: 1,
+      slots: {
+        [reviewerLaneKey]: {
+          laneKey: reviewerLaneKey,
+          routeId: 'session.main',
+          stageId: 'stage-session-main-role-reviewer',
+          roleId: 'reviewer',
+          selectedSurface: AdapterSurface.CODEX,
+          providerId: AdapterProviderKind.OPENAI,
+          transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+          model: 'gpt-5',
+          policyEnvelope: SessionMainProviderContinuationPolicyEnvelope.READ_ONLY,
+          workspaceRoot: '/workspace/repo/.repo-ai-governor',
+          currentWorkingDirectory: '/workspace/repo',
+          handle: {
+            providerId: AdapterProviderKind.OPENAI,
+            surface: AdapterSurface.CODEX,
+            transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+            handleKind: AgentStageContinuationHandleKind.RESPONSE_ID,
+            value: 'reviewer-acp-guard-existing',
+            model: 'gpt-5',
+            acquiredAt: '2026-04-04T12:00:00.000Z',
+          },
+          updatedAt: '2026-04-04T12:00:00.000Z',
+        },
+      },
+    };
+    const acpRoleDelegateAdaptersConfig: AdaptersConfig = {
+      ...adaptersConfig,
+      tools:
+        adaptersConfig.tools?.map((tool) =>
+          tool.toolId === AdapterSurface.CODEX
+            ? {
+                ...tool,
+                transport: AdapterTransportKind.ACP_EXEC,
+                remoteApi: {
+                  provider: AdapterProviderKind.OPENAI,
+                  vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+                  model: 'gpt-5',
+                },
+              }
+            : tool,
+        ) ?? [],
+    };
+    const localReviewInvokeStage = vi.fn(async () => ({
+      output: {
+        responseText: 'unsafe local reviewer answer',
+      },
+      elapsedMs: 1,
+    }));
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      acpRoleDelegateAdaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createUnavailableProtocol(AdapterSurface.CODEX),
+      [AdapterSurface.CLAUDE_CODE]: createUnavailableProtocol(AdapterSurface.CLAUDE_CODE),
+      [AdapterSurface.OLLAMA]: createAvailableProtocol(AdapterSurface.OLLAMA, 'unused local', {
+        invokeStageSpy: localReviewInvokeStage,
+        toolCallingSupportLevel: AgentCapabilitySupportLevel.UNSUPPORTED,
+      }),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'en-US',
+      adaptersConfig: acpRoleDelegateAdaptersConfig,
+      adapterRoutingRuntime,
+    });
+    const outcome = await runtime.resolveTurn({
+      sessionId: 'session-implicit-reviewer-acp-guard-001',
+      routeId: 'session.main',
+      turnId: 'turn-implicit-reviewer-acp-guard-001',
+      turnIndex: 8,
+      userMessage: '帮我 review 一下代码',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+      metadata: {
+        [SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY]: 'reviewer',
+      },
+      providerContinuationState,
+    });
+
+    expect(localReviewInvokeStage).not.toHaveBeenCalled();
+    expect(outcome.selectedSurface).toBe('guarded-role-delegate');
+    expect(outcome.selectedBy).toBe('session.main.role_delegate.guard');
+    expect(outcome.providerContinuationMutations).toEqual([
+      expect.objectContaining({
+        laneKey: reviewerLaneKey,
+        summary: expect.objectContaining({
+          status: AgentStageContinuationStatus.UNSUPPORTED,
+          invalidationReason: 'transport_not_continuation_capable',
+          providerId: AdapterProviderKind.OPENAI,
+          transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+          model: 'gpt-5',
+        }),
+      }),
+    ]);
+    expect(outcome.providerContinuationSummaries).toEqual([
+      expect.objectContaining({
+        laneKey: reviewerLaneKey,
+        laneLabel: 'reviewer',
+        status: AgentStageContinuationStatus.UNSUPPORTED,
+        surface: AdapterSurface.CODEX,
+        providerId: AdapterProviderKind.OPENAI,
+        transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+        model: 'gpt-5',
+        invalidationReason: 'transport_not_continuation_capable',
+      }),
+    ]);
   });
 
   it('routes explicit @planner @reviewer parallel requests through one parallel fan-out path', async () => {
+    const plannerLaneKey =
+      'session.main::stage-session-main-role-planner::planner::codex::mutation_capable';
+    const reviewerLaneKey =
+      'session.main::stage-session-main-role-reviewer::reviewer::codex::read_only';
+    const providerContinuationState: SessionProviderContinuationSessionState = {
+      version: 1,
+      slots: {
+        [plannerLaneKey]: {
+          laneKey: plannerLaneKey,
+          routeId: 'session.main',
+          stageId: 'stage-session-main-role-planner',
+          roleId: 'planner',
+          selectedSurface: AdapterSurface.CODEX,
+          providerId: AdapterProviderKind.OPENAI,
+          transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+          model: 'gpt-5',
+          policyEnvelope: SessionMainProviderContinuationPolicyEnvelope.MUTATION_CAPABLE,
+          workspaceRoot: '/workspace/repo/.repo-ai-governor',
+          currentWorkingDirectory: '/workspace/repo',
+          handle: {
+            providerId: AdapterProviderKind.OPENAI,
+            surface: AdapterSurface.CODEX,
+            transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+            handleKind: AgentStageContinuationHandleKind.RESPONSE_ID,
+            value: 'planner-resp-existing',
+            model: 'gpt-5',
+            acquiredAt: '2026-04-04T12:00:00.000Z',
+          },
+          updatedAt: '2026-04-04T12:00:00.000Z',
+        },
+        [reviewerLaneKey]: {
+          laneKey: reviewerLaneKey,
+          routeId: 'session.main',
+          stageId: 'stage-session-main-role-reviewer',
+          roleId: 'reviewer',
+          selectedSurface: AdapterSurface.CODEX,
+          providerId: AdapterProviderKind.OPENAI,
+          transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+          model: 'gpt-5',
+          policyEnvelope: SessionMainProviderContinuationPolicyEnvelope.READ_ONLY,
+          workspaceRoot: '/workspace/repo/.repo-ai-governor',
+          currentWorkingDirectory: '/workspace/repo',
+          handle: {
+            providerId: AdapterProviderKind.OPENAI,
+            surface: AdapterSurface.CODEX,
+            transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+            handleKind: AgentStageContinuationHandleKind.RESPONSE_ID,
+            value: 'reviewer-resp-existing',
+            model: 'gpt-5',
+            acquiredAt: '2026-04-04T12:00:00.000Z',
+          },
+          updatedAt: '2026-04-04T12:00:00.000Z',
+        },
+      },
+    };
     const parallelInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
       if (request.stageId === 'stage-session-main-role-planner') {
         expect(request.input).toEqual(
@@ -2508,6 +3245,7 @@ describe('Cli session-main supervisor runtime', () => {
       selectedSurface: AdapterSurface.CODEX,
       selectedBy: 'session.main.default',
       sessionRoutingPreferenceApplied: false,
+      providerContinuationState,
     });
 
     expect(parallelInvokeStage).toHaveBeenCalledTimes(2);
@@ -2539,6 +3277,205 @@ describe('Cli session-main supervisor runtime', () => {
       }),
     ]);
     expect(outcome.subagentCount).toBe(2);
+    expect(outcome.providerContinuationMutations).toEqual([
+      expect.objectContaining({
+        laneKey: plannerLaneKey,
+        summary: expect.objectContaining({
+          status: AgentStageContinuationStatus.CLEARED,
+          invalidationReason: 'provider_changed',
+          providerId: AdapterSurface.CODEX,
+          transportKind: AgentStageContinuationTransportKind.CLI_EXEC,
+          model: null,
+        }),
+      }),
+      expect.objectContaining({
+        laneKey: reviewerLaneKey,
+        summary: expect.objectContaining({
+          status: AgentStageContinuationStatus.CLEARED,
+          invalidationReason: 'provider_changed',
+          providerId: AdapterSurface.CODEX,
+          transportKind: AgentStageContinuationTransportKind.CLI_EXEC,
+          model: null,
+        }),
+      }),
+    ]);
+  });
+
+  it('clears stale planner/reviewer continuation state when acp_exec falls back during parallel collaboration', async () => {
+    const plannerLaneKey =
+      'session.main::stage-session-main-role-planner::planner::codex::mutation_capable';
+    const reviewerLaneKey =
+      'session.main::stage-session-main-role-reviewer::reviewer::codex::read_only';
+    const providerContinuationState: SessionProviderContinuationSessionState = {
+      version: 1,
+      slots: {
+        [plannerLaneKey]: {
+          laneKey: plannerLaneKey,
+          routeId: 'session.main',
+          stageId: 'stage-session-main-role-planner',
+          roleId: 'planner',
+          selectedSurface: AdapterSurface.CODEX,
+          providerId: AdapterProviderKind.OPENAI,
+          transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+          model: 'gpt-5',
+          policyEnvelope: SessionMainProviderContinuationPolicyEnvelope.MUTATION_CAPABLE,
+          workspaceRoot: '/workspace/repo/.repo-ai-governor',
+          currentWorkingDirectory: '/workspace/repo',
+          handle: {
+            providerId: AdapterProviderKind.OPENAI,
+            surface: AdapterSurface.CODEX,
+            transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+            handleKind: AgentStageContinuationHandleKind.RESPONSE_ID,
+            value: 'planner-acp-parallel-existing',
+            model: 'gpt-5',
+            acquiredAt: '2026-04-04T12:00:00.000Z',
+          },
+          updatedAt: '2026-04-04T12:00:00.000Z',
+        },
+        [reviewerLaneKey]: {
+          laneKey: reviewerLaneKey,
+          routeId: 'session.main',
+          stageId: 'stage-session-main-role-reviewer',
+          roleId: 'reviewer',
+          selectedSurface: AdapterSurface.CODEX,
+          providerId: AdapterProviderKind.OPENAI,
+          transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+          model: 'gpt-5',
+          policyEnvelope: SessionMainProviderContinuationPolicyEnvelope.READ_ONLY,
+          workspaceRoot: '/workspace/repo/.repo-ai-governor',
+          currentWorkingDirectory: '/workspace/repo',
+          handle: {
+            providerId: AdapterProviderKind.OPENAI,
+            surface: AdapterSurface.CODEX,
+            transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+            handleKind: AgentStageContinuationHandleKind.RESPONSE_ID,
+            value: 'reviewer-acp-parallel-existing',
+            model: 'gpt-5',
+            acquiredAt: '2026-04-04T12:00:00.000Z',
+          },
+          updatedAt: '2026-04-04T12:00:00.000Z',
+        },
+      },
+    };
+    const acpRoleDelegateAdaptersConfig: AdaptersConfig = {
+      ...adaptersConfig,
+      tools:
+        adaptersConfig.tools?.map((tool) =>
+          tool.toolId === AdapterSurface.CODEX
+            ? {
+                ...tool,
+                transport: AdapterTransportKind.ACP_EXEC,
+                remoteApi: {
+                  provider: AdapterProviderKind.OPENAI,
+                  vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+                  model: 'gpt-5',
+                },
+              }
+            : tool,
+        ) ?? [],
+    };
+    const parallelInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+      if (request.stageId === 'stage-session-main-role-planner') {
+        return {
+          output: {
+            responseText: '## Planner perspective\n\n- planning risk',
+          },
+          elapsedMs: 1,
+        };
+      }
+
+      return {
+        output: {
+          responseText: '## Reviewer perspective\n\n- review risk',
+        },
+        elapsedMs: 1,
+      };
+    });
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      acpRoleDelegateAdaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createAvailableProtocol(
+        AdapterSurface.CODEX,
+        'unsafe collaborative answer',
+      ),
+      [AdapterSurface.CLAUDE_CODE]: createAvailableProtocol(
+        AdapterSurface.CLAUDE_CODE,
+        'unsafe fallback answer',
+      ),
+      [AdapterSurface.OLLAMA]: createAvailableProtocol(AdapterSurface.OLLAMA, 'unused', {
+        invokeStageSpy: parallelInvokeStage,
+        toolCallingSupportLevel: AgentCapabilitySupportLevel.UNSUPPORTED,
+      }),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'en-US',
+      adaptersConfig: acpRoleDelegateAdaptersConfig,
+      adapterRoutingRuntime,
+    });
+    const outcome = await runtime.resolveTurn({
+      sessionId: 'session-parallel-acp-fallback-001',
+      routeId: 'session.main',
+      turnId: 'turn-parallel-acp-fallback-001',
+      turnIndex: 6,
+      userMessage: '@planner @reviewer parallel assess this rollout risk',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+      providerContinuationState,
+    });
+
+    expect(outcome.selectedSurface).toBe('planner:ollama | reviewer:ollama');
+    expect(outcome.providerContinuationMutations).toEqual([
+      expect.objectContaining({
+        laneKey: plannerLaneKey,
+        summary: expect.objectContaining({
+          status: AgentStageContinuationStatus.UNSUPPORTED,
+          invalidationReason: 'transport_not_continuation_capable',
+          providerId: AdapterProviderKind.OPENAI,
+          transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+          model: 'gpt-5',
+        }),
+      }),
+      expect.objectContaining({
+        laneKey: reviewerLaneKey,
+        summary: expect.objectContaining({
+          status: AgentStageContinuationStatus.UNSUPPORTED,
+          invalidationReason: 'transport_not_continuation_capable',
+          providerId: AdapterProviderKind.OPENAI,
+          transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+          model: 'gpt-5',
+        }),
+      }),
+    ]);
+    expect(outcome.providerContinuationSummaries).toEqual([
+      expect.objectContaining({
+        laneKey: plannerLaneKey,
+        laneLabel: 'planner',
+        status: AgentStageContinuationStatus.UNSUPPORTED,
+        surface: AdapterSurface.CODEX,
+        providerId: AdapterProviderKind.OPENAI,
+        transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+        model: 'gpt-5',
+        invalidationReason: 'transport_not_continuation_capable',
+      }),
+      expect.objectContaining({
+        laneKey: reviewerLaneKey,
+        laneLabel: 'reviewer',
+        status: AgentStageContinuationStatus.UNSUPPORTED,
+        surface: AdapterSurface.CODEX,
+        providerId: AdapterProviderKind.OPENAI,
+        transportKind: AgentStageContinuationTransportKind.REMOTE_API,
+        model: 'gpt-5',
+        invalidationReason: 'transport_not_continuation_capable',
+      }),
+    ]);
   });
 
   it('routes explicit three-role parallel requests through one three-role fan-out pilot', async () => {

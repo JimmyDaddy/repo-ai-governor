@@ -1,6 +1,6 @@
 # TK-823 preserve adapter-owned entrypoint shell and process-tree policies while adding baseline launch diagnostics
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-13
 - Owner: AI-Agent
 - Priority: P0
@@ -46,3 +46,6 @@
 ## 8. 执行记录
 
 1. 2026-04-13：任务通过 `DA-819` 创建，当前保持 `planned`，等待 `TK-822` 完成后执行。
+2. 2026-04-13：任务状态切换为 `active`；已把 `entrypoint_resolution / shell_wrapped / process_tree_policy / spawn_error_code` 固定为 additive launch diagnostics，并在 Codex / Claude Code / GitHub Copilot health-check surfaces 上对齐 shared runtime ownership 与 adapter-authored process-tree policy truth。
+3. 2026-04-13：已通过 `pnpm run build`、adapter focused smoke suites 与 public-boundary regression suite；当前等待 sprint-001 delegated CR 对 diagnostics ownership 与 no-god-object boundary 做 clean recheck。
+4. 2026-04-13：`CR-001` resolved 后，reviewer 未发现 adapter-owned launch authoring、process-tree policy truth 或 additive diagnostics 升格为 minimum contract 的问题；当前已通过 `pnpm run build`、focused Codex/runtime suite、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run check`，任务收口为 `completed`。

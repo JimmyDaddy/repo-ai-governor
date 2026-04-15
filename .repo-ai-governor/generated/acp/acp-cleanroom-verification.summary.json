@@ -1,0 +1,54 @@
+{
+  "schemaVersion": "acp-cleanroom-verification-summary-v1",
+  "overallStatus": "passed",
+  "verifiedAt": "2026-04-15T05:27:57.144Z",
+  "sourceReportPath": ".tmp/project-105-sprint-003-acp-cleanroom-report.json",
+  "distributionMode": "default",
+  "surfaces": [
+    {
+      "surfaceId": "claude-code",
+      "status": "pass",
+      "verifiedModes": ["link", "path", "tgz"],
+      "runtimeServiceVerificationSummaryPaths": [
+        "acp-cleanroom-verification.receipts/claude-code/runtime-service/link.host-verification.summary.json",
+        "acp-cleanroom-verification.receipts/claude-code/runtime-service/path.host-verification.summary.json",
+        "acp-cleanroom-verification.receipts/claude-code/runtime-service/tgz.host-verification.summary.json"
+      ],
+      "packagedDistributionVerificationSummaryPaths": [
+        "acp-cleanroom-verification.receipts/claude-code/packaged-distribution/link.host-verification.summary.json",
+        "acp-cleanroom-verification.receipts/claude-code/packaged-distribution/path.host-verification.summary.json",
+        "acp-cleanroom-verification.receipts/claude-code/packaged-distribution/tgz.host-verification.summary.json"
+      ]
+    },
+    {
+      "surfaceId": "codex",
+      "status": "pass",
+      "verifiedModes": ["link", "path", "tgz"],
+      "runtimeServiceVerificationSummaryPaths": [
+        "acp-cleanroom-verification.receipts/codex/runtime-service/link.host-verification.summary.json",
+        "acp-cleanroom-verification.receipts/codex/runtime-service/path.host-verification.summary.json",
+        "acp-cleanroom-verification.receipts/codex/runtime-service/tgz.host-verification.summary.json"
+      ],
+      "packagedDistributionVerificationSummaryPaths": [
+        "acp-cleanroom-verification.receipts/codex/packaged-distribution/link.host-verification.summary.json",
+        "acp-cleanroom-verification.receipts/codex/packaged-distribution/path.host-verification.summary.json",
+        "acp-cleanroom-verification.receipts/codex/packaged-distribution/tgz.host-verification.summary.json"
+      ]
+    },
+    {
+      "surfaceId": "github-copilot",
+      "status": "pass",
+      "verifiedModes": ["link", "path", "tgz"],
+      "runtimeServiceVerificationSummaryPaths": [
+        "acp-cleanroom-verification.receipts/github-copilot/runtime-service/link.host-verification.summary.json",
+        "acp-cleanroom-verification.receipts/github-copilot/runtime-service/path.host-verification.summary.json",
+        "acp-cleanroom-verification.receipts/github-copilot/runtime-service/tgz.host-verification.summary.json"
+      ],
+      "packagedDistributionVerificationSummaryPaths": [
+        "acp-cleanroom-verification.receipts/github-copilot/packaged-distribution/link.host-verification.summary.json",
+        "acp-cleanroom-verification.receipts/github-copilot/packaged-distribution/path.host-verification.summary.json",
+        "acp-cleanroom-verification.receipts/github-copilot/packaged-distribution/tgz.host-verification.summary.json"
+      ]
+    }
+  ]
+}

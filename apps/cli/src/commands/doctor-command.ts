@@ -61,6 +61,9 @@ export class CliDoctorCommand implements CliCommandExecutor {
     let onboardingContract: ReturnType<
       CliCommandExecutorContext['onboardingRuntime']['createOnboardingContractPayload']
     > | null = null;
+    let verificationMatrix: ReturnType<
+      CliCommandExecutorContext['onboardingRuntime']['createVerifyMatrixPayload']
+    > | null = null;
     let adapterStatus: CliGovernanceCheckStatus | null = null;
     let adapterVerificationSnapshot: CliAdapterVerificationResolution | null = null;
     const doctorId = `doctor-${Date.now()}`;
@@ -239,25 +242,6 @@ export class CliDoctorCommand implements CliCommandExecutor {
       if (adapterVerification.nextActions.length > 0) {
         nextActions.push(...adapterVerification.nextActions);
       }
-      onboardingContract = context.onboardingRuntime.createOnboardingContractPayload({
-        commandName: 'doctor',
-        executionId: doctorId,
-        workspaceId: context.options.workspace.workspaceId,
-        verificationStatus: adapterVerification.overallStatus,
-        nextActions: adapterVerification.nextActions,
-        enabledTools: context.onboardingRuntime.resolveSelectedTools({
-          requestedTools: runtimeDebugOptions.requestedTools,
-          currentAdaptersConfig: context.options.adaptersConfig,
-        }),
-        adaptersConfig: context.options.adaptersConfig,
-        verification: adapterVerification,
-        dryRun: runtimeDebugOptions.dryRun,
-        overwrite: runtimeDebugOptions.overwrite,
-        singleToolAllRoles: runtimeDebugOptions.singleToolAllRoles,
-        presetId: runtimeDebugOptions.presetId,
-        repairScope: runtimeDebugOptions.fix ? 'safe_local' : 'manual_only',
-        diagnosticSummary: `status=${adapterVerification.overallStatus} safe_local_fix=${safeLocalFixCount}`,
-      });
       this.emitProgress(context, {
         commandName: CliCommandName.DOCTOR,
         statusLine: this.translate(context, 'cli.reactShell.progress.doctor.writingArtifacts'),
@@ -297,6 +281,36 @@ export class CliDoctorCommand implements CliCommandExecutor {
         context.translate?.('cli.commandMessages.doctor.safeLocalFixHint') ??
           'safe_local fix only creates writable workspace/config/memory baseline paths; it never installs commands, logs in adapters, or pulls local models.',
       );
+    }
+    if (adapterVerificationSnapshot && adapterStatus !== null) {
+      const readinessSafeLocalFixCount = runtimeDebugOptions.fix ? safeLocalFixCount : undefined;
+      onboardingContract = context.onboardingRuntime.createOnboardingContractPayload({
+        commandName: 'doctor',
+        executionId: doctorId,
+        workspaceId: context.options.workspace.workspaceId,
+        verificationStatus: adapterStatus,
+        nextActions,
+        enabledTools: context.onboardingRuntime.resolveSelectedTools({
+          requestedTools: runtimeDebugOptions.requestedTools,
+          currentAdaptersConfig: context.options.adaptersConfig,
+        }),
+        adaptersConfig: context.options.adaptersConfig,
+        verification: adapterVerificationSnapshot,
+        dryRun: runtimeDebugOptions.dryRun,
+        overwrite: runtimeDebugOptions.overwrite,
+        singleToolAllRoles: runtimeDebugOptions.singleToolAllRoles,
+        presetId: runtimeDebugOptions.presetId,
+        repairScope: runtimeDebugOptions.fix ? 'safe_local' : 'manual_only',
+        safeLocalFixCount: readinessSafeLocalFixCount,
+      });
+      verificationMatrix = context.onboardingRuntime.createVerifyMatrixPayload({
+        commandName: 'doctor',
+        executionId: doctorId,
+        verification: adapterVerificationSnapshot,
+        adaptersConfig: context.options.adaptersConfig,
+        nextActions,
+        safeLocalFixCount: readinessSafeLocalFixCount,
+      });
     }
     if (nextActions.length > 0) {
       checks.push({
@@ -339,6 +353,7 @@ export class CliDoctorCommand implements CliCommandExecutor {
         runtimeDebugOptions.fix,
       ),
       ...(onboardingContract ? { onboardingContract } : {}),
+      ...(verificationMatrix ? { verificationMatrix } : {}),
       ...(agentView ? { agentView } : {}),
       durableStorage: durableStorageDiagnostics,
       checks,

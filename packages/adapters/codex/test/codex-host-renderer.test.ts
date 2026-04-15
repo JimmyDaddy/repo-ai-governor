@@ -1,3 +1,4 @@
+import { PUBLIC_SERVICE_HOST_PACKAGE_EXPORT } from '@repo-ai-governor/shared';
 import {
   HostDistributionHandoffBridge,
   StructuredWorkflowAssetRegistry,
@@ -5,6 +6,15 @@ import {
 import { CodexHostRenderer } from '../src/codex-host-renderer.js';
 
 describe('CodexHostRenderer', () => {
+  function readProjectedJson(
+    projectedFiles: Array<{ relativePath: string; content: string }>,
+    relativePath: string,
+  ): Record<string, unknown> {
+    const file = projectedFiles.find((entry) => entry.relativePath === relativePath);
+    expect(file).toBeDefined();
+    return JSON.parse(file?.content ?? '{}') as Record<string, unknown>;
+  }
+
   function createRegistry(target: 'codex.project_local' | 'codex.plugin') {
     return new StructuredWorkflowAssetRegistry({
       records: [
@@ -73,6 +83,25 @@ describe('CodexHostRenderer', () => {
         (file) => file.relativePath === '.agents/subagents/workspace-code-review-workflow.json',
       ),
     ).toBe(true);
+    expect(
+      readProjectedJson(
+        result.projectedFiles,
+        '.agents/subagents/workspace-code-review-workflow.json',
+      ),
+    ).toEqual(
+      expect.objectContaining({
+        serviceHostPackageExport: PUBLIC_SERVICE_HOST_PACKAGE_EXPORT,
+      }),
+    );
+    expect(readProjectedJson(result.projectedFiles, '.mcp.json')).toEqual(
+      expect.objectContaining({
+        mcpServers: expect.objectContaining({
+          'repo-ai-governor': expect.objectContaining({
+            packageExport: PUBLIC_SERVICE_HOST_PACKAGE_EXPORT,
+          }),
+        }),
+      }),
+    );
     expect(result.applyReport?.applyRoot).toBe('/workspace/repo');
   });
 
@@ -107,6 +136,20 @@ describe('CodexHostRenderer', () => {
       ),
     ).toBe(true);
     expect(result.projectedFiles.some((file) => file.relativePath === '.mcp.json')).toBe(true);
+    expect(readProjectedJson(result.projectedFiles, '.codex-plugin/plugin.json')).toEqual(
+      expect.objectContaining({
+        serviceHostPackageExport: PUBLIC_SERVICE_HOST_PACKAGE_EXPORT,
+      }),
+    );
+    expect(readProjectedJson(result.projectedFiles, '.mcp.json')).toEqual(
+      expect.objectContaining({
+        mcpServers: expect.objectContaining({
+          'repo-ai-governor': expect.objectContaining({
+            packageExport: PUBLIC_SERVICE_HOST_PACKAGE_EXPORT,
+          }),
+        }),
+      }),
+    );
     expect(result.packReport?.bundleRoot).toBe('/workspace/bundles/codex');
   });
 });

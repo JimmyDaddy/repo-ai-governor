@@ -1,4 +1,3 @@
-import { spawn } from 'node:child_process';
 import { setTimeout as delay } from 'node:timers/promises';
 
 import {
@@ -9,9 +8,11 @@ import {
   AgentCapabilitySupportLevel,
   AgentCliExecOperation,
   AgentCliExecOperationsRuntime,
+  type AgentCliLaunchDiagnostics,
   AgentConfirmationDecision,
   type AgentConfirmationRequest,
   type AgentConfirmationResult,
+  type AgentHealthCheckDiagnostic,
   type AgentInvokeStageRequest,
   type AgentInvokeStageResult,
   type AgentProbeRequest,
@@ -27,6 +28,7 @@ import {
   type AgentStreamEventsRequest,
   DEFAULT_AGENT_CLI_EXEC_MAX_RETRY_ATTEMPTS,
   DEFAULT_AGENT_CLI_EXEC_RETRY_BACKOFF_MS,
+  NativeCliExecProcessRuntime,
   type ProviderContinuationHandle,
   buildLayeredHealthCheckResult,
   resolveAgentStageExecutionPolicy,
@@ -188,6 +190,7 @@ interface CodexCliExecutionState {
 interface CodexProbeResolution {
   availabilityStatus: AgentAvailabilityStatus;
   unavailableReasons: string[];
+  launchDiagnostics?: AgentCliLaunchDiagnostics | null;
 }
 
 interface CodexProbeCacheEntry {
@@ -282,6 +285,7 @@ export class CodexAgentAdapter extends AgentProtocol {
   private readonly options: ResolvedCodexAgentAdapterOptions;
   private readonly execRunner: CodexExecRunner;
   private readonly cliExecOperationsRuntime: AgentCliExecOperationsRuntime;
+  private readonly cliProcessRuntime: NativeCliExecProcessRuntime;
   private readonly usesInjectedExecRunner: boolean;
   private readonly inflightCliExecutions = new Map<string, CodexCliExecutionState>();
   private probeCache: CodexProbeCacheEntry | null = null;
@@ -324,6 +328,7 @@ export class CodexAgentAdapter extends AgentProtocol {
       this.options.maxRetryAttempts,
       this.options.retryBackoffMs,
     );
+    this.cliProcessRuntime = new NativeCliExecProcessRuntime(this.cliExecOperationsRuntime);
     this.usesInjectedExecRunner = options.execRunner !== undefined;
     this.execRunner =
       options.execRunner ??
@@ -390,7 +395,10 @@ export class CodexAgentAdapter extends AgentProtocol {
         adapterId: this.options.agentId,
         surfaceId: CODEX_SURFACE,
         availabilityStatus,
-        selectedEntrypoint: remoteApiOptions?.endpoint ?? this.options.command,
+        selectedEntrypoint:
+          remoteApiOptions?.endpoint ??
+          runtimeProbe.launchDiagnostics?.selectedEntrypoint ??
+          this.options.command,
         routeKey: request.routeKey,
         routeRequirements: (request.requiredCapabilities ?? []).map(String),
         fallbackAllowed: true,
@@ -408,10 +416,10 @@ export class CodexAgentAdapter extends AgentProtocol {
         model: remoteApiOptions?.model ?? null,
         credentialSource: remoteApiCredentialResolution?.source ?? null,
         endpointSource: remoteApiOptions?.endpointSource ?? null,
-        diagnostics:
-          remoteApiCredentialResolution?.source === AdapterCredentialSource.CREDENTIAL_REF &&
-          remoteApiCredentialResolution.value &&
-          remoteApiCredentialResolution.detail.length > 0
+        diagnostics: remoteApiOptions
+          ? remoteApiCredentialResolution?.source === AdapterCredentialSource.CREDENTIAL_REF &&
+            remoteApiCredentialResolution.value &&
+            remoteApiCredentialResolution.detail.length > 0
             ? [
                 {
                   layer: 'auth',
@@ -420,11 +428,12 @@ export class CodexAgentAdapter extends AgentProtocol {
                   detail: remoteApiCredentialResolution.detail,
                 },
               ]
-            : [],
+            : []
+          : this.buildCliLaunchHealthDiagnostics(runtimeProbe.launchDiagnostics),
         requestCancellationMode:
           this.options.executionMode === CodexAgentAdapterExecutionMode.REMOTE_API
             ? AdapterRequestCancellationMode.LOCAL_ABORT_ONLY
-            : AdapterRequestCancellationMode.NOT_SUPPORTED,
+            : this.resolveCliRequestCancellationMode(),
       }),
     };
   }
@@ -660,6 +669,7 @@ export class CodexAgentAdapter extends AgentProtocol {
       return {
         availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
         unavailableReasons: [],
+        launchDiagnostics: null,
       };
     }
 
@@ -671,6 +681,7 @@ export class CodexAgentAdapter extends AgentProtocol {
       return {
         availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
         unavailableReasons: [],
+        launchDiagnostics: null,
       };
     }
 
@@ -711,17 +722,20 @@ export class CodexAgentAdapter extends AgentProtocol {
           unavailableReasons: [
             `health_check_invalid_response:${CODEX_SURFACE}:${this.cliExecOperationsRuntime.sanitizeReasonSegment(parsedOutput.responseText)}`,
           ],
+          launchDiagnostics: executionResult.launchDiagnostics ?? null,
         };
       }
 
       return {
         availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
         unavailableReasons: [],
+        launchDiagnostics: executionResult.launchDiagnostics ?? null,
       };
     } catch (error) {
       return {
         availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
         unavailableReasons: this.resolveProbeFailureReasons(error),
+        launchDiagnostics: this.readCliLaunchDiagnosticsFromError(error),
       };
     }
   }
@@ -745,21 +759,25 @@ export class CodexAgentAdapter extends AgentProtocol {
       return await this.cliExecOperationsRuntime.executeWithRetry(
         request.operation,
         async (remainingTimeoutMs) => {
-          return await this.execRunner({
-            command: this.options.command,
-            commandArguments:
-              request.commandArguments ?? this.resolveCommandArguments(request.executionPolicy),
-            cwd: this.options.currentWorkingDirectory,
-            env: this.resolveEnvironment(),
-            prompt: request.prompt,
-            timeoutMs: remainingTimeoutMs ?? request.timeoutMs,
-            signal: request.signal,
-            operation: request.operation,
-            onStdoutChunk: request.onStdoutChunk,
-            onStderrChunk: request.onStderrChunk,
-            onGracefulInterruptStart: request.onGracefulInterruptStart,
-            onHardTerminateStart: request.onHardTerminateStart,
-          });
+          const launchDiagnostics = this.createCliLaunchDiagnostics(this.options.command);
+          return this.ensureCliLaunchDiagnostics(
+            await this.execRunner({
+              command: this.options.command,
+              commandArguments:
+                request.commandArguments ?? this.resolveCommandArguments(request.executionPolicy),
+              cwd: this.options.currentWorkingDirectory,
+              env: this.resolveEnvironment(),
+              prompt: request.prompt,
+              timeoutMs: remainingTimeoutMs ?? request.timeoutMs,
+              signal: request.signal,
+              operation: request.operation,
+              onStdoutChunk: request.onStdoutChunk,
+              onStderrChunk: request.onStderrChunk,
+              onGracefulInterruptStart: request.onGracefulInterruptStart,
+              onHardTerminateStart: request.onHardTerminateStart,
+            }),
+            launchDiagnostics,
+          );
         },
         {
           signal: request.signal,
@@ -770,7 +788,8 @@ export class CodexAgentAdapter extends AgentProtocol {
       if (
         error instanceof RuntimeError &&
         (error.code === GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED ||
-          error.code === GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED)
+          error.code === GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED) &&
+        this.readCliLaunchDiagnosticsFromError(error)
       ) {
         throw error;
       }
@@ -781,10 +800,13 @@ export class CodexAgentAdapter extends AgentProtocol {
           ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
           : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
         `Codex ${request.operation} failed: ${standardizedError.message}`,
-        {
+        this.cliExecOperationsRuntime.createRedactedProcessDetails({
+          ...(standardizedError.details ?? {}),
           surface: CODEX_SURFACE,
           operation: request.operation,
-        },
+          ...this.resolveCliLaunchDiagnosticsForCommand(error, this.options.command),
+        }),
+        error,
       );
     }
   }
@@ -799,11 +821,51 @@ export class CodexAgentAdapter extends AgentProtocol {
     executionResult: CodexExecRunnerResult,
     operation: AgentCliExecOperation,
   ): CodexCliParsedOutput {
-    const jsonEvents: CodexCliJsonEvent[] = executionResult.stdout
-      .split(/\r?\n/u)
-      .map((line) => line.trim())
-      .filter((line) => line.startsWith('{'))
-      .map((line) => JSON.parse(line) as CodexCliJsonEvent);
+    if (executionResult.signal !== null) {
+      throw new RuntimeError(
+        operation === AgentCliExecOperation.PROBE
+          ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
+          : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+        `Codex ${operation} exited due to signal ${executionResult.signal}.`,
+        this.createCodexCliFailureDetails(executionResult, operation, {
+          exitCode: executionResult.exitCode,
+          signal: executionResult.signal,
+        }),
+      );
+    }
+
+    if (typeof executionResult.exitCode === 'number' && executionResult.exitCode !== 0) {
+      throw new RuntimeError(
+        operation === AgentCliExecOperation.PROBE
+          ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
+          : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+        `Codex ${operation} failed with exit code ${executionResult.exitCode}.`,
+        this.createCodexCliFailureDetails(executionResult, operation, {
+          exitCode: executionResult.exitCode,
+          signal: executionResult.signal,
+        }),
+      );
+    }
+
+    let jsonEvents: CodexCliJsonEvent[];
+    try {
+      jsonEvents = executionResult.stdout
+        .split(/\r?\n/u)
+        .map((line) => line.trim())
+        .filter((line) => line.startsWith('{'))
+        .map((line) => JSON.parse(line) as CodexCliJsonEvent);
+    } catch (error) {
+      const standardizedError = standardizeError(error);
+      throw new RuntimeError(
+        operation === AgentCliExecOperation.PROBE
+          ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
+          : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+        `Codex ${operation} returned malformed JSON output: ${standardizedError.message}`,
+        this.createCodexCliFailureDetails(executionResult, operation, {
+          parseError: standardizedError.message,
+        }),
+      );
+    }
 
     const completedMessage = jsonEvents
       .filter((event) => event.type === 'item.completed' && event.item?.type === 'agent_message')
@@ -817,12 +879,7 @@ export class CodexAgentAdapter extends AgentProtocol {
           ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
           : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
         `Codex ${operation} returned no completed agent_message event.`,
-        this.cliExecOperationsRuntime.createRedactedProcessDetails({
-          surface: CODEX_SURFACE,
-          operation,
-          stdout: executionResult.stdout,
-          stderr: executionResult.stderr,
-        }),
+        this.createCodexCliFailureDetails(executionResult, operation),
       );
     }
 
@@ -848,6 +905,58 @@ export class CodexAgentAdapter extends AgentProtocol {
         .split(/\r?\n/u)
         .map((line) => line.trim())
         .filter((line) => line.length > 0),
+    };
+  }
+
+  private createCodexCliFailureDetails(
+    executionResult: CodexExecRunnerResult,
+    operation: AgentCliExecOperation,
+    extraDetails: Record<string, unknown> = {},
+  ) {
+    return this.cliExecOperationsRuntime.createRedactedProcessDetails({
+      surface: CODEX_SURFACE,
+      operation,
+      stdout: executionResult.stdout,
+      stderr: executionResult.stderr,
+      ...extraDetails,
+      ...(executionResult.launchDiagnostics
+        ? {
+            selectedEntrypoint: executionResult.launchDiagnostics.selectedEntrypoint,
+            shellWrapped: executionResult.launchDiagnostics.shellWrapped,
+            processTreePolicy: executionResult.launchDiagnostics.processTreePolicy,
+            ...(executionResult.launchDiagnostics.spawnErrorCode
+              ? {
+                  spawnErrorCode: executionResult.launchDiagnostics.spawnErrorCode,
+                }
+              : {}),
+          }
+        : {}),
+    });
+  }
+
+  private createCliLaunchDiagnostics(
+    command: string,
+    spawnErrorCode: string | null = null,
+  ): AgentCliLaunchDiagnostics {
+    return {
+      selectedEntrypoint: command,
+      shellWrapped: false,
+      processTreePolicy: this.resolveCliProcessTreePolicy(),
+      ...(spawnErrorCode ? { spawnErrorCode } : {}),
+    };
+  }
+
+  private ensureCliLaunchDiagnostics(
+    executionResult: CodexExecRunnerResult,
+    launchDiagnostics: AgentCliLaunchDiagnostics,
+  ): CodexExecRunnerResult {
+    if (executionResult.launchDiagnostics) {
+      return executionResult;
+    }
+
+    return {
+      ...executionResult,
+      launchDiagnostics,
     };
   }
 
@@ -3049,6 +3158,98 @@ export class CodexAgentAdapter extends AgentProtocol {
     );
   }
 
+  private resolveCliProcessTreePolicy(): 'process_group_best_effort' {
+    return 'process_group_best_effort';
+  }
+
+  private resolveCliRequestCancellationMode(): AdapterRequestCancellationMode {
+    return AdapterRequestCancellationMode.NOT_SUPPORTED;
+  }
+
+  private buildCliLaunchHealthDiagnostics(
+    launchDiagnostics?: AgentCliLaunchDiagnostics | null,
+  ): AgentHealthCheckDiagnostic[] {
+    if (!launchDiagnostics) {
+      return [];
+    }
+    return [
+      {
+        layer: 'install',
+        status: 'pass',
+        code: 'install.entrypoint_resolution',
+        detail: launchDiagnostics.selectedEntrypoint,
+      },
+      {
+        layer: 'protocol',
+        status: 'pass',
+        code: 'protocol.shell_wrapped',
+        detail: String(launchDiagnostics.shellWrapped),
+      },
+      {
+        layer: launchDiagnostics.spawnErrorCode ? 'install' : 'protocol',
+        status: launchDiagnostics.spawnErrorCode ? 'fail' : 'pass',
+        code: launchDiagnostics.spawnErrorCode
+          ? 'install.spawn_error_code'
+          : 'protocol.process_tree_policy',
+        detail: launchDiagnostics.spawnErrorCode ?? launchDiagnostics.processTreePolicy,
+      },
+    ];
+  }
+
+  private readCliLaunchDiagnosticsFromError(error: unknown): AgentCliLaunchDiagnostics | null {
+    const details =
+      error && typeof error === 'object' && 'details' in error && error.details
+        ? error.details
+        : error && typeof error === 'object' && 'metadata' in error && error.metadata
+          ? error.metadata
+          : null;
+    if (!details || typeof details !== 'object') {
+      return null;
+    }
+    const detailsRecord = details as Record<string, unknown>;
+    const selectedEntrypoint =
+      typeof detailsRecord.selectedEntrypoint === 'string'
+        ? detailsRecord.selectedEntrypoint
+        : null;
+    const shellWrapped =
+      typeof detailsRecord.shellWrapped === 'boolean' ? detailsRecord.shellWrapped : null;
+    const processTreePolicy =
+      typeof detailsRecord.processTreePolicy === 'string' ? detailsRecord.processTreePolicy : null;
+    if (!selectedEntrypoint || shellWrapped === null || !processTreePolicy) {
+      return null;
+    }
+    return {
+      selectedEntrypoint,
+      shellWrapped,
+      processTreePolicy:
+        processTreePolicy === 'process_group_best_effort'
+          ? 'process_group_best_effort'
+          : 'process_only',
+      ...(typeof detailsRecord.spawnErrorCode === 'string'
+        ? { spawnErrorCode: detailsRecord.spawnErrorCode }
+        : {}),
+    };
+  }
+
+  private resolveCliLaunchDiagnosticsForCommand(
+    error: unknown,
+    command: string,
+  ): AgentCliLaunchDiagnostics {
+    return (
+      this.readCliLaunchDiagnosticsFromError(error) ??
+      this.createCliLaunchDiagnostics(command, this.resolveSpawnErrorCode(error))
+    );
+  }
+
+  private resolveSpawnErrorCode(error: unknown): string | null {
+    if (!error || typeof error !== 'object') {
+      return null;
+    }
+
+    const code = (error as { code?: unknown }).code;
+    return typeof code === 'string' ? code : null;
+  }
+
   private normalizeCliOutputLine(line: string): string | undefined {
     const normalizedLine = line.replace(/\s+/gu, ' ').trim();
     if (normalizedLine.length === 0) {
@@ -3291,396 +3492,94 @@ export class CodexAgentAdapter extends AgentProtocol {
    * @returns Captured process result.
    */
   private async executeCodexCli(request: CodexExecRunnerRequest): Promise<CodexExecRunnerResult> {
-    return new Promise<CodexExecRunnerResult>((resolve, reject) => {
-      const startedAt = Date.now();
-      const child = spawn(request.command, [...request.commandArguments], {
-        cwd: request.cwd,
-        env: request.env,
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
-
-      let stdout = '';
-      let stderr = '';
-      let settled = false;
-      let timedOut = false;
-      let abortRequested = false;
-      let hardTerminated = false;
-      let gracefulInterruptNotified = false;
-      let hardTerminateNotified = false;
-      let hardTerminateHandle: NodeJS.Timeout | null = null;
-
-      const notifyGracefulInterrupt = (
-        cancelMechanism: 'process_signal' | 'abort_signal',
-      ): void => {
-        if (gracefulInterruptNotified) {
-          return;
-        }
-        gracefulInterruptNotified = true;
-        request.onGracefulInterruptStart?.(cancelMechanism);
-      };
-
-      const notifyHardTerminate = (cancelMechanism: 'process_signal' | 'abort_signal'): void => {
-        if (hardTerminateNotified) {
-          return;
-        }
-        hardTerminateNotified = true;
-        request.onHardTerminateStart?.(cancelMechanism);
-      };
-
-      const clearTerminationTimers = (): void => {
-        if (timeoutHandle) {
-          clearTimeout(timeoutHandle);
-        }
-        if (hardTerminateHandle) {
-          clearTimeout(hardTerminateHandle);
-          hardTerminateHandle = null;
-        }
-      };
-
-      const startHardTerminationFuse = (
-        cancelMechanism: 'process_signal' | 'abort_signal',
-      ): void => {
-        if (hardTerminateHandle) {
-          return;
-        }
-        hardTerminateHandle = setTimeout(() => {
-          hardTerminated = true;
-          notifyHardTerminate(cancelMechanism);
-          child.kill('SIGKILL');
-        }, this.resolveCliTerminateGraceMs(request.timeoutMs));
-      };
-
-      const timeoutHandle = setTimeout(() => {
-        timedOut = true;
-        notifyGracefulInterrupt('process_signal');
-        child.kill('SIGTERM');
-        startHardTerminationFuse('process_signal');
-      }, request.timeoutMs);
-
-      const finishReject = (error: unknown) => {
-        if (settled) {
-          return;
-        }
-        settled = true;
-        clearTerminationTimers();
-        request.signal?.removeEventListener('abort', onAbortSignal);
-        reject(error);
-      };
-
-      const onAbortSignal = () => {
-        abortRequested = true;
-        notifyGracefulInterrupt('abort_signal');
-        child.kill('SIGTERM');
-        startHardTerminationFuse('abort_signal');
-      };
-
-      request.signal?.addEventListener('abort', onAbortSignal, { once: true });
-      if (request.signal?.aborted) {
-        onAbortSignal();
-      }
-
-      child.on('error', (error) => {
-        finishReject(error);
-      });
-
-      child.stdout.setEncoding('utf8');
-      child.stdout.on('data', (chunk: string) => {
-        stdout += chunk;
-      });
-
-      child.stderr.setEncoding('utf8');
-      child.stderr.on('data', (chunk: string) => {
-        stderr += chunk;
-      });
-
-      child.on('close', (exitCode, signal) => {
-        if (settled) {
-          return;
-        }
-        settled = true;
-        clearTerminationTimers();
-        request.signal?.removeEventListener('abort', onAbortSignal);
-
-        if (timedOut) {
-          reject(
-            new RuntimeError(
-              request.operation === AgentCliExecOperation.PROBE
-                ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
-                : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
-              hardTerminated
-                ? `Codex ${request.operation} timed out after ${request.timeoutMs}ms and exceeded graceful interrupt window.`
-                : `Codex ${request.operation} timed out after ${request.timeoutMs}ms.`,
-              this.cliExecOperationsRuntime.createRedactedProcessDetails({
-                surface: CODEX_SURFACE,
-                operation: request.operation,
-                timeoutMs: request.timeoutMs,
-                stdout,
-                stderr,
-                exitCode,
-                signal,
-                ...(hardTerminated ? { hardTerminated: true } : {}),
-              }),
-            ),
-          );
-          return;
-        }
-
-        if (abortRequested) {
-          reject(
-            new RuntimeError(
-              request.operation === AgentCliExecOperation.PROBE
-                ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
-                : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
-              hardTerminated
-                ? `Codex ${request.operation} aborted and exceeded graceful interrupt window.`
-                : `Codex ${request.operation} aborted before completion.`,
-              this.cliExecOperationsRuntime.createRedactedProcessDetails({
-                surface: CODEX_SURFACE,
-                operation: request.operation,
-                timeoutMs: request.timeoutMs,
-                stdout,
-                stderr,
-                exitCode,
-                signal,
-                aborted: true,
-                ...(hardTerminated ? { hardTerminated: true } : {}),
-              }),
-            ),
-          );
-          return;
-        }
-
-        if (exitCode !== 0) {
-          reject(
-            new RuntimeError(
-              request.operation === AgentCliExecOperation.PROBE
-                ? GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED
-                : GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
-              `Codex ${request.operation} exited with code ${exitCode ?? 'null'}.`,
-              this.cliExecOperationsRuntime.createRedactedProcessDetails({
-                surface: CODEX_SURFACE,
-                operation: request.operation,
-                stdout,
-                stderr,
-                exitCode,
-                signal,
-              }),
-            ),
-          );
-          return;
-        }
-
-        resolve({
-          stdout,
-          stderr,
-          exitCode,
-          signal,
-          elapsedMs: Date.now() - startedAt,
-        });
-      });
-
-      child.stdin.end(request.prompt);
-    });
+    return await this.cliProcessRuntime.execute(
+      this.createCodexCliLaunchPlan({
+        operation: request.operation,
+        prompt: request.prompt,
+        timeoutMs: request.timeoutMs,
+        signal: request.signal,
+        commandArguments: request.commandArguments,
+        onStdoutChunk: request.onStdoutChunk,
+        onStderrChunk: request.onStderrChunk,
+        onGracefulInterruptStart: request.onGracefulInterruptStart,
+        onHardTerminateStart: request.onHardTerminateStart,
+      }),
+    );
   }
 
   private async executeCodexCliStreaming(
     request: CodexCliExecutionRequest,
     state: CodexCliExecutionState,
   ): Promise<CodexExecRunnerResult> {
-    return await new Promise<CodexExecRunnerResult>((resolve, reject) => {
-      const startedAt = Date.now();
-      const executionPolicy = resolveAgentStageExecutionPolicy(request.input);
-      const prompt = this.shouldUseRepositoryReviewCommand(request)
-        ? this.renderRepositoryReviewPrompt(request)
-        : this.renderInvokePrompt(request);
-      const child = spawn(
-        this.options.command,
-        [...this.resolveInvokeCommandArguments(request, executionPolicy)],
-        {
-          cwd: this.options.currentWorkingDirectory,
-          env: this.resolveEnvironment(),
-          stdio: ['pipe', 'pipe', 'pipe'],
+    const executionPolicy = resolveAgentStageExecutionPolicy(request.input);
+    const prompt = this.shouldUseRepositoryReviewCommand(request)
+      ? this.renderRepositoryReviewPrompt(request)
+      : this.renderInvokePrompt(request);
+    const executionResult = await this.cliProcessRuntime.execute(
+      this.createCodexCliLaunchPlan({
+        operation: AgentCliExecOperation.INVOKE,
+        prompt,
+        timeoutMs: request.timeoutMs,
+        signal: request.signal,
+        commandArguments: this.resolveInvokeCommandArguments(request, executionPolicy),
+        onStdoutChunk: (chunk) => {
+          state.stdout += chunk;
+          this.ingestCodexStdout(state, request, chunk);
         },
-      );
+        onStderrChunk: (chunk) => {
+          state.stderr += chunk;
+          this.ingestCodexStderr(state, request, chunk);
+        },
+        onGracefulInterruptStart: (cancelMechanism) => {
+          this.pushCliGracefulInterruptEvent(state, request, cancelMechanism);
+        },
+        onHardTerminateStart: (cancelMechanism) => {
+          this.pushCliHardTerminationEvent(state, request, cancelMechanism);
+        },
+      }),
+    );
+    this.ingestCodexStdout(state, request, '', true);
+    this.ingestCodexStderr(state, request, '', true);
+    return {
+      ...executionResult,
+      stdout: state.stdout,
+      stderr: state.stderr,
+    };
+  }
 
-      let settled = false;
-      let timedOut = false;
-      let abortRequested = false;
-      let hardTerminated = false;
-      let hardTerminateHandle: NodeJS.Timeout | null = null;
-      let gracefulInterruptNotified = false;
-      let hardTerminateNotified = false;
-
-      const notifyGracefulInterrupt = (
-        cancelMechanism: 'process_signal' | 'abort_signal',
-      ): void => {
-        if (gracefulInterruptNotified) {
-          return;
-        }
-        gracefulInterruptNotified = true;
-        this.pushCliGracefulInterruptEvent(state, request, cancelMechanism);
-      };
-
-      const notifyHardTerminate = (cancelMechanism: 'process_signal' | 'abort_signal'): void => {
-        if (hardTerminateNotified) {
-          return;
-        }
-        hardTerminateNotified = true;
-        this.pushCliHardTerminationEvent(state, request, cancelMechanism);
-      };
-
-      const clearTerminationTimers = (): void => {
-        if (timeoutHandle) {
-          clearTimeout(timeoutHandle);
-        }
-        if (hardTerminateHandle) {
-          clearTimeout(hardTerminateHandle);
-          hardTerminateHandle = null;
-        }
-      };
-
-      const startHardTerminationFuse = (
-        cancelMechanism: 'process_signal' | 'abort_signal',
-      ): void => {
-        if (hardTerminateHandle) {
-          return;
-        }
-        hardTerminateHandle = setTimeout(() => {
-          hardTerminated = true;
-          notifyHardTerminate(cancelMechanism);
-          child.kill('SIGKILL');
-        }, this.resolveCliTerminateGraceMs(request.timeoutMs));
-      };
-
-      const timeoutHandle = setTimeout(() => {
-        timedOut = true;
-        notifyGracefulInterrupt('process_signal');
-        child.kill('SIGTERM');
-        startHardTerminationFuse('process_signal');
-      }, request.timeoutMs);
-
-      const finishReject = (error: unknown): void => {
-        if (settled) {
-          return;
-        }
-        settled = true;
-        clearTerminationTimers();
-        request.signal?.removeEventListener('abort', onAbortSignal);
-        reject(error);
-      };
-
-      const onAbortSignal = () => {
-        abortRequested = true;
-        notifyGracefulInterrupt('abort_signal');
-        child.kill('SIGTERM');
-        startHardTerminationFuse('abort_signal');
-      };
-
-      request.signal?.addEventListener('abort', onAbortSignal, { once: true });
-      if (request.signal?.aborted) {
-        onAbortSignal();
-      }
-
-      child.on('error', (error) => {
-        finishReject(error);
-      });
-
-      child.stdout.setEncoding('utf8');
-      child.stdout.on('data', (chunk: string) => {
-        state.stdout += chunk;
-        this.ingestCodexStdout(state, request, chunk);
-      });
-
-      child.stderr.setEncoding('utf8');
-      child.stderr.on('data', (chunk: string) => {
-        state.stderr += chunk;
-        this.ingestCodexStderr(state, request, chunk);
-      });
-
-      child.on('close', (exitCode, signal) => {
-        if (settled) {
-          return;
-        }
-        settled = true;
-        clearTerminationTimers();
-        request.signal?.removeEventListener('abort', onAbortSignal);
-        this.ingestCodexStdout(state, request, '', true);
-        this.ingestCodexStderr(state, request, '', true);
-
-        if (timedOut) {
-          reject(
-            new RuntimeError(
-              GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
-              hardTerminated
-                ? `Codex invoke timed out after ${request.timeoutMs}ms and exceeded graceful interrupt window.`
-                : `Codex invoke timed out after ${request.timeoutMs}ms.`,
-              this.cliExecOperationsRuntime.createRedactedProcessDetails({
-                surface: CODEX_SURFACE,
-                operation: AgentCliExecOperation.INVOKE,
-                timeoutMs: request.timeoutMs,
-                stdout: state.stdout,
-                stderr: state.stderr,
-                exitCode,
-                signal,
-                ...(hardTerminated ? { hardTerminated: true } : {}),
-              }),
-            ),
-          );
-          return;
-        }
-
-        if (abortRequested) {
-          reject(
-            new RuntimeError(
-              GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
-              hardTerminated
-                ? 'Codex invoke aborted and exceeded graceful interrupt window.'
-                : 'Codex invoke aborted before completion.',
-              this.cliExecOperationsRuntime.createRedactedProcessDetails({
-                surface: CODEX_SURFACE,
-                operation: AgentCliExecOperation.INVOKE,
-                timeoutMs: request.timeoutMs,
-                stdout: state.stdout,
-                stderr: state.stderr,
-                exitCode,
-                signal,
-                aborted: true,
-                ...(hardTerminated ? { hardTerminated: true } : {}),
-              }),
-            ),
-          );
-          return;
-        }
-
-        if (exitCode !== 0) {
-          reject(
-            new RuntimeError(
-              GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
-              `Codex invoke exited with code ${exitCode ?? 'null'}.`,
-              this.cliExecOperationsRuntime.createRedactedProcessDetails({
-                surface: CODEX_SURFACE,
-                operation: AgentCliExecOperation.INVOKE,
-                stdout: state.stdout,
-                stderr: state.stderr,
-                exitCode,
-                signal,
-              }),
-            ),
-          );
-          return;
-        }
-
-        resolve({
-          stdout: state.stdout,
-          stderr: state.stderr,
-          exitCode,
-          signal,
-          elapsedMs: Date.now() - startedAt,
-        });
-      });
-
-      child.stdin.end(prompt);
-    });
+  private createCodexCliLaunchPlan(options: {
+    operation: AgentCliExecOperation;
+    prompt: string;
+    timeoutMs: number;
+    signal?: AbortSignal;
+    commandArguments: string[];
+    onStdoutChunk?: (chunk: string) => void;
+    onStderrChunk?: (chunk: string) => void;
+    onGracefulInterruptStart?: (cancelMechanism: 'process_signal' | 'abort_signal') => void;
+    onHardTerminateStart?: (cancelMechanism: 'process_signal' | 'abort_signal') => void;
+  }) {
+    return {
+      surfaceId: CODEX_SURFACE,
+      operation: options.operation,
+      command: this.options.command,
+      commandArguments: options.commandArguments,
+      cwd: this.options.currentWorkingDirectory,
+      env: this.resolveEnvironment(),
+      timeoutMs: options.timeoutMs,
+      ...(options.signal ? { signal: options.signal } : {}),
+      stdinMode: 'pipe' as const,
+      stdinPayload: options.prompt,
+      terminateGraceMs: this.resolveCliTerminateGraceMs(options.timeoutMs),
+      launchDiagnostics: {
+        selectedEntrypoint: this.options.command,
+        shellWrapped: false,
+        processTreePolicy: this.resolveCliProcessTreePolicy(),
+      },
+      onStdoutChunk: options.onStdoutChunk,
+      onStderrChunk: options.onStderrChunk,
+      onGracefulInterruptStart: options.onGracefulInterruptStart,
+      onHardTerminateStart: options.onHardTerminateStart,
+    };
   }
 
   private resolveCommandArguments(

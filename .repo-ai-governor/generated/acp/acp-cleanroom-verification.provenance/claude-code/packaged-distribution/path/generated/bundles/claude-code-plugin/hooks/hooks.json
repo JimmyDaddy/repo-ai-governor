@@ -1,0 +1,13 @@
+{
+  "host": "claude-code",
+  "target": "claude_code.plugin",
+  "mode": "plugin-bundle",
+  "handoffBridge": "cli_wrapper",
+  "hooks": [
+    {
+      "hookName": "sample-host-skill",
+      "path": "hooks/sample-host-skill.hook.json",
+      "handoffTarget": "repo-ai-governor sample-host-skill"
+    }
+  ]
+}

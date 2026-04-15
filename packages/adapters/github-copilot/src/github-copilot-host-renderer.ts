@@ -1,7 +1,11 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
-import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
+import {
+  GovernorErrorCode,
+  PUBLIC_SERVICE_HOST_PACKAGE_EXPORT,
+  RuntimeError,
+} from '@repo-ai-governor/shared';
 import {
   HOST_EXPORT_MANIFEST_SCHEMA_VERSION,
   HostDistributionDiscoveryState,
@@ -384,7 +388,7 @@ export class GithubCopilotHostRenderer {
       target: input.target,
       mode: input.mode,
       handoffBridge: input.handoffBridge ?? HostDistributionHandoffBridge.CLI_WRAPPER,
-      serviceHostPackageExport: '@cjhdev/repo-ai-governor/service-host',
+      serviceHostPackageExport: PUBLIC_SERVICE_HOST_PACKAGE_EXPORT,
       workflowIds: records.map((record) => record.workflowId),
       canonicalSourceRefs: this.mergeStringLists(
         ...records.map((record) => record.canonicalSourceRefs),
@@ -405,7 +409,7 @@ export class GithubCopilotHostRenderer {
     return {
       mcpServers: {
         'repo-ai-governor': {
-          packageExport: '@cjhdev/repo-ai-governor/service-host',
+          packageExport: PUBLIC_SERVICE_HOST_PACKAGE_EXPORT,
           hostClass: 'LocalOrchestrationServiceSidecarHost',
           host: input.host,
           target: input.target,

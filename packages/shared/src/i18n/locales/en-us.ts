@@ -335,6 +335,12 @@ export const EN_US_TRANSLATIONS = {
         'Remote-api credential references cannot be materialized automatically; resolve them manually for: {{credentials}}.',
       authenticateAdapters:
         'Authenticate or refresh login for remote adapters before connect/doctor: {{credentials}}.',
+      enableAcpRuntimeService:
+        'Complete ACP runtime-service enablement and host handoff verification before relying on: {{toolIds}}.',
+      verifyAcpPackagedDistribution:
+        'Capture ACP packaged-distribution evidence and keep it transport-scoped for: {{toolIds}}.',
+      runAcpCleanRoomVerify:
+        'ACP runtime-service and packaged-distribution evidence exist for {{toolIds}}; run clean-room verify and keep support wording gated to evidence-backed surfaces.',
       investigateHealthChecks:
         'Investigate remote adapter health checks before unattended execution: {{healthChecks}}.',
       pullLocalModels:
@@ -618,20 +624,21 @@ export const EN_US_TRANSLATIONS = {
         mainTurnBacklink: 'Backlink: kind={{kind}} label={{label}} target={{target}}',
         mainTurnSuggestedActionsTitle: 'Suggested next steps',
         providerContinuationTitle: 'Provider continuation',
+        providerContinuationTransportSummary: ' transport={{transportKind}}',
         providerContinuationModelSummary: ' model={{model}}',
         providerContinuationReasonSummary: ' reason={{reason}}',
         providerContinuationCreated:
-          '{{laneLabel}}: started backend conversation on {{surface}}{{modelSummary}}.',
+          '{{laneLabel}}: started backend conversation on {{surface}}{{transportSummary}}{{modelSummary}}.',
         providerContinuationReused:
-          '{{laneLabel}}: reused backend conversation on {{surface}}{{modelSummary}}.',
+          '{{laneLabel}}: reused backend conversation on {{surface}}{{transportSummary}}{{modelSummary}}.',
         providerContinuationRefreshed:
-          '{{laneLabel}}: refreshed backend conversation on {{surface}}{{modelSummary}}{{reasonSummary}}.',
+          '{{laneLabel}}: refreshed backend conversation on {{surface}}{{transportSummary}}{{modelSummary}}{{reasonSummary}}.',
         providerContinuationCleared:
-          '{{laneLabel}}: cleared backend conversation state on {{surface}}{{modelSummary}}{{reasonSummary}}.',
+          '{{laneLabel}}: cleared backend conversation state on {{surface}}{{transportSummary}}{{modelSummary}}{{reasonSummary}}.',
         providerContinuationFallbackActive:
-          '{{laneLabel}}: continuity stayed available through the lightweight session note; {{surface}}{{modelSummary}} did not provide backend reuse{{reasonSummary}}.',
+          '{{laneLabel}}: continuity stayed available through the lightweight session note; {{surface}}{{transportSummary}}{{modelSummary}} did not provide backend reuse{{reasonSummary}}.',
         providerContinuationUnsupported:
-          '{{laneLabel}}: backend reuse on {{surface}}{{modelSummary}} is unsupported, and no lightweight session note was available to preserve continuity{{reasonSummary}}.',
+          '{{laneLabel}}: backend reuse on {{surface}}{{transportSummary}}{{modelSummary}} is unsupported, and no lightweight session note was available to preserve continuity{{reasonSummary}}.',
         mainTurnFollowUpPrompt: 'The main agent needs one clarification before handoff:',
         sessionStarted: 'Started service-backed session {{sessionId}} on {{routeId}}.',
         sessionResumed: 'Resumed session {{sessionId}} via selector={{resumeSelector}}.',

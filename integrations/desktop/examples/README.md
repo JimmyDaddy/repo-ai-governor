@@ -6,7 +6,7 @@
 2. desktop client 只消费 transport-neutral DTO / event stream
 3. desktop client 不直接持有 runtime internals，也不旁路 artifact / recovery / HITL contract
 4. memory provider 必须由 service host 通过 shared loader 解析，desktop 只消费 `memoryProvider` composition summary
-5. packaged local host bootstrap 只能通过 `@cjhdev/repo-ai-governor/service-host`，不能依赖内部 `dist/node_modules` 目录结构
+5. packaged local host bootstrap 只能通过 `repo-ai-governor/service-host`，不能依赖内部 `dist/node_modules` 目录结构
 
 这条候选基线当前只服务于 foundation-only desktop contract。它不创建也不暗示 standalone desktop installer、published desktop bundle 或 packaged desktop product claim。
 

@@ -1,10 +1,26 @@
 # checklist
 
-- [ ] TK-829 isolate a provisional ACP extension seam behind non-canonical internal runtime boundaries
+- [x] TK-829 isolate a provisional ACP extension seam behind non-canonical internal runtime boundaries
   - 2026-04-13：任务通过 `DA-819` 创建，当前保持 `planned`，等待 sprint-003 激活后执行。
-- [ ] TK-830 add guardrails so ACP remains additive non-default and non-public without a separate solution
+  - 2026-04-13：随着 `TK-828` 完成，任务状态切换为 `active`；当前围绕 internal-only ACP seam 推进实现与收口，并保持其不进入 adapter-sdk public surface；当前等待 sprint-003 delegated CR。
+  - 2026-04-13：`CR-001` clean 收口后，internal ACP seam 已证明保持在 non-canonical internal boundary 内，本任务收口为 `completed`。
+- [x] TK-830 add guardrails so ACP remains additive non-default and non-public without a separate solution
   - 2026-04-13：任务通过 `DA-819` 创建，当前保持 `planned`，等待 `TK-829` 完成后执行。
-- [ ] TK-831 produce regression and evidence packets for native cli_exec convergence and ACP seam non-regression
+  - 2026-04-13：随着 `TK-828` 完成，任务状态切换为 `active`；当前围绕 config guardrail 与 non-public boundary 推进收口，确保 `acp` 不被 authoring 成 canonical transport，也不进入 public support wording；当前等待 sprint-003 delegated CR。
+  - 2026-04-13：`CR-001` clean 收口后，ACP additive / non-default / non-public guardrail 已保持稳定，本任务收口为 `completed`。
+- [x] TK-831 produce regression and evidence packets for native cli_exec convergence and ACP seam non-regression
   - 2026-04-13：任务通过 `DA-819` 创建，当前保持 `planned`，等待 `TK-830` 完成后执行。
-- [ ] TK-832 finalize project-098 rollout closeout and delivery evidence handoff
+  - 2026-04-13：随着 `TK-828` 完成，任务状态切换为 `active`；当前围绕 seam unit test、config public-boundary guardrail test 与 package-level non-regression suite 收敛 evidence packet，等待 sprint-003 delegated CR。
+  - 2026-04-13：`CR-001` clean 收口后，ACP seam non-regression 与 native `cli_exec` convergence evidence 已具备 project-final review 前置条件，本任务收口为 `completed`。
+- [x] TK-832 finalize project-098 rollout closeout and delivery evidence handoff
   - 2026-04-13：任务通过 `DA-819` 创建，当前保持 `planned`，等待 sprint-003 与 evidence gate clean 收口后执行。
+  - 2026-04-13：`CR-002` 已 clean 收口；已创建 project-level completion audit summary，并将 project/sprint plan、delivery registry、completed history 与 `current-context.md` 一次性恢复到最终完成态。
+  - 2026-04-13：已执行最终 ledger/status gate 核验，确认 `TK-832` closeout 后的 sqlite/checklist/tasks.csv、review lifecycle、delivery registry 与 idle context 同步无漂移。
+- [x] CR-001 sprint-003-explicit-acp-extension-seam-guardrails-and-rollout-closeout delegated review loop round 1
+  - 2026-04-13：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-13：fresh review 未发现需要修复的点；internal ACP seam、config guardrail 与 non-regression evidence 边界满足 sprint-003 当前范围约束。
+  - 2026-04-13：review artifact 已直接收口为 `resolved_code_review_working-tree-20260413-1502.md`，下一步继续在 sprint-003 surface 上发起 project-final review。
+- [x] CR-002 project-098-cli-exec-runtime-rollout final delegated review loop round 2
+  - 2026-04-13：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-13：project-final fresh reviewer 返回 2 条 actionable findings；主 agent 已完成复核并全部认可，review artifact 已补充 `复核结论`。
+  - 2026-04-13：已完成 Codex / GitHub Copilot malformed-output parse-failure branch 修复与 smoke regression 补强，并将 review artifact 推进到 `resolved_code_review_working-tree-20260413-1550.md`。

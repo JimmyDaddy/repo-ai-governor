@@ -1,0 +1,131 @@
+{
+  "schemaVersion": "host-pack-report-v1",
+  "packedAt": "2026-04-15T05:27:00.162Z",
+  "host": "codex",
+  "mode": "plugin-bundle",
+  "target": "codex.plugin",
+  "stagedExportRoot": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/codex/packaged-distribution/link/generated/hosts/codex-plugin",
+  "bundleRoot": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/codex/packaged-distribution/link/generated/bundles/codex-plugin",
+  "discoveryState": "installed_bundle",
+  "packReportPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/codex/packaged-distribution/link/generated/hosts/codex-plugin/host-pack.report.json",
+  "exportManifestPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/codex/packaged-distribution/link/generated/hosts/codex-plugin/host-export.manifest.json",
+  "packedFiles": [
+    {
+      "relativePath": ".codex-plugin/plugin.json",
+      "content": "{\n  \"host\": \"codex\",\n  \"target\": \"codex.plugin\",\n  \"mode\": \"plugin-bundle\",\n  \"handoffBridge\": \"cli_wrapper\",\n  \"serviceHostPackageExport\": \"repo-ai-governor/service-host\",\n  \"workflowIds\": [\n    \"sample-host-skill\"\n  ],\n  \"canonicalSourceRefs\": [\n    \".codex/skills/sample-host-skill/SKILL.md\"\n  ],\n  \"sourcePackRefs\": [\n    \"repo-local-skill:sample-host-skill\"\n  ],\n  \"entrypoints\": {\n    \"skills\": [\n      \"skills/sample-host-skill/SKILL.md\"\n    ],\n    \"agents\": [\n      \"agents/sample-host-skill.agent.md\"\n    ]\n  }\n}\n",
+      "workflowId": "sample-host-skill",
+      "target": "codex.plugin",
+      "canonicalSourceRefs": [".codex/skills/sample-host-skill/SKILL.md"],
+      "sourcePackRefs": ["repo-local-skill:sample-host-skill"],
+      "bundlePath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/codex/packaged-distribution/link/generated/bundles/codex-plugin/.codex-plugin/plugin.json"
+    },
+    {
+      "relativePath": "skills/sample-host-skill/SKILL.md",
+      "content": "---\nname: sample-host-skill\ndescription: Sample host skill used by ACP clean-room verification.\n---\n\n# Sample Host Skill\n\nThis fixture proves installed-package host export/pack/verify behavior in clean-room repos.\n",
+      "workflowId": "sample-host-skill",
+      "target": "codex.plugin",
+      "canonicalSourceRefs": [".codex/skills/sample-host-skill/SKILL.md"],
+      "sourcePackRefs": ["repo-local-skill:sample-host-skill"],
+      "bundlePath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/codex/packaged-distribution/link/generated/bundles/codex-plugin/skills/sample-host-skill/SKILL.md"
+    },
+    {
+      "relativePath": "agents/sample-host-skill.agent.md",
+      "content": "# Sample Host Skill\n\n- Host: codex\n- Target: codex.plugin\n- Workflow ID: sample-host-skill\n- Handoff: cli_wrapper -> repo-ai-governor sample-host-skill\n\nSample host skill used by ACP clean-room verification.\n",
+      "workflowId": "sample-host-skill",
+      "target": "codex.plugin",
+      "canonicalSourceRefs": [".codex/skills/sample-host-skill/SKILL.md"],
+      "sourcePackRefs": ["repo-local-skill:sample-host-skill"],
+      "bundlePath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/codex/packaged-distribution/link/generated/bundles/codex-plugin/agents/sample-host-skill.agent.md"
+    },
+    {
+      "relativePath": ".mcp.json",
+      "content": "{\n  \"mcpServers\": {\n    \"repo-ai-governor\": {\n      \"packageExport\": \"repo-ai-governor/service-host\",\n      \"hostClass\": \"LocalOrchestrationServiceSidecarHost\",\n      \"host\": \"codex\",\n      \"target\": \"codex.plugin\",\n      \"mode\": \"plugin-bundle\",\n      \"bridge\": \"cli_wrapper\",\n      \"workflowIds\": [\n        \"sample-host-skill\"\n      ]\n    }\n  }\n}\n",
+      "workflowId": "sample-host-skill",
+      "target": "codex.plugin",
+      "canonicalSourceRefs": [".codex/skills/sample-host-skill/SKILL.md"],
+      "sourcePackRefs": ["repo-local-skill:sample-host-skill"],
+      "bundlePath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/codex/packaged-distribution/link/generated/bundles/codex-plugin/.mcp.json"
+    }
+  ],
+  "status": "pass",
+  "verificationSummary": {
+    "schemaVersion": "host-verification-summary-v1",
+    "status": "pass",
+    "verifiedAt": "2026-04-15T05:27:00.162Z",
+    "verificationSummaryPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/codex/packaged-distribution/link/generated/hosts/codex-plugin/host-pack.report.json",
+    "exportManifestPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/codex/packaged-distribution/link/generated/hosts/codex-plugin/host-export.manifest.json",
+    "checks": [
+      {
+        "checkId": "canonical-source-refs",
+        "status": "pass",
+        "detail": "Canonical source refs were captured for the export.",
+        "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/codex/packaged-distribution/link/generated/hosts/codex-plugin/host-export.manifest.json",
+        "expectedValue": "at least one canonical source ref",
+        "actualValue": "AGENTS.md, .codex/skills/sample-host-skill/SKILL.md"
+      },
+      {
+        "checkId": "source-pack-refs",
+        "status": "pass",
+        "detail": "Source pack refs were captured for the export.",
+        "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/codex/packaged-distribution/link/generated/hosts/codex-plugin/host-export.manifest.json",
+        "expectedValue": "at least one source pack ref",
+        "actualValue": "repo-local-skill:sample-host-skill"
+      },
+      {
+        "checkId": "host-target-alignment",
+        "status": "pass",
+        "detail": "Target codex.plugin belongs to host codex.",
+        "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/codex/packaged-distribution/link/generated/hosts/codex-plugin/host-export.manifest.json",
+        "expectedValue": "codex",
+        "actualValue": "codex"
+      },
+      {
+        "checkId": "mode-support",
+        "status": "pass",
+        "detail": "Mode plugin-bundle is supported for target codex.plugin.",
+        "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/codex/packaged-distribution/link/generated/hosts/codex-plugin/host-export.manifest.json",
+        "expectedValue": "plugin-bundle",
+        "actualValue": "plugin-bundle"
+      },
+      {
+        "checkId": "target-capability",
+        "status": "pass",
+        "detail": "Target belongs to the MVP-support matrix.",
+        "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/codex/packaged-distribution/link/generated/hosts/codex-plugin/host-export.manifest.json",
+        "expectedValue": "MVP target",
+        "actualValue": "codex.plugin"
+      },
+      {
+        "checkId": "rendered-files",
+        "status": "pass",
+        "detail": "Rendered files were produced for the requested target.",
+        "inspectedPath": ".codex-plugin/plugin.json",
+        "expectedValue": "at least one projected file",
+        "actualValue": "4"
+      },
+      {
+        "checkId": "handoff-bridge",
+        "status": "pass",
+        "detail": "Handoff bridge is cli_wrapper.",
+        "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/codex/packaged-distribution/link/generated/hosts/codex-plugin/host-export.manifest.json",
+        "expectedValue": "cli_wrapper, mcp",
+        "actualValue": "cli_wrapper"
+      },
+      {
+        "checkId": "discovery-state",
+        "status": "pass",
+        "detail": "Discovery state is installed_bundle.",
+        "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/codex/packaged-distribution/link/generated/hosts/codex-plugin/host-export.manifest.json",
+        "expectedValue": "staged_export, installed_bundle",
+        "actualValue": "installed_bundle"
+      }
+    ],
+    "inspectedPaths": [
+      ".codex-plugin/plugin.json",
+      "skills/sample-host-skill/SKILL.md",
+      "agents/sample-host-skill.agent.md",
+      ".mcp.json"
+    ],
+    "driftDetected": false
+  }
+}

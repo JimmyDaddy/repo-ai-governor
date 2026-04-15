@@ -1,0 +1,114 @@
+# checklist
+
+- [x] TK-864 wire focused compatibility verification profiles and trigger-matrix routing without promoting them to governance gates
+  - 2026-04-14：任务创建，状态初始化为 `planned`。
+  - 2026-04-14：sprint-001 clean closeout 后，当前任务状态切换为 `in_progress`，当前 sprint 被激活为新的 primary execution surface；下一步先为 sprint-002 分配本地 `CR-001`，再开始 profile routing implementation。
+  - 2026-04-14：已新增 `scripts/ci/run-cli-exec-compatibility-profile.js` 与 `pnpm run verify:cli-exec-compatibility` 入口，把 `full / runtime_foundation / adapter_slice` 三档 profile 变成真实 execution route。
+  - 2026-04-14：已新增 `test/cli-exec-compatibility-profile.integration.test.ts`，并用 dry-run 样例验证 shared runtime owner、cross-adapter window 与 single-adapter window 的 trigger-matrix routing。
+  - 2026-04-14：fresh reviewer round 1 指出 adapter-slice 命中面过宽；当前已将触发面收窄到真实 `cli_exec` runtime/parser 文件，并补齐 README / host-renderer false-positive regression coverage。
+  - 2026-04-14：fresh reviewer round 2 指出 `shared_runtime_foundation_changed` 缺少自动化覆盖；当前已补齐 adapter-sdk test / shared harness 两条 runtime-foundation regression assertions。
+  - 2026-04-14：fresh reviewer round 4 指出 shared `adapter-sdk` trigger surface 仍是目录级；当前已将 shared source/test 触发面收窄到 `native-cli-exec-process-runtime`、`agent-cli-exec-operations-runtime` 与 shared harness，并补齐 `agent-capability-evaluator`、`agent-route-runner`、`layered-health-check-runtime` false-positive regression coverage。
+  - 2026-04-14：fresh reviewer round 5 指出 adapter-slice 仍包含 `constants / interfaces` contract-only 文件；当前已将 adapter-slice 触发面进一步收窄到各 adapter 的真实 runtime entry 与 smoke test，并补齐 constants/interface false-positive regression coverage。
+  - 2026-04-14：fresh reviewer round 6 指出 shared native `cli_exec` internal ACP seam 未进入 trigger matrix，且 handoff artifact 将 adapter-slice 调用方式写成了通用 `<profile-id>` 入口；当前已把 seam source/test 纳入 shared profile、补齐 seam routing 与 explicit adapter-slice invocation regression coverage，并刷新 `DA-865` closeout guidance。
+  - 2026-04-14：fresh reviewer round 7 指出 CI `git_range` 分支仍缺少自动化覆盖；当前已新增临时 git repo 的 deterministic regression，锁住 `--base-ref/--head-ref` 路由到 shared full profile 的行为。
+  - 2026-04-14：fresh reviewer round 8 指出 compatibility router 自身与 guarding integration suite 变更仍可能绕过 baseline；当前已将 router script 与 integration suite 一并纳入 `cli_exec_compatibility_full` 触发面，并补齐对应 regression coverage。
+  - 2026-04-14：fresh reviewer round 9 指出显式无效 `--base-ref` 会静默降级到 working-tree mode；当前已将 explicit base-ref 解析改为 fail-fast，并补齐 invalid-base-ref regression coverage。
+  - 2026-04-14：fresh reviewer round 10 指出 explicit invalid `--base-ref` 仍可能被 env base-ref 接管、且 `package.json` verify entrypoint 改动还不会命中 full profile；当前已将显式 ref 解析改为优先 fail-fast，并把 `package.json` 纳入 `cli_exec_compatibility_full` 触发面，同时补齐两条 regression coverage。
+  - 2026-04-14：build、full compatibility profile 与 `test:packages` 已在当前 change window 通过，当前任务收口为 `completed`。
+- [x] TK-865 capture compatibility baseline evidence pack and closeout guidance for future runtime windows
+  - 2026-04-14：任务创建，状态初始化为 `planned`。
+  - 2026-04-14：已创建 `DA-865-cli-exec-compatibility-baseline-evidence-pack-and-closeout-guidance.md`，把三档 profile 的路由证据、当前窗口验证结果与 future closeout guidance 固定为可回链 handoff 面。
+  - 2026-04-14：fresh reviewer round 4 暴露 shared `adapter-sdk` false-positive trigger 后，当前已刷新 `DA-865` 的 trigger matrix 与验证证据，使 handoff artifact 与最新真实 routing 行为保持一致。
+  - 2026-04-14：fresh reviewer round 5 暴露 adapter-slice 仍把 contract-only `constants / interfaces` 当成触发面后，当前已再次刷新 `DA-865`，确保 handoff artifact 与 runtime/parser-only adapter boundary 保持一致。
+  - 2026-04-14：fresh reviewer round 6 暴露 shared native `cli_exec` internal ACP seam 未被 profile router 覆盖、且 adapter-slice 执行入口说明过宽后，当前已刷新 `DA-865` 的 seam guidance、adapter-slice invocation contract 与验证证据。
+  - 2026-04-14：fresh reviewer round 7 暴露 CI `git_range` 分支缺少回归保护后，当前已刷新 `DA-865` 的 targeted suite 统计，确保 handoff artifact 与最新 regression baseline 保持一致。
+  - 2026-04-14：fresh reviewer round 8 暴露 compatibility router 自身与 guarding integration suite 仍可能绕过 baseline 后，当前已刷新 `DA-865` 的 trigger guidance 与验证证据，确保“谁修改 trigger matrix，谁先跑 full”成为 handoff truth。
+  - 2026-04-14：fresh reviewer round 9 暴露显式无效 `--base-ref` 会静默降级到 working-tree mode 后，当前已刷新 `DA-865` 的 CI diff-routing guidance，确保 explicit git-range 输入在 ref 无法解析时 fail-fast。
+  - 2026-04-14：fresh reviewer round 10 暴露 explicit invalid `--base-ref` 仍可能被 env base-ref 接管、且 `package.json` verify entrypoint 改动仍可绕过 baseline 后，当前已刷新 `DA-865` 的 explicit-ref priority 与 full-profile trigger guidance。
+  - 2026-04-14：当前任务状态切换为 `completed`，下一步等待 sprint-002 fresh reviewer round 与 `TK-866` project-final closeout 收口。
+- [x] TK-866 finalize project-106 closeout and delivery evidence handoff
+  - 2026-04-14：任务创建，状态初始化为 `planned`。
+  - 2026-04-14：`sprint-002` 已在 `CR-011` clean recheck 后完成 boundary commit `c1258aa2`；当前任务切换为 `in_progress`，并开始 project-final fresh reviewer round。
+  - 2026-04-14：project-final `CR-012` 发现 project plan DoD、`current-context` active note 与本任务 `产出` 仍停留在 bootstrap/待激活语义；当前已修正 closeout truth，使 final closeout 能与真实完成态保持一致。
+  - 2026-04-14：native `cli_exec` timeout/abort partial-output preservation 的 full-gate flake 已通过 focused stabilization、`pnpm run build` 与 `pnpm run check` 重新转绿；当前任务继续保持 `in_progress`，并等待 latest fresh clean recheck 结论后执行最终 closeout。
+  - 2026-04-14：project-final `CR-017` 暴露 current closeout narrative 仍停留在 `CR-016` 语义，且 canonical ledger 中残留一条误写成 `completed` 的 `TK-866` 历史 execution row；当前先修复 narrative 与 canonical audit trail，再继续进入下一轮 fresh clean recheck。
+  - 2026-04-14：higher-level closeout surface 已统一切到 round-agnostic 的 “latest fresh clean recheck” truth；当前补齐 `TK-866` 自身 execution record 与派生 checklist/tasks.csv 的同窗写回，避免 task-level summary 再滞后一轮具体 `CR` 编号。
+  - 2026-04-14：project-final `CR-020` latest fresh clean recheck 未发现新的 actionable finding；当前已写回 completion audit、delivery truth、completed stream history 与 `project-102` activation，并完成 `project-106` final closeout。
+  - 2026-04-14：project-final CR-020 latest fresh clean recheck 保持 clean；completion audit、delivery truth、completed stream history 与 project-102 activation 已写回，当前任务正式完成。
+- [x] CR-001 sprint-002-verification-profiles-trigger-matrix-and-closeout delegated review loop round 1
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 1 返回 1 条 actionable finding；主 agent 复核后判定为 `accepted`，当前推进到 `verified` 并进入修复窗口。
+  - 2026-04-14：accepted finding 已完成修复，adapter-slice 触发面已收窄到真实 `cli_exec` runtime/parser 文件与对应 smoke tests；build、full compatibility profile、`test:packages` 与 false-positive targeted checks 已重跑通过，当前 round 收口为 `resolved`，下一步进入 fresh reviewer recheck round。
+- [x] CR-002 sprint-002-verification-profiles-trigger-matrix-and-closeout delegated recheck loop round 2
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 2 返回 1 条 actionable finding；主 agent 复核后判定为 `accepted`，当前推进到 `verified` 并进入修复窗口。
+  - 2026-04-14：accepted finding 已完成修复，新增 `shared_runtime_foundation_changed` 的 integration regression coverage；build、full compatibility profile、`test:packages` 与 targeted integration suite 已重跑通过，当前 round 收口为 `resolved`，下一步进入 fresh reviewer clean recheck。
+- [x] CR-003 sprint-002-verification-profiles-trigger-matrix-and-closeout delegated recheck loop round 3
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer clean recheck 返回 1 条 artifact evidence drift finding；主 agent 复核后判定为 `accepted`，当前推进到 `verified` 并进入修复窗口。
+  - 2026-04-14：accepted finding 已完成修复，`DA-865` 的 targeted suite 统计已刷新为当前真实结果；当前 round 收口为 `resolved`，下一步进入新的 fresh clean recheck。
+- [x] CR-004 sprint-002-verification-profiles-trigger-matrix-and-closeout delegated recheck loop round 4
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 4 发现 shared `adapter-sdk` trigger surface 仍是目录级，导致非 native `cli_exec` source/test 会被误路由到 `full` 或 `runtime_foundation` profile。
+  - 2026-04-14：主 agent 已将 shared `adapter-sdk` trigger 面收窄到真实 native `cli_exec` owner/foundation 文件，补齐 false-positive regression coverage，并用 `pnpm run build`、`pnpm run verify:cli-exec-compatibility -- --profile cli_exec_compatibility_full --execute`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 targeted dry-run 复核通过，当前状态推进为 `resolved`。
+- [x] CR-005 sprint-002-verification-profiles-trigger-matrix-and-closeout delegated recheck loop round 5
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 5 发现 adapter-slice 仍将 adapter `constants / interfaces` contract-only 文件当作 compatibility trigger，导致 runtime/parser-only closeout guidance 与实际 routing 行为不一致。
+  - 2026-04-14：主 agent 已将 adapter-slice 触发面收窄到各 adapter 的真实 runtime entry 与 smoke test，并补齐 constants/interface false-positive regression coverage；`pnpm run build`、`pnpm run verify:cli-exec-compatibility -- --profile cli_exec_compatibility_full --execute`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 targeted dry-run 已在同窗通过，当前状态推进为 `resolved`。
+- [x] CR-006 sprint-002-verification-profiles-trigger-matrix-and-closeout delegated recheck loop round 6
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 6 发现 shared native `cli_exec` internal ACP seam 未被 profile router 覆盖，且 `DA-865` 将 adapter-slice 执行入口写成了通用 `<profile-id>` 调用。
+  - 2026-04-14：主 agent 已将 internal ACP seam source/test 纳入 shared profile routing，补齐 seam 与 explicit adapter-slice invocation regression coverage，并刷新 `DA-865` 的调用文案与验证证据；`pnpm run build`、`pnpm run verify:cli-exec-compatibility -- --profile cli_exec_compatibility_full --execute`、`pnpm run verify:cli-exec-compatibility -- --profile cli_exec_compatibility_adapter_slice --adapter codex --execute`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 targeted dry-run 已在同窗通过，当前状态推进为 `resolved`。
+- [x] CR-007 sprint-002-verification-profiles-trigger-matrix-and-closeout delegated recheck loop round 7
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 7 发现 CI `git_range` 路径仍缺少自动化回归覆盖，`--base-ref/--head-ref` 与环境变量驱动的 diff 路由还没有被 integration suite 锁住。
+  - 2026-04-14：主 agent 已新增临时 git repo 的 deterministic regression，覆盖 `HEAD~1...HEAD` git-range shared-runtime 路由；`pnpm exec vitest run test/cli-exec-compatibility-profile.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run build`、`pnpm run verify:cli-exec-compatibility -- --profile cli_exec_compatibility_full --execute` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 已在同窗通过，当前状态推进为 `resolved`。
+- [x] CR-008 sprint-002-verification-profiles-trigger-matrix-and-closeout delegated recheck loop round 8
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 8 发现 compatibility router 自身与 guarding integration suite 的变更仍可能绕过 baseline，`scripts/ci/run-cli-exec-compatibility-profile.js` 与 `test/cli-exec-compatibility-profile.integration.test.ts` 当时都不会自动命中任何 compatibility profile。
+  - 2026-04-14：主 agent 已将 router script 与 guarding integration suite 纳入 `cli_exec_compatibility_full` 触发面，并补齐对应 regression coverage；`pnpm exec vitest run test/cli-exec-compatibility-profile.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run build`、`pnpm run verify:cli-exec-compatibility -- --profile cli_exec_compatibility_full --execute` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 已在同窗通过，当前状态推进为 `resolved`。
+- [x] CR-009 sprint-002-verification-profiles-trigger-matrix-and-closeout delegated recheck loop round 9
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 9 发现显式无效 `--base-ref` 会静默降级到 working-tree mode，导致 CI diff-routing 输入错误时仍可能误跑本地脏树。
+  - 2026-04-14：主 agent 已将 explicit invalid `--base-ref` 改为 fail-fast，并补齐 invalid-base-ref regression coverage；`pnpm exec vitest run test/cli-exec-compatibility-profile.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run build`、`pnpm run verify:cli-exec-compatibility -- --profile cli_exec_compatibility_full --execute` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 已在同窗通过，当前状态推进为 `resolved`。
+- [x] CR-010 sprint-002-verification-profiles-trigger-matrix-and-closeout delegated recheck loop round 10
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 10 发现两个剩余路由缺口：explicit invalid `--base-ref` 仍可能被 env base-ref 接管，且 `package.json` 中的 `verify:cli-exec-compatibility` entrypoint 改动仍不会命中 full profile。
+  - 2026-04-14：主 agent 已将 explicit `--base-ref` 校验调整为优先 fail-fast、把 `package.json` 纳入 `cli_exec_compatibility_full` 触发面，并补齐 env-fallback 与 package-entrypoint regression coverage；`pnpm exec vitest run test/cli-exec-compatibility-profile.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`node ./scripts/ci/run-cli-exec-compatibility-profile.js --changed-file package.json --output json`、`pnpm run build`、`pnpm run verify:cli-exec-compatibility -- --profile cli_exec_compatibility_full --execute` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 已在同窗通过，当前状态推进为 `resolved`。
+- [x] CR-011 sprint-002-verification-profiles-trigger-matrix-and-closeout delegated recheck loop round 11
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer clean recheck round 11 未发现新的 actionable finding；当前 sprint-002 implementation boundary 在最新 reviewer round 上达到 clean 状态。
+  - 2026-04-14：本地主 agent 复核了 `scripts/ci/run-cli-exec-compatibility-profile.js`、`package.json`、`test/cli-exec-compatibility-profile.integration.test.ts` 以及 `DA-865 / ADR` 的一致性，并确认 `pnpm exec vitest run test/cli-exec-compatibility-profile.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`node ./scripts/ci/run-cli-exec-compatibility-profile.js --changed-file package.json --output json`、`node ./scripts/ci/run-cli-exec-compatibility-profile.js --changed-file scripts/ci/run-cli-exec-compatibility-profile.js --output json`、`pnpm run build`、`pnpm run verify:cli-exec-compatibility -- --profile cli_exec_compatibility_full --execute` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 已在同窗通过，当前状态推进为 `resolved`。
+- [x] CR-012 project-106-cli-exec-compatibility-and-stability-rollout final delegated review loop round 12
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：project-final reviewer 发现 project plan DoD 仍停留在 decomposition/planned-stream 语义，且 active `current-context` note 还指向 `sprint-002` bootstrap 阶段；若直接 closeout，会让 canonical plan 与 active stream truth 和真实完成态脱节。
+  - 2026-04-14：主 agent 已将 project-level DoD、active `current-context` note 与 `TK-866` 产出/执行记录修正到 project-final closeout 阶段的真实语义；本轮仅触及 docs/ledger truth，不涉及新的可执行代码改动，下一步进入 fresh project-final clean recheck。
+- [x] CR-013 project-106-cli-exec-compatibility-and-stability-rollout final delegated review loop round 13
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer clean recheck 未发现新的 actionable finding；当前轮次直接写入 `resolved_code_review_working-tree-20260414-1120.md` 并将本任务推进为 `resolved`。
+- [x] CR-014 project-106-cli-exec-compatibility-and-stability-rollout final delegated review loop round 14
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 14 暴露 delivery truth、CR-012 verification text 与 project-level sprint summary 的治理漂移；accepted findings 已修复并写入 `resolved_code_review_working-tree-20260414-1147.md`，当前轮次推进为 `resolved`。
+- [x] CR-015 project-106-cli-exec-compatibility-and-stability-rollout final delegated review loop round 15
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 15 暴露 delivery truth 提前 completed 与 blocker 叙述过时两项治理漂移；accepted findings 已修复并写入 `resolved_code_review_working-tree-20260414-1158.md`，当前轮次推进为 `resolved`。
+- [x] CR-016 project-106-cli-exec-compatibility-and-stability-rollout final delegated review loop round 16
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 16 暴露 project-106 closeout-ready 语义里仍残留 “等待 gate blocker 清除” 的过时 truth；主 agent 复核后判定为 `accepted`。
+  - 2026-04-14：accepted finding 已完成修复，`current-context`、project-106 plan 与 `TK-866` 已统一改写为 “等待 latest fresh clean recheck 与 final closeout”；`check-technical-solution-delivery-registry`、`check-task-ledger-sync`、`check-sprint-plan-status-sync`、`check-code-review-status-sync` 与 `check-worktree-review-target` 已重跑通过，当前 round 收口为 `resolved`，下一步进入 fresh project-final clean recheck round。
+- [x] CR-017 project-106-cli-exec-compatibility-and-stability-rollout final delegated review loop round 17
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 17 暴露 2 条 accepted governance finding：`TK-866` canonical audit trail 中仍残留一条误写成 `completed` 的历史 execution row，且 active closeout surface 仍停留在 `CR-016` 语义。
+  - 2026-04-14：accepted findings 已完成修复；误写的 `TK-866` completed row 已从 sqlite canonical truth 与重渲染 `tasks.csv` 中移除，`current-context`、project plan、sprint plan 与 `TK-866` execution record 也已更新到当前 open `CR-017` 语义；delivery/task-ledger/sprint-plan/code-review/worktree checks 已重跑通过，当前 round 收口为 `resolved`，下一步进入 fresh project-final clean recheck round 18。
+- [x] CR-018 project-106-cli-exec-compatibility-and-stability-rollout final delegated review loop round 18
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 18 暴露 2 条 accepted governance finding：`CR-017` resolved row 未进入 rendered `tasks.csv`，且 active closeout narrative 仍停留在 `CR-017` 而不是当前 open `CR-018`。
+  - 2026-04-14：accepted findings 已完成修复；current closeout narrative 已推进到当前 open `CR-018`，并通过 source row 顺序重编号后重新串行写回 `CR-017 -> CR-018` canonical rows，消除了 `tasks.csv`/sqlite 漂移；task-ledger/sprint-plan/code-review/worktree/delivery checks 已重跑通过，当前 round 收口为 `resolved`，下一步进入 fresh project-final clean recheck round 19。
+- [x] CR-019 project-106-cli-exec-compatibility-and-stability-rollout final delegated review loop round 19
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer round 19 暴露 1 条 accepted risk-based finding：higher-level closeout surfaces 已切到 round-agnostic wording，但 `TK-866` 自身 execution record 与派生 checklist/tasks.csv 仍停留在旧 round 叙述。
+  - 2026-04-14：accepted finding 已完成修复；`TK-866` 已补一条 round-agnostic execution note，并已重渲染 checklist/tasks.csv 以移除 task-level summary 的旧 round 绑定；delivery/task-ledger/sprint-plan/code-review/worktree checks 已重跑通过，当前 round 收口为 `resolved`，下一步进入 fresh project-final clean recheck round 20。
+- [x] CR-020 project-106-cli-exec-compatibility-and-stability-rollout final delegated review loop round 20
+  - 2026-04-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-14：fresh reviewer clean recheck round 20 未发现新的 actionable finding；当前 project-106 final closeout boundary 在最新 reviewer round 上达到 clean 状态。
+  - 2026-04-14：delegated reviewer 已确认 focused runtime test、`pnpm run build`、`pnpm run check` 与 delivery/task-ledger/sprint-plan/code-review/worktree governance checks 全部通过，当前 round 收口为 `resolved`，下一步进入 project-106 final closeout 与 project-102 activation。

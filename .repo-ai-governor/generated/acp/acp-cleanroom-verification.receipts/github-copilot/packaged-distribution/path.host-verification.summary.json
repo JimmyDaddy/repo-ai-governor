@@ -1,0 +1,145 @@
+{
+  "schemaVersion": "host-verification-summary-v1",
+  "status": "pass",
+  "verifiedAt": "2026-04-15T05:26:58.049Z",
+  "verificationSummaryPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/packaged-distribution/path/generated/hosts/github-copilot-cli-plugin/host-verification.summary.json",
+  "exportManifestPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/packaged-distribution/path/generated/hosts/github-copilot-cli-plugin/host-export.manifest.json",
+  "checks": [
+    {
+      "checkId": "schema-version",
+      "status": "pass",
+      "detail": "schema_version=host-export-manifest-v1",
+      "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/packaged-distribution/path/generated/hosts/github-copilot-cli-plugin/host-export.manifest.json",
+      "expectedValue": "host-export-manifest-v1",
+      "actualValue": "host-export-manifest-v1"
+    },
+    {
+      "checkId": "canonical-source-refs",
+      "status": "pass",
+      "detail": "canonical_source_refs=2",
+      "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/packaged-distribution/path/generated/hosts/github-copilot-cli-plugin/host-export.manifest.json",
+      "expectedValue": "all canonical source refs exist",
+      "actualValue": "2"
+    },
+    {
+      "checkId": "target-capability",
+      "status": "pass",
+      "detail": "mvp_target=true",
+      "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/packaged-distribution/path/generated/hosts/github-copilot-cli-plugin/host-export.manifest.json",
+      "expectedValue": "true",
+      "actualValue": "true"
+    },
+    {
+      "checkId": "deprecated-github-app-path",
+      "status": "pass",
+      "detail": "github_app_copilot_extension_path_blocked=true",
+      "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/packaged-distribution/path/generated/hosts/github-copilot-cli-plugin/host-export.manifest.json",
+      "expectedValue": "no deprecated GitHub App Copilot Extension path",
+      "actualValue": "deprecated path absent"
+    },
+    {
+      "checkId": "required-target-paths",
+      "status": "pass",
+      "detail": "required_paths_checked=github_copilot.cli_plugin",
+      "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/packaged-distribution/path/generated/hosts/github-copilot-cli-plugin/host-export.manifest.json",
+      "expectedValue": "required paths present",
+      "actualValue": "github_copilot.cli_plugin"
+    },
+    {
+      "checkId": "staged:plugin.json",
+      "status": "pass",
+      "detail": "staged_file=plugin.json",
+      "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/packaged-distribution/path/generated/hosts/github-copilot-cli-plugin/plugin.json",
+      "expectedValue": "staged file content matches manifest",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "staged:skills/sample-host-skill/SKILL.md",
+      "status": "pass",
+      "detail": "staged_file=skills/sample-host-skill/SKILL.md",
+      "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/packaged-distribution/path/generated/hosts/github-copilot-cli-plugin/skills/sample-host-skill/SKILL.md",
+      "expectedValue": "staged file content matches manifest",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "staged:agents/sample-host-skill.agent.md",
+      "status": "pass",
+      "detail": "staged_file=agents/sample-host-skill.agent.md",
+      "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/packaged-distribution/path/generated/hosts/github-copilot-cli-plugin/agents/sample-host-skill.agent.md",
+      "expectedValue": "staged file content matches manifest",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "staged:hooks/hooks.json",
+      "status": "pass",
+      "detail": "staged_file=hooks/hooks.json",
+      "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/packaged-distribution/path/generated/hosts/github-copilot-cli-plugin/hooks/hooks.json",
+      "expectedValue": "staged file content matches manifest",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "staged:.mcp.json",
+      "status": "pass",
+      "detail": "staged_file=.mcp.json",
+      "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/packaged-distribution/path/generated/hosts/github-copilot-cli-plugin/.mcp.json",
+      "expectedValue": "staged file content matches manifest",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "pack-report-presence",
+      "status": "pass",
+      "detail": "pack_report=.repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/packaged-distribution/path/generated/hosts/github-copilot-cli-plugin/host-pack.report.json",
+      "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/packaged-distribution/path/generated/hosts/github-copilot-cli-plugin/host-pack.report.json",
+      "expectedValue": "pack report exists when manifest declares pack report path",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "packed:plugin.json",
+      "status": "pass",
+      "detail": "packed_file=plugin.json",
+      "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/packaged-distribution/path/generated/bundles/github-copilot-cli-plugin/plugin.json",
+      "expectedValue": "packed file content matches staged export",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "packed:skills/sample-host-skill/SKILL.md",
+      "status": "pass",
+      "detail": "packed_file=skills/sample-host-skill/SKILL.md",
+      "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/packaged-distribution/path/generated/bundles/github-copilot-cli-plugin/skills/sample-host-skill/SKILL.md",
+      "expectedValue": "packed file content matches staged export",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "packed:agents/sample-host-skill.agent.md",
+      "status": "pass",
+      "detail": "packed_file=agents/sample-host-skill.agent.md",
+      "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/packaged-distribution/path/generated/bundles/github-copilot-cli-plugin/agents/sample-host-skill.agent.md",
+      "expectedValue": "packed file content matches staged export",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "packed:hooks/hooks.json",
+      "status": "pass",
+      "detail": "packed_file=hooks/hooks.json",
+      "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/packaged-distribution/path/generated/bundles/github-copilot-cli-plugin/hooks/hooks.json",
+      "expectedValue": "packed file content matches staged export",
+      "actualValue": "present"
+    },
+    {
+      "checkId": "packed:.mcp.json",
+      "status": "pass",
+      "detail": "packed_file=.mcp.json",
+      "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/packaged-distribution/path/generated/bundles/github-copilot-cli-plugin/.mcp.json",
+      "expectedValue": "packed file content matches staged export",
+      "actualValue": "present"
+    }
+  ],
+  "inspectedPaths": [
+    "plugin.json",
+    "skills/sample-host-skill/SKILL.md",
+    "agents/sample-host-skill.agent.md",
+    "hooks/hooks.json",
+    ".mcp.json"
+  ],
+  "driftDetected": false
+}

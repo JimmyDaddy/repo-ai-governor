@@ -1,0 +1,149 @@
+{
+  "schemaVersion": "host-export-manifest-v1",
+  "generatedAt": "2026-04-15T05:27:04.276Z",
+  "host": "github-copilot",
+  "mode": "plugin-bundle",
+  "target": "github_copilot.cli_plugin",
+  "stagedExportRoot": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/packaged-distribution/link/generated/hosts/github-copilot-cli-plugin",
+  "discoveryState": "staged_export",
+  "semanticOwnerModule": "runtime.governance-clients",
+  "canonicalSourceRefs": ["AGENTS.md", ".codex/skills/sample-host-skill/SKILL.md"],
+  "sourcePackRefs": ["repo-local-skill:sample-host-skill"],
+  "workflowIds": ["sample-host-skill"],
+  "exportManifestPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/packaged-distribution/link/generated/hosts/github-copilot-cli-plugin/host-export.manifest.json",
+  "packReportPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/packaged-distribution/link/generated/hosts/github-copilot-cli-plugin/host-pack.report.json",
+  "handoffBridge": "cli_wrapper",
+  "targetCapabilities": {
+    "host": "github-copilot",
+    "target": "github_copilot.cli_plugin",
+    "supportedModes": ["plugin-bundle"],
+    "supportedDiscoveryStates": ["staged_export", "installed_bundle"],
+    "supportedHandoffBridges": ["cli_wrapper", "mcp"],
+    "supportsApplyToRepo": false,
+    "supportsBundlePackaging": true,
+    "isMvpTarget": true
+  },
+  "projectedFiles": [
+    {
+      "relativePath": "plugin.json",
+      "content": "{\n  \"host\": \"github-copilot\",\n  \"target\": \"github_copilot.cli_plugin\",\n  \"mode\": \"plugin-bundle\",\n  \"handoffBridge\": \"cli_wrapper\",\n  \"serviceHostPackageExport\": \"repo-ai-governor/service-host\",\n  \"workflowIds\": [\n    \"sample-host-skill\"\n  ],\n  \"canonicalSourceRefs\": [\n    \".codex/skills/sample-host-skill/SKILL.md\"\n  ],\n  \"sourcePackRefs\": [\n    \"repo-local-skill:sample-host-skill\"\n  ],\n  \"entrypoints\": {\n    \"skills\": [\n      \"skills/sample-host-skill/SKILL.md\"\n    ],\n    \"agents\": [\n      \"agents/sample-host-skill.agent.md\"\n    ],\n    \"hooks\": [\n      \"hooks/hooks.json\"\n    ]\n  }\n}\n",
+      "workflowId": "sample-host-skill",
+      "target": "github_copilot.cli_plugin",
+      "canonicalSourceRefs": [".codex/skills/sample-host-skill/SKILL.md"],
+      "sourcePackRefs": ["repo-local-skill:sample-host-skill"]
+    },
+    {
+      "relativePath": "skills/sample-host-skill/SKILL.md",
+      "content": "---\nname: sample-host-skill\ndescription: Sample host skill used by ACP clean-room verification.\n---\n\n# Sample Host Skill\n\nThis fixture proves installed-package host export/pack/verify behavior in clean-room repos.\n",
+      "workflowId": "sample-host-skill",
+      "target": "github_copilot.cli_plugin",
+      "canonicalSourceRefs": [".codex/skills/sample-host-skill/SKILL.md"],
+      "sourcePackRefs": ["repo-local-skill:sample-host-skill"]
+    },
+    {
+      "relativePath": "agents/sample-host-skill.agent.md",
+      "content": "# Sample Host Skill\n\n- Host: github-copilot\n- Target: github_copilot.cli_plugin\n- Workflow ID: sample-host-skill\n\nSample host skill used by ACP clean-room verification.\n",
+      "workflowId": "sample-host-skill",
+      "target": "github_copilot.cli_plugin",
+      "canonicalSourceRefs": [".codex/skills/sample-host-skill/SKILL.md"],
+      "sourcePackRefs": ["repo-local-skill:sample-host-skill"]
+    },
+    {
+      "relativePath": "hooks/hooks.json",
+      "content": "{\n  \"host\": \"github-copilot\",\n  \"target\": \"github_copilot.cli_plugin\",\n  \"mode\": \"plugin-bundle\",\n  \"handoffBridge\": \"cli_wrapper\",\n  \"hooks\": [\n    {\n      \"hookName\": \"sample-host-skill\",\n      \"path\": \"hooks/sample-host-skill.hook.json\"\n    }\n  ]\n}\n",
+      "workflowId": "sample-host-skill",
+      "target": "github_copilot.cli_plugin",
+      "canonicalSourceRefs": [".codex/skills/sample-host-skill/SKILL.md"],
+      "sourcePackRefs": ["repo-local-skill:sample-host-skill"]
+    },
+    {
+      "relativePath": ".mcp.json",
+      "content": "{\n  \"mcpServers\": {\n    \"repo-ai-governor\": {\n      \"packageExport\": \"repo-ai-governor/service-host\",\n      \"hostClass\": \"LocalOrchestrationServiceSidecarHost\",\n      \"host\": \"github-copilot\",\n      \"target\": \"github_copilot.cli_plugin\",\n      \"mode\": \"plugin-bundle\",\n      \"bridge\": \"cli_wrapper\",\n      \"workflowIds\": [\n        \"sample-host-skill\"\n      ]\n    }\n  }\n}\n",
+      "workflowId": "sample-host-skill",
+      "target": "github_copilot.cli_plugin",
+      "canonicalSourceRefs": [".codex/skills/sample-host-skill/SKILL.md"],
+      "sourcePackRefs": ["repo-local-skill:sample-host-skill"]
+    }
+  ],
+  "verificationSummary": {
+    "schemaVersion": "host-verification-summary-v1",
+    "status": "pass",
+    "verifiedAt": "2026-04-15T05:27:04.276Z",
+    "verificationSummaryPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/packaged-distribution/link/generated/hosts/github-copilot-cli-plugin/host-verification.summary.json",
+    "exportManifestPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/packaged-distribution/link/generated/hosts/github-copilot-cli-plugin/host-export.manifest.json",
+    "checks": [
+      {
+        "checkId": "canonical-source-refs",
+        "status": "pass",
+        "detail": "Canonical source refs were captured for the export.",
+        "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/packaged-distribution/link/generated/hosts/github-copilot-cli-plugin/host-export.manifest.json",
+        "expectedValue": "at least one canonical source ref",
+        "actualValue": "AGENTS.md, .codex/skills/sample-host-skill/SKILL.md"
+      },
+      {
+        "checkId": "source-pack-refs",
+        "status": "pass",
+        "detail": "Source pack refs were captured for the export.",
+        "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/packaged-distribution/link/generated/hosts/github-copilot-cli-plugin/host-export.manifest.json",
+        "expectedValue": "at least one source pack ref",
+        "actualValue": "repo-local-skill:sample-host-skill"
+      },
+      {
+        "checkId": "host-target-alignment",
+        "status": "pass",
+        "detail": "Target github_copilot.cli_plugin belongs to host github-copilot.",
+        "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/packaged-distribution/link/generated/hosts/github-copilot-cli-plugin/host-export.manifest.json",
+        "expectedValue": "github-copilot",
+        "actualValue": "github-copilot"
+      },
+      {
+        "checkId": "mode-support",
+        "status": "pass",
+        "detail": "Mode plugin-bundle is supported for target github_copilot.cli_plugin.",
+        "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/packaged-distribution/link/generated/hosts/github-copilot-cli-plugin/host-export.manifest.json",
+        "expectedValue": "plugin-bundle",
+        "actualValue": "plugin-bundle"
+      },
+      {
+        "checkId": "target-capability",
+        "status": "pass",
+        "detail": "Target belongs to the MVP-support matrix.",
+        "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/packaged-distribution/link/generated/hosts/github-copilot-cli-plugin/host-export.manifest.json",
+        "expectedValue": "MVP target",
+        "actualValue": "github_copilot.cli_plugin"
+      },
+      {
+        "checkId": "rendered-files",
+        "status": "pass",
+        "detail": "Rendered files were produced for the requested target.",
+        "inspectedPath": "plugin.json",
+        "expectedValue": "at least one projected file",
+        "actualValue": "5"
+      },
+      {
+        "checkId": "handoff-bridge",
+        "status": "pass",
+        "detail": "Handoff bridge is cli_wrapper.",
+        "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/packaged-distribution/link/generated/hosts/github-copilot-cli-plugin/host-export.manifest.json",
+        "expectedValue": "cli_wrapper, mcp",
+        "actualValue": "cli_wrapper"
+      },
+      {
+        "checkId": "discovery-state",
+        "status": "pass",
+        "detail": "Discovery state is staged_export.",
+        "inspectedPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/packaged-distribution/link/generated/hosts/github-copilot-cli-plugin/host-export.manifest.json",
+        "expectedValue": "staged_export, installed_bundle",
+        "actualValue": "staged_export"
+      }
+    ],
+    "inspectedPaths": [
+      "plugin.json",
+      "skills/sample-host-skill/SKILL.md",
+      "agents/sample-host-skill.agent.md",
+      "hooks/hooks.json",
+      ".mcp.json"
+    ],
+    "driftDetected": false
+  }
+}

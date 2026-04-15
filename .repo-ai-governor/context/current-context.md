@@ -12,7 +12,7 @@
 - Checklist: `none`
 - CSV: `none`
 - Review: `none`
-- Note: `2026-04-13` 已完成 `project-097 / sprint-001` docs-only promotion closeout；当前默认执行入口恢复为 idle，并将 `project-098 / sprint-001` 保留为 planned follow-up stream。
+- Note: `2026-04-15` `project-105 / sprint-003` reopened closeout 已在 latest project-final `CR-012` clean recheck 后重新收口；`TK-890`、completion audit、completed history 与 idle 恢复已按 canonical truth 写回。
 
 ## Active Streams
 
@@ -20,7 +20,7 @@
 
 ## Planned Follow-Up Streams
 
-- `stream-project-098-sprint-001`: project=`project-098-cli-exec-runtime-rollout`, sprint=`sprint-001-native-cli-runtime-foundation-and-codex-convergence`, docs=`.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout`, plan=`.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-001-native-cli-runtime-foundation-and-codex-convergence/plan.md`, tasks=`.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-001-native-cli-runtime-foundation-and-codex-convergence/tasks/`, checklist=`.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-001-native-cli-runtime-foundation-and-codex-convergence/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-001-native-cli-runtime-foundation-and-codex-convergence/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-098-cli-exec-runtime-rollout/sprint-001-native-cli-runtime-foundation-and-codex-convergence/review/`, status=`planned`
+- none
 
 ## Completed Stream History
 

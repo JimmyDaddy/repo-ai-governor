@@ -97,6 +97,38 @@ describe('AgentProjectionService', () => {
     );
   });
 
+  it('preserves acp host companion as additive projection-owned transport truth', () => {
+    const service = new AgentProjectionService();
+
+    const descriptor = service.project({
+      roleId: 'coder',
+      roleProfileId: 'coder-default',
+      routeKey: 'route.coder',
+      stageId: 'stage-coder',
+      adaptersConfig: createAdaptersConfigFixture(),
+      requiredCapabilities: ['tool_calling'],
+      workspaceId: 'workspace-001',
+      workspaceMode: WorkspaceMode.REPO_LOCAL,
+      selectedTransport: AdapterTransportKind.ACP_EXEC,
+      acpHostCompanion: {
+        hostReadinessStatus: 'baseline_only',
+        distributionBoundary: 'packaged_distribution_pending',
+        companionStateSummary: 'runtime_service_enablement_pending',
+      },
+    });
+
+    expect(descriptor).toEqual(
+      expect.objectContaining({
+        selectedTransport: AdapterTransportKind.ACP_EXEC,
+        acpHostCompanion: {
+          hostReadinessStatus: 'baseline_only',
+          distributionBoundary: 'packaged_distribution_pending',
+          companionStateSummary: 'runtime_service_enablement_pending',
+        },
+      }),
+    );
+  });
+
   it('fails closed when role binding is missing from adapters routing', () => {
     const service = new AgentProjectionService();
 

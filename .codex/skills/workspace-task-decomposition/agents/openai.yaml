@@ -1,0 +1,4 @@
+interface:
+  display_name: "Workspace Task Decomposition"
+  short_description: "标准化拆 project/sprint/task 与执行流骨架"
+  default_prompt: "使用 $workspace-task-decomposition 为当前仓库拆解一个标准化的 project/sprint/task execution surface，并生成 plan、task cards、checklist 与 tasks.csv 骨架。"

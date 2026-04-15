@@ -1,6 +1,6 @@
 # TK-822 project codex lifecycle observer partial-output and terminate-phase semantics onto the shared runtime
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-13
 - Owner: AI-Agent
 - Priority: P0
@@ -45,3 +45,6 @@
 ## 8. 执行记录
 
 1. 2026-04-13：任务通过 `DA-819` 创建，当前保持 `planned`，等待 `TK-821` 完成后执行。
+2. 2026-04-13：任务状态切换为 `active`；已将 `Codex` 的 streaming / non-streaming CLI 执行切到 shared runtime，同时保留 adapter parser-side semantic progress owner，并把 `graceful_interrupting` / `hard_terminating` / partial snapshot preservation 继续投影到现有 liveness contract。
+3. 2026-04-13：已通过 `pnpm run build` 与 Codex/adapter-sdk focused smoke + unit suite；当前等待 sprint-001 delegated CR 对 lifecycle observer 收敛与 terminate-phase 语义做 clean recheck。
+4. 2026-04-13：`CR-001` resolved 后，reviewer 未对 `Codex` lifecycle observer、partial snapshot preservation 或 terminate-phase 投影提出新增 actionable finding；当前 boundary 已通过 `pnpm run build`、focused Codex/runtime suite、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run check` 复核，任务收口为 `completed`。

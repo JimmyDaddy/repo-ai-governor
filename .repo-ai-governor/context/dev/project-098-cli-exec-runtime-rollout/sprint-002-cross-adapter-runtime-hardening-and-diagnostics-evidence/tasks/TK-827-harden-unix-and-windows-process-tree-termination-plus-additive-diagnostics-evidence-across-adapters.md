@@ -1,6 +1,6 @@
 # TK-827 harden Unix and Windows process-tree termination plus additive diagnostics evidence across adapters
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-13
 - Owner: AI-Agent
 - Priority: P0
@@ -45,3 +45,5 @@
 ## 8. 执行记录
 
 1. 2026-04-13：任务通过 `DA-819` 创建，当前保持 `planned`，等待 `TK-826` 完成后执行。
+2. 2026-04-13：随着 `TK-824` 完成，任务状态切换为 `active`；shared runtime 已补齐 Unix process-group / Windows `taskkill /T` 树终止收敛、launch diagnostics additive truth 与非零退出失败语义，`Claude Code` / `GitHub Copilot` / `Codex` cross-adapter evidence 已通过 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run check`；当前等待 sprint-002 delegated CR。
+3. 2026-04-13：`CR-001` 第 2 次 fresh review 识别 `Claude Code` / `GitHub Copilot` probe fallback launch diagnostics 在 parse-failure path 上会丢失；已补齐 adapter error-detail launch diagnostics 透传与 smoke regression，cross-platform terminate hardening 与 additive diagnostics evidence 已 clean 收口，本任务收口为 `completed`。

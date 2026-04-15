@@ -126,6 +126,29 @@ Important boundaries:
 1. Explicit `remote_api` selection is environment-gated. Warn states do not mean the system silently reused `cli_exec`.
 2. `local-model` is a constrained fallback surface, not a drop-in replacement for routes that require `tool_calling`, `structured_output`, or `confirmation_gate`.
 
+### Read Back The Readiness Chain Before The First Real Run
+
+Treat the emitted diagnostics payload as the source of truth. The playbook explains that payload; it does not recalculate readiness on its own.
+
+Use the same commands you already run for onboarding:
+
+```bash
+pnpm exec repo-ai-governor connect --tools codex,claude-code --preset multi-tool-default --output json
+pnpm exec repo-ai-governor doctor --adapters --fix --output json
+pnpm exec repo-ai-governor doctor --adapters --output json
+```
+
+Read the fields in this order:
+
+| Field | Where to read it | How to use it |
+|---|---|---|
+| `verification_status` | `verificationMatrix.verification_status` in the latest emitted `connect` or `doctor` diagnostics artifact | Treat this as the current public readiness verdict for the surface you just ran. Do not infer `pass` from a successful command exit alone. |
+| `diagnostic_summary` | `verificationMatrix.diagnostic_summary` | Use it as the compact readback of required-role failures, fallback/degraded role counts, and `doctor --fix` `safe_local_fix=<n>` activity. A `safe_local_fix` count means local workspace/config repairs happened; it does not mean missing CLIs, auth, or models were fixed for you. |
+| `next_action` / `next_actions` | `verificationMatrix.next_action` and `verificationMatrix.next_actions` | Treat these as the canonical operator next steps. The playbook may regroup or explain them, but it should not invent a greener state. |
+| `launch_diagnostics` | `verificationMatrix.tool_transport_matrix[]` and `verificationMatrix.role_binding_matrix[]` rows for the affected tool/role | Use these additive details only after you know the readiness verdict. They explain facts such as `selected_entrypoint`, `shell_wrapped`, `process_tree_policy`, and `spawn_error_code`. |
+
+If you need help or want a support-truth refresh later, keep the latest `connect` / `doctor` diagnostics artifact path plus the latest `verification_status`, `diagnostic_summary`, and `next_action(s)` together. If the issue only appears on the execution path, add the `run --dry-run --trace` artifact path too. That packet is the evidence hand-off.
+
 ## 5. Keep Shared Config And Personal Secrets Separate
 
 Use workspace config for repository-owned truth. Use `config` and `secret` when the setting belongs to one machine or one operator.
@@ -159,7 +182,7 @@ pnpm exec repo-ai-governor review-verify --output json
 Look for artifacts under the active workspace root, especially:
 
 1. `context/diagnostics/connect/`
-2. `context/diagnostics/verify/`
+2. `context/diagnostics/doctor/`
 3. `context/diagnostics/run/`
 4. `context/diagnostics/trace/`
 5. `context/review-queue/requests`
@@ -250,6 +273,22 @@ pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/ho
 ```
 
 Treat `host export`, `host verify`, and `host pack` as lower-level follow-up surfaces beneath the main `adopt apply` installation story.
+For packaged local host bootstrap, import the sidecar only from `repo-ai-governor/service-host`.
+
+### ACP host-facing readiness
+
+```bash
+pnpm exec repo-ai-governor host export --host codex --mode project-local --output-dir .repo-ai-governor/generated/hosts/codex --apply-to-repo /absolute/path/to/<target-repo>
+pnpm exec repo-ai-governor host pack --host codex --mode plugin-bundle --output-dir .repo-ai-governor/generated/hosts/codex-plugin --bundle-dir .repo-ai-governor/generated/bundles/codex-plugin
+pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/codex/host-export.manifest.json
+pnpm exec repo-ai-governor doctor --adapters --output json
+```
+
+Read this surface conservatively:
+
+1. `acp_exec` is explicit host-facing transport truth. It is never an alias or silent fallback of `cli_exec`.
+2. Treat ACP as support-ready only when `doctor` or `verify` projects `acp_host_companion` with runtime-service readiness, packaged-distribution readiness, and the clean-room verified summary.
+3. If ACP invoke, stream, or confirm still reports a blocked/fail-closed state, keep it blocked. Do not reinterpret that result as same-surface `cli_exec` success.
 
 ## 10. Troubleshooting And Known Boundaries
 
@@ -267,7 +306,8 @@ When in doubt:
 2. Re-run `doctor --adapters --fix --output json`.
 3. Re-run `doctor --adapters --output json`.
 4. Prefer `run --dry-run --trace` over a real run until the trace artifacts look healthy.
-5. Check `docs/support-matrix.md` before assuming a surface is formally supported.
+5. Read back `verification_status`, `diagnostic_summary`, and `next_action(s)` before escalating; use `launch_diagnostics` only as additive detail about the selected route.
+6. Check `docs/support-matrix.md` before assuming a surface is formally supported.
 
 ## 11. What To Read Next
 

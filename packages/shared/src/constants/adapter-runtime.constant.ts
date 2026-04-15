@@ -18,6 +18,7 @@ export enum AdapterSurface {
 export enum AdapterTransportKind {
   BASELINE = 'baseline',
   CLI_EXEC = 'cli_exec',
+  ACP_EXEC = 'acp_exec',
   REMOTE_API = 'remote_api',
 }
 
