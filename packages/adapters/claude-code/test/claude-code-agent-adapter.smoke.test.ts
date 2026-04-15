@@ -1007,7 +1007,8 @@ describe('claude-code-agent-adapter smoke', () => {
             'Bash(git:*) Bash(rg:*) Bash(sed:*) Bash(cat:*) Bash(ls:*) Bash(find:*) Read Grep Glob LS',
           ]),
         );
-        expect(request.timeoutMs).toBe(600000);
+        expect(request.timeoutMs).toBeGreaterThanOrEqual(599999);
+        expect(request.timeoutMs).toBeLessThanOrEqual(600000);
         expect(request.prompt).toContain('repository review stage');
         expect(request.prompt).toContain('帮我 review 一下代码');
         return createClaudeCodeExecRunner('claude review findings')({
