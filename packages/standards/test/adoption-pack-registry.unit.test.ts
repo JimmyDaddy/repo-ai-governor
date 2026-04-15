@@ -183,6 +183,9 @@ describe('AdoptionPackRegistry', () => {
     const governanceRulesMatrix = definition.readinessMatrixRecords.find(
       (record) => record.readinessGroup === AdoptionPackReadinessGroup.GOVERNANCE_RULES_READY,
     );
+    const executionSurfaceMatrix = definition.readinessMatrixRecords.find(
+      (record) => record.readinessGroup === AdoptionPackReadinessGroup.EXECUTION_SURFACE_READY,
+    );
 
     expect(readinessScopedSurfaces.length).toBeGreaterThan(0);
     expect(
@@ -207,6 +210,10 @@ describe('AdoptionPackRegistry', () => {
         'runtime_bootstrap:.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md',
       ]),
     );
+    expect(executionSurfaceMatrix?.note).toContain('diagnostics and adopt verify should warn');
+    expect(executionSurfaceMatrix?.note).toContain(
+      'downstream fail-closed execution preflight signal',
+    );
   });
 
   it('exposes self-host runtime bootstrap records through the built-in definition', async () => {
@@ -225,10 +232,12 @@ describe('AdoptionPackRegistry', () => {
     );
 
     expect(codeStandardsBootstrap?.content).toContain('# Code Standards');
+    expect(codeStandardsBootstrap?.content).toContain('replace_before_execution');
     expect(codeStandardsBootstrap?.sourceCatalogId).toBe(
       'runtime_bootstrap:.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md',
     );
     expect(maintenanceBootstrap?.content).toContain('# Long-Term Maintenance Guide');
+    expect(maintenanceBootstrap?.content).toContain('replace_before_execution');
     expect(maintenanceBootstrap?.sourceCatalogId).toBe(
       'runtime_bootstrap:.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md',
     );

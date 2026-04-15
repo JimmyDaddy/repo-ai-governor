@@ -1,8 +1,23 @@
 # checklist
 
-- [ ] TK-897 integrate self-host readiness signals into diagnostics verify and execution preflight
+- [x] TK-897 integrate self-host readiness signals into diagnostics verify and execution preflight
   - 2026-04-15：任务创建，状态初始化为 `planned`。
-- [ ] TK-898 add readiness applicability tests and refresh consumer docs truthfulness evidence
+  - 2026-04-15：状态切换为 `in_progress`，开始实现 `adopt verify` self-host readiness warning、`execution_preflight_signal` warning/signal 与最小 diagnostics sink integration。
+  - 2026-04-15：已在 `apps/cli/src/runtime/adoption-pack-runtime.ts` 接入 self-host-only readiness evaluation；fresh `self-host-complete + repo_local` `adopt verify` 现在会按 governance / product / execution 分组输出 warnings，并显式投影 `execution_preflight_signal=blocked` warning/signal，要求 self-host consumer 在 unattended execution 前按 downstream fail-closed blocker 处理，同时保持默认 `adopter-complete` 路径不受影响。
+  - 2026-04-15：已通过 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm exec vitest run apps/cli/test/adopt-command.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1` 验证 runtime integration 保持绿色。
+- [x] TK-898 add readiness applicability tests and refresh consumer docs truthfulness evidence
   - 2026-04-15：任务创建，状态初始化为 `planned`。
+  - 2026-04-15：状态切换为 `in_progress`，开始补齐 self-host readiness applicability coverage，并同步刷新 installer-facing consumer docs truthfulness wording。
+  - 2026-04-15：已补齐 `packages/standards/test/adoption-pack-registry.unit.test.ts` 与 `apps/cli/test/adopt-command.integration.test.ts` 的 readiness regression coverage，并刷新 `README.md`、`docs/local-adoption-playbook.md`、`docs/support-matrix.md`，明确 self-host verify warning、`execution_preflight_signal=blocked` signal 与 downstream fail-closed boundary。
+  - 2026-04-15：已通过 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm exec vitest run apps/cli/test/adopt-command.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1`、`node ./scripts/governance/run-normative-loading-manifest-gate.js` 验证 tests/docs truthfulness 与治理入口保持同步。
 - [ ] TK-899 finalize project-107 rollout closeout and completion audit
   - 2026-04-15：任务创建，状态初始化为 `planned`。
+- [x] CR-001 sprint-003-self-host-readiness-integration-and-consumer-truthfulness delegated review loop round 1
+  - 2026-04-15：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-15：delegated reviewer round 1 返回 2 条 actionable findings：一条要求收敛 self-host execution preflight wording truthfulness，另一条要求加固 starter placeholder readiness detection。
+  - 2026-04-15：主 agent 已逐条复核并认可上述 findings，完成 runtime/docs/tests 对齐与 placeholder detection hardening，并将对应 review artifact 推进到 `verified`。
+  - 2026-04-15：accepted findings 已全部完成修复，且同窗口 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm exec vitest run apps/cli/test/adopt-command.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1`、`node ./scripts/governance/run-normative-loading-manifest-gate.js` 均保持通过，report 已推进到 `resolved`。
+- [x] CR-002 sprint-003-self-host-readiness-integration-and-consumer-truthfulness delegated recheck loop round 2
+  - 2026-04-15：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-15：fresh reviewer round 2 已完成 post-fix recheck，未发现新的 actionable findings；仅保留一条关于 inverse branch coverage 的 non-blocking risk note。
+  - 2026-04-15：主 agent 依据 clean recheck 结果将 round 2 report 直接写为 `resolved`，并保留 round 1 accepted findings 已由 `CR-001` 收口的边界。

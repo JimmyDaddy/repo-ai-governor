@@ -105,10 +105,37 @@ describe('adopt command integration', () => {
         ['node', 'repo-ai-governor', 'adopt', 'verify', '--repo', '.'],
         verifyIo.io,
       );
+      const verificationSummary = JSON.parse(
+        await readFile(
+          resolve(
+            repositoryRoot,
+            '.repo-ai-governor',
+            'adoption',
+            'installations',
+            'repo-ai-governor-adoption-pack',
+            'adoption-verification.summary.json',
+          ),
+          'utf8',
+        ),
+      ) as {
+        status: string;
+        checks: Array<{ checkId: string }>;
+      };
 
       expect(verifyExitCode).toBe(0);
       expect(verifyIo.stderrBuffer.join('')).toBe('');
       expect(verifyIo.stdoutBuffer.join('')).toContain('adoption_verify');
+      expect(verificationSummary.status).toBe('pass');
+      expect(
+        verificationSummary.checks.some((check) =>
+          check.checkId.startsWith('self-host-readiness:'),
+        ),
+      ).toBe(false);
+      expect(
+        verificationSummary.checks.some(
+          (check) => check.checkId === 'self-host-execution-preflight',
+        ),
+      ).toBe(false);
 
       const managedSkillPath = resolve(
         repositoryRoot,
@@ -443,17 +470,70 @@ describe('adopt command integration', () => {
       );
       expect(configContent).toContain('mode: repo_local');
       expect(codeStandardsContent).toContain('- Status: draft');
+      expect(codeStandardsContent).toContain('- Placeholder Status: replace_before_execution');
       expect(maintenanceGuideContent).toContain('- Status: draft');
+      expect(maintenanceGuideContent).toContain('- Placeholder Status: replace_before_execution');
 
       const verifyIo = createBufferedIo(repositoryRoot);
       const verifyExitCode = await runCli(
         ['node', 'repo-ai-governor', 'adopt', 'verify', '--repo', '.'],
         verifyIo.io,
       );
+      const verificationSummary = JSON.parse(
+        await readFile(
+          resolve(
+            repositoryRoot,
+            '.repo-ai-governor',
+            'adoption',
+            'installations',
+            'repo-ai-governor-adoption-pack',
+            'adoption-verification.summary.json',
+          ),
+          'utf8',
+        ),
+      ) as {
+        status: string;
+        checks: Array<{ checkId: string; status: string; detail: string }>;
+      };
+      const governanceRulesReadinessCheck = verificationSummary.checks.find(
+        (check) => check.checkId === 'self-host-readiness:governance_rules_ready',
+      );
+      const productDirectionReadinessCheck = verificationSummary.checks.find(
+        (check) => check.checkId === 'self-host-readiness:product_direction_ready',
+      );
+      const executionSurfaceReadinessCheck = verificationSummary.checks.find(
+        (check) => check.checkId === 'self-host-readiness:execution_surface_ready',
+      );
+      const executionPreflightCheck = verificationSummary.checks.find(
+        (check) => check.checkId === 'self-host-execution-preflight',
+      );
 
       expect(verifyExitCode).toBe(0);
       expect(verifyIo.stderrBuffer.join('')).toBe('');
       expect(verifyIo.stdoutBuffer.join('')).toContain('adoption_verify');
+      expect(verificationSummary.status).toBe('warn');
+      expect(governanceRulesReadinessCheck).toMatchObject({
+        status: 'warn',
+      });
+      expect(governanceRulesReadinessCheck?.detail).toContain(
+        '.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md',
+      );
+      expect(productDirectionReadinessCheck).toMatchObject({
+        status: 'warn',
+      });
+      expect(productDirectionReadinessCheck?.detail).toContain(
+        '.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md',
+      );
+      expect(executionSurfaceReadinessCheck).toMatchObject({
+        status: 'warn',
+      });
+      expect(executionSurfaceReadinessCheck?.detail).toContain(
+        '.repo-ai-governor/context/current-context.md',
+      );
+      expect(executionPreflightCheck).toMatchObject({
+        status: 'warn',
+      });
+      expect(executionPreflightCheck?.detail).toContain('execution_preflight_signal=blocked');
     } finally {
       await rm(repositoryRoot, { recursive: true, force: true });
     }

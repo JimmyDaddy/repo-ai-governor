@@ -1,6 +1,6 @@
 # sprint-003-self-host-readiness-integration-and-consumer-truthfulness 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-15
 - Sprint Goal: 将 self-host-only readiness interlock 接入 runtime / diagnostics / verify / execution preflight，并完成首批 consumer docs truthfulness 与 evidence follow-through。
 - Project: `project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout`
@@ -18,19 +18,21 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-897 | integrate self-host readiness signals into diagnostics verify and execution preflight | TK-896 | planned |
-| TK-898 | add readiness applicability tests and refresh consumer docs truthfulness evidence | TK-897 | planned |
+| TK-897 | integrate self-host readiness signals into diagnostics verify and execution preflight | TK-896 | completed |
+| TK-898 | add readiness applicability tests and refresh consumer docs truthfulness evidence | TK-897 | completed |
 | TK-899 | finalize project-107 rollout closeout and completion audit | TK-897、TK-898 | planned |
 
 ## 3. Exit Criteria
 
-1. `TK-897 ~ TK-899` 的 canonical task cards、checklist 与 `tasks.csv` 已保持 planned 同步，且 project-final closeout 已提前获得显式承接任务。
+1. `TK-897` 已进入 `in_progress`，`TK-898 ~ TK-899` 继续保持 planned；canonical task cards、checklist 与 `tasks.csv` 需在本轮 execution 中持续同步，且 project-final closeout 已提前获得显式承接任务。
 2. runtime integration、tests/docs truthfulness 与 completion audit 的 project-final ownership 已拆清，不会在 closeout 时混成单一笼统任务。
 3. 本 sprint 被明确标记为 project-final execution surface，但仍保持 planned，直到用户显式要求激活。
 
 ## 4. Sprint Notes
 
-1. 本 sprint 已在 sprint-002 closeout 后切换为新的 primary stream，但 sprint plan 继续保持 `planned`，直到 `TK-897` 正式开工。
+1. 本 sprint 已在 sprint-002 closeout 后切换为新的 primary stream；`TK-897` 于 2026-04-15 正式开工后，sprint plan 已同步切换为 `active`。
 2. review surface 仅保留 `.gitkeep`，正式 `code_review_*` 生命周期文件待真实 execution 激活后再创建。
-3. 若后续窗口直接激活本 sprint，先执行 `node ./scripts/governance/sync-task-ledger.js --tasks-dir "<tasks-dir>"` 完成 canonical sqlite 对齐。
+3. `TK-897` 开工时必须先执行 `node ./scripts/governance/sync-task-ledger.js --tasks-dir "<tasks-dir>"` 完成 canonical sqlite 对齐。
 4. `TK-899` 只提供 project-final closeout 入口；是否真正把 `project-107` 切到 `completed`，取决于运行窗口是否产出了完整 build/test/docs evidence。
+5. `TK-897` / `TK-898` 已在 2026-04-15 完成，并形成进入 sprint delegated CR round 的当前实现边界。
+6. `CR-001` 与 `CR-002` 已于 2026-04-15 clean `resolved`；本 sprint 的 implementation + sprint-level CR boundary 已完成，现阶段继续保留为 project-final review / closeout surface，直到 `TK-899` 收口。

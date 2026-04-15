@@ -838,7 +838,7 @@ deliveries:
     consumer_surfaces:
       - internal_governance
     user_impact_level: none
-    execution_status: planned
+    execution_status: in_progress
     rollout_status: not_required
     owner: runtime
     project_ref: project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout

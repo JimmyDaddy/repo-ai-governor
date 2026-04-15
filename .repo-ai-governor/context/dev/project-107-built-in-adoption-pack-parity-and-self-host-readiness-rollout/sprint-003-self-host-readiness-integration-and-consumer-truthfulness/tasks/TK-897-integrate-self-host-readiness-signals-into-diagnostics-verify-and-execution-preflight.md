@@ -1,6 +1,6 @@
 # TK-897 integrate self-host readiness signals into diagnostics verify and execution preflight
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-15
 - Owner: AI-Agent
 - Priority: P1
@@ -19,7 +19,7 @@
 ## 3. 预期产物
 
 1. runtime readiness signal routing baseline
-2. self-host-only warn / fail_closed policy integration
+2. self-host-only warn / `execution_preflight_signal` policy integration
 3. diagnostics / verify / preflight sink ownership note
 
 ## 4. Required Inputs
@@ -57,9 +57,12 @@
 ## 9. 执行记录
 
 1. 2026-04-15：任务创建，状态初始化为 `planned`。
+2. 2026-04-15：状态切换为 `in_progress`，开始实现 `adopt verify` self-host readiness warning、`execution_preflight_signal` warning/signal 与最小 diagnostics sink integration。
+3. 2026-04-15：已在 `apps/cli/src/runtime/adoption-pack-runtime.ts` 接入 self-host-only readiness evaluation；fresh `self-host-complete + repo_local` `adopt verify` 现在会按 governance / product / execution 分组输出 warnings，并显式投影 `execution_preflight_signal=blocked` warning/signal，要求 self-host consumer 在 unattended execution 前按 downstream fail-closed blocker 处理，同时保持默认 `adopter-complete` 路径不受影响。
+4. 2026-04-15：已通过 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm exec vitest run apps/cli/test/adopt-command.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1` 验证 runtime integration 保持绿色。
 
 ## 10. 产出
 
-1. 待执行：runtime readiness signal routing baseline
-2. 待执行：self-host-only policy integration
-3. 待执行：sink ownership note
+1. 已完成：runtime readiness signal routing baseline
+2. 已完成：self-host-only policy integration
+3. 已完成：sink ownership note

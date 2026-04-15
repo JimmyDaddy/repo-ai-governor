@@ -86,6 +86,13 @@ What you should expect after this:
 3. `adopt apply` writes managed installation metadata under `.repo-ai-governor/adoption/installations/**`.
 4. `adopt verify` becomes the supported way to prove the managed baseline is still healthy.
 
+If you intentionally choose the `self-host-complete` profile with `workspace_mode=repo_local`, expect one extra boundary:
+
+1. Fresh `adopt verify` results warn while repo-local governance, product-direction, or execution starter placeholders are still untouched.
+2. Those warnings stay scoped to `self-host-complete + repo_local`; the default `adopter-complete` path is not downgraded by missing repo-local authoring docs.
+3. `adopt verify` now surfaces an `execution_preflight_signal=blocked` warning for untouched self-host starter placeholders; treat that signal as a hard blocker before unattended self-host execution, because the current public contract does not expose a separate automatic preflight command yet.
+4. `check` stays the explicit broader governance follow-up once the target repository starts authoring its own repo-local truth.
+
 ## First Successful Workflow
 
 After the repository is bootstrapped, the shortest end-to-end governed path is:

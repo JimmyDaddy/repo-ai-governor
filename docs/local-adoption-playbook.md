@@ -96,6 +96,13 @@ pnpm exec repo-ai-governor adopt verify --repo . --output json
 
 That path seeds empty or template-backed governance surfaces. It does not copy live execution state from this repository.
 
+Read the self-host verification result conservatively:
+
+1. A fresh `self-host-complete + repo_local` install is expected to return `warn` from `adopt verify` while starter governance, product-direction, or execution placeholders are still untouched.
+2. Those warnings are self-host-only readiness signals; the default `adopter-complete` install path does not inherit them.
+3. `adopt verify` now surfaces an `execution_preflight_signal=blocked` warning for untouched self-host starter placeholders; treat that signal as a hard blocker before unattended self-host execution, because the current public contract does not expose a separate automatic preflight command yet.
+4. After the repository authors its own repo-local surfaces, use `check` as the explicit broader governance audit instead of treating `adopt verify` as a substitute for full workspace readiness.
+
 ## 4. Connect Tools Before You Run
 
 Use `connect` when you want one repository baseline to route multiple tools through the same governed flow.

@@ -10,15 +10,18 @@ import { GithubCopilotHostRenderer } from '@repo-ai-governor/adapter-github-copi
 import { SqliteArtifactIndexStore } from '@repo-ai-governor/artifact-registry';
 import { GovernorErrorCode, RuntimeError, WorkspaceMode } from '@repo-ai-governor/shared';
 import {
+  AdoptionPackApplicabilityScope,
   type AdoptionPackInstallReceipt,
   AdoptionPackManagedAssetGroup,
   type AdoptionPackManagedFileRecord,
   type AdoptionPackProfile,
+  AdoptionPackReadinessSink,
   AdoptionPackRegistry,
   type AdoptionPackRuntimeBootstrapRecord,
   type AdoptionPackVerificationCheck,
   type AdoptionPackVerificationSummary,
   AdoptionPackWorkspaceModePolicy,
+  BUILT_IN_ADOPTION_PACK_PROFILE_IDS,
   DEFAULT_ADOPTION_METADATA_ROOT_SEGMENTS,
   HostDistributionHost,
   HostDistributionMode,
@@ -78,9 +81,24 @@ interface MaterializedHostResult {
   applyReportPath: string;
 }
 
+interface SelfHostReadinessEvaluation {
+  verifyChecks: AdoptionPackVerificationCheck[];
+}
+
 const ADOPTION_INSTALL_RECEIPT_FILE_NAME = 'adoption-install.receipt.json';
 const ADOPTION_VERIFICATION_SUMMARY_FILE_NAME = 'adoption-verification.summary.json';
 const ADOPTION_DIFF_REPORT_FILE_NAME = 'adoption-diff.report.json';
+const SELF_HOST_READINESS_CHECK_ID_PREFIX = 'self-host-readiness';
+const SELF_HOST_EXECUTION_PREFLIGHT_SIGNAL_CHECK_ID = 'self-host-execution-preflight';
+const SELF_HOST_REQUIRED_PLACEHOLDER_MARKER = 'replace_before_execution';
+const SELF_HOST_REQUIRED_PLACEHOLDER_STATUS_LINE = `- Placeholder Status: ${SELF_HOST_REQUIRED_PLACEHOLDER_MARKER}`;
+const SELF_HOST_STARTER_PLACEHOLDER_MARKERS = [
+  SELF_HOST_REQUIRED_PLACEHOLDER_STATUS_LINE,
+  'project-template',
+  'sprint-template',
+  'self-host-template',
+  '- Stream: `none`',
+] as const;
 const ARTIFACT_REGISTRY_HEADERS = [
   'artifact_id',
   'artifact_type',
@@ -381,6 +399,7 @@ export class CliAdoptionPackRuntime {
     const receipt = await this.loadReceiptForOperation(options);
     const diffRecords = await this.buildDiffRecords(receipt);
     const hostApplyReportPaths = this.resolveReceiptHostApplyReportPaths(receipt);
+    const selfHostReadiness = await this.evaluateSelfHostReadiness(receipt);
     const checks: AdoptionPackVerificationCheck[] = [
       {
         checkId: 'receipt-path',
@@ -401,6 +420,7 @@ export class CliAdoptionPackRuntime {
         inspectedPath: hostApplyReportPaths[0] ?? undefined,
       },
     ];
+    checks.push(...selfHostReadiness.verifyChecks);
     checks.push(
       ...diffRecords.map((record) => ({
         checkId: `managed:${record.relativePath}`,
@@ -1220,6 +1240,208 @@ export class CliAdoptionPackRuntime {
     }
 
     return diffRecords;
+  }
+
+  private async evaluateSelfHostReadiness(
+    receipt: AdoptionPackInstallReceipt,
+  ): Promise<SelfHostReadinessEvaluation> {
+    if (
+      receipt.appliedProfileId !== BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE ||
+      receipt.workspaceMode !== WorkspaceMode.REPO_LOCAL
+    ) {
+      return {
+        verifyChecks: [],
+      };
+    }
+
+    const definition = await this.adoptionPackRegistry.resolveDefinition(receipt.packId);
+    const starterContentByRelativePath = this.buildStarterContentByRelativePath(definition);
+    const sourceCatalogRecordBySurfaceId = new Map(
+      definition.sourceCatalogRecords.map((record) => [record.surfaceId, record] as const),
+    );
+    const verifyChecks: AdoptionPackVerificationCheck[] = [];
+    const preflightBlockedGroups: string[] = [];
+    const preflightBlockedPaths: string[] = [];
+
+    for (const matrixRecord of definition.readinessMatrixRecords) {
+      if (
+        matrixRecord.applicabilityScope !== AdoptionPackApplicabilityScope.SELF_HOST_REPO_LOCAL ||
+        (!matrixRecord.sinkIds.includes(AdoptionPackReadinessSink.ADOPT_VERIFY) &&
+          !matrixRecord.sinkIds.includes(AdoptionPackReadinessSink.EXECUTION_PREFLIGHT))
+      ) {
+        continue;
+      }
+
+      const unresolvedPlaceholderPaths = await this.resolveUnresolvedSelfHostReadinessPaths({
+        receipt,
+        starterContentByRelativePath,
+        sourceCatalogRecordBySurfaceId,
+        surfaceIds: matrixRecord.surfaceIds,
+      });
+      const normalizedGroup = matrixRecord.readinessGroup;
+      const unresolvedPlaceholderPathList = unresolvedPlaceholderPaths.join(',');
+
+      if (matrixRecord.sinkIds.includes(AdoptionPackReadinessSink.ADOPT_VERIFY)) {
+        verifyChecks.push({
+          checkId: `${SELF_HOST_READINESS_CHECK_ID_PREFIX}:${normalizedGroup}`,
+          status:
+            unresolvedPlaceholderPaths.length > 0
+              ? HostVerificationStatus.WARN
+              : HostVerificationStatus.PASS,
+          detail:
+            unresolvedPlaceholderPaths.length > 0
+              ? `readiness_group=${normalizedGroup} placeholder_paths=${unresolvedPlaceholderPathList}`
+              : `readiness_group=${normalizedGroup} ready`,
+          inspectedPath: unresolvedPlaceholderPaths[0] ?? undefined,
+        });
+      }
+
+      if (
+        matrixRecord.sinkIds.includes(AdoptionPackReadinessSink.EXECUTION_PREFLIGHT) &&
+        unresolvedPlaceholderPaths.length > 0
+      ) {
+        preflightBlockedGroups.push(normalizedGroup);
+        preflightBlockedPaths.push(...unresolvedPlaceholderPaths);
+      }
+    }
+
+    verifyChecks.push({
+      checkId: SELF_HOST_EXECUTION_PREFLIGHT_SIGNAL_CHECK_ID,
+      status:
+        preflightBlockedGroups.length > 0
+          ? HostVerificationStatus.WARN
+          : HostVerificationStatus.PASS,
+      detail:
+        preflightBlockedGroups.length > 0
+          ? `execution_preflight_signal=blocked enforcement=downstream_fail_closed blocked_groups=${[...new Set(preflightBlockedGroups)].join(',')} placeholder_paths=${[...new Set(preflightBlockedPaths)].join(',')}`
+          : 'execution_preflight_signal=ready',
+      inspectedPath: preflightBlockedPaths[0] ?? undefined,
+    });
+
+    return {
+      verifyChecks,
+    };
+  }
+
+  private buildStarterContentByRelativePath(
+    definition: ResolvedAdoptionPackDefinition,
+  ): Map<string, string> {
+    const starterContentByRelativePath = new Map<string, string>();
+
+    for (const templateRecord of definition.templateRecords) {
+      starterContentByRelativePath.set(templateRecord.relativePath, templateRecord.content);
+    }
+
+    for (const runtimeBootstrapRecord of definition.runtimeBootstrapRecords) {
+      starterContentByRelativePath.set(
+        runtimeBootstrapRecord.relativePath,
+        runtimeBootstrapRecord.content,
+      );
+    }
+
+    return starterContentByRelativePath;
+  }
+
+  private async resolveUnresolvedSelfHostReadinessPaths(options: {
+    receipt: AdoptionPackInstallReceipt;
+    starterContentByRelativePath: Map<string, string>;
+    sourceCatalogRecordBySurfaceId: Map<
+      string,
+      ResolvedAdoptionPackDefinition['sourceCatalogRecords'][number]
+    >;
+    surfaceIds: string[];
+  }): Promise<string[]> {
+    const unresolvedPaths = new Set<string>();
+
+    for (const surfaceId of options.surfaceIds) {
+      const sourceCatalogRecord = options.sourceCatalogRecordBySurfaceId.get(surfaceId);
+      const relativePath = sourceCatalogRecord?.relativePath;
+      if (!relativePath) {
+        continue;
+      }
+
+      const starterContent = options.starterContentByRelativePath.get(relativePath);
+      if (!starterContent) {
+        continue;
+      }
+
+      const absolutePath = resolve(options.receipt.targetRepoRoot, relativePath);
+      const currentContent = await this.readTextIfExists(absolutePath);
+      if (currentContent === null) {
+        unresolvedPaths.add(relativePath);
+        continue;
+      }
+
+      if (this.isSelfHostStarterPlaceholderContent(relativePath, currentContent, starterContent)) {
+        unresolvedPaths.add(relativePath);
+      }
+    }
+
+    return [...unresolvedPaths].sort((left, right) => left.localeCompare(right));
+  }
+
+  private isSelfHostStarterPlaceholderContent(
+    relativePath: string,
+    currentContent: string,
+    starterContent: string,
+  ): boolean {
+    const normalizedCurrentContent = currentContent.trim();
+    const normalizedStarterContent = starterContent.trim();
+    if (normalizedCurrentContent === normalizedStarterContent) {
+      return true;
+    }
+
+    const normalizedCurrentStarterSkeleton =
+      this.normalizeSelfHostStarterPlaceholderSkeleton(currentContent);
+    const normalizedStarterSkeleton =
+      this.normalizeSelfHostStarterPlaceholderSkeleton(starterContent);
+    if (normalizedCurrentStarterSkeleton === normalizedStarterSkeleton) {
+      return true;
+    }
+
+    if (
+      !relativePath.startsWith('.repo-ai-governor/context/') &&
+      !relativePath.startsWith('.repo-ai-governor/normative_knowledge_sources/')
+    ) {
+      return false;
+    }
+
+    return SELF_HOST_STARTER_PLACEHOLDER_MARKERS.some((marker) =>
+      normalizedCurrentContent.includes(marker),
+    );
+  }
+
+  private normalizeSelfHostStarterPlaceholderSkeleton(content: string): string {
+    return content
+      .split(/\r?\n/u)
+      .map((line) => line.trim())
+      .filter((line) => line !== SELF_HOST_REQUIRED_PLACEHOLDER_STATUS_LINE)
+      .map((line) => {
+        if (line.startsWith('- Status: ')) {
+          return '- Status: <placeholder>';
+        }
+
+        if (line.startsWith('- Date: ')) {
+          return '- Date: <placeholder>';
+        }
+
+        if (line.startsWith('- Stream: `')) {
+          return '- Stream: <placeholder>';
+        }
+
+        if (line.startsWith('- Project: `')) {
+          return '- Project: <placeholder>';
+        }
+
+        if (line.startsWith('- Sprint: `')) {
+          return '- Sprint: <placeholder>';
+        }
+
+        return line;
+      })
+      .join('\n')
+      .replace(/\n{3,}/gu, '\n\n')
+      .trim();
   }
 
   private async loadReceiptForOperation(

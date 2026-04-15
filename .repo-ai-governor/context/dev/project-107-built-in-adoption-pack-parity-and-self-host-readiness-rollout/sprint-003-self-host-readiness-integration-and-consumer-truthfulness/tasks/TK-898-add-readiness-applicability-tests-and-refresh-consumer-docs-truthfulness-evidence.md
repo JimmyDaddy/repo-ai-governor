@@ -1,6 +1,6 @@
 # TK-898 add readiness applicability tests and refresh consumer docs truthfulness evidence
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-15
 - Owner: AI-Agent
 - Priority: P1
@@ -57,9 +57,12 @@
 ## 9. 执行记录
 
 1. 2026-04-15：任务创建，状态初始化为 `planned`。
+2. 2026-04-15：状态切换为 `in_progress`，开始补齐 self-host readiness applicability coverage，并同步刷新 installer-facing consumer docs truthfulness wording。
+3. 2026-04-15：已补齐 `packages/standards/test/adoption-pack-registry.unit.test.ts` 与 `apps/cli/test/adopt-command.integration.test.ts` 的 readiness regression coverage，并刷新 `README.md`、`docs/local-adoption-playbook.md`、`docs/support-matrix.md`，明确 self-host verify warning、`execution_preflight_signal=blocked` signal 与 downstream fail-closed boundary。
+4. 2026-04-15：已通过 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm exec vitest run apps/cli/test/adopt-command.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1`、`node ./scripts/governance/run-normative-loading-manifest-gate.js` 验证 tests/docs truthfulness 与治理入口保持同步。
 
 ## 10. 产出
 
-1. 待执行：readiness applicability tests matrix
-2. 待执行：consumer docs truthfulness refresh updates
-3. 待执行：project-final evidence bundle
+1. 已完成：readiness applicability tests matrix
+2. 已完成：consumer docs truthfulness refresh updates
+3. 已完成：project-final evidence bundle

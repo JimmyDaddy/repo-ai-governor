@@ -12,7 +12,7 @@
 - Checklist: `.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-003-self-host-readiness-integration-and-consumer-truthfulness/tasks/checklist.md`
 - CSV: `.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-003-self-host-readiness-integration-and-consumer-truthfulness/tasks/tasks.csv`
 - Review: `.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-003-self-host-readiness-integration-and-consumer-truthfulness/review`
-- Note: `2026-04-15` `project-107 / sprint-002` 已在 `TK-910` 中完成 closeout write-back 并 clean 收口 delegated CR lifecycle；当前 primary stream 已顺序切换到 `project-107 / sprint-003`，但 sprint-003 plan 继续保持 `planned`，直到 `TK-897` 正式开工。`project-108 / sprint-001` 仍保留为 planned follow-up，不与 `project-107` 交错。
+- Note: `2026-04-15` `project-107 / sprint-002` 已在 `TK-910` 中完成 closeout write-back 并 clean 收口 delegated CR lifecycle；`project-107 / sprint-003` 的 sprint-level delegated CR rounds `CR-001` 与 `CR-002` 现已全部 `resolved`，runtime/docs/tests/ledger truth 已对齐，当前 stream 继续保留为 project-final CR 与 closeout surface。`project-108 / sprint-001` 仍保留为 planned follow-up，不与 `project-107` 交错。
 
 ## Active Streams
 

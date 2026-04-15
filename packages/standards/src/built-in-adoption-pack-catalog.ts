@@ -42,6 +42,7 @@ const BUILT_IN_ALL_PROFILE_IDS = [
   BUILT_IN_ADOPTION_PACK_PROFILE_IDS.ADOPTER_COMPLETE,
   BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE,
 ];
+const SELF_HOST_REQUIRED_PLACEHOLDER_STATUS_LINE = '- Placeholder Status: replace_before_execution';
 
 const BUILT_IN_WORKFLOW_RECORDS: StructuredWorkflowAssetRecord[] = [
   createWorkflowRecord(
@@ -582,6 +583,7 @@ documents:
 
 - Status: draft
 - Date: 1970-01-01
+${SELF_HOST_REQUIRED_PLACEHOLDER_STATUS_LINE}
 
 ## Purpose
 
@@ -885,13 +887,31 @@ const BUILT_IN_RUNTIME_BOOTSTRAP_RECORDS: AdoptionPackRuntimeBootstrapRecord[] =
   ),
   createRuntimeBootstrapTemplateRecord(
     '.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md',
-    '# Code Standards\n\n- Status: draft\n- Date: 1970-01-01\n\n## Purpose\n\nDefine repository-specific code constraints before enabling unattended delivery.\n',
+    `# Code Standards
+
+- Status: draft
+- Date: 1970-01-01
+${SELF_HOST_REQUIRED_PLACEHOLDER_STATUS_LINE}
+
+## Purpose
+
+Define repository-specific code constraints before enabling unattended delivery.
+`,
     AdoptionPackManagedAssetGroup.NORMATIVE_TEMPLATES,
     SELF_HOST_CODE_STANDARDS_DESCRIPTION,
   ),
   createRuntimeBootstrapTemplateRecord(
     '.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md',
-    '# Long-Term Maintenance Guide\n\n- Status: draft\n- Date: 1970-01-01\n\n## Purpose\n\nCapture maintenance expectations for self-hosted governance repositories.\n',
+    `# Long-Term Maintenance Guide
+
+- Status: draft
+- Date: 1970-01-01
+${SELF_HOST_REQUIRED_PLACEHOLDER_STATUS_LINE}
+
+## Purpose
+
+Capture maintenance expectations for self-hosted governance repositories.
+`,
     AdoptionPackManagedAssetGroup.NORMATIVE_TEMPLATES,
     SELF_HOST_LONG_TERM_MAINTENANCE_DESCRIPTION,
   ),
@@ -951,7 +971,7 @@ const BUILT_IN_READINESS_MATRIX_RECORDS: AdoptionPackReadinessMatrixRecord[] = [
       ),
       buildTemplateSurfaceId('.repo-ai-governor/context/completed-streams-history.md'),
     ],
-    'Execution-surface readiness only applies to self-host repo-local execution paths: diagnostics and adopt verify should warn while automatic execution preflight remains fail-closed when starter placeholders are still present.',
+    'Execution-surface readiness only applies to self-host repo-local execution paths: diagnostics and adopt verify should warn, and adopt verify should publish a downstream fail-closed execution preflight signal while starter placeholders are still present.',
   ),
 ];
 
