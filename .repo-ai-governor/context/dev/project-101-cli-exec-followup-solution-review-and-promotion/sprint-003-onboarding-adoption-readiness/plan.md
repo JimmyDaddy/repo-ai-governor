@@ -23,7 +23,7 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-851 | review cli-exec onboarding and adoption readiness productization draft | sprint-002 closeout | in_progress |
+| TK-851 | review cli-exec onboarding and adoption readiness productization draft | sprint-002 closeout | completed |
 | TK-852 | promote cli-exec onboarding and adoption readiness solution and create rollout handoff | TK-851 | completed |
 | TK-853 | finalize sprint-003 closeout and activate sprint-004 | TK-852 | completed |
 

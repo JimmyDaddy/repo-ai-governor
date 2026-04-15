@@ -3,24 +3,24 @@
 ## Primary Stream
 
 - Status: idle
-- Stream: `idle`
-- Project: `_None_`
-- Sprint: `_None_`
-- Docs: `_None_`
-- Plan: `_None_`
-- Tasks: `_None_`
-- Checklist: `_None_`
-- CSV: `_None_`
-- Review: `_None_`
+- Stream: `none`
+- Project: `none`
+- Sprint: `none`
+- Docs: `none`
+- Plan: `none`
+- Tasks: `none`
+- Checklist: `none`
+- CSV: `none`
+- Review: `none`
 - Note: `2026-04-15` `project-105 / sprint-003` reopened closeout 已在 latest project-final `CR-012` clean recheck 后重新收口；`TK-890`、completion audit、completed history 与 idle 恢复已按 canonical truth 写回。
 
 ## Active Streams
 
-_None._
+- none
 
 ## Planned Follow-Up Streams
 
-_None._
+- none
 
 ## Completed Stream History
 
