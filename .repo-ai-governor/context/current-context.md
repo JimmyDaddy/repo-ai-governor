@@ -12,7 +12,7 @@
 - Checklist: `.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/tasks/checklist.md`
 - CSV: `.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/tasks/tasks.csv`
 - Review: `.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/review`
-- Note: `2026-04-16` `CR-001` 已 clean `resolved`，`TK-912 / DA-912` 已完成 sprint-002 closeout write-back、delivery registry 前移与 sprint-003 activation。当前 primary surface 为 `sprint-003-cleanroom-evidence-and-rollout-closeout`，但在 `TK-906` 正式开工前，sprint plan 继续保持 `planned`。
+- Note: `2026-04-16` `sprint-002 / CR-001` 已 clean `resolved`，`TK-912 / DA-912` 已完成 sprint-002 closeout write-back、delivery registry 前移与 sprint-003 activation。当前 primary surface 为 `sprint-003-cleanroom-evidence-and-rollout-closeout`；`TK-906` 与 `TK-907` 已完成 orchestration regression coverage、clean-room rehearsal 与 truthfulness evidence 固化，`sprint-003 / CR-001` 与 `CR-002` 均已 `resolved`，当前 sprint-level delegated CR loop 已 clean 收口；`TK-908` 现进入 `in_progress`，开始承接 sprint boundary `pnpm run check`、local commit 与 project-final closeout 输入准备。
 
 ## Active Streams
 

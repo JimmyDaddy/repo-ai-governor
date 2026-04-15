@@ -1,6 +1,6 @@
 # TK-908 finalize project-108 rollout closeout and completion audit
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-04-15
 - Owner: AI-Agent
 - Priority: P1
@@ -54,6 +54,7 @@
 ## 9. 执行记录
 
 1. 2026-04-15：任务创建，状态初始化为 `planned`。
+2. 2026-04-16：状态切换为 `in_progress`，开始承接 sprint boundary `pnpm run check`、local commit 与 project-final closeout 输入准备；待 project-final delegated CR loop clean 后，再完成 completion audit、delivery registry completed truth 与 idle-or-next-stream handoff。
 
 ## 10. 产出
 

@@ -1,6 +1,6 @@
 # sprint-003-cleanroom-evidence-and-rollout-closeout 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-15
 - Sprint Goal: 补齐 orchestration tests、clean-room evidence、consumer truthfulness closeout 与 project final audit。
 - Project: `project-108-adopter-quickstart-bootstrap-rollout`
@@ -19,15 +19,15 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-906 | add bootstrap orchestration tests and clean-room rehearsal baseline | TK-903、TK-904 | planned |
-| TK-907 | collect rollout evidence and verify installer quickstart truthfulness | TK-905、TK-906 | planned |
-| TK-908 | finalize project-108 rollout closeout and completion audit | TK-906、TK-907 | planned |
+| TK-906 | add bootstrap orchestration tests and clean-room rehearsal baseline | TK-903、TK-904 | completed |
+| TK-907 | collect rollout evidence and verify installer quickstart truthfulness | TK-905、TK-906 | completed |
+| TK-908 | finalize project-108 rollout closeout and completion audit | TK-906、TK-907 | in_progress |
 
 ## 3. Exit Criteria
 
 1. tests、clean-room evidence 与 docs truthfulness 都已被固定为同一 sprint 的 closeout surface。
 2. `project-108` completion audit 入口已在 project plan 中预留，后续 closeout 无需再补做结构化接缝。
-3. 本 sprint 继续保持 planned，等待前序 sprint 激活和完成。
+3. `TK-908` 只能在当前 delegated CR round clean 收口后推进；在此之前，本 sprint 保持 active closeout surface 并继续承接 review lifecycle 与最终 completion audit 输入。
 
 ## 4. Sprint Notes
 
@@ -36,3 +36,9 @@
 3. sprint-003 必须复用 sprint-001 已冻结的 selector/rerun boundary，而不是在 clean-room evidence 阶段重新放宽 fail-closed semantics。
 4. 2026-04-16：`CR-001` 已 clean `resolved`；`TK-912 / DA-912` 已将本 sprint 提升为新的 primary execution surface，但在 `TK-906` 正式开工前，sprint plan 继续保持 `planned`。
 5. 2026-04-16：`TK-912` 已完成 sprint-002 closeout write-back 与 delivery registry 前移；当前 sprint 成为唯一 active primary surface，等待 `TK-906` 开工。
+6. 2026-04-16：`TK-906` 已切换为 `in_progress`；当前 sprint 正式进入 bootstrap orchestration regression coverage 与 clean-room rehearsal 基线实现窗口。
+7. 2026-04-16：`TK-907` 已切换为 `in_progress`；当前 sprint 开始执行构建后 CLI clean-room rehearsal、truthfulness evidence 固化与 support-surface 验证摘要整理。
+8. 2026-04-16：`TK-906` 已完成 bootstrap orchestration regression coverage，覆盖 explicit selector reuse、multiple receipts blocker 与 mismatch redirect，且 `pnpm run build` 与 targeted `vitest` 已通过。
+9. 2026-04-16：`TK-907 / DA-907` 已完成 clean-room evidence packet、help surface 验证与 docs/support truthfulness 复核；当前 sprint 进入统一验证与 delegated CR round 准备窗口。
+10. 2026-04-16：`CR-001` 已完成 accepted findings 修复并 `resolved`；fresh clean recheck `CR-002` 未发现新的 actionable findings，当前 sprint-level delegated CR loop 已 clean 收口。
+11. 2026-04-16：`TK-908` 已切换为 `in_progress`，开始承接 sprint boundary `pnpm run check`、local commit 与 project-final closeout 输入准备。

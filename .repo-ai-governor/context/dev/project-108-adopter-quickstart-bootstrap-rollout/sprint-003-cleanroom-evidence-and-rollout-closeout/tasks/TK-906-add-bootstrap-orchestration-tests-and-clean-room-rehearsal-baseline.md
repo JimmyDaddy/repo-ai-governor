@@ -1,6 +1,6 @@
 # TK-906 add bootstrap orchestration tests and clean-room rehearsal baseline
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-15
 - Owner: AI-Agent
 - Priority: P1
@@ -55,9 +55,11 @@
 ## 9. 执行记录
 
 1. 2026-04-15：任务创建，状态初始化为 `planned`。
+2. 2026-04-16：状态切换为 `in_progress`，开始补齐 explicit selector reuse、multiple existing receipts blocker、clean rerun / drift redirect 的 bootstrap orchestration coverage，并准备 clean-room rehearsal baseline。
+3. 2026-04-16：已补齐 explicit selector reuse、multiple receipts blocker 与 mismatch redirect 的 regression coverage，并用 `pnpm run build` 与 `pnpm exec vitest run apps/cli/test/adopt-command.integration.test.ts --maxWorkers=1 --maxConcurrency=1` 验证通过。
 
 ## 10. 产出
 
-1. 待执行：bootstrap orchestration tests
-2. 待执行：ambiguity / rerun coverage
-3. 待执行：clean-room rehearsal baseline
+1. 已完成：`apps/cli/test/adopt-command.integration.test.ts`
+2. 已完成：`.tmp/project-108-adopt-bootstrap-cleanroom-summary.json`
+3. 已完成：`.tmp/project-108-adopt-bootstrap-help.txt`

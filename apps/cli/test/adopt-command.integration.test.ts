@@ -501,6 +501,51 @@ describe('adopt command integration', () => {
     }
   });
 
+  it('reuses explicit profile selector resolution when the selector uniquely matches the built-in pack', async () => {
+    const repositoryRoot = await createAdoptionFixtureRepository();
+
+    try {
+      const bootstrapIo = createBufferedIo(repositoryRoot);
+      const bootstrapExitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--output',
+          'json',
+          'adopt',
+          'bootstrap',
+          'adopter-complete',
+          '--repo',
+          '.',
+          '--hosts',
+          'codex',
+          '--workspace-mode',
+          'repo_local',
+        ],
+        bootstrapIo.io,
+      );
+      const bootstrapPayload = parseJsonOutput(bootstrapIo.stdoutBuffer);
+      const bootstrapSummaryPath = bootstrapPayload.command_result?.artifacts?.find(
+        (artifact) => artifact.id === 'adoption_bootstrap_summary',
+      )?.path;
+      const bootstrapSummary = JSON.parse(
+        await readFile(String(bootstrapSummaryPath), 'utf8'),
+      ) as BootstrapSummaryPayload;
+
+      expect(bootstrapExitCode).toBe(0);
+      expect(bootstrapIo.stderrBuffer.join('')).toBe('');
+      expect(bootstrapPayload.command_result?.details?.selector_resolution).toBe(
+        'explicit_profile_alias',
+      );
+      expect(bootstrapPayload.command_result?.details?.reentry_mode).toBe('fresh_install');
+      expect(bootstrapPayload.command_result?.details?.host_target_count).toBe('1');
+      expect(bootstrapSummary.selectorResolution).toBe('explicit_profile_alias');
+      expect(bootstrapSummary.reentryMode).toBe('fresh_install');
+    } finally {
+      await rm(repositoryRoot, { recursive: true, force: true });
+    }
+  });
+
   it('fails closed when an explicit profile selector is ambiguous across multiple adoption packs', async () => {
     const repositoryRoot = await createAdoptionFixtureRepository();
 
@@ -615,6 +660,78 @@ describe('adopt command integration', () => {
     }
   });
 
+  it('blocks bootstrap reruns when multiple adoption receipts already exist', async () => {
+    const repositoryRoot = await createAdoptionFixtureRepository();
+
+    try {
+      const firstRunIo = createBufferedIo(repositoryRoot);
+      const firstRunExitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          'adopt',
+          'bootstrap',
+          '--repo',
+          '.',
+          '--workspace-mode',
+          'repo_local',
+        ],
+        firstRunIo.io,
+      );
+
+      expect(firstRunExitCode).toBe(0);
+
+      const installationsRoot = resolve(
+        repositoryRoot,
+        '.repo-ai-governor',
+        'adoption',
+        'installations',
+      );
+      const primaryReceiptPath = resolve(
+        installationsRoot,
+        'repo-ai-governor-adoption-pack',
+        'adoption-install.receipt.json',
+      );
+      const duplicateReceiptPath = resolve(
+        installationsRoot,
+        'repo-ai-governor-adoption-pack-duplicate',
+        'adoption-install.receipt.json',
+      );
+      await mkdir(resolve(installationsRoot, 'repo-ai-governor-adoption-pack-duplicate'), {
+        recursive: true,
+      });
+      await writeFile(duplicateReceiptPath, await readFile(primaryReceiptPath, 'utf8'), 'utf8');
+
+      const rerunIo = createBufferedIo(repositoryRoot);
+      const rerunExitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          'adopt',
+          'bootstrap',
+          '--repo',
+          '.',
+          '--workspace-mode',
+          'repo_local',
+        ],
+        rerunIo.io,
+      );
+      const { payload: rerunSummary } = await readLatestBootstrapSummary(repositoryRoot);
+
+      expect(rerunExitCode).toBe(1);
+      expect(rerunIo.stderrBuffer.join('')).toContain('adopt diff/upgrade/remove');
+      expect(rerunSummary.reentryMode).toBe('blocked_by_existing_receipts');
+      expect(rerunSummary.redirectCommands).toEqual([
+        'adopt diff',
+        'adopt upgrade',
+        'adopt remove',
+      ]);
+      expect(rerunSummary.finalStatus).toBe('fail');
+    } finally {
+      await rm(repositoryRoot, { recursive: true, force: true });
+    }
+  });
+
   it('redirects drifted reruns back to diff and upgrade lifecycle commands', async () => {
     const repositoryRoot = await createAdoptionFixtureRepository();
 
@@ -670,6 +787,62 @@ describe('adopt command integration', () => {
         'adopt remove',
       ]);
       expect(rerunSummary.diffReportPath).not.toBeNull();
+    } finally {
+      await rm(repositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('redirects mismatched existing installs back to diff and upgrade lifecycle commands', async () => {
+    const repositoryRoot = await createAdoptionFixtureRepository();
+
+    try {
+      const firstRunIo = createBufferedIo(repositoryRoot);
+      const firstRunExitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          'adopt',
+          'apply',
+          'adopter-complete',
+          '--adoption-profile',
+          'self-host-complete',
+          '--repo',
+          '.',
+          '--hosts',
+          'codex',
+          '--workspace-mode',
+          'repo_local',
+        ],
+        firstRunIo.io,
+      );
+
+      expect(firstRunExitCode).toBe(0);
+
+      const rerunIo = createBufferedIo(repositoryRoot);
+      const rerunExitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          'adopt',
+          'bootstrap',
+          '--repo',
+          '.',
+          '--workspace-mode',
+          'repo_local',
+        ],
+        rerunIo.io,
+      );
+      const { payload: rerunSummary } = await readLatestBootstrapSummary(repositoryRoot);
+
+      expect(rerunExitCode).toBe(1);
+      expect(rerunIo.stderrBuffer.join('')).toContain('adopt diff/upgrade/remove');
+      expect(rerunSummary.reentryMode).toBe('redirect_to_lifecycle');
+      expect(rerunSummary.redirectCommands).toEqual([
+        'adopt diff',
+        'adopt upgrade',
+        'adopt remove',
+      ]);
+      expect(rerunSummary.finalStatus).toBe('fail');
     } finally {
       await rm(repositoryRoot, { recursive: true, force: true });
     }

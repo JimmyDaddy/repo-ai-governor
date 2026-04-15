@@ -1,6 +1,6 @@
 # TK-907 collect rollout evidence and verify installer quickstart truthfulness
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-15
 - Owner: AI-Agent
 - Priority: P1
@@ -54,9 +54,11 @@
 ## 9. 执行记录
 
 1. 2026-04-15：任务创建，状态初始化为 `planned`。
+2. 2026-04-16：状态切换为 `in_progress`，开始用构建后的 `dist/bin/repo-ai-governor.js` 执行 quickstart clean-room rehearsal，固定 omitted selector、explicit selector、ambiguity fail-closed、rerun redirect 与 `check` follow-up 的 truthfulness evidence。
+3. 2026-04-16：已产出 `DA-907` evidence handoff，固定七条 clean-room 场景、`adopt --help` wording 与 README/playbook/support matrix 的 support-surface truthfulness。
 
 ## 10. 产出
 
-1. 待执行：quickstart rollout evidence packet
-2. 待执行：truthfulness verification notes
-3. 待执行：support surface verification summary
+1. 已完成：`.tmp/project-108-adopt-bootstrap-cleanroom-summary.json`
+2. 已完成：`.tmp/project-108-adopt-bootstrap-help.txt`
+3. 已完成：`.repo-ai-governor/context/dev/project-108-adopter-quickstart-bootstrap-rollout/sprint-003-cleanroom-evidence-and-rollout-closeout/tasks/DA-907-adopt-bootstrap-clean-room-and-truthfulness-evidence.md`

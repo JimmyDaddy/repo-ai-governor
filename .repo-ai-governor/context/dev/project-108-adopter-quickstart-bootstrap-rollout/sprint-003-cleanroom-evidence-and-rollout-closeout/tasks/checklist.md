@@ -1,8 +1,21 @@
 # checklist
 
-- [ ] TK-906 add bootstrap orchestration tests and clean-room rehearsal baseline
+- [x] TK-906 add bootstrap orchestration tests and clean-room rehearsal baseline
   - 2026-04-15：任务创建，状态初始化为 `planned`。
-- [ ] TK-907 collect rollout evidence and verify installer quickstart truthfulness
+  - 2026-04-16：状态切换为 `in_progress`，开始补齐 explicit selector reuse、multiple existing receipts blocker、clean rerun / drift redirect 的 bootstrap orchestration coverage，并准备 clean-room rehearsal baseline。
+  - 2026-04-16：已补齐 explicit selector reuse、multiple receipts blocker 与 mismatch redirect 的 regression coverage，并用 `pnpm run build` 与 `pnpm exec vitest run apps/cli/test/adopt-command.integration.test.ts --maxWorkers=1 --maxConcurrency=1` 验证通过。
+- [x] TK-907 collect rollout evidence and verify installer quickstart truthfulness
   - 2026-04-15：任务创建，状态初始化为 `planned`。
+  - 2026-04-16：状态切换为 `in_progress`，开始用构建后的 `dist/bin/repo-ai-governor.js` 执行 quickstart clean-room rehearsal，固定 omitted selector、explicit selector、ambiguity fail-closed、rerun redirect 与 `check` follow-up 的 truthfulness evidence。
+  - 2026-04-16：已产出 `DA-907` evidence handoff，固定七条 clean-room 场景、`adopt --help` wording 与 README/playbook/support matrix 的 support-surface truthfulness。
 - [ ] TK-908 finalize project-108 rollout closeout and completion audit
   - 2026-04-15：任务创建，状态初始化为 `planned`。
+  - 2026-04-16：状态切换为 `in_progress`，开始承接 sprint boundary `pnpm run check`、local commit 与 project-final closeout 输入准备；待 project-final delegated CR loop clean 后，再完成 completion audit、delivery registry completed truth 与 idle-or-next-stream handoff。
+  - 2026-04-16：状态切换为 `in_progress`，开始承接 sprint boundary `pnpm run check`、local commit 与 project-final closeout 输入准备。
+- [x] CR-001 sprint-003-cleanroom-evidence-and-rollout-closeout delegated review loop round 1
+  - 2026-04-16：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-16：reviewer 返回 `2` 条 findings，主 agent 全部认可并完成复核，当前进入 `verified`，等待 lifecycle sync checks 后推进 `resolved`。
+  - 2026-04-16：已完成当前 round 的 `2` 条 accepted findings 修复与 lifecycle sync checks，`CR-001` clean 收口为 `resolved`。
+- [x] CR-002 sprint-003-cleanroom-evidence-and-rollout-closeout delegated recheck loop round 2
+  - 2026-04-16：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-16：fresh reviewer round 2 已完成 clean recheck，未发现新的 actionable findings；当前 round 直接写为 `resolved`。
