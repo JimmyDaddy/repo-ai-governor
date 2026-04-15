@@ -30,7 +30,7 @@
 
 ## 4. Sprint Notes
 
-1. 本 sprint 当前只创建 planned scaffold，不切换当前 primary stream。
+1. 本 sprint 已在 sprint-002 closeout 后切换为新的 primary stream，但 sprint plan 继续保持 `planned`，直到 `TK-897` 正式开工。
 2. review surface 仅保留 `.gitkeep`，正式 `code_review_*` 生命周期文件待真实 execution 激活后再创建。
 3. 若后续窗口直接激活本 sprint，先执行 `node ./scripts/governance/sync-task-ledger.js --tasks-dir "<tasks-dir>"` 完成 canonical sqlite 对齐。
 4. `TK-899` 只提供 project-final closeout 入口；是否真正把 `project-107` 切到 `completed`，取决于运行窗口是否产出了完整 build/test/docs evidence。

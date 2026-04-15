@@ -1,6 +1,6 @@
 # TK-894 build built-in pack source catalog and generated assembly baseline
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-15
 - Owner: AI-Agent
 - Priority: P1
@@ -56,9 +56,11 @@
 ## 9. 执行记录
 
 1. 2026-04-15：任务创建，状态初始化为 `planned`。
+2. 2026-04-15：状态切换为 `in_progress`，开始把 source catalog shape 收口为 catalog-driven built-in pack assembly seam。
+3. 2026-04-15：已将 self-host runtime bootstrap surfaces 收口到 `ResolvedAdoptionPackDefinition.runtimeBootstrapRecords`，并通过 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm exec vitest run apps/cli/test/adopt-command.integration.test.ts --maxWorkers=1 --maxConcurrency=1`。
 
 ## 10. 产出
 
-1. 待执行：source catalog definition / field model
-2. 待执行：catalog-driven assembly seam integration
-3. 待执行：standards-side touchpoint note
+1. 已完成：`packages/standards/src/built-in-adoption-pack-catalog.ts` 与 `packages/standards/src/types/interfaces/adoption-pack.interface.ts` 新增 `runtimeBootstrapRecords` 与 `sourceCatalogId` linkage，使 built-in source catalog baseline 可覆盖 self-host bootstrap surfaces。
+2. 已完成：`packages/standards/src/adoption-pack-registry.ts` 与 `apps/cli/src/runtime/adoption-pack-runtime.ts` 改为消费 catalog-driven runtime bootstrap definition，移除 CLI 内部的 self-host bootstrap 硬编码列表。
+3. 已完成：standards/runtime seam 已明确冻结为“source catalog 决定 materialization order，readiness sinks 留待 sprint-003”，从而为 `TK-895` 的 placeholder boundary 与 `TK-896` 的 handoff 总结提供稳定输入。

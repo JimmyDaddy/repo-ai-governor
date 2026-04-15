@@ -26,9 +26,9 @@
 
 ## 2.2 sprint-002-generated-projection-and-placeholder-boundaries
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 将 `packages/standards` built-in pack source catalog、projection assembly 与 adopter-owned placeholder/template boundary materialize 为首批实现面。
-- Task Package: `TK-894`、`TK-895`、`TK-896`
+- Task Package: `TK-894`、`TK-895`、`TK-896`、`TK-910`
 
 ## 2.3 sprint-003-self-host-readiness-integration-and-consumer-truthfulness
 
@@ -44,9 +44,10 @@
 | TK-892 | sprint-001 | formalize self-host placeholder readiness applicability and diagnostics integration | readiness/policy | TK-891 | completed |
 | TK-893 | sprint-001 | add first-wave parity tests and docs truthfulness follow-up plan | verification/docs | TK-892 | completed |
 | TK-909 | sprint-001 | finalize sprint-001 closeout and activate sprint-002 | closeout/handoff | CR-001 | completed |
-| TK-894 | sprint-002 | build built-in pack source catalog and generated assembly baseline | source-catalog/assembly | TK-891 | planned |
-| TK-895 | sprint-002 | implement structured template projection and adopter-owned placeholder boundaries | projection/placeholder | TK-894、TK-892 | planned |
-| TK-896 | sprint-002 | close sprint-002 standards parity coverage and sprint-003 handoff readiness | closeout/handoff | TK-894、TK-895、TK-893 | planned |
+| TK-894 | sprint-002 | build built-in pack source catalog and generated assembly baseline | source-catalog/assembly | TK-891 | completed |
+| TK-895 | sprint-002 | implement structured template projection and adopter-owned placeholder boundaries | projection/placeholder | TK-894、TK-892 | completed |
+| TK-896 | sprint-002 | close sprint-002 standards parity coverage and sprint-003 handoff readiness | closeout/handoff | TK-894、TK-895、TK-893 | completed |
+| TK-910 | sprint-002 | finalize sprint-002 closeout and activate sprint-003 | closeout/activation | CR-001 | in_progress |
 | TK-897 | sprint-003 | integrate self-host readiness signals into diagnostics verify and execution preflight | readiness/runtime | TK-896 | planned |
 | TK-898 | sprint-003 | add readiness applicability tests and refresh consumer docs truthfulness evidence | verification/docs | TK-897 | planned |
 | TK-899 | sprint-003 | finalize project-107 rollout closeout and completion audit | closeout/final-audit | TK-897、TK-898 | planned |
@@ -64,9 +65,9 @@
 ## 5. DoD（project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout）
 
 1. built-in pack parity inventory、source catalog shape 与 self-host applicability boundary 已 materialize 为可执行 rollout scope，并由 active sprint 承接当前实现窗口。
-2. active/planned task ledger、project/sprint plan 与 `current-context` 保持同步：`sprint-001` 已完成并进入 completed history，`current-context` 已将 `sprint-002` 登记为下一条 primary stream，但在 `TK-894` 开工前 sprint-002 task aggregate 与 sprint plan 仍保持 `planned`；`sprint-003` 与 `project-108 / sprint-001` 仍保持 planned follow-up。
+2. active/planned task ledger、project/sprint plan 与 `current-context` 保持同步：`sprint-001` 已完成并进入 completed history，`sprint-002` 已在 `TK-894` 开工后切换为 active primary stream；`sprint-003` 与 `project-108 / sprint-001` 仍保持 planned follow-up。
 3. 后续 implementation window 可以直接沿用冻结的 formal direction 与分 sprint ownership，而不需要在切换窗口时重新解释范围。
-4. `sprint-002` 与 `sprint-003` 的排队顺序已在 project-level plan 中冻结，且 `sprint-001 ~ sprint-003` 的 scaffold 已就位。
+4. `sprint-002` 已 clean closeout 并移入 completed history；`sprint-003` 现已成为 primary stream，但 sprint plan 继续保持 `planned`，直到 `TK-897` 正式开工；`project-108 / sprint-001` 仍为 planned follow-up。
 
 ## 6. 里程碑记录
 
@@ -75,7 +76,9 @@
 3. 2026-04-15：project-level sprint queue 已扩展到 `sprint-002` / `sprint-003`，并已补齐对应 task scaffold 与 planned ledger。
 4. 2026-04-15：`sprint-002` / `sprint-003` 虽已补齐 planned scaffold，但仍未登记到 `current-context` 的默认 planned follow-up stream，且未切换为 active execution surface。
 5. 2026-04-15：`sprint-001-parity-catalog-and-readiness-foundation` 已切换为 active primary stream，后续严格按 `sprint-001 -> sprint-002 -> sprint-003 -> project-final CR` 顺序推进。
-6. 2026-04-15：`CR-001` clean `resolved` 后，`TK-909` 已完成 sprint-001 closeout write-back；`current-context` 已切换到 `sprint-002` 作为下一条 primary stream，而 sprint-002 plan 在 `TK-894` 开工前继续保持 `planned`，`sprint-003` 与 `project-108 / sprint-001` 继续保留为 planned follow-up。
+6. 2026-04-15：`CR-001` clean `resolved` 后，`TK-909` 已完成 sprint-001 closeout write-back；`current-context` 已切换到 `sprint-002` 作为下一条 primary stream，`sprint-003` 与 `project-108 / sprint-001` 继续保留为 planned follow-up。
+7. 2026-04-15：`TK-894` 已开工，`sprint-002` 现进入 active implementation 状态，并将 built-in pack source catalog / assembly baseline 作为当前唯一 in-scope execution surface。
+8. 2026-04-15：`TK-910` 已完成 sprint-002 closeout write-back，`stream-project-107-sprint-002` 进入 completed history；`current-context` 已按顺序切换到 `sprint-003`，等待 `TK-897` 开工。
 
 ## 7. 里程碑记录入口
 

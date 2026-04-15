@@ -21,6 +21,7 @@ import { HostDistributionHandoffBridge, HostDistributionTarget } from './constan
 import type {
   AdoptionPackManifest,
   AdoptionPackReadinessMatrixRecord,
+  AdoptionPackRuntimeBootstrapRecord,
   AdoptionPackSourceCatalogRecord,
   AdoptionPackTemplateRecord,
   ResolvedAdoptionPackDefinition,
@@ -31,6 +32,7 @@ interface BuiltInAdoptionPackDefinition {
   manifest: AdoptionPackManifest;
   workflowRecords: StructuredWorkflowAssetRecord[];
   templateRecords: AdoptionPackTemplateRecord[];
+  runtimeBootstrapRecords: AdoptionPackRuntimeBootstrapRecord[];
   sourceCatalogRecords: AdoptionPackSourceCatalogRecord[];
   readinessMatrixRecords: AdoptionPackReadinessMatrixRecord[];
   capabilityCoverage: Record<string, string[]>;
@@ -329,6 +331,7 @@ i18n:
     assetGroup: AdoptionPackManagedAssetGroup.EXECUTION_TEMPLATES,
     profileIds: [BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE],
     description: 'Empty self-host execution context template.',
+    sourceCatalogId: buildTemplateSurfaceId('.repo-ai-governor/context/current-context.md'),
   },
   createTemplateRecord(
     '.repo-ai-governor/context/dev/project-template/plan.md',
@@ -434,6 +437,9 @@ Use this directory for future \`code_review_*\`, \`verified_code_review_*\`, and
     assetGroup: AdoptionPackManagedAssetGroup.EXECUTION_TEMPLATES,
     profileIds: [BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE],
     description: 'Empty completed-stream history template.',
+    sourceCatalogId: buildTemplateSurfaceId(
+      '.repo-ai-governor/context/completed-streams-history.md',
+    ),
   },
   {
     relativePath: '.repo-ai-governor/context/technical-solution-lifecycle-registry.yaml',
@@ -446,6 +452,9 @@ solutions: []
     assetGroup: AdoptionPackManagedAssetGroup.GOVERNANCE_AUTHORING_TEMPLATES,
     profileIds: [BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE],
     description: 'Empty technical-solution lifecycle registry template.',
+    sourceCatalogId: buildTemplateSurfaceId(
+      '.repo-ai-governor/context/technical-solution-lifecycle-registry.yaml',
+    ),
   },
   {
     relativePath: '.repo-ai-governor/context/technical-solution-delivery-registry.yaml',
@@ -458,6 +467,9 @@ deliveries: []
     assetGroup: AdoptionPackManagedAssetGroup.GOVERNANCE_AUTHORING_TEMPLATES,
     profileIds: [BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE],
     description: 'Empty technical-solution delivery registry template.',
+    sourceCatalogId: buildTemplateSurfaceId(
+      '.repo-ai-governor/context/technical-solution-delivery-registry.yaml',
+    ),
   },
   {
     relativePath: '.repo-ai-governor/normative_knowledge_sources/normative-loading-manifest.yaml',
@@ -560,6 +572,9 @@ documents:
     assetGroup: AdoptionPackManagedAssetGroup.NORMATIVE_TEMPLATES,
     profileIds: [BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE],
     description: 'Minimal normative-loading manifest template for self-host authoring.',
+    sourceCatalogId: buildTemplateSurfaceId(
+      '.repo-ai-governor/normative_knowledge_sources/normative-loading-manifest.yaml',
+    ),
   },
   {
     relativePath: '.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md',
@@ -575,6 +590,9 @@ Describe the target repository governance product line before expanding into det
     assetGroup: AdoptionPackManagedAssetGroup.NORMATIVE_TEMPLATES,
     profileIds: [BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE],
     description: 'Minimal PRD brief template for self-host authoring.',
+    sourceCatalogId: buildTemplateSurfaceId(
+      '.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md',
+    ),
   },
   createTemplateRecord(
     '.repo-ai-governor/draft/README.md',
@@ -722,15 +740,21 @@ const SELF_HOST_READINESS_SINK_IDS = [
   AdoptionPackReadinessSink.EXECUTION_PREFLIGHT,
 ];
 
-const SELF_HOST_RUNTIME_BOOTSTRAP_SOURCE_REF =
-  'apps/cli/src/runtime/adoption-pack-runtime.ts#bootstrapSelfHostSurface';
+const SELF_HOST_GOVERNOR_CONFIG_DESCRIPTION =
+  'Self-host governor config is currently written by runtime bootstrap and therefore must stay visible in the parity inventory.';
+const SELF_HOST_MODULE_REGISTRY_DESCRIPTION =
+  'Self-host technical-solution module registry bootstrap remains a blank registry seed until the adopter formalizes real modules.';
+const SELF_HOST_CODE_STANDARDS_DESCRIPTION =
+  'Self-host code standards stay adopter-owned even though the bootstrap writes an initial placeholder file today.';
+const SELF_HOST_LONG_TERM_MAINTENANCE_DESCRIPTION =
+  'Self-host long-term maintenance guidance stays adopter-owned even though the bootstrap writes an initial placeholder file today.';
 
 const BUILT_IN_SOURCE_CATALOG_RECORDS: AdoptionPackSourceCatalogRecord[] = [
   ...BUILT_IN_WORKFLOW_RECORDS.map((record) => createWorkflowSourceCatalogRecord(record)),
   ...BUILT_IN_TEMPLATE_RECORDS.map((record) => createTemplateSourceCatalogRecord(record)),
   createRuntimeBootstrapSourceCatalogRecord(
     '.repo-ai-governor/governor.yaml',
-    'Self-host governor config is currently written by runtime bootstrap and therefore must stay visible in the parity inventory.',
+    SELF_HOST_GOVERNOR_CONFIG_DESCRIPTION,
     AdoptionPackManagedAssetGroup.BOOTSTRAP_TEMPLATES,
     AdoptionPackParityClass.TEMPLATE_SEED,
     AdoptionPackSourceMode.TEMPLATE_SEED,
@@ -739,7 +763,7 @@ const BUILT_IN_SOURCE_CATALOG_RECORDS: AdoptionPackSourceCatalogRecord[] = [
   ),
   createRuntimeBootstrapSourceCatalogRecord(
     '.repo-ai-governor/normative_knowledge_sources/technical-solutions/technical-solution-module-registry.yaml',
-    'Self-host technical-solution module registry bootstrap remains a blank registry seed until the adopter formalizes real modules.',
+    SELF_HOST_MODULE_REGISTRY_DESCRIPTION,
     AdoptionPackManagedAssetGroup.NORMATIVE_TEMPLATES,
     AdoptionPackParityClass.TEMPLATE_SEED,
     AdoptionPackSourceMode.TEMPLATE_SEED,
@@ -748,7 +772,7 @@ const BUILT_IN_SOURCE_CATALOG_RECORDS: AdoptionPackSourceCatalogRecord[] = [
   ),
   createRuntimeBootstrapSourceCatalogRecord(
     '.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md',
-    'Self-host code standards stay adopter-owned even though the bootstrap writes an initial placeholder file today.',
+    SELF_HOST_CODE_STANDARDS_DESCRIPTION,
     AdoptionPackManagedAssetGroup.NORMATIVE_TEMPLATES,
     AdoptionPackParityClass.ADOPTER_OWNED_PLACEHOLDER,
     AdoptionPackSourceMode.ADOPTER_PLACEHOLDER,
@@ -757,7 +781,7 @@ const BUILT_IN_SOURCE_CATALOG_RECORDS: AdoptionPackSourceCatalogRecord[] = [
   ),
   createRuntimeBootstrapSourceCatalogRecord(
     '.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md',
-    'Self-host long-term maintenance guidance stays adopter-owned even though the bootstrap writes an initial placeholder file today.',
+    SELF_HOST_LONG_TERM_MAINTENANCE_DESCRIPTION,
     AdoptionPackManagedAssetGroup.NORMATIVE_TEMPLATES,
     AdoptionPackParityClass.ADOPTER_OWNED_PLACEHOLDER,
     AdoptionPackSourceMode.ADOPTER_PLACEHOLDER,
@@ -799,6 +823,77 @@ const BUILT_IN_SOURCE_CATALOG_RECORDS: AdoptionPackSourceCatalogRecord[] = [
     AdoptionPackSourceMode.TEMPLATE_SEED,
     AdoptionPackPlaceholderPolicy.TEMPLATE_SEED,
     AdoptionPackReadinessGroup.NONE,
+  ),
+];
+
+const BUILT_IN_RUNTIME_BOOTSTRAP_RECORDS: AdoptionPackRuntimeBootstrapRecord[] = [
+  createRuntimeBootstrapTemplateRecord(
+    '.repo-ai-governor/governor.yaml',
+    [
+      'schemaVersion: "1.1"',
+      'workspace:',
+      '  mode: repo_local',
+      '  migrationPolicy: copy_verify_switch_rollback',
+      'i18n:',
+      '  runtimeEngine: i18next',
+      '  defaultLocale: zh-CN',
+      '  fallbackLocale: en-US',
+      '  supportedLocales:',
+      '    - zh-CN',
+      '    - en-US',
+      'memory:',
+      '  storeEngine: fs_csv',
+      '  storeRoot: context/memory',
+      '',
+    ].join('\n'),
+    AdoptionPackManagedAssetGroup.BOOTSTRAP_TEMPLATES,
+    SELF_HOST_GOVERNOR_CONFIG_DESCRIPTION,
+  ),
+  createRuntimeBootstrapTemplateRecord(
+    '.repo-ai-governor/normative_knowledge_sources/technical-solutions/technical-solution-module-registry.yaml',
+    [
+      'schema_version: 2',
+      'generated_at: 1970-01-01',
+      'status: active',
+      'owner: self-host-template',
+      '',
+      'allowed_layers:',
+      '  - governance-core',
+      '  - runtime-core',
+      '',
+      'change_impact_classes:',
+      '  - local_detail_change',
+      '  - exported_contract_change',
+      '  - module_registry_change',
+      '  - north_star_change',
+      '  - layer_boundary_change',
+      '',
+      'sync_target_tokens:',
+      '  - summary_doc',
+      '  - module_registry',
+      '  - direct_consumers',
+      '  - overall_technical_solution',
+      '  - architecture_and_repo_layering',
+      '  - product_requirements',
+      '  - product_requirements_brief',
+      '',
+      'modules: []',
+      '',
+    ].join('\n'),
+    AdoptionPackManagedAssetGroup.NORMATIVE_TEMPLATES,
+    SELF_HOST_MODULE_REGISTRY_DESCRIPTION,
+  ),
+  createRuntimeBootstrapTemplateRecord(
+    '.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md',
+    '# Code Standards\n\n- Status: draft\n- Date: 1970-01-01\n\n## Purpose\n\nDefine repository-specific code constraints before enabling unattended delivery.\n',
+    AdoptionPackManagedAssetGroup.NORMATIVE_TEMPLATES,
+    SELF_HOST_CODE_STANDARDS_DESCRIPTION,
+  ),
+  createRuntimeBootstrapTemplateRecord(
+    '.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md',
+    '# Long-Term Maintenance Guide\n\n- Status: draft\n- Date: 1970-01-01\n\n## Purpose\n\nCapture maintenance expectations for self-hosted governance repositories.\n',
+    AdoptionPackManagedAssetGroup.NORMATIVE_TEMPLATES,
+    SELF_HOST_LONG_TERM_MAINTENANCE_DESCRIPTION,
   ),
 ];
 
@@ -886,6 +981,7 @@ function toResolvedDefinition(): ResolvedAdoptionPackDefinition {
     manifest: BUILT_IN_MANIFEST,
     workflowRecords: BUILT_IN_WORKFLOW_RECORDS,
     templateRecords: BUILT_IN_TEMPLATE_RECORDS,
+    runtimeBootstrapRecords: BUILT_IN_RUNTIME_BOOTSTRAP_RECORDS,
     sourceCatalogRecords: BUILT_IN_SOURCE_CATALOG_RECORDS,
     readinessMatrixRecords: BUILT_IN_READINESS_MATRIX_RECORDS,
     capabilityCoverage: {
@@ -920,6 +1016,7 @@ function toResolvedDefinition(): ResolvedAdoptionPackDefinition {
     },
     workflowRecords: definition.workflowRecords.map((record) => ({ ...record })),
     templateRecords: definition.templateRecords.map((record) => ({ ...record })),
+    runtimeBootstrapRecords: definition.runtimeBootstrapRecords.map((record) => ({ ...record })),
     sourceCatalogRecords: definition.sourceCatalogRecords.map((record) => ({
       ...record,
       profileIds: [...record.profileIds],
@@ -970,7 +1067,7 @@ function createTemplateSourceCatalogRecord(
 ): AdoptionPackSourceCatalogRecord {
   const surfaceId = buildTemplateSurfaceId(templateRecord.relativePath);
   const defaultRecord: AdoptionPackSourceCatalogRecord = {
-    surfaceId,
+    surfaceId: templateRecord.sourceCatalogId ?? surfaceId,
     surfaceKind: AdoptionPackSurfaceKind.TEMPLATE_FILE,
     description: templateRecord.description,
     profileIds: [...templateRecord.profileIds],
@@ -1097,7 +1194,7 @@ function createRuntimeBootstrapSourceCatalogRecord(
     assetGroup,
     parityClass,
     sourceMode,
-    sourceRef: SELF_HOST_RUNTIME_BOOTSTRAP_SOURCE_REF,
+    sourceRef: buildBuiltinRuntimeBootstrapSourceRef(relativePath),
     compositionPolicy: AdoptionPackCompositionPolicy.RUNTIME_BOOTSTRAP,
     placeholderPolicy,
     applicabilityScope: AdoptionPackApplicabilityScope.SELF_HOST_REPO_LOCAL,
@@ -1136,6 +1233,10 @@ function buildRuntimeBootstrapSurfaceId(relativePath: string): string {
 
 function buildBuiltinTemplateSourceRef(relativePath: string): string {
   return `builtin://repo-ai-governor/adoption-pack/template/${relativePath}`;
+}
+
+function buildBuiltinRuntimeBootstrapSourceRef(relativePath: string): string {
+  return `builtin://repo-ai-governor/adoption-pack/runtime-bootstrap/${relativePath}`;
 }
 
 function createWorkflowRecord(
@@ -1180,6 +1281,7 @@ function createTemplateRecord(
   assetGroup: AdoptionPackManagedAssetGroup,
   profileIds: string[],
   description: string,
+  sourceCatalogId = buildTemplateSurfaceId(relativePath),
 ): AdoptionPackTemplateRecord {
   return {
     relativePath,
@@ -1187,5 +1289,22 @@ function createTemplateRecord(
     assetGroup,
     profileIds,
     description,
+    sourceCatalogId,
+  };
+}
+
+function createRuntimeBootstrapTemplateRecord(
+  relativePath: string,
+  content: string,
+  assetGroup: AdoptionPackManagedAssetGroup,
+  description: string,
+): AdoptionPackRuntimeBootstrapRecord {
+  return {
+    relativePath,
+    content,
+    assetGroup,
+    profileIds: [BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE],
+    description,
+    sourceCatalogId: buildRuntimeBootstrapSurfaceId(relativePath),
   };
 }

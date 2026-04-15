@@ -1,6 +1,6 @@
 # sprint-002-generated-projection-and-placeholder-boundaries 计划
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-15
 - Sprint Goal: 将 `packages/standards` built-in pack source catalog、projection assembly 与 adopter-owned placeholder/template boundary materialize 为首批实现面。
 - Project: `project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout`
@@ -18,9 +18,10 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-894 | build built-in pack source catalog and generated assembly baseline | TK-891 | planned |
-| TK-895 | implement structured template projection and adopter-owned placeholder boundaries | TK-894、TK-892 | planned |
-| TK-896 | close sprint-002 standards parity coverage and sprint-003 handoff readiness | TK-894、TK-895、TK-893 | planned |
+| TK-894 | build built-in pack source catalog and generated assembly baseline | TK-891 | completed |
+| TK-895 | implement structured template projection and adopter-owned placeholder boundaries | TK-894、TK-892 | completed |
+| TK-896 | close sprint-002 standards parity coverage and sprint-003 handoff readiness | TK-894、TK-895、TK-893 | completed |
+| TK-910 | finalize sprint-002 closeout and activate sprint-003 | CR-001 | completed |
 
 ## 3. Exit Criteria
 
@@ -30,7 +31,8 @@
 
 ## 4. Sprint Notes
 
-1. 本 sprint 已在 sprint-001 closeout 同窗登记到 `current-context` 的 primary stream 槽位；待 `TK-894` 正式开工后，再把 sprint plan 切换为 `active` 并按 `TK-894 -> TK-895 -> TK-896` 顺序推进，再进入 delegated sprint CR loop。
+1. 本 sprint 已在 sprint-001 closeout 同窗登记到 `current-context` 的 primary stream 槽位；当前已由 `TK-894` 正式开工，因此 sprint plan 切换为 `active`，并按 `TK-894 -> TK-895 -> TK-896` 顺序推进，再进入 delegated sprint CR loop。
 2. review surface 仅保留 `.gitkeep`，正式 `code_review_*` 生命周期文件待真实 execution 激活后再创建。
 3. 当前激活窗口继续遵循 task-card 语义主源，按状态切换执行 `node ./scripts/governance/sync-task-ledger.js` 回写 canonical sqlite 与派生视图。
 4. `sprint-003` 虽已 scaffold，但仍不能跳过 `sprint-002` 直接启动，因为 runtime integration 依赖 standards-side source model 与 placeholder boundary 先稳定。
+5. `TK-894 ~ TK-896`、`CR-001` 与 `TK-910` 已全部完成；sprint-002 已移入 completed history，`sprint-003` 已切换为下一条 primary stream。

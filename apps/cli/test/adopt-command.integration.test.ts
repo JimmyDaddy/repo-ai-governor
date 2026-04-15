@@ -383,12 +383,67 @@ describe('adopt command integration', () => {
           ),
         ),
       ).toBe(true);
+      expect(
+        existsSync(
+          resolve(
+            repositoryRoot,
+            '.repo-ai-governor',
+            'normative_knowledge_sources',
+            'technical-solutions',
+            'technical-solution-module-registry.yaml',
+          ),
+        ),
+      ).toBe(true);
+      expect(
+        existsSync(
+          resolve(
+            repositoryRoot,
+            '.repo-ai-governor',
+            'normative_knowledge_sources',
+            'governance',
+            'code_standards.md',
+          ),
+        ),
+      ).toBe(true);
+      expect(
+        existsSync(
+          resolve(
+            repositoryRoot,
+            '.repo-ai-governor',
+            'normative_knowledge_sources',
+            'governance',
+            'long-term-maintenance-guide.md',
+          ),
+        ),
+      ).toBe(true);
 
       const configContent = await readFile(
         resolve(repositoryRoot, '.repo-ai-governor', 'governor.yaml'),
         'utf8',
       );
+      const codeStandardsContent = await readFile(
+        resolve(
+          repositoryRoot,
+          '.repo-ai-governor',
+          'normative_knowledge_sources',
+          'governance',
+          'code_standards.md',
+        ),
+        'utf8',
+      );
+      const maintenanceGuideContent = await readFile(
+        resolve(
+          repositoryRoot,
+          '.repo-ai-governor',
+          'normative_knowledge_sources',
+          'governance',
+          'long-term-maintenance-guide.md',
+        ),
+        'utf8',
+      );
       expect(configContent).toContain('mode: repo_local');
+      expect(codeStandardsContent).toContain('- Status: draft');
+      expect(maintenanceGuideContent).toContain('- Status: draft');
 
       const verifyIo = createBufferedIo(repositoryRoot);
       const verifyExitCode = await runCli(

@@ -1,6 +1,6 @@
 # TK-895 implement structured template projection and adopter-owned placeholder boundaries
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-15
 - Owner: AI-Agent
 - Priority: P1
@@ -56,9 +56,11 @@
 ## 9. 执行记录
 
 1. 2026-04-15：任务创建，状态初始化为 `planned`。
+2. 2026-04-15：状态切换为 `in_progress`，开始把 `structured_template_projection` surface 与 adopter-owned placeholder/bootstrap boundary 对齐到 self-host asset assembly。
+3. 2026-04-15：已把 template/bootstrap materialization 顺序绑定到 source catalog，并通过 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm exec vitest run apps/cli/test/adopt-command.integration.test.ts --maxWorkers=1 --maxConcurrency=1` 验证 self-host placeholder bootstrap 仍保持 starter boundary。
 
 ## 10. 产出
 
-1. 待执行：structured template projection baseline
-2. 待执行：adopter-owned placeholder seed policy
-3. 待执行：boundary note / deferred runtime sink list
+1. 已完成：`current-context.md`、`normative-loading-manifest.yaml` 等 starter-instance surface 继续通过 source-catalog-linked template projection 物化，避免回退为无边界 whole-file sync。
+2. 已完成：`code_standards.md`、`long-term-maintenance-guide.md` 与 self-host execution starter docs 作为 adopter-owned placeholder/template seed 的边界被明确保留，CLI bootstrap 只写 starter content 而不镜像 live authoring truth。
+3. 已完成：deferred runtime sink list 已冻结为 `doctor diagnostics`、`adopt verify` 与 execution preflight，留待 `sprint-003` 接手 self-host readiness integration。

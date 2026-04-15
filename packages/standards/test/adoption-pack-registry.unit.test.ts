@@ -123,6 +123,9 @@ describe('AdoptionPackRegistry', () => {
         record.relativePath ===
         '.repo-ai-governor/normative_knowledge_sources/normative-loading-manifest.yaml',
     );
+    const governorBootstrapRecord = definition.runtimeBootstrapRecords.find(
+      (record) => record.relativePath === '.repo-ai-governor/governor.yaml',
+    );
 
     expect(workflowSurface).toMatchObject({
       surfaceKind: AdoptionPackSurfaceKind.WORKFLOW_ASSET,
@@ -141,6 +144,8 @@ describe('AdoptionPackRegistry', () => {
       surfaceKind: AdoptionPackSurfaceKind.RUNTIME_BOOTSTRAP,
       parityClass: AdoptionPackParityClass.TEMPLATE_SEED,
       sourceMode: AdoptionPackSourceMode.TEMPLATE_SEED,
+      sourceRef:
+        'builtin://repo-ai-governor/adoption-pack/runtime-bootstrap/.repo-ai-governor/governor.yaml',
     });
     expect(codeStandardsSurface).toMatchObject({
       surfaceKind: AdoptionPackSurfaceKind.RUNTIME_BOOTSTRAP,
@@ -148,6 +153,16 @@ describe('AdoptionPackRegistry', () => {
       sourceMode: AdoptionPackSourceMode.ADOPTER_PLACEHOLDER,
       applicabilityScope: AdoptionPackApplicabilityScope.SELF_HOST_REPO_LOCAL,
       readinessGroup: AdoptionPackReadinessGroup.GOVERNANCE_RULES_READY,
+      sourceRef:
+        'builtin://repo-ai-governor/adoption-pack/runtime-bootstrap/.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md',
+    });
+    expect(currentContextTemplate?.sourceCatalogId).toBe(currentContextSurface?.surfaceId);
+    expect(manifestTemplate?.sourceCatalogId).toBe(
+      'template:.repo-ai-governor/normative_knowledge_sources/normative-loading-manifest.yaml',
+    );
+    expect(governorBootstrapRecord).toMatchObject({
+      sourceCatalogId: governorConfigSurface?.surfaceId,
+      assetGroup: AdoptionPackManagedAssetGroup.BOOTSTRAP_TEMPLATES,
     });
     expect(currentContextTemplate?.content).toContain('- Stream: `none`');
     expect(currentContextTemplate?.content).toContain(
@@ -191,6 +206,31 @@ describe('AdoptionPackRegistry', () => {
         'runtime_bootstrap:.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md',
         'runtime_bootstrap:.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md',
       ]),
+    );
+  });
+
+  it('exposes self-host runtime bootstrap records through the built-in definition', async () => {
+    const registry = new AdoptionPackRegistry();
+
+    const definition = await registry.resolveDefinition(BUILT_IN_ADOPTION_PACK_ID);
+    const codeStandardsBootstrap = definition.runtimeBootstrapRecords.find(
+      (record) =>
+        record.relativePath ===
+        '.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md',
+    );
+    const maintenanceBootstrap = definition.runtimeBootstrapRecords.find(
+      (record) =>
+        record.relativePath ===
+        '.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md',
+    );
+
+    expect(codeStandardsBootstrap?.content).toContain('# Code Standards');
+    expect(codeStandardsBootstrap?.sourceCatalogId).toBe(
+      'runtime_bootstrap:.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md',
+    );
+    expect(maintenanceBootstrap?.content).toContain('# Long-Term Maintenance Guide');
+    expect(maintenanceBootstrap?.sourceCatalogId).toBe(
+      'runtime_bootstrap:.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md',
     );
   });
 

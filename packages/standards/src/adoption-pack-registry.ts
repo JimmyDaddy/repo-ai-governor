@@ -537,6 +537,8 @@ export class AdoptionPackRegistry {
       manifest: mergedManifest,
       workflowRecords: builtInDefinition?.workflowRecords.map((record) => ({ ...record })) ?? [],
       templateRecords: builtInDefinition?.templateRecords.map((record) => ({ ...record })) ?? [],
+      runtimeBootstrapRecords:
+        builtInDefinition?.runtimeBootstrapRecords.map((record) => ({ ...record })) ?? [],
       sourceCatalogRecords:
         builtInDefinition?.sourceCatalogRecords.map((record) => ({
           ...record,

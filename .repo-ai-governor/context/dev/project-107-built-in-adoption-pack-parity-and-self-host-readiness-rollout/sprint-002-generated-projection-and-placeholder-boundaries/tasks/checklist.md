@@ -1,8 +1,22 @@
 # checklist
 
-- [ ] TK-894 build built-in pack source catalog and generated assembly baseline
+- [x] TK-894 build built-in pack source catalog and generated assembly baseline
   - 2026-04-15：任务创建，状态初始化为 `planned`。
-- [ ] TK-895 implement structured template projection and adopter-owned placeholder boundaries
+  - 2026-04-15：状态切换为 `in_progress`，开始把 source catalog shape 收口为 catalog-driven built-in pack assembly seam。
+  - 2026-04-15：已将 self-host runtime bootstrap surfaces 收口到 `ResolvedAdoptionPackDefinition.runtimeBootstrapRecords`，并通过 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm exec vitest run apps/cli/test/adopt-command.integration.test.ts --maxWorkers=1 --maxConcurrency=1`。
+- [x] TK-895 implement structured template projection and adopter-owned placeholder boundaries
   - 2026-04-15：任务创建，状态初始化为 `planned`。
-- [ ] TK-896 close sprint-002 standards parity coverage and sprint-003 handoff readiness
+  - 2026-04-15：状态切换为 `in_progress`，开始把 `structured_template_projection` surface 与 adopter-owned placeholder/bootstrap boundary 对齐到 self-host asset assembly。
+  - 2026-04-15：已把 template/bootstrap materialization 顺序绑定到 source catalog，并通过 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm exec vitest run apps/cli/test/adopt-command.integration.test.ts --maxWorkers=1 --maxConcurrency=1` 验证 self-host placeholder bootstrap 仍保持 starter boundary。
+- [x] TK-896 close sprint-002 standards parity coverage and sprint-003 handoff readiness
   - 2026-04-15：任务创建，状态初始化为 `planned`。
+  - 2026-04-15：状态切换为 `in_progress`，开始汇总 sprint-002 standards parity coverage、exit acceptance evidence 与 sprint-003 activation handoff。
+  - 2026-04-15：已完成 sprint-002 standards-side coverage summary，并通过 `node ./scripts/governance/run-normative-loading-manifest-gate.js`、`node ./scripts/governance/check-task-ledger-sync.js`、`node ./scripts/governance/check-sprint-plan-status-sync.js` 验证 handoff 账面与治理入口保持同步。
+- [x] CR-001 sprint-002-generated-projection-and-placeholder-boundaries delegated review loop round 1
+  - 2026-04-15：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-15：已完成主 agent 复核，结论为 `部分认可`；finding `2.1` 因已冻结到 `sprint-003` 而不在本轮作为 defect 接受，finding `2.2` 被接受并进入修复。
+  - 2026-04-15：已完成 accepted finding 修复与同窗验证，CR-001 收口为 `resolved`。
+- [x] TK-910 finalize sprint-002 closeout and activate sprint-003
+  - 2026-04-15：任务创建并立即切换为 `in_progress`，开始执行 sprint-002 closeout、sprint-003 activation 与本地边界提交准备。
+  - 2026-04-15：已完成 current-context / completed history / delivery registry / plan write-back，并生成 `DA-910` handoff，准备在通过 `pnpm run check` 后创建 sprint-002 本地边界提交。
+  - 2026-04-15：已完成 sprint-002 closeout，并把 sprint-003 切换为新的 primary stream；project-108 继续保持 planned follow-up。

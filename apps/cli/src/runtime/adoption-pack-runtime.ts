@@ -15,6 +15,7 @@ import {
   type AdoptionPackManagedFileRecord,
   type AdoptionPackProfile,
   AdoptionPackRegistry,
+  type AdoptionPackRuntimeBootstrapRecord,
   type AdoptionPackVerificationCheck,
   type AdoptionPackVerificationSummary,
   AdoptionPackWorkspaceModePolicy,
@@ -218,6 +219,8 @@ export class CliAdoptionPackRuntime {
     if (resolvedTarget.profile.profileId === 'self-host-complete') {
       const bootstrapResult = await this.bootstrapSelfHostSurface({
         repoRoot,
+        definition: resolvedTarget.definition,
+        profile: resolvedTarget.profile,
         existingReceipt,
         force: options.force,
       });
@@ -699,8 +702,83 @@ export class CliAdoptionPackRuntime {
     definition: ResolvedAdoptionPackDefinition,
     profile: AdoptionPackProfile,
   ) {
-    return definition.templateRecords.filter((record) =>
-      record.profileIds.includes(profile.profileId),
+    return this.orderMaterializationRecords(
+      definition.templateRecords.filter((record) => record.profileIds.includes(profile.profileId)),
+      this.buildSourceCatalogSurfaceOrder(definition),
+      'template record',
+    );
+  }
+
+  private resolveRuntimeBootstrapRecords(
+    definition: ResolvedAdoptionPackDefinition,
+    profile: AdoptionPackProfile,
+  ): AdoptionPackRuntimeBootstrapRecord[] {
+    return this.orderMaterializationRecords(
+      definition.runtimeBootstrapRecords.filter((record) =>
+        record.profileIds.includes(profile.profileId),
+      ),
+      this.buildSourceCatalogSurfaceOrder(definition),
+      'runtime bootstrap record',
+    );
+  }
+
+  private buildSourceCatalogSurfaceOrder(
+    definition: ResolvedAdoptionPackDefinition,
+  ): Map<string, number> {
+    return new Map(
+      definition.sourceCatalogRecords.map((record, index) => [record.surfaceId, index] as const),
+    );
+  }
+
+  private orderMaterializationRecords<T extends { relativePath: string; sourceCatalogId?: string }>(
+    records: T[],
+    sourceCatalogSurfaceOrder: Map<string, number>,
+    recordKind: string,
+  ): T[] {
+    return [...records].sort((left, right) => {
+      const leftOrder = this.resolveMaterializationOrder(
+        left.relativePath,
+        left.sourceCatalogId,
+        sourceCatalogSurfaceOrder,
+        recordKind,
+      );
+      const rightOrder = this.resolveMaterializationOrder(
+        right.relativePath,
+        right.sourceCatalogId,
+        sourceCatalogSurfaceOrder,
+        recordKind,
+      );
+
+      return leftOrder - rightOrder;
+    });
+  }
+
+  private resolveMaterializationOrder(
+    relativePath: string,
+    sourceCatalogId: string | undefined,
+    sourceCatalogSurfaceOrder: Map<string, number>,
+    recordKind: string,
+  ): number {
+    if (!sourceCatalogId) {
+      return Number.MAX_SAFE_INTEGER;
+    }
+
+    const surfaceOrder = sourceCatalogSurfaceOrder.get(sourceCatalogId);
+    if (surfaceOrder !== undefined) {
+      return surfaceOrder;
+    }
+
+    throw new RuntimeError(
+      GovernorErrorCode.STANDARDS_PACK_INVALID,
+      this.localizeText(
+        `Cannot materialize ${recordKind} "${relativePath}" because source catalog id "${sourceCatalogId}" is missing from the resolved definition.`,
+        `无法物化 ${recordKind} "${relativePath}"，因为 source catalog id "${sourceCatalogId}" 不存在于已解析 definition 中。`,
+      ),
+      {
+        relativePath,
+        sourceCatalogId,
+        recordKind,
+      },
     );
   }
 
@@ -957,6 +1035,8 @@ export class CliAdoptionPackRuntime {
 
   private async bootstrapSelfHostSurface(options: {
     repoRoot: string;
+    definition: ResolvedAdoptionPackDefinition;
+    profile: AdoptionPackProfile;
     existingReceipt: AdoptionPackInstallReceipt | null;
     force: boolean;
   }): Promise<{
@@ -966,93 +1046,27 @@ export class CliAdoptionPackRuntime {
   }> {
     const managedFileRecords: AdoptionPackManagedFileRecord[] = [];
     const writtenArtifacts: string[] = [];
-    const dynamicFiles = [
-      {
-        relativePath: '.repo-ai-governor/governor.yaml',
-        content: [
-          'schemaVersion: "1.1"',
-          'workspace:',
-          '  mode: repo_local',
-          '  migrationPolicy: copy_verify_switch_rollback',
-          'i18n:',
-          '  runtimeEngine: i18next',
-          '  defaultLocale: zh-CN',
-          '  fallbackLocale: en-US',
-          '  supportedLocales:',
-          '    - zh-CN',
-          '    - en-US',
-          'memory:',
-          '  storeEngine: fs_csv',
-          '  storeRoot: context/memory',
-          '',
-        ].join('\n'),
-        assetGroup: AdoptionPackManagedAssetGroup.BOOTSTRAP_TEMPLATES,
-      },
-      {
-        relativePath:
-          '.repo-ai-governor/normative_knowledge_sources/technical-solutions/technical-solution-module-registry.yaml',
-        content: [
-          'schema_version: 2',
-          'generated_at: 1970-01-01',
-          'status: active',
-          'owner: self-host-template',
-          '',
-          'allowed_layers:',
-          '  - governance-core',
-          '  - runtime-core',
-          '',
-          'change_impact_classes:',
-          '  - local_detail_change',
-          '  - exported_contract_change',
-          '  - module_registry_change',
-          '  - north_star_change',
-          '  - layer_boundary_change',
-          '',
-          'sync_target_tokens:',
-          '  - summary_doc',
-          '  - module_registry',
-          '  - direct_consumers',
-          '  - overall_technical_solution',
-          '  - architecture_and_repo_layering',
-          '  - product_requirements',
-          '  - product_requirements_brief',
-          '',
-          'modules: []',
-          '',
-        ].join('\n'),
-        assetGroup: AdoptionPackManagedAssetGroup.NORMATIVE_TEMPLATES,
-      },
-      {
-        relativePath: '.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md',
-        content:
-          '# Code Standards\n\n- Status: draft\n- Date: 1970-01-01\n\n## Purpose\n\nDefine repository-specific code constraints before enabling unattended delivery.\n',
-        assetGroup: AdoptionPackManagedAssetGroup.NORMATIVE_TEMPLATES,
-      },
-      {
-        relativePath:
-          '.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md',
-        content:
-          '# Long-Term Maintenance Guide\n\n- Status: draft\n- Date: 1970-01-01\n\n## Purpose\n\nCapture maintenance expectations for self-hosted governance repositories.\n',
-        assetGroup: AdoptionPackManagedAssetGroup.NORMATIVE_TEMPLATES,
-      },
-    ];
+    const runtimeBootstrapRecords = this.resolveRuntimeBootstrapRecords(
+      options.definition,
+      options.profile,
+    );
 
-    for (const dynamicFile of dynamicFiles) {
-      const absolutePath = resolve(options.repoRoot, dynamicFile.relativePath);
+    for (const runtimeBootstrapRecord of runtimeBootstrapRecords) {
+      const absolutePath = resolve(options.repoRoot, runtimeBootstrapRecord.relativePath);
       await this.writeManagedTextFile({
         absolutePath,
-        relativePath: dynamicFile.relativePath,
-        content: dynamicFile.content,
-        assetGroup: dynamicFile.assetGroup,
+        relativePath: runtimeBootstrapRecord.relativePath,
+        content: runtimeBootstrapRecord.content,
+        assetGroup: runtimeBootstrapRecord.assetGroup,
         existingReceipt: options.existingReceipt,
         force: options.force,
       });
       managedFileRecords.push(
         this.createManagedFileRecord(
-          dynamicFile.relativePath,
+          runtimeBootstrapRecord.relativePath,
           absolutePath,
-          dynamicFile.assetGroup,
-          dynamicFile.content,
+          runtimeBootstrapRecord.assetGroup,
+          runtimeBootstrapRecord.content,
         ),
       );
       writtenArtifacts.push(absolutePath);

@@ -83,6 +83,18 @@ export interface AdoptionPackTemplateRecord {
 }
 
 /**
+ * Defines one runtime-bootstrap text surface materialized outside the static template list.
+ */
+export interface AdoptionPackRuntimeBootstrapRecord {
+  relativePath: string;
+  content: string;
+  assetGroup: AdoptionPackManagedAssetGroup;
+  profileIds: string[];
+  description: string;
+  sourceCatalogId: string;
+}
+
+/**
  * Defines one machine-readable built-in source-catalog record for parity/readiness inventory.
  */
 export interface AdoptionPackSourceCatalogRecord {
@@ -125,6 +137,7 @@ export interface ResolvedAdoptionPackDefinition {
   manifest: ResolvedAdoptionPackManifest;
   workflowRecords: StructuredWorkflowAssetRecord[];
   templateRecords: AdoptionPackTemplateRecord[];
+  runtimeBootstrapRecords: AdoptionPackRuntimeBootstrapRecord[];
   sourceCatalogRecords: AdoptionPackSourceCatalogRecord[];
   readinessMatrixRecords: AdoptionPackReadinessMatrixRecord[];
   capabilityCoverage: Record<string, string[]>;

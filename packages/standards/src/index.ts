@@ -122,6 +122,7 @@ export type {
   AdoptionPackProfile,
   AdoptionPackReadinessMatrixRecord,
   AdoptionPackRegistryOptions,
+  AdoptionPackRuntimeBootstrapRecord,
   AdoptionPackSourceCatalogRecord,
   AdoptionPackSourceResolution,
   AdoptionPackTemplateRecord,

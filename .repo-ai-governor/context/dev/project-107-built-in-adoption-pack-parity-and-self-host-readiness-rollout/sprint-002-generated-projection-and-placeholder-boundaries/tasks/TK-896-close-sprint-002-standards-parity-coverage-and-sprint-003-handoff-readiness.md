@@ -1,6 +1,6 @@
 # TK-896 close sprint-002 standards parity coverage and sprint-003 handoff readiness
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-15
 - Owner: AI-Agent
 - Priority: P1
@@ -58,9 +58,11 @@
 ## 9. 执行记录
 
 1. 2026-04-15：任务创建，状态初始化为 `planned`。
+2. 2026-04-15：状态切换为 `in_progress`，开始汇总 sprint-002 standards parity coverage、exit acceptance evidence 与 sprint-003 activation handoff。
+3. 2026-04-15：已完成 sprint-002 standards-side coverage summary，并通过 `node ./scripts/governance/run-normative-loading-manifest-gate.js`、`node ./scripts/governance/check-task-ledger-sync.js`、`node ./scripts/governance/check-sprint-plan-status-sync.js` 验证 handoff 账面与治理入口保持同步。
 
 ## 10. 产出
 
-1. 待执行：standards parity coverage summary
-2. 待执行：sprint-003 activation handoff recommendation
-3. 待执行：sprint-002 exit acceptance evidence note
+1. 已完成：standards parity coverage 已冻结为“source catalog linkage + runtime bootstrap definition + placeholder boundary”三段式实现面，验证面覆盖 `packages/standards/test/adoption-pack-registry.unit.test.ts` 与 `apps/cli/test/adopt-command.integration.test.ts`。
+2. 已完成：`sprint-003` activation handoff 已压缩为单跳输入，即仅接手 `doctor diagnostics`、`adopt verify`、execution preflight 的 self-host readiness integration，以及 `README.md`、`docs/local-adoption-playbook.md`、`docs/support-matrix.md` 的 consumer truthfulness refresh。
+3. 已完成：sprint-002 exit acceptance evidence 已记录为 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm exec vitest run apps/cli/test/adopt-command.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`node ./scripts/governance/run-normative-loading-manifest-gate.js`，当前边界已可进入 delegated sprint CR loop。
