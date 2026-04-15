@@ -60,6 +60,8 @@
 2. 2026-04-15：状态切换为 `in_progress`，开始实现 `adopt verify` self-host readiness warning、`execution_preflight_signal` warning/signal 与最小 diagnostics sink integration。
 3. 2026-04-15：已在 `apps/cli/src/runtime/adoption-pack-runtime.ts` 接入 self-host-only readiness evaluation；fresh `self-host-complete + repo_local` `adopt verify` 现在会按 governance / product / execution 分组输出 warnings，并显式投影 `execution_preflight_signal=blocked` warning/signal，要求 self-host consumer 在 unattended execution 前按 downstream fail-closed blocker 处理，同时保持默认 `adopter-complete` 路径不受影响。
 4. 2026-04-15：已通过 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm exec vitest run apps/cli/test/adopt-command.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1` 验证 runtime integration 保持绿色。
+5. 2026-04-15：project-final `CR-003` 识别出 `doctor diagnostics` sink 尚未真正消费同一套 self-host readiness facts；主 agent 已将同源 readiness checks 路由到 `apps/cli/src/commands/doctor-command.ts`，并在 `apps/cli/test/adopt-command.integration.test.ts` 中补上 fresh `self-host-complete + repo_local` 的 doctor-path integration assertion。
+6. 2026-04-15：project-final `CR-004` 进一步识别出 malformed adoption receipt 会让 `doctor` 直接失去诊断面；主 agent 已把 doctor-path receipt 读取失败标准化为 `adoption-receipt-diagnostics` fail check，并补上坏 receipt regression test，确保 diagnostics surface 在 metadata 损坏时仍然可用。
 
 ## 10. 产出
 

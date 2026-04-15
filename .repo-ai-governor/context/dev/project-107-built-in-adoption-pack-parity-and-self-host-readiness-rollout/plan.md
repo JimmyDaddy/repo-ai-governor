@@ -1,6 +1,6 @@
 # project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-15
 - Stage Mapping: built-in adoption pack parity and self-host readiness rollout
 - Phase Mapping: sprint-001 parity inventory and source-catalog foundation / sprint-002 generated projection and placeholder-boundary implementation / sprint-003 readiness integration and consumer truthfulness follow-through
@@ -32,7 +32,7 @@
 
 ## 2.3 sprint-003-self-host-readiness-integration-and-consumer-truthfulness
 
-- Status: active
+- Status: completed
 - Sprint Goal: 将 self-host-only readiness interlock 接入 runtime / diagnostics / verify / execution preflight，并完成首批 consumer docs truthfulness 与 evidence follow-through。
 - Task Package: `TK-897`、`TK-898`、`TK-899`
 
@@ -50,7 +50,7 @@
 | TK-910 | sprint-002 | finalize sprint-002 closeout and activate sprint-003 | closeout/activation | CR-001 | completed |
 | TK-897 | sprint-003 | integrate self-host readiness signals into diagnostics verify and execution preflight | readiness/runtime | TK-896 | completed |
 | TK-898 | sprint-003 | add readiness applicability tests and refresh consumer docs truthfulness evidence | verification/docs | TK-897 | completed |
-| TK-899 | sprint-003 | finalize project-107 rollout closeout and completion audit | closeout/final-audit | TK-897、TK-898 | planned |
+| TK-899 | sprint-003 | finalize project-107 rollout closeout and completion audit | closeout/final-audit | TK-897、TK-898 | completed |
 
 ## 4. 依赖产物策略
 
@@ -67,7 +67,7 @@
 1. built-in pack parity inventory、source catalog shape 与 self-host applicability boundary 已 materialize 为可执行 rollout scope，并由 active sprint 承接当前实现窗口。
 2. active/planned task ledger、project/sprint plan 与 `current-context` 保持同步：`sprint-001` 已完成并进入 completed history，`sprint-002` 已在 `TK-894` 开工后切换为 active primary stream；`sprint-003` 与 `project-108 / sprint-001` 仍保持 planned follow-up。
 3. 后续 implementation window 可以直接沿用冻结的 formal direction 与分 sprint ownership，而不需要在切换窗口时重新解释范围。
-4. `sprint-002` 已 clean closeout 并移入 completed history；`TK-897` 开工后，`sprint-003` 已成为 active primary stream；`project-108 / sprint-001` 仍为 planned follow-up。
+4. `sprint-002` 已 clean closeout 并移入 completed history；`sprint-003` 已完成 project-final CR loop 与 `TK-899` final closeout write-back；当前默认 primary stream 已清空为 `idle`，`project-108 / sprint-001` 继续保留为 planned follow-up。
 
 ## 6. 里程碑记录
 
@@ -82,7 +82,9 @@
 9. 2026-04-15：`TK-897` 已切换为 `in_progress`，`sprint-003` 正式进入 self-host readiness integration 与 consumer truthfulness execution 窗口。
 10. 2026-04-15：`TK-897` / `TK-898` 已完成 runtime readiness integration、tests 与 consumer docs truthfulness refresh；`sprint-003` 下一步进入 delegated CR round，再决定 `TK-899` closeout 窗口。
 11. 2026-04-15：`sprint-003` sprint-level delegated CR rounds `CR-001` / `CR-002` 已 clean `resolved`；当前 boundary 已具备进入 project-final CR loop 的条件，`TK-899` 继续保留为最终 closeout/audit 承接点。
+12. 2026-04-15：project-final delegated rounds `CR-003` / `CR-004` 已完成 accepted finding 修复并 `resolved`，`CR-005` 作为 fresh clean recheck 已确认 project-final boundary 无新的 actionable finding。
+13. 2026-04-15：`TK-899 / DA-899` 已完成 final closeout write-back；`project-107` 正式进入 `completed`，并在此里程碑回链 [project-107 completion audit summary](./project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout-completion-audit-summary.md)。
 
 ## 7. 里程碑记录入口
 
-1. 待 closeout 后补齐。
+1. [project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout-completion-audit-summary.md](./project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout-completion-audit-summary.md)

@@ -534,6 +534,156 @@ describe('adopt command integration', () => {
         status: 'warn',
       });
       expect(executionPreflightCheck?.detail).toContain('execution_preflight_signal=blocked');
+
+      const doctorIo = createBufferedIo(repositoryRoot);
+      const doctorExitCode = await runCli(
+        ['node', 'repo-ai-governor', '--output', 'json', 'doctor'],
+        doctorIo.io,
+      );
+      const doctorPayload = JSON.parse(doctorIo.stdoutBuffer.join('')) as {
+        command?: string;
+        command_result?: {
+          checks?: Array<{ id?: string; status?: string; detail?: string }>;
+          artifacts?: Array<{ id?: string; path?: string }>;
+        };
+      };
+      const doctorDiagnosticsArtifactPath = doctorPayload.command_result?.artifacts?.find(
+        (artifact) => artifact.id === 'doctor_diagnostics',
+      )?.path;
+      const doctorDiagnosticsPayload = JSON.parse(
+        await readFile(String(doctorDiagnosticsArtifactPath), 'utf8'),
+      ) as {
+        checks?: Array<{ id?: string; status?: string; detail?: string }>;
+      };
+      const doctorGovernanceRulesReadinessCheck = doctorPayload.command_result?.checks?.find(
+        (check) => check.id === 'self-host-readiness:governance_rules_ready',
+      );
+      const doctorProductDirectionReadinessCheck = doctorPayload.command_result?.checks?.find(
+        (check) => check.id === 'self-host-readiness:product_direction_ready',
+      );
+      const doctorExecutionSurfaceReadinessCheck = doctorPayload.command_result?.checks?.find(
+        (check) => check.id === 'self-host-readiness:execution_surface_ready',
+      );
+      const doctorExecutionPreflightCheck = doctorPayload.command_result?.checks?.find(
+        (check) => check.id === 'self-host-execution-preflight',
+      );
+
+      expect(doctorExitCode).toBe(0);
+      expect(doctorIo.stderrBuffer.join('')).toBe('');
+      expect(doctorPayload.command).toBe('doctor');
+      expect(doctorGovernanceRulesReadinessCheck).toMatchObject({
+        status: 'warn',
+      });
+      expect(doctorGovernanceRulesReadinessCheck?.detail).toContain(
+        '.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md',
+      );
+      expect(doctorProductDirectionReadinessCheck).toMatchObject({
+        status: 'warn',
+      });
+      expect(doctorProductDirectionReadinessCheck?.detail).toContain(
+        '.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md',
+      );
+      expect(doctorExecutionSurfaceReadinessCheck).toMatchObject({
+        status: 'warn',
+      });
+      expect(doctorExecutionSurfaceReadinessCheck?.detail).toContain(
+        '.repo-ai-governor/context/current-context.md',
+      );
+      expect(doctorExecutionPreflightCheck).toMatchObject({
+        status: 'warn',
+      });
+      expect(doctorExecutionPreflightCheck?.detail).toContain('execution_preflight_signal=blocked');
+      expect(
+        doctorDiagnosticsPayload.checks?.some(
+          (check) =>
+            check.id === 'self-host-readiness:governance_rules_ready' && check.status === 'warn',
+        ),
+      ).toBe(true);
+      expect(
+        doctorDiagnosticsPayload.checks?.some(
+          (check) => check.id === 'self-host-execution-preflight' && check.status === 'warn',
+        ),
+      ).toBe(true);
+    } finally {
+      await rm(repositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps doctor diagnostic output available when an adoption receipt is malformed', async () => {
+    const repositoryRoot = await createAdoptionFixtureRepository();
+
+    try {
+      const applyIo = createBufferedIo(repositoryRoot);
+      const applyExitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          'adopt',
+          'apply',
+          'adopter-complete',
+          '--adoption-profile',
+          'self-host-complete',
+          '--repo',
+          '.',
+          '--workspace-mode',
+          'repo_local',
+          '--hosts',
+          'codex',
+        ],
+        applyIo.io,
+      );
+      const receiptPath = resolve(
+        repositoryRoot,
+        '.repo-ai-governor',
+        'adoption',
+        'installations',
+        'repo-ai-governor-adoption-pack',
+        'adoption-install.receipt.json',
+      );
+
+      expect(applyExitCode).toBe(0);
+      expect(applyIo.stderrBuffer.join('')).toBe('');
+
+      await writeFile(receiptPath, '{bad json\n', 'utf8');
+
+      const doctorIo = createBufferedIo(repositoryRoot);
+      const doctorExitCode = await runCli(
+        ['node', 'repo-ai-governor', '--output', 'json', 'doctor'],
+        doctorIo.io,
+      );
+      const doctorPayload = JSON.parse(doctorIo.stdoutBuffer.join('')) as {
+        command?: string;
+        command_result?: {
+          checks?: Array<{ id?: string; status?: string; detail?: string }>;
+          artifacts?: Array<{ id?: string; path?: string }>;
+        };
+      };
+      const doctorDiagnosticsArtifactPath = doctorPayload.command_result?.artifacts?.find(
+        (artifact) => artifact.id === 'doctor_diagnostics',
+      )?.path;
+      const doctorDiagnosticsPayload = JSON.parse(
+        await readFile(String(doctorDiagnosticsArtifactPath), 'utf8'),
+      ) as {
+        checks?: Array<{ id?: string; status?: string; detail?: string }>;
+      };
+      const invalidReceiptCheck = doctorPayload.command_result?.checks?.find(
+        (check) => check.id === 'adoption-receipt-diagnostics',
+      );
+
+      expect(doctorExitCode).toBe(0);
+      expect(doctorIo.stderrBuffer.join('')).toBe('');
+      expect(doctorPayload.command).toBe('doctor');
+      expect(invalidReceiptCheck).toMatchObject({
+        status: 'fail',
+      });
+      expect(invalidReceiptCheck?.detail).toContain('receipt_state=invalid');
+      expect(invalidReceiptCheck?.detail).toContain('code=STANDARDS_PACK_INVALID');
+      expect(invalidReceiptCheck?.detail).toContain(receiptPath);
+      expect(
+        doctorDiagnosticsPayload.checks?.some(
+          (check) => check.id === 'adoption-receipt-diagnostics' && check.status === 'fail',
+        ),
+      ).toBe(true);
     } finally {
       await rm(repositoryRoot, { recursive: true, force: true });
     }

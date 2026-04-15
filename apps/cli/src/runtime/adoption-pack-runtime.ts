@@ -8,7 +8,12 @@ import { ClaudeCodeHostRenderer } from '@repo-ai-governor/adapter-claude-code';
 import { CodexHostRenderer } from '@repo-ai-governor/adapter-codex';
 import { GithubCopilotHostRenderer } from '@repo-ai-governor/adapter-github-copilot';
 import { SqliteArtifactIndexStore } from '@repo-ai-governor/artifact-registry';
-import { GovernorErrorCode, RuntimeError, WorkspaceMode } from '@repo-ai-governor/shared';
+import {
+  GovernorErrorCode,
+  RuntimeError,
+  WorkspaceMode,
+  standardizeError,
+} from '@repo-ai-governor/shared';
 import {
   AdoptionPackApplicabilityScope,
   type AdoptionPackInstallReceipt,
@@ -82,12 +87,14 @@ interface MaterializedHostResult {
 }
 
 interface SelfHostReadinessEvaluation {
+  doctorChecks: AdoptionPackVerificationCheck[];
   verifyChecks: AdoptionPackVerificationCheck[];
 }
 
 const ADOPTION_INSTALL_RECEIPT_FILE_NAME = 'adoption-install.receipt.json';
 const ADOPTION_VERIFICATION_SUMMARY_FILE_NAME = 'adoption-verification.summary.json';
 const ADOPTION_DIFF_REPORT_FILE_NAME = 'adoption-diff.report.json';
+const ADOPTION_RECEIPT_DIAGNOSTICS_CHECK_ID = 'adoption-receipt-diagnostics';
 const SELF_HOST_READINESS_CHECK_ID_PREFIX = 'self-host-readiness';
 const SELF_HOST_EXECUTION_PREFLIGHT_SIGNAL_CHECK_ID = 'self-host-execution-preflight';
 const SELF_HOST_REQUIRED_PLACEHOLDER_MARKER = 'replace_before_execution';
@@ -469,6 +476,33 @@ export class CliAdoptionPackRuntime {
             ]
           : verificationSummary.checks,
     };
+  }
+
+  /**
+   * Collects doctor-facing self-host readiness checks without mutating adoption verification artifacts.
+   * @param options Optional repo or pack selector used to resolve one installed adoption receipt.
+   * @returns Doctor diagnostics checks for self-host readiness, or an empty list when no matching receipt exists.
+   */
+  public async collectDoctorReadinessChecks(options?: {
+    repoPath?: string | null;
+    packSelector?: string | null;
+  }): Promise<AdoptionPackVerificationCheck[]> {
+    const repoRoot = this.resolveRepoRoot(options?.repoPath ?? null);
+    try {
+      const receipt = await this.readExistingReceipt(
+        repoRoot,
+        options?.packSelector ?? null,
+        false,
+      );
+      if (!receipt) {
+        return [];
+      }
+
+      const selfHostReadiness = await this.evaluateSelfHostReadiness(receipt);
+      return selfHostReadiness.doctorChecks;
+    } catch (error) {
+      return [this.createDoctorReceiptFailureCheck(error, repoRoot)];
+    }
   }
 
   /**
@@ -1250,6 +1284,7 @@ export class CliAdoptionPackRuntime {
       receipt.workspaceMode !== WorkspaceMode.REPO_LOCAL
     ) {
       return {
+        doctorChecks: [],
         verifyChecks: [],
       };
     }
@@ -1260,6 +1295,7 @@ export class CliAdoptionPackRuntime {
       definition.sourceCatalogRecords.map((record) => [record.surfaceId, record] as const),
     );
     const verifyChecks: AdoptionPackVerificationCheck[] = [];
+    const doctorChecks: AdoptionPackVerificationCheck[] = [];
     const preflightBlockedGroups: string[] = [];
     const preflightBlockedPaths: string[] = [];
 
@@ -1296,6 +1332,21 @@ export class CliAdoptionPackRuntime {
         });
       }
 
+      if (matrixRecord.sinkIds.includes(AdoptionPackReadinessSink.DOCTOR_DIAGNOSTICS)) {
+        doctorChecks.push({
+          checkId: `${SELF_HOST_READINESS_CHECK_ID_PREFIX}:${normalizedGroup}`,
+          status:
+            unresolvedPlaceholderPaths.length > 0
+              ? HostVerificationStatus.WARN
+              : HostVerificationStatus.PASS,
+          detail:
+            unresolvedPlaceholderPaths.length > 0
+              ? `readiness_group=${normalizedGroup} placeholder_paths=${unresolvedPlaceholderPathList}`
+              : `readiness_group=${normalizedGroup} ready`,
+          inspectedPath: unresolvedPlaceholderPaths[0] ?? undefined,
+        });
+      }
+
       if (
         matrixRecord.sinkIds.includes(AdoptionPackReadinessSink.EXECUTION_PREFLIGHT) &&
         unresolvedPlaceholderPaths.length > 0
@@ -1305,7 +1356,7 @@ export class CliAdoptionPackRuntime {
       }
     }
 
-    verifyChecks.push({
+    const preflightSignalCheck = {
       checkId: SELF_HOST_EXECUTION_PREFLIGHT_SIGNAL_CHECK_ID,
       status:
         preflightBlockedGroups.length > 0
@@ -1316,9 +1367,12 @@ export class CliAdoptionPackRuntime {
           ? `execution_preflight_signal=blocked enforcement=downstream_fail_closed blocked_groups=${[...new Set(preflightBlockedGroups)].join(',')} placeholder_paths=${[...new Set(preflightBlockedPaths)].join(',')}`
           : 'execution_preflight_signal=ready',
       inspectedPath: preflightBlockedPaths[0] ?? undefined,
-    });
+    } satisfies AdoptionPackVerificationCheck;
+    verifyChecks.push(preflightSignalCheck);
+    doctorChecks.push({ ...preflightSignalCheck });
 
     return {
+      doctorChecks,
       verifyChecks,
     };
   }
@@ -1666,13 +1720,55 @@ export class CliAdoptionPackRuntime {
   }
 
   private async readInstallReceipt(filePath: string): Promise<AdoptionPackInstallReceipt> {
-    return this.normalizeInstallReceipt(
-      await this.readJsonFile<AdoptionPackInstallReceipt>(filePath),
-    );
+    try {
+      return this.normalizeInstallReceipt(
+        await this.readJsonFile<AdoptionPackInstallReceipt>(filePath),
+      );
+    } catch (error) {
+      if (error instanceof RuntimeError) {
+        throw error;
+      }
+
+      throw new RuntimeError(
+        GovernorErrorCode.STANDARDS_PACK_INVALID,
+        this.localizeText(
+          'Failed to read adoption install receipt.',
+          '读取 adoption install receipt 失败。',
+        ),
+        {
+          receiptPath: filePath,
+        },
+        error,
+      );
+    }
   }
 
   private async readJsonFile<T>(filePath: string): Promise<T> {
     return JSON.parse(await readFile(filePath, 'utf8')) as T;
+  }
+
+  private createDoctorReceiptFailureCheck(
+    error: unknown,
+    repoRoot: string,
+  ): AdoptionPackVerificationCheck {
+    const standardizedError = standardizeError(error);
+    const receiptPath =
+      standardizedError.details && typeof standardizedError.details.receiptPath === 'string'
+        ? standardizedError.details.receiptPath
+        : undefined;
+
+    return {
+      checkId: ADOPTION_RECEIPT_DIAGNOSTICS_CHECK_ID,
+      status: HostVerificationStatus.FAIL,
+      detail: [
+        'receipt_state=invalid',
+        `code=${standardizedError.code}`,
+        `repo_root=${repoRoot}`,
+        ...(receiptPath ? [`receipt=${receiptPath}`] : []),
+        `message=${standardizedError.message}`,
+      ].join(' '),
+      inspectedPath: receiptPath,
+    };
   }
 
   private normalizeInstallReceipt(receipt: AdoptionPackInstallReceipt): AdoptionPackInstallReceipt {

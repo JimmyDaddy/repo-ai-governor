@@ -1,6 +1,6 @@
 # sprint-003-self-host-readiness-integration-and-consumer-truthfulness 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-15
 - Sprint Goal: 将 self-host-only readiness interlock 接入 runtime / diagnostics / verify / execution preflight，并完成首批 consumer docs truthfulness 与 evidence follow-through。
 - Project: `project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout`
@@ -20,13 +20,13 @@
 | --- | --- | --- | --- |
 | TK-897 | integrate self-host readiness signals into diagnostics verify and execution preflight | TK-896 | completed |
 | TK-898 | add readiness applicability tests and refresh consumer docs truthfulness evidence | TK-897 | completed |
-| TK-899 | finalize project-107 rollout closeout and completion audit | TK-897、TK-898 | planned |
+| TK-899 | finalize project-107 rollout closeout and completion audit | TK-897、TK-898 | completed |
 
 ## 3. Exit Criteria
 
-1. `TK-897` 已进入 `in_progress`，`TK-898 ~ TK-899` 继续保持 planned；canonical task cards、checklist 与 `tasks.csv` 需在本轮 execution 中持续同步，且 project-final closeout 已提前获得显式承接任务。
-2. runtime integration、tests/docs truthfulness 与 completion audit 的 project-final ownership 已拆清，不会在 closeout 时混成单一笼统任务。
-3. 本 sprint 被明确标记为 project-final execution surface，但仍保持 planned，直到用户显式要求激活。
+1. `TK-897`、`TK-898`、`TK-899` 最新状态均为 `completed`，且 `CR-001` 至 `CR-005` 最新状态均为 `resolved`。
+2. runtime integration、tests/docs truthfulness、project-final CR loop 与 completion audit 已全部通过 canonical task cards、review artifacts、checklist 与 `tasks.csv` 同步到完成态。
+3. 本 sprint 已完成 project-final closeout write-back，并在 `current-context` 中迁出 active execution surface。
 
 ## 4. Sprint Notes
 
@@ -36,3 +36,5 @@
 4. `TK-899` 只提供 project-final closeout 入口；是否真正把 `project-107` 切到 `completed`，取决于运行窗口是否产出了完整 build/test/docs evidence。
 5. `TK-897` / `TK-898` 已在 2026-04-15 完成，并形成进入 sprint delegated CR round 的当前实现边界。
 6. `CR-001` 与 `CR-002` 已于 2026-04-15 clean `resolved`；本 sprint 的 implementation + sprint-level CR boundary 已完成，现阶段继续保留为 project-final review / closeout surface，直到 `TK-899` 收口。
+7. `CR-003` / `CR-004` 已完成 accepted finding 修复并 `resolved`，`CR-005` clean `resolved` 后已确认当前 project-final boundary 可进入正式 closeout。
+8. `TK-899 / DA-899` 已完成 final closeout write-back；当前 sprint 已恢复为最终 `completed` 真值，并迁出 active execution surface。

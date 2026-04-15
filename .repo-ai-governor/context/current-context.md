@@ -2,21 +2,21 @@
 
 ## Primary Stream
 
-- Status: active
-- Stream: `stream-project-107-sprint-003`
-- Project: `project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout`
-- Sprint: `sprint-003-self-host-readiness-integration-and-consumer-truthfulness`
-- Docs: `.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout`
-- Plan: `.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-003-self-host-readiness-integration-and-consumer-truthfulness/plan.md`
-- Tasks: `.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-003-self-host-readiness-integration-and-consumer-truthfulness/tasks/`
-- Checklist: `.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-003-self-host-readiness-integration-and-consumer-truthfulness/tasks/checklist.md`
-- CSV: `.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-003-self-host-readiness-integration-and-consumer-truthfulness/tasks/tasks.csv`
-- Review: `.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-003-self-host-readiness-integration-and-consumer-truthfulness/review`
-- Note: `2026-04-15` `project-107 / sprint-002` 已在 `TK-910` 中完成 closeout write-back 并 clean 收口 delegated CR lifecycle；`project-107 / sprint-003` 的 sprint-level delegated CR rounds `CR-001` 与 `CR-002` 现已全部 `resolved`，runtime/docs/tests/ledger truth 已对齐，当前 stream 继续保留为 project-final CR 与 closeout surface。`project-108 / sprint-001` 仍保留为 planned follow-up，不与 `project-107` 交错。
+- Status: idle
+- Stream: `none`
+- Project: `none`
+- Sprint: `none`
+- Docs: `none`
+- Plan: `none`
+- Tasks: `none`
+- Checklist: `none`
+- CSV: `none`
+- Review: `none`
+- Note: `2026-04-15` `project-107 / sprint-003` 已完成 project-final delegated CR loop（`CR-003`、`CR-004`、`CR-005` 全部 `resolved`）与 `TK-899 / DA-899` final closeout write-back；当前 worktree 暂无 active primary stream，`project-108 / sprint-001` 继续保留为 planned follow-up，等待下一次显式激活。
 
 ## Active Streams
 
-- `stream-project-107-sprint-003`: project=`project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout`, sprint=`sprint-003-self-host-readiness-integration-and-consumer-truthfulness`, docs=`.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout`, plan=`.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-003-self-host-readiness-integration-and-consumer-truthfulness/plan.md`, tasks=`.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-003-self-host-readiness-integration-and-consumer-truthfulness/tasks/`, checklist=`.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-003-self-host-readiness-integration-and-consumer-truthfulness/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-003-self-host-readiness-integration-and-consumer-truthfulness/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-003-self-host-readiness-integration-and-consumer-truthfulness/review/`, status=`active`, role=`primary`
+- `none`
 
 ## Planned Follow-Up Streams
 

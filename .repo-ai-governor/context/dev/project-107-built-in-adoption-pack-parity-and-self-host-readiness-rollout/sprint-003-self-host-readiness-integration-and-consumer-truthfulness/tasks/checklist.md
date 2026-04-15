@@ -5,13 +5,18 @@
   - 2026-04-15：状态切换为 `in_progress`，开始实现 `adopt verify` self-host readiness warning、`execution_preflight_signal` warning/signal 与最小 diagnostics sink integration。
   - 2026-04-15：已在 `apps/cli/src/runtime/adoption-pack-runtime.ts` 接入 self-host-only readiness evaluation；fresh `self-host-complete + repo_local` `adopt verify` 现在会按 governance / product / execution 分组输出 warnings，并显式投影 `execution_preflight_signal=blocked` warning/signal，要求 self-host consumer 在 unattended execution 前按 downstream fail-closed blocker 处理，同时保持默认 `adopter-complete` 路径不受影响。
   - 2026-04-15：已通过 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm exec vitest run apps/cli/test/adopt-command.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1` 验证 runtime integration 保持绿色。
+  - 2026-04-15：project-final `CR-003` 识别出 `doctor diagnostics` sink 尚未真正消费同一套 self-host readiness facts；主 agent 已将同源 readiness checks 路由到 `apps/cli/src/commands/doctor-command.ts`，并在 `apps/cli/test/adopt-command.integration.test.ts` 中补上 fresh `self-host-complete + repo_local` 的 doctor-path integration assertion。
+  - 2026-04-15：project-final `CR-004` 进一步识别出 malformed adoption receipt 会让 `doctor` 直接失去诊断面；主 agent 已把 doctor-path receipt 读取失败标准化为 `adoption-receipt-diagnostics` fail check，并补上坏 receipt regression test，确保 diagnostics surface 在 metadata 损坏时仍然可用。
 - [x] TK-898 add readiness applicability tests and refresh consumer docs truthfulness evidence
   - 2026-04-15：任务创建，状态初始化为 `planned`。
   - 2026-04-15：状态切换为 `in_progress`，开始补齐 self-host readiness applicability coverage，并同步刷新 installer-facing consumer docs truthfulness wording。
   - 2026-04-15：已补齐 `packages/standards/test/adoption-pack-registry.unit.test.ts` 与 `apps/cli/test/adopt-command.integration.test.ts` 的 readiness regression coverage，并刷新 `README.md`、`docs/local-adoption-playbook.md`、`docs/support-matrix.md`，明确 self-host verify warning、`execution_preflight_signal=blocked` signal 与 downstream fail-closed boundary。
   - 2026-04-15：已通过 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm exec vitest run apps/cli/test/adopt-command.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run test:integration -- --maxWorkers=1 --maxConcurrency=1`、`node ./scripts/governance/run-normative-loading-manifest-gate.js` 验证 tests/docs truthfulness 与治理入口保持同步。
-- [ ] TK-899 finalize project-107 rollout closeout and completion audit
+- [x] TK-899 finalize project-107 rollout closeout and completion audit
   - 2026-04-15：任务创建，状态初始化为 `planned`。
+  - 2026-04-15：`CR-005` clean `resolved` 后，状态切换为 `in_progress`，开始执行 project-107 final closeout write-back、completion audit summary、delivery registry completed truth 与 idle primary-stream clearance。
+  - 2026-04-15：已创建 `project-107` completion audit summary 与 `DA-899` final closeout handoff，并将 project / sprint plan、`current-context.md`、`completed-streams-history.md` 与 delivery registry 同步到最终 completed / idle 真值。
+  - 2026-04-15：已完成 `TK-899` canonical task-ledger sync，并重新通过 `pnpm run build`、governance closeout gates 与 `pnpm run check`；当前 project 已具备完整完成态证据。
 - [x] CR-001 sprint-003-self-host-readiness-integration-and-consumer-truthfulness delegated review loop round 1
   - 2026-04-15：任务创建，状态初始化为 `review_pending`。
   - 2026-04-15：delegated reviewer round 1 返回 2 条 actionable findings：一条要求收敛 self-host execution preflight wording truthfulness，另一条要求加固 starter placeholder readiness detection。
@@ -21,3 +26,17 @@
   - 2026-04-15：任务创建，状态初始化为 `review_pending`。
   - 2026-04-15：fresh reviewer round 2 已完成 post-fix recheck，未发现新的 actionable findings；仅保留一条关于 inverse branch coverage 的 non-blocking risk note。
   - 2026-04-15：主 agent 依据 clean recheck 结果将 round 2 report 直接写为 `resolved`，并保留 round 1 accepted findings 已由 `CR-001` 收口的边界。
+- [x] CR-003 project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout final delegated review loop round 3
+  - 2026-04-15：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-15：project-final delegated reviewer round 3 返回 1 条 P1 actionable finding：self-host readiness 尚未真正接入 `doctor diagnostics`，导致 project-level readiness sinks truth 不一致。
+  - 2026-04-15：主 agent 已复核并认可该 finding，完成 `doctor` readiness sink integration 与 CLI integration coverage 补强，并将 round 3 report 推进到 `verified`。
+  - 2026-04-15：accepted project-final finding 已完成修复并复验通过；当前 `CR-003` 已推进到 `resolved`，下一步由新的 project-final fresh reviewer round 继续确认 clean state。
+- [x] CR-004 project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout final delegated review loop round 4
+  - 2026-04-15：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-15：fresh project-final reviewer round 4 返回 2 条 actionable findings：`CR-004` 初始 bootstrap 后尚未同步到 sprint ledger，以及 `doctor` 新接入的 adoption receipt 解析路径会在 malformed receipt 下直接硬失败。
+  - 2026-04-15：主 agent 已复核并认可两条 findings；当前已先通过 `node ./scripts/governance/sync-task-ledger.js --tasks-dir ".../sprint-003.../tasks" --task-id CR-004` 收口 round-4 ledger drift，并在 `apps/cli/src/runtime/adoption-pack-runtime.ts` / `apps/cli/test/adopt-command.integration.test.ts` 上补入 malformed-receipt diagnostics fallback 与 integration regression coverage，任务状态推进为 `verified`，等待 full matrix 复验后进入 `resolved`。
+  - 2026-04-15：accepted findings 已完成修复并通过 round-4 full matrix；当前 `CR-004` 已推进到 `resolved`，下一步必须由新的 project-final fresh reviewer round 继续确认 clean state 后，`TK-899` 才能进入正式 closeout。
+- [x] CR-005 project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout final delegated review loop round 5
+  - 2026-04-15：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-15：fresh project-final reviewer round 5 已完成 clean recheck，未发现新的 actionable findings；仅保留一条关于 self-host readiness authored-ready inverse-path integration coverage 的 non-blocking residual risk note。
+  - 2026-04-15：主 agent 已依据 clean recheck 结果将 round 5 report 直接写为 `resolved`；当前 project-final review loop 已满足进入 `TK-899` 正式 closeout 的条件。

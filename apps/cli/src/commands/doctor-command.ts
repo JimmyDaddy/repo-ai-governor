@@ -10,6 +10,7 @@ import {
   MemoryStoreEngine,
   RuntimeError,
 } from '@repo-ai-governor/shared';
+import type { AdoptionPackVerificationCheck } from '@repo-ai-governor/standards';
 import {
   CLI_ADAPTER_TOOL_CHECK_ID_PREFIX,
   CliCommandResultCheckId,
@@ -21,6 +22,7 @@ import {
   CLI_RUNTIME_OPERATION,
   CliGovernanceCheckStatus,
 } from '../constants/cli-governance-runtime.constant.js';
+import { CliAdoptionPackRuntime } from '../runtime/adoption-pack-runtime.js';
 import type {
   CliAdapterSecretBackendStatus,
   CliAdapterVerificationResolution,
@@ -45,8 +47,20 @@ const DOCTOR_PROGRESS_ROW_DIAGNOSTICS = 'doctor-diagnostics';
 export class CliDoctorCommand implements CliCommandExecutor {
   public readonly commandName = CliCommandName.DOCTOR;
 
+  public constructor(
+    private readonly adoptionPackRuntimeFactory: (
+      currentWorkingDirectory: string,
+      localizeText: (english: string, chinese: string) => string,
+    ) => CliAdoptionPackRuntime = (currentWorkingDirectory, localizeText) =>
+      new CliAdoptionPackRuntime(currentWorkingDirectory, localizeText),
+  ) {}
+
   public async execute(context: CliCommandExecutorContext) {
     const runtimeDebugOptions = context.resolveRuntimeDebugOptions();
+    const adoptionPackRuntime = this.adoptionPackRuntimeFactory(
+      context.options.currentWorkingDirectory,
+      context.localizeText,
+    );
     const durableStorageDiagnosticsRuntime = await this.createDurableStorageDiagnosticsRuntime();
     const totalSteps = runtimeDebugOptions.adapters
       ? DOCTOR_PROGRESS_STEPS_WITH_ADAPTERS
@@ -335,6 +349,8 @@ export class CliDoctorCommand implements CliCommandExecutor {
         context.options.memoryConfig?.storeEngine ?? MemoryStoreEngine.SQLITE_FS,
       memoryStoreProviderName: context.options.memoryStoreProviderName ?? 'sqlite-fs',
     });
+    const adoptionReadinessChecks = await adoptionPackRuntime.collectDoctorReadinessChecks();
+    checks.push(...adoptionReadinessChecks.map((check) => this.toDoctorCheck(check)));
     checks.push(...durableStorageDiagnosticsRuntime.createChecks(durableStorageDiagnostics));
     this.throwIfAborted(context);
     await context.artifactWriter.writeJsonArtifact(doctorDiagnosticsArtifactPath, {
@@ -534,6 +550,25 @@ export class CliDoctorCommand implements CliCommandExecutor {
     }
 
     return ExecutionProgressStatus.FAILED;
+  }
+
+  private toDoctorCheck(check: AdoptionPackVerificationCheck): CliCommandResultCheck {
+    return {
+      id: check.checkId,
+      status: this.toCliCheckStatus(check.status),
+      detail: check.detail,
+    };
+  }
+
+  private toCliCheckStatus(status: string): CliGovernanceCheckStatus {
+    switch (status) {
+      case 'pass':
+        return CliGovernanceCheckStatus.PASS;
+      case 'warn':
+        return CliGovernanceCheckStatus.WARN;
+      default:
+        return CliGovernanceCheckStatus.FAIL;
+    }
   }
 
   private resolveDoctorBaselineStatus(options: {

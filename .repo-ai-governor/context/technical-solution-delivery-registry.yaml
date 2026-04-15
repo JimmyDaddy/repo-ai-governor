@@ -838,7 +838,7 @@ deliveries:
     consumer_surfaces:
       - internal_governance
     user_impact_level: none
-    execution_status: in_progress
+    execution_status: completed
     rollout_status: not_required
     owner: runtime
     project_ref: project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout
@@ -850,8 +850,7 @@ deliveries:
     project_plan_path: .repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/plan.md
     sprint_plan_path: .repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-003-self-host-readiness-integration-and-consumer-truthfulness/plan.md
     task_csv_path: .repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-003-self-host-readiness-integration-and-consumer-truthfulness/tasks/tasks.csv
-    handoff_artifact_path: .repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-002-generated-projection-and-placeholder-boundaries/tasks/DA-910-sprint-002-closeout-and-sprint-003-activation-handoff.md
-    rollout_artifacts: []
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout/sprint-003-self-host-readiness-integration-and-consumer-truthfulness/tasks/DA-899-project-107-final-closeout-and-idle-primary-stream-handoff.md
     accepted_at: 2026-04-15
 
   - solution_id: technical-solution.adopter-quickstart-bootstrap-command
