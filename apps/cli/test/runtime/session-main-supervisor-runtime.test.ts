@@ -3713,7 +3713,25 @@ describe('Cli session-main supervisor runtime', () => {
     expect(outcome.assistantMessage).toContain('@planner @architect @reviewer @verifier');
   });
 
-  it('blocks explicit @planner delegation when the only no-tool fallback misses one required capability', async () => {
+  it('falls back to a tool-capable governed surface when the only no-tool planner fallback misses one required capability', async () => {
+    const codexInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+      expect(request.input).toEqual(
+        expect.objectContaining({
+          roleId: 'planner',
+          interactionMode: 'single_role_delegate',
+          [AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY]: {
+            interactionMode: AgentStageExecutionMode.CHAT_ONLY,
+            toolUsePolicy: AgentStageToolUsePolicy.FORBIDDEN,
+          },
+        }),
+      );
+      return {
+        output: {
+          responseText: '## Planner perspective\n\n- continue on the primary governed surface',
+        },
+        elapsedMs: 1,
+      };
+    });
     const ollamaInvokeStage = vi.fn(async () => ({
       output: {
         responseText: '## Planner perspective\n\n- this should not run',
@@ -3729,6 +3747,9 @@ describe('Cli session-main supervisor runtime', () => {
       [AdapterSurface.CODEX]: createAvailableProtocol(
         AdapterSurface.CODEX,
         'unsafe planner answer',
+        {
+          invokeStageSpy: codexInvokeStage,
+        },
       ),
       [AdapterSurface.CLAUDE_CODE]: createAvailableProtocol(
         AdapterSurface.CLAUDE_CODE,
@@ -3767,22 +3788,35 @@ describe('Cli session-main supervisor runtime', () => {
     });
 
     expect(ollamaInvokeStage).not.toHaveBeenCalled();
+    expect(codexInvokeStage).toHaveBeenCalledTimes(1);
     expect(outcome.responseMode).toBe('role_collaboration');
     expect(outcome.interactionMode).toBe('single_role_delegate');
-    expect(outcome.selectedSurface).toBe('guarded-role-delegate');
-    expect(outcome.selectedBy).toBe('session.main.role_delegate.guard');
-    expect(outcome.invokedRoleIds).toEqual([]);
-    expect(outcome.subagentCount).toBe(0);
-    expect(outcome.assistantMessage).toContain('missing one required capability');
+    expect(outcome.selectedSurface).toBe(AdapterSurface.CODEX);
+    expect(outcome.selectedBy).toBe('session.main.role_delegate.primary');
+    expect(outcome.invokedRoleIds).toEqual(['planner']);
+    expect(outcome.subagentCount).toBe(1);
+    expect(outcome.assistantMessage).toContain('continue on the primary governed surface');
   });
 
-  it('keeps explicit @planner turns on the governed side when only tool-capable role surfaces are active', async () => {
-    const codexInvokeStage = vi.fn(async () => ({
-      output: {
-        responseText: 'unsafe planner answer',
-      },
-      elapsedMs: 1,
-    }));
+  it('dispatches explicit @planner turns on tool-capable surfaces with chat-only governance when no no-tool fallback is active', async () => {
+    const codexInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+      expect(request.input).toEqual(
+        expect.objectContaining({
+          roleId: 'planner',
+          interactionMode: 'single_role_delegate',
+          [AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY]: {
+            interactionMode: AgentStageExecutionMode.CHAT_ONLY,
+            toolUsePolicy: AgentStageToolUsePolicy.FORBIDDEN,
+          },
+        }),
+      );
+      return {
+        output: {
+          responseText: '## Planner perspective\n\n- break this release into milestones',
+        },
+        elapsedMs: 1,
+      };
+    });
     const adapterRoutingRuntime = new CliAdapterRoutingRuntime({
       ...adaptersConfig,
       tools: adaptersConfig.tools?.filter((tool) => tool.toolId !== AdapterSurface.OLLAMA),
@@ -3825,13 +3859,165 @@ describe('Cli session-main supervisor runtime', () => {
       sessionRoutingPreferenceApplied: false,
     });
 
-    expect(codexInvokeStage).not.toHaveBeenCalled();
+    expect(codexInvokeStage).toHaveBeenCalledTimes(1);
     expect(outcome.responseMode).toBe('role_collaboration');
     expect(outcome.interactionMode).toBe('single_role_delegate');
-    expect(outcome.selectedSurface).toBe('guarded-role-delegate');
-    expect(outcome.selectedBy).toBe('session.main.role_delegate.guard');
-    expect(outcome.invokedRoleIds).toEqual([]);
-    expect(outcome.subagentCount).toBe(0);
-    expect(outcome.assistantMessage).toContain('restricted to no-tool surfaces');
+    expect(outcome.selectedSurface).toBe(AdapterSurface.CODEX);
+    expect(outcome.selectedBy).toBe('session.main.role_delegate.primary');
+    expect(outcome.invokedRoleIds).toEqual(['planner']);
+    expect(outcome.subagentCount).toBe(1);
+    expect(outcome.assistantMessage).toContain('## Planner perspective');
+  });
+
+  it('dispatches serial role collaboration on tool-capable surfaces with chat-only governance when no no-tool fallback is active', async () => {
+    const codexInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+      const roleId =
+        typeof request.input === 'object' && request.input && 'roleId' in request.input
+          ? String((request.input as Record<string, unknown>).roleId)
+          : 'unknown';
+      expect(request.input).toEqual(
+        expect.objectContaining({
+          roleId,
+          interactionMode:
+            roleId === 'planner' ? 'single_role_delegate' : 'serial_role_collaboration',
+          [AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY]: {
+            interactionMode: AgentStageExecutionMode.CHAT_ONLY,
+            toolUsePolicy: AgentStageToolUsePolicy.FORBIDDEN,
+          },
+        }),
+      );
+      return {
+        output: {
+          responseText:
+            roleId === 'planner'
+              ? '## Planner\n\n- phase the rollout'
+              : '## Reviewer\n\n- validate the rollout checkpoints',
+        },
+        elapsedMs: 1,
+      };
+    });
+    const toolOnlyAdaptersConfig: AdaptersConfig = {
+      ...adaptersConfig,
+      tools: adaptersConfig.tools?.filter((tool) => tool.toolId !== AdapterSurface.OLLAMA),
+    };
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      toolOnlyAdaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createAvailableProtocol(AdapterSurface.CODEX, 'unused', {
+        invokeStageSpy: codexInvokeStage,
+      }),
+      [AdapterSurface.CLAUDE_CODE]: createAvailableProtocol(
+        AdapterSurface.CLAUDE_CODE,
+        'unused fallback',
+      ),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'en-US',
+      adaptersConfig: toolOnlyAdaptersConfig,
+      adapterRoutingRuntime,
+    });
+    const outcome = await runtime.resolveTurn({
+      sessionId: 'session-005-serial',
+      routeId: 'session.main',
+      turnId: 'turn-005-serial',
+      turnIndex: 6,
+      userMessage: '@planner @reviewer collaborate on this rollout plan',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+    });
+
+    expect(codexInvokeStage).toHaveBeenCalledTimes(2);
+    expect(outcome.responseMode).toBe('role_collaboration');
+    expect(outcome.interactionMode).toBe('serial_role_collaboration');
+    expect(outcome.selectedSurface).toBe('planner:codex -> reviewer:codex');
+    expect(outcome.selectedBy).toBe(
+      'planner:session.main.role_delegate.primary -> reviewer:session.main.role_delegate.primary',
+    );
+    expect(outcome.invokedRoleIds).toEqual(['planner', 'reviewer']);
+    expect(outcome.subagentCount).toBe(2);
+    expect(outcome.assistantMessage).toContain('## Planner -> Reviewer Collaboration');
+  });
+
+  it('dispatches parallel role fan-out on tool-capable surfaces with chat-only governance when no no-tool fallback is active', async () => {
+    const codexInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+      expect(request.input).toEqual(
+        expect.objectContaining({
+          interactionMode: 'parallel_role_fanout',
+          [AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY]: {
+            interactionMode: AgentStageExecutionMode.CHAT_ONLY,
+            toolUsePolicy: AgentStageToolUsePolicy.FORBIDDEN,
+          },
+        }),
+      );
+      const roleId =
+        typeof request.input === 'object' && request.input && 'roleId' in request.input
+          ? String((request.input as Record<string, unknown>).roleId)
+          : 'unknown';
+      return {
+        output: {
+          responseText:
+            roleId === 'planner'
+              ? '## Planner\n\n- identify rollout milestones'
+              : '## Reviewer\n\n- identify rollout risks',
+        },
+        elapsedMs: 1,
+      };
+    });
+    const toolOnlyAdaptersConfig: AdaptersConfig = {
+      ...adaptersConfig,
+      tools: adaptersConfig.tools?.filter((tool) => tool.toolId !== AdapterSurface.OLLAMA),
+    };
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      toolOnlyAdaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createAvailableProtocol(AdapterSurface.CODEX, 'unused', {
+        invokeStageSpy: codexInvokeStage,
+      }),
+      [AdapterSurface.CLAUDE_CODE]: createAvailableProtocol(
+        AdapterSurface.CLAUDE_CODE,
+        'unused fallback',
+      ),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'en-US',
+      adaptersConfig: toolOnlyAdaptersConfig,
+      adapterRoutingRuntime,
+    });
+    const outcome = await runtime.resolveTurn({
+      sessionId: 'session-005-parallel',
+      routeId: 'session.main',
+      turnId: 'turn-005-parallel',
+      turnIndex: 7,
+      userMessage: '@planner @reviewer parallel assess this rollout risk',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+    });
+
+    expect(codexInvokeStage).toHaveBeenCalledTimes(2);
+    expect(outcome.responseMode).toBe('role_collaboration');
+    expect(outcome.interactionMode).toBe('parallel_role_fanout');
+    expect(outcome.selectedSurface).toBe('planner:codex | reviewer:codex');
+    expect(outcome.selectedBy).toBe(
+      'planner:session.main.role_delegate.primary | reviewer:session.main.role_delegate.primary',
+    );
+    expect(outcome.invokedRoleIds).toEqual(['planner', 'reviewer']);
+    expect(outcome.subagentCount).toBe(2);
+    expect(outcome.assistantMessage).toContain('Planner + Reviewer Parallel Analysis');
   });
 });

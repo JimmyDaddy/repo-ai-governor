@@ -1,7 +1,7 @@
 # Governance Adoption Pack Install Contract
 
 - Status: active
-- Date: 2026-04-09
+- Date: 2026-04-15
 - Contract ID: `contract.runtime.adoption-pack-install.v1`
 - Producer Module: `runtime.governance-clients`
 
@@ -106,6 +106,13 @@
 7. `adopt apply` 必须产出 install receipt，并记录 managed ownership；`adopt upgrade/remove` 只能自动处理 managed records，检测到 drift 时必须显式报出。
 8. host-specific project-local assets、installable bundle 与 target-aware verify 仍由 `contract.runtime.governance-host-distribution.v1` 的 lower-level lifecycle 承担；installer 只是在更高层 orchestrate 这些子链。
 9. `.codex/skills/**` 可作为 repo-local override 或 authoring input，但不得继续被要求为 adopter install 的前置目录。
+10. `self-host-complete` seed 的 repo-specific governance / product / execution starter docs（例如 `code_standards.md`、`long-term-maintenance-guide.md`、`product-requirements-brief.md`、project / sprint / task starter docs）只能是 adopter-owned placeholder 或 template content；installer 不得把源仓库 live authoring truth 镜像到目标仓库。
+11. 与上述 placeholder surface 相关的 readiness interlock 只允许在 self-host authoring / execution path 生效；默认 `adopter-complete` 安装路径不得因为缺少 repo-local governance、product 或 execution docs 而被 `warn` 或 `fail_closed`。
+12. 对于 `current-context.md`、`normative-loading-manifest.yaml` 这类需要“结构同步 + starter instance”分离的 surface，installer 只能物化 filtered/template projection，不得做 unconditional whole-file sync。
+13. public installer convenience entry（例如 `adopt bootstrap`）可以编排 `init`、`doctor --fix`、`adopt apply` 与 `adopt verify`，但 install receipt 与 verification summary 仍是唯一 canonical install truth。
+14. convenience entry 不得把 broader governance audit `check` 吞并为 install result 的隐式前置或唯一 follow-up；`check` 继续作为显式治理审计 surface。
+15. 当 convenience entry 省略 pack selector 时，只允许回落到官方 built-in pack；显式 selector 解析必须复用现有 `pack-id -> profile-id` fallback 语义，并在目标不唯一时 fail-closed。
+16. 当目标仓库已存在 install receipt 时，convenience rerun 只允许在 `pack_id/applied_profile_id` 匹配且 managed files 干净时复用现有安装；出现 drift、pack mismatch 或 profile mismatch 时，必须显式重定向到 `adopt diff/upgrade/remove`，不得静默变成 upgrade 或 cross-pack migration。
 
 ## 5. Consumers
 
@@ -122,3 +129,5 @@
 1. `v1` formalize 的是 installer-layer manifest / receipt / ownership / bootstrap boundary，而不是宣称所有 follow-up implementation 已经交付。
 2. `v1` 允许 `adopter-complete` 先覆盖完整 adopter-facing capability surface，再由后续 sprint 逐步补齐 installer lifecycle、managed bundle、clean-room rehearsal 与 docs truthfulness。
 3. `v1` 允许 `self-host-complete` 先 formalize 为官方治理模板路径，并把 template bootstrap 与 live-state clone 的边界写成 fail-closed contract。
+4. `v1` 允许以 additive clarification 的方式补充 built-in pack parity 与 self-host placeholder readiness applicability boundary，而不要求新增 schema version。
+5. `v1` 允许以 additive clarification 的方式 formalize installer convenience orchestration、explicit `check` follow-up、default built-in selector 与 clean rerun boundary，而不要求新增 schema version。

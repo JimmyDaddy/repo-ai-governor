@@ -1,0 +1,53 @@
+# checklist
+
+- [x] TK-906 add bootstrap orchestration tests and clean-room rehearsal baseline
+  - 2026-04-15：任务创建，状态初始化为 `planned`。
+  - 2026-04-16：状态切换为 `in_progress`，开始补齐 explicit selector reuse、multiple existing receipts blocker、clean rerun / drift redirect 的 bootstrap orchestration coverage，并准备 clean-room rehearsal baseline。
+  - 2026-04-16：已补齐 explicit selector reuse、multiple receipts blocker 与 mismatch redirect 的 regression coverage，并用 `pnpm run build` 与 `pnpm exec vitest run apps/cli/test/adopt-command.integration.test.ts --maxWorkers=1 --maxConcurrency=1` 验证通过。
+- [x] TK-907 collect rollout evidence and verify installer quickstart truthfulness
+  - 2026-04-15：任务创建，状态初始化为 `planned`。
+  - 2026-04-16：状态切换为 `in_progress`，开始用构建后的 `dist/bin/repo-ai-governor.js` 执行 quickstart clean-room rehearsal，固定 omitted selector、explicit selector、ambiguity fail-closed、rerun redirect 与 `check` follow-up 的 truthfulness evidence。
+  - 2026-04-16：已产出 `DA-907` evidence handoff，固定七条 clean-room 场景、`adopt --help` wording 与 README/playbook/support matrix 的 support-surface truthfulness。
+- [x] TK-908 finalize project-108 rollout closeout and completion audit
+  - 2026-04-15：任务创建，状态初始化为 `planned`。
+  - 2026-04-16：状态切换为 `in_progress`，开始承接 sprint boundary `pnpm run check`、local commit 与 project-final closeout 输入准备；待 project-final delegated CR loop clean 后，再完成 completion audit、delivery registry completed truth 与 idle-or-next-stream handoff。
+  - 2026-04-16：`CR-010` clean `resolved` 后，已创建 `project-108` completion audit summary 与 `DA-908` final closeout handoff，并将 project / sprint plan、`current-context.md`、`completed-streams-history.md` 与 delivery registry 同步到最终 completed / idle 真值。
+  - 2026-04-16：已完成 `TK-908` canonical task-ledger sync，并重新通过 `pnpm run build`、targeted `vitest`、clean-room helper、artifact/delivery/ledger closeout gates 与 `pnpm run check`；当前 project 已具备完整完成态证据。
+- [x] CR-001 sprint-003-cleanroom-evidence-and-rollout-closeout delegated review loop round 1
+  - 2026-04-16：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-16：reviewer 返回 `2` 条 findings，主 agent 全部认可并完成复核，当前进入 `verified`，等待 lifecycle sync checks 后推进 `resolved`。
+  - 2026-04-16：已完成当前 round 的 `2` 条 accepted findings 修复与 lifecycle sync checks，`CR-001` clean 收口为 `resolved`。
+- [x] CR-002 sprint-003-cleanroom-evidence-and-rollout-closeout delegated recheck loop round 2
+  - 2026-04-16：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-16：fresh reviewer round 2 已完成 clean recheck，未发现新的 actionable findings；当前 round 直接写为 `resolved`。
+- [x] CR-003 project-108-adopter-quickstart-bootstrap-rollout final delegated review loop round 3
+  - 2026-04-16：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-16：fresh reviewer round 3 返回 `1` 条 findings；主 agent 复核后判定为 `认可`，当前进入 `verified`，开始修复 bootstrap doctor-stage diagnostics 与 public doctor diagnostics channel 的 truthfulness 冲突。
+  - 2026-04-16：已完成 bootstrap doctor-stage diagnostics channel 隔离、CLI/help/docs/test truthfulness 对齐，并以 `pnpm run build`、targeted integration、clean-room helper、`pnpm run check` 与 lifecycle sync checks 复核通过；`CR-003` clean 收口为 `resolved`。
+- [x] CR-004 project-108-adopter-quickstart-bootstrap-rollout final delegated review loop round 4
+  - 2026-04-16：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-16：fresh reviewer round 4 返回 `1` 条 findings；主 agent 复核后判定为 `认可`，当前进入 `verified`，开始把中文 README / playbook / support matrix 同步到 `adopt bootstrap` quickstart contract。
+  - 2026-04-16：已完成中文 adopter-facing docs truth sync，并以 `pnpm run build`、`pnpm exec vitest run apps/cli/test/adopt-command.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`node ./.tmp/project-108-bootstrap-cleanroom.mjs`、`pnpm run check` 与 lifecycle sync checks 复核通过；`CR-004` clean 收口为 `resolved`。
+- [x] CR-005 project-108-adopter-quickstart-bootstrap-rollout final delegated review loop round 5
+  - 2026-04-16：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-16：fresh reviewer round 5 返回 `1` 条 finding；主 agent 复核后判定为 `认可`，当前进入 `verified`，开始刷新中英文 support matrix 的 closeout provenance、verification snapshot 与 GA support truthfulness evidence。
+  - 2026-04-16：已完成 support matrix provenance 刷新，并以 `pnpm run build`、`pnpm exec vitest run apps/cli/test/adopt-command.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`node ./.tmp/project-108-bootstrap-cleanroom.mjs`、`pnpm run check` 与 lifecycle sync checks 复核通过；`CR-005` clean 收口为 `resolved`。
+- [x] CR-006 project-108-adopter-quickstart-bootstrap-rollout final delegated review loop round 6
+  - 2026-04-16：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-16：fresh reviewer round 6 返回 `2` 条 findings；主 agent 复核后全部判定为 `认可`，当前进入 `verified`，开始修复英文 playbook 对 `adopt apply` 的旧主线表述，以及 sprint-002 `TK-903` provenance 中已过时的 bootstrap contract 记录。
+  - 2026-04-16：已完成英文 playbook truth sync 与 sprint-002 `TK-903` canonical provenance 修复，并用 `pnpm run build`、`pnpm exec vitest run apps/cli/test/adopt-command.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`node ./.tmp/project-108-bootstrap-cleanroom.mjs`、`pnpm run check` 与 lifecycle sync checks 复核通过；`CR-006` clean 收口为 `resolved`。
+- [x] CR-007 project-108-adopter-quickstart-bootstrap-rollout final delegated review loop round 7
+  - 2026-04-16：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-16：fresh reviewer round 7 返回 `1` 条 P1 finding；主 agent 复核后判定为 `认可`，当前进入 `verified`，开始修复 bootstrap clean-room 证据未隔离到目标 repo 的 workspace 解析问题，并补齐 integration / clean-room 断言。
+  - 2026-04-16：已补齐 `apps/cli/src/main.ts` 的 repo-aware runtime override 编译回归，重新构建 `dist` 后用 `pnpm run build`、`pnpm exec vitest run apps/cli/test/adopt-command.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`node ./.tmp/project-108-bootstrap-cleanroom.mjs`、`pnpm run check` 与 lifecycle sync checks 验证通过；`CR-007` clean 收口为 `resolved`，下一步仅保留 fresh `CR-008` clean recheck 作为 project-final closeout 前置条件。
+- [x] CR-008 project-108-adopter-quickstart-bootstrap-rollout final delegated review loop round 8
+  - 2026-04-16：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-16：fresh reviewer round 8 返回 `1` 条 P2 finding；主 agent 复核后判定为 `认可`，当前进入 `verified`，开始把中英文 support matrix 的 closeout provenance 刷新到最新 clean-room evidence window，避免 support truth 回链到已被后续 rerun 覆盖的 mutable artifact。
+  - 2026-04-16：已把中英文 support matrix 的 installer/self-host bootstrap support row 刷新到 `2026-04-15T20:04:40.834Z` 这次 clean-room evidence window，并用 `pnpm run build`、`pnpm exec vitest run apps/cli/test/adopt-command.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`node ./.tmp/project-108-bootstrap-cleanroom.mjs`、`pnpm run check` 与 lifecycle sync checks 复核通过；`CR-008` clean 收口为 `resolved`，project-final closeout 仍待 fresh `CR-009` clean recheck。
+- [x] CR-009 project-108-adopter-quickstart-bootstrap-rollout final delegated review loop round 9
+  - 2026-04-16：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-16：fresh reviewer round 9 返回 `1` 条 P2 finding；主 agent 复核后判定为 `认可`，当前进入 `verified`，开始把显式 `adopt --workspace-mode repo_local` 贯穿到 runtime context，并阻止 adopt flows 误触 generic workspace auto-bootstrap。
+  - 2026-04-16：已把显式 `adopt --workspace-mode repo_local` 带入 runtime context，且 adopt flows 不再触发 generic workspace auto-bootstrap；新增隔离 `HOME` 的集成断言后，用 `pnpm run build`、`pnpm exec vitest run apps/cli/test/adopt-command.integration.test.ts --maxWorkers=1 --maxConcurrency=1`、`node ./.tmp/project-108-bootstrap-cleanroom.mjs`、`pnpm run check` 与 lifecycle sync checks 复核通过；`CR-009` clean 收口为 `resolved`，project-final closeout 仍待 fresh `CR-010` clean recheck。
+- [x] CR-010 project-108-adopter-quickstart-bootstrap-rollout final delegated review loop round 10
+  - 2026-04-16：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-16：fresh reviewer round 10 已完成 clean recheck，未发现新的 actionable findings；当前 round 直接写为 `resolved`，`TK-908` 可进入正式 closeout。

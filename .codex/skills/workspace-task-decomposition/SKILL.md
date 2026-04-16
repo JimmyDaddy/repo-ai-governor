@@ -64,6 +64,7 @@ Read these before doing anything else:
 - new stream under `.repo-ai-governor/context/dev/<project-xxx>/<sprint-xxx>/`
 - existing project path already under `.repo-ai-governor/context/dev/**`
 - existing sprint path already under `.repo-ai-governor/context/dev/**`
+- when scope spans multiple sprints, resolve the full ordered sprint queue under one `project-xxx/`
 
 3. Decide whether this turn should:
 - only create or normalize the scaffold
@@ -76,12 +77,12 @@ Default rule: if the user asked for decomposition/template initialization only, 
 Always resolve at least:
 
 1. `project id`
-2. `sprint id`
-3. `project goal`
-4. `sprint goal`
-5. `in-scope TK items`
+2. `project goal`
+3. `ordered sprint queue`
+4. `per-sprint goal`
+5. `per-sprint in-scope TK items`
 
-Add `CR` items when the sprint is expected to track code-review lifecycle in the ledger.
+Add `CR` items when a sprint is expected to track code-review lifecycle in the ledger.
 
 Before writing new task cards, resolve only the first-hop artifact inputs needed for decomposition:
 
@@ -99,7 +100,14 @@ node ./scripts/governance/query-artifact-candidates.js \
   --limit 5
 ```
 
-When the user gives only a broad request, use the smallest safe first sprint:
+When the user gives a finalized technical solution or equivalent approved delivery baseline, default to full decomposition across the known sprint queue:
+
+1. enumerate all in-scope sprints in execution order
+2. assign `TK/CR` items for each sprint
+3. scaffold every sprint in `planned` or explicitly requested status
+4. keep activation incremental: only the first sprint becomes the default activation candidate unless the user explicitly wants multiple active streams
+
+When the scope baseline is still incomplete or highly uncertain, fall back to the smallest safe first sprint:
 
 1. one bootstrap / baseline task
 2. one implementation or documentation task
@@ -122,24 +130,32 @@ Prefer the helper script:
 ```bash
 node ./.codex/skills/workspace-task-decomposition/scripts/bootstrap-execution-scaffold.mjs \
   --project project-097-meaningful-name \
-  --sprint sprint-001-meaningful-name \
   --stage-mapping "delivery-governance" \
   --phase-mapping "task decomposition" \
   --project-goal "完成 project/sprint/task 执行流标准骨架。" \
   --project-goal "让后续执行直接衔接 plan/task-ledger/review surface。" \
-  --sprint-goal "完成首个 sprint 的任务拆解与骨架落盘。" \
-  --task "bootstrap stream scaffold|P1|创建标准目录、plan 与 task ledger seed" \
-  --task "implement core change|P1|完成本轮主要实现" \
-  --task-input "implement-core-change|required|.repo-ai-governor/context/dev/project-096-previous-stream/sprint-004/tasks/DA-812-followup-handoff.md" \
-  --task-input "implement-core-change|traceback|.repo-ai-governor/context/dev/project-096-previous-stream/project-096-completion-audit-summary.md" \
-  --task "validate and close bootstrap|P1|补齐验证与交付检查"
+  --sprint-spec "sprint-001-foundation|完成基础骨架、输入收敛与首轮执行准备|planned" \
+  --sprint-spec "sprint-002-core-delivery|完成主要实现、验证与 CR 闭环|planned" \
+  --sprint-spec "sprint-003-closeout|完成交付收口、审计摘要与后续 handoff|planned" \
+  --sprint-scope "sprint-001-foundation|建立 project/sprint/task/review 标准执行面。" \
+  --sprint-scope "sprint-002-core-delivery|承接方案主路径实现与验证。" \
+  --sprint-scope "sprint-003-closeout|完成 closeout、completion audit 与交付收口。" \
+  --task "sprint-001-foundation|bootstrap stream scaffold|P1|创建标准目录、plan 与 task ledger seed" \
+  --task "sprint-001-foundation|prepare execution inputs|P1|收敛首跳 Required Inputs 与实施边界" \
+  --task "sprint-002-core-delivery|implement core change|P1|完成本轮主要实现" \
+  --task "sprint-002-core-delivery|verify and review delivery|P1|补齐验证并准备 review lifecycle" \
+  --task "sprint-003-closeout|close sprint and project|P1|补齐 closeout 与 completion audit" \
+  --task-input "sprint-002-core-delivery|implement-core-change|required|.repo-ai-governor/context/dev/project-096-previous-stream/sprint-004/tasks/DA-812-followup-handoff.md" \
+  --task-input "sprint-002-core-delivery|implement-core-change|traceback|.repo-ai-governor/context/dev/project-096-previous-stream/project-096-completion-audit-summary.md"
 ```
 
 Input assignment rules:
 
 1. `--task-input` selector can be the exact task title or its slugified form.
-2. Use `required` only for execution-entry inputs that should be read by default.
-3. Use `traceback` for history, audit, extra handoff material, and overflow references that should not bloat default context.
+2. In multi-sprint mode, `--task` / `--cr` / `--task-input` should start with the target `sprint-xxx` selector.
+3. Legacy single-sprint invocation remains valid for targeted scaffold repair or one-sprint bootstrap.
+4. Use `required` only for execution-entry inputs that should be read by default.
+5. Use `traceback` for history, audit, extra handoff material, and overflow references that should not bloat default context.
 
 When the request targets an existing stream:
 
@@ -161,7 +177,7 @@ Bootstrap seeds are not the end state. Before the stream is treated as the activ
 Only after that should you:
 
 1. update `current-context.md`
-2. mark the sprint as the primary active stream
+2. if multiple sprints were scaffolded, mark only the first execution sprint as the primary active stream and keep the rest as planned follow-up streams
 3. start actual implementation work
 
 ## Verification
@@ -193,14 +209,15 @@ Run the checks that match what changed:
 6. Never mark a bootstrap-only stream as `completed` just because the scaffold exists; completion still requires real task execution and closeout artifacts.
 7. Never manually browse every DA file just to fill a new task card; use `query-artifact-candidates.js` to narrow to a small candidate set first.
 8. Never stuff all candidate DA into `Required Inputs`; keep only first-hop execution inputs there and move overflow to `Traceback References`.
+9. Never silently collapse a finalized multi-sprint scope into only the first sprint; if the user supplied an approved full-scope baseline, decompose the full sprint queue unless they explicitly ask for a phased partial bootstrap.
 
 ## Result Template
 
 Use this structure in the final response, adapted to the actual outcome:
 
 1. `Mode`: `decompose-scope` / `bootstrap-stream` / `normalize-plans` / `repair-scaffold`
-2. `Target`: project path + sprint path
+2. `Target`: project path + sprint path(s)
 3. `Scaffold Outcome`: created / updated / normalized
 4. `Ledger State`: seed-only / canonicalized
 5. `Verification`: commands run + pass/fail
-6. `Next Step`: activate stream / continue decomposition / start execution
+6. `Next Step`: activate first sprint / continue decomposition / start execution

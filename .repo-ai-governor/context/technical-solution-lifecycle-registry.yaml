@@ -1,5 +1,5 @@
 schema_version: 1
-generated_at: 2026-04-13
+generated_at: 2026-04-15
 status: active
 owner: architecture
 
@@ -890,4 +890,52 @@ solutions:
       - prd.multi-agent-orchestration
       - overall.graph-first-runtime
       - architecture.governance-boundary
+    supersedes: []
+
+  - solution_id: technical-solution.adopter-quickstart-bootstrap-command
+    title: Adopter quickstart bootstrap command technical solution
+    status: active
+    owner: runtime
+    version: v1
+    scope: cross-cutting
+    draft_paths:
+      - .repo-ai-governor/draft/adopter-quickstart-bootstrap-command-technical-solution.md
+    review_paths:
+      - .repo-ai-governor/draft/approved_solution_review_adopter-quickstart-bootstrap-command.md
+    final_paths:
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/adopter-quickstart-bootstrap-command-and-install-convenience-surface.md
+    target_module_ids:
+      - runtime.governance-clients
+    north_star_refs:
+      - prd.multi-tool-adapters
+      - overall.graph-first-runtime
+      - architecture.runtime-boundary
+      - architecture.governance-boundary
+    approved_at: 2026-04-15
+    approved_by: AI-Agent
+    activated_at: 2026-04-15
+    supersedes: []
+
+  - solution_id: technical-solution.built-in-adoption-pack-parity-and-self-host-readiness-sync
+    title: Built-in adoption pack parity and self-host readiness sync technical solution
+    status: active
+    owner: runtime
+    version: v1
+    scope: cross-cutting
+    draft_paths:
+      - .repo-ai-governor/draft/built-in-adoption-pack-parity-and-self-host-readiness-sync-technical-solution.md
+    review_paths:
+      - .repo-ai-governor/draft/approved_solution_review_built-in-adoption-pack-parity-and-self-host-readiness-sync.md
+    final_paths:
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/built-in-adoption-pack-parity-and-self-host-readiness-sync.md
+    target_module_ids:
+      - runtime.governance-clients
+    north_star_refs:
+      - prd.multi-tool-adapters
+      - overall.graph-first-runtime
+      - architecture.runtime-boundary
+      - architecture.governance-boundary
+    approved_at: 2026-04-15
+    approved_by: User
+    activated_at: 2026-04-15
     supersedes: []

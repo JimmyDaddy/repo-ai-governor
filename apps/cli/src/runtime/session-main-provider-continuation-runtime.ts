@@ -73,10 +73,12 @@ export class SessionMainProviderContinuationRuntime {
     input: Record<string, unknown>,
     roleId: string | null,
   ): SessionMainProviderContinuationPolicyEnvelope {
-    if (
-      typeof input.reviewScope === 'string' ||
-      (typeof roleId === 'string' && roleId.trim().length > 0 && roleId === 'reviewer')
-    ) {
+    if (typeof input.reviewScope === 'string') {
+      return SessionMainProviderContinuationPolicyEnvelope.READ_ONLY;
+    }
+
+    const normalizedRoleId = typeof roleId === 'string' ? roleId.trim() : '';
+    if (normalizedRoleId === 'reviewer') {
       return SessionMainProviderContinuationPolicyEnvelope.READ_ONLY;
     }
 

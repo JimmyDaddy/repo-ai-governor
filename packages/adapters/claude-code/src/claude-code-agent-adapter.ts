@@ -69,6 +69,7 @@ const CLAUDE_CODE_CLI_EXECUTION_CACHE_TTL_MS = 30000;
 const CLAUDE_CODE_CLI_TERMINATE_GRACE_MIN_MS = 250;
 const CLAUDE_CODE_CLI_TERMINATE_GRACE_MAX_MS = 2000;
 const CLAUDE_CODE_CHAT_ONLY_ARGS = ['--tools', ''] as const;
+const CLAUDE_CODE_PROBE_ARGS = ['--bare', '--tools', ''] as const;
 const CLAUDE_CODE_REPOSITORY_REVIEW_SCOPE = 'uncommitted_changes';
 const CLAUDE_CODE_REPOSITORY_REVIEW_ARGS = [
   '--allowedTools',
@@ -1415,44 +1416,132 @@ export class ClaudeCodeAgentAdapter extends AgentProtocol {
    * @returns Probe availability resolution.
    */
   private async executeHealthProbe(signal?: AbortSignal): Promise<ClaudeCodeProbeResolution> {
+    const probeDeadlineAt = Date.now() + this.options.requestTimeoutMs;
     try {
-      const executionResult = await this.runClaudeCodeOperation({
-        prompt: CLAUDE_CODE_HEALTH_CHECK_PROMPT,
-        timeoutMs: this.options.requestTimeoutMs,
-        signal,
-        operation: AgentCliExecOperation.PROBE,
-      });
-      const parsedOutput = this.parseClaudeCodeCliOutput(
-        executionResult,
-        AgentCliExecOperation.PROBE,
-      );
-      if (
-        !matchesHealthCheckEchoResponse(
-          parsedOutput.responseText,
-          CLAUDE_CODE_HEALTH_CHECK_EXPECTED_RESPONSE,
-        )
-      ) {
-        return {
-          availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
-          unavailableReasons: [
-            `health_check_invalid_response:${CLAUDE_CODE_SURFACE}:${this.cliExecOperationsRuntime.sanitizeReasonSegment(parsedOutput.responseText)}`,
-          ],
-          launchDiagnostics: executionResult.launchDiagnostics ?? null,
-        };
+      return await this.executeOptimizedHealthProbe(signal, probeDeadlineAt);
+    } catch (error) {
+      if (this.isLegacyProbeFallbackCandidate(error)) {
+        const remainingTimeoutMs = probeDeadlineAt - Date.now();
+        if (remainingTimeoutMs > 0) {
+          try {
+            return await this.executeLegacyHealthProbe(signal, remainingTimeoutMs);
+          } catch (legacyProbeError) {
+            return this.createUnavailableProbeResolution(legacyProbeError);
+          }
+        }
       }
 
-      return {
-        availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
-        unavailableReasons: [],
-        launchDiagnostics: executionResult.launchDiagnostics ?? null,
-      };
-    } catch (error) {
+      return this.createUnavailableProbeResolution(error);
+    }
+  }
+
+  /**
+   * Runs the preferred lightweight health probe path that avoids project boot overhead.
+   * Why: Claude Code startup may spend significant time on hooks/plugin sync/CLAUDE.md discovery,
+   * which creates false-negative timeouts even when the CLI can answer normal prompts.
+   * @param signal Optional caller abort signal.
+   * @param probeDeadlineAt Absolute probe deadline shared across optimized and legacy fallback paths.
+   * @returns Probe availability resolution.
+   */
+  private async executeOptimizedHealthProbe(
+    signal: AbortSignal | undefined,
+    probeDeadlineAt: number,
+  ): Promise<ClaudeCodeProbeResolution> {
+    const executionResult = await this.runClaudeCodeOperation({
+      prompt: CLAUDE_CODE_HEALTH_CHECK_PROMPT,
+      timeoutMs: Math.max(0, probeDeadlineAt - Date.now()),
+      signal,
+      operation: AgentCliExecOperation.PROBE,
+      commandArgumentsPrefixResolver: (basePrefix) => [...basePrefix, ...CLAUDE_CODE_PROBE_ARGS],
+    });
+
+    return this.resolveHealthProbeExecutionResult(executionResult);
+  }
+
+  /**
+   * Runs the legacy health probe path for older Claude CLI builds that do not understand the
+   * lightweight probe flags.
+   * @param signal Optional caller abort signal.
+   * @param timeoutMs Remaining timeout budget from the original probe window.
+   * @returns Probe availability resolution.
+   */
+  private async executeLegacyHealthProbe(
+    signal: AbortSignal | undefined,
+    timeoutMs: number,
+  ): Promise<ClaudeCodeProbeResolution> {
+    const executionResult = await this.runClaudeCodeOperation({
+      prompt: CLAUDE_CODE_HEALTH_CHECK_PROMPT,
+      timeoutMs,
+      signal,
+      operation: AgentCliExecOperation.PROBE,
+    });
+
+    return this.resolveHealthProbeExecutionResult(executionResult);
+  }
+
+  /**
+   * Normalizes one successful probe execution into availability truth.
+   * @param executionResult Raw CLI execution result.
+   * @returns Probe availability resolution.
+   */
+  private resolveHealthProbeExecutionResult(
+    executionResult: ClaudeCodeExecRunnerResult,
+  ): ClaudeCodeProbeResolution {
+    const parsedOutput = this.parseClaudeCodeCliOutput(
+      executionResult,
+      AgentCliExecOperation.PROBE,
+    );
+    if (
+      !matchesHealthCheckEchoResponse(
+        parsedOutput.responseText,
+        CLAUDE_CODE_HEALTH_CHECK_EXPECTED_RESPONSE,
+      )
+    ) {
       return {
         availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
-        unavailableReasons: this.resolveProbeFailureReasons(error),
-        launchDiagnostics: this.readCliLaunchDiagnosticsFromError(error),
+        unavailableReasons: [
+          `health_check_invalid_response:${CLAUDE_CODE_SURFACE}:${this.cliExecOperationsRuntime.sanitizeReasonSegment(parsedOutput.responseText)}`,
+        ],
+        launchDiagnostics: executionResult.launchDiagnostics ?? null,
       };
     }
+
+    return {
+      availabilityStatus: AgentAvailabilityStatus.AVAILABLE,
+      unavailableReasons: [],
+      launchDiagnostics: executionResult.launchDiagnostics ?? null,
+    };
+  }
+
+  /**
+   * Determines whether the optimized probe should fall back to the legacy argv surface.
+   * Why: `--bare` / `--tools` materially reduce false probe timeouts, but older Claude Code
+   * builds may reject those flags and should still be considered probeable via the legacy path.
+   * @param error Probe failure raised by the optimized probe path.
+   * @returns True when the failure looks like an unsupported optimized-probe flag.
+   */
+  private isLegacyProbeFallbackCandidate(error: unknown): boolean {
+    const standardizedError = standardizeError(error);
+    const detail = this.cliExecOperationsRuntime
+      .collectErrorDetail(error, standardizedError.message)
+      .toLowerCase();
+    return (
+      /(unknown option|unknown argument|unsupported option|invalid option)/u.test(detail) &&
+      (detail.includes('--bare') || detail.includes('--tools'))
+    );
+  }
+
+  /**
+   * Maps one probe error into the stable unavailable probe resolution shape.
+   * @param error Unknown probe failure.
+   * @returns Probe availability resolution.
+   */
+  private createUnavailableProbeResolution(error: unknown): ClaudeCodeProbeResolution {
+    return {
+      availabilityStatus: AgentAvailabilityStatus.UNAVAILABLE,
+      unavailableReasons: this.resolveProbeFailureReasons(error),
+      launchDiagnostics: this.readCliLaunchDiagnosticsFromError(error),
+    };
   }
 
   /**

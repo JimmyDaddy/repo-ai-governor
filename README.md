@@ -18,7 +18,7 @@ With the current public CLI surface you can:
 | Goal | Main commands |
 |---|---|
 | Bootstrap a repository and inspect environment readiness | `init`, `doctor`, `check` |
-| Install and maintain a managed adoption baseline | `adopt list`, `adopt apply`, `adopt diff`, `adopt verify`, `adopt upgrade`, `adopt remove` |
+| Install and maintain a managed adoption baseline | `adopt list`, `adopt bootstrap`, `adopt apply`, `adopt diff`, `adopt verify`, `adopt upgrade`, `adopt remove` |
 | Connect multiple AI tools into one governed baseline | `connect`, `doctor` |
 | Keep personal machine defaults and secrets out of shared config | `config`, `secret` |
 | Run a governed delivery loop | `plan`, `run`, `review`, `review-verify` |
@@ -26,7 +26,7 @@ With the current public CLI surface you can:
 | Preview workflows and manage workspace or schema changes | `workflow`, `workspace`, `set-ui-theme`, `upgrade` |
 | Generate lower-level host assets and service-host integrations | `host export`, `host verify`, `host pack`, `repo-ai-governor/service-host` |
 
-If you only remember one thing: most adopters should start with `init`, `doctor`, and `adopt apply`, then move to `connect` and a traced `run --dry-run`.
+If you only remember one thing: most adopters should start with `init`, `doctor`, and `adopt bootstrap`, then keep `check` as the explicit broader governance follow-up before moving to `connect` and a traced `run --dry-run`.
 
 ## Start Here
 
@@ -69,22 +69,35 @@ pnpm exec repo-ai-governor doctor --output json
 pnpm exec repo-ai-governor check --output json
 ```
 
-### Option C: Managed installation for a real adopter baseline
+### Option C: Managed quickstart for a real adopter baseline
 
-Once bootstrap succeeds, apply the managed baseline instead of hand-copying host assets.
+Once the basic environment bootstrap succeeds, use the managed installer quickstart instead of hand-copying host assets.
 
 ```bash
 pnpm exec repo-ai-governor adopt list --output json
-pnpm exec repo-ai-governor adopt apply adopter-complete --repo . --hosts codex,claude-code,github-copilot --output json
-pnpm exec repo-ai-governor adopt verify --repo . --output json
+pnpm exec repo-ai-governor adopt bootstrap --repo . --hosts codex,claude-code,github-copilot --output json
+pnpm exec repo-ai-governor check --output json
 ```
 
 What you should expect after this:
 
-1. `init` completes a guided first-time setup.
-2. `doctor` and `check` return readable or machine-readable facts instead of crashing.
-3. `adopt apply` writes managed installation metadata under `.repo-ai-governor/adoption/installations/**`.
-4. `adopt verify` becomes the supported way to prove the managed baseline is still healthy.
+1. `adopt bootstrap` runs `init -> bootstrap doctor preflight -> adopt apply -> adopt verify` in a fixed order.
+2. If you omit the selector, bootstrap defaults to the official built-in pack; explicit selectors reuse the existing pack-id/profile-alias rules and stay fail-closed on ambiguity.
+3. Bootstrap writes additive init/bootstrap-doctor/bootstrap-summary artifacts, but the install receipt plus `adopt verify` summary remain the canonical install truth.
+4. Clean reruns only reuse one matching clean installation; drift or pack/profile mismatches redirect you back to `adopt diff/upgrade/remove`.
+5. `check` remains the explicit broader governance follow-up after installation; it is not folded into install success.
+
+If you intentionally choose the `self-host-complete` profile with `workspace_mode=repo_local`, expect one extra boundary:
+
+```bash
+pnpm exec repo-ai-governor adopt bootstrap --adoption-profile self-host-complete --repo . --workspace-mode repo_local --hosts codex --output json
+pnpm exec repo-ai-governor check --output json
+```
+
+1. Fresh `adopt verify` results warn while repo-local governance, product-direction, or execution starter placeholders are still untouched.
+2. Those warnings stay scoped to `self-host-complete + repo_local`; the default `adopter-complete` path is not downgraded by missing repo-local authoring docs.
+3. `adopt verify` now surfaces an `execution_preflight_signal=blocked` warning for untouched self-host starter placeholders; treat that signal as a hard blocker before unattended self-host execution, because the current public contract does not expose a separate automatic preflight command yet.
+4. `check` stays the explicit broader governance follow-up once the target repository starts authoring its own repo-local truth.
 
 ## First Successful Workflow
 
@@ -130,7 +143,7 @@ Use these as a mental model for the product:
 
 | Job to be done | Recommended commands |
 |---|---|
-| Install or refresh one governed repository baseline | `adopt apply`, `adopt verify`, `adopt diff`, `adopt upgrade`, `adopt remove` |
+| Install or refresh one governed repository baseline | `adopt bootstrap`, `adopt verify`, `adopt diff`, `adopt upgrade`, `adopt remove` |
 | Wire multiple tools into one repository | `connect`, `doctor --adapters --fix`, `doctor --adapters` |
 | Run the first plan -> run -> review loop | `plan`, `run --dry-run --trace`, `review`, `review-verify` |
 | Work in a conversation-first shell | `repo-ai-governor --output pretty`, `resume` |
@@ -158,7 +171,7 @@ These are the constraints that most often surprise new readers:
 
 1. `dist-binary` proves CLI/runtime behavior, not packaged-install behavior.
 2. `tgz` is an online packaged-install rehearsal that still depends on the npm registry, not an offline/self-contained installer.
-3. Built-in `adopt apply` is the preferred whole-repository installation path; lower-level `host export` and `host pack` are follow-up surfaces, not the default installer story.
+3. Built-in `adopt bootstrap` is the preferred whole-repository quickstart, `adopt apply` remains the explicit lower-level install surface, and lower-level `host export` plus `host pack` are follow-up surfaces rather than the default installer story.
 4. VS Code support is currently a built-source companion and local VSIX packaging path, not Marketplace support.
 5. Desktop support is currently desktop foundation-only from a built source checkout, not a standalone desktop installer or standalone desktop product.
 6. `local-model` is a constrained fallback surface, not a full substitute for primary remote adapters.

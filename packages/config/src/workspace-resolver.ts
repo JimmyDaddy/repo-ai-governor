@@ -26,7 +26,9 @@ export class WorkspaceResolver {
    * @returns Effective workspace metadata used by downstream runtime/bootstrap steps.
    */
   public resolve(options: WorkspaceResolverOptions): ResolvedWorkspace {
-    const repositoryRoot = this.resolveRepositoryRoot(options.currentWorkingDirectory);
+    const repositoryRoot = options.repositoryRootOverride
+      ? this.resolveAbsolutePath(options.repositoryRootOverride, options.currentWorkingDirectory)
+      : this.resolveRepositoryRoot(options.currentWorkingDirectory);
     const runtimeOverrides = options.runtimeOverrides ?? {};
     const configWorkspace = options.config?.workspace;
     const modeResolution = this.resolveWorkspaceMode(runtimeOverrides.mode, configWorkspace?.mode);

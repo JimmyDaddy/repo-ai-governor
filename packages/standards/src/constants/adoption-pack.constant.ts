@@ -39,6 +39,84 @@ export enum AdoptionPackManagedAssetGroup {
 }
 
 /**
+ * Defines the built-in adoption-pack parity classes for surface-level governance.
+ */
+export enum AdoptionPackParityClass {
+  EXACT_SYNC = 'exact_sync',
+  GENERATED_PROJECTION = 'generated_projection',
+  TEMPLATE_SEED = 'template_seed',
+  ADOPTER_OWNED_PLACEHOLDER = 'adopter_owned_placeholder',
+}
+
+/**
+ * Defines the source-mode taxonomy used by the built-in pack source catalog.
+ */
+export enum AdoptionPackSourceMode {
+  REPO_FILE_SYNC = 'repo_file_sync',
+  STRUCTURED_TEMPLATE_PROJECTION = 'structured_template_projection',
+  GENERATED_PROJECTION = 'generated_projection',
+  TEMPLATE_SEED = 'template_seed',
+  ADOPTER_PLACEHOLDER = 'adopter_placeholder',
+}
+
+/**
+ * Defines how one source-catalog surface is materialized at install time.
+ */
+export enum AdoptionPackCompositionPolicy {
+  WHOLE_FILE = 'whole_file',
+  CATALOG_ASSEMBLED = 'catalog_assembled',
+  STRUCTURE_INSTANCE_SPLIT = 'structure_instance_split',
+  RUNTIME_BOOTSTRAP = 'runtime_bootstrap',
+}
+
+/**
+ * Defines whether a surface is still a template/placeholder after bootstrap.
+ */
+export enum AdoptionPackPlaceholderPolicy {
+  NONE = 'none',
+  TEMPLATE_SEED = 'template_seed',
+  ADOPTER_OWNED = 'adopter_owned',
+}
+
+/**
+ * Defines where one surface or readiness rule is allowed to apply.
+ */
+export enum AdoptionPackApplicabilityScope {
+  ALL_PROFILES = 'all_profiles',
+  SELF_HOST_COMPLETE = 'self_host_complete',
+  SELF_HOST_REPO_LOCAL = 'self_host_repo_local',
+  SELF_HOST_DETECTED_SURFACE = 'self_host_detected_surface',
+}
+
+/**
+ * Defines the stable source-catalog surface kinds used by built-in inventory records.
+ */
+export enum AdoptionPackSurfaceKind {
+  WORKFLOW_ASSET = 'workflow_asset',
+  TEMPLATE_FILE = 'template_file',
+  RUNTIME_BOOTSTRAP = 'runtime_bootstrap',
+}
+
+/**
+ * Defines the first-wave readiness groups formalized for self-host bootstrap surfaces.
+ */
+export enum AdoptionPackReadinessGroup {
+  NONE = 'none',
+  GOVERNANCE_RULES_READY = 'governance_rules_ready',
+  PRODUCT_DIRECTION_READY = 'product_direction_ready',
+  EXECUTION_SURFACE_READY = 'execution_surface_ready',
+}
+
+/**
+ * Defines the first stable sinks that will later consume self-host readiness results.
+ */
+export enum AdoptionPackReadinessSink {
+  DOCTOR_DIAGNOSTICS = 'doctor_diagnostics',
+  ADOPT_VERIFY = 'adopt_verify',
+  EXECUTION_PREFLIGHT = 'execution_preflight',
+}
+
+/**
  * Defines upgrade policies formalized by the installer contract.
  */
 export enum AdoptionPackUpgradePolicy {
@@ -138,6 +216,62 @@ export const ADOPTION_PACK_WORKSPACE_MODE_POLICY_VALUES = new Set<string>(
  */
 export const ADOPTION_PACK_MANAGED_ASSET_GROUP_VALUES = new Set<string>(
   Object.values(AdoptionPackManagedAssetGroup),
+);
+
+/**
+ * Re-exports parity-class values as a validation set.
+ */
+export const ADOPTION_PACK_PARITY_CLASS_VALUES = new Set<string>(
+  Object.values(AdoptionPackParityClass),
+);
+
+/**
+ * Re-exports source-mode values as a validation set.
+ */
+export const ADOPTION_PACK_SOURCE_MODE_VALUES = new Set<string>(
+  Object.values(AdoptionPackSourceMode),
+);
+
+/**
+ * Re-exports composition-policy values as a validation set.
+ */
+export const ADOPTION_PACK_COMPOSITION_POLICY_VALUES = new Set<string>(
+  Object.values(AdoptionPackCompositionPolicy),
+);
+
+/**
+ * Re-exports placeholder-policy values as a validation set.
+ */
+export const ADOPTION_PACK_PLACEHOLDER_POLICY_VALUES = new Set<string>(
+  Object.values(AdoptionPackPlaceholderPolicy),
+);
+
+/**
+ * Re-exports applicability-scope values as a validation set.
+ */
+export const ADOPTION_PACK_APPLICABILITY_SCOPE_VALUES = new Set<string>(
+  Object.values(AdoptionPackApplicabilityScope),
+);
+
+/**
+ * Re-exports surface-kind values as a validation set.
+ */
+export const ADOPTION_PACK_SURFACE_KIND_VALUES = new Set<string>(
+  Object.values(AdoptionPackSurfaceKind),
+);
+
+/**
+ * Re-exports readiness-group values as a validation set.
+ */
+export const ADOPTION_PACK_READINESS_GROUP_VALUES = new Set<string>(
+  Object.values(AdoptionPackReadinessGroup),
+);
+
+/**
+ * Re-exports readiness-sink values as a validation set.
+ */
+export const ADOPTION_PACK_READINESS_SINK_VALUES = new Set<string>(
+  Object.values(AdoptionPackReadinessSink),
 );
 
 /**

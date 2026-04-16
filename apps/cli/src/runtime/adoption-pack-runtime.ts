@@ -8,16 +8,26 @@ import { ClaudeCodeHostRenderer } from '@repo-ai-governor/adapter-claude-code';
 import { CodexHostRenderer } from '@repo-ai-governor/adapter-codex';
 import { GithubCopilotHostRenderer } from '@repo-ai-governor/adapter-github-copilot';
 import { SqliteArtifactIndexStore } from '@repo-ai-governor/artifact-registry';
-import { GovernorErrorCode, RuntimeError, WorkspaceMode } from '@repo-ai-governor/shared';
 import {
+  GovernorErrorCode,
+  RuntimeError,
+  WorkspaceMode,
+  standardizeError,
+} from '@repo-ai-governor/shared';
+import {
+  AdoptionPackApplicabilityScope,
   type AdoptionPackInstallReceipt,
   AdoptionPackManagedAssetGroup,
   type AdoptionPackManagedFileRecord,
   type AdoptionPackProfile,
+  AdoptionPackReadinessSink,
   AdoptionPackRegistry,
+  type AdoptionPackRuntimeBootstrapRecord,
   type AdoptionPackVerificationCheck,
   type AdoptionPackVerificationSummary,
   AdoptionPackWorkspaceModePolicy,
+  BUILT_IN_ADOPTION_PACK_ID,
+  BUILT_IN_ADOPTION_PACK_PROFILE_IDS,
   DEFAULT_ADOPTION_METADATA_ROOT_SEGMENTS,
   HostDistributionHost,
   HostDistributionMode,
@@ -27,6 +37,7 @@ import {
   HostVerificationStatus,
   type ResolvedAdoptionPackDefinition,
   StructuredWorkflowAssetRegistry,
+  resolveBuiltInAdoptionPackDefinition,
 } from '@repo-ai-governor/standards';
 import { CliAdoptAction } from '../constants/cli-adopt.constant.js';
 import type { CliAdoptCommandOptions } from '../types/interfaces/cli-adopt-command.interface.js';
@@ -42,7 +53,7 @@ interface AdoptionListItem {
   installSupported: boolean;
 }
 
-interface AdoptionOperationResult {
+export interface AdoptionOperationResult {
   action: CliAdoptAction;
   repoRoot: string;
   packId: string | null;
@@ -58,6 +69,12 @@ interface AdoptionOperationResult {
   diffReportPath: string | null;
   writtenArtifacts: string[];
   checks: AdoptionPackVerificationCheck[];
+  initManifestPath?: string | null;
+  bootstrapDoctorDiagnosticsPath?: string | null;
+  bootstrapSummaryPath?: string | null;
+  selectorResolution?: string | null;
+  reentryMode?: string | null;
+  userFacingMessage?: string | null;
   availablePacks?: AdoptionListItem[];
 }
 
@@ -77,9 +94,26 @@ interface MaterializedHostResult {
   applyReportPath: string;
 }
 
+interface SelfHostReadinessEvaluation {
+  doctorChecks: AdoptionPackVerificationCheck[];
+  verifyChecks: AdoptionPackVerificationCheck[];
+}
+
 const ADOPTION_INSTALL_RECEIPT_FILE_NAME = 'adoption-install.receipt.json';
 const ADOPTION_VERIFICATION_SUMMARY_FILE_NAME = 'adoption-verification.summary.json';
 const ADOPTION_DIFF_REPORT_FILE_NAME = 'adoption-diff.report.json';
+const ADOPTION_RECEIPT_DIAGNOSTICS_CHECK_ID = 'adoption-receipt-diagnostics';
+const SELF_HOST_READINESS_CHECK_ID_PREFIX = 'self-host-readiness';
+const SELF_HOST_EXECUTION_PREFLIGHT_SIGNAL_CHECK_ID = 'self-host-execution-preflight';
+const SELF_HOST_REQUIRED_PLACEHOLDER_MARKER = 'replace_before_execution';
+const SELF_HOST_REQUIRED_PLACEHOLDER_STATUS_LINE = `- Placeholder Status: ${SELF_HOST_REQUIRED_PLACEHOLDER_MARKER}`;
+const SELF_HOST_STARTER_PLACEHOLDER_MARKERS = [
+  SELF_HOST_REQUIRED_PLACEHOLDER_STATUS_LINE,
+  'project-template',
+  'sprint-template',
+  'self-host-template',
+  '- Stream: `none`',
+] as const;
 const ARTIFACT_REGISTRY_HEADERS = [
   'artifact_id',
   'artifact_type',
@@ -109,6 +143,67 @@ export class CliAdoptionPackRuntime {
       new AdoptionPackRegistry({
         currentWorkingDirectory,
       });
+  }
+
+  /**
+   * Resolves one explicit install selection using pack-id first, then unique profile-id fallback.
+   * @param options Normalized adopt command options.
+   * @returns Resolved definition/profile pair plus selector-resolution metadata.
+   */
+  public async resolveInstallSelection(options: CliAdoptCommandOptions): Promise<{
+    definition: ResolvedAdoptionPackDefinition;
+    profile: AdoptionPackProfile;
+    selectorResolution: 'explicit_pack' | 'explicit_profile_alias';
+  }> {
+    return this.resolveExplicitInstallSelection(options);
+  }
+
+  /**
+   * Resolves bootstrap install selection, defaulting omitted selectors to the official built-in pack.
+   * @param options Normalized adopt command options.
+   * @returns Resolved definition/profile pair plus selector-resolution metadata.
+   */
+  public async resolveBootstrapSelection(options: CliAdoptCommandOptions): Promise<{
+    definition: ResolvedAdoptionPackDefinition;
+    profile: AdoptionPackProfile;
+    selectorResolution: 'default_built_in' | 'explicit_pack' | 'explicit_profile_alias';
+  }> {
+    if (options.packSelector) {
+      return this.resolveExplicitInstallSelection(options);
+    }
+
+    const builtInDefinition = resolveBuiltInAdoptionPackDefinition(BUILT_IN_ADOPTION_PACK_ID);
+    if (!builtInDefinition) {
+      throw new RuntimeError(
+        GovernorErrorCode.STANDARDS_PACK_INVALID,
+        this.localizeText(
+          'The official built-in adoption pack is unavailable for bootstrap defaulting.',
+          '官方内置 adoption pack 不可用，无法作为 bootstrap 的默认选择。',
+        ),
+        {
+          packId: BUILT_IN_ADOPTION_PACK_ID,
+        },
+      );
+    }
+
+    return {
+      definition: builtInDefinition,
+      profile: this.resolveProfile(builtInDefinition, options.adoptionProfileId, null),
+      selectorResolution: 'default_built_in',
+    };
+  }
+
+  /**
+   * Resolves the effective workspace mode for one selected adoption profile.
+   * @param profile Resolved adoption profile.
+   * @param requestedWorkspaceMode Optional CLI override.
+   * @returns Effective workspace mode after policy enforcement.
+   */
+  public resolveEffectiveWorkspaceMode(
+    profile: AdoptionPackProfile,
+    requestedWorkspaceMode: WorkspaceMode | null,
+  ): WorkspaceMode {
+    return this.resolveWorkspaceMode(profile, requestedWorkspaceMode, true);
   }
 
   /**
@@ -155,9 +250,33 @@ export class CliAdoptionPackRuntime {
    * Applies one resolved adoption pack into the target repository.
    */
   public async apply(options: CliAdoptCommandOptions): Promise<AdoptionOperationResult> {
-    const repoRoot = this.resolveRepoRoot(options.repoPath);
     const resolvedTarget = await this.resolveInstallTarget(options);
-    const existingReceipt = await this.readExistingReceipt(repoRoot, options.packSelector);
+    return this.applyResolvedTarget(options, resolvedTarget);
+  }
+
+  /**
+   * Applies one pre-resolved adoption target into the target repository.
+   * @param options Normalized adopt command options.
+   * @param resolvedTarget Definition/profile pair chosen by selector resolution.
+   * @returns Canonical adoption operation result.
+   */
+  public async applyResolvedTarget(
+    options: CliAdoptCommandOptions,
+    resolvedTarget: ResolvedInstallTarget,
+  ): Promise<AdoptionOperationResult> {
+    const repoRoot = this.resolveRepoRoot(options.repoPath);
+    return this.applyResolvedInstallTarget(options, repoRoot, resolvedTarget);
+  }
+
+  private async applyResolvedInstallTarget(
+    options: CliAdoptCommandOptions,
+    repoRoot: string,
+    resolvedTarget: ResolvedInstallTarget,
+  ): Promise<AdoptionOperationResult> {
+    const existingReceipt = await this.readExistingReceipt(
+      repoRoot,
+      options.packSelector ?? resolvedTarget.definition.manifest.packId,
+    );
     const selectedTargets = this.resolveSelectedHostTargets(resolvedTarget.profile, options.hosts);
     const workspaceMode = this.resolveWorkspaceMode(
       resolvedTarget.profile,
@@ -218,6 +337,8 @@ export class CliAdoptionPackRuntime {
     if (resolvedTarget.profile.profileId === 'self-host-complete') {
       const bootstrapResult = await this.bootstrapSelfHostSurface({
         repoRoot,
+        definition: resolvedTarget.definition,
+        profile: resolvedTarget.profile,
         existingReceipt,
         force: options.force,
       });
@@ -378,6 +499,7 @@ export class CliAdoptionPackRuntime {
     const receipt = await this.loadReceiptForOperation(options);
     const diffRecords = await this.buildDiffRecords(receipt);
     const hostApplyReportPaths = this.resolveReceiptHostApplyReportPaths(receipt);
+    const selfHostReadiness = await this.evaluateSelfHostReadiness(receipt);
     const checks: AdoptionPackVerificationCheck[] = [
       {
         checkId: 'receipt-path',
@@ -398,6 +520,7 @@ export class CliAdoptionPackRuntime {
         inspectedPath: hostApplyReportPaths[0] ?? undefined,
       },
     ];
+    checks.push(...selfHostReadiness.verifyChecks);
     checks.push(
       ...diffRecords.map((record) => ({
         checkId: `managed:${record.relativePath}`,
@@ -446,6 +569,33 @@ export class CliAdoptionPackRuntime {
             ]
           : verificationSummary.checks,
     };
+  }
+
+  /**
+   * Collects doctor-facing self-host readiness checks without mutating adoption verification artifacts.
+   * @param options Optional repo or pack selector used to resolve one installed adoption receipt.
+   * @returns Doctor diagnostics checks for self-host readiness, or an empty list when no matching receipt exists.
+   */
+  public async collectDoctorReadinessChecks(options?: {
+    repoPath?: string | null;
+    packSelector?: string | null;
+  }): Promise<AdoptionPackVerificationCheck[]> {
+    const repoRoot = this.resolveRepoRoot(options?.repoPath ?? null);
+    try {
+      const receipt = await this.readExistingReceipt(
+        repoRoot,
+        options?.packSelector ?? null,
+        false,
+      );
+      if (!receipt) {
+        return [];
+      }
+
+      const selfHostReadiness = await this.evaluateSelfHostReadiness(receipt);
+      return selfHostReadiness.doctorChecks;
+    } catch (error) {
+      return [this.createDoctorReceiptFailureCheck(error, repoRoot)];
+    }
   }
 
   /**
@@ -552,25 +702,64 @@ export class CliAdoptionPackRuntime {
       );
     }
 
+    const resolvedSelection = await this.resolveExplicitInstallSelection(options);
+    return {
+      definition: resolvedSelection.definition,
+      profile: resolvedSelection.profile,
+    };
+  }
+
+  private async resolveExplicitInstallSelection(options: CliAdoptCommandOptions): Promise<{
+    definition: ResolvedAdoptionPackDefinition;
+    profile: AdoptionPackProfile;
+    selectorResolution: 'explicit_pack' | 'explicit_profile_alias';
+  }> {
+    if (!options.packSelector) {
+      throw new RuntimeError(
+        GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+        this.localizeText(
+          'adopt apply/upgrade/remove requires one pack selector.',
+          'adopt apply/upgrade/remove 需要提供 pack 选择器。',
+        ),
+      );
+    }
+
     try {
       const definition = await this.adoptionPackRegistry.resolveDefinition(options.packSelector);
       return {
         definition,
         profile: this.resolveProfile(definition, options.adoptionProfileId, null),
+        selectorResolution: 'explicit_pack',
       };
     } catch (error) {
       const manifests = await this.adoptionPackRegistry.list();
-      const manifest = manifests.find((candidate) =>
+      const matchingManifests = manifests.filter((candidate) =>
         candidate.profiles.some((profile) => profile.profileId === options.packSelector),
       );
-      if (!manifest) {
+      if (matchingManifests.length === 0) {
         throw error;
       }
 
+      if (matchingManifests.length > 1) {
+        throw new RuntimeError(
+          GovernorErrorCode.STANDARDS_PACK_INVALID,
+          this.localizeText(
+            `Pack selector "${options.packSelector}" is ambiguous across multiple adoption packs; use an explicit pack id.`,
+            `pack 选择器 "${options.packSelector}" 同时命中多个 adoption pack；请改用显式 pack id。`,
+          ),
+          {
+            selector: options.packSelector,
+            matchingPackIds: matchingManifests.map((manifest) => manifest.packId),
+          },
+        );
+      }
+
+      const manifest = matchingManifests[0] as (typeof matchingManifests)[number];
       const definition = await this.adoptionPackRegistry.resolveDefinition(manifest.packId);
       return {
         definition,
         profile: this.resolveProfile(definition, options.adoptionProfileId, options.packSelector),
+        selectorResolution: 'explicit_profile_alias',
       };
     }
   }
@@ -699,8 +888,83 @@ export class CliAdoptionPackRuntime {
     definition: ResolvedAdoptionPackDefinition,
     profile: AdoptionPackProfile,
   ) {
-    return definition.templateRecords.filter((record) =>
-      record.profileIds.includes(profile.profileId),
+    return this.orderMaterializationRecords(
+      definition.templateRecords.filter((record) => record.profileIds.includes(profile.profileId)),
+      this.buildSourceCatalogSurfaceOrder(definition),
+      'template record',
+    );
+  }
+
+  private resolveRuntimeBootstrapRecords(
+    definition: ResolvedAdoptionPackDefinition,
+    profile: AdoptionPackProfile,
+  ): AdoptionPackRuntimeBootstrapRecord[] {
+    return this.orderMaterializationRecords(
+      definition.runtimeBootstrapRecords.filter((record) =>
+        record.profileIds.includes(profile.profileId),
+      ),
+      this.buildSourceCatalogSurfaceOrder(definition),
+      'runtime bootstrap record',
+    );
+  }
+
+  private buildSourceCatalogSurfaceOrder(
+    definition: ResolvedAdoptionPackDefinition,
+  ): Map<string, number> {
+    return new Map(
+      definition.sourceCatalogRecords.map((record, index) => [record.surfaceId, index] as const),
+    );
+  }
+
+  private orderMaterializationRecords<T extends { relativePath: string; sourceCatalogId?: string }>(
+    records: T[],
+    sourceCatalogSurfaceOrder: Map<string, number>,
+    recordKind: string,
+  ): T[] {
+    return [...records].sort((left, right) => {
+      const leftOrder = this.resolveMaterializationOrder(
+        left.relativePath,
+        left.sourceCatalogId,
+        sourceCatalogSurfaceOrder,
+        recordKind,
+      );
+      const rightOrder = this.resolveMaterializationOrder(
+        right.relativePath,
+        right.sourceCatalogId,
+        sourceCatalogSurfaceOrder,
+        recordKind,
+      );
+
+      return leftOrder - rightOrder;
+    });
+  }
+
+  private resolveMaterializationOrder(
+    relativePath: string,
+    sourceCatalogId: string | undefined,
+    sourceCatalogSurfaceOrder: Map<string, number>,
+    recordKind: string,
+  ): number {
+    if (!sourceCatalogId) {
+      return Number.MAX_SAFE_INTEGER;
+    }
+
+    const surfaceOrder = sourceCatalogSurfaceOrder.get(sourceCatalogId);
+    if (surfaceOrder !== undefined) {
+      return surfaceOrder;
+    }
+
+    throw new RuntimeError(
+      GovernorErrorCode.STANDARDS_PACK_INVALID,
+      this.localizeText(
+        `Cannot materialize ${recordKind} "${relativePath}" because source catalog id "${sourceCatalogId}" is missing from the resolved definition.`,
+        `无法物化 ${recordKind} "${relativePath}"，因为 source catalog id "${sourceCatalogId}" 不存在于已解析 definition 中。`,
+      ),
+      {
+        relativePath,
+        sourceCatalogId,
+        recordKind,
+      },
     );
   }
 
@@ -957,6 +1221,8 @@ export class CliAdoptionPackRuntime {
 
   private async bootstrapSelfHostSurface(options: {
     repoRoot: string;
+    definition: ResolvedAdoptionPackDefinition;
+    profile: AdoptionPackProfile;
     existingReceipt: AdoptionPackInstallReceipt | null;
     force: boolean;
   }): Promise<{
@@ -966,93 +1232,27 @@ export class CliAdoptionPackRuntime {
   }> {
     const managedFileRecords: AdoptionPackManagedFileRecord[] = [];
     const writtenArtifacts: string[] = [];
-    const dynamicFiles = [
-      {
-        relativePath: '.repo-ai-governor/governor.yaml',
-        content: [
-          'schemaVersion: "1.1"',
-          'workspace:',
-          '  mode: repo_local',
-          '  migrationPolicy: copy_verify_switch_rollback',
-          'i18n:',
-          '  runtimeEngine: i18next',
-          '  defaultLocale: zh-CN',
-          '  fallbackLocale: en-US',
-          '  supportedLocales:',
-          '    - zh-CN',
-          '    - en-US',
-          'memory:',
-          '  storeEngine: fs_csv',
-          '  storeRoot: context/memory',
-          '',
-        ].join('\n'),
-        assetGroup: AdoptionPackManagedAssetGroup.BOOTSTRAP_TEMPLATES,
-      },
-      {
-        relativePath:
-          '.repo-ai-governor/normative_knowledge_sources/technical-solutions/technical-solution-module-registry.yaml',
-        content: [
-          'schema_version: 2',
-          'generated_at: 1970-01-01',
-          'status: active',
-          'owner: self-host-template',
-          '',
-          'allowed_layers:',
-          '  - governance-core',
-          '  - runtime-core',
-          '',
-          'change_impact_classes:',
-          '  - local_detail_change',
-          '  - exported_contract_change',
-          '  - module_registry_change',
-          '  - north_star_change',
-          '  - layer_boundary_change',
-          '',
-          'sync_target_tokens:',
-          '  - summary_doc',
-          '  - module_registry',
-          '  - direct_consumers',
-          '  - overall_technical_solution',
-          '  - architecture_and_repo_layering',
-          '  - product_requirements',
-          '  - product_requirements_brief',
-          '',
-          'modules: []',
-          '',
-        ].join('\n'),
-        assetGroup: AdoptionPackManagedAssetGroup.NORMATIVE_TEMPLATES,
-      },
-      {
-        relativePath: '.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md',
-        content:
-          '# Code Standards\n\n- Status: draft\n- Date: 1970-01-01\n\n## Purpose\n\nDefine repository-specific code constraints before enabling unattended delivery.\n',
-        assetGroup: AdoptionPackManagedAssetGroup.NORMATIVE_TEMPLATES,
-      },
-      {
-        relativePath:
-          '.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md',
-        content:
-          '# Long-Term Maintenance Guide\n\n- Status: draft\n- Date: 1970-01-01\n\n## Purpose\n\nCapture maintenance expectations for self-hosted governance repositories.\n',
-        assetGroup: AdoptionPackManagedAssetGroup.NORMATIVE_TEMPLATES,
-      },
-    ];
+    const runtimeBootstrapRecords = this.resolveRuntimeBootstrapRecords(
+      options.definition,
+      options.profile,
+    );
 
-    for (const dynamicFile of dynamicFiles) {
-      const absolutePath = resolve(options.repoRoot, dynamicFile.relativePath);
+    for (const runtimeBootstrapRecord of runtimeBootstrapRecords) {
+      const absolutePath = resolve(options.repoRoot, runtimeBootstrapRecord.relativePath);
       await this.writeManagedTextFile({
         absolutePath,
-        relativePath: dynamicFile.relativePath,
-        content: dynamicFile.content,
-        assetGroup: dynamicFile.assetGroup,
+        relativePath: runtimeBootstrapRecord.relativePath,
+        content: runtimeBootstrapRecord.content,
+        assetGroup: runtimeBootstrapRecord.assetGroup,
         existingReceipt: options.existingReceipt,
         force: options.force,
       });
       managedFileRecords.push(
         this.createManagedFileRecord(
-          dynamicFile.relativePath,
+          runtimeBootstrapRecord.relativePath,
           absolutePath,
-          dynamicFile.assetGroup,
-          dynamicFile.content,
+          runtimeBootstrapRecord.assetGroup,
+          runtimeBootstrapRecord.content,
         ),
       );
       writtenArtifacts.push(absolutePath);
@@ -1206,6 +1406,228 @@ export class CliAdoptionPackRuntime {
     }
 
     return diffRecords;
+  }
+
+  private async evaluateSelfHostReadiness(
+    receipt: AdoptionPackInstallReceipt,
+  ): Promise<SelfHostReadinessEvaluation> {
+    if (
+      receipt.appliedProfileId !== BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE ||
+      receipt.workspaceMode !== WorkspaceMode.REPO_LOCAL
+    ) {
+      return {
+        doctorChecks: [],
+        verifyChecks: [],
+      };
+    }
+
+    const definition = await this.adoptionPackRegistry.resolveDefinition(receipt.packId);
+    const starterContentByRelativePath = this.buildStarterContentByRelativePath(definition);
+    const sourceCatalogRecordBySurfaceId = new Map(
+      definition.sourceCatalogRecords.map((record) => [record.surfaceId, record] as const),
+    );
+    const verifyChecks: AdoptionPackVerificationCheck[] = [];
+    const doctorChecks: AdoptionPackVerificationCheck[] = [];
+    const preflightBlockedGroups: string[] = [];
+    const preflightBlockedPaths: string[] = [];
+
+    for (const matrixRecord of definition.readinessMatrixRecords) {
+      if (
+        matrixRecord.applicabilityScope !== AdoptionPackApplicabilityScope.SELF_HOST_REPO_LOCAL ||
+        (!matrixRecord.sinkIds.includes(AdoptionPackReadinessSink.ADOPT_VERIFY) &&
+          !matrixRecord.sinkIds.includes(AdoptionPackReadinessSink.EXECUTION_PREFLIGHT))
+      ) {
+        continue;
+      }
+
+      const unresolvedPlaceholderPaths = await this.resolveUnresolvedSelfHostReadinessPaths({
+        receipt,
+        starterContentByRelativePath,
+        sourceCatalogRecordBySurfaceId,
+        surfaceIds: matrixRecord.surfaceIds,
+      });
+      const normalizedGroup = matrixRecord.readinessGroup;
+      const unresolvedPlaceholderPathList = unresolvedPlaceholderPaths.join(',');
+
+      if (matrixRecord.sinkIds.includes(AdoptionPackReadinessSink.ADOPT_VERIFY)) {
+        verifyChecks.push({
+          checkId: `${SELF_HOST_READINESS_CHECK_ID_PREFIX}:${normalizedGroup}`,
+          status:
+            unresolvedPlaceholderPaths.length > 0
+              ? HostVerificationStatus.WARN
+              : HostVerificationStatus.PASS,
+          detail:
+            unresolvedPlaceholderPaths.length > 0
+              ? `readiness_group=${normalizedGroup} placeholder_paths=${unresolvedPlaceholderPathList}`
+              : `readiness_group=${normalizedGroup} ready`,
+          inspectedPath: unresolvedPlaceholderPaths[0] ?? undefined,
+        });
+      }
+
+      if (matrixRecord.sinkIds.includes(AdoptionPackReadinessSink.DOCTOR_DIAGNOSTICS)) {
+        doctorChecks.push({
+          checkId: `${SELF_HOST_READINESS_CHECK_ID_PREFIX}:${normalizedGroup}`,
+          status:
+            unresolvedPlaceholderPaths.length > 0
+              ? HostVerificationStatus.WARN
+              : HostVerificationStatus.PASS,
+          detail:
+            unresolvedPlaceholderPaths.length > 0
+              ? `readiness_group=${normalizedGroup} placeholder_paths=${unresolvedPlaceholderPathList}`
+              : `readiness_group=${normalizedGroup} ready`,
+          inspectedPath: unresolvedPlaceholderPaths[0] ?? undefined,
+        });
+      }
+
+      if (
+        matrixRecord.sinkIds.includes(AdoptionPackReadinessSink.EXECUTION_PREFLIGHT) &&
+        unresolvedPlaceholderPaths.length > 0
+      ) {
+        preflightBlockedGroups.push(normalizedGroup);
+        preflightBlockedPaths.push(...unresolvedPlaceholderPaths);
+      }
+    }
+
+    const preflightSignalCheck = {
+      checkId: SELF_HOST_EXECUTION_PREFLIGHT_SIGNAL_CHECK_ID,
+      status:
+        preflightBlockedGroups.length > 0
+          ? HostVerificationStatus.WARN
+          : HostVerificationStatus.PASS,
+      detail:
+        preflightBlockedGroups.length > 0
+          ? `execution_preflight_signal=blocked enforcement=downstream_fail_closed blocked_groups=${[...new Set(preflightBlockedGroups)].join(',')} placeholder_paths=${[...new Set(preflightBlockedPaths)].join(',')}`
+          : 'execution_preflight_signal=ready',
+      inspectedPath: preflightBlockedPaths[0] ?? undefined,
+    } satisfies AdoptionPackVerificationCheck;
+    verifyChecks.push(preflightSignalCheck);
+    doctorChecks.push({ ...preflightSignalCheck });
+
+    return {
+      doctorChecks,
+      verifyChecks,
+    };
+  }
+
+  private buildStarterContentByRelativePath(
+    definition: ResolvedAdoptionPackDefinition,
+  ): Map<string, string> {
+    const starterContentByRelativePath = new Map<string, string>();
+
+    for (const templateRecord of definition.templateRecords) {
+      starterContentByRelativePath.set(templateRecord.relativePath, templateRecord.content);
+    }
+
+    for (const runtimeBootstrapRecord of definition.runtimeBootstrapRecords) {
+      starterContentByRelativePath.set(
+        runtimeBootstrapRecord.relativePath,
+        runtimeBootstrapRecord.content,
+      );
+    }
+
+    return starterContentByRelativePath;
+  }
+
+  private async resolveUnresolvedSelfHostReadinessPaths(options: {
+    receipt: AdoptionPackInstallReceipt;
+    starterContentByRelativePath: Map<string, string>;
+    sourceCatalogRecordBySurfaceId: Map<
+      string,
+      ResolvedAdoptionPackDefinition['sourceCatalogRecords'][number]
+    >;
+    surfaceIds: string[];
+  }): Promise<string[]> {
+    const unresolvedPaths = new Set<string>();
+
+    for (const surfaceId of options.surfaceIds) {
+      const sourceCatalogRecord = options.sourceCatalogRecordBySurfaceId.get(surfaceId);
+      const relativePath = sourceCatalogRecord?.relativePath;
+      if (!relativePath) {
+        continue;
+      }
+
+      const starterContent = options.starterContentByRelativePath.get(relativePath);
+      if (!starterContent) {
+        continue;
+      }
+
+      const absolutePath = resolve(options.receipt.targetRepoRoot, relativePath);
+      const currentContent = await this.readTextIfExists(absolutePath);
+      if (currentContent === null) {
+        unresolvedPaths.add(relativePath);
+        continue;
+      }
+
+      if (this.isSelfHostStarterPlaceholderContent(relativePath, currentContent, starterContent)) {
+        unresolvedPaths.add(relativePath);
+      }
+    }
+
+    return [...unresolvedPaths].sort((left, right) => left.localeCompare(right));
+  }
+
+  private isSelfHostStarterPlaceholderContent(
+    relativePath: string,
+    currentContent: string,
+    starterContent: string,
+  ): boolean {
+    const normalizedCurrentContent = currentContent.trim();
+    const normalizedStarterContent = starterContent.trim();
+    if (normalizedCurrentContent === normalizedStarterContent) {
+      return true;
+    }
+
+    const normalizedCurrentStarterSkeleton =
+      this.normalizeSelfHostStarterPlaceholderSkeleton(currentContent);
+    const normalizedStarterSkeleton =
+      this.normalizeSelfHostStarterPlaceholderSkeleton(starterContent);
+    if (normalizedCurrentStarterSkeleton === normalizedStarterSkeleton) {
+      return true;
+    }
+
+    if (
+      !relativePath.startsWith('.repo-ai-governor/context/') &&
+      !relativePath.startsWith('.repo-ai-governor/normative_knowledge_sources/')
+    ) {
+      return false;
+    }
+
+    return SELF_HOST_STARTER_PLACEHOLDER_MARKERS.some((marker) =>
+      normalizedCurrentContent.includes(marker),
+    );
+  }
+
+  private normalizeSelfHostStarterPlaceholderSkeleton(content: string): string {
+    return content
+      .split(/\r?\n/u)
+      .map((line) => line.trim())
+      .filter((line) => line !== SELF_HOST_REQUIRED_PLACEHOLDER_STATUS_LINE)
+      .map((line) => {
+        if (line.startsWith('- Status: ')) {
+          return '- Status: <placeholder>';
+        }
+
+        if (line.startsWith('- Date: ')) {
+          return '- Date: <placeholder>';
+        }
+
+        if (line.startsWith('- Stream: `')) {
+          return '- Stream: <placeholder>';
+        }
+
+        if (line.startsWith('- Project: `')) {
+          return '- Project: <placeholder>';
+        }
+
+        if (line.startsWith('- Sprint: `')) {
+          return '- Sprint: <placeholder>';
+        }
+
+        return line;
+      })
+      .join('\n')
+      .replace(/\n{3,}/gu, '\n\n')
+      .trim();
   }
 
   private async loadReceiptForOperation(
@@ -1430,13 +1852,55 @@ export class CliAdoptionPackRuntime {
   }
 
   private async readInstallReceipt(filePath: string): Promise<AdoptionPackInstallReceipt> {
-    return this.normalizeInstallReceipt(
-      await this.readJsonFile<AdoptionPackInstallReceipt>(filePath),
-    );
+    try {
+      return this.normalizeInstallReceipt(
+        await this.readJsonFile<AdoptionPackInstallReceipt>(filePath),
+      );
+    } catch (error) {
+      if (error instanceof RuntimeError) {
+        throw error;
+      }
+
+      throw new RuntimeError(
+        GovernorErrorCode.STANDARDS_PACK_INVALID,
+        this.localizeText(
+          'Failed to read adoption install receipt.',
+          '读取 adoption install receipt 失败。',
+        ),
+        {
+          receiptPath: filePath,
+        },
+        error,
+      );
+    }
   }
 
   private async readJsonFile<T>(filePath: string): Promise<T> {
     return JSON.parse(await readFile(filePath, 'utf8')) as T;
+  }
+
+  private createDoctorReceiptFailureCheck(
+    error: unknown,
+    repoRoot: string,
+  ): AdoptionPackVerificationCheck {
+    const standardizedError = standardizeError(error);
+    const receiptPath =
+      standardizedError.details && typeof standardizedError.details.receiptPath === 'string'
+        ? standardizedError.details.receiptPath
+        : undefined;
+
+    return {
+      checkId: ADOPTION_RECEIPT_DIAGNOSTICS_CHECK_ID,
+      status: HostVerificationStatus.FAIL,
+      detail: [
+        'receipt_state=invalid',
+        `code=${standardizedError.code}`,
+        `repo_root=${repoRoot}`,
+        ...(receiptPath ? [`receipt=${receiptPath}`] : []),
+        `message=${standardizedError.message}`,
+      ].join(' '),
+      inspectedPath: receiptPath,
+    };
   }
 
   private normalizeInstallReceipt(receipt: AdoptionPackInstallReceipt): AdoptionPackInstallReceipt {

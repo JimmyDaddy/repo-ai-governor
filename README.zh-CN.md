@@ -18,7 +18,7 @@
 | 目标 | 主要命令 |
 |---|---|
 | 初始化仓库并检查环境状态 | `init`、`doctor`、`check` |
-| 安装并维护受管 adoption baseline | `adopt list`、`adopt apply`、`adopt diff`、`adopt verify`、`adopt upgrade`、`adopt remove` |
+| 安装并维护受管 adoption baseline | `adopt list`、`adopt bootstrap`、`adopt apply`、`adopt diff`、`adopt verify`、`adopt upgrade`、`adopt remove` |
 | 把多种 AI 工具接到同一套治理基线 | `connect`、`doctor` |
 | 把个人机器偏好与密钥从共享配置中隔离出来 | `config`、`secret` |
 | 跑一条受治理的交付闭环 | `plan`、`run`、`review`、`review-verify` |
@@ -26,7 +26,7 @@
 | 预览 workflow、处理 workspace 或 schema 变更 | `workflow`、`workspace`、`set-ui-theme`、`upgrade` |
 | 生成更低层的宿主资产与 service-host 集成 | `host export`、`host verify`、`host pack`、`repo-ai-governor/service-host` |
 
-如果你只想记一条最重要的路径：大多数 adopter 应先跑 `init`、`doctor`、`adopt apply`，然后再进入 `connect` 和带 trace 的 `run --dry-run`。
+如果你只想记一条最重要的路径：大多数 adopter 应先跑 `init`、`doctor`、`adopt bootstrap`，然后把 `check` 保留为显式的更广治理 follow-up，再进入 `connect` 和带 trace 的 `run --dry-run`。
 
 ## 从这里开始
 
@@ -69,22 +69,35 @@ pnpm exec repo-ai-governor doctor --output json
 pnpm exec repo-ai-governor check --output json
 ```
 
-### 方式 C：给真实 adopter 仓库应用受管 baseline
+### 方式 C：给真实 adopter 仓库跑受管 quickstart
 
-当 bootstrap 通过后，优先使用受管安装，而不是手工复制宿主资产。
+当基础环境 bootstrap 成功后，优先使用受管安装 quickstart，而不是手工复制宿主资产。
 
 ```bash
 pnpm exec repo-ai-governor adopt list --output json
-pnpm exec repo-ai-governor adopt apply adopter-complete --repo . --hosts codex,claude-code,github-copilot --output json
-pnpm exec repo-ai-governor adopt verify --repo . --output json
+pnpm exec repo-ai-governor adopt bootstrap --repo . --hosts codex,claude-code,github-copilot --output json
+pnpm exec repo-ai-governor check --output json
 ```
 
 跑完之后你应该看到：
 
-1. `init` 能完成一轮引导式初始化。
-2. `doctor` 和 `check` 会输出可读或机器可读事实，而不是直接失败。
-3. `adopt apply` 会把受管安装元数据写到 `.repo-ai-governor/adoption/installations/**`。
-4. `adopt verify` 会成为后续证明这套 baseline 仍然健康的正式入口。
+1. `adopt bootstrap` 会按固定顺序执行 `init -> bootstrap doctor preflight -> adopt apply -> adopt verify`。
+2. 如果省略 selector，bootstrap 会默认选用官方内置 pack；显式 selector 则复用现有的 pack-id/profile-alias 规则，并在歧义时保持 fail-closed。
+3. bootstrap 产出的 init/bootstrap-doctor/bootstrap-summary 诊断是增量 hand-off 产物；canonical install truth 仍然是 install receipt 与 `adopt verify` summary。
+4. 只有“恰好匹配且当前干净”的旧安装会被 clean rerun 复用；一旦出现 drift 或 pack/profile 不匹配，就会把你导回 `adopt diff/upgrade/remove`。
+5. `check` 仍然是安装后的显式更广治理 follow-up，不会被折叠进 install 成功结果。
+
+如果你是有意选择 `self-host-complete` 并且使用 `workspace_mode=repo_local`，还会多出一层边界：
+
+```bash
+pnpm exec repo-ai-governor adopt bootstrap --adoption-profile self-host-complete --repo . --workspace-mode repo_local --hosts codex --output json
+pnpm exec repo-ai-governor check --output json
+```
+
+1. 新鲜的 `adopt verify` 结果会在 repo-local governance、product-direction 或 execution starter placeholder 仍未触碰时给出 warning。
+2. 这些 warning 只属于 `self-host-complete + repo_local`；默认的 `adopter-complete` 路径不会因此被降级。
+3. `adopt verify` 现在还会对未触碰的 self-host starter placeholder 暴露 `execution_preflight_signal=blocked` warning；在无人值守的 self-host 执行前，应把它当成硬阻断。
+4. 当目标仓库开始编写自己的 repo-local 真值后，`check` 仍然是显式的更广治理 follow-up。
 
 ## 第一条成功工作流
 
@@ -130,7 +143,7 @@ pnpm exec repo-ai-governor connect --tools codex --output pretty
 
 | 要完成的事 | 推荐命令 |
 |---|---|
-| 安装或刷新一套受治理仓库 baseline | `adopt apply`、`adopt verify`、`adopt diff`、`adopt upgrade`、`adopt remove` |
+| 安装或刷新一套受治理仓库 baseline | `adopt bootstrap`、`adopt verify`、`adopt diff`、`adopt upgrade`、`adopt remove` |
 | 给一个仓库接多种 AI 工具 | `connect`、`doctor --adapters --fix`、`doctor --adapters` |
 | 跑通第一条 plan -> run -> review 闭环 | `plan`、`run --dry-run --trace`、`review`、`review-verify` |
 | 使用对话式 shell | `repo-ai-governor --output pretty`、`resume` |
@@ -158,7 +171,7 @@ pnpm exec repo-ai-governor connect --tools codex --output pretty
 
 1. `dist-binary` 证明的是 CLI/runtime 行为，不是 packaged install 行为。
 2. `tgz` 是仍需访问 npm registry 的联网 packaged install 演练，不是离线自包含安装器。
-3. 内置 `adopt apply` 才是默认整仓安装路径；更低层的 `host export` 和 `host pack` 只是 follow-up surface，不是默认 installer story。
+3. 内置 `adopt bootstrap` 才是首选整仓 quickstart；`adopt apply` 保留为显式的更低层安装 surface，而 `host export` 与 `host pack` 只是 follow-up surface，不是默认 installer story。
 4. VS Code 目前支持的是 built-source companion 和本地 VSIX 打包路径，不是 Marketplace 发布路径。
 5. Desktop 目前仍是 built-source 的 desktop foundation-only 路径，不是独立桌面安装器，也不是独立桌面产品。
 6. `local-model` 是受能力约束的 fallback surface，不是 primary remote adapter 的等价替代。
