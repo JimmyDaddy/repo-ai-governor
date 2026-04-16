@@ -27,7 +27,7 @@ export class WorkspaceResolver {
    */
   public resolve(options: WorkspaceResolverOptions): ResolvedWorkspace {
     const repositoryRoot = options.repositoryRootOverride
-      ? resolve(options.repositoryRootOverride)
+      ? this.resolveAbsolutePath(options.repositoryRootOverride, options.currentWorkingDirectory)
       : this.resolveRepositoryRoot(options.currentWorkingDirectory);
     const runtimeOverrides = options.runtimeOverrides ?? {};
     const configWorkspace = options.config?.workspace;
