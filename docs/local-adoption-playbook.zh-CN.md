@@ -13,6 +13,21 @@
 
 `docs/support-matrix.zh-CN.md` 仍然是正式支持真值；这份文档是面向操作者的 runbook。
 
+## 一屏看懂默认路径
+
+大多数 adopter 一开始不需要把所有模式和命令全部比较一遍。
+
+如果你只想先走最短、最稳妥的默认路径，就按下面做：
+
+1. 想先无安装演练，用 `dist-binary`；要接入真实 `pnpm` 仓库，用 `path`。
+2. 跑 `init`。
+3. 跑 `doctor`。
+4. 跑 `adopt bootstrap`。
+5. 跑 `check`。
+6. 再跑 `connect`，然后执行 `run --dry-run --trace`。
+
+后面的章节再展开解释：什么时候该换路径，以及如何解读这些命令产出的 diagnostics。
+
 ## 1. 先选最轻的安装路径
 
 优先选择“刚好能证明你关心的行为”的最小路径。

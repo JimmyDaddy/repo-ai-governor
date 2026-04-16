@@ -13,6 +13,21 @@ If you maintain or release `repo-ai-governor` itself, use `docs/maintainer-valid
 
 `docs/support-matrix.md` remains the formal support truth. This playbook is the operator runbook.
 
+## Default Path In One Screen
+
+Most adopters do not need to compare every mode and every command first.
+
+If you want the shortest safe default path, do this:
+
+1. Use `dist-binary` for a no-install rehearsal, or `path` for a real `pnpm` repository.
+2. Run `init`.
+3. Run `doctor`.
+4. Run `adopt bootstrap`.
+5. Run `check`.
+6. Run `connect`, then `run --dry-run --trace`.
+
+The rest of this document explains when to choose a different path and how to interpret the resulting diagnostics.
+
 ## 1. Choose The Lightest Install Path
 
 Start with the smallest thing that proves the behavior you care about.
