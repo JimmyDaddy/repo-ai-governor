@@ -1433,6 +1433,20 @@ describe('CLI output contract integration', () => {
     expect(stdout).not.toContain('/verify');
   });
 
+  it('renders top-level help with alias-only deliver discoverability in zh-CN', async () => {
+    const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false);
+
+    const exitCode = await runCli(['node', 'repo-ai-governor', '--locale', 'zh-CN', '--help'], io);
+    const stdout = stdoutBuffer.join('');
+
+    expect(exitCode).toBe(0);
+    expect(stderrBuffer.join('')).toBe('');
+    expect(stdout).toContain('受治理能力目录：');
+    expect(stdout).toContain('[对话优先]           交付:');
+    expect(stdout).toContain('/review verify');
+    expect(stdout).not.toContain('/deliver');
+  });
+
   it('renders top-level set-ui-theme help with direct examples', async () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo(false);
 

@@ -32,6 +32,12 @@ const SESSION_MAIN_OVERVIEW_PATTERNS = [
 const SESSION_MAIN_DETAIL_PATTERNS = [
   /tell me about/iu,
   /what is/iu,
+  /what does/iu,
+  /what can.*do/iu,
+  /tell me what.*does/iu,
+  /when should (?:i|we) use/iu,
+  /why should (?:i|we) use/iu,
+  /how should (?:i|we) use/iu,
   /explain/iu,
   /how does/iu,
   /介绍一下/u,
@@ -44,6 +50,10 @@ const SESSION_MAIN_EXAMPLE_PATTERNS = [
   /example/iu,
   /examples/iu,
   /how to use/iu,
+  /how do (?:i|we)/iu,
+  /show me how/iu,
+  /what steps/iu,
+  /walk me through/iu,
   /sample prompt/iu,
   /示例/u,
   /例子/u,
@@ -71,7 +81,35 @@ const SESSION_MAIN_REMOVED_VERIFY_PATTERNS = [
   /校验/u,
 ] as const;
 
+const SESSION_MAIN_DELIVER_DIRECT_REFERENCE_PATTERNS = [
+  /\/deliver/iu,
+  /\bdeliver\b(?=\s*(?:$|[?.!,]))/iu,
+  /\bdeliver\b(?=\s+(?:capability|entry|alias|surface|examples?|usage|work|works|does|do)\b)/iu,
+  /\bdeliver\b.*\b(?:governed path|requirement-to-cr)\b/iu,
+  /\b(?:governed path|requirement-to-cr)\b.*\bdeliver\b/iu,
+  /(?:交付).*(?:能力|做什么|是什么|入口)/u,
+  /(?:能力|做什么|是什么|入口).*(?:交付)/u,
+] as const;
+
+const SESSION_MAIN_DELIVER_PARENT_DOMAIN_REFERENCE_PATTERNS = [
+  /\bdelivery orchestration\b/iu,
+  /\brequirement-to-cr\b/iu,
+  /需求.*(?:到|至).*(?:cr|评审)/iu,
+] as const;
+
+const SESSION_MAIN_WORKFLOW_DIRECT_REFERENCE_PATTERNS = [
+  /\/workflow/iu,
+  /\bworkflow\b(?=\s*(?:$|[?.!,]))/iu,
+  /\bworkflow\b(?=\s+(?:preview|template|capability|entry|examples?|usage|work|works|does|do)\b)/iu,
+  /(?:流程).*(?:预览|模板|能力|做什么|是什么|入口)/u,
+  /(?:预览|模板|能力|做什么|是什么|入口).*(?:流程)/u,
+] as const;
+
 const SESSION_MAIN_CAPABILITY_REFERENCE_RULES = [
+  {
+    capabilityId: SESSION_MAIN_CAPABILITY_ID.DELIVER,
+    patterns: SESSION_MAIN_DELIVER_DIRECT_REFERENCE_PATTERNS,
+  },
   {
     capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW_VERIFY,
     patterns: [/review[- ]verify/iu, /\/review verify/iu, /复核/u, /cr verify/iu],
@@ -101,7 +139,7 @@ const SESSION_MAIN_CAPABILITY_REFERENCE_RULES = [
   },
   {
     capabilityId: SESSION_MAIN_CAPABILITY_ID.WORKFLOW,
-    patterns: [/\bworkflow\b/iu, /流程/u],
+    patterns: SESSION_MAIN_WORKFLOW_DIRECT_REFERENCE_PATTERNS,
   },
   {
     capabilityId: SESSION_MAIN_CAPABILITY_ID.PLAN,
@@ -123,11 +161,19 @@ const SESSION_MAIN_CAPABILITY_REFERENCE_RULES = [
   },
 ] as const;
 
+const SESSION_MAIN_DELIVER_CHILD_CAPABILITY_IDS = new Set<SessionMainCapabilityId>([
+  SESSION_MAIN_CAPABILITY_ID.PLAN,
+  SESSION_MAIN_CAPABILITY_ID.REVIEW,
+  SESSION_MAIN_CAPABILITY_ID.REVIEW_VERIFY,
+  SESSION_MAIN_CAPABILITY_ID.RUN,
+]);
+
 const SESSION_MAIN_OVERVIEW_LIST_CAPABILITY_IDS = [
   SESSION_MAIN_CAPABILITY_ID.CONNECT,
   SESSION_MAIN_CAPABILITY_ID.BRANCH_SWITCH,
   SESSION_MAIN_CAPABILITY_ID.DOCTOR,
   SESSION_MAIN_CAPABILITY_ID.WORKFLOW,
+  SESSION_MAIN_CAPABILITY_ID.DELIVER,
   SESSION_MAIN_CAPABILITY_ID.PLAN,
   SESSION_MAIN_CAPABILITY_ID.REVIEW,
   SESSION_MAIN_CAPABILITY_ID.REVIEW_VERIFY,
@@ -280,7 +326,7 @@ export class LocalOrchestrationServiceSessionMainCapabilityExplainer {
       '',
       ...capabilityViews.map(
         (capabilityView) =>
-          `- \`${capabilityView.suggestedSlashCommand}\` ${capabilityView.title}: ${capabilityView.summary} ${this.formatOverviewAvailabilitySuffix(
+          `- ${this.formatCapabilityEntryBadge(capabilityView, translate)} ${capabilityView.title}: ${capabilityView.summary} ${this.formatOverviewAvailabilitySuffix(
             capabilityView.capabilityId,
             availabilityByCapabilityId,
             translate,
@@ -402,11 +448,7 @@ export class LocalOrchestrationServiceSessionMainCapabilityExplainer {
       '',
       capabilityView.detail,
       '',
-      `${translate(
-        '__internal.label.slash',
-        'Suggested slash command:',
-        '建议的 slash command：',
-      )} \`${capabilityView.suggestedSlashCommand}\``,
+      ...this.buildPrimaryEntryLines(capabilityView, translate),
       `${translate('__internal.label.execution', 'Execution path:', '执行路径：')} ${executionPathSummary}`,
       ...(interactionLines.length > 0 ? interactionLines : []),
       ...(availabilityLines.length > 0 ? ['', ...availabilityLines] : []),
@@ -419,7 +461,7 @@ export class LocalOrchestrationServiceSessionMainCapabilityExplainer {
             translate('__internal.label.related', 'Related capabilities:', '相关能力：'),
             ...relatedCapabilityViews.map(
               (relatedCapabilityView) =>
-                `- \`${relatedCapabilityView.suggestedSlashCommand}\` ${relatedCapabilityView.title}: ${relatedCapabilityView.summary}`,
+                `- ${this.formatCapabilityEntryBadge(relatedCapabilityView, translate)} ${relatedCapabilityView.title}: ${relatedCapabilityView.summary}`,
             ),
           ]
         : []),
@@ -469,11 +511,7 @@ export class LocalOrchestrationServiceSessionMainCapabilityExplainer {
       '',
       ...capabilityView.examplePrompts.map((examplePrompt) => `- ${examplePrompt}`),
       '',
-      `${translate(
-        '__internal.label.slash',
-        'Suggested slash command:',
-        '建议的 slash command：',
-      )} \`${capabilityView.suggestedSlashCommand}\``,
+      ...this.buildPrimaryEntryLines(capabilityView, translate),
       ...(availabilityLines.length > 0 ? ['', ...availabilityLines] : []),
     ].join('\n');
 
@@ -515,11 +553,7 @@ export class LocalOrchestrationServiceSessionMainCapabilityExplainer {
       ...capabilityViews.flatMap((capabilityView) => [
         `### ${capabilityView.title}`,
         capabilityView.summary,
-        `${translate(
-          '__internal.label.slash',
-          'Suggested slash command:',
-          '建议的 slash command：',
-        )} \`${capabilityView.suggestedSlashCommand}\``,
+        ...this.buildPrimaryEntryLines(capabilityView, translate),
         `${translate('__internal.label.execution', 'Execution path:', '执行路径：')} ${
           capabilityView.backingExecution === 'templated_ai_workflow'
             ? translate(
@@ -573,7 +607,9 @@ export class LocalOrchestrationServiceSessionMainCapabilityExplainer {
     capabilityViews: readonly {
       capabilityId: SessionMainCapabilityId;
       title: string;
+      primaryEntry: 'role_mention' | 'slash_command' | 'cli_command' | 'conversational_answer';
       suggestedSlashCommand: string;
+      examplePrompts: readonly string[];
     }[],
     limit: number,
     availabilityByCapabilityId: ReadonlyMap<
@@ -599,25 +635,29 @@ export class LocalOrchestrationServiceSessionMainCapabilityExplainer {
       }
 
       const availability = availabilityByCapabilityId.get(capabilityView.capabilityId);
-      const targetSlashCommand =
+      const shouldRedirectToConnect =
+        capabilityView.primaryEntry !== 'conversational_answer' &&
         availability?.status === SESSION_MAIN_CAPABILITY_AVAILABILITY_STATUS.SETUP_REQUIRED &&
-        connectView
-          ? connectView.suggestedSlashCommand
+        connectView;
+      const target = shouldRedirectToConnect
+        ? connectView.suggestedSlashCommand
+        : capabilityView.primaryEntry === 'conversational_answer'
+          ? (capabilityView.examplePrompts[0] ?? capabilityView.title)
           : capabilityView.suggestedSlashCommand;
-      const label =
-        availability?.status === SESSION_MAIN_CAPABILITY_AVAILABILITY_STATUS.SETUP_REQUIRED &&
-        connectView
-          ? connectView.title
-          : capabilityView.title;
+      const label = shouldRedirectToConnect ? connectView.title : capabilityView.title;
 
-      if (seenTargets.has(targetSlashCommand)) {
+      if (seenTargets.has(target)) {
         continue;
       }
-      seenTargets.add(targetSlashCommand);
+      seenTargets.add(target);
       suggestions.push({
         label,
-        target: targetSlashCommand,
-        suggestedSlashCommand: targetSlashCommand,
+        target,
+        ...(capabilityView.primaryEntry === 'conversational_answer'
+          ? {}
+          : {
+              suggestedSlashCommand: target,
+            }),
       });
     }
 
@@ -636,6 +676,10 @@ export class LocalOrchestrationServiceSessionMainCapabilityExplainer {
       fallbackChinese?: string,
     ) => string,
   ): string {
+    if (this.shouldHideAvailabilityOverlay(capabilityId)) {
+      return '';
+    }
+
     const availability = availabilityByCapabilityId.get(capabilityId);
     if (!availability) {
       return '';
@@ -694,6 +738,59 @@ export class LocalOrchestrationServiceSessionMainCapabilityExplainer {
     return lines;
   }
 
+  private buildPrimaryEntryLines(
+    capabilityView: {
+      primaryEntry: 'role_mention' | 'slash_command' | 'cli_command' | 'conversational_answer';
+      suggestedSlashCommand: string;
+    },
+    translate: (
+      translationKey: string,
+      fallbackEnglish?: string,
+      fallbackChinese?: string,
+    ) => string,
+  ): string[] {
+    if (capabilityView.primaryEntry === 'conversational_answer') {
+      return [
+        `${translate('__internal.label.primaryEntry', 'Primary entry:', '主入口：')} ${translate(
+          '__internal.entry.conversationalAnswer',
+          'direct chat request',
+          '直接对话请求',
+        )}`,
+        `${translate(
+          '__internal.label.alias',
+          'Reserved discoverability alias:',
+          '预留 discoverability alias：',
+        )} \`${capabilityView.suggestedSlashCommand}\``,
+      ];
+    }
+
+    return [
+      `${translate(
+        '__internal.label.slash',
+        'Suggested slash command:',
+        '建议的 slash command：',
+      )} \`${capabilityView.suggestedSlashCommand}\``,
+    ];
+  }
+
+  private formatCapabilityEntryBadge(
+    capabilityView: {
+      primaryEntry: 'role_mention' | 'slash_command' | 'cli_command' | 'conversational_answer';
+      suggestedSlashCommand: string;
+    },
+    translate: (
+      translationKey: string,
+      fallbackEnglish?: string,
+      fallbackChinese?: string,
+    ) => string,
+  ): string {
+    if (capabilityView.primaryEntry === 'conversational_answer') {
+      return translate('__internal.entry.badge.chatFirst', '[chat-first]', '[对话优先]');
+    }
+
+    return `\`${capabilityView.suggestedSlashCommand}\``;
+  }
+
   private buildAvailabilityLines(
     capabilityId: SessionMainCapabilityId,
     availabilityByCapabilityId: ReadonlyMap<
@@ -706,6 +803,10 @@ export class LocalOrchestrationServiceSessionMainCapabilityExplainer {
       fallbackChinese?: string,
     ) => string,
   ): string[] {
+    if (this.shouldHideAvailabilityOverlay(capabilityId)) {
+      return [];
+    }
+
     const availability = availabilityByCapabilityId.get(capabilityId);
     if (!availability) {
       return [];
@@ -738,6 +839,10 @@ export class LocalOrchestrationServiceSessionMainCapabilityExplainer {
     }
 
     return detailLines;
+  }
+
+  private shouldHideAvailabilityOverlay(capabilityId: SessionMainCapabilityId): boolean {
+    return capabilityId === SESSION_MAIN_CAPABILITY_ID.DELIVER;
   }
 
   private translateAvailabilitySelectionSource(
@@ -853,12 +958,37 @@ export class LocalOrchestrationServiceSessionMainCapabilityExplainer {
   }
 
   private resolveReferencedCapabilityIds(userMessage: string): SessionMainCapabilityId[] {
-    return [
+    const referencedCapabilityIds = [
       ...new Set(
         SESSION_MAIN_CAPABILITY_REFERENCE_RULES.flatMap((rule) =>
           rule.patterns.some((pattern) => pattern.test(userMessage)) ? [rule.capabilityId] : [],
         ),
       ),
+    ];
+    const hasDeliverParentDomainReference = this.matchesAnyPattern(
+      userMessage,
+      SESSION_MAIN_DELIVER_PARENT_DOMAIN_REFERENCE_PATTERNS,
+    );
+
+    if (!hasDeliverParentDomainReference) {
+      return referencedCapabilityIds;
+    }
+
+    const childCapabilityIds = referencedCapabilityIds.filter((capabilityId) =>
+      SESSION_MAIN_DELIVER_CHILD_CAPABILITY_IDS.has(capabilityId),
+    );
+    if (childCapabilityIds.length === 0) {
+      return [...new Set([SESSION_MAIN_CAPABILITY_ID.DELIVER, ...referencedCapabilityIds])];
+    }
+
+    return [
+      ...childCapabilityIds,
+      ...referencedCapabilityIds.filter(
+        (capabilityId) => !SESSION_MAIN_DELIVER_CHILD_CAPABILITY_IDS.has(capabilityId),
+      ),
+      ...(!referencedCapabilityIds.includes(SESSION_MAIN_CAPABILITY_ID.DELIVER)
+        ? [SESSION_MAIN_CAPABILITY_ID.DELIVER]
+        : []),
     ];
   }
 

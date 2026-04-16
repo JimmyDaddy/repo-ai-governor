@@ -142,6 +142,17 @@ describe('CliSessionSlashCommandRegistry', () => {
     expect(suggestions[0]?.command).toBe('/help');
   });
 
+  it('keeps deliver out of public slash discoverability while it remains chat-first', () => {
+    const registry = new CliSessionSlashCommandRegistry();
+
+    const suggestions = registry.suggest('/', translate, {
+      surface: 'full',
+    });
+
+    expect(suggestions.map((suggestion) => suggestion.command)).not.toContain('/deliver');
+    expect(registry.findByCommand('/deliver', translate)).toBeNull();
+  });
+
   it('surfaces nested workspace actions when the query narrows under /workspace', () => {
     const registry = new CliSessionSlashCommandRegistry();
 

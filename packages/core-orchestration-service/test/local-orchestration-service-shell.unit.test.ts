@@ -28,7 +28,15 @@ import {
   MemoryStoreEngine,
   standardizeError,
 } from '@repo-ai-governor/shared';
-import { LocalOrchestrationServiceShell } from '../src/index.js';
+import {
+  LocalOrchestrationServiceShell,
+  SESSION_DELIVERY_REQUIREMENT_REVIEW_OUTCOME,
+  SESSION_DELIVERY_WORKFLOW_CAPABILITY_ID,
+  SESSION_DELIVERY_WORKFLOW_CONTEXT_KEY,
+  SESSION_DELIVERY_WORKFLOW_PHASE,
+  SESSION_DELIVERY_WORKFLOW_VERSION,
+  SESSION_MAIN_CAPABILITY_ID,
+} from '../src/index.js';
 
 function createGraphPlan() {
   const compiler = new ProcessCompiler();
@@ -1326,6 +1334,47 @@ describe('core-orchestration-service local shell', () => {
           }),
         ]),
       );
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('projects delivery workflow presenter metadata into the canonical TURN_COMPLETED payload', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+    });
+
+    try {
+      const started = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
+      await orchestrationService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: 'Help me deliver this requirement through the governed path.',
+        metadata: {
+          locale: 'en-US',
+        },
+      });
+      const subscription = await orchestrationService.subscribeSession({
+        sessionId: started.session.sessionId,
+      });
+      const completedEvent = subscription.events.find(
+        (event) => event.type === OrchestrationSessionEventType.TURN_COMPLETED,
+      );
+
+      expect(completedEvent?.payload).toMatchObject({
+        role: OrchestrationSessionTranscriptRole.ASSISTANT,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        responseMode: 'answer',
+        executionIntent: 'deliver.requirement_to_cr',
+        turn_delivery_phase: SESSION_DELIVERY_WORKFLOW_PHASE.REQUIREMENT_CAPTURE,
+        turn_delivery_pending_action: 'capture_requirement_or_attach_approved_brief',
+        turn_delivery_selected_stream: null,
+        turn_delivery_result_summary: null,
+      });
+      expect(completedEvent?.payload.turn_delivery_related_artifact_paths).toEqual([]);
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }
@@ -2784,6 +2833,138 @@ describe('core-orchestration-service local shell', () => {
       });
 
       expect(resumedResolveTurn).toHaveBeenCalledTimes(1);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('persists delivery workflow state into session context and reloads it on resumed turns', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+    });
+
+    try {
+      const started = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
+      await orchestrationService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: 'Help me deliver this requirement through the governed path.',
+        metadata: {
+          locale: 'en-US',
+        },
+      });
+      const session = await orchestrationService.getSession(started.session.sessionId);
+
+      expect(session?.context[SESSION_DELIVERY_WORKFLOW_CONTEXT_KEY]).toEqual(
+        expect.objectContaining({
+          capabilityId: SESSION_DELIVERY_WORKFLOW_CAPABILITY_ID.DELIVER,
+          currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.REQUIREMENT_CAPTURE,
+          pendingAction: 'capture_requirement_or_attach_approved_brief',
+        }),
+      );
+
+      const resumedResolveTurn = vi.fn(async (context) => {
+        expect(context.deliveryWorkflowState).toEqual(
+          expect.objectContaining({
+            capabilityId: SESSION_DELIVERY_WORKFLOW_CAPABILITY_ID.DELIVER,
+            currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.REQUIREMENT_CAPTURE,
+            pendingAction: 'capture_requirement_or_attach_approved_brief',
+          }),
+        );
+        return {
+          responseMode: 'answer' as const,
+          interactionMode: 'direct_answer' as const,
+          assistantDelta: 'Resumed the governed deliver workflow.',
+          assistantMessage: 'Resumed the governed deliver workflow.',
+          executionIntent: 'deliver.requirement_to_cr',
+          requiresConfirmation: false,
+          selectedSurface: 'codex',
+          selectedBy: 'session.main.router.delivery_workflow.start',
+          sessionRoutingPreferenceApplied: false,
+          referencedCapabilityIds: [SESSION_MAIN_CAPABILITY_ID.DELIVER],
+          skillId: 'skill.deliver.workflow',
+          skillVersion: '2026-04-08',
+          handoffExecutionMode: 'direct_execute' as const,
+          deliveryWorkflowState: {
+            version: SESSION_DELIVERY_WORKFLOW_VERSION,
+            workflowId:
+              context.deliveryWorkflowState?.workflowId ?? 'delivery-workflow-shell-resumed-001',
+            capabilityId: SESSION_DELIVERY_WORKFLOW_CAPABILITY_ID.DELIVER,
+            currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.SOLUTION_REVIEW_PENDING,
+            requirementReviewGate: {
+              outcome: SESSION_DELIVERY_REQUIREMENT_REVIEW_OUTCOME.EXPLICIT_APPROVAL,
+              evidenceArtifactPath: '.repo-ai-governor/context/evidence/approval.md',
+            },
+            approvedDeliveryBriefPath: '.repo-ai-governor/context/durable/approved-brief.md',
+            pendingAction: 'review_solution_artifact',
+            selectedTargetStream: 'stream-project-110-sprint-001',
+            relatedArtifactPaths: ['.repo-ai-governor/context/durable/approved-brief.md'],
+            childWorkflowBacklinks: [
+              {
+                capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW,
+                artifactPath: '.repo-ai-governor/context/review/approved-requirement.md',
+                summary: 'Requirement review receipt.',
+              },
+            ],
+            blockedReason: null,
+            resultSummary: 'Approved durable brief exported.',
+          },
+          invokedRoleIds: [],
+          subagentCount: 0,
+        };
+      });
+      const resumedService = new LocalOrchestrationServiceShell({
+        workspaceRoot: temporaryRoot,
+        sessionMainSupervisorRuntime: {
+          resolveTurn: resumedResolveTurn,
+        },
+      });
+      const resumed = await resumedService.resumeSession({
+        sessionId: started.session.sessionId,
+      });
+
+      expect(resumed.session.context[SESSION_DELIVERY_WORKFLOW_CONTEXT_KEY]).toEqual(
+        expect.objectContaining({
+          capabilityId: SESSION_DELIVERY_WORKFLOW_CAPABILITY_ID.DELIVER,
+          currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.REQUIREMENT_CAPTURE,
+        }),
+      );
+
+      await resumedService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: 'Summarize the current session state for me.',
+      });
+      const resumedSession = await resumedService.getSession(started.session.sessionId);
+      const resumedSubscription = await resumedService.subscribeSession({
+        sessionId: started.session.sessionId,
+      });
+      const resumedCompletedEvent = resumedSubscription.events
+        .filter((event) => event.type === OrchestrationSessionEventType.TURN_COMPLETED)
+        .at(-1);
+
+      expect(resumedResolveTurn).toHaveBeenCalledTimes(1);
+      expect(resumedSession?.context[SESSION_DELIVERY_WORKFLOW_CONTEXT_KEY]).toEqual(
+        expect.objectContaining({
+          capabilityId: SESSION_DELIVERY_WORKFLOW_CAPABILITY_ID.DELIVER,
+          currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.SOLUTION_REVIEW_PENDING,
+          pendingAction: 'review_solution_artifact',
+          approvedDeliveryBriefPath: '.repo-ai-governor/context/durable/approved-brief.md',
+        }),
+      );
+      expect(resumedCompletedEvent?.payload).toMatchObject({
+        executionIntent: 'deliver.requirement_to_cr',
+        turn_delivery_phase: SESSION_DELIVERY_WORKFLOW_PHASE.SOLUTION_REVIEW_PENDING,
+        turn_delivery_pending_action: 'review_solution_artifact',
+        turn_delivery_selected_stream: 'stream-project-110-sprint-001',
+        turn_delivery_result_summary: 'Approved durable brief exported.',
+      });
+      expect(resumedCompletedEvent?.payload.turn_delivery_related_artifact_paths).toEqual([
+        '.repo-ai-governor/context/durable/approved-brief.md',
+      ]);
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }

@@ -57,10 +57,12 @@ import {
   type StandardizedError,
   standardizeError,
 } from '@repo-ai-governor/shared';
+import { LocalOrchestrationServiceSessionDeliveryWorkflowRuntime } from './local-orchestration-service-session-delivery-workflow-runtime.js';
 import { LocalOrchestrationServiceSessionMainAgentDispatcher } from './local-orchestration-service-session-main-agent-dispatcher.js';
 import { ProviderContinuationSessionRuntime } from './provider-continuation-session-runtime.js';
 import type {
   LocalOrchestrationServicePublishEventRequest,
+  SessionDeliveryWorkflowSessionState,
   SessionMainSupervisorRuntimeContract,
   SessionMainSupervisorStreamEvent,
 } from './types/index.js';
@@ -106,6 +108,8 @@ export class LocalOrchestrationServiceSessionRuntime {
   private readonly nowProvider: () => Date;
   private readonly memoryProviderRegistry: MemoryProviderRegistry;
   private readonly mainAgentDispatcher: LocalOrchestrationServiceSessionMainAgentDispatcher;
+  private readonly deliveryWorkflowSessionRuntime =
+    new LocalOrchestrationServiceSessionDeliveryWorkflowRuntime();
   private readonly providerContinuationSessionRuntime = new ProviderContinuationSessionRuntime();
   private memoryProviderStatePromise: Promise<LocalOrchestrationServiceSessionMemoryProviderState> | null =
     null;
@@ -289,6 +293,9 @@ export class LocalOrchestrationServiceSessionRuntime {
         providerContinuationState: this.providerContinuationSessionRuntime.readSessionState(
           existingSession.context,
         ),
+        deliveryWorkflowState: this.deliveryWorkflowSessionRuntime.readSessionState(
+          existingSession.context,
+        ),
         publishStreamEvent: async (streamEvent) => {
           emittedStreamDeltaCount += 1;
           await appendSessionEvent({
@@ -332,6 +339,14 @@ export class LocalOrchestrationServiceSessionRuntime {
           this.providerContinuationSessionRuntime.createContextPatch(
             currentContext,
             dispatchResult.providerContinuationMutations,
+          ),
+        );
+      }
+      if (Object.hasOwn(dispatchResult, 'deliveryWorkflowState')) {
+        await updateSessionContextWithLatest((currentContext) =>
+          this.deliveryWorkflowSessionRuntime.createContextPatch(
+            currentContext,
+            dispatchResult.deliveryWorkflowState ?? null,
           ),
         );
       }
@@ -451,6 +466,7 @@ export class LocalOrchestrationServiceSessionRuntime {
                 ),
               }
             : {}),
+          ...this.createDeliveryWorkflowTurnPayload(dispatchResult.deliveryWorkflowState ?? null),
         },
       });
       sessionProjectionContextPatch[SESSION_CONTEXT_PREVIEW_SUMMARY_KEY] =
@@ -1101,6 +1117,29 @@ export class LocalOrchestrationServiceSessionRuntime {
             },
           }
         : {}),
+    };
+  }
+
+  /**
+   * Projects presenter-safe delivery workflow summary fields into TURN_COMPLETED payloads.
+   *
+   * Why this exists:
+   * session shell must consume orchestration-owned delivery phase truth from shared-session
+   * metadata instead of inferring it from assistant prose or local presenter heuristics.
+   */
+  private createDeliveryWorkflowTurnPayload(
+    deliveryWorkflowState: SessionDeliveryWorkflowSessionState | null,
+  ): Record<string, unknown> {
+    if (!deliveryWorkflowState) {
+      return {};
+    }
+
+    return {
+      turn_delivery_phase: deliveryWorkflowState.currentPhase,
+      turn_delivery_pending_action: deliveryWorkflowState.pendingAction,
+      turn_delivery_related_artifact_paths: [...deliveryWorkflowState.relatedArtifactPaths],
+      turn_delivery_selected_stream: deliveryWorkflowState.selectedTargetStream,
+      turn_delivery_result_summary: deliveryWorkflowState.resultSummary,
     };
   }
 

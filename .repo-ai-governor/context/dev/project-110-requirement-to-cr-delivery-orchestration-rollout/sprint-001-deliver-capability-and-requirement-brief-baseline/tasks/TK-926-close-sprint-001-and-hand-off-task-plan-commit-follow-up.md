@@ -1,6 +1,6 @@
 # TK-926 close sprint-001 and hand off task-plan commit follow-up
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-16
 - Owner: AI-Agent
 - Priority: P1
@@ -41,21 +41,26 @@
 
 ## 7. Development Verification
 
-1. 待执行：按任务范围补充 fast/targeted verification。
+1. pnpm run check
 2. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/tasks" --task-id TK-926
 
 ## 8. Delivery Verification
 
-1. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/tasks" --task-id TK-926
-2. node ./scripts/governance/check-task-required-inputs.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/tasks" --task-id TK-926
-3. node ./scripts/governance/check-task-ledger-sync.js
-4. node ./scripts/governance/check-sprint-plan-status-sync.js
+1. pnpm run check
+2. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/tasks" --task-id TK-926
+3. node ./scripts/governance/check-task-required-inputs.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/tasks" --task-id TK-926
+4. node ./scripts/governance/check-task-ledger-sync.js
+5. node ./scripts/governance/check-sprint-plan-status-sync.js
+6. node ./scripts/governance/check-worktree-review-target.js
 
 ## 9. 执行记录
 
 1. 2026-04-16：任务创建，状态初始化为 `planned`。
+2. 2026-04-17：`CR-019` fresh reviewer clean round 已返回无 actionable finding，`TK-925` 同步切换为 `completed`；当前任务激活为 `in_progress`，开始执行 sprint-001 closeout、`pnpm run check` 边界 gate 与 sprint-002 activation handoff。
+3. 2026-04-17：已完成 `DA-926` closeout/handoff packet、artifact dependency reconcile、`pnpm run check` 边界 gate 与 sprint-001 plan/project plan closeout write-back；当前任务切换为 `completed`，下一步在边界 commit 后激活 sprint-002。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. /Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/tasks/DA-926-sprint-001-closeout-and-sprint-002-activation-handoff.md
+2. /Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/plan.md
+3. /Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/plan.md

@@ -1,6 +1,6 @@
 # sprint-001-deliver-capability-and-requirement-brief-baseline 计划
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-16
 - Sprint Goal: 冻结 deliver capability、approved durable brief 与 requirement review gate 的第一阶段 baseline
 - Project: `project-110-requirement-to-cr-delivery-orchestration-rollout`
@@ -19,8 +19,8 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-925 | freeze deliver capability and approved durable brief baseline | DA-915 | planned |
-| TK-926 | close sprint-001 and hand off task-plan commit follow-up | TK-925 | planned |
+| TK-925 | freeze deliver capability and approved durable brief baseline | DA-915 | completed |
+| TK-926 | close sprint-001 and hand off task-plan commit follow-up | TK-925 | completed |
 
 ## 3. Exit Criteria
 
@@ -30,3 +30,6 @@
 ## 4. Sprint Notes
 
 1. 默认先从 runtime.orchestration producer truth 开始，不在 sprint-001 抢跑 task-plan commit 或 execution route。
+2. `2026-04-16` 已切换为 active primary stream；本轮先冻结 deliver capability、approved durable brief gate 与 shared-session baseline，再进入 fresh reviewer CR loop。
+3. `2026-04-17` latest fresh reviewer round `CR-019` 已 clean；`TK-925` 切换为 `completed`，`TK-926` 激活为 `in_progress`，开始 sprint-001 closeout 与 sprint-002 activation handoff。
+4. `2026-04-17` 已完成 `DA-926` closeout packet 与 sprint-002 activation handoff 约束写回；当前 sprint status 切换为 `completed`，等待边界 commit 后把 primary execution surface 切到 sprint-002。

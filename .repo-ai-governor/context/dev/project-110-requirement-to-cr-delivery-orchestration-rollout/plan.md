@@ -1,6 +1,6 @@
 # project-110-requirement-to-cr-delivery-orchestration-rollout 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-16
 - Stage Mapping: technical solution rollout
 - Phase Mapping: deliver capability baseline / task-plan commit and backlink projection / execution and governed CR orchestration / discoverability rollout closeout
@@ -20,7 +20,7 @@
 
 ## 2.1 sprint-001-deliver-capability-and-requirement-brief-baseline
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 冻结 deliver capability、approved durable brief 与 requirement review gate 的第一阶段 baseline
 - Task Package: `TK-925、TK-926`
 
@@ -46,8 +46,8 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 | --- | --- | --- | --- | --- | --- |
-| TK-925 | sprint-001-deliver-capability-and-requirement-brief-baseline | freeze deliver capability and approved durable brief baseline | runtime contract baseline | DA-915 | planned |
-| TK-926 | sprint-001-deliver-capability-and-requirement-brief-baseline | close sprint-001 and hand off task-plan commit follow-up | governance handoff | TK-925 | planned |
+| TK-925 | sprint-001-deliver-capability-and-requirement-brief-baseline | freeze deliver capability and approved durable brief baseline | runtime contract baseline | DA-915 | completed |
+| TK-926 | sprint-001-deliver-capability-and-requirement-brief-baseline | close sprint-001 and hand off task-plan commit follow-up | governance handoff | TK-925 | completed |
 | TK-927 | sprint-002-task-plan-commit-and-backlink-projection | land task plan preview-commit bridge and durable backlink projection | runtime orchestration plus durable storage | DA-915 | planned |
 | TK-928 | sprint-002-task-plan-commit-and-backlink-projection | close sprint-002 and hand off execution-orchestration follow-up | governance handoff | TK-927 | planned |
 | TK-929 | sprint-003-execution-and-governed-cr-orchestration | route task-driven execution and governed CR through deliver orchestration | runtime execution and review orchestration | DA-915 | planned |
@@ -70,6 +70,9 @@
 ## 6. 里程碑记录
 
 1. 2026-04-16：创建 project-110-requirement-to-cr-delivery-orchestration-rollout 全量执行流骨架，覆盖 sprint-001-deliver-capability-and-requirement-brief-baseline、sprint-002-task-plan-commit-and-backlink-projection、sprint-003-execution-and-governed-cr-orchestration、sprint-004-discoverability-rollout-and-project-closeout。
+2. 2026-04-16：激活 `project-110 / sprint-001` 为 active primary stream，`TK-925` 进入 `in_progress`，开始冻结 deliver capability 与 approved durable brief baseline。
+3. 2026-04-17：fresh reviewer `CR-019` clean round 返回无 actionable finding；`TK-925` 切换为 `completed`，`TK-926` 激活为 `in_progress`，开始 sprint-001 closeout 与 sprint-002 activation handoff。
+4. 2026-04-17：已完成 `DA-926` closeout packet，project-110 的 sprint-001 正式切换为 `completed`；下一条执行边界固定为 sprint-002 / `TK-927`，将在 sprint-001 boundary commit 后激活。
 
 ## 7. 里程碑记录入口
 

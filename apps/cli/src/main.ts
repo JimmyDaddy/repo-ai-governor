@@ -1537,7 +1537,7 @@ function buildSessionMainCapabilityCatalogHelpText(
     i18n.t('sessionMainCapabilities.helpAppendix.catalogTitle'),
     ...capabilityViews.map(
       (capabilityView) =>
-        `  ${capabilityView.suggestedSlashCommand.padEnd(16)} ${capabilityView.title}: ${capabilityView.summary}`,
+        `  ${formatGovernedCapabilityEntry(capabilityView, i18n).padEnd(16)} ${capabilityView.title}: ${capabilityView.summary}`,
     ),
   ].join('\n');
 }
@@ -1568,9 +1568,11 @@ function buildGovernedCapabilityHelpText(
     (translationKey) => i18n.t(translationKey),
   );
   const executionModeSummary =
-    descriptorView.handoffExecutionMode === SESSION_MAIN_HANDOFF_EXECUTION_MODE.DIRECT_EXECUTE
-      ? i18n.t('sessionMainCapabilities.helpAppendix.executionModes.directExecute')
-      : i18n.t('sessionMainCapabilities.helpAppendix.executionModes.previewConfirm');
+    descriptorView.backingExecution === 'templated_ai_workflow'
+      ? i18n.t('sessionMainCapabilities.helpAppendix.executionModes.aiWorkflow')
+      : descriptorView.handoffExecutionMode === SESSION_MAIN_HANDOFF_EXECUTION_MODE.DIRECT_EXECUTE
+        ? i18n.t('sessionMainCapabilities.helpAppendix.executionModes.directExecute')
+        : i18n.t('sessionMainCapabilities.helpAppendix.executionModes.previewConfirm');
 
   return [
     '',
@@ -1580,7 +1582,14 @@ function buildGovernedCapabilityHelpText(
     `  ${descriptorView.summary}`,
     `  ${descriptorView.detail}`,
     '',
-    `${i18n.t('sessionMainCapabilities.helpAppendix.suggestedSlashCommand')} ${descriptorView.suggestedSlashCommand}`,
+    `${i18n.t('sessionMainCapabilities.helpAppendix.primaryEntry')} ${formatGovernedCapabilityPrimaryEntry(descriptorView, i18n)}`,
+    ...(descriptorView.primaryEntry === 'conversational_answer'
+      ? [
+          `${i18n.t('sessionMainCapabilities.helpAppendix.reservedAlias')} ${descriptorView.suggestedSlashCommand}`,
+        ]
+      : [
+          `${i18n.t('sessionMainCapabilities.helpAppendix.suggestedSlashCommand')} ${descriptorView.suggestedSlashCommand}`,
+        ]),
     `${i18n.t('sessionMainCapabilities.helpAppendix.executionMode')} ${executionModeSummary}`,
     '',
     i18n.t('sessionMainCapabilities.helpAppendix.examplePromptsTitle'),
@@ -1591,11 +1600,46 @@ function buildGovernedCapabilityHelpText(
           i18n.t('sessionMainCapabilities.helpAppendix.relatedCapabilitiesTitle'),
           ...relatedCapabilityViews.map(
             (relatedCapabilityView) =>
-              `  ${relatedCapabilityView.suggestedSlashCommand.padEnd(16)} ${relatedCapabilityView.title}: ${relatedCapabilityView.summary}`,
+              `  ${formatGovernedCapabilityEntry(relatedCapabilityView, i18n).padEnd(16)} ${relatedCapabilityView.title}: ${relatedCapabilityView.summary}`,
           ),
         ]
       : []),
   ].join('\n');
+}
+
+function formatGovernedCapabilityEntry(
+  capabilityView: {
+    primaryEntry: 'role_mention' | 'slash_command' | 'cli_command' | 'conversational_answer';
+    suggestedSlashCommand: string;
+  },
+  i18n: I18nRuntime,
+): string {
+  if (capabilityView.primaryEntry === 'conversational_answer') {
+    return i18n.t('sessionMainCapabilities.helpAppendix.entryBadges.chatFirst');
+  }
+
+  return capabilityView.suggestedSlashCommand;
+}
+
+function formatGovernedCapabilityPrimaryEntry(
+  capabilityView: {
+    primaryEntry: 'role_mention' | 'slash_command' | 'cli_command' | 'conversational_answer';
+    suggestedSlashCommand: string;
+  },
+  i18n: I18nRuntime,
+): string {
+  switch (capabilityView.primaryEntry) {
+    case 'conversational_answer':
+      return i18n.t('sessionMainCapabilities.helpAppendix.primaryEntries.conversationalAnswer');
+    case 'role_mention':
+      return i18n.t('sessionMainCapabilities.helpAppendix.primaryEntries.roleMention');
+    case 'cli_command':
+      return i18n.t('sessionMainCapabilities.helpAppendix.primaryEntries.cliCommand');
+    default:
+      return i18n.t('sessionMainCapabilities.helpAppendix.primaryEntries.slashCommand', {
+        command: capabilityView.suggestedSlashCommand,
+      });
+  }
 }
 
 /**

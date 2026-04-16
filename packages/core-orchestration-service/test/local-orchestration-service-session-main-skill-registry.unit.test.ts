@@ -85,6 +85,210 @@ describe('LocalOrchestrationServiceSessionMainSkillRegistry', () => {
     expect(reviewVerifyPlan).toBeNull();
   });
 
+  it('routes the official English deliver example to the governed deliver workflow', () => {
+    const registry = new LocalOrchestrationServiceSessionMainSkillRegistry();
+
+    const deliverPlan = registry.resolvePlan(
+      'Help me deliver this requirement through the governed path.',
+      {
+        preferredSurface: AdapterSurface.CODEX,
+        configuredRoleMentionPresent: false,
+      },
+    );
+
+    expect(deliverPlan).toEqual(
+      expect.objectContaining({
+        skillId: 'skill.deliver.workflow',
+        executionIntent: 'deliver.requirement_to_cr',
+        suggestedSlashCommand: '/deliver',
+        handoffExecutionMode: 'direct_execute',
+      }),
+    );
+  });
+
+  it('routes the official Chinese deliver example to the governed deliver workflow', () => {
+    const registry = new LocalOrchestrationServiceSessionMainSkillRegistry();
+
+    const deliverPlan = registry.resolvePlan('帮我把这个需求按受治理主路径交付下去。', {
+      preferredSurface: AdapterSurface.CODEX,
+      configuredRoleMentionPresent: false,
+    });
+
+    expect(deliverPlan).toEqual(
+      expect.objectContaining({
+        skillId: 'skill.deliver.workflow',
+        executionIntent: 'deliver.requirement_to_cr',
+        suggestedSlashCommand: '/deliver',
+        handoffExecutionMode: 'direct_execute',
+      }),
+    );
+  });
+
+  it('keeps direct-object English governed-path delivery requests on the deliver workflow even without help-me phrasing', () => {
+    const registry = new LocalOrchestrationServiceSessionMainSkillRegistry();
+
+    const deliverPlan = registry.resolvePlan(
+      'Please deliver this requirement through the governed path.',
+      {
+        preferredSurface: AdapterSurface.CODEX,
+        configuredRoleMentionPresent: false,
+      },
+    );
+
+    expect(deliverPlan).toEqual(
+      expect.objectContaining({
+        skillId: 'skill.deliver.workflow',
+        executionIntent: 'deliver.requirement_to_cr',
+        suggestedSlashCommand: '/deliver',
+        handoffExecutionMode: 'direct_execute',
+      }),
+    );
+  });
+
+  it('keeps explicit requirement-to-cr review starts on the review child capability', () => {
+    const registry = new LocalOrchestrationServiceSessionMainSkillRegistry();
+
+    const reviewPlan = registry.resolvePlan('Start the requirement-to-cr review.', {
+      preferredSurface: AdapterSurface.CODEX,
+      configuredRoleMentionPresent: false,
+    });
+
+    expect(reviewPlan).toEqual(
+      expect.objectContaining({
+        skillId: 'skill.review.code',
+        executionIntent: 'review.start',
+        suggestedSlashCommand: '/review',
+      }),
+    );
+  });
+
+  it('keeps explicit requirement-to-cr planning starts on the plan child capability', () => {
+    const registry = new LocalOrchestrationServiceSessionMainSkillRegistry();
+
+    const planPlan = registry.resolvePlan('Run the requirement-to-cr planning workflow.', {
+      preferredSurface: AdapterSurface.CODEX,
+      configuredRoleMentionPresent: false,
+    });
+
+    expect(planPlan).toEqual(
+      expect.objectContaining({
+        skillId: 'skill.plan.task',
+        executionIntent: 'plan.generate',
+        suggestedSlashCommand: '/plan',
+      }),
+    );
+  });
+
+  it('keeps explicit task-driven execution asks on the run child capability', () => {
+    const registry = new LocalOrchestrationServiceSessionMainSkillRegistry();
+
+    const runPlan = registry.resolvePlan('Run the requirement-to-cr task-driven execution flow.', {
+      preferredSurface: AdapterSurface.CODEX,
+      configuredRoleMentionPresent: false,
+    });
+
+    expect(runPlan).toEqual(
+      expect.objectContaining({
+        skillId: 'skill.run.task',
+        executionIntent: 'run.task',
+        suggestedSlashCommand: '/run',
+      }),
+    );
+  });
+
+  it('does not hijack review requests that only mention requirement-to-cr by name', () => {
+    const registry = new LocalOrchestrationServiceSessionMainSkillRegistry();
+
+    const reviewPlan = registry.resolvePlan('Review the requirement-to-cr design.', {
+      preferredSurface: AdapterSurface.CODEX,
+      configuredRoleMentionPresent: false,
+    });
+
+    expect(reviewPlan).toEqual(
+      expect.objectContaining({
+        skillId: 'skill.review.code',
+        executionIntent: 'review.start',
+        suggestedSlashCommand: '/review',
+      }),
+    );
+  });
+
+  it('does not hijack planning requests that reference delivery orchestration by name', () => {
+    const registry = new LocalOrchestrationServiceSessionMainSkillRegistry();
+
+    const planPlan = registry.resolvePlan(
+      'Plan the requirement-to-cr delivery orchestration rollout.',
+      {
+        preferredSurface: AdapterSurface.CODEX,
+        configuredRoleMentionPresent: false,
+      },
+    );
+
+    expect(planPlan).toEqual(
+      expect.objectContaining({
+        executionIntent: 'plan.generate',
+        suggestedSlashCommand: '/plan',
+      }),
+    );
+  });
+
+  it('does not route generic deliver-the-artifact asks into the requirement-to-cr workflow', () => {
+    const registry = new LocalOrchestrationServiceSessionMainSkillRegistry();
+
+    const reviewFixPlan = registry.resolvePlan('Help me deliver the review fixes.', {
+      preferredSurface: AdapterSurface.CODEX,
+      configuredRoleMentionPresent: false,
+    });
+    const releaseNotesPlan = registry.resolvePlan('Help me deliver the release notes.', {
+      preferredSurface: AdapterSurface.CODEX,
+      configuredRoleMentionPresent: false,
+    });
+    const repositoryCleanupPlan = registry.resolvePlan('Help me deliver the repository cleanup.', {
+      preferredSurface: AdapterSurface.CODEX,
+      configuredRoleMentionPresent: false,
+    });
+    const repoMigrationPlan = registry.resolvePlan('Help me deliver the repo migration.', {
+      preferredSurface: AdapterSurface.CODEX,
+      configuredRoleMentionPresent: false,
+    });
+    const requirementBriefPlan = registry.resolvePlan(
+      'Help me deliver the requirement brief to the team.',
+      {
+        preferredSurface: AdapterSurface.CODEX,
+        configuredRoleMentionPresent: false,
+      },
+    );
+    const requirementSummaryPlan = registry.resolvePlan(
+      'Can you deliver this requirement summary by email?',
+      {
+        preferredSurface: AdapterSurface.CODEX,
+        configuredRoleMentionPresent: false,
+      },
+    );
+    const startReleaseNotesPlan = registry.resolvePlan('开始交付 release notes。', {
+      preferredSurface: AdapterSurface.CODEX,
+      configuredRoleMentionPresent: false,
+    });
+    const startDrillPlan = registry.resolvePlan('发起交付演练。', {
+      preferredSurface: AdapterSurface.CODEX,
+      configuredRoleMentionPresent: false,
+    });
+    const docsUpdatePlan = registry.resolvePlan('Start the requirement-to-cr docs update.', {
+      preferredSurface: AdapterSurface.CODEX,
+      configuredRoleMentionPresent: false,
+    });
+
+    expect(reviewFixPlan?.executionIntent).not.toBe('deliver.requirement_to_cr');
+    expect(releaseNotesPlan).toBeNull();
+    expect(repositoryCleanupPlan).toBeNull();
+    expect(repoMigrationPlan).toBeNull();
+    expect(requirementBriefPlan).toBeNull();
+    expect(requirementSummaryPlan).toBeNull();
+    expect(startReleaseNotesPlan).toBeNull();
+    expect(startDrillPlan).toBeNull();
+    expect(docsUpdatePlan).toBeNull();
+  });
+
   it('keeps the /review ai-workflow prompt on review instead of workflow preview', () => {
     const registry = new LocalOrchestrationServiceSessionMainSkillRegistry();
 
@@ -157,6 +361,72 @@ describe('LocalOrchestrationServiceSessionMainSkillRegistry', () => {
         ],
       }),
     );
+  });
+
+  it('keeps preview-style delivery workflow asks on /workflow instead of starting deliver', () => {
+    const registry = new LocalOrchestrationServiceSessionMainSkillRegistry();
+
+    const workflowPlan = registry.resolvePlan('Start the delivery workflow preview.', {
+      preferredSurface: AdapterSurface.CODEX,
+      configuredRoleMentionPresent: false,
+    });
+
+    expect(workflowPlan).toEqual(
+      expect.objectContaining({
+        skillId: 'skill.workflow.preview',
+        executionIntent: 'workflow.preview',
+        suggestedSlashCommand: '/workflow',
+        handoffExecutionMode: 'direct_execute',
+      }),
+    );
+  });
+
+  it('lets generic delivery workflow asks fall through until requirement-to-cr or governed-path intent is explicit', () => {
+    const registry = new LocalOrchestrationServiceSessionMainSkillRegistry();
+
+    const startWorkflowPlan = registry.resolvePlan(
+      'Start the delivery workflow for the release notes.',
+      {
+        preferredSurface: AdapterSurface.CODEX,
+        configuredRoleMentionPresent: false,
+      },
+    );
+    const runWorkflowPlan = registry.resolvePlan(
+      'Run the delivery workflow for our docs handoff.',
+      {
+        preferredSurface: AdapterSurface.CODEX,
+        configuredRoleMentionPresent: false,
+      },
+    );
+
+    expect(startWorkflowPlan).toBeNull();
+    expect(runWorkflowPlan).toBeNull();
+  });
+
+  it('does not route explain-style governed-path deliver prompts into the requirement-to-cr workflow', () => {
+    const registry = new LocalOrchestrationServiceSessionMainSkillRegistry();
+    const explanationPrompts = [
+      'Tell me about deliver in the governed path.',
+      'Tell me about the deliver governed path capability.',
+      'Show me examples for the deliver governed path capability.',
+      'What does deliver in the governed path do?',
+      'What can deliver in the governed path do?',
+      'When should I use deliver in the governed path?',
+      'Why should I use deliver in the governed path?',
+      'Tell me what deliver in the governed path does.',
+      'How should I use deliver in the governed path?',
+      'How do I deliver this requirement through the governed path?',
+      'What steps should we follow to deliver this requirement through the governed path?',
+      'Could you show me how to deliver this requirement through the governed path?',
+    ];
+
+    for (const prompt of explanationPrompts) {
+      const plan = registry.resolvePlan(prompt, {
+        preferredSurface: AdapterSurface.CODEX,
+        configuredRoleMentionPresent: false,
+      });
+      expect(plan).toBeNull();
+    }
   });
 
   it('derives governed branch-switch metadata from the canonical capability catalog seed', () => {

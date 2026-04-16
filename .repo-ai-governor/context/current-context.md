@@ -2,25 +2,24 @@
 
 ## Primary Stream
 
-- Status: idle
-- Stream: `none`
-- Project: `none`
-- Sprint: `none`
-- Docs: `none`
-- Plan: `none`
-- Tasks: `none`
-- Checklist: `none`
-- CSV: `none`
-- Review: `none`
-- Note: `2026-04-16` 已完成 `project-111 / sprint-001` 的 formal promotion、planned rollout decomposition 与 closeout；当前无 active primary stream，建议后续按顺序激活 `project-112 / sprint-001`，`project-110 / sprint-001` 继续保留为 planned follow-up stream。
+- Status: active
+- Stream: `stream-project-110-sprint-001`
+- Project: `project-110-requirement-to-cr-delivery-orchestration-rollout`
+- Sprint: `sprint-001-deliver-capability-and-requirement-brief-baseline`
+- Docs: `.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout`
+- Plan: `.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/plan.md`
+- Tasks: `.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/tasks/`
+- Checklist: `.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/tasks/checklist.md`
+- CSV: `.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/tasks/tasks.csv`
+- Review: `.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/review/`
+- Note: `2026-04-16` 已完成 execution baseline checkpoint commit `bdfec1f5`；当前正式激活 `project-110 / sprint-001` 作为 active primary stream，`project-112 / sprint-001` 继续保留为 planned follow-up stream。
 
 ## Active Streams
 
-- none
+- `stream-project-110-sprint-001`: project=`project-110-requirement-to-cr-delivery-orchestration-rollout`, sprint=`sprint-001-deliver-capability-and-requirement-brief-baseline`, docs=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout`, plan=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/plan.md`, tasks=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/tasks/`, checklist=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/review/`, status=`in_progress`, role=`primary`
 
 ## Planned Follow-Up Streams
 
-- `stream-project-110-sprint-001`: project=`project-110-requirement-to-cr-delivery-orchestration-rollout`, sprint=`sprint-001-deliver-capability-and-requirement-brief-baseline`, docs=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout`, plan=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/plan.md`, tasks=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/tasks/`, checklist=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/review/`, status=`planned`, role=`followup`
 - `stream-project-112-sprint-001`: project=`project-112-vscode-governance-workbench-rollout`, sprint=`sprint-001-phase-a-primary-workbench-baseline`, docs=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout`, plan=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/plan.md`, tasks=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/tasks/`, checklist=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/review/`, status=`planned`, role=`followup`
 
 ## Completed Stream History

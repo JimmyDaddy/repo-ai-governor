@@ -15,6 +15,15 @@ export type {
   SessionProviderContinuationSummary,
 } from './provider-continuation.interface.js';
 export type {
+  SessionDeliveryRequirementReviewGate,
+  SessionDeliveryRequirementReviewOutcome,
+  SessionDeliveryWorkflowBacklink,
+  SessionDeliveryWorkflowCapabilityId,
+  SessionDeliveryWorkflowPhase,
+  SessionDeliveryWorkflowSessionState,
+  SessionDeliveryWorkflowVersion,
+} from './session-delivery-workflow.interface.js';
+export type {
   LocalOrchestrationServiceMemoryProviderState,
   LocalOrchestrationServicePublishEventRequest,
   LocalOrchestrationServiceSaveCheckpointRequest,

@@ -29,6 +29,12 @@ describe('LocalOrchestrationServiceSessionMainCapabilityCatalog', () => {
         capabilityId: SESSION_MAIN_CAPABILITY_ID.WORKFLOW,
       }),
       expect.objectContaining({
+        capabilityId: SESSION_MAIN_CAPABILITY_ID.DELIVER,
+        interactionModel: 'ai_fixed_workflow',
+        primaryEntry: 'conversational_answer',
+        backingExecution: 'templated_ai_workflow',
+      }),
+      expect.objectContaining({
         capabilityId: SESSION_MAIN_CAPABILITY_ID.PLAN,
         interactionModel: 'ai_fixed_workflow',
         primaryEntry: 'slash_command',

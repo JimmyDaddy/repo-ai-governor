@@ -1397,11 +1397,23 @@ export const EN_US_TRANSLATIONS = {
     helpAppendix: {
       catalogTitle: 'Governed capability catalog:',
       capabilityTitle: 'Session.main governed capability: {{title}}',
+      primaryEntry: 'Primary entry:',
+      reservedAlias: 'Reserved discoverability alias:',
       suggestedSlashCommand: 'Suggested slash command:',
       executionMode: 'Execution path:',
       examplePromptsTitle: 'Example prompts:',
       relatedCapabilitiesTitle: 'Related capabilities:',
+      entryBadges: {
+        chatFirst: '[chat-first]',
+      },
+      primaryEntries: {
+        conversationalAnswer: 'direct chat request',
+        roleMention: 'role mention',
+        cliCommand: 'CLI command',
+        slashCommand: 'slash command {{command}}',
+      },
       executionModes: {
+        aiWorkflow: 'productized AI workflow',
         directExecute: 'direct execute (no extra confirmation)',
         previewConfirm: 'preview first, then confirm',
       },
@@ -1468,6 +1480,17 @@ export const EN_US_TRANSLATIONS = {
           1: 'Open the workflow template surface for this repo.',
         },
       },
+      deliver: {
+        title: 'Deliver',
+        summary:
+          'Coordinate the governed requirement-to-CR delivery path from requirement intake to clean review closure.',
+        detail:
+          'Deliver is the parent AI workflow for requirement-to-CR orchestration. It keeps requirement capture, approved durable brief gating, solution review, task decomposition, execution, and governed CR closure on one orchestration-owned path without creating a second registry.',
+        examples: {
+          0: 'Help me deliver this requirement through the governed path.',
+          1: 'Start the requirement-to-CR delivery workflow for this repo.',
+        },
+      },
       plan: {
         title: 'Plan',
         summary: 'Run the productized planning workflow for the current goal.',
@@ -1509,6 +1532,18 @@ export const EN_US_TRANSLATIONS = {
           1: 'Execute the task-driven delivery flow for TK-123.',
         },
       },
+    },
+  },
+  sessionMainDispatcher: {
+    deliver: {
+      startedDelta: 'Started governed deliver workflow.',
+      startedMessage:
+        'Started the governed deliver workflow. Share the requirement or point me to an approved durable brief so I can anchor the next phase on the orchestration-owned path.',
+      resumedDelta: 'Resumed governed deliver workflow.',
+      resumedMessage:
+        'Resumed the governed deliver workflow at phase `{{phase}}`. Continue from the current shared-session state instead of restarting from requirement capture.',
+      resumedMessageWithAction:
+        'Resumed the governed deliver workflow at phase `{{phase}}`. Continue with pending action `{{pendingAction}}` from the current shared-session state.',
     },
   },
   __internal: {

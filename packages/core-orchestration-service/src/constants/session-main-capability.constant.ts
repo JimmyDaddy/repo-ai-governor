@@ -74,6 +74,7 @@ export const SESSION_MAIN_CAPABILITY_ID = {
   DOCTOR: 'doctor',
   VERIFY: 'verify',
   WORKFLOW: 'workflow',
+  DELIVER: 'deliver',
   PLAN: 'plan',
   REVIEW: 'review',
   REVIEW_VERIFY: 'review_verify',
