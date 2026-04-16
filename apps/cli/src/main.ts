@@ -539,6 +539,7 @@ export async function runCli(
             commandExecutionOptions: dependencies.nestedCommandExecutionOptions,
           }
         : {}),
+      mentionableRoleIds: runtimeContext.adapters.roles.map((role) => role.roleId),
       currentWorkingDirectory: io.cwd(),
       workspaceSummary: runtimeI18n.t('cli.sessionShell.workspaceSummary', {
         workspaceId: runtimeContext.workspace.workspaceId,

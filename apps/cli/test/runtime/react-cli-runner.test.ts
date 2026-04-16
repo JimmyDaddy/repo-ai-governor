@@ -82,6 +82,47 @@ describe('ReactCliRunner', () => {
     expect(output).toContain('Shortcuts');
   });
 
+  it('renders leveled command progress logs with visible severity labels', () => {
+    const runner = new ReactCliRunner();
+    const output = normalizeRenderedOutput(
+      runner.renderFrame({
+        title: '[react-shell:doctor] doctor',
+        subtitle: 'state=running ui=react stdout=pretty',
+        commandProgressPanel: {
+          title: 'Running progress',
+          runState: 'running',
+          statusLine: 'Doctor diagnostics are ready.',
+          logsTitle: 'Recent logs',
+          cancelCapability: 'supported',
+          cancelLabel: 'Press Ctrl+C to request cancellation.',
+          rows: [],
+          artifacts: [],
+          logEntries: [
+            {
+              text: 'doctor preflight fallback active',
+              level: 'warning',
+              label: 'WARN',
+            },
+            {
+              text: 'doctor diagnostics ready',
+              level: 'success',
+              label: 'SUCCESS',
+            },
+          ],
+          logLines: ['doctor preflight fallback active', 'doctor diagnostics ready'],
+        },
+        sections: [],
+        footerShortcutsTitle: 'Shortcuts',
+        footerShortcuts: ['Esc exit'],
+      }),
+    );
+
+    expect(output).toContain('Running progress');
+    expect(output).toContain('Recent logs');
+    expect(output).toContain('[WARN] doctor preflight fallback active');
+    expect(output).toContain('[SUCCESS] doctor diagnostics ready');
+  });
+
   it('renders the session-shell frame through the shared Ink runner', () => {
     const runner = new ReactCliRunner();
     const output = runner.renderSessionShellFrame({

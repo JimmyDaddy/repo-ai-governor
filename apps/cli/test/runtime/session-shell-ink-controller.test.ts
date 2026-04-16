@@ -47,6 +47,14 @@ function createViewModel(): CliSessionShellViewModel {
 
 function translate(key: string, interpolation?: Record<string, string>): string {
   const translations: Record<string, string> = {
+    'cli.sessionShell.sections.slashPalette': 'Slash palette',
+    'cli.sessionShell.sections.mentionPalette': 'Role mentions',
+    'cli.sessionShell.palette.emptyState': 'No slash commands matched.',
+    'cli.sessionShell.palette.mentionEmptyState': 'No role mentions matched.',
+    'cli.sessionShell.mentions.roles.planner.summary': 'Planning discussion.',
+    'cli.sessionShell.mentions.roles.reviewer.summary': 'Review discussion.',
+    'cli.sessionShell.mentions.roles.generic.summary':
+      'Discussion with configured role {{roleId}}.',
     'cli.sessionShell.responses.secureSecretSlashSuffixRejected':
       'Do not enter secret in slash text. Re-run {{command}} and continue in secure local capture.',
   };
@@ -194,6 +202,60 @@ describe('CliSessionShellInkController', () => {
     expect(
       viewModel.slashSuggestions.some((suggestion) => suggestion.command === '/workflow'),
     ).toBe(true);
+  });
+
+  it('opens role mention suggestions when the composer ends with an @role query', () => {
+    const controller = new CliSessionShellInkController();
+    const viewModel = createViewModel();
+
+    controller.primeViewModel(viewModel);
+    controller.applyAction(
+      viewModel,
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '请 @re',
+      },
+      translate,
+      ['planner', 'reviewer'],
+    );
+
+    expect(viewModel.shellMode).toBe(CliSessionShellMode.COMMAND_PALETTE);
+    expect(viewModel.inputMode).toBe(CliSessionShellInputMode.PLAIN_TEXT);
+    expect(viewModel.slashPaletteVisible).toBe(true);
+    expect(viewModel.slashPaletteTitle).toBe('Role mentions');
+    expect(viewModel.highlightedCommand).toBe('@reviewer');
+    expect(viewModel.slashSuggestions.map((suggestion) => suggestion.command)).toEqual([
+      '@reviewer',
+    ]);
+  });
+
+  it('accepts the highlighted role mention without discarding the surrounding text', () => {
+    const controller = new CliSessionShellInkController();
+    const viewModel = createViewModel();
+
+    controller.primeViewModel(viewModel);
+    controller.applyAction(
+      viewModel,
+      {
+        type: CliSessionShellInputActionType.COMPOSER_CHANGED,
+        value: '请 @re',
+      },
+      translate,
+      ['planner', 'reviewer'],
+    );
+    controller.applyAction(
+      viewModel,
+      {
+        type: CliSessionShellInputActionType.PALETTE_ACCEPT_HIGHLIGHTED,
+      },
+      translate,
+      ['planner', 'reviewer'],
+    );
+
+    expect(viewModel.composerValue).toBe('请 @reviewer ');
+    expect(viewModel.slashPaletteVisible).toBe(false);
+    expect(viewModel.shellMode).toBe(CliSessionShellMode.SESSION_SHELL);
+    expect(viewModel.inputMode).toBe(CliSessionShellInputMode.PLAIN_TEXT);
   });
 
   it('drops secret suffix input before it reaches presenter-visible slash state', () => {

@@ -155,6 +155,9 @@ export class ReactCliSessionController {
       artifacts: panel.artifacts.map((artifact) => ({
         ...artifact,
       })),
+      logEntries: panel.logEntries.map((entry) => ({
+        ...entry,
+      })),
       logLines: [...panel.logLines],
     };
   }

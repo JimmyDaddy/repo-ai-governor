@@ -40,6 +40,7 @@ export type {
 export type { ReactCliShellPalette, ReactCliThemeDefinition } from './react-cli-theme.interface.js';
 export type {
   CliCommandCancelCapability,
+  CliCommandLogLevel,
   CliNestedCommandExecutionOptions,
   CliCommandProgressArtifactPatch,
   CliCommandProgressEvent,
@@ -49,6 +50,7 @@ export type {
   CliGovernanceCommandExecutionOptions,
 } from './cli-command-progress.interface.js';
 export type {
+  CliCommandProgressLogEntryViewModel,
   CliCommandProgressPanelArtifactViewModel,
   CliCommandProgressPanelRowViewModel,
   CliCommandProgressPanelViewModel,

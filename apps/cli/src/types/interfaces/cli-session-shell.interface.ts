@@ -281,6 +281,7 @@ export interface CliSessionShellRunOptions {
   commandExecutionOptions?: CliGovernanceCommandExecutionOptions;
   secureSecretMutator?: CliSessionShellSecureSecretMutator;
   passthroughExecutor?: CliSessionShellPassthroughExecutor;
+  mentionableRoleIds?: string[];
   currentWorkingDirectory: string;
   workspaceSummary: string;
   outputMode: ErrorOutputEnvironment;

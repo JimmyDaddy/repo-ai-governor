@@ -227,6 +227,59 @@ describe('mapSessionShellKeypressToAction', () => {
 
     expect(
       mapSessionShellKeypressToAction({
+        input: '',
+        key: {
+          downArrow: true,
+        } as never,
+        composerValue: '请 @re',
+        highlightedCommand: '@reviewer',
+        slashPaletteVisible: true,
+      }),
+    ).toEqual({
+      kind: 'action',
+      action: {
+        type: CliSessionShellInputActionType.PALETTE_HIGHLIGHT_NEXT,
+      },
+    });
+
+    expect(
+      mapSessionShellKeypressToAction({
+        input: '\t',
+        key: {
+          tab: false,
+        } as never,
+        composerValue: '请 @re',
+        highlightedCommand: '@reviewer',
+        slashPaletteVisible: true,
+      }),
+    ).toEqual({
+      kind: 'action',
+      action: {
+        type: CliSessionShellInputActionType.PALETTE_ACCEPT_HIGHLIGHTED,
+      },
+      nextComposerValue: '请 @reviewer ',
+    });
+
+    expect(
+      mapSessionShellKeypressToAction({
+        input: '\r',
+        key: {
+          return: true,
+        } as never,
+        composerValue: '请 @re',
+        highlightedCommand: '@reviewer',
+        slashPaletteVisible: true,
+      }),
+    ).toEqual({
+      kind: 'action',
+      action: {
+        type: CliSessionShellInputActionType.PALETTE_ACCEPT_HIGHLIGHTED,
+      },
+      nextComposerValue: '请 @reviewer ',
+    });
+
+    expect(
+      mapSessionShellKeypressToAction({
         input: '\r',
         key: {
           return: true,

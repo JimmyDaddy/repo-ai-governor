@@ -353,6 +353,7 @@ export const ZH_CN_TRANSLATIONS = {
         composer: '输入',
         secureCaptureComposer: '安全输入',
         slashPalette: 'Slash Palette',
+        mentionPalette: '角色 Mention',
         promptBar: 'Prompt Bar',
       },
       composer: {
@@ -361,6 +362,26 @@ export const ZH_CN_TRANSLATIONS = {
       },
       palette: {
         emptyState: '没有匹配的 slash command。可输入 /help 查看当前 MVP 命令集合。',
+        mentionEmptyState: '没有匹配的角色 mention。请继续在 @ 后输入角色名。',
+      },
+      mentions: {
+        roles: {
+          generic: {
+            summary: '与当前已配置的 {{roleId}} 角色进行开放式讨论。',
+          },
+          planner: {
+            summary: '规划、拆解与执行策略讨论。',
+          },
+          architect: {
+            summary: '架构取舍、边界与设计讨论。',
+          },
+          reviewer: {
+            summary: '风险评审、代码阅读与 findings-first 反馈。',
+          },
+          verifier: {
+            summary: '验证、回归检查与收口确认。',
+          },
+        },
       },
       resumeSelector: {
         latest: 'latest',
@@ -496,6 +517,15 @@ export const ZH_CN_TRANSLATIONS = {
         commandFailureSummary: '失败原因：{{summary}}',
         commandAgentSummary: 'Agent 路由：{{summary}}',
         commandAttentionSummary: '关注项：{{summary}}',
+        commandDoctorSummaryReadWrite: '当前 workspace 可写，基础 doctor 检查已完成。',
+        commandDoctorSummaryReadOnly: '当前 workspace 为只读，doctor 已按只读诊断模式完成。',
+        commandDoctorSummaryGeneric: 'doctor 检查已完成。',
+        commandDoctorAdapterChecksEnabled: '已检查适配器',
+        commandDoctorAdapterChecksSkipped: '未检查适配器',
+        commandDoctorCheckTotals: '{{pass}} 通过 / {{warn}} 警告 / {{fail}} 失败',
+        commandDoctorAttentionBaselineDocs: 'repo-local 基线文档缺失（{{missing}}/{{total}}）',
+        commandDoctorAttentionArtifactRegistryUninitialized: 'artifact registry 尚未初始化',
+        commandDoctorAttentionTaskLedgerUninitialized: 'task ledger 尚未初始化',
         commandErrorHint: '提示：{{hint}}',
         commandErrorNextAction: '下一步：{{nextAction}}',
         commandErrorNextActionCheckCommandUsage: '检查命令用法与必填参数。',
@@ -861,6 +891,15 @@ export const ZH_CN_TRANSLATIONS = {
         steps: '步骤 {{completed}}/{{total}}',
         artifactsTitle: '产物',
         logsTitle: '最近日志',
+        logs: {
+          level: {
+            debug: '调试',
+            info: '信息',
+            success: '成功',
+            warning: '警告',
+            error: '错误',
+          },
+        },
         shortcut: {
           exit: 'Ctrl+C 退出',
           cancel: 'Ctrl+C 取消',

@@ -326,7 +326,12 @@ export class CliSessionShellRunner {
           return this.completeExit(viewModel, options, runtimeState, CliSessionShellExitReason.EOF);
         }
 
-        const effects = inkController.applyAction(viewModel, action, options.translate);
+        const effects = inkController.applyAction(
+          viewModel,
+          action,
+          options.translate,
+          options.mentionableRoleIds,
+        );
         viewModel.promptBarLines = this.buildPromptBarLines(viewModel, options, runtimeState);
 
         if (effects.systemNoticeLines && effects.systemNoticeLines.length > 0) {
@@ -1948,6 +1953,8 @@ export class CliSessionShellRunner {
     viewModel.slashPaletteVisible = false;
     viewModel.slashSuggestions = this.slashCommandRegistry.suggest('', options.translate);
     viewModel.highlightedCommand = viewModel.slashSuggestions[0]?.command ?? null;
+    viewModel.slashPaletteTitle = options.translate('cli.sessionShell.sections.slashPalette');
+    viewModel.slashPaletteEmptyState = options.translate('cli.sessionShell.palette.emptyState');
     viewModel.commandPreview = null;
     viewModel.handoffState = CliSessionShellHandoffState.IDLE;
     viewModel.commandProgressPanel = undefined;
@@ -2552,6 +2559,8 @@ export class CliSessionShellRunner {
     viewModel.slashPaletteVisible = false;
     viewModel.slashSuggestions = this.slashCommandRegistry.suggest('', options.translate);
     viewModel.highlightedCommand = viewModel.slashSuggestions[0]?.command ?? null;
+    viewModel.slashPaletteTitle = options.translate('cli.sessionShell.sections.slashPalette');
+    viewModel.slashPaletteEmptyState = options.translate('cli.sessionShell.palette.emptyState');
     viewModel.commandPreview = null;
     viewModel.handoffState = CliSessionShellHandoffState.IDLE;
     viewModel.commandProgressPanel = undefined;
@@ -2586,6 +2595,7 @@ export class CliSessionShellRunner {
         value: nextComposerValue,
       },
       options.translate,
+      options.mentionableRoleIds,
     );
     viewModel.promptBarLines = this.buildPromptBarLines(viewModel, options, runtimeState);
     this.renderActiveSurface(viewModel);

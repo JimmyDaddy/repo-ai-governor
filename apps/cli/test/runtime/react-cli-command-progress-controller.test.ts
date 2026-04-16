@@ -39,6 +39,21 @@ describe('ReactCliCommandProgressController', () => {
         if (key === 'cli.reactShell.progress.steps') {
           return `Step ${interpolation?.completed ?? '0'}/${interpolation?.total ?? '0'}`;
         }
+        if (key === 'cli.reactShell.progress.logs.level.debug') {
+          return 'DEBUG';
+        }
+        if (key === 'cli.reactShell.progress.logs.level.info') {
+          return 'INFO';
+        }
+        if (key === 'cli.reactShell.progress.logs.level.success') {
+          return 'SUCCESS';
+        }
+        if (key === 'cli.reactShell.progress.logs.level.warning') {
+          return 'WARN';
+        }
+        if (key === 'cli.reactShell.progress.logs.level.error') {
+          return 'ERROR';
+        }
         if (key === 'cli.reactShell.progress.status.running') {
           return `Running ${interpolation?.command ?? 'command'}…`;
         }
@@ -101,6 +116,13 @@ describe('ReactCliCommandProgressController', () => {
     ]);
     expect(snapshot.commandProgressPanel?.logLines).toEqual([
       'connect_id=connect-123 adapter_status=warn',
+    ]);
+    expect(snapshot.commandProgressPanel?.logEntries).toEqual([
+      {
+        text: 'connect_id=connect-123 adapter_status=warn',
+        level: 'warning',
+        label: 'WARN',
+      },
     ]);
   });
 

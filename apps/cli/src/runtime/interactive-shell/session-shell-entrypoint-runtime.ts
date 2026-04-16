@@ -5,6 +5,7 @@ import {
   GovernorErrorCode,
 } from '@repo-ai-governor/shared';
 import { CLI_COMMAND_NAMES, CLI_PROGRAM_NAME } from '../../constants/cli-command.constant.js';
+import { CliRuntimeOperation } from '../../constants/cli-governance-runtime.constant.js';
 import { CliInteractiveUiMode } from '../../constants/cli-interactive-shell.constant.js';
 import { CLI_OPTIONS_REQUIRING_VALUE, CliNextAction } from '../../constants/cli-output.constant.js';
 import type { CliReactThemePreset } from '../../constants/cli-react-theme.constant.js';
@@ -51,6 +52,7 @@ interface CliSessionShellEntrypointRuntimeOptions {
   commandExecutor?: CliSessionShellCommandExecutor;
   commandExecutionOptions?: CliGovernanceCommandExecutionOptions;
   secureSecretMutator?: CliSessionShellSecureSecretMutator;
+  mentionableRoleIds?: string[];
   currentWorkingDirectory: string;
   workspaceSummary: string;
   outputMode: ErrorOutputEnvironment;
@@ -158,6 +160,11 @@ export class CliSessionShellEntrypointRuntime {
       ...(this.options.secureSecretMutator
         ? {
             secureSecretMutator: this.options.secureSecretMutator,
+          }
+        : {}),
+      ...(this.options.mentionableRoleIds
+        ? {
+            mentionableRoleIds: [...this.options.mentionableRoleIds],
           }
         : {}),
       currentWorkingDirectory: this.options.currentWorkingDirectory,
@@ -352,10 +359,14 @@ export class CliSessionShellEntrypointRuntime {
         ?.map((artifact) => artifact.path)
         .filter((path) => typeof path === 'string' && path.length > 0) ?? [];
     const summaryLocale = parsedPayload.diagnostics?.locale ?? options.locale;
-    const primarySummary = CliSessionShellEntrypointRuntime.resolvePrimarySummaryLine(
+    const commandPresentation = CliSessionShellEntrypointRuntime.resolveCommandPresentation({
       parsedPayload,
       artifactPaths,
-    );
+      translate: options.translate,
+    });
+    const primarySummary =
+      commandPresentation?.primarySummary ??
+      CliSessionShellEntrypointRuntime.resolvePrimarySummaryLine(parsedPayload, artifactPaths);
     const agentViewSummary = parsedPayload.command_result?.agentView
       ? options.translate('cli.sessionShell.responses.commandAgentSummary', {
           summary: CliSessionShellEntrypointRuntime.agentProjectionPresenter.buildSummaryLine(
@@ -371,10 +382,12 @@ export class CliSessionShellEntrypointRuntime {
           options.translate,
         )
       : null;
-    const keyStatusSummary = CliSessionShellEntrypointRuntime.resolveKeyStatusSummaryLine(
-      parsedPayload.command_result?.experience?.layeredLogs.summary ?? [],
-      artifactPaths,
-    );
+    const keyStatusSummary =
+      commandPresentation?.keyStatusSummary ??
+      CliSessionShellEntrypointRuntime.resolveKeyStatusSummaryLine(
+        parsedPayload.command_result?.experience?.layeredLogs.summary ?? [],
+        artifactPaths,
+      );
     const logicalFailure = CliSessionShellEntrypointRuntime.resolveLogicalFailure(
       parsedPayload,
       artifactPaths,
@@ -392,6 +405,7 @@ export class CliSessionShellEntrypointRuntime {
             })
           : null,
         agentViewSummary,
+        commandPresentation?.attentionSummary,
         agentAttentionLine,
         keyStatusSummary
           ? options.translate('cli.sessionShell.responses.commandStatusSummary', {
@@ -426,6 +440,136 @@ export class CliSessionShellEntrypointRuntime {
       summaryCandidate,
       artifactPaths,
     );
+  }
+
+  private static resolveCommandPresentation(options: {
+    parsedPayload: CliSuccessOutputPayload;
+    artifactPaths: string[];
+    translate: (key: string, interpolation?: Record<string, string>) => string;
+  }): {
+    primarySummary: string | null;
+    keyStatusSummary: string | null;
+    attentionSummary: string | null;
+  } | null {
+    if (!CliSessionShellEntrypointRuntime.isDoctorPayload(options.parsedPayload)) {
+      return null;
+    }
+
+    return CliSessionShellEntrypointRuntime.resolveDoctorPresentation(options);
+  }
+
+  private static isDoctorPayload(parsedPayload: CliSuccessOutputPayload): boolean {
+    return (
+      parsedPayload.command === 'doctor' ||
+      parsedPayload.command_result?.operation === CliRuntimeOperation.ENV_DOCTOR
+    );
+  }
+
+  private static resolveDoctorPresentation(options: {
+    parsedPayload: CliSuccessOutputPayload;
+    artifactPaths: string[];
+    translate: (key: string, interpolation?: Record<string, string>) => string;
+  }): {
+    primarySummary: string | null;
+    keyStatusSummary: string | null;
+    attentionSummary: string | null;
+  } {
+    const attachMode = options.parsedPayload.command_result?.attach_mode ?? null;
+    const adaptersEnabled =
+      typeof options.parsedPayload.command_result?.details?.adapters_enabled === 'boolean'
+        ? options.parsedPayload.command_result.details.adapters_enabled
+        : null;
+    const checkTotals = options.parsedPayload.command_result?.check_totals;
+    const warningSegments = CliSessionShellEntrypointRuntime.resolveDoctorWarningSegments(
+      options.parsedPayload.command_result?.checks ?? [],
+      options.translate,
+    );
+
+    const primarySummary =
+      attachMode === 'read_write'
+        ? options.translate('cli.sessionShell.responses.commandDoctorSummaryReadWrite')
+        : attachMode === 'read_only'
+          ? options.translate('cli.sessionShell.responses.commandDoctorSummaryReadOnly')
+          : options.translate('cli.sessionShell.responses.commandDoctorSummaryGeneric');
+
+    const keyStatusSegments = [
+      adaptersEnabled === null
+        ? null
+        : options.translate(
+            adaptersEnabled
+              ? 'cli.sessionShell.responses.commandDoctorAdapterChecksEnabled'
+              : 'cli.sessionShell.responses.commandDoctorAdapterChecksSkipped',
+          ),
+      checkTotals
+        ? options.translate('cli.sessionShell.responses.commandDoctorCheckTotals', {
+            pass: String(checkTotals.pass),
+            warn: String(checkTotals.warn),
+            fail: String(checkTotals.fail),
+          })
+        : null,
+    ].filter((segment): segment is string => typeof segment === 'string' && segment.length > 0);
+
+    return {
+      primarySummary,
+      keyStatusSummary: keyStatusSegments.length > 0 ? keyStatusSegments.join(' · ') : null,
+      attentionSummary:
+        warningSegments.length > 0
+          ? options.translate('cli.sessionShell.responses.commandAttentionSummary', {
+              summary: warningSegments.join(' · '),
+            })
+          : null,
+    };
+  }
+
+  private static resolveDoctorWarningSegments(
+    checks: NonNullable<CliSuccessOutputPayload['command_result']>['checks'],
+    translate: (key: string, interpolation?: Record<string, string>) => string,
+  ): string[] {
+    const segments: string[] = [];
+    for (const check of checks ?? []) {
+      if (check.status !== 'warn' && check.status !== 'fail') {
+        continue;
+      }
+
+      switch (check.id) {
+        case 'baseline_docs': {
+          const missingMatch = check.detail.match(/missing=(\d+)\/(\d+)/u);
+          if (!missingMatch) {
+            break;
+          }
+          segments.push(
+            translate('cli.sessionShell.responses.commandDoctorAttentionBaselineDocs', {
+              missing: missingMatch[1] ?? '0',
+              total: missingMatch[2] ?? '0',
+            }),
+          );
+          break;
+        }
+        case 'artifact_registry_canonical_truth':
+          if (check.detail.includes('state=uninitialized')) {
+            segments.push(
+              translate(
+                'cli.sessionShell.responses.commandDoctorAttentionArtifactRegistryUninitialized',
+              ),
+            );
+          }
+          break;
+        case 'task_ledger_canonical_truth':
+          if (
+            check.detail.includes('state=no_sources') ||
+            check.detail.includes('state=uninitialized')
+          ) {
+            segments.push(
+              translate('cli.sessionShell.responses.commandDoctorAttentionTaskLedgerUninitialized'),
+            );
+          }
+          break;
+        default:
+          break;
+      }
+    }
+
+    return CliSessionShellEntrypointRuntime.dedupeSummaryLines(segments);
   }
 
   private static resolveKeyStatusSummaryLine(

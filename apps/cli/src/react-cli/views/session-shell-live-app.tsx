@@ -5,6 +5,11 @@ import {
   CliSessionShellInputActionType,
   CliSessionShellInputMode,
 } from '../../constants/cli-session-shell.constant.js';
+import {
+  applyAcceptedRoleMention,
+  isRoleMentionSuggestion,
+  resolveTrailingRoleMentionQuery,
+} from '../../runtime/interactive-shell/session-role-mention-registry.js';
 import { CliSessionSlashCommandRegistry } from '../../runtime/interactive-shell/session-slash-command-registry.js';
 import type { CliSessionShellInputAction, CliSessionShellViewModel } from '../../types/index.js';
 import { ReactCliSessionShellApp } from './session-shell-app.js';
@@ -221,7 +226,7 @@ export function mapSessionShellKeypressToAction(
           action: {
             type: CliSessionShellInputActionType.PALETTE_ACCEPT_HIGHLIGHTED,
           },
-          nextComposerValue: context.highlightedCommand,
+          nextComposerValue: resolveAcceptedPaletteComposerValue(context),
         }
       : {
           kind: 'ignore',
@@ -244,7 +249,10 @@ export function mapSessionShellKeypressToAction(
         action: {
           type: CliSessionShellInputActionType.PALETTE_ACCEPT_HIGHLIGHTED,
         },
-        nextComposerValue: context.highlightedCommand ?? undefined,
+        nextComposerValue:
+          context.highlightedCommand === null
+            ? undefined
+            : resolveAcceptedPaletteComposerValue(context),
       };
     }
 
@@ -404,7 +412,11 @@ function shouldNavigatePalette(context: ReactCliSessionShellKeypressContext): bo
   }
 
   const trimmedComposerValue = context.composerValue.trim();
-  return trimmedComposerValue === '?' || trimmedComposerValue.startsWith('/');
+  return (
+    trimmedComposerValue === '?' ||
+    trimmedComposerValue.startsWith('/') ||
+    resolveTrailingRoleMentionQuery(context.composerValue) !== null
+  );
 }
 
 function shouldAcceptHighlightedCommandOnEnter(
@@ -412,6 +424,20 @@ function shouldAcceptHighlightedCommandOnEnter(
 ): boolean {
   if (!context.highlightedCommand || !context.slashPaletteVisible) {
     return false;
+  }
+
+  if (isRoleMentionSuggestion(context.highlightedCommand)) {
+    const activeMentionQuery = resolveTrailingRoleMentionQuery(context.composerValue);
+    if (!activeMentionQuery) {
+      return false;
+    }
+
+    const normalizedMentionQuery = activeMentionQuery.toLowerCase();
+    const normalizedHighlightedMention = context.highlightedCommand.toLowerCase();
+    return (
+      normalizedHighlightedMention !== normalizedMentionQuery &&
+      normalizedHighlightedMention.startsWith(normalizedMentionQuery)
+    );
   }
 
   const normalizedComposerValue = normalizeSlashComposerValue(context.composerValue);
@@ -436,6 +462,18 @@ function normalizeSlashComposerValue(value: string): string {
     .split(/\s+/u)
     .filter((token) => token.length > 0)
     .join(' ');
+}
+
+function resolveAcceptedPaletteComposerValue(
+  context: ReactCliSessionShellKeypressContext,
+): string | undefined {
+  if (!context.highlightedCommand) {
+    return undefined;
+  }
+
+  return isRoleMentionSuggestion(context.highlightedCommand)
+    ? applyAcceptedRoleMention(context.composerValue, context.highlightedCommand)
+    : context.highlightedCommand;
 }
 
 /**

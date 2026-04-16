@@ -4,7 +4,11 @@ import {
 } from '@repo-ai-governor/shared';
 import { Box, Text } from 'ink';
 import type React from 'react';
-import type { CliCommandProgressPanelViewModel, ReactCliShellPalette } from '../../types/index.js';
+import type {
+  CliCommandLogLevel,
+  CliCommandProgressPanelViewModel,
+  ReactCliShellPalette,
+} from '../../types/index.js';
 
 export interface ReactCliCommandProgressPanelProps {
   panel: CliCommandProgressPanelViewModel;
@@ -24,6 +28,7 @@ export function ReactCliCommandProgressPanel({
     panel.stepsLabel,
     panel.heartbeatLabel,
   ].filter((value) => Boolean(value)) as string[];
+  const hasStructuredLogEntries = panel.logEntries.length > 0;
 
   return (
     <Box
@@ -65,16 +70,26 @@ export function ReactCliCommandProgressPanel({
           ))}
         </Box>
       ) : null}
-      {panel.logLines.length > 0 ? (
+      {hasStructuredLogEntries || panel.logLines.length > 0 ? (
         <Box flexDirection='column' marginTop={1}>
           <Text bold color={shellPalette.sectionTitleColor}>
             {panel.logsTitle ?? 'Recent logs'}
           </Text>
-          {panel.logLines.map((line) => (
-            <Text key={`log:${line}`} color={shellPalette.footerColor}>
-              {line}
-            </Text>
-          ))}
+          {hasStructuredLogEntries
+            ? panel.logEntries.map((entry, index) => (
+                <Text
+                  key={`log:${index}:${entry.level}:${entry.text}`}
+                  color={resolveLogColor(entry.level, shellPalette)}
+                >
+                  <Text bold>{`[${entry.label}] `}</Text>
+                  {entry.text}
+                </Text>
+              ))
+            : panel.logLines.map((line, index) => (
+                <Text key={`log:${index}:${line}`} color={shellPalette.footerColor}>
+                  {line}
+                </Text>
+              ))}
         </Box>
       ) : null}
     </Box>
@@ -94,4 +109,19 @@ function resolveRowColor(
   }
 
   return shellPalette.sectionTitleColor;
+}
+
+function resolveLogColor(level: CliCommandLogLevel, shellPalette: ReactCliShellPalette): string {
+  switch (level) {
+    case 'debug':
+      return shellPalette.commandLogPalette.debug;
+    case 'success':
+      return shellPalette.commandLogPalette.success;
+    case 'warning':
+      return shellPalette.commandLogPalette.warning;
+    case 'error':
+      return shellPalette.commandLogPalette.error;
+    default:
+      return shellPalette.commandLogPalette.info;
+  }
 }

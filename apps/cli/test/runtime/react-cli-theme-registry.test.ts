@@ -10,6 +10,7 @@ describe('resolveReactCliTheme', () => {
 
     expect(theme.preset).toBe(CliReactThemePreset.GOVERNOR);
     expect(theme.shellPalette.borderColor).toBeTruthy();
+    expect(theme.shellPalette.commandLogPalette.error).toBeTruthy();
     expect(theme.inkTheme.components.StatusMessage).toBeDefined();
   });
 
@@ -35,5 +36,30 @@ describe('resolveReactCliTheme', () => {
     expect(
       CLI_REACT_THEME_PRESET_ORDER.map((preset) => resolveReactCliTheme(preset).preset),
     ).toEqual([...CLI_REACT_THEME_PRESET_ORDER]);
+  });
+
+  it('provides log severity colors for every preset', () => {
+    for (const preset of CLI_REACT_THEME_PRESET_ORDER) {
+      const commandLogPalette = resolveReactCliTheme(preset).shellPalette.commandLogPalette;
+
+      expect(commandLogPalette.debug).toBeTruthy();
+      expect(commandLogPalette.info).toBeTruthy();
+      expect(commandLogPalette.success).toBeTruthy();
+      expect(commandLogPalette.warning).toBeTruthy();
+      expect(commandLogPalette.error).toBeTruthy();
+    }
+  });
+
+  it('provides composer token colors for every preset', () => {
+    for (const preset of CLI_REACT_THEME_PRESET_ORDER) {
+      const composerTokenPalette = resolveReactCliTheme(preset).shellPalette.composerTokenPalette;
+
+      expect(composerTokenPalette.plain).toBeTruthy();
+      expect(composerTokenPalette.slash).toBeTruthy();
+      expect(composerTokenPalette.mention).toBeTruthy();
+      expect(composerTokenPalette.slash).not.toBe(composerTokenPalette.plain);
+      expect(composerTokenPalette.mention).not.toBe(composerTokenPalette.plain);
+      expect(composerTokenPalette.mention).not.toBe(composerTokenPalette.slash);
+    }
   });
 });

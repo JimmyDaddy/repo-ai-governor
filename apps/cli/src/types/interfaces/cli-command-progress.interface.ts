@@ -6,6 +6,8 @@ export type CliCommandRunState = 'idle' | 'running' | 'success' | 'failure' | 'c
 
 export type CliCommandCancelCapability = 'none' | 'supported' | 'cancel_requested';
 
+export type CliCommandLogLevel = 'debug' | 'info' | 'success' | 'warning' | 'error';
+
 export interface CliCommandProgressRowPatch {
   id: string;
   title: string;
@@ -36,6 +38,7 @@ export interface CliCommandProgressEvent {
   row?: CliCommandProgressRowPatch;
   artifact?: CliCommandProgressArtifactPatch;
   logLine?: string;
+  logLevel?: CliCommandLogLevel;
   occurredAt?: string;
 }
 

@@ -18,6 +18,11 @@ export const REACT_CLI_THEME_PRESET_REGISTRY: Record<CliReactThemePreset, ReactC
         helpColor: '#A7B4C4',
         footerColor: '#8FBCBB',
         promptTitleColor: '#88C0D0',
+        composerTokenPalette: {
+          plain: '#ECEFF4',
+          slash: '#88C0D0',
+          mention: '#B48EAD',
+        },
         conversationPalette: {
           assistantTextColor: '#ECEFF4',
           assistantHeadingColor: '#88C0D0',
@@ -45,6 +50,13 @@ export const REACT_CLI_THEME_PRESET_REGISTRY: Record<CliReactThemePreset, ReactC
             error: '#BF616A',
           },
         },
+        commandLogPalette: {
+          debug: '#81A1C1',
+          info: '#8FBCBB',
+          success: '#A3BE8C',
+          warning: '#EBCB8B',
+          error: '#BF616A',
+        },
       },
       {
         info: '#5E81AC',
@@ -67,6 +79,11 @@ export const REACT_CLI_THEME_PRESET_REGISTRY: Record<CliReactThemePreset, ReactC
         helpColor: '#94A3B8',
         footerColor: '#7DD3FC',
         promptTitleColor: '#60A5FA',
+        composerTokenPalette: {
+          plain: '#F7FAFF',
+          slash: '#60A5FA',
+          mention: '#A78BFA',
+        },
         conversationPalette: {
           assistantTextColor: '#E5F0FF',
           assistantHeadingColor: '#60A5FA',
@@ -94,6 +111,13 @@ export const REACT_CLI_THEME_PRESET_REGISTRY: Record<CliReactThemePreset, ReactC
             error: '#F87171',
           },
         },
+        commandLogPalette: {
+          debug: '#8BA7D9',
+          info: '#7DD3FC',
+          success: '#34D399',
+          warning: '#FBBF24',
+          error: '#F87171',
+        },
       },
       {
         info: '#3B82F6',
@@ -116,6 +140,11 @@ export const REACT_CLI_THEME_PRESET_REGISTRY: Record<CliReactThemePreset, ReactC
         helpColor: '#A5ADCB',
         footerColor: '#F5BDE6',
         promptTitleColor: '#8AADF4',
+        composerTokenPalette: {
+          plain: '#CAD3F5',
+          slash: '#8AADF4',
+          mention: '#F5BDE6',
+        },
         conversationPalette: {
           assistantTextColor: '#CAD3F5',
           assistantHeadingColor: '#C6A0F6',
@@ -143,6 +172,13 @@ export const REACT_CLI_THEME_PRESET_REGISTRY: Record<CliReactThemePreset, ReactC
             error: '#ED8796',
           },
         },
+        commandLogPalette: {
+          debug: '#939AB7',
+          info: '#8AADF4',
+          success: '#A6DA95',
+          warning: '#EED49F',
+          error: '#ED8796',
+        },
       },
       {
         info: '#8AADF4',
@@ -165,6 +201,11 @@ export const REACT_CLI_THEME_PRESET_REGISTRY: Record<CliReactThemePreset, ReactC
         helpColor: '#908CAA',
         footerColor: '#9CCFD8',
         promptTitleColor: '#EBBCBA',
+        composerTokenPalette: {
+          plain: '#E0DEF4',
+          slash: '#EBBCBA',
+          mention: '#9CCFD8',
+        },
         conversationPalette: {
           assistantTextColor: '#E0DEF4',
           assistantHeadingColor: '#C4A7E7',
@@ -192,6 +233,13 @@ export const REACT_CLI_THEME_PRESET_REGISTRY: Record<CliReactThemePreset, ReactC
             error: '#EB6F92',
           },
         },
+        commandLogPalette: {
+          debug: '#908CAA',
+          info: '#9CCFD8',
+          success: '#31748F',
+          warning: '#F6C177',
+          error: '#EB6F92',
+        },
       },
       {
         info: '#9CCFD8',
@@ -214,6 +262,11 @@ export const REACT_CLI_THEME_PRESET_REGISTRY: Record<CliReactThemePreset, ReactC
         helpColor: '#737AA2',
         footerColor: '#86E1FC',
         promptTitleColor: '#89DDFF',
+        composerTokenPalette: {
+          plain: '#C8D3F5',
+          slash: '#89DDFF',
+          mention: '#C099FF',
+        },
         conversationPalette: {
           assistantTextColor: '#C8D3F5',
           assistantHeadingColor: '#C099FF',
@@ -241,6 +294,13 @@ export const REACT_CLI_THEME_PRESET_REGISTRY: Record<CliReactThemePreset, ReactC
             error: '#FF757F',
           },
         },
+        commandLogPalette: {
+          debug: '#828BB8',
+          info: '#89DDFF',
+          success: '#C3E88D',
+          warning: '#FFC777',
+          error: '#FF757F',
+        },
       },
       {
         info: '#82AAFF',
@@ -263,6 +323,11 @@ export const REACT_CLI_THEME_PRESET_REGISTRY: Record<CliReactThemePreset, ReactC
         helpColor: '#A6A69C',
         footerColor: '#7AA89F',
         promptTitleColor: '#7FB4CA',
+        composerTokenPalette: {
+          plain: '#DCD7BA',
+          slash: '#7FB4CA',
+          mention: '#E6C384',
+        },
         conversationPalette: {
           assistantTextColor: '#DCD7BA',
           assistantHeadingColor: '#E6C384',
@@ -290,6 +355,13 @@ export const REACT_CLI_THEME_PRESET_REGISTRY: Record<CliReactThemePreset, ReactC
             error: '#E46876',
           },
         },
+        commandLogPalette: {
+          debug: '#727169',
+          info: '#7FB4CA',
+          success: '#98BB6C',
+          warning: '#E6C384',
+          error: '#E46876',
+        },
       },
       {
         info: '#7E9CD8',
@@ -312,6 +384,11 @@ export const REACT_CLI_THEME_PRESET_REGISTRY: Record<CliReactThemePreset, ReactC
         helpColor: '#878580',
         footerColor: '#3AA99F',
         promptTitleColor: '#4385BE',
+        composerTokenPalette: {
+          plain: '#FFFCF0',
+          slash: '#4385BE',
+          mention: '#8B7EC8',
+        },
         conversationPalette: {
           assistantTextColor: '#CECDC3',
           assistantHeadingColor: '#8B7EC8',
@@ -338,6 +415,13 @@ export const REACT_CLI_THEME_PRESET_REGISTRY: Record<CliReactThemePreset, ReactC
             todo: '#D0A215',
             error: '#D14D41',
           },
+        },
+        commandLogPalette: {
+          debug: '#878580',
+          info: '#4385BE',
+          success: '#879A39',
+          warning: '#D0A215',
+          error: '#D14D41',
         },
       },
       {

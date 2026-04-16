@@ -13,6 +13,7 @@ function clonePanel(
     ...panel,
     rows: panel.rows.map((row) => ({ ...row })),
     artifacts: panel.artifacts.map((artifact) => ({ ...artifact })),
+    logEntries: panel.logEntries.map((entry) => ({ ...entry })),
     logLines: [...panel.logLines],
   };
 }

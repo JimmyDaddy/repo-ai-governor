@@ -407,6 +407,7 @@ export const EN_US_TRANSLATIONS = {
         composer: 'Input',
         secureCaptureComposer: 'Secure input',
         slashPalette: 'Slash palette',
+        mentionPalette: 'Role mentions',
         promptBar: 'Prompt bar',
       },
       composer: {
@@ -415,6 +416,26 @@ export const EN_US_TRANSLATIONS = {
       },
       palette: {
         emptyState: 'No matching slash commands. Type /help to view the MVP command set.',
+        mentionEmptyState: 'No matching role mentions. Keep typing after @ to target one role.',
+      },
+      mentions: {
+        roles: {
+          generic: {
+            summary: 'Open-ended discussion with the configured {{roleId}} role.',
+          },
+          planner: {
+            summary: 'Planning, decomposition, and execution strategy discussion.',
+          },
+          architect: {
+            summary: 'Architecture trade-offs, boundaries, and design discussion.',
+          },
+          reviewer: {
+            summary: 'Risk review, code reading, and findings-first feedback.',
+          },
+          verifier: {
+            summary: 'Verification, regression checks, and closure confidence.',
+          },
+        },
       },
       resumeSelector: {
         latest: 'latest',
@@ -557,6 +578,18 @@ export const EN_US_TRANSLATIONS = {
         commandFailureSummary: 'Failure: {{summary}}',
         commandAgentSummary: 'Agent routing: {{summary}}',
         commandAttentionSummary: 'Attention: {{summary}}',
+        commandDoctorSummaryReadWrite: 'Workspace is writable. Baseline doctor checks completed.',
+        commandDoctorSummaryReadOnly:
+          'Workspace is read-only. Doctor completed in inspection-only mode.',
+        commandDoctorSummaryGeneric: 'Doctor checks completed.',
+        commandDoctorAdapterChecksEnabled: 'adapter checks run',
+        commandDoctorAdapterChecksSkipped: 'adapter checks not run',
+        commandDoctorCheckTotals: '{{pass}} pass / {{warn}} warn / {{fail}} fail',
+        commandDoctorAttentionBaselineDocs:
+          'repo-local baseline docs are missing ({{missing}}/{{total}})',
+        commandDoctorAttentionArtifactRegistryUninitialized:
+          'artifact registry is not initialized yet',
+        commandDoctorAttentionTaskLedgerUninitialized: 'task ledger is not initialized yet',
         commandErrorHint: 'Hint: {{hint}}',
         commandErrorNextAction: 'Next step: {{nextAction}}',
         commandErrorNextActionCheckCommandUsage: 'Check the command usage and required flags.',
@@ -945,6 +978,15 @@ export const EN_US_TRANSLATIONS = {
         steps: 'Step {{completed}}/{{total}}',
         artifactsTitle: 'Artifacts',
         logsTitle: 'Recent logs',
+        logs: {
+          level: {
+            debug: 'DEBUG',
+            info: 'INFO',
+            success: 'SUCCESS',
+            warning: 'WARN',
+            error: 'ERROR',
+          },
+        },
         shortcut: {
           exit: 'Ctrl+C exit',
           cancel: 'Ctrl+C cancel',

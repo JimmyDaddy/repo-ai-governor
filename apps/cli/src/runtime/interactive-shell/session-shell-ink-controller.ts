@@ -12,6 +12,11 @@ import type {
   CliSessionShellInputActionResult,
   CliSessionShellViewModel,
 } from '../../types/index.js';
+import {
+  CliSessionRoleMentionRegistry,
+  applyAcceptedRoleMention,
+  resolveTrailingRoleMentionQuery,
+} from './session-role-mention-registry.js';
 import { CliSessionSlashCommandRegistry } from './session-slash-command-registry.js';
 
 const DEFAULT_ACTION_RESULT: CliSessionShellInputActionResult = {
@@ -30,6 +35,7 @@ const DEFAULT_ACTION_RESULT: CliSessionShellInputActionResult = {
 export class CliSessionShellInkController {
   public constructor(
     private readonly slashCommandRegistry: CliSessionSlashCommandRegistry = new CliSessionSlashCommandRegistry(),
+    private readonly roleMentionRegistry: CliSessionRoleMentionRegistry = new CliSessionRoleMentionRegistry(),
   ) {}
 
   /**
@@ -54,10 +60,16 @@ export class CliSessionShellInkController {
     viewModel: CliSessionShellViewModel,
     action: CliSessionShellInputAction,
     translate: (key: string, interpolation?: Record<string, string>) => string,
+    mentionableRoleIds?: readonly string[],
   ): CliSessionShellInputActionResult {
     switch (action.type) {
       case CliSessionShellInputActionType.COMPOSER_CHANGED: {
-        const systemNoticeLines = this.applyComposerValue(viewModel, action.value ?? '', translate);
+        const systemNoticeLines = this.applyComposerValue(
+          viewModel,
+          action.value ?? '',
+          translate,
+          mentionableRoleIds,
+        );
         return systemNoticeLines
           ? {
               ...DEFAULT_ACTION_RESULT,
@@ -83,7 +95,10 @@ export class CliSessionShellInkController {
         return DEFAULT_ACTION_RESULT;
       case CliSessionShellInputActionType.PALETTE_ACCEPT_HIGHLIGHTED:
         if (this.isPaletteInteractive(viewModel) && viewModel.highlightedCommand) {
-          this.applyComposerValue(viewModel, viewModel.highlightedCommand, translate);
+          const acceptedComposerValue = viewModel.highlightedCommand.startsWith('@')
+            ? applyAcceptedRoleMention(viewModel.composerValue, viewModel.highlightedCommand)
+            : viewModel.highlightedCommand;
+          this.applyComposerValue(viewModel, acceptedComposerValue, translate, mentionableRoleIds);
         }
         return DEFAULT_ACTION_RESULT;
       case CliSessionShellInputActionType.PALETTE_CLOSED:
@@ -110,6 +125,7 @@ export class CliSessionShellInkController {
     viewModel: CliSessionShellViewModel,
     nextValue: string,
     translate: (key: string, interpolation?: Record<string, string>) => string,
+    mentionableRoleIds?: readonly string[],
   ): string[] | null {
     viewModel.commandPreview = null;
     viewModel.handoffState = CliSessionShellHandoffState.IDLE;
@@ -133,22 +149,44 @@ export class CliSessionShellInkController {
       return null;
     }
 
-    if (!nextValue.startsWith('/')) {
-      this.resetPalette(viewModel, translate);
+    if (nextValue.startsWith('/')) {
+      const suggestions = this.slashCommandRegistry.suggest(nextValue, translate);
+      viewModel.shellMode = CliSessionShellMode.COMMAND_PALETTE;
+      viewModel.inputMode = CliSessionShellInputMode.SLASH_COMMAND;
+      viewModel.slashQuery = nextValue;
+      viewModel.slashPaletteVisible = true;
+      viewModel.slashSuggestions = suggestions;
+      viewModel.highlightedCommand = suggestions[0]?.command ?? null;
+      this.restoreDefaultPalettePresentation(viewModel, translate);
+      viewModel.foregroundFocusTarget =
+        suggestions.length > 0
+          ? CliSessionShellForegroundFocusTarget.PALETTE
+          : CliSessionShellForegroundFocusTarget.COMPOSER;
       return null;
     }
 
-    const suggestions = this.slashCommandRegistry.suggest(nextValue, translate);
-    viewModel.shellMode = CliSessionShellMode.COMMAND_PALETTE;
-    viewModel.inputMode = CliSessionShellInputMode.SLASH_COMMAND;
-    viewModel.slashQuery = nextValue;
-    viewModel.slashPaletteVisible = true;
-    viewModel.slashSuggestions = suggestions;
-    viewModel.highlightedCommand = suggestions[0]?.command ?? null;
-    viewModel.foregroundFocusTarget =
-      suggestions.length > 0
-        ? CliSessionShellForegroundFocusTarget.PALETTE
-        : CliSessionShellForegroundFocusTarget.COMPOSER;
+    const activeMentionQuery = resolveTrailingRoleMentionQuery(nextValue);
+    if (activeMentionQuery) {
+      const mentionSuggestions = this.roleMentionRegistry.suggest(
+        nextValue,
+        translate,
+        mentionableRoleIds,
+      );
+      viewModel.shellMode = CliSessionShellMode.COMMAND_PALETTE;
+      viewModel.inputMode = CliSessionShellInputMode.PLAIN_TEXT;
+      viewModel.slashQuery = activeMentionQuery;
+      viewModel.slashPaletteVisible = true;
+      viewModel.slashSuggestions = mentionSuggestions;
+      viewModel.highlightedCommand = mentionSuggestions[0]?.command ?? null;
+      this.applyMentionPalettePresentation(viewModel, translate);
+      viewModel.foregroundFocusTarget =
+        mentionSuggestions.length > 0
+          ? CliSessionShellForegroundFocusTarget.PALETTE
+          : CliSessionShellForegroundFocusTarget.COMPOSER;
+      return null;
+    }
+
+    this.resetPalette(viewModel, translate);
     return null;
   }
 
@@ -167,6 +205,7 @@ export class CliSessionShellInkController {
     viewModel.slashPaletteVisible = false;
     viewModel.slashSuggestions = this.slashCommandRegistry.suggest('', translate);
     viewModel.highlightedCommand = viewModel.slashSuggestions[0]?.command ?? null;
+    this.restoreDefaultPalettePresentation(viewModel, translate);
     viewModel.commandPreview = warningLine;
     viewModel.foregroundFocusTarget = CliSessionShellForegroundFocusTarget.COMPOSER;
     return [warningLine];
@@ -185,6 +224,7 @@ export class CliSessionShellInkController {
     viewModel.slashPaletteVisible = true;
     viewModel.slashSuggestions = suggestions;
     viewModel.highlightedCommand = suggestions[0]?.command ?? null;
+    this.restoreDefaultPalettePresentation(viewModel, translate);
     viewModel.foregroundFocusTarget =
       suggestions.length > 0
         ? CliSessionShellForegroundFocusTarget.PALETTE
@@ -201,6 +241,7 @@ export class CliSessionShellInkController {
     viewModel.slashPaletteVisible = false;
     viewModel.slashSuggestions = this.slashCommandRegistry.suggest('', translate);
     viewModel.highlightedCommand = viewModel.slashSuggestions[0]?.command ?? null;
+    this.restoreDefaultPalettePresentation(viewModel, translate);
     viewModel.foregroundFocusTarget = CliSessionShellForegroundFocusTarget.COMPOSER;
   }
 
@@ -241,6 +282,23 @@ export class CliSessionShellInkController {
     viewModel.slashPaletteVisible = false;
     viewModel.slashSuggestions = [];
     viewModel.highlightedCommand = null;
+    this.restoreDefaultPalettePresentation(viewModel, _translate);
     viewModel.foregroundFocusTarget = CliSessionShellForegroundFocusTarget.COMPOSER;
+  }
+
+  private restoreDefaultPalettePresentation(
+    viewModel: CliSessionShellViewModel,
+    translate: (key: string, interpolation?: Record<string, string>) => string,
+  ): void {
+    viewModel.slashPaletteTitle = translate('cli.sessionShell.sections.slashPalette');
+    viewModel.slashPaletteEmptyState = translate('cli.sessionShell.palette.emptyState');
+  }
+
+  private applyMentionPalettePresentation(
+    viewModel: CliSessionShellViewModel,
+    translate: (key: string, interpolation?: Record<string, string>) => string,
+  ): void {
+    viewModel.slashPaletteTitle = translate('cli.sessionShell.sections.mentionPalette');
+    viewModel.slashPaletteEmptyState = translate('cli.sessionShell.palette.mentionEmptyState');
   }
 }

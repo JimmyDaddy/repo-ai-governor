@@ -1,6 +1,8 @@
 import type { CliReactThemePreset } from '../../constants/cli-react-theme.constant.js';
 import type {
+  CliCommandLogLevel,
   CliCommandProgressEvent,
+  CliCommandProgressLogEntryViewModel,
   CliCommandProgressPanelArtifactViewModel,
   CliCommandProgressPanelRowViewModel,
   CliCommandRunState,
@@ -29,7 +31,7 @@ export class ReactCliCommandProgressController {
   private readonly sessionController: ReactCliSessionController;
   private readonly progressRows = new Map<string, CliCommandProgressPanelRowViewModel>();
   private readonly progressArtifacts = new Map<string, CliCommandProgressPanelArtifactViewModel>();
-  private readonly logTail: string[] = [];
+  private readonly logTail: CliCommandProgressLogEntryViewModel[] = [];
   private readonly startedAtMs = Date.now();
   private shellTitle: string;
   private shellSubtitle: string;
@@ -102,7 +104,7 @@ export class ReactCliCommandProgressController {
       });
     }
     if (event.logLine) {
-      this.logTail.push(event.logLine);
+      this.logTail.push(this.createLogEntry(event.logLine, event.logLevel));
       if (this.logTail.length > LOG_TAIL_LIMIT) {
         this.logTail.splice(0, this.logTail.length - LOG_TAIL_LIMIT);
       }
@@ -163,7 +165,10 @@ export class ReactCliCommandProgressController {
         cancelLabel,
         rows: [...this.progressRows.values()],
         artifacts: [...this.progressArtifacts.values()],
-        logLines: [...this.logTail],
+        logEntries: this.logTail.map((entry) => ({
+          ...entry,
+        })),
+        logLines: this.logTail.map((entry) => entry.text),
       },
       footerShortcuts: [
         this.cancelCapability === 'supported'
@@ -183,5 +188,46 @@ export class ReactCliCommandProgressController {
     }
 
     return 'info';
+  }
+
+  private createLogEntry(
+    line: string,
+    explicitLevel: CliCommandLogLevel | undefined,
+  ): CliCommandProgressLogEntryViewModel {
+    const level = explicitLevel ?? this.inferLogLevel(line);
+    return {
+      text: line,
+      level,
+      label: this.resolveLogLevelLabel(level),
+    };
+  }
+
+  private inferLogLevel(line: string): CliCommandLogLevel {
+    const normalizedLine = line.toLowerCase();
+    if (/(?:^|[\s_=:[\]-])(trace|debug|verbose)(?:$|[\s_=:[\]-])/u.test(normalizedLine)) {
+      return 'debug';
+    }
+    if (
+      /(?:^|[\s_=:[\]-])(error|failed|failure|fatal|blocked)(?:$|[\s_=:[\]-])/u.test(normalizedLine)
+    ) {
+      return 'error';
+    }
+    if (
+      /(?:^|[\s_=:[\]-])(warn|warning|degraded|fallback)(?:$|[\s_=:[\]-])/u.test(normalizedLine)
+    ) {
+      return 'warning';
+    }
+    if (
+      /(?:^|[\s_=:[\]-])(success|succeeded|completed|resolved|ready)(?:$|[\s_=:[\]-])/u.test(
+        normalizedLine,
+      )
+    ) {
+      return 'success';
+    }
+    return 'info';
+  }
+
+  private resolveLogLevelLabel(level: CliCommandLogLevel): string {
+    return this.options.translate(`cli.reactShell.progress.logs.level.${level}`);
   }
 }

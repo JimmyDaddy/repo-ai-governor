@@ -1,6 +1,7 @@
 import type { ExecutionProgressStatus } from '@repo-ai-governor/shared';
 import type {
   CliCommandCancelCapability,
+  CliCommandLogLevel,
   CliCommandRunState,
 } from './cli-command-progress.interface.js';
 
@@ -15,6 +16,12 @@ export interface CliCommandProgressPanelArtifactViewModel {
   id: string;
   label: string;
   path: string;
+}
+
+export interface CliCommandProgressLogEntryViewModel {
+  text: string;
+  level: CliCommandLogLevel;
+  label: string;
 }
 
 /**
@@ -34,5 +41,6 @@ export interface CliCommandProgressPanelViewModel {
   cancelLabel?: string;
   rows: CliCommandProgressPanelRowViewModel[];
   artifacts: CliCommandProgressPanelArtifactViewModel[];
+  logEntries: CliCommandProgressLogEntryViewModel[];
   logLines: string[];
 }

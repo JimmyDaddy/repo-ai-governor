@@ -91,6 +91,7 @@ describe('CliSessionShellEntrypointRuntime', () => {
     const runtime = createRuntime({
       translate,
       secureSecretMutator,
+      mentionableRoleIds: ['planner', 'reviewer'],
       commandExecutionOptions: {
         progressSink,
         abortSignal: abortController.signal,
@@ -115,6 +116,7 @@ describe('CliSessionShellEntrypointRuntime', () => {
           abortSignal: abortController.signal,
         },
         secureSecretMutator,
+        mentionableRoleIds: ['planner', 'reviewer'],
         translate,
       }),
     );
@@ -171,6 +173,74 @@ describe('CliSessionShellEntrypointRuntime', () => {
       message: 'command succeeded',
       status: 'success',
       summaryLines: ['Summary: summary line', 'Key status: first detail · second detail'],
+    });
+  });
+
+  it('renders doctor payloads as human-readable recap summaries', async () => {
+    const executeCli = vi.fn(async (_argv, io) => {
+      io.stdout(
+        JSON.stringify({
+          command: 'doctor',
+          message: 'Doctor completed with attach_mode=read_write.',
+          command_result: {
+            operation: 'env_doctor',
+            summary: 'Doctor completed with attach_mode=read_write.',
+            attach_mode: 'read_write',
+            check_totals: {
+              pass: 5,
+              warn: 4,
+              fail: 0,
+            },
+            checks: [
+              {
+                id: 'baseline_docs',
+                status: 'warn',
+                detail: 'missing=5/5',
+              },
+              {
+                id: 'artifact_registry_canonical_truth',
+                status: 'warn',
+                detail: 'state=uninitialized database_present=false',
+              },
+              {
+                id: 'task_ledger_canonical_truth',
+                status: 'warn',
+                detail: 'state=no_sources source_count=0',
+              },
+            ],
+            details: {
+              adapters_enabled: false,
+            },
+            experience: {
+              layeredLogs: {
+                summary: ['attach_mode=read_write', 'adapter_probe=false'],
+              },
+            },
+          },
+        }),
+      );
+      return 0;
+    });
+    const commandExecutor = CliSessionShellEntrypointRuntime.createNestedCommandExecutor({
+      locale: 'en-US',
+      currentWorkingDirectory: '/workspace',
+      environment: {},
+      translate: translateSessionShellResponse,
+      executeCli,
+    });
+
+    const result = await commandExecutor(['doctor']);
+
+    expect(result).toEqual({
+      artifactPaths: [],
+      commandLine: 'doctor',
+      message: 'Doctor completed with attach_mode=read_write.',
+      status: 'success',
+      summaryLines: [
+        'Summary: Workspace is writable. Baseline doctor checks completed.',
+        'Attention: repo-local baseline docs are missing (5/5) · artifact registry is not initialized yet · task ledger is not initialized yet',
+        'Key status: adapter checks not run · 5 pass / 4 warn / 0 fail',
+      ],
     });
   });
 
@@ -456,6 +526,21 @@ const SESSION_SHELL_RESPONSE_TRANSLATIONS: Record<string, string> = {
   'cli.sessionShell.responses.commandFailureSummary': 'Failure: {{summary}}',
   'cli.sessionShell.responses.commandAgentSummary': 'Agent routing: {{summary}}',
   'cli.sessionShell.responses.commandAttentionSummary': 'Attention: {{summary}}',
+  'cli.sessionShell.responses.commandDoctorSummaryReadWrite':
+    'Workspace is writable. Baseline doctor checks completed.',
+  'cli.sessionShell.responses.commandDoctorSummaryReadOnly':
+    'Workspace is read-only. Doctor completed in inspection-only mode.',
+  'cli.sessionShell.responses.commandDoctorSummaryGeneric': 'Doctor checks completed.',
+  'cli.sessionShell.responses.commandDoctorAdapterChecksEnabled': 'adapter checks run',
+  'cli.sessionShell.responses.commandDoctorAdapterChecksSkipped': 'adapter checks not run',
+  'cli.sessionShell.responses.commandDoctorCheckTotals':
+    '{{pass}} pass / {{warn}} warn / {{fail}} fail',
+  'cli.sessionShell.responses.commandDoctorAttentionBaselineDocs':
+    'repo-local baseline docs are missing ({{missing}}/{{total}})',
+  'cli.sessionShell.responses.commandDoctorAttentionArtifactRegistryUninitialized':
+    'artifact registry is not initialized yet',
+  'cli.sessionShell.responses.commandDoctorAttentionTaskLedgerUninitialized':
+    'task ledger is not initialized yet',
   'cli.sessionShell.responses.commandErrorHint': 'Hint: {{hint}}',
   'cli.sessionShell.responses.commandErrorNextAction': 'Next step: {{nextAction}}',
   'cli.sessionShell.responses.commandErrorNextActionCheckCommandUsage':

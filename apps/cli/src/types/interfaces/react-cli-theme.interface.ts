@@ -23,6 +23,20 @@ export interface ReactCliLiveActivityPalette {
   tagPalette: ReactCliLiveActivityTagPalette;
 }
 
+export interface ReactCliCommandLogPalette {
+  debug: string;
+  info: string;
+  success: string;
+  warning: string;
+  error: string;
+}
+
+export interface ReactCliComposerTokenPalette {
+  plain: string;
+  slash: string;
+  mention: string;
+}
+
 export interface ReactCliConversationPalette {
   assistantTextColor: string;
   assistantHeadingColor: string;
@@ -44,8 +58,10 @@ export interface ReactCliShellPalette {
   helpColor: string;
   footerColor: string;
   promptTitleColor: string;
+  composerTokenPalette: ReactCliComposerTokenPalette;
   conversationPalette: ReactCliConversationPalette;
   liveActivityPalette: ReactCliLiveActivityPalette;
+  commandLogPalette: ReactCliCommandLogPalette;
 }
 
 /**
