@@ -514,6 +514,44 @@ export const EN_US_TRANSLATIONS = {
           summary: 'Inspect or pin the current foreground session route naming baseline.',
         },
       },
+      aiWorkflowPrompts: {
+        deliver: {
+          currentRepoIntro:
+            'Start the governed requirement-to-CR deliver workflow for the current repo.',
+          requestIntro:
+            'Start the governed requirement-to-CR deliver workflow for the following request.',
+          aliasNotice:
+            'Treat `/deliver` only as an explicit acceleration alias for the chat-first deliver entry.',
+          requestLine: 'Delivery request: {{request}}',
+        },
+        plan: {
+          currentGoalIntro:
+            'Use the standard planning template to create an execution plan for the current goal.',
+          goalIntro:
+            'Use the standard planning template to create an execution plan for the following goal.',
+          noSyncNotice: 'Do not sync anything to the sprint ledger yet.',
+          goalLine: 'Goal: {{goal}}',
+        },
+        review: {
+          currentScopeIntro:
+            'Run the standard governed code-review workflow for the current working scope.',
+          scopeIntro: 'Run the standard governed code-review workflow for the following scope.',
+          focusNotice: 'Focus on user-visible regressions, behavior risk, and missing tests.',
+          structuredNotice:
+            'Return a structured review-style result instead of a free-form expert brainstorm.',
+          scopeLine: 'Review scope: {{target}}',
+        },
+        reviewVerify: {
+          currentTargetIntro:
+            'Run the standard review-verification workflow for the latest governed review context.',
+          targetIntro: 'Run the standard review-verification workflow for the following target.',
+          recheckNotice:
+            'Recheck the existing review artifact or fix result and determine whether accepted findings are actually resolved.',
+          structuredNotice:
+            'Return a structured verification result rather than an open-ended expert discussion.',
+          targetLine: 'Verification target: {{target}}',
+        },
+      },
       responses: {
         welcome:
           'Session shell is active. Plain text, slash commands, and service-backed transcript replay now share one foreground surface.',
@@ -1405,6 +1443,8 @@ export const EN_US_TRANSLATIONS = {
       catalogTitle: 'Governed capability catalog:',
       capabilityTitle: 'Session.main governed capability: {{title}}',
       primaryEntry: 'Primary entry:',
+      optionalAlias: 'Optional discoverability alias:',
+      optionalAliasInline: '(optional alias: {{command}})',
       reservedAlias: 'Reserved discoverability alias:',
       suggestedSlashCommand: 'Suggested slash command:',
       executionMode: 'Execution path:',

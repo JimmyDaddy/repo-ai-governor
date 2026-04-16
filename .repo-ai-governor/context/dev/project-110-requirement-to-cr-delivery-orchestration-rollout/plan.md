@@ -1,6 +1,6 @@
 # project-110-requirement-to-cr-delivery-orchestration-rollout 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-16
 - Stage Mapping: technical solution rollout
 - Phase Mapping: deliver capability baseline / task-plan commit and backlink projection / execution and governed CR orchestration / discoverability rollout closeout
@@ -38,7 +38,7 @@
 
 ## 2.4 sprint-004-discoverability-rollout-and-project-closeout
 
-- Status: active
+- Status: completed
 - Sprint Goal: 收口 deliver discoverability、docs/playbook evidence 与项目 closeout
 - Task Package: `TK-931、TK-932`
 
@@ -52,8 +52,8 @@
 | TK-928 | sprint-002-task-plan-commit-and-backlink-projection | close sprint-002 and hand off execution-orchestration follow-up | governance handoff | TK-927 | completed |
 | TK-929 | sprint-003-execution-and-governed-cr-orchestration | route task-driven execution and governed CR through deliver orchestration | runtime execution and review orchestration | DA-915 | completed |
 | TK-930 | sprint-003-execution-and-governed-cr-orchestration | close sprint-003 and hand off discoverability closeout follow-up | governance handoff | TK-929 | completed |
-| TK-931 | sprint-004-discoverability-rollout-and-project-closeout | align deliver discoverability rollout guidance and runtime evidence | discoverability and rollout evidence | DA-915 | in_progress |
-| TK-932 | sprint-004-discoverability-rollout-and-project-closeout | finalize project-110 rollout closeout and delivery evidence handoff | closeout and delivery evidence | TK-931 | planned |
+| TK-931 | sprint-004-discoverability-rollout-and-project-closeout | align deliver discoverability rollout guidance and runtime evidence | discoverability and rollout evidence | DA-915 | completed |
+| TK-932 | sprint-004-discoverability-rollout-and-project-closeout | finalize project-110 rollout closeout and delivery evidence handoff | closeout and delivery evidence | TK-931 | completed |
 
 ## 4. 依赖产物策略
 
@@ -76,7 +76,10 @@
 5. 2026-04-17：sprint-001 boundary commit `51cad3ca` 已落地；`project-110 / sprint-002` 成为新的 active primary stream，`TK-927` 切换为 `in_progress`。
 6. 2026-04-17：latest fresh reviewer round `CR-005` clean after rounds `CR-001 ~ CR-005`；`TK-928` 已完成 sprint-002 closeout 与 sprint-003 activation handoff，当前 active primary stream 已切换到 sprint-003 / `TK-929`。
 7. 2026-04-17：latest fresh reviewer round `CR-003` 已 clean `resolved`；`TK-929` 切换为 `completed`，`TK-930 / DA-930` 已完成 sprint-003 closeout 与 sprint-004 activation handoff，当前 active primary stream 已切换到 sprint-004 / `TK-931`。
+8. 2026-04-17：fresh reviewer `CR-004` 返回 `no actionable findings`；`TK-931` 已切换为 `completed`，`TK-932` 进入 `in_progress`，开始写入 sprint-004 exit acceptance 与 project-final review handoff packet。
+9. 2026-04-17：project-final `CR-005` 暴露的 duplicate review lifecycle drift 已在同窗口修复并收口为 `resolved`；fresh clean recheck `CR-006` 返回 `no actionable findings`。
+10. 2026-04-17：`TK-932` 已完成 completion audit、delivery registry completion write-back 与 `project-112 / sprint-001` activation handoff；`project-110` 正式切换为 `completed`。
 
 ## 7. 里程碑记录入口
 
-1. 待 closeout 后补齐 completion audit summary。
+1. [project-110-requirement-to-cr-delivery-orchestration-rollout-completion-audit-summary.md](/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/project-110-requirement-to-cr-delivery-orchestration-rollout-completion-audit-summary.md)

@@ -1025,8 +1025,8 @@ deliveries:
       - runtime_service
       - docs_playbook
     user_impact_level: high
-    execution_status: in_progress
-    rollout_status: in_progress
+    execution_status: completed
+    rollout_status: completed
     owner: runtime
     project_ref: project-110-requirement-to-cr-delivery-orchestration-rollout
     sprint_ref: sprint-004-discoverability-rollout-and-project-closeout
@@ -1036,7 +1036,7 @@ deliveries:
     project_plan_path: .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/plan.md
     sprint_plan_path: .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/plan.md
     task_csv_path: .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/tasks/tasks.csv
-    handoff_artifact_path: .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-003-execution-and-governed-cr-orchestration/tasks/DA-930-sprint-003-closeout-and-sprint-004-activation-handoff.md
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/tasks/DA-933-project-110-final-closeout-and-project-112-primary-stream-activation.md
     rollout_artifacts:
       - .repo-ai-governor/context/dev/project-109-requirement-to-cr-delivery-solution-review-and-promotion-prep/sprint-001-solution-review-and-promotion-handoff/tasks/DA-915-requirement-to-cr-delivery-promotion-and-rollout-decomposition-handoff.md
       - .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/plan.md
@@ -1048,6 +1048,12 @@ deliveries:
       - .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-003-execution-and-governed-cr-orchestration/review/resolved_code_review_working-tree-20260417-0550.md
       - .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-003-execution-and-governed-cr-orchestration/tasks/DA-930-sprint-003-closeout-and-sprint-004-activation-handoff.md
       - .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/plan.md
+      - .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/tasks/DA-931-deliver-discoverability-rollout-runtime-evidence.md
+      - .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/tasks/DA-932-sprint-004-exit-acceptance-and-project-final-review-handoff.md
+      - .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/review/resolved_code_review_working-tree-20260417-0719.md
+      - .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/review/resolved_code_review_working-tree-20260417-0734.md
+      - .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/project-110-requirement-to-cr-delivery-orchestration-rollout-completion-audit-summary.md
+      - .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/tasks/DA-933-project-110-final-closeout-and-project-112-primary-stream-activation.md
     accepted_at: 2026-04-16
   - solution_id: technical-solution.vscode-full-governance-workbench-and-task-driven-orchestration
     delivery_mode: followup_required
@@ -1057,8 +1063,8 @@ deliveries:
       - runtime_service
       - docs_playbook
     user_impact_level: high
-    execution_status: planned
-    rollout_status: planned
+    execution_status: in_progress
+    rollout_status: in_progress
     owner: runtime
     project_ref: project-112-vscode-governance-workbench-rollout
     sprint_ref: sprint-001-phase-a-primary-workbench-baseline

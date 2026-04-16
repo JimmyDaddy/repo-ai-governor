@@ -460,6 +460,36 @@ export const ZH_CN_TRANSLATIONS = {
           summary: '查看或固定当前前台 session route 的正式命名。',
         },
       },
+      aiWorkflowPrompts: {
+        deliver: {
+          currentRepoIntro: '为当前仓库启动受治理的 requirement-to-CR deliver workflow。',
+          requestIntro: '为下列需求启动受治理的 requirement-to-CR deliver workflow。',
+          aliasNotice:
+            '将 `/deliver` 仅视为 chat-first deliver 入口的显式加速别名，而不是新的 canonical entry。',
+          requestLine: '交付需求：{{request}}',
+        },
+        plan: {
+          currentGoalIntro: '使用标准 planning template 为当前目标生成一份执行计划。',
+          goalIntro: '使用标准 planning template 为下列目标生成一份执行计划。',
+          noSyncNotice: '暂时不要把任何内容同步到 sprint ledger。',
+          goalLine: '目标：{{goal}}',
+        },
+        review: {
+          currentScopeIntro: '对当前工作范围运行标准化的受治理 code-review workflow。',
+          scopeIntro: '对下列范围运行标准化的受治理 code-review workflow。',
+          focusNotice: '重点关注用户可见回归、行为风险与缺失测试。',
+          structuredNotice: '请返回结构化 review 结果，而不是开放式专家脑暴。',
+          scopeLine: '评审范围：{{target}}',
+        },
+        reviewVerify: {
+          currentTargetIntro: '对最近的受治理评审上下文运行标准化的 review-verification workflow。',
+          targetIntro: '对下列目标运行标准化的 review-verification workflow。',
+          recheckNotice:
+            '重新检查既有评审产物或修复结果，并判断已接受的问题是否真的已经 resolved。',
+          structuredNotice: '请返回结构化 verification 结果，而不是开放式专家讨论。',
+          targetLine: '复核目标：{{target}}',
+        },
+      },
       responses: {
         welcome:
           'session shell 已启用。普通文本、slash command 与 service-backed transcript 现在共用同一前台交互面。',
@@ -1300,6 +1330,8 @@ export const ZH_CN_TRANSLATIONS = {
       catalogTitle: '受治理能力目录：',
       capabilityTitle: 'session.main 受治理能力：{{title}}',
       primaryEntry: '主入口：',
+      optionalAlias: '可选 discoverability alias：',
+      optionalAliasInline: '（可选 alias：{{command}}）',
       reservedAlias: '预留 discoverability alias：',
       suggestedSlashCommand: '建议的 slash command：',
       executionMode: '执行路径：',

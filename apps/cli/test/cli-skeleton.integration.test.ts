@@ -67,7 +67,8 @@ describe('CLI command integration', () => {
     expect(stdout).toContain('Governed capability catalog:');
     expect(stdout).toContain('[chat-first]     Deliver:');
     expect(stdout).toContain('/review verify');
-    expect(stdout).not.toContain('/deliver');
+    expect(stdout).toContain('/deliver');
+    expect(stdout).not.toContain('(optional alias: /help)');
   });
 
   it('shows explicit workflow create/edit/preview subcommands in workflow help', async () => {

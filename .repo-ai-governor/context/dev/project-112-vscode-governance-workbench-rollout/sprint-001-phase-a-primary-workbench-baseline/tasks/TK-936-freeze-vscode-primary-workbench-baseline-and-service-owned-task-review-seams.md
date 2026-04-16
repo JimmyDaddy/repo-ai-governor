@@ -1,6 +1,6 @@
 # TK-936 freeze vscode primary workbench baseline and service-owned task-review seams
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-04-16
 - Owner: AI-Agent
 - Priority: P1
@@ -53,6 +53,7 @@
 ## 9. 执行记录
 
 1. 2026-04-16：任务创建，状态初始化为 `planned`。
+2. 2026-04-17：随着 `project-110` 完成 final closeout，当前任务已切换为 `in_progress`，开始承接 VS Code primary workbench baseline、task/review queue seam 与 service-owned projection contract 的 Phase A 实施。
 
 ## 10. 产出
 

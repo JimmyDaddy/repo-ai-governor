@@ -191,6 +191,7 @@ const SESSION_SLASH_COMMAND_FULL_ORDER = [
   '/workspace switch-branch',
   '/workspace set-ui-theme',
   '/workflow',
+  '/deliver',
   '/plan',
   '/review',
   '/review verify',
@@ -250,9 +251,13 @@ export class CliSessionSlashCommandRegistry {
   /**
    * Resolves the internal action semantics for one exact slash command.
    * @param query Raw slash query including arguments.
+   * @param translate Optional i18n translation function used for AI workflow prompts.
    * @returns Runtime command resolution or `null` when no exact command exists.
    */
-  public resolveAction(query: string): SessionSlashCommandResolution | null {
+  public resolveAction(
+    query: string,
+    translate?: (key: string, interpolation?: Record<string, string>) => string,
+  ): SessionSlashCommandResolution | null {
     const secureLocalSecretCapture = this.resolveSecureLocalSecretCapture(query);
     if (secureLocalSecretCapture) {
       return {
@@ -287,7 +292,9 @@ export class CliSessionSlashCommandRegistry {
         : definition.kind === 'ai_workflow'
           ? {
               executionMode: definition.executionMode ?? 'direct',
-              aiWorkflowPrompt: this.resolveAiWorkflowPrompt(definition.command, argumentTokens),
+              aiWorkflowPrompt: translate
+                ? this.resolveAiWorkflowPrompt(definition.command, argumentTokens, translate)
+                : undefined,
             }
           : {}),
     };
@@ -515,33 +522,55 @@ export class CliSessionSlashCommandRegistry {
     return [command.slice(1), ...argumentTokens];
   }
 
-  private resolveAiWorkflowPrompt(command: string, argumentTokens: string[]): string {
+  private resolveAiWorkflowPrompt(
+    command: string,
+    argumentTokens: string[],
+    translate: (key: string, interpolation?: Record<string, string>) => string,
+  ): string {
+    if (command === '/deliver') {
+      const request = argumentTokens.join(' ').trim();
+      return request.length > 0
+        ? [
+            translate('cli.sessionShell.aiWorkflowPrompts.deliver.requestIntro'),
+            translate('cli.sessionShell.aiWorkflowPrompts.deliver.aliasNotice'),
+            '',
+            translate('cli.sessionShell.aiWorkflowPrompts.deliver.requestLine', { request }),
+          ].join('\n')
+        : [
+            translate('cli.sessionShell.aiWorkflowPrompts.deliver.currentRepoIntro'),
+            translate('cli.sessionShell.aiWorkflowPrompts.deliver.aliasNotice'),
+          ].join('\n');
+    }
+
     if (command === '/plan') {
       const goal = argumentTokens.join(' ').trim();
       return goal.length > 0
         ? [
-            'Use the standard planning template to create an execution plan for the following goal.',
-            'Do not sync anything to the sprint ledger yet.',
+            translate('cli.sessionShell.aiWorkflowPrompts.plan.goalIntro'),
+            translate('cli.sessionShell.aiWorkflowPrompts.plan.noSyncNotice'),
             '',
-            `Goal: ${goal}`,
+            translate('cli.sessionShell.aiWorkflowPrompts.plan.goalLine', { goal }),
           ].join('\n')
-        : 'Use the standard planning template to create an execution plan for the current goal. Do not sync anything to the sprint ledger yet.';
+        : [
+            translate('cli.sessionShell.aiWorkflowPrompts.plan.currentGoalIntro'),
+            translate('cli.sessionShell.aiWorkflowPrompts.plan.noSyncNotice'),
+          ].join('\n');
     }
 
     if (command === '/review') {
       const target = argumentTokens.join(' ').trim();
       return target.length > 0
         ? [
-            'Run the standard governed code-review workflow for the following scope.',
-            'Focus on user-visible regressions, behavior risk, and missing tests.',
-            'Return a structured review-style result instead of a free-form expert brainstorm.',
+            translate('cli.sessionShell.aiWorkflowPrompts.review.scopeIntro'),
+            translate('cli.sessionShell.aiWorkflowPrompts.review.focusNotice'),
+            translate('cli.sessionShell.aiWorkflowPrompts.review.structuredNotice'),
             '',
-            `Review scope: ${target}`,
+            translate('cli.sessionShell.aiWorkflowPrompts.review.scopeLine', { target }),
           ].join('\n')
         : [
-            'Run the standard governed code-review workflow for the current working scope.',
-            'Focus on user-visible regressions, behavior risk, and missing tests.',
-            'Return a structured review-style result instead of a free-form expert brainstorm.',
+            translate('cli.sessionShell.aiWorkflowPrompts.review.currentScopeIntro'),
+            translate('cli.sessionShell.aiWorkflowPrompts.review.focusNotice'),
+            translate('cli.sessionShell.aiWorkflowPrompts.review.structuredNotice'),
           ].join('\n');
     }
 
@@ -549,20 +578,20 @@ export class CliSessionSlashCommandRegistry {
       const target = argumentTokens.join(' ').trim();
       return target.length > 0
         ? [
-            'Run the standard review-verification workflow for the following target.',
-            'Recheck the existing review artifact or fix result and determine whether accepted findings are actually resolved.',
-            'Return a structured verification result rather than an open-ended expert discussion.',
+            translate('cli.sessionShell.aiWorkflowPrompts.reviewVerify.targetIntro'),
+            translate('cli.sessionShell.aiWorkflowPrompts.reviewVerify.recheckNotice'),
+            translate('cli.sessionShell.aiWorkflowPrompts.reviewVerify.structuredNotice'),
             '',
-            `Verification target: ${target}`,
+            translate('cli.sessionShell.aiWorkflowPrompts.reviewVerify.targetLine', { target }),
           ].join('\n')
         : [
-            'Run the standard review-verification workflow for the latest governed review context.',
-            'Recheck the existing review artifact or fix result and determine whether accepted findings are actually resolved.',
-            'Return a structured verification result rather than an open-ended expert discussion.',
+            translate('cli.sessionShell.aiWorkflowPrompts.reviewVerify.currentTargetIntro'),
+            translate('cli.sessionShell.aiWorkflowPrompts.reviewVerify.recheckNotice'),
+            translate('cli.sessionShell.aiWorkflowPrompts.reviewVerify.structuredNotice'),
           ].join('\n');
     }
 
-    return command;
+    return translate('cli.sessionShell.responses.commandNotExecutable');
   }
 
   private normalizePrefix(query: string): string {

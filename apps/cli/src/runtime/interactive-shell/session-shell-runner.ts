@@ -887,7 +887,7 @@ export class CliSessionShellRunner {
         ? CliSessionShellForegroundFocusTarget.PALETTE
         : CliSessionShellForegroundFocusTarget.COMPOSER;
 
-    const exactCommand = this.slashCommandRegistry.resolveAction(query);
+    const exactCommand = this.slashCommandRegistry.resolveAction(query, options.translate);
     if (exactCommand?.command !== '/help') {
       await this.appendServiceTranscriptItem(
         viewModel,

@@ -1537,7 +1537,7 @@ function buildSessionMainCapabilityCatalogHelpText(
     i18n.t('sessionMainCapabilities.helpAppendix.catalogTitle'),
     ...capabilityViews.map(
       (capabilityView) =>
-        `  ${formatGovernedCapabilityEntry(capabilityView, i18n).padEnd(16)} ${capabilityView.title}: ${capabilityView.summary}`,
+        `  ${formatGovernedCapabilityEntry(capabilityView, i18n).padEnd(16)} ${capabilityView.title}: ${formatGovernedCapabilityCatalogSummary(capabilityView, i18n)}`,
     ),
   ].join('\n');
 }
@@ -1585,7 +1585,7 @@ function buildGovernedCapabilityHelpText(
     `${i18n.t('sessionMainCapabilities.helpAppendix.primaryEntry')} ${formatGovernedCapabilityPrimaryEntry(descriptorView, i18n)}`,
     ...(descriptorView.primaryEntry === 'conversational_answer'
       ? [
-          `${i18n.t('sessionMainCapabilities.helpAppendix.reservedAlias')} ${descriptorView.suggestedSlashCommand}`,
+          `${i18n.t('sessionMainCapabilities.helpAppendix.optionalAlias')} ${descriptorView.suggestedSlashCommand}`,
         ]
       : [
           `${i18n.t('sessionMainCapabilities.helpAppendix.suggestedSlashCommand')} ${descriptorView.suggestedSlashCommand}`,
@@ -1621,6 +1621,27 @@ function formatGovernedCapabilityEntry(
   return capabilityView.suggestedSlashCommand;
 }
 
+function formatGovernedCapabilityCatalogSummary(
+  capabilityView: {
+    capabilityId: SessionMainCapabilityId;
+    primaryEntry: 'role_mention' | 'slash_command' | 'cli_command' | 'conversational_answer';
+    suggestedSlashCommand: string;
+    summary: string;
+  },
+  i18n: I18nRuntime,
+): string {
+  if (!shouldRenderOptionalAlias(capabilityView.capabilityId)) {
+    return capabilityView.summary;
+  }
+
+  return `${capabilityView.summary} ${i18n.t(
+    'sessionMainCapabilities.helpAppendix.optionalAliasInline',
+    {
+      command: capabilityView.suggestedSlashCommand,
+    },
+  )}`;
+}
+
 function formatGovernedCapabilityPrimaryEntry(
   capabilityView: {
     primaryEntry: 'role_mention' | 'slash_command' | 'cli_command' | 'conversational_answer';
@@ -1640,6 +1661,10 @@ function formatGovernedCapabilityPrimaryEntry(
         command: capabilityView.suggestedSlashCommand,
       });
   }
+}
+
+function shouldRenderOptionalAlias(capabilityId: SessionMainCapabilityId): boolean {
+  return capabilityId === SESSION_MAIN_CAPABILITY_ID.DELIVER;
 }
 
 /**

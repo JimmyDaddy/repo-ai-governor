@@ -920,6 +920,38 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
     'Show session-shell status and hidden runtime details.',
   'cli.sessionShell.commands.theme.summary': 'Inspect or update the theme.',
   'cli.sessionShell.commands.agent.summary': 'Inspect the current foreground route.',
+  'cli.sessionShell.aiWorkflowPrompts.deliver.currentRepoIntro':
+    'Start the governed requirement-to-CR deliver workflow for the current repo.',
+  'cli.sessionShell.aiWorkflowPrompts.deliver.requestIntro':
+    'Start the governed requirement-to-CR deliver workflow for the following request.',
+  'cli.sessionShell.aiWorkflowPrompts.deliver.aliasNotice':
+    'Treat `/deliver` only as an explicit acceleration alias for the chat-first deliver entry.',
+  'cli.sessionShell.aiWorkflowPrompts.deliver.requestLine': 'Delivery request: {{request}}',
+  'cli.sessionShell.aiWorkflowPrompts.plan.currentGoalIntro':
+    'Use the standard planning template to create an execution plan for the current goal.',
+  'cli.sessionShell.aiWorkflowPrompts.plan.goalIntro':
+    'Use the standard planning template to create an execution plan for the following goal.',
+  'cli.sessionShell.aiWorkflowPrompts.plan.noSyncNotice':
+    'Do not sync anything to the sprint ledger yet.',
+  'cli.sessionShell.aiWorkflowPrompts.plan.goalLine': 'Goal: {{goal}}',
+  'cli.sessionShell.aiWorkflowPrompts.review.currentScopeIntro':
+    'Run the standard governed code-review workflow for the current working scope.',
+  'cli.sessionShell.aiWorkflowPrompts.review.scopeIntro':
+    'Run the standard governed code-review workflow for the following scope.',
+  'cli.sessionShell.aiWorkflowPrompts.review.focusNotice':
+    'Focus on user-visible regressions, behavior risk, and missing tests.',
+  'cli.sessionShell.aiWorkflowPrompts.review.structuredNotice':
+    'Return a structured review-style result instead of a free-form expert brainstorm.',
+  'cli.sessionShell.aiWorkflowPrompts.review.scopeLine': 'Review scope: {{target}}',
+  'cli.sessionShell.aiWorkflowPrompts.reviewVerify.currentTargetIntro':
+    'Run the standard review-verification workflow for the latest governed review context.',
+  'cli.sessionShell.aiWorkflowPrompts.reviewVerify.targetIntro':
+    'Run the standard review-verification workflow for the following target.',
+  'cli.sessionShell.aiWorkflowPrompts.reviewVerify.recheckNotice':
+    'Recheck the existing review artifact or fix result and determine whether accepted findings are actually resolved.',
+  'cli.sessionShell.aiWorkflowPrompts.reviewVerify.structuredNotice':
+    'Return a structured verification result rather than an open-ended expert discussion.',
+  'cli.sessionShell.aiWorkflowPrompts.reviewVerify.targetLine': 'Verification target: {{target}}',
   'cli.commands.init.description': 'Initialize governor workspace baseline.',
   'cli.commands.workspace.description': 'Plan or execute workspace migration baseline.',
   'cli.commands.workspace.actionGuideDryRun':

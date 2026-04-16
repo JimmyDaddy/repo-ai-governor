@@ -51,6 +51,24 @@ describe('LocalOrchestrationServiceSessionMainCapabilityExplainer', () => {
     expect(answer?.assistantMessage).toContain('/review');
   });
 
+  it('keeps help chat-first without advertising a deliver-style optional alias', async () => {
+    const explainer = new LocalOrchestrationServiceSessionMainCapabilityExplainer();
+
+    const answer = await explainer.resolveAnswer('tell me about help', {
+      locale: 'en-US',
+    });
+
+    expect(answer).toEqual(
+      expect.objectContaining({
+        answerKind: 'detail',
+        referencedCapabilityIds: [SESSION_MAIN_CAPABILITY_ID.HELP],
+      }),
+    );
+    expect(answer?.assistantMessage).toContain('Primary entry: direct chat request');
+    expect(answer?.assistantMessage).not.toContain('Optional discoverability alias: `/help`');
+    expect(answer?.assistantMessage).not.toContain('Suggested slash command: `/help`');
+  });
+
   it('renders a comparison answer when two governed capabilities are compared', async () => {
     const explainer = new LocalOrchestrationServiceSessionMainCapabilityExplainer();
 
@@ -146,7 +164,7 @@ describe('LocalOrchestrationServiceSessionMainCapabilityExplainer', () => {
       }),
     );
     expect(answer?.assistantMessage).toContain('Primary entry: direct chat request');
-    expect(answer?.assistantMessage).toContain('Reserved discoverability alias: `/deliver`');
+    expect(answer?.assistantMessage).toContain('Optional discoverability alias: `/deliver`');
     expect(answer?.assistantMessage).not.toContain('Suggested slash command: `/deliver`');
   });
 
@@ -169,7 +187,7 @@ describe('LocalOrchestrationServiceSessionMainCapabilityExplainer', () => {
         referencedCapabilityIds: [SESSION_MAIN_CAPABILITY_ID.DELIVER],
       }),
     );
-    expect(capabilityAnswer?.assistantMessage).toContain('预留 discoverability alias： `/deliver`');
+    expect(capabilityAnswer?.assistantMessage).toContain('可选 discoverability alias： `/deliver`');
     expect(genericDrillAnswer).toBeNull();
     expect(genericTeamAnswer).toBeNull();
   });
@@ -218,7 +236,7 @@ describe('LocalOrchestrationServiceSessionMainCapabilityExplainer', () => {
       }),
     );
     expect(answer?.assistantMessage).toContain('/review verify');
-    expect(answer?.assistantMessage).not.toContain('Reserved discoverability alias: `/deliver`');
+    expect(answer?.assistantMessage).not.toContain('Optional discoverability alias: `/deliver`');
   });
 
   it('keeps requirement-to-cr example prompts on plan instead of the deliver parent capability', async () => {
@@ -238,7 +256,7 @@ describe('LocalOrchestrationServiceSessionMainCapabilityExplainer', () => {
       }),
     );
     expect(answer?.assistantMessage).toContain('/plan');
-    expect(answer?.assistantMessage).not.toContain('Reserved discoverability alias: `/deliver`');
+    expect(answer?.assistantMessage).not.toContain('Optional discoverability alias: `/deliver`');
   });
 
   it('still maps requirement-to-cr domain questions to deliver when no child capability is requested', async () => {
@@ -257,7 +275,7 @@ describe('LocalOrchestrationServiceSessionMainCapabilityExplainer', () => {
         referencedCapabilityIds: [SESSION_MAIN_CAPABILITY_ID.DELIVER],
       }),
     );
-    expect(answer?.assistantMessage).toContain('Reserved discoverability alias: `/deliver`');
+    expect(answer?.assistantMessage).toContain('Optional discoverability alias: `/deliver`');
   });
 
   it('keeps governed-path deliver explanation prompts on the deliver capability explainer', async () => {
@@ -300,7 +318,7 @@ describe('LocalOrchestrationServiceSessionMainCapabilityExplainer', () => {
           referencedCapabilityIds: [SESSION_MAIN_CAPABILITY_ID.DELIVER],
         }),
       );
-      expect(answer?.assistantMessage).toContain('Reserved discoverability alias: `/deliver`');
+      expect(answer?.assistantMessage).toContain('Optional discoverability alias: `/deliver`');
     }
     for (const answer of exampleAnswers) {
       expect(answer).toEqual(
@@ -309,7 +327,7 @@ describe('LocalOrchestrationServiceSessionMainCapabilityExplainer', () => {
           referencedCapabilityIds: [SESSION_MAIN_CAPABILITY_ID.DELIVER],
         }),
       );
-      expect(answer?.assistantMessage).toContain('Reserved discoverability alias: `/deliver`');
+      expect(answer?.assistantMessage).toContain('Optional discoverability alias: `/deliver`');
     }
   });
 

@@ -3,24 +3,24 @@
 ## Primary Stream
 
 - Status: active
-- Stream: `stream-project-110-sprint-004`
-- Project: `project-110-requirement-to-cr-delivery-orchestration-rollout`
-- Sprint: `sprint-004-discoverability-rollout-and-project-closeout`
-- Docs: `.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout`
-- Plan: `.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/plan.md`
-- Tasks: `.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/tasks/`
-- Checklist: `.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/tasks/checklist.md`
-- CSV: `.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/tasks/tasks.csv`
-- Review: `.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/review/`
-- Note: `2026-04-16` 已完成 execution baseline checkpoint commit `bdfec1f5`；`2026-04-17` 已完成 sprint-001 boundary commit `51cad3ca` 与 sprint-002 boundary commit `ff09fb6c`；latest fresh reviewer round `CR-003` clean `resolved` 后，sprint-003 已完成 closeout 并通过 `DA-930` 正式激活 `project-110 / sprint-004` 作为新的 active primary stream，`project-112 / sprint-001` 继续保留为 planned follow-up stream。
+- Stream: `stream-project-112-sprint-001`
+- Project: `project-112-vscode-governance-workbench-rollout`
+- Sprint: `sprint-001-phase-a-primary-workbench-baseline`
+- Docs: `.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout`
+- Plan: `.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/plan.md`
+- Tasks: `.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/tasks/`
+- Checklist: `.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/tasks/checklist.md`
+- CSV: `.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/tasks/tasks.csv`
+- Review: `.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/review/`
+- Note: `2026-04-16` 已完成 execution baseline checkpoint commit `bdfec1f5`；`2026-04-17` 已完成 sprint-001 boundary commit `51cad3ca` 与 sprint-002 boundary commit `ff09fb6c`；project-110 已在 project-final `CR-006` clean round、completion audit summary 与 `DA-933` handoff 后完成 closeout，并正式激活 `project-112 / sprint-001` 作为新的 active primary stream。
 
 ## Active Streams
 
-- `stream-project-110-sprint-004`: project=`project-110-requirement-to-cr-delivery-orchestration-rollout`, sprint=`sprint-004-discoverability-rollout-and-project-closeout`, docs=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout`, plan=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/review/`, status=`in_progress`, role=`primary`
+- `stream-project-112-sprint-001`: project=`project-112-vscode-governance-workbench-rollout`, sprint=`sprint-001-phase-a-primary-workbench-baseline`, docs=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout`, plan=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/plan.md`, tasks=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/tasks/`, checklist=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/review/`, status=`in_progress`, role=`primary`
 
 ## Planned Follow-Up Streams
 
-- `stream-project-112-sprint-001`: project=`project-112-vscode-governance-workbench-rollout`, sprint=`sprint-001-phase-a-primary-workbench-baseline`, docs=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout`, plan=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/plan.md`, tasks=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/tasks/`, checklist=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/review/`, status=`planned`, role=`followup`
+- None.
 
 ## Completed Stream History
 

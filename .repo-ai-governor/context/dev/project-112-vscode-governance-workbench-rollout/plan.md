@@ -1,6 +1,6 @@
 # project-112-vscode-governance-workbench-rollout 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-16
 - Stage Mapping: technical solution rollout
 - Phase Mapping: primary workbench baseline / outer-loop consolidation / workflow studio and full workbench cutover
@@ -20,7 +20,7 @@
 
 ## 2.1 sprint-001-phase-a-primary-workbench-baseline
 
-- Status: planned
+- Status: active
 - Sprint Goal: 冻结 VS Code primary workbench baseline、task/review queue seam 与 service-owned projection contract
 - Task Package: `TK-936、TK-937`
 
@@ -40,7 +40,7 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 | --- | --- | --- | --- | --- | --- |
-| TK-936 | sprint-001-phase-a-primary-workbench-baseline | freeze vscode primary workbench baseline and service-owned task-review seams | runtime contract baseline | DA-934 | planned |
+| TK-936 | sprint-001-phase-a-primary-workbench-baseline | freeze vscode primary workbench baseline and service-owned task-review seams | runtime contract baseline | DA-934 | in_progress |
 | TK-937 | sprint-001-phase-a-primary-workbench-baseline | close sprint-001 and hand off phase-b outer-loop consolidation | governance handoff | freeze vscode primary workbench baseline and service-owned task-review seams | planned |
 | TK-938 | sprint-002-phase-b-outer-loop-consolidation-and-operations | land outer-loop consolidation and typed cli bridge governance baseline | workbench operations baseline | DA-934 | planned |
 | TK-939 | sprint-002-phase-b-outer-loop-consolidation-and-operations | close sprint-002 and hand off phase-c full-workbench cutover | governance handoff | land outer-loop consolidation and typed cli bridge governance baseline | planned |
@@ -62,6 +62,7 @@
 ## 6. 里程碑记录
 
 1. 2026-04-16：创建 project-112-vscode-governance-workbench-rollout 全量执行流骨架，覆盖 sprint-001-phase-a-primary-workbench-baseline、sprint-002-phase-b-outer-loop-consolidation-and-operations、sprint-003-phase-c-workflow-studio-and-full-workbench-cutover。
+2. 2026-04-17：`project-110` 完成 final closeout 后，`project-112 / sprint-001` 被激活为新的 active primary stream；`TK-936` 切换为 `in_progress`，开始冻结 VS Code primary workbench baseline 与 service-owned task/review seams。
 
 ## 7. 里程碑记录入口
 

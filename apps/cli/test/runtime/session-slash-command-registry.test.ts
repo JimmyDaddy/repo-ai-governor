@@ -34,6 +34,38 @@ const TRANSLATIONS: Record<string, string> = {
     'Remove the current governor workspace config so init can rebuild a clean baseline.',
   'cli.commands.workspace.actionGuideSetUiTheme':
     'Open the session-shell theme selector or persist one explicit workspace/global theme.',
+  'cli.sessionShell.aiWorkflowPrompts.deliver.currentRepoIntro':
+    'Start the governed requirement-to-CR deliver workflow for the current repo.',
+  'cli.sessionShell.aiWorkflowPrompts.deliver.requestIntro':
+    'Start the governed requirement-to-CR deliver workflow for the following request.',
+  'cli.sessionShell.aiWorkflowPrompts.deliver.aliasNotice':
+    'Treat `/deliver` only as an explicit acceleration alias for the chat-first deliver entry.',
+  'cli.sessionShell.aiWorkflowPrompts.deliver.requestLine': 'Delivery request: {{request}}',
+  'cli.sessionShell.aiWorkflowPrompts.plan.currentGoalIntro':
+    'Use the standard planning template to create an execution plan for the current goal.',
+  'cli.sessionShell.aiWorkflowPrompts.plan.goalIntro':
+    'Use the standard planning template to create an execution plan for the following goal.',
+  'cli.sessionShell.aiWorkflowPrompts.plan.noSyncNotice':
+    'Do not sync anything to the sprint ledger yet.',
+  'cli.sessionShell.aiWorkflowPrompts.plan.goalLine': 'Goal: {{goal}}',
+  'cli.sessionShell.aiWorkflowPrompts.review.currentScopeIntro':
+    'Run the standard governed code-review workflow for the current working scope.',
+  'cli.sessionShell.aiWorkflowPrompts.review.scopeIntro':
+    'Run the standard governed code-review workflow for the following scope.',
+  'cli.sessionShell.aiWorkflowPrompts.review.focusNotice':
+    'Focus on user-visible regressions, behavior risk, and missing tests.',
+  'cli.sessionShell.aiWorkflowPrompts.review.structuredNotice':
+    'Return a structured review-style result instead of a free-form expert brainstorm.',
+  'cli.sessionShell.aiWorkflowPrompts.review.scopeLine': 'Review scope: {{target}}',
+  'cli.sessionShell.aiWorkflowPrompts.reviewVerify.currentTargetIntro':
+    'Run the standard review-verification workflow for the latest governed review context.',
+  'cli.sessionShell.aiWorkflowPrompts.reviewVerify.targetIntro':
+    'Run the standard review-verification workflow for the following target.',
+  'cli.sessionShell.aiWorkflowPrompts.reviewVerify.recheckNotice':
+    'Recheck the existing review artifact or fix result and determine whether accepted findings are actually resolved.',
+  'cli.sessionShell.aiWorkflowPrompts.reviewVerify.structuredNotice':
+    'Return a structured verification result rather than an open-ended expert discussion.',
+  'cli.sessionShell.aiWorkflowPrompts.reviewVerify.targetLine': 'Verification target: {{target}}',
   'cli.reactShell.themePresets.governor.description':
     'Cool blue-gray default palette with higher contrast for governance-focused information.',
   'cli.reactShell.themePresets.copilot.description':
@@ -55,6 +87,8 @@ const TRANSLATIONS: Record<string, string> = {
     'Diagnose adapter health, environment readiness, and route blockers.',
   'sessionMainCapabilities.catalog.workflow.summary':
     'Preview or enter the governed workflow definition surface.',
+  'sessionMainCapabilities.catalog.deliver.summary':
+    'Coordinate the governed requirement-to-CR delivery path from requirement intake to clean review closure.',
   'sessionMainCapabilities.catalog.run.summary':
     'Start a reusable governed workflow or task-driven execution flow.',
   'sessionMainCapabilities.catalog.plan.summary':
@@ -65,8 +99,39 @@ const TRANSLATIONS: Record<string, string> = {
     'Recheck a review report and confirm whether accepted findings are actually fixed.',
 };
 
-function translate(key: string): string {
-  return TRANSLATIONS[key] ?? key;
+const ZH_TRANSLATIONS: Record<string, string> = {
+  ...TRANSLATIONS,
+  'cli.sessionShell.aiWorkflowPrompts.deliver.currentRepoIntro':
+    '为当前仓库启动受治理的 requirement-to-CR deliver workflow。',
+  'cli.sessionShell.aiWorkflowPrompts.deliver.requestIntro':
+    '为下列需求启动受治理的 requirement-to-CR deliver workflow。',
+  'cli.sessionShell.aiWorkflowPrompts.deliver.aliasNotice':
+    '将 `/deliver` 仅视为 chat-first deliver 入口的显式加速别名，而不是新的 canonical entry。',
+  'cli.sessionShell.aiWorkflowPrompts.deliver.requestLine': '交付需求：{{request}}',
+};
+
+function renderTranslation(
+  translations: Record<string, string>,
+  key: string,
+  interpolation?: Record<string, string>,
+): string {
+  const template = translations[key] ?? key;
+  if (!interpolation) {
+    return template;
+  }
+
+  return Object.entries(interpolation).reduce(
+    (result, [field, value]) => result.replace(`{{${field}}}`, value),
+    template,
+  );
+}
+
+function translate(key: string, interpolation?: Record<string, string>): string {
+  return renderTranslation(TRANSLATIONS, key, interpolation);
+}
+
+function translateZh(key: string, interpolation?: Record<string, string>): string {
+  return renderTranslation(ZH_TRANSLATIONS, key, interpolation);
 }
 
 describe('CliSessionSlashCommandRegistry', () => {
@@ -142,15 +207,21 @@ describe('CliSessionSlashCommandRegistry', () => {
     expect(suggestions[0]?.command).toBe('/help');
   });
 
-  it('keeps deliver out of public slash discoverability while it remains chat-first', () => {
+  it('surfaces deliver as a full-surface alias while keeping launcher discoverability chat-first', () => {
     const registry = new CliSessionSlashCommandRegistry();
 
+    const launcherSuggestions = registry.suggest('/', translate);
     const suggestions = registry.suggest('/', translate, {
       surface: 'full',
     });
 
-    expect(suggestions.map((suggestion) => suggestion.command)).not.toContain('/deliver');
-    expect(registry.findByCommand('/deliver', translate)).toBeNull();
+    expect(launcherSuggestions.map((suggestion) => suggestion.command)).not.toContain('/deliver');
+    expect(suggestions.map((suggestion) => suggestion.command)).toContain('/deliver');
+    expect(registry.findByCommand('/deliver', translate)).toEqual({
+      command: '/deliver',
+      summary:
+        'Coordinate the governed requirement-to-CR delivery path from requirement intake to clean review closure.',
+    });
   });
 
   it('surfaces nested workspace actions when the query narrows under /workspace', () => {
@@ -312,7 +383,7 @@ describe('CliSessionSlashCommandRegistry', () => {
       kind: 'builtin',
       summaryKey: 'cli.sessionShell.commands.agent.summary',
     });
-    expect(registry.resolveAction('/review verify latest')).toEqual({
+    expect(registry.resolveAction('/review verify latest', translate)).toEqual({
       aiWorkflowPrompt: [
         'Run the standard review-verification workflow for the following target.',
         'Recheck the existing review artifact or fix result and determine whether accepted findings are actually resolved.',
@@ -325,15 +396,17 @@ describe('CliSessionSlashCommandRegistry', () => {
       kind: 'ai_workflow',
       summaryKey: 'sessionMainCapabilities.catalog.review_verify.summary',
     });
-    expect(registry.resolveAction('/plan')).toEqual({
-      aiWorkflowPrompt:
-        'Use the standard planning template to create an execution plan for the current goal. Do not sync anything to the sprint ledger yet.',
+    expect(registry.resolveAction('/plan', translate)).toEqual({
+      aiWorkflowPrompt: [
+        'Use the standard planning template to create an execution plan for the current goal.',
+        'Do not sync anything to the sprint ledger yet.',
+      ].join('\n'),
       command: '/plan',
       executionMode: 'direct',
       kind: 'ai_workflow',
       summaryKey: 'sessionMainCapabilities.catalog.plan.summary',
     });
-    expect(registry.resolveAction('/plan ship a tetris clone')).toEqual({
+    expect(registry.resolveAction('/plan ship a tetris clone', translate)).toEqual({
       aiWorkflowPrompt: [
         'Use the standard planning template to create an execution plan for the following goal.',
         'Do not sync anything to the sprint ledger yet.',
@@ -345,7 +418,7 @@ describe('CliSessionSlashCommandRegistry', () => {
       kind: 'ai_workflow',
       summaryKey: 'sessionMainCapabilities.catalog.plan.summary',
     });
-    expect(registry.resolveAction('/PLAN Fix API naming in README.md')).toEqual({
+    expect(registry.resolveAction('/PLAN Fix API naming in README.md', translate)).toEqual({
       aiWorkflowPrompt: [
         'Use the standard planning template to create an execution plan for the following goal.',
         'Do not sync anything to the sprint ledger yet.',
@@ -496,12 +569,36 @@ describe('CliSessionSlashCommandRegistry', () => {
       kind: 'bridge',
       summaryKey: 'sessionMainCapabilities.catalog.doctor.summary',
     });
+    expect(registry.resolveAction('/deliver', translate)).toEqual({
+      aiWorkflowPrompt: [
+        'Start the governed requirement-to-CR deliver workflow for the current repo.',
+        'Treat `/deliver` only as an explicit acceleration alias for the chat-first deliver entry.',
+      ].join('\n'),
+      command: '/deliver',
+      executionMode: 'direct',
+      kind: 'ai_workflow',
+      summaryKey: 'sessionMainCapabilities.catalog.deliver.summary',
+    });
+    expect(
+      registry.resolveAction('/deliver approved brief ./artifacts/brief.md', translate),
+    ).toEqual({
+      aiWorkflowPrompt: [
+        'Start the governed requirement-to-CR deliver workflow for the following request.',
+        'Treat `/deliver` only as an explicit acceleration alias for the chat-first deliver entry.',
+        '',
+        'Delivery request: approved brief ./artifacts/brief.md',
+      ].join('\n'),
+      command: '/deliver',
+      executionMode: 'direct',
+      kind: 'ai_workflow',
+      summaryKey: 'sessionMainCapabilities.catalog.deliver.summary',
+    });
   });
 
   it('keeps /review on the AI fixed workflow path and /run on the governed bridge path', () => {
     const registry = new CliSessionSlashCommandRegistry();
 
-    expect(registry.resolveAction('/review')).toEqual({
+    expect(registry.resolveAction('/review', translate)).toEqual({
       aiWorkflowPrompt: [
         'Run the standard governed code-review workflow for the current working scope.',
         'Focus on user-visible regressions, behavior risk, and missing tests.',
@@ -512,7 +609,7 @@ describe('CliSessionSlashCommandRegistry', () => {
       kind: 'ai_workflow',
       summaryKey: 'sessionMainCapabilities.catalog.review.summary',
     });
-    expect(registry.resolveAction('/review current diff')).toEqual({
+    expect(registry.resolveAction('/review current diff', translate)).toEqual({
       aiWorkflowPrompt: [
         'Run the standard governed code-review workflow for the following scope.',
         'Focus on user-visible regressions, behavior risk, and missing tests.',
@@ -538,6 +635,24 @@ describe('CliSessionSlashCommandRegistry', () => {
       executionMode: 'direct',
       kind: 'bridge',
       summaryKey: 'sessionMainCapabilities.catalog.run.summary',
+    });
+  });
+
+  it('localizes /deliver AI workflow prompts when the shell translator changes locale', () => {
+    const registry = new CliSessionSlashCommandRegistry();
+
+    expect(
+      registry.resolveAction('/deliver approved brief ./artifacts/brief.md', translateZh),
+    ).toMatchObject({
+      aiWorkflowPrompt: [
+        '为下列需求启动受治理的 requirement-to-CR deliver workflow。',
+        '将 `/deliver` 仅视为 chat-first deliver 入口的显式加速别名，而不是新的 canonical entry。',
+        '',
+        '交付需求：approved brief ./artifacts/brief.md',
+      ].join('\n'),
+      command: '/deliver',
+      executionMode: 'direct',
+      kind: 'ai_workflow',
     });
   });
 });

@@ -740,6 +740,7 @@ export class LocalOrchestrationServiceSessionMainCapabilityExplainer {
 
   private buildPrimaryEntryLines(
     capabilityView: {
+      capabilityId: SessionMainCapabilityId;
       primaryEntry: 'role_mention' | 'slash_command' | 'cli_command' | 'conversational_answer';
       suggestedSlashCommand: string;
     },
@@ -750,18 +751,25 @@ export class LocalOrchestrationServiceSessionMainCapabilityExplainer {
     ) => string,
   ): string[] {
     if (capabilityView.primaryEntry === 'conversational_answer') {
-      return [
+      const lines = [
         `${translate('__internal.label.primaryEntry', 'Primary entry:', '主入口：')} ${translate(
           '__internal.entry.conversationalAnswer',
           'direct chat request',
           '直接对话请求',
         )}`,
-        `${translate(
-          '__internal.label.alias',
-          'Reserved discoverability alias:',
-          '预留 discoverability alias：',
-        )} \`${capabilityView.suggestedSlashCommand}\``,
       ];
+
+      if (capabilityView.capabilityId === SESSION_MAIN_CAPABILITY_ID.DELIVER) {
+        lines.push(
+          `${translate(
+            '__internal.label.alias',
+            'Optional discoverability alias:',
+            '可选 discoverability alias：',
+          )} \`${capabilityView.suggestedSlashCommand}\``,
+        );
+      }
+
+      return lines;
     }
 
     return [

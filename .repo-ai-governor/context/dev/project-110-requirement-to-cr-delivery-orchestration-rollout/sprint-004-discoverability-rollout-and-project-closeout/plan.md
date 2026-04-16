@@ -1,6 +1,6 @@
 # sprint-004-discoverability-rollout-and-project-closeout 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-16
 - Sprint Goal: 收口 deliver discoverability、docs/playbook evidence 与项目 closeout
 - Project: `project-110-requirement-to-cr-delivery-orchestration-rollout`
@@ -19,8 +19,8 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-931 | align deliver discoverability rollout guidance and runtime evidence | DA-915 | in_progress |
-| TK-932 | finalize project-110 rollout closeout and delivery evidence handoff | TK-931 | planned |
+| TK-931 | align deliver discoverability rollout guidance and runtime evidence | DA-915 | completed |
+| TK-932 | finalize project-110 rollout closeout and delivery evidence handoff | TK-931 | completed |
 
 ## 3. Exit Criteria
 
@@ -31,3 +31,4 @@
 
 1. 项目 closeout 必须回链 completion audit summary，并把 rollout 证据写回 delivery registry。
 2. `2026-04-17` sprint-003 已在 latest fresh reviewer clean round `CR-003` 后完成 closeout；当前 sprint 被激活为新的 primary execution surface，`TK-931` 切换为 `in_progress`。
+3. `2026-04-17` project-final `CR-006` clean round 返回 `no actionable findings`；`TK-932` 完成 completion audit、`DA-933` handoff、delivery registry completion write-back 与 `project-112 / sprint-001` activation，当前 sprint 已恢复为最终 `completed` 真值。
