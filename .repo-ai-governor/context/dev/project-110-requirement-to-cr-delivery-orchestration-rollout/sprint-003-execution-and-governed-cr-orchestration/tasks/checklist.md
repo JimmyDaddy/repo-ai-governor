@@ -1,8 +1,25 @@
 # checklist
 
-- [ ] TK-929 route task-driven execution and governed CR through deliver orchestration
+- [x] TK-929 route task-driven execution and governed CR through deliver orchestration
   - 2026-04-16：任务创建，状态初始化为 `planned`。
   - 2026-04-17：随着 sprint-002 closeout 与 `current-context` 切换，本任务已激活为新的 primary implementation boundary，开始推进 execution/review/review-verify deliver orchestration 接线。
-  - 2026-04-17：随着 sprint-002 closeout 完成，TK-929 已状态切换为 `in_progress`，作为新的 primary implementation boundary 开始推进 execution/review/review-verify deliver orchestration 接线。
-- [ ] TK-930 close sprint-003 and hand off discoverability closeout follow-up
+  - 2026-04-17：已完成 orchestration-owned delivery pending-action vocabulary 扩展，并把新的 execution/review/review-verify/clean-recheck action 集合从 `packages/core-orchestration-service` 导出给 CLI session-shell 复用，避免 presenter 侧再维护第二套 finite truth。
+  - 2026-04-17：已完成 `governance_run`、`review_queue` 与 `review_verify` 的 `deliveryWorkflowUpdate` 接线；CLI runtime 现在会把 canonical review artifact path/status、review verify decision、ledger backfill backlink 映射回 deliver phase machine，并在后续 update 未重复声明时保留既有 `selectedTargetStream`。
+  - 2026-04-17：已补充 session-shell 与 local orchestration service 聚焦测试，覆盖 governed run/review/review-verify deliver overlay 映射与 selected stream persistence；同窗口 `pnpm run build`、两组定向 vitest 已通过，任务进入 fresh reviewer CR round 准备窗口，状态保持 `in_progress`。
+  - 2026-04-17：`CR-001 ~ CR-003` 已全部 `resolved`，其中 latest fresh reviewer clean round `CR-003` 未发现新的 actionable finding；本任务切换为 `completed`，实现边界正式移交给 `TK-930` 承接 sprint-003 closeout 与 sprint-004 activation handoff。
+- [x] TK-930 close sprint-003 and hand off discoverability closeout follow-up
   - 2026-04-16：任务创建，状态初始化为 `planned`。
+  - 2026-04-17：latest fresh reviewer round `CR-003` 已 clean `resolved`；当前任务切换为 `in_progress`，开始执行 sprint-003 closeout、`DA-930` handoff packet、project/sprint/current-context/completed-history truth write-back 与 sprint-004 activation。
+  - 2026-04-17：已完成 `DA-930`、sprint-003 completed write-back、sprint-004 activation 与 delivery registry 前移；当前任务切换为 `completed`，下一步只保留 sprint-003 boundary `pnpm run check` 与本地 commit 收口。
+  - 2026-04-17：`pnpm run check` 已通过；同窗口 artifact-registry gate 额外识别并修复了 `DA-915` 对已关闭 `TK-929` 的 stale dependency，当前 closeout truth 在 task ledger、review lifecycle、delivery registry 与 artifact registry 之间保持同步，可进入 sprint-003 boundary commit。
+- [x] CR-001 sprint-003-execution-and-governed-cr-orchestration delegated review loop round 1
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：fresh reviewer round 1 返回 3 条 actionable findings；主 agent 已逐条复核并全部判定为 `accepted`，当前推进到 `verified`，进入同窗口修复与复验阶段。
+  - 2026-04-17：accepted findings 已全部修复完成，并已通过同窗口 `pnpm run build`、两组定向 vitest 与治理门禁复验；`CR-001` 推进到 `resolved`，下一步进入 fresh clean recheck round。
+- [x] CR-002 sprint-003-execution-and-governed-cr-orchestration delegated recheck loop round 2
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：fresh reviewer round 2 仅返回 1 条 P2 finding；主 agent 复核后判定为 `accepted`，问题集中在 core persistence test 仍固化修复前的 receipt 形态。
+  - 2026-04-17：已把 selected-stream persistence test 更新为 presenter-safe canonical artifact 形态，并通过同窗口 `pnpm run build`、两组定向 vitest 与治理门禁复验；`CR-002` 收口为 `resolved`，下一步进入 fresh clean reviewer round。
+- [x] CR-003 sprint-003-execution-and-governed-cr-orchestration delegated recheck loop round 3
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：fresh clean reviewer round 3 返回“无 actionable finding”；当前边界确认 clean，可作为 sprint-003 进入 closeout 的评审证据。

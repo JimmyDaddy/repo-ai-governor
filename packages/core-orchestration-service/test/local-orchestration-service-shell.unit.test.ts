@@ -33,6 +33,7 @@ import {
   SESSION_DELIVERY_REQUIREMENT_REVIEW_OUTCOME,
   SESSION_DELIVERY_WORKFLOW_CAPABILITY_ID,
   SESSION_DELIVERY_WORKFLOW_CONTEXT_KEY,
+  SESSION_DELIVERY_WORKFLOW_PENDING_ACTION,
   SESSION_DELIVERY_WORKFLOW_PHASE,
   SESSION_DELIVERY_WORKFLOW_VERSION,
   SESSION_MAIN_CAPABILITY_ID,
@@ -1536,6 +1537,125 @@ describe('core-orchestration-service local shell', () => {
         turn_delivery_pending_action: 'confirm_task_plan_commit',
         turn_delivery_selected_stream: 'stream-project-110-sprint-002',
         turn_delivery_result_summary: 'Task plan preview is ready for confirmation.',
+      });
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('preserves the selected target stream when later deliver updates omit it', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+    });
+
+    try {
+      const started = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
+
+      await orchestrationService.appendSessionMessage({
+        sessionId: started.session.sessionId,
+        role: OrchestrationSessionTranscriptRole.ASSISTANT,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        lines: ['Summary: task plan preview is ready for confirmation.'],
+        metadata: {
+          renderKind: 'command_recap',
+          commandLine: 'plan --output pretty',
+          deliveryWorkflowUpdate: {
+            currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.TASK_PLAN_COMMIT_PENDING,
+            pendingAction: SESSION_DELIVERY_WORKFLOW_PENDING_ACTION.CONFIRM_TASK_PLAN_COMMIT,
+            selectedTargetStream: 'stream-project-110-sprint-003',
+            relatedArtifactPaths: ['.repo-ai-governor/context/plan/plan-003.preview.json'],
+            resultSummary: 'Task plan preview is ready for confirmation.',
+            childWorkflowBacklinks: [
+              {
+                capabilityId: SESSION_MAIN_CAPABILITY_ID.PLAN,
+                artifactPath: '.repo-ai-governor/context/plan/plan-003.preview.json',
+                summary: 'Task plan preview artifact.',
+              },
+            ],
+          },
+        },
+      });
+
+      const appendResult = await orchestrationService.appendSessionMessage({
+        sessionId: started.session.sessionId,
+        role: OrchestrationSessionTranscriptRole.ASSISTANT,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        lines: ['Summary: governed review verify completed and clean recheck is next.'],
+        metadata: {
+          renderKind: 'command_recap',
+          commandLine: 'review-verify --output pretty',
+          deliveryWorkflowUpdate: {
+            currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.RESOLVED,
+            pendingAction: SESSION_DELIVERY_WORKFLOW_PENDING_ACTION.RUN_FRESH_CLEAN_RECHECK,
+            relatedArtifactPaths: [
+              '.repo-ai-governor/context/dev/project-110/sprint-003/review/resolved_code_review_tk-929.md',
+              '.repo-ai-governor/context/dev/project-110/sprint-003/tasks/CR-001.md',
+            ],
+            resultSummary: 'Governed review verify completed and clean recheck is next.',
+            childWorkflowBacklinks: [
+              {
+                capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW,
+                artifactPath:
+                  '.repo-ai-governor/context/dev/project-110/sprint-003/review/resolved_code_review_tk-929.md',
+                summary: 'Governed review verify completed and clean recheck is next.',
+              },
+              {
+                capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW_VERIFY,
+                artifactPath:
+                  '.repo-ai-governor/context/dev/project-110/sprint-003/review/resolved_code_review_tk-929.md',
+                summary: 'Governed review verify completed and clean recheck is next.',
+              },
+            ],
+          },
+        },
+      });
+      const session = await orchestrationService.getSession(started.session.sessionId);
+      const deliveryWorkflowState = session?.context[
+        SESSION_DELIVERY_WORKFLOW_CONTEXT_KEY
+      ] as Record<string, unknown> | null;
+
+      expect(deliveryWorkflowState).toEqual(
+        expect.objectContaining({
+          capabilityId: SESSION_DELIVERY_WORKFLOW_CAPABILITY_ID.DELIVER,
+          currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.RESOLVED,
+          pendingAction: SESSION_DELIVERY_WORKFLOW_PENDING_ACTION.RUN_FRESH_CLEAN_RECHECK,
+          selectedTargetStream: 'stream-project-110-sprint-003',
+          resultSummary: 'Governed review verify completed and clean recheck is next.',
+        }),
+      );
+      expect(deliveryWorkflowState?.relatedArtifactPaths).toEqual([
+        '.repo-ai-governor/context/plan/plan-003.preview.json',
+        '.repo-ai-governor/context/dev/project-110/sprint-003/review/resolved_code_review_tk-929.md',
+        '.repo-ai-governor/context/dev/project-110/sprint-003/tasks/CR-001.md',
+      ]);
+      expect(deliveryWorkflowState?.childWorkflowBacklinks).toEqual([
+        {
+          capabilityId: SESSION_MAIN_CAPABILITY_ID.PLAN,
+          artifactPath: '.repo-ai-governor/context/plan/plan-003.preview.json',
+          summary: 'Task plan preview artifact.',
+        },
+        {
+          capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW,
+          artifactPath:
+            '.repo-ai-governor/context/dev/project-110/sprint-003/review/resolved_code_review_tk-929.md',
+          summary: 'Governed review verify completed and clean recheck is next.',
+        },
+        {
+          capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW_VERIFY,
+          artifactPath:
+            '.repo-ai-governor/context/dev/project-110/sprint-003/review/resolved_code_review_tk-929.md',
+          summary: 'Governed review verify completed and clean recheck is next.',
+        },
+      ]);
+      expect(appendResult.event.payload.metadata).toMatchObject({
+        turn_delivery_phase: SESSION_DELIVERY_WORKFLOW_PHASE.RESOLVED,
+        turn_delivery_pending_action:
+          SESSION_DELIVERY_WORKFLOW_PENDING_ACTION.RUN_FRESH_CLEAN_RECHECK,
+        turn_delivery_selected_stream: 'stream-project-110-sprint-003',
+        turn_delivery_result_summary: 'Governed review verify completed and clean recheck is next.',
       });
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });

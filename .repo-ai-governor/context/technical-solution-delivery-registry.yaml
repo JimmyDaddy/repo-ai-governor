@@ -1029,23 +1029,26 @@ deliveries:
     rollout_status: in_progress
     owner: runtime
     project_ref: project-110-requirement-to-cr-delivery-orchestration-rollout
-    sprint_ref: sprint-003-execution-and-governed-cr-orchestration
+    sprint_ref: sprint-004-discoverability-rollout-and-project-closeout
     task_ids:
-      - TK-929
-      - TK-930
+      - TK-931
+      - TK-932
     project_plan_path: .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/plan.md
-    sprint_plan_path: .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-003-execution-and-governed-cr-orchestration/plan.md
-    task_csv_path: .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-003-execution-and-governed-cr-orchestration/tasks/tasks.csv
-    handoff_artifact_path: .repo-ai-governor/context/dev/project-109-requirement-to-cr-delivery-solution-review-and-promotion-prep/sprint-001-solution-review-and-promotion-handoff/tasks/DA-915-requirement-to-cr-delivery-promotion-and-rollout-decomposition-handoff.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-003-execution-and-governed-cr-orchestration/tasks/DA-930-sprint-003-closeout-and-sprint-004-activation-handoff.md
     rollout_artifacts:
       - .repo-ai-governor/context/dev/project-109-requirement-to-cr-delivery-solution-review-and-promotion-prep/sprint-001-solution-review-and-promotion-handoff/tasks/DA-915-requirement-to-cr-delivery-promotion-and-rollout-decomposition-handoff.md
       - .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/plan.md
       - .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/plan.md
+      - .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/tasks/DA-926-sprint-001-closeout-and-sprint-002-activation-handoff.md
       - .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-002-task-plan-commit-and-backlink-projection/plan.md
+      - .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-002-task-plan-commit-and-backlink-projection/tasks/DA-928-sprint-002-closeout-and-sprint-003-activation-handoff.md
       - .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-003-execution-and-governed-cr-orchestration/plan.md
+      - .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-003-execution-and-governed-cr-orchestration/review/resolved_code_review_working-tree-20260417-0550.md
+      - .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-003-execution-and-governed-cr-orchestration/tasks/DA-930-sprint-003-closeout-and-sprint-004-activation-handoff.md
       - .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/plan.md
     accepted_at: 2026-04-16
-
   - solution_id: technical-solution.vscode-full-governance-workbench-and-task-driven-orchestration
     delivery_mode: followup_required
     consumer_surfaces:

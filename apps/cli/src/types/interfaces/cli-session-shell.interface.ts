@@ -86,7 +86,7 @@ export interface CliSessionShellTranscriptProviderContinuationBlock {
 export interface CliSessionShellDeliveryWorkflowUpdate {
   currentPhase: SessionDeliveryWorkflowPhase;
   pendingAction: string | null;
-  selectedTargetStream: string | null;
+  selectedTargetStream?: string | null;
   relatedArtifactPaths: string[];
   resultSummary: string | null;
   childWorkflowBacklinks: Array<{

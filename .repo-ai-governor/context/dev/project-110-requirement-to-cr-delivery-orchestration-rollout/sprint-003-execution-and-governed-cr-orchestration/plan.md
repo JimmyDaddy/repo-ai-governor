@@ -1,6 +1,6 @@
 # sprint-003-execution-and-governed-cr-orchestration 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-16
 - Sprint Goal: 把 task-driven execution、review 与 review-verify 纳入 deliver phase machine
 - Project: `project-110-requirement-to-cr-delivery-orchestration-rollout`
@@ -19,8 +19,8 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-929 | route task-driven execution and governed CR through deliver orchestration | DA-915 | in_progress |
-| TK-930 | close sprint-003 and hand off discoverability closeout follow-up | TK-929 | planned |
+| TK-929 | route task-driven execution and governed CR through deliver orchestration | DA-915 | completed |
+| TK-930 | close sprint-003 and hand off discoverability closeout follow-up | TK-929 | completed |
 
 ## 3. Exit Criteria
 
@@ -31,3 +31,5 @@
 
 1. 需要 clean round 时应复用 productized delegated CR loop 方向，而不是在 presenter 层发明第二套 verify。
 2. `2026-04-17` sprint-002 已在 latest fresh reviewer clean round 后完成 closeout；当前 sprint 被激活为新的 primary execution surface，`TK-929` 切换为 `in_progress`。
+3. `2026-04-17` `CR-001 ~ CR-003` 已全部 `resolved`，其中 latest fresh reviewer clean round `CR-003` 返回无 actionable finding；`TK-929` 切换为 `completed`，`TK-930` 接手 sprint-003 closeout。
+4. `2026-04-17` 已完成 `DA-930`、project/sprint/current-context/delivery-registry write-back 与 sprint-004 activation；当前 sprint 正式切换为 `completed`。

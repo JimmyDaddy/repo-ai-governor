@@ -20,6 +20,14 @@ export const SESSION_DELIVERY_WORKFLOW_CAPABILITY_ID = {
  */
 export const SESSION_DELIVERY_WORKFLOW_PENDING_ACTION = {
   CAPTURE_REQUIREMENT_OR_ATTACH_APPROVED_BRIEF: 'capture_requirement_or_attach_approved_brief',
+  CONFIRM_TASK_PLAN_COMMIT: 'confirm_task_plan_commit',
+  REFINE_TASK_PLAN_PREVIEW: 'refine_task_plan_preview',
+  START_TASK_DRIVEN_EXECUTION_FLOW: 'start_task_driven_execution_flow',
+  REFINE_TASK_PLAN_PREVIEW_OR_RECONFIRM: 'refine_task_plan_preview_or_reconfirm',
+  START_GOVERNED_REVIEW_FLOW: 'start_governed_review_flow',
+  RUN_REVIEW_VERIFY: 'run_review_verify',
+  ADDRESS_ACCEPTED_REVIEW_FINDINGS: 'address_accepted_review_findings',
+  RUN_FRESH_CLEAN_RECHECK: 'run_fresh_clean_recheck',
 } as const;
 
 /**

@@ -104,6 +104,7 @@ import {
 } from './constants/cli-governance-runtime.constant.js';
 import { CliInteractiveUiMode } from './constants/cli-interactive-shell.constant.js';
 import { DEFAULT_CLI_REACT_THEME_PRESET } from './constants/cli-react-theme.constant.js';
+import { CliReviewLifecycleStatus } from './constants/cli-review.constant.js';
 import {
   CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS,
   CliDeliveryRehearsalAction,
@@ -1295,6 +1296,9 @@ export class CliGovernanceRuntime {
           inline_review_request_path: inlineReviewChainSummary.reviewRequestPath,
           inline_review_verify_path: inlineReviewChainSummary.reviewVerifyPath,
           inline_review_ledger_backfill_path: inlineReviewChainSummary.ledgerBackfillPath,
+          inline_review_artifact_path: inlineReviewChainSummary.reviewArtifactPath,
+          inline_review_artifact_status: inlineReviewChainSummary.reviewArtifactStatus,
+          inline_review_verify_decision: inlineReviewChainSummary.reviewVerifyDecision,
           delivery_rehearsal_enabled: deliveryRehearsalSummary.enabled,
           delivery_rehearsal_status: deliveryRehearsalSummary.status,
           delivery_rehearsal_skip_reason: deliveryRehearsalSummary.skipReason,
@@ -2123,6 +2127,14 @@ export class CliGovernanceRuntime {
       const reviewRequestPath =
         commandResult.commandResult.artifacts?.find((artifact) => artifact.id === 'review_request')
           ?.path ?? null;
+      const reviewArtifactPath =
+        typeof commandResult.commandResult.details?.review_artifact_path === 'string'
+          ? commandResult.commandResult.details.review_artifact_path
+          : null;
+      const reviewArtifactStatus =
+        typeof commandResult.commandResult.details?.review_status === 'string'
+          ? commandResult.commandResult.details.review_status
+          : null;
       return {
         handledBy: 'inline-review-subchain',
         stageId: stageContext.stageId,
@@ -2130,6 +2142,8 @@ export class CliGovernanceRuntime {
         managedLedgerBackfill: inlineRuntimeDebugOptions.recordLedger,
         reviewChainStatus: CliInlineReviewChainStatus.APPLIED,
         reviewRequestPath,
+        reviewArtifactPath,
+        reviewArtifactStatus,
       };
     }
 
@@ -2142,6 +2156,18 @@ export class CliGovernanceRuntime {
       commandResult.commandResult.artifacts?.find(
         (artifact) => artifact.id === 'review_ledger_backfill',
       )?.path ?? null;
+    const reviewArtifactPath =
+      typeof commandResult.commandResult.details?.review_artifact_path === 'string'
+        ? commandResult.commandResult.details.review_artifact_path
+        : null;
+    const reviewArtifactStatus =
+      typeof commandResult.commandResult.details?.review_status === 'string'
+        ? commandResult.commandResult.details.review_status
+        : null;
+    const reviewVerifyDecision =
+      typeof commandResult.commandResult.details?.overall_decision === 'string'
+        ? commandResult.commandResult.details.overall_decision
+        : null;
     return {
       handledBy: 'inline-review-subchain',
       stageId: stageContext.stageId,
@@ -2150,6 +2176,9 @@ export class CliGovernanceRuntime {
       reviewChainStatus: CliInlineReviewChainStatus.APPLIED,
       reviewVerifyPath: verifyArtifactPath,
       ledgerBackfillPath,
+      reviewArtifactPath,
+      reviewArtifactStatus,
+      reviewVerifyDecision,
     };
   }
 
@@ -2282,6 +2311,9 @@ export class CliGovernanceRuntime {
     reviewRequestPath: string | null;
     reviewVerifyPath: string | null;
     ledgerBackfillPath: string | null;
+    reviewArtifactPath: string | null;
+    reviewArtifactStatus: CliReviewLifecycleStatus | null;
+    reviewVerifyDecision: string | null;
     reviewStageStatus: RuntimeStageStatus | null;
     reviewVerifyStageStatus: RuntimeStageStatus | null;
   } {
@@ -2300,6 +2332,16 @@ export class CliGovernanceRuntime {
     const reviewRequestPath = this.readStageOutputString(reviewOutput, 'reviewRequestPath');
     const reviewVerifyPath = this.readStageOutputString(reviewVerifyOutput, 'reviewVerifyPath');
     const ledgerBackfillPath = this.readStageOutputString(reviewVerifyOutput, 'ledgerBackfillPath');
+    const reviewArtifactPath =
+      this.readStageOutputString(reviewVerifyOutput, 'reviewArtifactPath') ??
+      this.readStageOutputString(reviewOutput, 'reviewArtifactPath');
+    const reviewArtifactStatus =
+      this.readInlineReviewArtifactStatus(reviewVerifyOutput, 'reviewArtifactStatus') ??
+      this.readInlineReviewArtifactStatus(reviewOutput, 'reviewArtifactStatus');
+    const reviewVerifyDecision = this.readStageOutputString(
+      reviewVerifyOutput,
+      'reviewVerifyDecision',
+    );
     const enabled = reviewStageResult !== null || reviewVerifyStageResult !== null;
 
     if (!enabled) {
@@ -2310,6 +2352,9 @@ export class CliGovernanceRuntime {
         reviewRequestPath,
         reviewVerifyPath,
         ledgerBackfillPath,
+        reviewArtifactPath,
+        reviewArtifactStatus,
+        reviewVerifyDecision,
         reviewStageStatus: null,
         reviewVerifyStageStatus: null,
       };
@@ -2344,6 +2389,9 @@ export class CliGovernanceRuntime {
       reviewRequestPath,
       reviewVerifyPath,
       ledgerBackfillPath,
+      reviewArtifactPath,
+      reviewArtifactStatus,
+      reviewVerifyDecision,
       reviewStageStatus,
       reviewVerifyStageStatus,
     };
@@ -2451,6 +2499,26 @@ export class CliGovernanceRuntime {
       statusValue as CliInlineReviewChainStatus,
     )
       ? (statusValue as CliInlineReviewChainStatus)
+      : null;
+  }
+
+  /**
+   * Resolves canonical review lifecycle status from inline review stage outputs.
+   * @param stageOutput Inline review/review-verify stage output payload.
+   * @param fieldName Field name containing review lifecycle status.
+   * @returns Review lifecycle status when explicitly emitted.
+   */
+  private readInlineReviewArtifactStatus(
+    stageOutput: Record<string, unknown> | null,
+    fieldName: string,
+  ): CliReviewLifecycleStatus | null {
+    const statusValue = this.readStageOutputString(stageOutput, fieldName);
+    if (!statusValue) {
+      return null;
+    }
+
+    return Object.values(CliReviewLifecycleStatus).includes(statusValue as CliReviewLifecycleStatus)
+      ? (statusValue as CliReviewLifecycleStatus)
       : null;
   }
 

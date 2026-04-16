@@ -1,6 +1,6 @@
 # TK-931 align deliver discoverability rollout guidance and runtime evidence
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-04-16
 - Owner: AI-Agent
 - Priority: P1
@@ -54,6 +54,7 @@
 ## 9. 执行记录
 
 1. 2026-04-16：任务创建，状态初始化为 `planned`。
+2. 2026-04-17：随着 `TK-930` 完成 sprint-003 closeout 与 sprint-004 activation handoff，本任务已切换为 `in_progress`，开始承接 conversational deliver explainer、optional `/deliver` alias、CLI/session-shell discoverability 与 rollout evidence 收口。
 
 ## 10. 产出
 

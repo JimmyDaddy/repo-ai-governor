@@ -1,5 +1,11 @@
+import {
+  SESSION_DELIVERY_WORKFLOW_PHASE,
+  SESSION_MAIN_CAPABILITY_ID,
+} from '@repo-ai-governor/core-orchestration-service';
 import { ErrorOutputEnvironment } from '@repo-ai-governor/shared';
+import { CliRuntimeOperation } from '../../src/constants/cli-governance-runtime.constant.js';
 import { CliInteractiveUiMode } from '../../src/constants/cli-interactive-shell.constant.js';
+import { CliReviewLifecycleStatus } from '../../src/constants/cli-review.constant.js';
 import { CliSessionShellEntrypointRuntime } from '../../src/runtime/interactive-shell/session-shell-entrypoint-runtime.js';
 import type { CliCommandProgressEvent } from '../../src/types/index.js';
 
@@ -287,6 +293,385 @@ describe('CliSessionShellEntrypointRuntime', () => {
     expect(result.summaryLines).toContain(
       'Key status: diagnostics_path=/absolute/path/to/context/diagnostics/check/check-123.json',
     );
+  });
+
+  it('projects governed run review-chain state into the deliver workflow overlay', async () => {
+    const commandExecutor = CliSessionShellEntrypointRuntime.createNestedCommandExecutor({
+      locale: 'en-US',
+      currentWorkingDirectory: '/workspace',
+      environment: {},
+      translate: translateSessionShellResponse,
+      executeCli: async (_argv, io) => {
+        io.stdout(
+          JSON.stringify({
+            command: 'run',
+            message: 'Run completed with governed review chain artifacts.',
+            command_result: {
+              operation: CliRuntimeOperation.GOVERNANCE_RUN,
+              summary: 'Run completed with governed review chain artifacts.',
+              details: {
+                inline_review_request_path: '/tmp/review-request.md',
+                inline_review_verify_path: '/tmp/review-verify.md',
+                inline_review_ledger_backfill_path: '/tmp/review-ledger-backfill.json',
+                inline_review_artifact_path: '/tmp/verified-code-review.md',
+                inline_review_artifact_status: CliReviewLifecycleStatus.VERIFIED,
+                inline_review_verify_decision: 'accepted',
+              },
+              artifacts: [
+                {
+                  id: 'execution_report',
+                  path: '/tmp/execution-report.md',
+                },
+              ],
+            },
+          }),
+        );
+        return 0;
+      },
+    });
+
+    const result = await commandExecutor(['run']);
+
+    expect(result.deliveryWorkflowUpdate).toEqual({
+      currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.REVIEW_VERIFY_PENDING,
+      pendingAction: 'address_accepted_review_findings',
+      relatedArtifactPaths: ['/tmp/execution-report.md', '/tmp/verified-code-review.md'],
+      resultSummary: 'Run completed with governed review chain artifacts.',
+      childWorkflowBacklinks: [
+        {
+          capabilityId: SESSION_MAIN_CAPABILITY_ID.RUN,
+          artifactPath: '/tmp/execution-report.md',
+          summary: 'Run completed with governed review chain artifacts.',
+        },
+        {
+          capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW,
+          artifactPath: '/tmp/verified-code-review.md',
+          summary: 'Run completed with governed review chain artifacts.',
+        },
+        {
+          capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW_VERIFY,
+          artifactPath: '/tmp/verified-code-review.md',
+          summary: 'Run completed with governed review chain artifacts.',
+        },
+      ],
+    });
+    expect(result.deliveryWorkflowUpdate?.selectedTargetStream).toBeUndefined();
+  });
+
+  it('covers the remaining governed run status-routing branches', async () => {
+    const scenarios = [
+      {
+        inlineReviewArtifactStatus: undefined,
+        inlineReviewVerifyDecision: undefined,
+        expectedPhase: SESSION_DELIVERY_WORKFLOW_PHASE.EXECUTION_ACTIVE,
+        expectedPendingAction: 'start_governed_review_flow',
+        expectedBacklinks: [
+          {
+            capabilityId: SESSION_MAIN_CAPABILITY_ID.RUN,
+            artifactPath: '/tmp/execution-report.md',
+            summary: 'Governed run branch exercised.',
+          },
+          {
+            capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW,
+            artifactPath: '/tmp/code-review.md',
+            summary: 'Governed run branch exercised.',
+          },
+        ],
+      },
+      {
+        inlineReviewArtifactStatus: CliReviewLifecycleStatus.REVIEW_PENDING,
+        inlineReviewVerifyDecision: undefined,
+        expectedPhase: SESSION_DELIVERY_WORKFLOW_PHASE.REVIEW_PENDING,
+        expectedPendingAction: 'run_review_verify',
+        expectedBacklinks: [
+          {
+            capabilityId: SESSION_MAIN_CAPABILITY_ID.RUN,
+            artifactPath: '/tmp/execution-report.md',
+            summary: 'Governed run branch exercised.',
+          },
+          {
+            capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW,
+            artifactPath: '/tmp/code-review.md',
+            summary: 'Governed run branch exercised.',
+          },
+        ],
+      },
+      {
+        inlineReviewArtifactStatus: CliReviewLifecycleStatus.RESOLVED,
+        inlineReviewVerifyDecision: 'accepted',
+        expectedPhase: SESSION_DELIVERY_WORKFLOW_PHASE.RESOLVED,
+        expectedPendingAction: 'run_fresh_clean_recheck',
+        expectedBacklinks: [
+          {
+            capabilityId: SESSION_MAIN_CAPABILITY_ID.RUN,
+            artifactPath: '/tmp/execution-report.md',
+            summary: 'Governed run branch exercised.',
+          },
+          {
+            capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW,
+            artifactPath: '/tmp/code-review.md',
+            summary: 'Governed run branch exercised.',
+          },
+          {
+            capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW_VERIFY,
+            artifactPath: '/tmp/code-review.md',
+            summary: 'Governed run branch exercised.',
+          },
+        ],
+      },
+    ] as const;
+
+    for (const scenario of scenarios) {
+      const commandExecutor = CliSessionShellEntrypointRuntime.createNestedCommandExecutor({
+        locale: 'en-US',
+        currentWorkingDirectory: '/workspace',
+        environment: {},
+        translate: translateSessionShellResponse,
+        executeCli: async (_argv, io) => {
+          io.stdout(
+            JSON.stringify({
+              command: 'run',
+              message: 'Governed run branch exercised.',
+              command_result: {
+                operation: CliRuntimeOperation.GOVERNANCE_RUN,
+                summary: 'Governed run branch exercised.',
+                details: {
+                  inline_review_request_path: '/tmp/review-request.md',
+                  inline_review_verify_path: '/tmp/review-verify.md',
+                  inline_review_ledger_backfill_path: '/tmp/review-ledger-backfill.json',
+                  inline_review_artifact_path: '/tmp/code-review.md',
+                  inline_review_artifact_status: scenario.inlineReviewArtifactStatus,
+                  inline_review_verify_decision: scenario.inlineReviewVerifyDecision,
+                },
+                artifacts: [
+                  {
+                    id: 'execution_report',
+                    path: '/tmp/execution-report.md',
+                  },
+                ],
+              },
+            }),
+          );
+          return 0;
+        },
+      });
+
+      const result = await commandExecutor(['run']);
+
+      expect(result.deliveryWorkflowUpdate).toEqual({
+        currentPhase: scenario.expectedPhase,
+        pendingAction: scenario.expectedPendingAction,
+        relatedArtifactPaths: ['/tmp/execution-report.md', '/tmp/code-review.md'],
+        resultSummary: 'Governed run branch exercised.',
+        childWorkflowBacklinks: scenario.expectedBacklinks,
+      });
+    }
+  });
+
+  it('projects review queue lifecycle status into review-pending deliver workflow state', async () => {
+    const commandExecutor = CliSessionShellEntrypointRuntime.createNestedCommandExecutor({
+      locale: 'en-US',
+      currentWorkingDirectory: '/workspace',
+      environment: {},
+      translate: translateSessionShellResponse,
+      executeCli: async (_argv, io) => {
+        io.stdout(
+          JSON.stringify({
+            command: 'review',
+            message: 'Review queue artifact created.',
+            command_result: {
+              operation: CliRuntimeOperation.REVIEW_QUEUE,
+              summary: 'Review queue artifact created.',
+              details: {
+                review_status: CliReviewLifecycleStatus.REVIEW_PENDING,
+                review_artifact_path: '/tmp/code-review.md',
+                request_path: '/tmp/review-request.md',
+                review_task_card_path: '/tmp/CR-008.md',
+              },
+            },
+          }),
+        );
+        return 0;
+      },
+    });
+
+    const result = await commandExecutor(['review']);
+
+    expect(result.deliveryWorkflowUpdate).toEqual({
+      currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.REVIEW_PENDING,
+      pendingAction: 'run_review_verify',
+      relatedArtifactPaths: ['/tmp/code-review.md', '/tmp/CR-008.md'],
+      resultSummary: 'Review queue artifact created.',
+      childWorkflowBacklinks: [
+        {
+          capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW,
+          artifactPath: '/tmp/code-review.md',
+          summary: 'Review queue artifact created.',
+        },
+      ],
+    });
+  });
+
+  it('projects resolved review queue state into the deliver overlay without verify follow-up', async () => {
+    const commandExecutor = CliSessionShellEntrypointRuntime.createNestedCommandExecutor({
+      locale: 'en-US',
+      currentWorkingDirectory: '/workspace',
+      environment: {},
+      translate: translateSessionShellResponse,
+      executeCli: async (_argv, io) => {
+        io.stdout(
+          JSON.stringify({
+            command: 'review',
+            message: 'Review queue item is already resolved.',
+            command_result: {
+              operation: CliRuntimeOperation.REVIEW_QUEUE,
+              summary: 'Review queue item is already resolved.',
+              details: {
+                review_status: CliReviewLifecycleStatus.RESOLVED,
+                review_artifact_path: '/tmp/resolved-code-review.md',
+                request_path: '/tmp/review-request.md',
+                review_task_card_path: '/tmp/CR-008.md',
+              },
+            },
+          }),
+        );
+        return 0;
+      },
+    });
+
+    const result = await commandExecutor(['review']);
+
+    expect(result.deliveryWorkflowUpdate).toEqual({
+      currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.RESOLVED,
+      pendingAction: null,
+      relatedArtifactPaths: ['/tmp/resolved-code-review.md', '/tmp/CR-008.md'],
+      resultSummary: 'Review queue item is already resolved.',
+      childWorkflowBacklinks: [
+        {
+          capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW,
+          artifactPath: '/tmp/resolved-code-review.md',
+          summary: 'Review queue item is already resolved.',
+        },
+      ],
+    });
+  });
+
+  it('projects review-verify completion into clean-recheck deliver workflow state', async () => {
+    const commandExecutor = CliSessionShellEntrypointRuntime.createNestedCommandExecutor({
+      locale: 'en-US',
+      currentWorkingDirectory: '/workspace',
+      environment: {},
+      translate: translateSessionShellResponse,
+      executeCli: async (_argv, io) => {
+        io.stdout(
+          JSON.stringify({
+            command: 'review-verify',
+            message: 'Review verify resolved all actionable findings.',
+            command_result: {
+              operation: CliRuntimeOperation.REVIEW_VERIFY,
+              summary: 'Review verify resolved all actionable findings.',
+              details: {
+                review_status: CliReviewLifecycleStatus.RESOLVED,
+                review_artifact_path: '/tmp/resolved-code-review.md',
+                review_task_card_path: '/tmp/CR-008.md',
+                overall_decision: 'accepted',
+              },
+              artifacts: [
+                {
+                  id: 'review_verify_result',
+                  path: '/tmp/review-verify-result.json',
+                },
+                {
+                  id: 'review_ledger_backfill',
+                  path: '/tmp/review-ledger-backfill.json',
+                },
+              ],
+            },
+          }),
+        );
+        return 0;
+      },
+    });
+
+    const result = await commandExecutor(['review-verify']);
+
+    expect(result.deliveryWorkflowUpdate).toEqual({
+      currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.RESOLVED,
+      pendingAction: 'run_fresh_clean_recheck',
+      relatedArtifactPaths: ['/tmp/resolved-code-review.md', '/tmp/CR-008.md'],
+      resultSummary: 'Review verify resolved all actionable findings.',
+      childWorkflowBacklinks: [
+        {
+          capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW,
+          artifactPath: '/tmp/resolved-code-review.md',
+          summary: 'Review verify resolved all actionable findings.',
+        },
+        {
+          capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW_VERIFY,
+          artifactPath: '/tmp/resolved-code-review.md',
+          summary: 'Review verify resolved all actionable findings.',
+        },
+      ],
+    });
+  });
+
+  it('projects verified review-verify state into accepted-findings follow-up', async () => {
+    const commandExecutor = CliSessionShellEntrypointRuntime.createNestedCommandExecutor({
+      locale: 'en-US',
+      currentWorkingDirectory: '/workspace',
+      environment: {},
+      translate: translateSessionShellResponse,
+      executeCli: async (_argv, io) => {
+        io.stdout(
+          JSON.stringify({
+            command: 'review-verify',
+            message: 'Review verify accepted follow-up work.',
+            command_result: {
+              operation: CliRuntimeOperation.REVIEW_VERIFY,
+              summary: 'Review verify accepted follow-up work.',
+              details: {
+                review_status: CliReviewLifecycleStatus.VERIFIED,
+                review_artifact_path: '/tmp/verified-code-review.md',
+                review_task_card_path: '/tmp/CR-008.md',
+                overall_decision: 'accepted',
+              },
+              artifacts: [
+                {
+                  id: 'review_verify_result',
+                  path: '/tmp/review-verify-result.json',
+                },
+                {
+                  id: 'review_ledger_backfill',
+                  path: '/tmp/review-ledger-backfill.json',
+                },
+              ],
+            },
+          }),
+        );
+        return 0;
+      },
+    });
+
+    const result = await commandExecutor(['review-verify']);
+
+    expect(result.deliveryWorkflowUpdate).toEqual({
+      currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.REVIEW_VERIFY_PENDING,
+      pendingAction: 'address_accepted_review_findings',
+      relatedArtifactPaths: ['/tmp/verified-code-review.md', '/tmp/CR-008.md'],
+      resultSummary: 'Review verify accepted follow-up work.',
+      childWorkflowBacklinks: [
+        {
+          capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW,
+          artifactPath: '/tmp/verified-code-review.md',
+          summary: 'Review verify accepted follow-up work.',
+        },
+        {
+          capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW_VERIFY,
+          artifactPath: '/tmp/verified-code-review.md',
+          summary: 'Review verify accepted follow-up work.',
+        },
+      ],
+    });
   });
 
   it('forwards nested progress relay ownership into re-entered runCli execution options', async () => {
