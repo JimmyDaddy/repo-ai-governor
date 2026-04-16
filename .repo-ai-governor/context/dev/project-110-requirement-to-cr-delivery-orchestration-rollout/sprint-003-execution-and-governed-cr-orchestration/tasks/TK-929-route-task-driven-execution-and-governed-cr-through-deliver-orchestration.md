@@ -1,6 +1,6 @@
 # TK-929 route task-driven execution and governed CR through deliver orchestration
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-04-16
 - Owner: AI-Agent
 - Priority: P1
@@ -54,8 +54,9 @@
 ## 9. 执行记录
 
 1. 2026-04-16：任务创建，状态初始化为 `planned`。
+2. 2026-04-17：随着 sprint-002 closeout 与 `current-context` 切换，本任务已激活为新的 primary implementation boundary，开始推进 execution/review/review-verify deliver orchestration 接线。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. 待执行中：sprint-003 runtime execution/review orchestration artifact
+2. 待执行中：与任务推进同步的 task-ledger/checklist/tasks.csv update

@@ -1,4 +1,5 @@
 import type {
+  SessionDeliveryWorkflowPhase,
   SessionMainCapabilityAnswerKind,
   SessionMainCapabilityId,
   SessionMainCapabilitySuggestedAction,
@@ -80,6 +81,31 @@ export interface CliSessionShellTranscriptProviderContinuationBlock {
 }
 
 /**
+ * Defines one presenter-safe delivery-workflow update emitted by nested governed commands.
+ */
+export interface CliSessionShellDeliveryWorkflowUpdate {
+  currentPhase: SessionDeliveryWorkflowPhase;
+  pendingAction: string | null;
+  selectedTargetStream: string | null;
+  relatedArtifactPaths: string[];
+  resultSummary: string | null;
+  childWorkflowBacklinks: Array<{
+    capabilityId: SessionMainCapabilityId;
+    artifactPath: string;
+    summary: string | null;
+  }>;
+}
+
+/**
+ * Defines one confirmation-gated follow-up command armed after a direct bridge command succeeds.
+ */
+export interface CliSessionShellCommandFollowUp {
+  argv: string[];
+  previewCommandLine: string;
+  slashQuery: string;
+}
+
+/**
  * Defines one transcript item rendered inside the session-shell transcript pane.
  */
 export interface CliSessionShellTranscriptItem {
@@ -91,6 +117,7 @@ export interface CliSessionShellTranscriptItem {
   summaryLine?: string;
   markdownSource?: string;
   backlinks?: CliSessionShellTranscriptBacklink[];
+  backlinksTitle?: string;
   details?: CliSessionShellTranscriptDetailsBlock;
   capabilityAnswerKind?: SessionMainCapabilityAnswerKind;
   referencedCapabilityIds?: SessionMainCapabilityId[];
@@ -218,6 +245,8 @@ export interface CliSessionShellCommandExecutionResult {
   message: string;
   summaryLines: string[];
   artifactPaths: string[];
+  deliveryWorkflowUpdate?: CliSessionShellDeliveryWorkflowUpdate;
+  followUpCommand?: CliSessionShellCommandFollowUp;
 }
 
 export type CliSessionShellCommandExecutor = (

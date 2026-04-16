@@ -1029,13 +1029,13 @@ deliveries:
     rollout_status: in_progress
     owner: runtime
     project_ref: project-110-requirement-to-cr-delivery-orchestration-rollout
-    sprint_ref: sprint-001-deliver-capability-and-requirement-brief-baseline
+    sprint_ref: sprint-003-execution-and-governed-cr-orchestration
     task_ids:
-      - TK-925
-      - TK-926
+      - TK-929
+      - TK-930
     project_plan_path: .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/plan.md
-    sprint_plan_path: .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/plan.md
-    task_csv_path: .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/tasks/tasks.csv
+    sprint_plan_path: .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-003-execution-and-governed-cr-orchestration/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-003-execution-and-governed-cr-orchestration/tasks/tasks.csv
     handoff_artifact_path: .repo-ai-governor/context/dev/project-109-requirement-to-cr-delivery-solution-review-and-promotion-prep/sprint-001-solution-review-and-promotion-handoff/tasks/DA-915-requirement-to-cr-delivery-promotion-and-rollout-decomposition-handoff.md
     rollout_artifacts:
       - .repo-ai-governor/context/dev/project-109-requirement-to-cr-delivery-solution-review-and-promotion-prep/sprint-001-solution-review-and-promotion-handoff/tasks/DA-915-requirement-to-cr-delivery-promotion-and-rollout-decomposition-handoff.md

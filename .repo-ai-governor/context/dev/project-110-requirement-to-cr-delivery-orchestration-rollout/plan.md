@@ -26,13 +26,13 @@
 
 ## 2.2 sprint-002-task-plan-commit-and-backlink-projection
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 把 task decomposition preview/commit 与 durable backlink summary 接到 delivery orchestration
 - Task Package: `TK-927、TK-928`
 
 ## 2.3 sprint-003-execution-and-governed-cr-orchestration
 
-- Status: planned
+- Status: active
 - Sprint Goal: 把 task-driven execution、review 与 review-verify 纳入 deliver phase machine
 - Task Package: `TK-929、TK-930`
 
@@ -48,9 +48,9 @@
 | --- | --- | --- | --- | --- | --- |
 | TK-925 | sprint-001-deliver-capability-and-requirement-brief-baseline | freeze deliver capability and approved durable brief baseline | runtime contract baseline | DA-915 | completed |
 | TK-926 | sprint-001-deliver-capability-and-requirement-brief-baseline | close sprint-001 and hand off task-plan commit follow-up | governance handoff | TK-925 | completed |
-| TK-927 | sprint-002-task-plan-commit-and-backlink-projection | land task plan preview-commit bridge and durable backlink projection | runtime orchestration plus durable storage | DA-915 | planned |
-| TK-928 | sprint-002-task-plan-commit-and-backlink-projection | close sprint-002 and hand off execution-orchestration follow-up | governance handoff | TK-927 | planned |
-| TK-929 | sprint-003-execution-and-governed-cr-orchestration | route task-driven execution and governed CR through deliver orchestration | runtime execution and review orchestration | DA-915 | planned |
+| TK-927 | sprint-002-task-plan-commit-and-backlink-projection | land task plan preview-commit bridge and durable backlink projection | runtime orchestration plus durable storage | DA-915 | completed |
+| TK-928 | sprint-002-task-plan-commit-and-backlink-projection | close sprint-002 and hand off execution-orchestration follow-up | governance handoff | TK-927 | completed |
+| TK-929 | sprint-003-execution-and-governed-cr-orchestration | route task-driven execution and governed CR through deliver orchestration | runtime execution and review orchestration | DA-915 | in_progress |
 | TK-930 | sprint-003-execution-and-governed-cr-orchestration | close sprint-003 and hand off discoverability closeout follow-up | governance handoff | TK-929 | planned |
 | TK-931 | sprint-004-discoverability-rollout-and-project-closeout | align deliver discoverability rollout guidance and runtime evidence | discoverability and rollout evidence | DA-915 | planned |
 | TK-932 | sprint-004-discoverability-rollout-and-project-closeout | finalize project-110 rollout closeout and delivery evidence handoff | closeout and delivery evidence | TK-931 | planned |
@@ -73,6 +73,8 @@
 2. 2026-04-16：激活 `project-110 / sprint-001` 为 active primary stream，`TK-925` 进入 `in_progress`，开始冻结 deliver capability 与 approved durable brief baseline。
 3. 2026-04-17：fresh reviewer `CR-019` clean round 返回无 actionable finding；`TK-925` 切换为 `completed`，`TK-926` 激活为 `in_progress`，开始 sprint-001 closeout 与 sprint-002 activation handoff。
 4. 2026-04-17：已完成 `DA-926` closeout packet，project-110 的 sprint-001 正式切换为 `completed`；下一条执行边界固定为 sprint-002 / `TK-927`，将在 sprint-001 boundary commit 后激活。
+5. 2026-04-17：sprint-001 boundary commit `51cad3ca` 已落地；`project-110 / sprint-002` 成为新的 active primary stream，`TK-927` 切换为 `in_progress`。
+6. 2026-04-17：latest fresh reviewer round `CR-005` clean after rounds `CR-001 ~ CR-005`；`TK-928` 已完成 sprint-002 closeout 与 sprint-003 activation handoff，当前 active primary stream 已切换到 sprint-003 / `TK-929`。
 
 ## 7. 里程碑记录入口
 

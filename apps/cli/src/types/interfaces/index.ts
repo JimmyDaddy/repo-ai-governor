@@ -106,6 +106,8 @@ export type {
   CliInteractiveShellSelectPrompt,
 } from './cli-interactive-shell.interface.js';
 export type {
+  CliSessionShellCommandFollowUp,
+  CliSessionShellDeliveryWorkflowUpdate,
   CliSessionShellSecureSecretMutator,
   CliSessionShellSecureCaptureDescriptor,
   CliSessionShellTranscriptProviderContinuationBlock,

@@ -548,7 +548,7 @@ export class LocalOrchestrationServiceSessionRuntime {
     request: OrchestrationAppendSessionMessageRequest,
   ): Promise<OrchestrationAppendSessionMessageResponse> {
     const sessionManager = await this.resolveSharedSessionManager();
-    await sessionManager.getSession(request.sessionId);
+    const currentSession = await sessionManager.getSession(request.sessionId);
     const createdAt = this.toTimestamp();
     const normalizedLines = request.lines
       .map((line) => line.trimEnd())
@@ -566,6 +566,21 @@ export class LocalOrchestrationServiceSessionRuntime {
     const role = this.assertSupportedTranscriptRole(request.role);
     const routeId = request.routeId ?? OrchestrationSessionRouteId.MAIN;
     this.assertSupportedRouteId(routeId);
+    const deliveryWorkflowMetadataUpdate =
+      this.deliveryWorkflowSessionRuntime.resolveMessageMetadataUpdate(
+        currentSession.context,
+        request.metadata,
+        request.sessionId,
+      );
+    const eventMetadata =
+      request.metadata || deliveryWorkflowMetadataUpdate
+        ? {
+            ...(request.metadata ? { ...request.metadata } : {}),
+            ...(deliveryWorkflowMetadataUpdate
+              ? { ...deliveryWorkflowMetadataUpdate.presenterMetadata }
+              : {}),
+          }
+        : undefined;
     await sessionManager.appendEvent({
       sessionId: request.sessionId,
       type: OrchestrationSessionEventType.SESSION_MESSAGE_APPENDED,
@@ -574,12 +589,14 @@ export class LocalOrchestrationServiceSessionRuntime {
         role,
         routeId,
         lines: normalizedLines,
-        ...(request.metadata ? { metadata: { ...request.metadata } } : {}),
+        ...(eventMetadata ? { metadata: eventMetadata } : {}),
       },
     });
     const noteContextPatch = this.buildAppendedMessageContextPatch(
+      currentSession.context,
       normalizedLines,
-      request.metadata,
+      eventMetadata,
+      deliveryWorkflowMetadataUpdate?.nextState ?? null,
     );
     if (Object.keys(noteContextPatch).length > 0) {
       await sessionManager.updateContext({
@@ -1408,30 +1425,40 @@ export class LocalOrchestrationServiceSessionRuntime {
   }
 
   private buildAppendedMessageContextPatch(
+    currentContext: Record<string, unknown>,
     lines: string[],
     metadata?: Record<string, unknown>,
+    deliveryWorkflowState?: SessionDeliveryWorkflowSessionState | null,
   ): Record<string, unknown> {
-    if (!metadata || typeof metadata !== 'object') {
-      return {};
+    const noteContextPatch: Record<string, unknown> = {};
+    if (metadata && typeof metadata === 'object') {
+      const renderKind = this.readOptionalMetadataString(metadata, 'renderKind');
+      const commandLine = this.readOptionalMetadataString(metadata, 'commandLine');
+      if (commandLine || renderKind === 'collaboration_recap') {
+        const previewSummary = lines[0] ? this.toSingleLineSummary(lines[0]) : undefined;
+        const latestNoteSummary = commandLine
+          ? `last_command=${this.toSingleLineSummary(commandLine)}`
+          : previewSummary;
+        if (previewSummary) {
+          noteContextPatch[SESSION_CONTEXT_PREVIEW_SUMMARY_KEY] = previewSummary;
+        }
+        if (latestNoteSummary) {
+          noteContextPatch[SESSION_CONTEXT_LATEST_NOTE_SUMMARY_KEY] = latestNoteSummary;
+        }
+      }
     }
 
-    const renderKind = this.readOptionalMetadataString(metadata, 'renderKind');
-    const commandLine = this.readOptionalMetadataString(metadata, 'commandLine');
-    if (!commandLine && renderKind !== 'collaboration_recap') {
-      return {};
+    const deliveryContextPatch = deliveryWorkflowState
+      ? this.deliveryWorkflowSessionRuntime.createContextPatch(
+          currentContext,
+          deliveryWorkflowState,
+        )
+      : null;
+    if (deliveryContextPatch) {
+      Object.assign(noteContextPatch, deliveryContextPatch);
     }
 
-    const previewSummary = lines[0] ? this.toSingleLineSummary(lines[0]) : undefined;
-    const latestNoteSummary = commandLine
-      ? `last_command=${this.toSingleLineSummary(commandLine)}`
-      : previewSummary;
-
-    return {
-      ...(previewSummary ? { [SESSION_CONTEXT_PREVIEW_SUMMARY_KEY]: previewSummary } : {}),
-      ...(latestNoteSummary
-        ? { [SESSION_CONTEXT_LATEST_NOTE_SUMMARY_KEY]: latestNoteSummary }
-        : {}),
-    };
+    return noteContextPatch;
   }
 
   private buildSessionPreviewSummary(options: {

@@ -343,6 +343,7 @@ describe('ReactCliRunner', () => {
             'Intent: connect.adapters.bootstrap',
           ],
           renderKind: 'command_recap',
+          backlinksTitle: 'Related',
           backlinks: [
             {
               kind: 'slash_command',

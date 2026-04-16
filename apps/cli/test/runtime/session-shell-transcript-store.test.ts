@@ -203,6 +203,80 @@ describe('CliSessionShellTranscriptStore', () => {
     });
   });
 
+  it('recomputes collapsed detail counts and localizes backlink titles when delivery metadata is merged in', () => {
+    const store = new CliSessionShellTranscriptStore();
+    const items = store.applyEvents(
+      'session-001',
+      [
+        {
+          eventId: 'event-3b',
+          sequence: 31,
+          streamCursor: 'cursor-31',
+          sessionId: 'session-001',
+          type: OrchestrationSessionEventType.SESSION_MESSAGE_APPENDED,
+          createdAt: '2026-03-31T12:00:03Z',
+          payload: {
+            role: OrchestrationSessionTranscriptRole.ASSISTANT,
+            lines: ['Command handoff completed for plan.'],
+            metadata: {
+              renderKind: 'command_recap',
+              executionDetailsLines: ['Running plan…'],
+              turn_delivery_phase: 'task_plan_commit_pending',
+              turn_delivery_pending_action: 'confirm_task_plan_commit',
+              turn_delivery_related_artifact_paths: [
+                '/workspace/repo/context/plan/plan-001.preview.json',
+              ],
+              turn_delivery_result_summary: 'Task plan preview is ready for confirmation.',
+            },
+          },
+        },
+      ],
+      (key, interpolation) => {
+        if (key === 'cli.sessionShell.transcript.assistantLabel') {
+          return 'Governor';
+        }
+        if (key === 'cli.sessionShell.responses.executionDetailsTitle') {
+          return 'Execution details';
+        }
+        if (key === 'cli.sessionShell.responses.executionDetailsCollapsed') {
+          return `▶ Collapsed · ${interpolation?.count ?? '0'} entries · Ctrl+O to open`;
+        }
+        if (key === 'cli.sessionShell.responses.deliverySummaryTitle') {
+          return 'Delivery workflow';
+        }
+        if (key === 'cli.sessionShell.responses.deliverySummarySummaryLine') {
+          return 'Delivery workflow metadata';
+        }
+        if (key === 'cli.sessionShell.responses.deliveryPhaseField') {
+          return `Delivery phase: ${interpolation?.phase ?? ''}`;
+        }
+        if (key === 'cli.sessionShell.responses.deliveryPendingActionField') {
+          return `Pending action: ${interpolation?.pendingAction ?? ''}`;
+        }
+        if (key === 'cli.sessionShell.responses.deliveryResultSummaryField') {
+          return `Delivery summary: ${interpolation?.resultSummary ?? ''}`;
+        }
+        if (key === 'cli.sessionShell.responses.relatedLinksTitle') {
+          return 'Related';
+        }
+        return key;
+      },
+    );
+
+    expect(items[0]?.details).toEqual({
+      title: 'Execution details',
+      summaryLine: '▶ Collapsed · 4 entries · Ctrl+O to open',
+      lines: [
+        'Running plan…',
+        'Delivery phase: task_plan_commit_pending',
+        'Pending action: confirm_task_plan_commit',
+        'Delivery summary: Task plan preview is ready for confirmation.',
+      ],
+      expanded: false,
+    });
+    expect(items[0]?.backlinksTitle).toBe('Related');
+  });
+
   it('renders presenter-safe provider continuation recap blocks from completed turns', () => {
     const store = new CliSessionShellTranscriptStore();
     const items = store.applyEvents(

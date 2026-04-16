@@ -3,20 +3,20 @@
 ## Primary Stream
 
 - Status: active
-- Stream: `stream-project-110-sprint-001`
+- Stream: `stream-project-110-sprint-003`
 - Project: `project-110-requirement-to-cr-delivery-orchestration-rollout`
-- Sprint: `sprint-001-deliver-capability-and-requirement-brief-baseline`
+- Sprint: `sprint-003-execution-and-governed-cr-orchestration`
 - Docs: `.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout`
-- Plan: `.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/plan.md`
-- Tasks: `.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/tasks/`
-- Checklist: `.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/tasks/checklist.md`
-- CSV: `.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/tasks/tasks.csv`
-- Review: `.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/review/`
-- Note: `2026-04-16` 已完成 execution baseline checkpoint commit `bdfec1f5`；当前正式激活 `project-110 / sprint-001` 作为 active primary stream，`project-112 / sprint-001` 继续保留为 planned follow-up stream。
+- Plan: `.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-003-execution-and-governed-cr-orchestration/plan.md`
+- Tasks: `.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-003-execution-and-governed-cr-orchestration/tasks/`
+- Checklist: `.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-003-execution-and-governed-cr-orchestration/tasks/checklist.md`
+- CSV: `.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-003-execution-and-governed-cr-orchestration/tasks/tasks.csv`
+- Review: `.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-003-execution-and-governed-cr-orchestration/review/`
+- Note: `2026-04-16` 已完成 execution baseline checkpoint commit `bdfec1f5`；`2026-04-17` 已完成 sprint-001 boundary commit `51cad3ca`，sprint-002 已在 latest fresh reviewer round `CR-005` clean 后完成 closeout，当前正式激活 `project-110 / sprint-003` 作为新的 active primary stream，`project-112 / sprint-001` 继续保留为 planned follow-up stream。
 
 ## Active Streams
 
-- `stream-project-110-sprint-001`: project=`project-110-requirement-to-cr-delivery-orchestration-rollout`, sprint=`sprint-001-deliver-capability-and-requirement-brief-baseline`, docs=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout`, plan=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/plan.md`, tasks=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/tasks/`, checklist=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/review/`, status=`in_progress`, role=`primary`
+- `stream-project-110-sprint-003`: project=`project-110-requirement-to-cr-delivery-orchestration-rollout`, sprint=`sprint-003-execution-and-governed-cr-orchestration`, docs=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout`, plan=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-003-execution-and-governed-cr-orchestration/plan.md`, tasks=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-003-execution-and-governed-cr-orchestration/tasks/`, checklist=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-003-execution-and-governed-cr-orchestration/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-003-execution-and-governed-cr-orchestration/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-003-execution-and-governed-cr-orchestration/review/`, status=`in_progress`, role=`primary`
 
 ## Planned Follow-Up Streams
 

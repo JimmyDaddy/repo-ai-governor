@@ -9,6 +9,7 @@ import {
 import {
   SESSION_DELIVERY_REQUIREMENT_REVIEW_OUTCOME,
   SESSION_DELIVERY_WORKFLOW_CAPABILITY_ID,
+  SESSION_DELIVERY_WORKFLOW_PENDING_ACTION,
   SESSION_DELIVERY_WORKFLOW_PHASE,
   SESSION_DELIVERY_WORKFLOW_VERSION,
   SESSION_MAIN_CAPABILITY_AVAILABILITY_STATUS,
@@ -663,7 +664,8 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
           evidenceArtifactPath: null,
         },
         approvedDeliveryBriefPath: null,
-        pendingAction: 'capture_requirement_or_attach_approved_brief',
+        pendingAction:
+          SESSION_DELIVERY_WORKFLOW_PENDING_ACTION.CAPTURE_REQUIREMENT_OR_ATTACH_APPROVED_BRIEF,
         selectedTargetStream: null,
         relatedArtifactPaths: [],
         childWorkflowBacklinks: [],

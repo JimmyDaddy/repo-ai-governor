@@ -1,3 +1,5 @@
+import { basename } from 'node:path';
+
 import {
   type OrchestrationSessionEvent,
   OrchestrationSessionEventType,
@@ -95,6 +97,7 @@ export class CliSessionShellTranscriptStore {
       ...(item.referencedCapabilityIds
         ? { referencedCapabilityIds: [...item.referencedCapabilityIds] }
         : {}),
+      ...(item.backlinksTitle ? { backlinksTitle: item.backlinksTitle } : {}),
       ...(item.backlinks ? { backlinks: item.backlinks.map((backlink) => ({ ...backlink })) } : {}),
       ...(item.details
         ? {
@@ -176,16 +179,32 @@ export class CliSessionShellTranscriptStore {
         this.readStringArray(metadata?.executionDetailsLines),
         translate,
       );
+      const deliverySummary = this.readDeliveryWorkflowSummary(metadata);
+      const mergedDetails = this.mergeDetailsBlock(
+        details,
+        this.buildDeliveryWorkflowDetailsBlock(deliverySummary, translate),
+        translate,
+      );
+      const linesWithDeliverySummary = this.appendDeliveryWorkflowRecapLines(
+        lines,
+        deliverySummary,
+        translate,
+      );
+      const deliveryBacklinks = this.resolveDeliveryWorkflowBacklinks(deliverySummary);
 
       return {
         id: `${event.sessionId}:${String(event.sequence)}`,
         role: this.mapTranscriptRole(role),
         label: this.resolveTranscriptLabel(role, translate),
-        lines,
+        lines: linesWithDeliverySummary,
         renderKind:
           requestedRenderKind ??
           (role === OrchestrationSessionTranscriptRole.SYSTEM ? 'system_notice' : 'plain_text'),
-        ...(details ? { details } : {}),
+        ...(mergedDetails ? { details: mergedDetails } : {}),
+        ...(deliveryBacklinks.length > 0
+          ? { backlinksTitle: translate('cli.sessionShell.responses.relatedLinksTitle') }
+          : {}),
+        ...(deliveryBacklinks.length > 0 ? { backlinks: deliveryBacklinks } : {}),
       };
     }
 
@@ -247,6 +266,16 @@ export class CliSessionShellTranscriptStore {
       const invokedRoleIds = this.readStringArray(event.payload.invokedRoleIds);
       const subagentCount = this.readOptionalNumber(event.payload.subagentCount);
       const handoffBacklinks = this.readBacklinks(event.payload.handoffBacklinks);
+      const deliverySummary = this.readDeliveryWorkflowSummary(event.payload);
+      const deliveryBacklinks = this.mergeBacklinks(
+        handoffBacklinks,
+        this.resolveDeliveryWorkflowBacklinks(deliverySummary),
+      );
+      const mergedDetails = this.mergeDetailsBlock(
+        details,
+        this.buildDeliveryWorkflowDetailsBlock(deliverySummary, translate),
+        translate,
+      );
       if (assistantMessage && responseMode === 'role_collaboration') {
         return {
           id: `${event.sessionId}:${String(event.sequence)}`,
@@ -264,7 +293,11 @@ export class CliSessionShellTranscriptStore {
           renderKind: 'collaboration_recap',
           markdownSource: assistantMessage,
           ...(providerContinuationBlock ? { providerContinuationBlock } : {}),
-          ...(details ? { details } : {}),
+          ...(mergedDetails ? { details: mergedDetails } : {}),
+          ...(deliveryBacklinks.length > 0
+            ? { backlinksTitle: translate('cli.sessionShell.responses.relatedLinksTitle') }
+            : {}),
+          ...(deliveryBacklinks.length > 0 ? { backlinks: deliveryBacklinks } : {}),
         };
       }
 
@@ -280,7 +313,11 @@ export class CliSessionShellTranscriptStore {
           ...(referencedCapabilityIds ? { referencedCapabilityIds } : {}),
           ...(suggestedActionsBlock ? { suggestedActionsBlock } : {}),
           ...(providerContinuationBlock ? { providerContinuationBlock } : {}),
-          ...(details ? { details } : {}),
+          ...(mergedDetails ? { details: mergedDetails } : {}),
+          ...(deliveryBacklinks.length > 0
+            ? { backlinksTitle: translate('cli.sessionShell.responses.relatedLinksTitle') }
+            : {}),
+          ...(deliveryBacklinks.length > 0 ? { backlinks: deliveryBacklinks } : {}),
         };
       }
 
@@ -329,9 +366,12 @@ export class CliSessionShellTranscriptStore {
           ],
           renderKind: 'command_recap',
           ...(assistantMessage ? { markdownSource: assistantMessage } : {}),
-          backlinks: handoffBacklinks,
+          ...(deliveryBacklinks.length > 0
+            ? { backlinksTitle: translate('cli.sessionShell.responses.relatedLinksTitle') }
+            : {}),
+          backlinks: deliveryBacklinks,
           ...(providerContinuationBlock ? { providerContinuationBlock } : {}),
-          ...(details ? { details } : {}),
+          ...(mergedDetails ? { details: mergedDetails } : {}),
         };
       }
 
@@ -353,7 +393,10 @@ export class CliSessionShellTranscriptStore {
               : []),
           ],
           renderKind: 'system_notice',
-          backlinks: handoffBacklinks,
+          ...(deliveryBacklinks.length > 0
+            ? { backlinksTitle: translate('cli.sessionShell.responses.relatedLinksTitle') }
+            : {}),
+          backlinks: deliveryBacklinks,
         };
       }
 
@@ -390,9 +433,12 @@ export class CliSessionShellTranscriptStore {
             : []),
         ],
         renderKind: 'command_recap',
-        backlinks: handoffBacklinks,
+        ...(deliveryBacklinks.length > 0
+          ? { backlinksTitle: translate('cli.sessionShell.responses.relatedLinksTitle') }
+          : {}),
+        backlinks: deliveryBacklinks,
         ...(providerContinuationBlock ? { providerContinuationBlock } : {}),
-        ...(details ? { details } : {}),
+        ...(mergedDetails ? { details: mergedDetails } : {}),
       };
     }
 
@@ -853,5 +899,173 @@ export class CliSessionShellTranscriptStore {
         };
       })
       .filter((backlink): backlink is CliSessionShellTranscriptBacklink => backlink !== null);
+  }
+
+  private readDeliveryWorkflowSummary(candidate: Record<string, unknown> | null | undefined): {
+    phase: string;
+    pendingAction: string | null;
+    relatedArtifactPaths: string[];
+    selectedStream: string | null;
+    resultSummary: string | null;
+  } | null {
+    if (!candidate) {
+      return null;
+    }
+
+    const phase = this.readOptionalString(candidate.turn_delivery_phase);
+    if (!phase) {
+      return null;
+    }
+
+    return {
+      phase,
+      pendingAction: this.readOptionalString(candidate.turn_delivery_pending_action) ?? null,
+      relatedArtifactPaths: this.readStringArray(candidate.turn_delivery_related_artifact_paths),
+      selectedStream: this.readOptionalString(candidate.turn_delivery_selected_stream) ?? null,
+      resultSummary: this.readOptionalString(candidate.turn_delivery_result_summary) ?? null,
+    };
+  }
+
+  private appendDeliveryWorkflowRecapLines(
+    lines: string[],
+    deliverySummary: {
+      phase: string;
+      pendingAction: string | null;
+      relatedArtifactPaths: string[];
+      selectedStream: string | null;
+      resultSummary: string | null;
+    } | null,
+    translate: (key: string, interpolation?: Record<string, string>) => string,
+  ): string[] {
+    if (!deliverySummary) {
+      return lines;
+    }
+
+    return [
+      ...lines,
+      translate('cli.sessionShell.responses.deliveryPhaseField', {
+        phase: deliverySummary.phase,
+      }),
+      ...(deliverySummary.pendingAction
+        ? [
+            translate('cli.sessionShell.responses.deliveryPendingActionField', {
+              pendingAction: deliverySummary.pendingAction,
+            }),
+          ]
+        : []),
+      ...(deliverySummary.selectedStream
+        ? [
+            translate('cli.sessionShell.responses.deliverySelectedStreamField', {
+              selectedStream: deliverySummary.selectedStream,
+            }),
+          ]
+        : []),
+      ...(deliverySummary.resultSummary
+        ? [
+            translate('cli.sessionShell.responses.deliveryResultSummaryField', {
+              resultSummary: deliverySummary.resultSummary,
+            }),
+          ]
+        : []),
+    ];
+  }
+
+  private buildDeliveryWorkflowDetailsBlock(
+    deliverySummary: {
+      phase: string;
+      pendingAction: string | null;
+      relatedArtifactPaths: string[];
+      selectedStream: string | null;
+      resultSummary: string | null;
+    } | null,
+    translate: (key: string, interpolation?: Record<string, string>) => string,
+  ): CliSessionShellTranscriptDetailsBlock | undefined {
+    if (!deliverySummary) {
+      return undefined;
+    }
+
+    return {
+      title: translate('cli.sessionShell.responses.deliverySummaryTitle'),
+      summaryLine: translate('cli.sessionShell.responses.deliverySummarySummaryLine'),
+      lines: [
+        translate('cli.sessionShell.responses.deliveryPhaseField', {
+          phase: deliverySummary.phase,
+        }),
+        ...(deliverySummary.pendingAction
+          ? [
+              translate('cli.sessionShell.responses.deliveryPendingActionField', {
+                pendingAction: deliverySummary.pendingAction,
+              }),
+            ]
+          : []),
+        ...(deliverySummary.selectedStream
+          ? [
+              translate('cli.sessionShell.responses.deliverySelectedStreamField', {
+                selectedStream: deliverySummary.selectedStream,
+              }),
+            ]
+          : []),
+        ...(deliverySummary.resultSummary
+          ? [
+              translate('cli.sessionShell.responses.deliveryResultSummaryField', {
+                resultSummary: deliverySummary.resultSummary,
+              }),
+            ]
+          : []),
+      ],
+      expanded: false,
+    };
+  }
+
+  private resolveDeliveryWorkflowBacklinks(
+    deliverySummary: {
+      phase: string;
+      pendingAction: string | null;
+      relatedArtifactPaths: string[];
+      selectedStream: string | null;
+      resultSummary: string | null;
+    } | null,
+  ): CliSessionShellTranscriptBacklink[] {
+    if (!deliverySummary) {
+      return [];
+    }
+
+    return deliverySummary.relatedArtifactPaths.map((artifactPath) => ({
+      kind: 'artifact',
+      label: basename(artifactPath) || artifactPath,
+      target: artifactPath,
+    }));
+  }
+
+  private mergeBacklinks(
+    primary: CliSessionShellTranscriptBacklink[],
+    secondary: CliSessionShellTranscriptBacklink[],
+  ): CliSessionShellTranscriptBacklink[] {
+    const mergedBacklinks = new Map<string, CliSessionShellTranscriptBacklink>();
+    for (const backlink of [...primary, ...secondary]) {
+      mergedBacklinks.set(`${backlink.kind}:${backlink.target}`, backlink);
+    }
+
+    return [...mergedBacklinks.values()];
+  }
+
+  private mergeDetailsBlock(
+    primary: CliSessionShellTranscriptDetailsBlock | undefined,
+    secondary: CliSessionShellTranscriptDetailsBlock | undefined,
+    translate: (key: string, interpolation?: Record<string, string>) => string,
+  ): CliSessionShellTranscriptDetailsBlock | undefined {
+    if (!primary) {
+      return secondary;
+    }
+    if (!secondary) {
+      return primary;
+    }
+
+    const mergedDetails: CliSessionShellTranscriptDetailsBlock = {
+      ...primary,
+      lines: this.mergeExecutionDetailsLines(primary.lines, secondary.lines),
+    };
+    mergedDetails.summaryLine = this.renderExecutionDetailsSummaryLine(mergedDetails, translate);
+    return mergedDetails;
   }
 }

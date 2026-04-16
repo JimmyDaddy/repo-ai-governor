@@ -132,6 +132,7 @@ function ReactCliCommandRecapTranscriptItem({
   const recap = parseStructuredRecap(item.lines);
   const responseBlocks = item.markdownSource ? parseMarkdownBlocks(item.markdownSource) : [];
   const backlinks = item.backlinks ?? [];
+  const backlinksTitle = item.backlinksTitle ?? '';
   const hasRelatedLinks = backlinks.length > 0;
   const transcriptLabelHidden = shouldHideTranscriptLabel(item.role);
 
@@ -212,7 +213,7 @@ function ReactCliCommandRecapTranscriptItem({
         {hasRelatedLinks ? (
           <Box flexDirection='column' marginTop={1} paddingLeft={1}>
             <Text bold color={shellPalette.helpColor}>
-              Related
+              {backlinksTitle}
             </Text>
             {backlinks.map((backlink, index) => (
               <Text key={`${item.id}:backlink:${index}`} color={shellPalette.helpColor}>
@@ -316,6 +317,8 @@ function ReactCliMarkdownTranscriptItem({
   shellPalette,
 }: ReactCliTranscriptItemRendererProps): React.JSX.Element {
   const blocks = parseMarkdownBlocks(item.markdownSource ?? item.lines.join('\n'));
+  const backlinks = item.backlinks ?? [];
+  const backlinksTitle = item.backlinksTitle ?? '';
 
   return (
     <Box flexDirection='column'>
@@ -328,6 +331,18 @@ function ReactCliMarkdownTranscriptItem({
       {renderTranscriptDetailsBlock(item, shellPalette)}
       {renderTranscriptProviderContinuationBlock(item, shellPalette)}
       {renderTranscriptSuggestedActionsBlock(item, shellPalette)}
+      {backlinks.length > 0 ? (
+        <Box flexDirection='column' marginTop={1}>
+          <Text bold color={shellPalette.helpColor}>
+            {backlinksTitle}
+          </Text>
+          {backlinks.map((backlink, index) => (
+            <Text key={`${item.id}:markdown-backlink:${index}`} color={shellPalette.helpColor}>
+              {`- ${backlink.label} -> ${backlink.target}`}
+            </Text>
+          ))}
+        </Box>
+      ) : null}
     </Box>
   );
 }

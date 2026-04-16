@@ -16,6 +16,13 @@ export const SESSION_DELIVERY_WORKFLOW_CAPABILITY_ID = {
 } as const;
 
 /**
+ * Declares the delivery workflow pending-action vocabulary owned by orchestration.
+ */
+export const SESSION_DELIVERY_WORKFLOW_PENDING_ACTION = {
+  CAPTURE_REQUIREMENT_OR_ATTACH_APPROVED_BRIEF: 'capture_requirement_or_attach_approved_brief',
+} as const;
+
+/**
  * Declares the delivery workflow phase overlay vocabulary.
  */
 export const SESSION_DELIVERY_WORKFLOW_PHASE = {

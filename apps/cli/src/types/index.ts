@@ -51,6 +51,8 @@ export type {
   CliLayeredLogs,
   CliOrchestrationServiceOwner,
   CliOrchestrationServiceRuntimeDependencies,
+  CliSessionShellCommandFollowUp,
+  CliSessionShellDeliveryWorkflowUpdate,
   CliSessionShellSecureSecretMutator,
   CliSessionShellSecureCaptureDescriptor,
   CliSessionShellInputAction,

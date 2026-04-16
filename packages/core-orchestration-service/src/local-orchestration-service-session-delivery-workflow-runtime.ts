@@ -5,6 +5,7 @@ import {
   SESSION_DELIVERY_REQUIREMENT_REVIEW_OUTCOME,
   SESSION_DELIVERY_WORKFLOW_CAPABILITY_ID,
   SESSION_DELIVERY_WORKFLOW_CONTEXT_KEY,
+  SESSION_DELIVERY_WORKFLOW_PENDING_ACTION,
   SESSION_DELIVERY_WORKFLOW_PHASE,
   SESSION_DELIVERY_WORKFLOW_VERSION,
 } from './constants/session-delivery-workflow.constant.js';
@@ -13,6 +14,7 @@ import type {
   SessionDeliveryRequirementReviewGate,
   SessionDeliveryRequirementReviewOutcome,
   SessionDeliveryWorkflowBacklink,
+  SessionDeliveryWorkflowPhase,
   SessionDeliveryWorkflowSessionState,
 } from './types/index.js';
 
@@ -32,6 +34,7 @@ const DELIVERY_ALLOWED_PHASES: ReadonlySet<string> = new Set(
 const DELIVERY_ALLOWED_REVIEW_OUTCOMES: ReadonlySet<string> = new Set(
   Object.values(SESSION_DELIVERY_REQUIREMENT_REVIEW_OUTCOME),
 );
+const DELIVERY_MESSAGE_METADATA_UPDATE_KEY = 'deliveryWorkflowUpdate';
 
 /**
  * Owns shared-session parsing and validation for the delivery workflow overlay.
@@ -131,6 +134,44 @@ export class LocalOrchestrationServiceSessionDeliveryWorkflowRuntime {
         candidate,
       },
     );
+  }
+
+  /**
+   * Resolves one appended-message metadata update into the next delivery state plus presenter fields.
+   * @param context Current shared-session context snapshot.
+   * @param metadata Appended-message metadata payload.
+   * @returns Next state plus presenter-safe metadata, or `null` when no delivery update applies.
+   */
+  public resolveMessageMetadataUpdate(
+    context: Record<string, unknown> | null | undefined,
+    metadata: Record<string, unknown> | undefined,
+    sessionId?: string,
+  ): {
+    nextState: SessionDeliveryWorkflowSessionState;
+    presenterMetadata: Record<string, unknown>;
+  } | null {
+    const updateRecord = this.readRecord(metadata?.[DELIVERY_MESSAGE_METADATA_UPDATE_KEY]);
+    if (!updateRecord) {
+      return null;
+    }
+
+    const currentState = this.readSessionState(context);
+    const nextStateBaseline =
+      currentState ??
+      this.createBootstrapStateForMessageMetadataUpdate(context, sessionId, updateRecord);
+    if (!nextStateBaseline) {
+      return null;
+    }
+
+    const nextState = this.applyMessageMetadataUpdate(nextStateBaseline, updateRecord);
+    if (!nextState) {
+      return null;
+    }
+
+    return {
+      nextState,
+      presenterMetadata: this.createPresenterMetadata(nextState),
+    };
   }
 
   private parseState(candidate: unknown): SessionDeliveryWorkflowSessionState | undefined {
@@ -265,6 +306,181 @@ export class LocalOrchestrationServiceSessionDeliveryWorkflowRuntime {
     }
 
     return backlinks;
+  }
+
+  private createBootstrapStateForMessageMetadataUpdate(
+    context: Record<string, unknown> | null | undefined,
+    sessionId: string | undefined,
+    updateRecord: Record<string, unknown>,
+  ): SessionDeliveryWorkflowSessionState | null {
+    if (!sessionId || (context && Object.hasOwn(context, SESSION_DELIVERY_WORKFLOW_CONTEXT_KEY))) {
+      return null;
+    }
+
+    const currentPhase = this.readString(updateRecord.currentPhase);
+    if (!currentPhase || !DELIVERY_ALLOWED_PHASES.has(currentPhase)) {
+      return null;
+    }
+
+    return {
+      version: SESSION_DELIVERY_WORKFLOW_VERSION,
+      workflowId: `delivery-workflow-${sessionId}-bootstrap`,
+      capabilityId: SESSION_DELIVERY_WORKFLOW_CAPABILITY_ID.DELIVER,
+      currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.REQUIREMENT_CAPTURE,
+      requirementReviewGate: {
+        outcome: SESSION_DELIVERY_REQUIREMENT_REVIEW_OUTCOME.PENDING,
+        evidenceArtifactPath: null,
+      },
+      approvedDeliveryBriefPath: null,
+      pendingAction:
+        SESSION_DELIVERY_WORKFLOW_PENDING_ACTION.CAPTURE_REQUIREMENT_OR_ATTACH_APPROVED_BRIEF,
+      selectedTargetStream: null,
+      relatedArtifactPaths: [],
+      childWorkflowBacklinks: [],
+      blockedReason: null,
+      resultSummary: null,
+    };
+  }
+
+  private applyMessageMetadataUpdate(
+    currentState: SessionDeliveryWorkflowSessionState,
+    updateRecord: Record<string, unknown>,
+  ): SessionDeliveryWorkflowSessionState | null {
+    const currentPhase = this.readString(updateRecord.currentPhase);
+    if (!currentPhase || !DELIVERY_ALLOWED_PHASES.has(currentPhase)) {
+      return null;
+    }
+
+    const relatedArtifactPathsUpdate = this.readOptionalStringArrayField(
+      updateRecord,
+      'relatedArtifactPaths',
+    );
+    if (Object.hasOwn(updateRecord, 'relatedArtifactPaths') && !relatedArtifactPathsUpdate) {
+      return null;
+    }
+
+    const childWorkflowBacklinksUpdate = this.readOptionalChildWorkflowBacklinksField(
+      updateRecord,
+      'childWorkflowBacklinks',
+    );
+    if (Object.hasOwn(updateRecord, 'childWorkflowBacklinks') && !childWorkflowBacklinksUpdate) {
+      return null;
+    }
+
+    const pendingActionUpdate = this.readOptionalNullableStringField(updateRecord, 'pendingAction');
+    const selectedTargetStreamUpdate = this.readOptionalNullableStringField(
+      updateRecord,
+      'selectedTargetStream',
+    );
+    const resultSummaryUpdate = this.readOptionalNullableStringField(updateRecord, 'resultSummary');
+    const approvedDeliveryBriefPathUpdate = this.readOptionalNullableStringField(
+      updateRecord,
+      'approvedDeliveryBriefPath',
+    );
+    const blockedReasonUpdate = this.readOptionalNullableStringField(updateRecord, 'blockedReason');
+
+    return this.requireValidState({
+      ...currentState,
+      currentPhase: currentPhase as SessionDeliveryWorkflowPhase,
+      pendingAction: pendingActionUpdate?.hasValue
+        ? pendingActionUpdate.value
+        : currentState.pendingAction,
+      selectedTargetStream: selectedTargetStreamUpdate?.hasValue
+        ? selectedTargetStreamUpdate.value
+        : currentState.selectedTargetStream,
+      approvedDeliveryBriefPath: approvedDeliveryBriefPathUpdate?.hasValue
+        ? approvedDeliveryBriefPathUpdate.value
+        : currentState.approvedDeliveryBriefPath,
+      relatedArtifactPaths: this.mergeStringArrays(
+        currentState.relatedArtifactPaths,
+        relatedArtifactPathsUpdate?.value ?? [],
+      ),
+      childWorkflowBacklinks: this.mergeChildWorkflowBacklinks(
+        currentState.childWorkflowBacklinks,
+        childWorkflowBacklinksUpdate?.value ?? [],
+      ),
+      blockedReason: blockedReasonUpdate?.hasValue
+        ? blockedReasonUpdate.value
+        : currentState.blockedReason,
+      resultSummary: resultSummaryUpdate?.hasValue
+        ? resultSummaryUpdate.value
+        : currentState.resultSummary,
+    });
+  }
+
+  private createPresenterMetadata(
+    state: SessionDeliveryWorkflowSessionState,
+  ): Record<string, unknown> {
+    return {
+      turn_delivery_phase: state.currentPhase,
+      turn_delivery_pending_action: state.pendingAction,
+      turn_delivery_related_artifact_paths: [...state.relatedArtifactPaths],
+      turn_delivery_selected_stream: state.selectedTargetStream,
+      turn_delivery_result_summary: state.resultSummary,
+    };
+  }
+
+  private readOptionalNullableStringField(
+    record: Record<string, unknown>,
+    fieldName: string,
+  ): {
+    hasValue: boolean;
+    value: string | null;
+  } | null {
+    if (!Object.hasOwn(record, fieldName)) {
+      return null;
+    }
+
+    return {
+      hasValue: true,
+      value: this.readNullableString(record[fieldName]),
+    };
+  }
+
+  private readOptionalStringArrayField(
+    record: Record<string, unknown>,
+    fieldName: string,
+  ): {
+    value: string[];
+  } | null {
+    if (!Object.hasOwn(record, fieldName)) {
+      return null;
+    }
+
+    const value = this.readStringArray(record[fieldName]);
+    return value ? { value } : null;
+  }
+
+  private readOptionalChildWorkflowBacklinksField(
+    record: Record<string, unknown>,
+    fieldName: string,
+  ): {
+    value: SessionDeliveryWorkflowBacklink[];
+  } | null {
+    if (!Object.hasOwn(record, fieldName)) {
+      return null;
+    }
+
+    const value = this.readChildWorkflowBacklinks(record[fieldName]);
+    return value ? { value } : null;
+  }
+
+  private mergeStringArrays(currentValues: string[], nextValues: string[]): string[] {
+    return [...new Set([...currentValues, ...nextValues])];
+  }
+
+  private mergeChildWorkflowBacklinks(
+    currentValues: SessionDeliveryWorkflowBacklink[],
+    nextValues: SessionDeliveryWorkflowBacklink[],
+  ): SessionDeliveryWorkflowBacklink[] {
+    const mergedBacklinks = new Map<string, SessionDeliveryWorkflowBacklink>();
+    for (const backlink of [...currentValues, ...nextValues]) {
+      mergedBacklinks.set(`${backlink.capabilityId}:${backlink.artifactPath}`, {
+        ...backlink,
+      });
+    }
+
+    return [...mergedBacklinks.values()];
   }
 
   private readStringArray(candidate: unknown): string[] | undefined {

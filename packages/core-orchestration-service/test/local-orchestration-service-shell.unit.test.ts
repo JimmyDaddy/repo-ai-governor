@@ -1380,6 +1380,168 @@ describe('core-orchestration-service local shell', () => {
     }
   });
 
+  it('merges plan preview delivery updates into session context and appended transcript metadata', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+    });
+
+    try {
+      const started = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
+      await orchestrationService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: 'Help me deliver this requirement through the governed path.',
+        metadata: {
+          locale: 'en-US',
+        },
+      });
+
+      const appendResult = await orchestrationService.appendSessionMessage({
+        sessionId: started.session.sessionId,
+        role: OrchestrationSessionTranscriptRole.ASSISTANT,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        lines: ['Summary: plan preview is ready for confirmation.'],
+        metadata: {
+          renderKind: 'command_recap',
+          commandLine: 'plan --output pretty',
+          deliveryWorkflowUpdate: {
+            currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.TASK_PLAN_COMMIT_PENDING,
+            pendingAction: 'confirm_task_plan_commit',
+            selectedTargetStream: 'stream-project-110-sprint-002',
+            relatedArtifactPaths: [
+              '.repo-ai-governor/context/plan/plan-001.preview.json',
+              '.repo-ai-governor/context/dev/project-110/sprint-002/plan.md',
+              '.repo-ai-governor/context/dev/project-110/sprint-002/tasks/checklist.md',
+            ],
+            resultSummary: 'Task plan preview is ready for confirmation.',
+            childWorkflowBacklinks: [
+              {
+                capabilityId: SESSION_MAIN_CAPABILITY_ID.PLAN,
+                artifactPath: '.repo-ai-governor/context/plan/plan-001.preview.json',
+                summary: 'Task plan preview artifact.',
+              },
+            ],
+          },
+        },
+      });
+      const session = await orchestrationService.getSession(started.session.sessionId);
+      const deliveryWorkflowState = session?.context[
+        SESSION_DELIVERY_WORKFLOW_CONTEXT_KEY
+      ] as Record<string, unknown> | null;
+
+      expect(deliveryWorkflowState).toEqual(
+        expect.objectContaining({
+          capabilityId: SESSION_DELIVERY_WORKFLOW_CAPABILITY_ID.DELIVER,
+          currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.TASK_PLAN_COMMIT_PENDING,
+          pendingAction: 'confirm_task_plan_commit',
+          selectedTargetStream: 'stream-project-110-sprint-002',
+          resultSummary: 'Task plan preview is ready for confirmation.',
+        }),
+      );
+      expect(deliveryWorkflowState?.relatedArtifactPaths).toEqual([
+        '.repo-ai-governor/context/plan/plan-001.preview.json',
+        '.repo-ai-governor/context/dev/project-110/sprint-002/plan.md',
+        '.repo-ai-governor/context/dev/project-110/sprint-002/tasks/checklist.md',
+      ]);
+      expect(deliveryWorkflowState?.childWorkflowBacklinks).toEqual([
+        {
+          capabilityId: SESSION_MAIN_CAPABILITY_ID.PLAN,
+          artifactPath: '.repo-ai-governor/context/plan/plan-001.preview.json',
+          summary: 'Task plan preview artifact.',
+        },
+      ]);
+      expect(appendResult.event.payload.metadata).toMatchObject({
+        turn_delivery_phase: SESSION_DELIVERY_WORKFLOW_PHASE.TASK_PLAN_COMMIT_PENDING,
+        turn_delivery_pending_action: 'confirm_task_plan_commit',
+        turn_delivery_selected_stream: 'stream-project-110-sprint-002',
+        turn_delivery_result_summary: 'Task plan preview is ready for confirmation.',
+      });
+      expect(appendResult.event.payload.metadata?.turn_delivery_related_artifact_paths).toEqual([
+        '.repo-ai-governor/context/plan/plan-001.preview.json',
+        '.repo-ai-governor/context/dev/project-110/sprint-002/plan.md',
+        '.repo-ai-governor/context/dev/project-110/sprint-002/tasks/checklist.md',
+      ]);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('bootstraps canonical delivery workflow state from appended metadata when no prior delivery turn exists', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+    });
+
+    try {
+      const started = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
+
+      const appendResult = await orchestrationService.appendSessionMessage({
+        sessionId: started.session.sessionId,
+        role: OrchestrationSessionTranscriptRole.ASSISTANT,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        lines: ['Summary: plan preview is ready for confirmation.'],
+        metadata: {
+          renderKind: 'command_recap',
+          commandLine: 'plan --output pretty',
+          deliveryWorkflowUpdate: {
+            currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.TASK_PLAN_COMMIT_PENDING,
+            pendingAction: 'confirm_task_plan_commit',
+            selectedTargetStream: 'stream-project-110-sprint-002',
+            relatedArtifactPaths: [
+              '.repo-ai-governor/context/plan/plan-001.preview.json',
+              '.repo-ai-governor/context/dev/project-110/sprint-002/tasks/checklist.md',
+            ],
+            resultSummary: 'Task plan preview is ready for confirmation.',
+            childWorkflowBacklinks: [
+              {
+                capabilityId: SESSION_MAIN_CAPABILITY_ID.PLAN,
+                artifactPath: '.repo-ai-governor/context/plan/plan-001.preview.json',
+                summary: 'Task plan preview artifact.',
+              },
+            ],
+          },
+        },
+      });
+      const session = await orchestrationService.getSession(started.session.sessionId);
+      const deliveryWorkflowState = session?.context[
+        SESSION_DELIVERY_WORKFLOW_CONTEXT_KEY
+      ] as Record<string, unknown> | null;
+
+      expect(deliveryWorkflowState).toEqual(
+        expect.objectContaining({
+          version: SESSION_DELIVERY_WORKFLOW_VERSION,
+          workflowId: expect.stringContaining(`delivery-workflow-${started.session.sessionId}`),
+          capabilityId: SESSION_DELIVERY_WORKFLOW_CAPABILITY_ID.DELIVER,
+          currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.TASK_PLAN_COMMIT_PENDING,
+          pendingAction: 'confirm_task_plan_commit',
+          selectedTargetStream: 'stream-project-110-sprint-002',
+          resultSummary: 'Task plan preview is ready for confirmation.',
+          requirementReviewGate: {
+            outcome: SESSION_DELIVERY_REQUIREMENT_REVIEW_OUTCOME.PENDING,
+            evidenceArtifactPath: null,
+          },
+        }),
+      );
+      expect(deliveryWorkflowState?.relatedArtifactPaths).toEqual([
+        '.repo-ai-governor/context/plan/plan-001.preview.json',
+        '.repo-ai-governor/context/dev/project-110/sprint-002/tasks/checklist.md',
+      ]);
+      expect(appendResult.event.payload.metadata).toMatchObject({
+        turn_delivery_phase: SESSION_DELIVERY_WORKFLOW_PHASE.TASK_PLAN_COMMIT_PENDING,
+        turn_delivery_pending_action: 'confirm_task_plan_commit',
+        turn_delivery_selected_stream: 'stream-project-110-sprint-002',
+        turn_delivery_result_summary: 'Task plan preview is ready for confirmation.',
+      });
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
   it('projects session.main invoke liveness into linked orchestration execution summaries and events', async () => {
     const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
     const orchestrationService = new LocalOrchestrationServiceShell({
