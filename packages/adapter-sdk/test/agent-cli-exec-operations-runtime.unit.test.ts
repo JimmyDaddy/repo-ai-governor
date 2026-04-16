@@ -23,7 +23,8 @@ describe('AgentCliExecOperationsRuntime', () => {
       });
 
     const result = await runtime.executeWithRetry(AgentCliExecOperation.PROBE, executeAttempt, {
-      timeoutMs: 50,
+      // Keep enough wall-clock budget so full-suite scheduler jitter does not hide the retry branch.
+      timeoutMs: 250,
     });
 
     expect(result).toBe('ok');
