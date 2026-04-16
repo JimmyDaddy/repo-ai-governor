@@ -1,0 +1,3 @@
+execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at
+seed-20260416-tk-936,TK-936,freeze vscode primary workbench baseline and service-owned task-review seams,AI-Agent,P1,2026-04-16,planned,project-112-vscode-governance-workbench-rollout,sprint-001-phase-a-primary-workbench-baseline,冻结 VS Code primary workbench baseline、task/review queue seam 与 service-owned projection contract,待执行,待验证,待执行,2026-04-16
+seed-20260416-tk-937,TK-937,close sprint-001 and hand off phase-b outer-loop consolidation,AI-Agent,P1,2026-04-16,planned,project-112-vscode-governance-workbench-rollout,sprint-001-phase-a-primary-workbench-baseline,完成 sprint-001 closeout，并把 phase-b outer-loop consolidation 输入回链到下一 sprint,待执行,待验证,待执行,2026-04-16

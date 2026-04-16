@@ -1,5 +1,5 @@
 schema_version: 1
-generated_at: 2026-04-15
+generated_at: 2026-04-16
 status: active
 owner: repo-ai-governor
 
@@ -450,6 +450,20 @@ documents:
     owner: architecture
     last_reviewed_at: 2026-04-02
 
+  - doc_id: technical_solution_runtime_durable_storage_delivery_workflow_summary_contract
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-durable-storage/contracts/delivery-workflow-summary-and-artifact-backlink-contract.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - runtime_contract_change
+      - governance_engine_change
+      - ledger_sync_issue
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+    owner: architecture
+    last_reviewed_at: 2026-04-16
+
   - doc_id: technical_solution_runtime_durable_storage_adr
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-durable-storage/adrs/sqlite-fs-default-runtime-truth-and-rendered-csv-views.md
     tier: L2
@@ -478,7 +492,7 @@ documents:
       - technical_solution_module_change
       - technical_solution_promotion_change
     owner: architecture
-    last_reviewed_at: 2026-04-04
+    last_reviewed_at: 2026-04-16
 
   - doc_id: technical_solution_runtime_orchestration_contract
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/contracts/runtime-graph-execution-contract.md
@@ -505,6 +519,34 @@ documents:
       - command_surface_change
     owner: architecture
     last_reviewed_at: 2026-04-10
+
+  - doc_id: technical_solution_runtime_orchestration_session_main_delivery_orchestration_contract
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/contracts/session-main-delivery-orchestration-contract.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - runtime_contract_change
+      - governance_engine_change
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - command_surface_change
+    owner: architecture
+    last_reviewed_at: 2026-04-16
+
+  - doc_id: technical_solution_runtime_orchestration_governance_workbench_aggregation_facade_contract
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/contracts/governance-workbench-aggregation-facade-contract.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - runtime_contract_change
+      - governance_engine_change
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - ide_surface_change
+    owner: architecture
+    last_reviewed_at: 2026-04-16
 
   - doc_id: technical_solution_runtime_orchestration_adr
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/adrs/graph-first-runtime-and-service-backed-execution-cutover.md
@@ -546,6 +588,19 @@ documents:
       - command_surface_change
     owner: architecture
     last_reviewed_at: 2026-04-10
+
+  - doc_id: technical_solution_runtime_orchestration_requirement_to_cr_delivery_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/adrs/requirement-to-cr-governed-delivery-orchestration.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - runtime_contract_change
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - command_surface_change
+    owner: architecture
+    last_reviewed_at: 2026-04-16
 
   - doc_id: technical_solution_runtime_orchestration_standards_native_review_engine_adr
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/adrs/standards-native-review-engine-and-provenance-aware-cr.md
@@ -1061,6 +1116,19 @@ documents:
     owner: runtime
     last_reviewed_at: 2026-04-12
 
+  - doc_id: runtime_cli_session_shell_delivery_workflow_presenter_contract
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/contracts/session-shell-delivery-workflow-presenter-contract.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - cli_ui_change
+      - command_surface_change
+    owner: runtime
+    last_reviewed_at: 2026-04-16
+
   - doc_id: runtime_cli_session_shell_adr
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/adrs/session-first-shell-and-service-owned-session-state.md
     tier: L2
@@ -1152,7 +1220,7 @@ documents:
       - ide_surface_change
       - command_surface_change
     owner: runtime
-    last_reviewed_at: 2026-04-15
+    last_reviewed_at: 2026-04-16
 
   - doc_id: runtime_governance_surface_client_contract
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/governance-surface-client-contract.md
@@ -1168,6 +1236,20 @@ documents:
       - command_surface_change
     owner: runtime
     last_reviewed_at: 2026-04-05
+
+  - doc_id: runtime_vscode_governance_workbench_surface_contract
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/vscode-governance-workbench-surface-contract.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - runtime_contract_change
+      - ide_surface_change
+      - command_surface_change
+    owner: runtime
+    last_reviewed_at: 2026-04-16
 
   - doc_id: runtime_governance_local_user_config_secret_command_contract
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/local-user-config-and-secret-command-contract.md
@@ -1225,6 +1307,20 @@ documents:
       - command_surface_change
     owner: runtime
     last_reviewed_at: 2026-04-05
+
+  - doc_id: runtime_vscode_primary_full_governance_workbench_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/vscode-primary-full-governance-workbench.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - runtime_contract_change
+      - ide_surface_change
+      - desktop_surface_change
+    owner: runtime
+    last_reviewed_at: 2026-04-16
 
   - doc_id: runtime_governance_host_distribution_adr
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/host-native-distribution-and-target-specific-consumption.md

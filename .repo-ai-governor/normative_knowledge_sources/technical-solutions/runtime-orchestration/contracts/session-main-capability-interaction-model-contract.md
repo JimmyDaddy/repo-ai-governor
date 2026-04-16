@@ -1,7 +1,7 @@
 # Session Main Capability Interaction Model Contract
 
 - Status: active
-- Date: 2026-04-10
+- Date: 2026-04-16
 - Contract ID: `contract.runtime.session-main.capability-interaction-model.v1`
 - Producer Module: `runtime.orchestration`
 
@@ -44,10 +44,17 @@
 1. `runtime.orchestration` 是这份 interaction model 的唯一 producer；`runtime.cli-interactive-shell` 只能消费，不得反向拥有第二份 command-model truth。
 2. `raw_role_entry` 只用于 expert surface，例如 `@planner / @architect / @reviewer / @verifier`；role mention 不是 slash bridge，也不应取代标准任务的主入口。
 3. `ai_fixed_workflow` 适用于产品化 AI 工作流；当前正式范围至少包括：
+   - `deliver`
    - `plan`
    - `review`
    - `review_verify`
-4. `deterministic_utility` 适用于作用域固定、产物固定或状态机固定的命令；当前正式范围至少包括：
+4. `deliver` 作为 requirement-to-CR governed delivery orchestration 的 parent capability 时，必须满足：
+   - `interaction_model=ai_fixed_workflow`
+   - `primary_entry=conversational_answer`
+   - `backing_execution=templated_ai_workflow`
+   - 只允许 `/deliver` 作为 discoverability alias 或显式加速入口；不得把 slash alias 升格为第二条 canonical truth surface
+   - 必须显式把 `plan / review / review_verify / run` 建模为 related child capability，而不是把它们重新包装成 raw role entry
+5. `deterministic_utility` 适用于作用域固定、产物固定或状态机固定的命令；当前正式范围至少包括：
    - `plan_sync`
    - `workflow`
    - `connect`
@@ -67,6 +74,7 @@
 | `@architect` | `raw_role_entry` | `role_mention` | `raw_role_delegate` |
 | `@reviewer` | `raw_role_entry` | `role_mention` | `raw_role_delegate` |
 | `@verifier` | `raw_role_entry` | `role_mention` | `raw_role_delegate` |
+| `deliver` | `ai_fixed_workflow` | `conversational_answer` | `templated_ai_workflow` |
 | `plan` | `ai_fixed_workflow` | `slash_command` | `templated_ai_workflow` |
 | `review` | `ai_fixed_workflow` | `slash_command` | `templated_ai_workflow` |
 | `review_verify` | `ai_fixed_workflow` | `slash_command` | `templated_ai_workflow` |
@@ -90,3 +98,4 @@
 1. `v1` 定义的是 interaction model truth，不等于所有对应 runtime/CLI 行为已经在代码面一次性全部交付。
 2. `v1` 允许 `run` 先以 `pending_existence_review` 进入正式 contract，再由后续 rollout 把 public wording 收窄到稳定终态。
 3. `v1` 明确 public `/verify` removal，但不否定 adapter readiness、binding verification 或 durable-storage preflight 这类底层检查能力继续存在。
+4. `v1` 现进一步接受 `deliver` 作为 parent orchestration capability：其正式职责是把 requirement intake、approved durable brief、technical-solution review、task plan commit、execution、review 与 review-verify 串成一条受治理 phase machine，同时继续尊重底层 `technical-solution lifecycle`、task ledger 与 review artifact 的 canonical truth 边界。

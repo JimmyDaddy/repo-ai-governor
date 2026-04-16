@@ -12,15 +12,16 @@
 - Checklist: `none`
 - CSV: `none`
 - Review: `none`
-- Note: `2026-04-16` `project-108 / sprint-003` 已完成 project-final delegated CR loop（`CR-003` 至 `CR-010` 全部 `resolved`）与 `TK-908 / DA-908` final closeout write-back；当前 worktree 暂无 active primary stream，也不保留 planned follow-up stream，等待下一次显式激活。
+- Note: `2026-04-16` 已完成 `project-111 / sprint-001` 的 formal promotion、planned rollout decomposition 与 closeout；当前无 active primary stream，建议后续按顺序激活 `project-112 / sprint-001`，`project-110 / sprint-001` 继续保留为 planned follow-up stream。
 
 ## Active Streams
 
-- `none`
+- none
 
 ## Planned Follow-Up Streams
 
-- none
+- `stream-project-110-sprint-001`: project=`project-110-requirement-to-cr-delivery-orchestration-rollout`, sprint=`sprint-001-deliver-capability-and-requirement-brief-baseline`, docs=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout`, plan=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/plan.md`, tasks=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/tasks/`, checklist=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-001-deliver-capability-and-requirement-brief-baseline/review/`, status=`planned`, role=`followup`
+- `stream-project-112-sprint-001`: project=`project-112-vscode-governance-workbench-rollout`, sprint=`sprint-001-phase-a-primary-workbench-baseline`, docs=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout`, plan=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/plan.md`, tasks=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/tasks/`, checklist=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/review/`, status=`planned`, role=`followup`
 
 ## Completed Stream History
 

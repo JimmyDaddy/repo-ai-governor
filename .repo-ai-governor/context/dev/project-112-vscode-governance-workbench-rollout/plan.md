@@ -1,0 +1,68 @@
+# project-112-vscode-governance-workbench-rollout 计划
+
+- Status: planned
+- Date: 2026-04-16
+- Stage Mapping: technical solution rollout
+- Phase Mapping: primary workbench baseline / outer-loop consolidation / workflow studio and full workbench cutover
+- Upstream:
+  - `.repo-ai-governor/context/dev/project-111-vscode-workbench-solution-promotion-and-decomposition/sprint-001-promotion-and-rollout-handoff/tasks/DA-934-vscode-workbench-promotion-and-rollout-decomposition-handoff.md`
+  - `.repo-ai-governor/context/technical-solution-lifecycle-registry.yaml`
+  - `.repo-ai-governor/context/technical-solution-delivery-registry.yaml`
+  - `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/module-overview.md`
+
+## 1. 目标
+
+1. 将 technical-solution.vscode-full-governance-workbench-and-task-driven-orchestration 的 formal direction 拆成真实 rollout project。
+2. 按 Phase A-C 依次交付 VS Code primary workbench baseline、outer-loop consolidation 与 workflow studio/full-workbench cutover。
+3. 为 delivery registry 提供真实 planned follow-up stream、task ledger 与后续 closeout 路径。
+
+## 2. Sprint 细化
+
+## 2.1 sprint-001-phase-a-primary-workbench-baseline
+
+- Status: planned
+- Sprint Goal: 冻结 VS Code primary workbench baseline、task/review queue seam 与 service-owned projection contract
+- Task Package: `TK-936、TK-937`
+
+## 2.2 sprint-002-phase-b-outer-loop-consolidation-and-operations
+
+- Status: planned
+- Sprint Goal: 收口 automation queue、artifact workbench、multi-workspace overview 与 typed CLI bridge governance
+- Task Package: `TK-938、TK-939`
+
+## 2.3 sprint-003-phase-c-workflow-studio-and-full-workbench-cutover
+
+- Status: planned
+- Sprint Goal: 规划 workflow studio、support-truth evidence 与 full workbench cutover
+- Task Package: `TK-940、TK-941`
+
+## 3. 任务拆解矩阵（WBS）
+
+| task_id | sprint | title | 目标产出类型 | depends_on | status |
+| --- | --- | --- | --- | --- | --- |
+| TK-936 | sprint-001-phase-a-primary-workbench-baseline | freeze vscode primary workbench baseline and service-owned task-review seams | runtime contract baseline | DA-934 | planned |
+| TK-937 | sprint-001-phase-a-primary-workbench-baseline | close sprint-001 and hand off phase-b outer-loop consolidation | governance handoff | freeze vscode primary workbench baseline and service-owned task-review seams | planned |
+| TK-938 | sprint-002-phase-b-outer-loop-consolidation-and-operations | land outer-loop consolidation and typed cli bridge governance baseline | workbench operations baseline | DA-934 | planned |
+| TK-939 | sprint-002-phase-b-outer-loop-consolidation-and-operations | close sprint-002 and hand off phase-c full-workbench cutover | governance handoff | land outer-loop consolidation and typed cli bridge governance baseline | planned |
+| TK-940 | sprint-003-phase-c-workflow-studio-and-full-workbench-cutover | plan workflow studio cutover and primary workbench support-truth evidence | workflow studio and support-truth cutover | DA-934 | planned |
+| TK-941 | sprint-003-phase-c-workflow-studio-and-full-workbench-cutover | finalize project-112 rollout closeout and delivery evidence handoff | closeout and delivery evidence | plan workflow studio cutover and primary workbench support-truth evidence | planned |
+
+## 4. 依赖产物策略
+
+1. task decomposition 产物优先回链到 project/sprint plan 与 canonical task cards。
+2. review lifecycle 产物只在真正进入 review 窗口后生成，不在 bootstrap 阶段预写。
+3. closeout / completion audit summary 只在终态窗口创建并回链。
+
+## 5. DoD（project-112-vscode-governance-workbench-rollout）
+
+1. 3 个 sprint 的 plan、task cards、checklist、tasks.csv 与 review scaffold 已标准化落盘。
+2. 任务编号、目录结构与命名规则符合 AGENTS 与 governance template 约束。
+3. 在正式激活前已有明确的 task-ledger canonicalization 路径，且只需要按顺序激活执行面。
+
+## 6. 里程碑记录
+
+1. 2026-04-16：创建 project-112-vscode-governance-workbench-rollout 全量执行流骨架，覆盖 sprint-001-phase-a-primary-workbench-baseline、sprint-002-phase-b-outer-loop-consolidation-and-operations、sprint-003-phase-c-workflow-studio-and-full-workbench-cutover。
+
+## 7. 里程碑记录入口
+
+1. 待 closeout 后补齐 completion audit summary。

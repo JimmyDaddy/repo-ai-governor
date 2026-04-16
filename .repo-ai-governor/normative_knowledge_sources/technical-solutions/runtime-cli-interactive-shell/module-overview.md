@@ -1,7 +1,7 @@
 # Runtime CLI Interactive Shell Module Overview
 
 - Status: active
-- Date: 2026-04-13
+- Date: 2026-04-16
 - Module ID: `runtime.cli-interactive-shell`
 - Owner: runtime
 - Layer: `runtime-core`
@@ -47,11 +47,14 @@
 ## 5. Imported Contracts
 
 1. `contract.runtime.graph-execution.v1`
+2. `contract.runtime.session-main.delivery-orchestration.v1`
+3. `contract.runtime.delivery-workflow-summary-projection.v1`
 
 ## 6. Exported Contracts
 
 1. `contract.cli.interactive-shell.v1`
 2. `contract.cli.session-shell.v1`
+3. `contract.cli.session-shell.delivery-workflow-presenter.v1`
 
 ## 7. Loading Guidance
 
@@ -83,12 +86,14 @@
 20. 截至 `2026-04-11`，本模块进一步接受“session-shell theme preset choice follow-up”补充方向：`/workspace set-ui-theme` 在 session shell 中需直接暴露当前公开 preset catalog 的 choice 提示；当前真值为 `governor|catppuccin|calm|tokyo-night|kanagawa|flexoki`，并允许带空格前缀的 `Enter/Tab` 优先接受更具体子命令，避免无 preset 父命令先失败再回退的交互。
 21. 截至 `2026-04-12`，本模块进一步接受“session-shell secure local secret capture and redacted handoff”补充方向：显式 `/secret set <keyName>` 现必须切换到 shell-local secure capture；extra token/suffix 的 typed/pasted bytes 必须在进入 `composer_value` / `slash_query` 之前被拦截并丢弃；raw secret 只允许在本地隐藏输入 buffer 与共享 secret mutation seam 之间短暂存在，而 `session.main`-triggered secure-input request 与 desktop/VS Code parity 继续留在后续独立 solution。
 22. 截至 `2026-04-13`，本模块进一步接受“web-inspired theme pack expansion”补充方向：theme definitions 现应与 registry logic 分离维护，新增 preset 继续复用 shared preset enum 与统一 discoverability/help 真值，不得因为 palette 数量增长而把 registry 退化成一份难以维护的单文件 theme 数据表。
+23. 截至 `2026-04-16`，本模块进一步接受“requirement-to-CR governed delivery orchestration presenter boundary”补充方向：session shell 现需把 `deliver` 作为可解释的 parent workflow 呈现，消费 approved durable brief / phase summary / pending confirmation / artifact backlink 等 presenter-safe metadata，并把 optional `/deliver` 维持为 discoverability alias；但 CLI 不得在本地重算 requirement review、solution review、task-plan commit 或 review-verify 的 canonical truth。
 
 ## 9. Detail Docs
 
 1. Contract:
    - `contracts/cli-interactive-shell-contract.md`
    - `contracts/cli-session-shell-contract.md`
+   - `contracts/session-shell-delivery-workflow-presenter-contract.md`
 2. ADR:
    - `adrs/session-first-shell-and-service-owned-session-state.md`
    - `adrs/ink-owned-input-and-action-driven-session-shell.md`

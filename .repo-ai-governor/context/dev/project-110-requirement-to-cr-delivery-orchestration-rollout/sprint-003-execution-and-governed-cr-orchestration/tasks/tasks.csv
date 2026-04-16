@@ -1,0 +1,3 @@
+execution_id,task_id,title,owner,priority,due_date,status,project,sprint,plan,result,verify,review_delta,recorded_at
+seed-20260416-tk-929,TK-929,route task-driven execution and governed CR through deliver orchestration,AI-Agent,P1,2026-04-16,planned,project-110-requirement-to-cr-delivery-orchestration-rollout,sprint-003-execution-and-governed-cr-orchestration,把 run、review、review-verify 与 clean-round recheck 接入 deliver phase machine,待执行,待验证,待执行,2026-04-16
+seed-20260416-tk-930,TK-930,close sprint-003 and hand off discoverability closeout follow-up,AI-Agent,P1,2026-04-16,planned,project-110-requirement-to-cr-delivery-orchestration-rollout,sprint-003-execution-and-governed-cr-orchestration,完成 sprint-003 closeout，并为 sprint-004 写 activation/handoff 约束,待执行,待验证,待执行,2026-04-16
