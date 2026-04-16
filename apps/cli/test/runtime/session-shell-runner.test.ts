@@ -1217,7 +1217,7 @@ describe('CliSessionShellRunner', () => {
     ).toBe(true);
     expect(
       result.transcriptItems.some((item) =>
-        item.lines.includes('artifact=.../repo/context/review/code-review.md'),
+        item.lines.includes('artifact=/workspace/repo/context/review/code-review.md'),
       ),
     ).toBe(true);
     expect(result.transcriptItems[result.transcriptItems.length - 1]?.lines).toContain(

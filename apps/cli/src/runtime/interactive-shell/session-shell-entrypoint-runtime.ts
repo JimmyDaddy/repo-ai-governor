@@ -436,7 +436,7 @@ export class CliSessionShellEntrypointRuntime {
       return null;
     }
 
-    return CliSessionShellEntrypointRuntime.replaceArtifactPathsWithShortForms(
+    return CliSessionShellEntrypointRuntime.replaceArtifactPathsWithDisplayForms(
       summaryCandidate,
       artifactPaths,
     );
@@ -579,7 +579,7 @@ export class CliSessionShellEntrypointRuntime {
     const compactSegments = experienceLines
       .slice(0, 2)
       .map((line) =>
-        CliSessionShellEntrypointRuntime.replaceArtifactPathsWithShortForms(line, artifactPaths),
+        CliSessionShellEntrypointRuntime.replaceArtifactPathsWithDisplayForms(line, artifactPaths),
       )
       .filter((line) => line.length > 0);
     if (compactSegments.length === 0) {
@@ -618,7 +618,7 @@ export class CliSessionShellEntrypointRuntime {
         parsedPayload.command_result?.experience,
         artifactPaths,
       ) ??
-      CliSessionShellEntrypointRuntime.replaceArtifactPathsWithShortForms(
+      CliSessionShellEntrypointRuntime.replaceArtifactPathsWithDisplayForms(
         `runtime_status=${runtimeStatus}`,
         artifactPaths,
       );
@@ -642,7 +642,7 @@ export class CliSessionShellEntrypointRuntime {
       (entry) => entry.status === ExecutionProgressStatus.FAILED,
     );
     if (failedProgressEntry) {
-      return CliSessionShellEntrypointRuntime.replaceArtifactPathsWithShortForms(
+      return CliSessionShellEntrypointRuntime.replaceArtifactPathsWithDisplayForms(
         [failedProgressEntry.summary, failedProgressEntry.detail]
           .filter((segment): segment is string => typeof segment === 'string' && segment.length > 0)
           .join(' · '),
@@ -654,7 +654,7 @@ export class CliSessionShellEntrypointRuntime {
       line.startsWith('failed_reason='),
     );
     return failureDetail
-      ? CliSessionShellEntrypointRuntime.replaceArtifactPathsWithShortForms(
+      ? CliSessionShellEntrypointRuntime.replaceArtifactPathsWithDisplayForms(
           failureDetail,
           artifactPaths,
         )
@@ -698,23 +698,15 @@ export class CliSessionShellEntrypointRuntime {
     return dedupedLines;
   }
 
-  private static replaceArtifactPathsWithShortForms(text: string, artifactPaths: string[]): string {
+  private static replaceArtifactPathsWithDisplayForms(
+    text: string,
+    artifactPaths: string[],
+  ): string {
     let nextText = text;
     for (const artifactPath of artifactPaths) {
-      nextText = nextText
-        .split(artifactPath)
-        .join(CliSessionShellEntrypointRuntime.shortenArtifactPath(artifactPath));
+      nextText = nextText.split(artifactPath).join(artifactPath);
     }
     return nextText;
-  }
-
-  private static shortenArtifactPath(artifactPath: string): string {
-    const segments = artifactPath.split(/[\\/]/u).filter((segment) => segment.length > 0);
-    if (segments.length <= 4) {
-      return artifactPath;
-    }
-
-    return `.../${segments.slice(-4).join('/')}`;
   }
 
   private static truncateLine(line: string, maxLength: number): string {

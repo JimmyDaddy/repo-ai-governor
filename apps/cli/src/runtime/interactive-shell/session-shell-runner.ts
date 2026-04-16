@@ -3325,7 +3325,7 @@ export class CliSessionShellRunner {
     }
 
     const primaryArtifactLine = options.translate('cli.sessionShell.responses.commandArtifact', {
-      artifactPath: this.shortenArtifactPath(artifactPaths[0] ?? ''),
+      artifactPath: artifactPaths[0] ?? '',
     });
     if (artifactPaths.length === 1) {
       return [primaryArtifactLine];
@@ -3337,15 +3337,6 @@ export class CliSessionShellRunner {
         count: String(artifactPaths.length - 1),
       }),
     ];
-  }
-
-  private shortenArtifactPath(artifactPath: string): string {
-    const segments = artifactPath.split(/[\\/]/u).filter((segment) => segment.length > 0);
-    if (segments.length <= 4) {
-      return artifactPath;
-    }
-
-    return `.../${segments.slice(-4).join('/')}`;
   }
 
   private buildPassthroughSummaryLines(

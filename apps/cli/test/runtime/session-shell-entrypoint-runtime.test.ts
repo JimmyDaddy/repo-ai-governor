@@ -244,6 +244,51 @@ describe('CliSessionShellEntrypointRuntime', () => {
     });
   });
 
+  it('preserves absolute artifact paths in command summaries', async () => {
+    const commandExecutor = CliSessionShellEntrypointRuntime.createNestedCommandExecutor({
+      locale: 'en-US',
+      currentWorkingDirectory: '/workspace',
+      environment: {},
+      translate: translateSessionShellResponse,
+      executeCli: async (_argv, io) => {
+        io.stdout(
+          JSON.stringify({
+            command: 'check',
+            message: 'check completed',
+            command_result: {
+              summary: 'check completed',
+              artifacts: [
+                {
+                  path: '/absolute/path/to/context/diagnostics/check/check-123.json',
+                },
+              ],
+              experience: {
+                roleProgress: [],
+                layeredLogs: {
+                  summary: [
+                    'diagnostics_path=/absolute/path/to/context/diagnostics/check/check-123.json',
+                  ],
+                  detailed: [],
+                },
+                interactionPrompts: [],
+              },
+            },
+          }),
+        );
+        return 0;
+      },
+    });
+
+    const result = await commandExecutor(['check']);
+
+    expect(result.artifactPaths).toEqual([
+      '/absolute/path/to/context/diagnostics/check/check-123.json',
+    ]);
+    expect(result.summaryLines).toContain(
+      'Key status: diagnostics_path=/absolute/path/to/context/diagnostics/check/check-123.json',
+    );
+  });
+
   it('forwards nested progress relay ownership into re-entered runCli execution options', async () => {
     const progressEvents: CliCommandProgressEvent[] = [];
     const executeCli = vi.fn(async (_argv, io, executionOptions) => {

@@ -310,7 +310,11 @@ For packaged local host bootstrap, import the sidecar only from `repo-ai-governo
 
 ### ACP host-facing readiness
 
+If you want to switch Codex explicitly to ACP instead of continuing on `remote_api` or the default CLI-backed path, use this minimum sequence:
+
 ```bash
+pnpm exec repo-ai-governor config set tools.codex.transport acp_exec
+pnpm exec repo-ai-governor config get tools.codex.transport
 pnpm exec repo-ai-governor host export --host codex --mode project-local --output-dir .repo-ai-governor/generated/hosts/codex --apply-to-repo /absolute/path/to/<target-repo>
 pnpm exec repo-ai-governor host pack --host codex --mode plugin-bundle --output-dir .repo-ai-governor/generated/hosts/codex-plugin --bundle-dir .repo-ai-governor/generated/bundles/codex-plugin
 pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/codex/host-export.manifest.json
@@ -319,9 +323,10 @@ pnpm exec repo-ai-governor doctor --adapters --output json
 
 Read this surface conservatively:
 
-1. `acp_exec` is explicit host-facing transport truth. It is never an alias or silent fallback of `cli_exec`.
-2. Treat ACP as support-ready only when `doctor` or `verify` projects `acp_host_companion` with runtime-service readiness, packaged-distribution readiness, and the clean-room verified summary.
-3. If ACP invoke, stream, or confirm still reports a blocked/fail-closed state, keep it blocked. Do not reinterpret that result as same-surface `cli_exec` success.
+1. The ACP config value is `acp_exec`. It is not `remote_api`, and it is never an alias or silent fallback of `cli_exec`.
+2. If you already keep `tools.codex.remoteApi.*` endpoint/model/credential truth in config, you usually do not need to remove it first; explicit `transport=acp_exec` can coexist with that configuration.
+3. Treat ACP as support-ready only when `doctor` or `verify` projects `transport=acp_exec` and `acp_host_companion` with runtime-service readiness, packaged-distribution readiness, and the clean-room verified summary.
+4. If ACP invoke, stream, or confirm still reports a blocked/fail-closed state, keep it blocked. Do not reinterpret that result as same-surface `cli_exec` success.
 
 ## 10. Troubleshooting And Known Boundaries
 

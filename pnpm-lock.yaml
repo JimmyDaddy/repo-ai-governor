@@ -294,12 +294,21 @@ importers:
       '@repo-ai-governor/artifact-registry':
         specifier: workspace:*
         version: link:../artifact-registry
+      '@repo-ai-governor/core-memory':
+        specifier: workspace:*
+        version: link:../core-memory
       '@repo-ai-governor/core-runtime-langgraph':
         specifier: workspace:*
         version: link:../core-runtime-langgraph
+      '@repo-ai-governor/core-session':
+        specifier: workspace:*
+        version: link:../core-session
       '@repo-ai-governor/memory-provider-registry':
         specifier: workspace:*
         version: link:../memory-provider-registry
+      '@repo-ai-governor/memory-store-adapter':
+        specifier: workspace:*
+        version: link:../memory-store-adapter
       '@repo-ai-governor/orchestration-service-client':
         specifier: workspace:*
         version: link:../orchestration-service-client

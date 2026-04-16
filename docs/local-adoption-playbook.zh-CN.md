@@ -310,7 +310,11 @@ pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/ho
 
 ### ACP 宿主向 readiness
 
+如果你要把 Codex 显式切到 ACP，而不是继续使用 `remote_api` 或默认 CLI-backed 路径，最小步骤是：
+
 ```bash
+pnpm exec repo-ai-governor config set tools.codex.transport acp_exec
+pnpm exec repo-ai-governor config get tools.codex.transport
 pnpm exec repo-ai-governor host export --host codex --mode project-local --output-dir .repo-ai-governor/generated/hosts/codex --apply-to-repo /absolute/path/to/<target-repo>
 pnpm exec repo-ai-governor host pack --host codex --mode plugin-bundle --output-dir .repo-ai-governor/generated/hosts/codex-plugin --bundle-dir .repo-ai-governor/generated/bundles/codex-plugin
 pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/codex/host-export.manifest.json
@@ -319,9 +323,10 @@ pnpm exec repo-ai-governor doctor --adapters --output json
 
 这条 surface 要保守读取：
 
-1. `acp_exec` 是显式的 host-facing transport truth，绝不是 `cli_exec` 的 alias 或静默 fallback。
-2. 只有当 `doctor` 或 `verify` 投影出的 `acp_host_companion` 同时具备 runtime-service ready、packaged-distribution ready 与 clean-room verified summary 时，才把 ACP 视作 evidence-backed supported surface。
-3. 如果 ACP 的 invoke、stream 或 confirm 仍然报告 blocked/fail-closed，就保持阻断；不要把它重新解释成同 surface 的 `cli_exec` 成功。
+1. ACP 的配置值就是 `acp_exec`；它不是 `remote_api`，也绝不是 `cli_exec` 的 alias 或静默 fallback。
+2. 如果你已经保留了 `tools.codex.remoteApi.*` 这组 endpoint/model/credential truth，通常不需要先删掉；显式 `transport=acp_exec` 可以和这些配置并存。
+3. 只有当 `doctor` 或 `verify` 投影出 `transport=acp_exec`，并且 `acp_host_companion` 同时具备 runtime-service ready、packaged-distribution ready 与 clean-room verified summary 时，才把 ACP 视作 evidence-backed supported surface。
+4. 如果 ACP 的 invoke、stream 或 confirm 仍然报告 blocked/fail-closed，就保持阻断；不要把它重新解释成同 surface 的 `cli_exec` 成功。
 
 ## 10. 排障与常见边界
 
