@@ -1121,6 +1121,52 @@ describe('claude-code-agent-adapter smoke', () => {
     expect(execRunner).toHaveBeenCalledTimes(2);
   });
 
+  it('falls back to legacy probe args when the Claude CLI does not support optimized probe flags', async () => {
+    const execRunner = vi
+      .fn<ClaudeCodeExecRunner>()
+      .mockImplementationOnce(async (request) => {
+        expect(request.commandArgumentsPrefix).toEqual(
+          expect.arrayContaining(['--bare', '--tools', '']),
+        );
+        throw new RuntimeError(
+          GovernorErrorCode.ADAPTER_PROTOCOL_PROBE_FAILED,
+          'Claude Code probe failed: unknown option --bare',
+          {
+            stderr: "error: unknown option '--bare'",
+            selectedEntrypoint: 'claude',
+            shellWrapped: false,
+            processTreePolicy: 'process_group_best_effort',
+          },
+        );
+      })
+      .mockImplementationOnce(async (request) => {
+        expect(request.commandArgumentsPrefix).toEqual([]);
+        return {
+          stdout: 'OK\n',
+          stderr: '',
+          exitCode: 0,
+          signal: null,
+          elapsedMs: 4,
+          launchDiagnostics: {
+            selectedEntrypoint: 'claude',
+            shellWrapped: false,
+            processTreePolicy: 'process_group_best_effort',
+          },
+        };
+      });
+    const adapter = new ClaudeCodeAgentAdapter({
+      executionMode: ClaudeCodeAgentAdapterExecutionMode.CLI_EXEC,
+      execRunner,
+    });
+
+    const probeResult = await adapter.probe({
+      routeKey: 'codegen',
+    });
+
+    expect(probeResult.availabilityStatus).toBe('available');
+    expect(execRunner).toHaveBeenCalledTimes(2);
+  });
+
   it('treats non-zero process exit as protocol failure even when stdout is present', async () => {
     const adapter = new ClaudeCodeAgentAdapter({
       executionMode: ClaudeCodeAgentAdapterExecutionMode.CLI_EXEC,
@@ -1347,7 +1393,7 @@ describe('claude-code-agent-adapter smoke', () => {
     });
   });
 
-  it('places the prompt after a delimiter so --add-dir does not swallow it', async () => {
+  it('uses lightweight probe args and places the prompt after a delimiter so --add-dir does not swallow it', async () => {
     const tempRoot = mkdtempSync(join(tmpdir(), 'claude-cli-argv-'));
     const commandPath = join(tempRoot, 'fake-claude');
     const argvLogPath = join(tempRoot, 'argv-log.json');
@@ -1376,8 +1422,20 @@ describe('claude-code-agent-adapter smoke', () => {
 
       expect(probeResult.availabilityStatus).toBe('available');
       expect(argv).toEqual(
-        expect.arrayContaining(['--add-dir', tempRoot, '--', 'Respond with exactly OK.']),
+        expect.arrayContaining([
+          '--bare',
+          '--tools',
+          '',
+          '--add-dir',
+          tempRoot,
+          '--',
+          'Respond with exactly OK.',
+        ]),
       );
+      expect(argv.indexOf('--bare')).toBeGreaterThanOrEqual(0);
+      expect(argv.indexOf('--bare')).toBeLessThan(argv.indexOf('--'));
+      expect(argv.indexOf('--tools')).toBeGreaterThanOrEqual(0);
+      expect(argv[argv.indexOf('--tools') + 1]).toBe('');
       expect(argv.at(-2)).toBe('--');
       expect(argv.at(-1)).toBe('Respond with exactly OK.');
     } finally {

@@ -90,4 +90,25 @@ describe('WorkspaceResolver smoke', () => {
       resolve(repositoryRoot, '.tmp/custom-workspaces'),
     );
   });
+
+  it('resolves relative repositoryRootOverride from currentWorkingDirectory', () => {
+    const resolver = new WorkspaceResolver();
+    const currentWorkingDirectory = resolve(process.cwd(), 'fixtures', 'runner-context');
+    const repositoryRootOverride = '../target-repository';
+    const expectedRepositoryRoot = resolve(currentWorkingDirectory, repositoryRootOverride);
+
+    const resolvedWorkspace = resolver.resolve({
+      currentWorkingDirectory,
+      repositoryRootOverride,
+      runtimeOverrides: {
+        mode: WorkspaceMode.REPO_LOCAL,
+        repoLocalRoot: '.repo-ai-governor',
+      },
+    });
+
+    expect(resolvedWorkspace.repositoryRoot).toBe(expectedRepositoryRoot);
+    expect(resolvedWorkspace.workspaceRoot).toBe(
+      resolve(expectedRepositoryRoot, '.repo-ai-governor'),
+    );
+  });
 });

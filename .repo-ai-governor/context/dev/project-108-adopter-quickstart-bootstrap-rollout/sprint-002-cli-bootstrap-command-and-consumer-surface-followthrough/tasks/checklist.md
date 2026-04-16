@@ -1,0 +1,25 @@
+# checklist
+
+- [x] TK-903 implement adopt bootstrap orchestrator and default built-in resolution
+  - 2026-04-15：任务创建，状态初始化为 `planned`。
+  - 2026-04-15：开始进入实现窗口，状态切换为 `in_progress`，准备落 `adopt bootstrap` runtime orchestration、selector resolution 与 fail-closed boundary。
+  - 2026-04-16：已完成 runtime 实现；`adopt bootstrap` 现在先执行 bootstrap 专属 doctor preflight，再进入 convenience install orchestration 与 additive diagnostics summary；在省略 selector 时默认回落官方 built-in pack，对显式 profile-alias 歧义保持 fail-closed，并把 clean rerun / drift redirect 语义收口到 `reuse_existing_installation` 与 `adopt diff/upgrade/remove`，而不是重回旧的 `doctor --fix -> adopt apply -> adopt verify` 固定编排口径。
+  - 2026-04-16：验证结果已记录：`pnpm exec vitest run apps/cli/test/cli-skeleton.integration.test.ts apps/cli/test/adopt-command.integration.test.ts apps/cli/test/commands/adopt-command.test.ts --maxWorkers=1 --maxConcurrency=1` 通过，`pnpm run build` 通过；`pnpm -s tsc -p tsconfig.json --noEmit` 仍失败，但失败点分布在本任务变更面外的既有测试文件，未观察到新的 sprint-002 source-surface 类型错误。
+- [x] TK-904 integrate bootstrap summary output help copy and fail-closed rerun guidance
+  - 2026-04-15：任务创建，状态初始化为 `planned`。
+  - 2026-04-15：进入实现窗口，开始把 bootstrap summary output、help copy 与 rerun guidance 对齐到 `adopt bootstrap` 的真实行为与 fail-closed 语义。
+  - 2026-04-16：已完成 CLI presenter 与 i18n 接入；`adopt bootstrap` 子命令、result payload、help copy、blocker wording 与 bootstrap summary artifact 路径已经统一对齐到 quickstart contract，并保留 `check` 为显式 broader follow-up。
+  - 2026-04-16：验证结果已记录：`pnpm exec vitest run apps/cli/test/cli-skeleton.integration.test.ts apps/cli/test/adopt-command.integration.test.ts apps/cli/test/commands/adopt-command.test.ts --maxWorkers=1 --maxConcurrency=1` 通过，`pnpm run build` 通过；根级 `pnpm -s tsc -p tsconfig.json --noEmit` 继续受既有仓库测试类型漂移影响而失败，未见本任务新引入的 presenter/runtime 类型错误。
+- [x] TK-905 refresh adopter docs truth for quickstart versus check follow-up
+  - 2026-04-15：任务创建，状态初始化为 `planned`。
+  - 2026-04-15：进入实现窗口，开始刷新 README、adoption playbook 与 support matrix，使 quickstart、verify 与 `check` 的边界表述回到运行时真值。
+  - 2026-04-16：已完成 adopter-facing docs truth refresh；README、local adoption playbook 与 support matrix 现已把 `adopt bootstrap` 表述为 installer quickstart convenience surface，并明确 `adopt verify` 仍是 canonical install truth、`check` 仍是显式 broader governance follow-up。
+  - 2026-04-16：文档验证结果已记录：`node ./scripts/governance/check-normative-loading-manifest.js --mode block` 与 `node ./scripts/governance/check-docs-triad-sync.js` 通过；同窗口 `pnpm run build` 与定向 vitest 已提供代码变更所需的 build/test 证据。
+- [x] CR-001 sprint-002-cli-bootstrap-command-and-consumer-surface-followthrough delegated review loop round 1
+  - 2026-04-16：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-16：fresh reviewer round 1 已输出 `code_review_working-tree-20260416-0043.md`，共记录 3 条 actionable findings，等待主 agent 复核并推进到 `verified`。
+  - 2026-04-16：主 agent 已完成逐条复核，3 条 findings 全部判定为 `accepted`，任务状态切换为 `verified`，等待修复执行记录与最终 `resolved` 收口。
+  - 2026-04-16：已完成全部 accepted findings 修复与同窗口验证；review artifact 已收口为 `resolved_code_review_working-tree-20260416-0043.md`，任务状态切换为 `resolved`。
+- [x] TK-912 finalize sprint-002 closeout and activate sprint-003
+  - 2026-04-16：任务创建并立即切换为 `in_progress`，开始执行 sprint-002 closeout、sprint-003 activation、delivery registry 前移与本地边界提交准备。
+  - 2026-04-16：已完成 current-context / delivery registry / plan write-back，并生成 `DA-912` handoff；`pnpm run check` 已通过，sprint-002 具备本地边界提交条件。

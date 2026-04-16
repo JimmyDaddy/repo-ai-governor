@@ -1,7 +1,7 @@
 # Runtime Governance Clients Module Overview
 
 - Status: active
-- Date: 2026-04-12
+- Date: 2026-04-15
 - Module ID: `runtime.governance-clients`
 - Owner: runtime
 - Layer: `runtime-core`
@@ -21,11 +21,14 @@
 7. 拥有 worktree / editor / terminal / review 文档等 handoff affordance 与 host distribution apply/pack/verify 语义的正式产品边界，但不把 handoff consumer 或宿主插件升格为新的 runtime owner。
 8. 定义 installer-layer `adoption pack` 与 target-repo bootstrap boundary：高层 installer 负责 pack resolve/apply/diff/upgrade/remove、managed ownership、receipt 与 bootstrap template，而底层 host export/apply/pack/verify 仍只负责 host-native projection。
 9. 约束 installer 只可物化 host-consumable projection、installer metadata 与显式 repo-local bootstrap template；默认 `tool_managed` 工作区事实、`repo_local` 运行态 state 与 self-host authoring surface 不能被静态 install payload 冒充。
-10. 为 multi-workspace overview、parallel execution lane、background queue、notification ownership 与 host-native rollout phase map 提供正式方向，但不宣称这些方向已在代码面全部交付。
-11. 为 adopter truthfulness、real adapter invocation、secondary surface sequencing、GA evidence consolidation、standards runtime productization 与 adoption-pack installer rollout 提供 planning-side formal direction，但不把路线图判断误报为已完成交付。
-12. 为 current surface baseline classification、host-native lifecycle carry slot 与 follow-up decomposition 提供 planning-side formal direction，但不把路线图判断误报为已完成交付。
-13. 正式拥有 `config` / `secret` command family、session shell `/config` / `/secret` discoverability 与 `~/.repo-ai-governor/user-config.yaml` authoring UX 的 host-facing boundary；这些 surface 只能写入 user-private defaults、`credentialRef` selector 与 secret backend mutation request，不得把 raw secret value 或 user-config path 冒充为 runtime canonical truth。
-14. 对显式 `/secret set <keyName>` 的 session-shell authoring path，正式要求 host-facing surface 在 slash secure route 命中后切换到本地隐藏输入与 redacted mutation handoff；raw secret 不得经由 slash text、argv、preview recap、error copy 或 transcript surface 暴露，而 skill-triggered secure-input request 与 desktop / VS Code prompt parity 继续留待后续独立 solution。
+10. 正式拥有 built-in adoption pack parity 与 self-host readiness sync boundary：需要同步的 installer/template surface、template-seed surface 与 adopter-owned placeholder surface 必须显式分层；`current-context` / `normative-loading-manifest` 这类同一路径结构与实例值分离的 surface 不得回退成整文件镜像。
+11. 正式要求 repo-specific governance / product / execution starter docs 的 placeholder readiness interlock 只属于 self-host authoring / execution path；默认 `adopter-complete` 安装路径不得因缺少 repo-local authoring docs 而被误阻断。
+12. 为 multi-workspace overview、parallel execution lane、background queue、notification ownership 与 host-native rollout phase map 提供正式方向，但不宣称这些方向已在代码面全部交付。
+13. 为 adopter truthfulness、real adapter invocation、secondary surface sequencing、GA evidence consolidation、standards runtime productization 与 adoption-pack installer rollout 提供 planning-side formal direction，但不把路线图判断误报为已完成交付。
+14. 为 current surface baseline classification、host-native lifecycle carry slot 与 follow-up decomposition 提供 planning-side formal direction，但不把路线图判断误报为已完成交付。
+15. 正式拥有 `config` / `secret` command family、session shell `/config` / `/secret` discoverability 与 `~/.repo-ai-governor/user-config.yaml` authoring UX 的 host-facing boundary；这些 surface 只能写入 user-private defaults、`credentialRef` selector 与 secret backend mutation request，不得把 raw secret value 或 user-config path 冒充为 runtime canonical truth。
+16. 对显式 `/secret set <keyName>` 的 session-shell authoring path，正式要求 host-facing surface 在 slash secure route 命中后切换到本地隐藏输入与 redacted mutation handoff；raw secret 不得经由 slash text、argv、preview recap、error copy 或 transcript surface 暴露，而 skill-triggered secure-input request 与 desktop / VS Code prompt parity 继续留待后续独立 solution。
+17. 正式拥有 adopter installer quickstart convenience boundary：`adopt bootstrap` 只可 orchestrate `init -> doctor --fix -> adopt apply -> adopt verify`；`check` 继续作为显式 broader governance audit follow-up；缺省 selector 只允许落官方 built-in pack，而 existing receipt drift / mismatch rerun 必须回到 `adopt diff/upgrade/remove` lifecycle。
 
 ## 3. 非目标
 
@@ -92,6 +95,17 @@
    - session shell `/config`、`/secret` 只承担 discoverability 与 handoff affordance，不形成新的 runtime truth。
    - `runtime.governance-clients` 负责 authoring UX 与 host-facing copy，`runtime.agent-projection` 继续负责 canonical normalization 与 read-only consumption。
 10. 截至 `2026-04-12`，本模块进一步接受“session-shell secure local secret authoring”补充方向：显式 `/secret set <keyName>` 允许由 session shell 直接切换到本地隐藏输入，但当前 formal scope 仅锁定 command-initiated secure capture、redacted mutation handoff 与 suffix pre-commit rejection；service-owned secure-input request、desktop secure dialog 与 VS Code secure prompt 仍不属于本轮 active truth。
+11. 截至 `2026-04-15`，本模块进一步接受 built-in adoption pack parity 与 self-host readiness sync direction：
+   - built-in pack 必须显式区分 `exact_sync`、`generated_projection`、`template_seed` 与 `adopter_owned_placeholder` surface。
+   - repo-specific governance / product / execution starter docs 在 `self-host-complete` 下继续属于 adopter-owned placeholder，而不是源仓库 mirror。
+   - self-host placeholder readiness interlock 只属于 `self-host-complete + repo_local` 或等价 detected surface；默认 `adopter-complete` 路径继续排除在外。
+   - 真实 parity/readiness rollout follow-up 由 `project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout` 承接。
+12. 截至 `2026-04-15`，本模块进一步接受 adopter quickstart bootstrap command direction：
+   - public installer convenience surface 固定为 `adopt bootstrap`，而不是新增顶层 installer family。
+   - `adopt bootstrap` 只编排 install-affecting stages；`check` 继续保留为显式 broader governance audit follow-up。
+   - omitted selector 只允许落官方 built-in pack；显式 selector 复用当前 `adopt apply` resolver，歧义时继续 fail-closed。
+   - clean existing installation 可以通过 convenience rerun 复用；managed drift、pack mismatch 或 profile mismatch 必须回到 `adopt diff/upgrade/remove`，而不是隐式升级成新的 lifecycle owner。
+   - 真实 command/runtime/docs rollout follow-up 由 `project-108-adopter-quickstart-bootstrap-rollout` 承接。
 
 ## 9. Detail Docs
 
@@ -106,3 +120,5 @@
    - `adrs/adopter-productization-priority-and-surface-sequencing.md`
    - `adrs/adoption-pack-installer-and-self-host-template-bootstrap.md`
    - `adrs/current-surface-baseline-classification-and-followup-decomposition.md`
+   - `adrs/built-in-adoption-pack-parity-and-self-host-readiness-sync.md`
+   - `adrs/adopter-quickstart-bootstrap-command-and-install-convenience-surface.md`

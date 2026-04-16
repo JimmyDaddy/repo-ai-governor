@@ -110,6 +110,7 @@ interface PreparedRoleDispatch {
   descriptor: SessionMainSubagentDescriptor;
   capabilityRequirement?: AgentCapabilityRequirement;
   safeCandidateSurfaces: AdapterSurface[];
+  toolCapableSurfaceFallbackApplied?: boolean;
   preflightProviderContinuationMutations?: SessionMainSupervisorTurnOutcome['providerContinuationMutations'];
 }
 
@@ -252,6 +253,9 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
         mentionedRoleId,
         protocolBySurface,
         toolConfigBySurface,
+        {
+          allowToolCapableSurfaces: true,
+        },
       );
     }
     if (implicitRoleDelegateId) {
@@ -1124,6 +1128,9 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
         roleId,
         protocolBySurface,
         toolConfigBySurface,
+        {
+          allowToolCapableSurfaces: true,
+        },
       );
       if (!preparedDispatch) {
         return this.createUnknownSerialRoleCollaborationOutcome(context, roleId);
@@ -1206,6 +1213,9 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
         roleId,
         protocolBySurface,
         toolConfigBySurface,
+        {
+          allowToolCapableSurfaces: true,
+        },
       );
       if (!preparedDispatch) {
         return this.createUnknownParallelRoleFanoutOutcome(context, roleId);
@@ -1232,6 +1242,11 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
               context,
               preparedDispatch.descriptor,
               preparedDispatches.map((candidate) => candidate.descriptor.roleId),
+              {
+                enforceChatOnlyToolForbiddenPolicy:
+                  preparedDispatch.toolCapableSurfaceFallbackApplied === true &&
+                  !this.isRepositoryReviewRoleDispatch(context, preparedDispatch.descriptor),
+              },
             ),
           },
         ),
@@ -1443,10 +1458,41 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       protocolBySurface,
       capabilityRequirement,
       {
-        allowToolCapableSurfaces: options?.allowToolCapableSurfaces,
-        streamContext: roleDelegateStreamContext,
+        streamContext: options?.allowToolCapableSurfaces ? undefined : roleDelegateStreamContext,
       },
     );
+    let toolCapableSurfaceFallbackApplied = false;
+    if (safeCandidateSurfaces.length === 0 && options?.allowToolCapableSurfaces) {
+      await this.publishStreamEvent(context, {
+        kind: 'lifecycle',
+        state: 'running',
+        title: roleDelegateStreamContext.title,
+        detail: this.localizeText(
+          `No safe no-tool ${descriptor.roleId} surface passed preflight; retrying tool-capable surfaces under chat-only governance.`,
+          `没有安全的无工具 ${descriptor.roleId} surface 通过预检；正在以仅聊天、禁工具的治理模式重试可用的 tool-capable surface。`,
+        ),
+        activityKey: `role-preflight:${descriptor.routeKey}:${descriptor.roleId}`,
+        roleId: descriptor.roleId,
+        stageId: descriptor.stageId,
+        routeKey: descriptor.routeKey,
+        ...(eligibleRoleDelegateCandidateSurfaces[0]
+          ? {
+              selectedSurface: eligibleRoleDelegateCandidateSurfaces[0],
+            }
+          : {}),
+      });
+      safeCandidateSurfaces = await this.resolveSafeCandidateSurfaces(
+        eligibleRoleDelegateCandidateSurfaces,
+        descriptor.routeKey,
+        protocolBySurface,
+        capabilityRequirement,
+        {
+          allowToolCapableSurfaces: true,
+          streamContext: roleDelegateStreamContext,
+        },
+      );
+      toolCapableSurfaceFallbackApplied = safeCandidateSurfaces.length > 0;
+    }
     if (repositoryReviewRoleDispatch && safeCandidateSurfaces.length === 0) {
       safeCandidateSurfaces = await this.resolveAvailableCandidateSurfaces(
         eligibleRoleDelegateCandidateSurfaces,
@@ -1490,6 +1536,11 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       descriptor,
       capabilityRequirement,
       safeCandidateSurfaces,
+      ...(toolCapableSurfaceFallbackApplied
+        ? {
+            toolCapableSurfaceFallbackApplied: true,
+          }
+        : {}),
       ...(preflightProviderContinuationMutations.length > 0
         ? {
             preflightProviderContinuationMutations,
@@ -1609,6 +1660,9 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       customInput?: Record<string, unknown>;
     },
   ): Promise<ExecutedRoleDispatch> {
+    const enforceToolForbiddenRoleDelegatePolicy =
+      preparedDispatch.toolCapableSurfaceFallbackApplied === true &&
+      !this.isRepositoryReviewRoleDispatch(context, preparedDispatch.descriptor);
     const dispatchInput = options?.customInput
       ? options.customInput
       : options?.priorRoleOutputs && options.priorRoleOutputs.length > 0
@@ -1617,8 +1671,13 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
             preparedDispatch.descriptor,
             options.priorRoleOutputs,
             options.roleOrder ?? [preparedDispatch.descriptor.roleId],
+            {
+              enforceChatOnlyToolForbiddenPolicy: enforceToolForbiddenRoleDelegatePolicy,
+            },
           )
-        : this.createRoleDelegateInput(context, preparedDispatch.descriptor);
+        : this.createRoleDelegateInput(context, preparedDispatch.descriptor, {
+            enforceChatOnlyToolForbiddenPolicy: enforceToolForbiddenRoleDelegatePolicy,
+          });
     const routeRunner = this.createRouteRunner({
       routeKey: preparedDispatch.descriptor.routeKey,
       protocolBySurface,
@@ -2127,6 +2186,9 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
   private createRoleDelegateInput(
     context: SessionMainSupervisorTurnContext,
     descriptor: SessionMainSubagentDescriptor,
+    options?: {
+      enforceChatOnlyToolForbiddenPolicy?: boolean;
+    },
   ): Record<string, unknown> {
     const repositoryReviewScope = this.isRepositoryReviewRoleDispatch(context, descriptor)
       ? SESSION_MAIN_REPOSITORY_REVIEW_SCOPE
@@ -2148,6 +2210,14 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       permissionLevel: descriptor.permissionLevel,
       interactionMode: SESSION_MAIN_INTERACTION_MODE.SINGLE_ROLE_DELEGATE,
       governorInstructions: this.createRoleDelegateGovernorInstructions(context, descriptor),
+      ...(options?.enforceChatOnlyToolForbiddenPolicy
+        ? {
+            [AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY]: {
+              interactionMode: AgentStageExecutionMode.CHAT_ONLY,
+              toolUsePolicy: AgentStageToolUsePolicy.FORBIDDEN,
+            },
+          }
+        : {}),
       ...(repositoryReviewScope ? { reviewScope: repositoryReviewScope } : {}),
       ...(sessionContinuityNote ? { sessionContinuityNote } : {}),
       ...(context.metadata ? { metadata: { ...context.metadata } } : {}),
@@ -2259,9 +2329,12 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     descriptor: SessionMainSubagentDescriptor,
     priorRoleOutputs: Array<{ roleId: string; assistantMessage: string }>,
     roleOrder: string[],
+    options?: {
+      enforceChatOnlyToolForbiddenPolicy?: boolean;
+    },
   ): Record<string, unknown> {
     return {
-      ...this.createRoleDelegateInput(context, descriptor),
+      ...this.createRoleDelegateInput(context, descriptor, options),
       interactionMode: SESSION_MAIN_INTERACTION_MODE.SERIAL_ROLE_COLLABORATION,
       collaborationRoleOrder: [...roleOrder],
       priorRoleOutputs: priorRoleOutputs.map((candidate) => ({
@@ -2279,9 +2352,12 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     context: SessionMainSupervisorTurnContext,
     descriptor: SessionMainSubagentDescriptor,
     roleOrder: string[],
+    options?: {
+      enforceChatOnlyToolForbiddenPolicy?: boolean;
+    },
   ): Record<string, unknown> {
     return {
-      ...this.createRoleDelegateInput(context, descriptor),
+      ...this.createRoleDelegateInput(context, descriptor, options),
       interactionMode: SESSION_MAIN_INTERACTION_MODE.PARALLEL_ROLE_FANOUT,
       collaborationRoleOrder: [...roleOrder],
       synthesisMode: SESSION_MAIN_PARALLEL_ANALYSIS_SYNTHESIS_MODE,
@@ -2584,8 +2660,8 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
             `我没有把「${context.userMessage}」委派给 ${descriptor.roleId} 角色，因为当前配置的 reviewer surface 要么不可用、要么没有通过仓库评审所需的预检。`,
           )
         : this.localizeText(
-            `I did not delegate "${context.userMessage}" to the ${descriptor.roleId} role because every currently configured surface for that role is tool-capable, unavailable, or missing one required capability.`,
-            `我没有把「${context.userMessage}」委派给 ${descriptor.roleId} 角色，因为这个角色当前配置的 surface 要么支持工具调用、要么不可用、要么缺少必需能力。`,
+            `I did not delegate "${context.userMessage}" to the ${descriptor.roleId} role because every currently configured surface for that role is unavailable or missing one required capability after active preflight checks.`,
+            `我没有把「${context.userMessage}」委派给 ${descriptor.roleId} 角色，因为这个角色当前配置的 surface 在主动预检后要么不可用、要么缺少必需能力。`,
           ),
       '',
       repositoryReviewRequest
@@ -2594,8 +2670,8 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
             '当前没有可用的 reviewer surface 通过仓库评审所需的 availability 与治理检查。请先恢复一个可用的 reviewer surface，或重新执行适配器诊断后再试。',
           )
         : this.localizeText(
-            'The bootstrap collaboration path is currently restricted to no-tool surfaces so that front-stage role delegation does not bypass the governed handoff boundary.',
-            '当前 bootstrap 协作路径只允许走无工具调用的 surface，这样前台 role delegate 才不会绕过受治理的 handoff 边界。',
+            'The bootstrap collaboration path currently requires one surface that passes active preflight checks and satisfies the role capability contract before delegation can start.',
+            '当前 bootstrap 协作路径要求至少有一个 surface 先通过主动预检并满足角色能力契约，然后才能开始委派。',
           ),
     ].join('\n');
     return {
@@ -2642,8 +2718,8 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       ),
       '',
       this.localizeText(
-        'Serial role collaboration currently requires every role in the chain to have one safe no-tool surface that also satisfies its required capabilities before the supervisor starts invoking any stage.',
-        '当前串行角色协作要求链路中的每个角色都先具备一个同时满足 required capabilities 的安全无工具 surface，supervisor 才会开始实际调用。',
+        'Serial role collaboration currently requires every role in the chain to have one safe surface that satisfies its required capabilities before the supervisor starts invoking any stage.',
+        '当前串行角色协作要求链路中的每个角色都先具备一个满足 required capabilities 的安全 surface，supervisor 才会开始实际调用。',
       ),
     ].join('\n');
     return {
@@ -2690,8 +2766,8 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       ),
       '',
       this.localizeText(
-        'Parallel role analysis currently requires every role in the fan-out set to have one safe no-tool surface that also satisfies its required capabilities before the supervisor starts any parallel dispatch.',
-        '当前并行角色分析要求 fan-out 集合中的每个角色都先具备一个同时满足 required capabilities 的安全无工具 surface，supervisor 才会开始任何并行分发。',
+        'Parallel role analysis currently requires every role in the fan-out set to have one safe surface that satisfies its required capabilities before the supervisor starts any parallel dispatch.',
+        '当前并行角色分析要求 fan-out 集合中的每个角色都先具备一个满足 required capabilities 的安全 surface，supervisor 才会开始任何并行分发。',
       ),
     ].join('\n');
     return {

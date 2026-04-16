@@ -1,5 +1,5 @@
 schema_version: 1
-generated_at: 2026-04-13
+generated_at: 2026-04-15
 status: active
 owner: repo-ai-governor
 
@@ -1152,7 +1152,7 @@ documents:
       - ide_surface_change
       - command_surface_change
     owner: runtime
-    last_reviewed_at: 2026-04-12
+    last_reviewed_at: 2026-04-15
 
   - doc_id: runtime_governance_surface_client_contract
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/governance-surface-client-contract.md
@@ -1210,7 +1210,7 @@ documents:
       - command_surface_change
       - ide_surface_change
     owner: runtime
-    last_reviewed_at: 2026-04-09
+    last_reviewed_at: 2026-04-15
 
   - doc_id: runtime_governance_surface_split_adr
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/desktop-command-center-and-vscode-editor-companion-split.md
@@ -1283,3 +1283,31 @@ documents:
       - ide_surface_change
     owner: runtime
     last_reviewed_at: 2026-04-09
+
+  - doc_id: runtime_governance_built_in_adoption_pack_parity_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/built-in-adoption-pack-parity-and-self-host-readiness-sync.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - runtime_contract_change
+      - command_surface_change
+      - ide_surface_change
+    owner: runtime
+    last_reviewed_at: 2026-04-15
+
+  - doc_id: runtime_governance_adopter_quickstart_bootstrap_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/adopter-quickstart-bootstrap-command-and-install-convenience-surface.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - runtime_contract_change
+      - command_surface_change
+      - ide_surface_change
+    owner: runtime
+    last_reviewed_at: 2026-04-15

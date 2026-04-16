@@ -273,6 +273,7 @@ export function replaceTaskLedgerCanonicalRowsForSource(options) {
 
     if (options.writeRenderedView !== false) {
       renderTaskLedgerCsvViews({
+        taskLedgerRoot: options.taskLedgerRoot,
         databaseFilePath,
         taskCsvPath: absoluteTaskCsvPath,
         writeFiles: true,

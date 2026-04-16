@@ -16,7 +16,8 @@
 1. `project plan` 只承载 project 级目标、sprint 结构、WBS 概览、DoD 与 milestone records。
 2. 不在 `project plan` 中维护 task-level canonical status 真值；WBS 的 status 只作为概览，最终以 task ledger 为准。
 3. 若尚未 closeout，`里程碑记录入口` 章节仍需保留，并写明 `待 closeout 后补齐`。
-4. 若项目只启动了一个 sprint，也应保留 `Sprint 细化` 章节，方便后续扩展。
+4. 若 scope baseline 已经覆盖多个 sprint，默认应在 `Sprint 细化` 中一次写出完整 sprint queue；激活仍可逐个推进。
+5. 若项目当前只明确一个 sprint，也应保留 `Sprint 细化` 章节，方便后续扩展。
 
 ## 3. Concrete Template
 
@@ -45,6 +46,12 @@
 - Sprint Goal: <本 sprint 的目标>
 - Task Package: `<TK/CR 清单>`
 
+## 2.2 <sprint-002-xxx>
+
+- Status: <planned|active|completed>
+- Sprint Goal: <本 sprint 的目标>
+- Task Package: `<TK/CR 清单>`
+
 ## 3. 任务拆解矩阵（WBS）
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
@@ -66,7 +73,7 @@
 
 ## 6. 里程碑记录
 
-1. <YYYY-MM-DD>：创建 project 与首个 sprint 骨架。
+1. <YYYY-MM-DD>：创建 project 与全量已知 sprint queue 骨架。
 2. <YYYY-MM-DD>：<关键推进记录>
 
 ## 7. 里程碑记录入口
@@ -78,4 +85,4 @@
 
 1. `Stage Mapping` / `Phase Mapping` 没有现成值时允许先写 `待补充`，但不得省略字段。
 2. `Task Package` 建议使用 `TK-xxx` / `CR-xxx` 的短列表，不重复任务目标正文。
-3. 若 project 级 scope 涉及多 sprint，可在 `Sprint 细化` 中继续追加 `2.2 / 2.3 ...` 小节。
+3. 若 project 级 scope 涉及多 sprint，默认应在首轮拆解时直接写出 `2.1 / 2.2 / 2.3 ...` 的完整执行队列；后续仅在范围变化时再调整。

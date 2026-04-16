@@ -12,11 +12,11 @@
 - Checklist: `none`
 - CSV: `none`
 - Review: `none`
-- Note: `2026-04-15` `project-105 / sprint-003` reopened closeout 已在 latest project-final `CR-012` clean recheck 后重新收口；`TK-890`、completion audit、completed history 与 idle 恢复已按 canonical truth 写回。
+- Note: `2026-04-16` `project-108 / sprint-003` 已完成 project-final delegated CR loop（`CR-003` 至 `CR-010` 全部 `resolved`）与 `TK-908 / DA-908` final closeout write-back；当前 worktree 暂无 active primary stream，也不保留 planned follow-up stream，等待下一次显式激活。
 
 ## Active Streams
 
-- none
+- `none`
 
 ## Planned Follow-Up Streams
 

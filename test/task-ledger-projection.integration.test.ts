@@ -87,6 +87,7 @@ describe('task ledger sqlite canonical truth integration', () => {
       expect(unchangedRows.get('TK-900')?.recorded_at).toBe('2026-04-03');
 
       const renderedDrift = compareRenderedTaskLedgerCsvViews({
+        taskLedgerRoot: devRoot,
         databaseFilePath: canonicalDatabasePath,
         taskCsvPath: sprintOneCsvPath,
       });
@@ -94,6 +95,7 @@ describe('task ledger sqlite canonical truth integration', () => {
 
       replaceTaskLedgerCanonicalRowsForSource({
         taskCsvPath: sprintOneCsvPath,
+        taskLedgerRoot: devRoot,
         databaseFilePath: canonicalDatabasePath,
         rows: [
           {
@@ -156,6 +158,7 @@ describe('task ledger sqlite canonical truth integration', () => {
       expect(refreshedRows.get('TK-900')?.recorded_at).toBe('2026-04-05');
 
       const refreshedDrift = compareRenderedTaskLedgerCsvViews({
+        taskLedgerRoot: devRoot,
         databaseFilePath: canonicalDatabasePath,
         taskCsvPath: sprintOneCsvPath,
       });

@@ -318,7 +318,13 @@ export class CliGovernanceRuntime {
    * @returns True when baseline workspace files should be auto-created before execution.
    */
   private shouldEnsureWorkspaceBootstrap(commandName: CliCommandName): boolean {
-    if (commandName === CliCommandName.CONFIG || commandName === CliCommandName.SECRET) {
+    // Adopt flows resolve and initialize their target workspace explicitly, so generic
+    // CLI auto-bootstrap would create unrelated state and can conflict with managed apply/bootstrap.
+    if (
+      commandName === CliCommandName.CONFIG ||
+      commandName === CliCommandName.SECRET ||
+      commandName === CliCommandName.ADOPT
+    ) {
       return false;
     }
 

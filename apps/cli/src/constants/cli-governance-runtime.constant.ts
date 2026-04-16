@@ -57,6 +57,7 @@ export enum CliRuntimeOperation {
   ENV_DOCTOR = 'env_doctor',
   GOVERNANCE_CHECK = 'governance_check',
   ADOPTION_LIST = 'adoption_list',
+  ADOPTION_BOOTSTRAP = 'adoption_bootstrap',
   ADOPTION_APPLY = 'adoption_apply',
   ADOPTION_DIFF = 'adoption_diff',
   ADOPTION_VERIFY = 'adoption_verify',

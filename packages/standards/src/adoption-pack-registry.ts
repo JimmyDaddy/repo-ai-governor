@@ -537,6 +537,31 @@ export class AdoptionPackRegistry {
       manifest: mergedManifest,
       workflowRecords: builtInDefinition?.workflowRecords.map((record) => ({ ...record })) ?? [],
       templateRecords: builtInDefinition?.templateRecords.map((record) => ({ ...record })) ?? [],
+      runtimeBootstrapRecords:
+        builtInDefinition?.runtimeBootstrapRecords.map((record) => ({
+          ...record,
+          profileIds: [...record.profileIds],
+        })) ?? [],
+      sourceCatalogRecords:
+        builtInDefinition?.sourceCatalogRecords.map((record) => ({
+          ...record,
+          profileIds: [...record.profileIds],
+          readinessSinkIds: [...record.readinessSinkIds],
+          ...(record.relativePath ? { relativePath: record.relativePath } : {}),
+          ...(record.workflowId ? { workflowId: record.workflowId } : {}),
+          ...(record.structureSourceRef ? { structureSourceRef: record.structureSourceRef } : {}),
+          ...(record.instanceSourceMode ? { instanceSourceMode: record.instanceSourceMode } : {}),
+          ...(record.instanceSourceRef ? { instanceSourceRef: record.instanceSourceRef } : {}),
+          ...(record.instancePlaceholderPolicy
+            ? { instancePlaceholderPolicy: record.instancePlaceholderPolicy }
+            : {}),
+        })) ?? [],
+      readinessMatrixRecords:
+        builtInDefinition?.readinessMatrixRecords.map((record) => ({
+          ...record,
+          sinkIds: [...record.sinkIds],
+          surfaceIds: [...record.surfaceIds],
+        })) ?? [],
       capabilityCoverage: builtInDefinition ? { ...builtInDefinition.capabilityCoverage } : {},
     };
   }
