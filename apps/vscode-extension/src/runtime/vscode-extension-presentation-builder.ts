@@ -26,7 +26,10 @@ import type {
   OrchestrationHitlInboxEntry,
   OrchestrationQueueOverviewQueryResponse,
 } from '@repo-ai-governor/orchestration-service-client';
-import { VSCODE_EXTENSION_PUBLIC_SUPPORT_LEVEL } from '../constants/index.js';
+import {
+  VSCODE_EXTENSION_DESKTOP_RELATIONSHIP,
+  VSCODE_EXTENSION_PUBLIC_SUPPORT_LEVEL,
+} from '../constants/index.js';
 import {
   VSCODE_EXTENSION_CHAT_COMMAND_REVIEW,
   VSCODE_EXTENSION_COMMAND_IDS,
@@ -37,6 +40,7 @@ import type {
   VsCodeExtensionReviewDetailSnapshot,
   VsCodeExtensionTreeNodeDescriptor,
   VsCodeExtensionWorkbenchOverviewSnapshot,
+  VsCodeExtensionWorkflowStudioSnapshot,
   VsCodeExtensionWorkspaceContextSnapshot,
 } from '../types/index.js';
 import type { VsCodeExtensionLocalizer } from './vscode-extension-localizer.js';
@@ -314,10 +318,32 @@ export class VsCodeExtensionPresentationBuilder {
         label: this.localizer.localizeText('Public support level', '公开支持级别'),
         description: this.localizePublicSupportLevel(VSCODE_EXTENSION_PUBLIC_SUPPORT_LEVEL),
         tooltip: this.localizer.localizeText(
-          'Phase B keeps the VS Code surface at workbench baseline in progress until workflow-studio and support-truth evidence are complete.',
-          'Phase B 会让 VS Code 保持在 workbench baseline in progress，直到 workflow studio 与支持口径证据闭环。',
+          'Phase C keeps the VS Code surface at workbench baseline in progress until workflow-studio and support-truth evidence are complete.',
+          'Phase C 会让 VS Code 保持在 workbench baseline in progress，直到 workflow studio 与支持口径证据闭环。',
         ),
         themeIconId: 'workspace-trusted',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+      },
+      {
+        nodeId: 'desktop-relationship',
+        label: this.localizer.localizeText('Desktop relationship', 'Desktop 关系'),
+        description: this.localizeDesktopRelationship(VSCODE_EXTENSION_DESKTOP_RELATIONSHIP),
+        tooltip: this.localizer.localizeText(
+          'Desktop remains a governed secondary surface until workflow-studio evidence and support-truth cutover both close cleanly.',
+          '在 workflow studio 证据面与 support-truth cutover 一起 clean 收口前，Desktop 继续保持受治理的 secondary surface。',
+        ),
+        themeIconId: 'device-desktop',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+      },
+      {
+        nodeId: 'workflow-studio-gate',
+        label: this.localizer.localizeText('Workflow studio gate', 'Workflow Studio 门槛'),
+        description: this.getSupportTruthGateLabel(queueOverview, selectedExecution?.execution),
+        tooltip: this.localizer.localizeText(
+          'Phase C uses one explicit workflow-studio + desktop-decision evidence surface before support-truth can claim VS Code as the public primary workbench.',
+          'Phase C 需要 workflow studio 与 desktop decision 的显式证据面一起闭环，之后 support-truth 才能把 VS Code 改口为公开主工作台。',
+        ),
+        themeIconId: this.isPrimaryWorkbenchClaimActive() ? 'pass-filled' : 'clock',
         contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
       },
       {
@@ -677,6 +703,128 @@ export class VsCodeExtensionPresentationBuilder {
   }
 
   /**
+   * Builds HTML for the workflow-studio evidence surface.
+   * @param snapshot Workflow-studio inputs resolved from service-owned queries.
+   * @returns Standalone HTML payload for the workflow-studio webview.
+   */
+  public buildWorkflowStudioHtml(snapshot: VsCodeExtensionWorkflowStudioSnapshot): string {
+    const title = this.localizer.localizeText(
+      'Governor workflow studio',
+      'Governor Workflow Studio',
+    );
+    if (!snapshot.workspaceContext.workspaceRoot) {
+      return [
+        '<!DOCTYPE html>',
+        '<html lang="en">',
+        '<head>',
+        '  <meta charset="UTF-8" />',
+        '  <meta name="viewport" content="width=device-width, initial-scale=1.0" />',
+        `  <title>${this.escapeHtml(title)}</title>`,
+        '  <style>',
+        '    :root { color-scheme: light dark; }',
+        '    body { font-family: var(--vscode-font-family); padding: 12px; color: var(--vscode-editor-foreground); background: var(--vscode-editor-background); }',
+        '    h1, h2 { margin: 0 0 8px; }',
+        '    .card { border: 1px solid var(--vscode-panel-border); border-radius: 10px; padding: 12px; margin-bottom: 12px; background: color-mix(in srgb, var(--vscode-editor-background) 92%, var(--vscode-list-hoverBackground) 8%); }',
+        '    .facts { margin: 8px 0 0; padding-left: 16px; }',
+        '    .section-list { margin: 0; padding-left: 16px; }',
+        '    p, li { line-height: 1.5; }',
+        '  </style>',
+        '</head>',
+        '<body>',
+        `  <h1>${this.escapeHtml(title)}</h1>`,
+        `  <section class="card"><h2>${this.escapeHtml(this.localizer.localizeText('No workspace selected', '尚未选择工作区'))}</h2><p>${this.escapeHtml(this.localizer.localizeText('Open a governed workspace folder to project workflow-studio evidence into VS Code.', '打开一个受治理工作区后，workflow studio 证据面才会投影到 VS Code。'))}</p></section>`,
+        '</body>',
+        '</html>',
+      ].join('\n');
+    }
+
+    const queueOverview = snapshot.queueOverview;
+    const selectedExecution = snapshot.selectedExecution?.execution;
+    const artifactPane = snapshot.artifactPane;
+    const workflowLines = this.buildWorkflowStudioSelectionLines(
+      selectedExecution,
+      artifactPane,
+      snapshot.reviewSourcePath,
+    );
+    const queueLines = this.buildWorkflowStudioQueueLines(queueOverview);
+    const supportTruthLines = this.buildWorkflowStudioSupportTruthLines(
+      queueOverview,
+      selectedExecution,
+      artifactPane,
+    );
+    const desktopDecisionLines = this.buildWorkflowStudioDesktopDecisionLines(
+      queueOverview,
+      selectedExecution,
+    );
+    const temporaryBridgeLines = this.buildWorkflowStudioTemporaryBridgeLines(
+      queueOverview.temporaryBridges,
+    );
+    const workspaceFacts = this.buildWorkspaceFactLines(snapshot.workspaceContext);
+
+    return [
+      '<!DOCTYPE html>',
+      '<html lang="en">',
+      '<head>',
+      '  <meta charset="UTF-8" />',
+      '  <meta name="viewport" content="width=device-width, initial-scale=1.0" />',
+      `  <title>${this.escapeHtml(title)}</title>`,
+      '  <style>',
+      '    :root { color-scheme: light dark; }',
+      '    body { font-family: var(--vscode-font-family); padding: 12px; color: var(--vscode-editor-foreground); background: var(--vscode-editor-background); }',
+      '    h1, h2 { margin: 0 0 8px; }',
+      '    .card { border: 1px solid var(--vscode-panel-border); border-radius: 10px; padding: 12px; margin-bottom: 12px; background: color-mix(in srgb, var(--vscode-editor-background) 92%, var(--vscode-list-hoverBackground) 8%); }',
+      '    .facts { margin: 8px 0 0; padding-left: 16px; }',
+      '    .section-list { margin: 0; padding-left: 16px; }',
+      '    p, li { line-height: 1.5; }',
+      '  </style>',
+      '</head>',
+      '<body>',
+      `  <h1>${this.escapeHtml(title)}</h1>`,
+      `  <section class="card">
+        <h2>${this.escapeHtml(this.localizer.localizeText('Phase C evidence surface', 'Phase C 证据面'))}</h2>
+        <p>${this.escapeHtml(
+          this.localizer.localizeText(
+            'Workflow studio stays service-backed: it shows workflow, queue, bridge, and support-truth evidence without turning VS Code into the owner of governance truth.',
+            'Workflow Studio 保持为 service-backed：它只展示 workflow、queue、bridge 与 support-truth 证据，不把 VS Code 变成治理真值拥有者。',
+          ),
+        )}</p>
+        <ul class="facts">
+          ${workspaceFacts
+            .map(
+              (fact) =>
+                `<li><strong>${this.escapeHtml(fact.label)}:</strong> ${this.escapeHtml(fact.value)}</li>`,
+            )
+            .join('')}
+          <li><strong>${this.escapeHtml(this.localizer.localizeText('Public support level', '公开支持级别'))}:</strong> ${this.escapeHtml(this.localizePublicSupportLevel(VSCODE_EXTENSION_PUBLIC_SUPPORT_LEVEL))}</li>
+          <li><strong>${this.escapeHtml(this.localizer.localizeText('Desktop relationship', 'Desktop 关系'))}:</strong> ${this.escapeHtml(this.localizeDesktopRelationship(VSCODE_EXTENSION_DESKTOP_RELATIONSHIP))}</li>
+        </ul>
+      </section>`,
+      this.renderStringSection(
+        this.localizer.localizeText('Workflow focus', 'Workflow 聚焦'),
+        workflowLines,
+      ),
+      this.renderStringSection(
+        this.localizer.localizeText('Queue and rollout overview', '队列与 rollout 总览'),
+        queueLines,
+      ),
+      this.renderStringSection(
+        this.localizer.localizeText('Support-truth gate', 'Support-Truth 门槛'),
+        supportTruthLines,
+      ),
+      this.renderStringSection(
+        this.localizer.localizeText('Desktop decision surface', 'Desktop 决策面'),
+        desktopDecisionLines,
+      ),
+      this.renderStringSection(
+        this.localizer.localizeText('Temporary bridge exit evidence', '临时 Bridge 退出证据'),
+        temporaryBridgeLines,
+      ),
+      '</body>',
+      '</html>',
+    ].join('\n');
+  }
+
+  /**
    * Builds markdown for chat-participant responses.
    * @param options Chat response inputs.
    * @returns Markdown summary for the chat stream.
@@ -725,7 +873,13 @@ export class VsCodeExtensionPresentationBuilder {
     }
     lines.push(
       `- ${this.localizer.localizeText('Public support level', '公开支持级别')}: ${this.localizePublicSupportLevel(VSCODE_EXTENSION_PUBLIC_SUPPORT_LEVEL)}`,
+      `- ${this.localizer.localizeText('Desktop relationship', 'Desktop 关系')}: ${this.localizeDesktopRelationship(VSCODE_EXTENSION_DESKTOP_RELATIONSHIP)}`,
     );
+    if (queueOverview) {
+      lines.push(
+        `- ${this.localizer.localizeText('Workflow studio gate', 'Workflow Studio 门槛')}: ${this.getSupportTruthGateLabel(queueOverview, latestExecution)}`,
+      );
+    }
 
     if (latestExecution) {
       lines.push(
@@ -1812,14 +1966,41 @@ export class VsCodeExtensionPresentationBuilder {
   }
 
   private localizePublicSupportLevel(level: string): string {
-    if (level === 'workbench_baseline_in_progress') {
-      return this.localizer.localizeText(
-        'Workbench baseline in progress',
-        'Workbench baseline 进行中',
-      );
+    switch (level) {
+      case 'companion_upgraded':
+        return this.localizer.localizeText('Companion upgraded', 'Companion 已增强');
+      case 'primary_workbench_claim':
+        return this.localizer.localizeText(
+          'Primary workbench claim active',
+          '主工作台公开口径已生效',
+        );
+      case 'workbench_baseline_in_progress':
+        return this.localizer.localizeText(
+          'Workbench baseline in progress',
+          'Workbench baseline 进行中',
+        );
+      default:
+        return level;
     }
+  }
 
-    return level;
+  private localizeDesktopRelationship(relationship: string): string {
+    switch (relationship) {
+      case 'foundation_only_secondary_surface':
+        return this.localizer.localizeText(
+          'Foundation-only secondary surface',
+          '仅基础能力的 secondary surface',
+        );
+      case 'coexisting_secondary_surface':
+        return this.localizer.localizeText(
+          'Coexisting secondary surface',
+          '并存的 secondary surface',
+        );
+      case 'optional_shell_candidate':
+        return this.localizer.localizeText('Optional shell candidate', '可选 shell 候选');
+      default:
+        return relationship;
+    }
   }
 
   private localizeNotificationStatus(status: OrchestrationGovernanceNotificationStatus): string {
@@ -2102,6 +2283,160 @@ export class VsCodeExtensionPresentationBuilder {
       default:
         return 'folder-opened';
     }
+  }
+
+  private buildWorkflowStudioSelectionLines(
+    selectedExecution: OrchestrationExecutionSummary | undefined,
+    artifactPane: NonNullable<VsCodeExtensionWorkflowStudioSnapshot['artifactPane']> | undefined,
+    reviewSourcePath?: string,
+  ): string[] {
+    if (!selectedExecution) {
+      return [
+        this.localizer.localizeText(
+          'No execution is selected yet. Pick a task, review, or automation item to inspect workflow evidence.',
+          '当前还没有选中执行。请选择任务、评审或自动化项来查看 workflow 证据。',
+        ),
+        `${this.localizer.localizeText('Review source', '评审来源')}: ${reviewSourcePath ?? this.localizer.localizeText('Unavailable', '不可用')}`,
+      ];
+    }
+
+    const lines = [
+      `${this.localizer.localizeText('Execution', '执行')}: ${selectedExecution.executionId}`,
+      `${this.localizer.localizeText('Task', '任务')}: ${selectedExecution.taskId ?? this.localizer.localizeText('Unavailable', '不可用')}`,
+      `${this.localizer.localizeText('Project / sprint', '项目 / Sprint')}: ${selectedExecution.projectId ?? this.localizer.localizeText('Unavailable', '不可用')} / ${selectedExecution.sprintId ?? this.localizer.localizeText('Unavailable', '不可用')}`,
+      `${this.localizer.localizeText('Execution status', '执行状态')}: ${this.localizeExecutionStatus(selectedExecution.status)}`,
+      `${this.localizer.localizeText('Current stage', '当前阶段')}: ${selectedExecution.currentStageId ?? this.localizer.localizeText('Unavailable', '不可用')}`,
+      `${this.localizer.localizeText('Latest event', '最新事件')}: ${selectedExecution.latestEventType ?? this.localizer.localizeText('Unavailable', '不可用')}`,
+      `${this.localizer.localizeText('Pending HITL', '待处理 HITL')}: ${selectedExecution.pendingHitl ? this.localizer.localizeText('Yes', '是') : this.localizer.localizeText('No', '否')}`,
+      `${this.localizer.localizeText('Review source', '评审来源')}: ${artifactPane?.reviewSourcePath ?? reviewSourcePath ?? this.localizer.localizeText('Unavailable', '不可用')}`,
+    ];
+    if (artifactPane?.workbench.latestArtifactId) {
+      lines.push(
+        `${this.localizer.localizeText('Latest artifact', '最新产物')}: ${artifactPane.workbench.latestArtifactId}`,
+      );
+    }
+    if (artifactPane?.reviewLifecycle.latestReviewId) {
+      lines.push(
+        `${this.localizer.localizeText('Latest review', '最新评审')}: ${artifactPane.reviewLifecycle.latestReviewId}`,
+      );
+    }
+
+    return lines;
+  }
+
+  private buildWorkflowStudioQueueLines(
+    queueOverview: OrchestrationQueueOverviewQueryResponse,
+  ): string[] {
+    return [
+      `${this.localizer.localizeText('Queue owner surface', '队列归属表面')}: ${queueOverview.notificationOwnership.ownerSurface}`,
+      `${this.localizer.localizeText('Review queue items', '评审队列项')}: ${queueOverview.reviewQueue.length}`,
+      `${this.localizer.localizeText('Automation queue items', '自动化队列项')}: ${queueOverview.automationInbox.length}`,
+      `${this.localizer.localizeText('Projected workspaces', '已投影工作区')}: ${queueOverview.workspaceSummary.length}`,
+      `${this.localizer.localizeText('Parallel lanes', '并行泳道')}: ${queueOverview.parallelLanes.length}`,
+      `${this.localizer.localizeText('Temporary bridges', '临时 bridge')}: ${queueOverview.temporaryBridges.length}`,
+      `${this.localizer.localizeText('Notification status', '通知状态')}: ${this.localizeNotificationStatus(queueOverview.notificationOwnership.notificationStatus)}`,
+    ];
+  }
+
+  private buildWorkflowStudioSupportTruthLines(
+    queueOverview: OrchestrationQueueOverviewQueryResponse,
+    selectedExecution: OrchestrationExecutionSummary | undefined,
+    artifactPane: NonNullable<VsCodeExtensionWorkflowStudioSnapshot['artifactPane']> | undefined,
+  ): string[] {
+    const lines = [
+      `${this.localizer.localizeText('Public support level', '公开支持级别')}: ${this.localizePublicSupportLevel(VSCODE_EXTENSION_PUBLIC_SUPPORT_LEVEL)}`,
+      `${this.localizer.localizeText('Workflow studio gate', 'Workflow Studio 门槛')}: ${this.getSupportTruthGateLabel(queueOverview, selectedExecution)}`,
+      `${this.localizer.localizeText('Temporary bridge exit backlog', '临时 bridge 退出积压')}: ${queueOverview.temporaryBridges.length}`,
+    ];
+    if (artifactPane) {
+      lines.push(
+        `${this.localizer.localizeText('Resolved reviews', '已解决评审')}: ${artifactPane.reviewLifecycle.resolvedReviewCount}`,
+        `${this.localizer.localizeText('Pending / verified reviews', '待处理 / 已验证评审')}: ${artifactPane.reviewLifecycle.pendingReviewCount} / ${artifactPane.reviewLifecycle.verifiedReviewCount}`,
+        `${this.localizer.localizeText('Evidence backlinks', '证据回链')}: ${artifactPane.evidenceBacklinks.artifactPaths.length} artifact path(s), ${artifactPane.evidenceBacklinks.reviewPaths.length} review path(s)`,
+      );
+    }
+    lines.push(
+      this.localizer.localizeText(
+        'Keep public docs at workbench baseline in progress until workflow-studio evidence, desktop decision, and support-truth refresh all close in one governed window.',
+        '在 workflow studio 证据、desktop decision 与 support-truth refresh 同窗收口前，公开文档仍需保持 workbench baseline in progress。',
+      ),
+    );
+
+    return lines;
+  }
+
+  private buildWorkflowStudioDesktopDecisionLines(
+    queueOverview: OrchestrationQueueOverviewQueryResponse,
+    selectedExecution: OrchestrationExecutionSummary | undefined,
+  ): string[] {
+    return [
+      `${this.localizer.localizeText('Desktop relationship', 'Desktop 关系')}: ${this.localizeDesktopRelationship(VSCODE_EXTENSION_DESKTOP_RELATIONSHIP)}`,
+      `${this.localizer.localizeText('Queue owner surface', '队列归属表面')}: ${queueOverview.notificationOwnership.ownerSurface}`,
+      `${this.localizer.localizeText('Active workspaces', '活跃工作区')}: ${queueOverview.notificationOwnership.activeWorkspaceCount}`,
+      `${this.localizer.localizeText('Selected execution', '当前选中执行')}: ${selectedExecution?.executionId ?? this.localizer.localizeText('None', '无')}`,
+      `${this.localizer.localizeText('Decision guidance', '决策建议')}: ${this.getDesktopDecisionGuidance(queueOverview)}`,
+    ];
+  }
+
+  private buildWorkflowStudioTemporaryBridgeLines(
+    temporaryBridges: readonly OrchestrationGovernanceTemporaryBridgeEntry[],
+  ): string[] {
+    if (temporaryBridges.length === 0) {
+      return [
+        this.localizer.localizeText(
+          'No temporary bridge remains projected for this workspace.',
+          '当前工作区已经没有临时 bridge 投影。',
+        ),
+      ];
+    }
+
+    return temporaryBridges.map(
+      (entry) =>
+        `${this.localizeTemporaryBridgeCapability(entry.capabilityClass)} | ${this.localizeTemporaryBridgeReceiptKind(entry.receiptKind)} | ${this.localizeTemporaryBridgeBacklinkSurface(entry.backlinkSurface)} | ${entry.exitCriteria.map((criterion) => this.localizeTemporaryBridgeExitCriterion(criterion)).join('; ')}`,
+    );
+  }
+
+  private getSupportTruthGateLabel(
+    queueOverview: OrchestrationQueueOverviewQueryResponse,
+    selectedExecution: OrchestrationExecutionSummary | undefined,
+  ): string {
+    if (this.isPrimaryWorkbenchClaimActive()) {
+      return this.localizer.localizeText(
+        'Primary-workbench claim active',
+        '主工作台公开口径已生效',
+      );
+    }
+    if (queueOverview.temporaryBridges.length > 0) {
+      return this.localizer.localizeText('Evidence in progress', '证据收集中');
+    }
+    if (selectedExecution?.currentStageId) {
+      return this.localizer.localizeText(
+        'Ready for support-truth review',
+        '可进入 support-truth 复核',
+      );
+    }
+
+    return this.localizer.localizeText('Evidence in progress', '证据收集中');
+  }
+
+  private getDesktopDecisionGuidance(
+    queueOverview: OrchestrationQueueOverviewQueryResponse,
+  ): string {
+    if (this.isPrimaryWorkbenchClaimActive() && queueOverview.temporaryBridges.length === 0) {
+      return this.localizer.localizeText(
+        'Desktop may be re-evaluated as a coexisting secondary surface.',
+        'Desktop 可以重新评估为并存的 secondary surface。',
+      );
+    }
+
+    return this.localizer.localizeText(
+      'Keep desktop at foundation-only secondary surface until bridge exits and support-truth evidence both close cleanly.',
+      '在 bridge 退出与 support-truth 证据一起 clean 收口前，Desktop 继续保持 foundation-only secondary surface。',
+    );
+  }
+
+  private isPrimaryWorkbenchClaimActive(): boolean {
+    return String(VSCODE_EXTENSION_PUBLIC_SUPPORT_LEVEL) === 'primary_workbench_claim';
   }
 
   private renderStringSection(title: string, lines: readonly string[]): string {

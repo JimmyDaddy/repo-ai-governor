@@ -16,6 +16,7 @@ import type { VsCodeExtensionReviewDetailProvider } from './vscode-extension-rev
 import type { VsCodeExtensionSelectionStore } from './vscode-extension-selection-store.js';
 import type { VsCodeExtensionServiceRuntime } from './vscode-extension-service-runtime.js';
 import type { VsCodeExtensionTreeDataProvider } from './vscode-extension-tree-data-provider.js';
+import type { VsCodeExtensionWorkflowStudioProvider } from './vscode-extension-workflow-studio-provider.js';
 
 interface VsCodeExtensionCommandControllerDependencies {
   taskBoardProvider?: VsCodeExtensionTreeDataProvider;
@@ -25,6 +26,7 @@ interface VsCodeExtensionCommandControllerDependencies {
   automationQueueProvider?: VsCodeExtensionTreeDataProvider;
   workbenchOverviewProvider?: VsCodeExtensionTreeDataProvider;
   workspaceContextProvider?: VsCodeExtensionTreeDataProvider;
+  workflowStudioProvider?: VsCodeExtensionWorkflowStudioProvider;
   reviewDetailProvider: VsCodeExtensionReviewDetailProvider;
 }
 
@@ -56,6 +58,7 @@ export class VsCodeExtensionCommandController {
     this.dependencies.automationQueueProvider?.refresh();
     this.dependencies.workbenchOverviewProvider?.refresh();
     this.dependencies.workspaceContextProvider?.refresh();
+    void this.dependencies.workflowStudioProvider?.refresh();
     await this.dependencies.reviewDetailProvider.refresh();
   }
 
@@ -366,6 +369,7 @@ export class VsCodeExtensionCommandController {
     this.selectionStore.applyCommandRequest(request);
     this.dependencies.workbenchOverviewProvider?.refresh();
     this.dependencies.workspaceContextProvider?.refresh();
+    void this.dependencies.workflowStudioProvider?.refresh(request);
     await this.dependencies.reviewDetailProvider.refresh(request);
   }
 
@@ -384,6 +388,7 @@ export class VsCodeExtensionCommandController {
     this.selectionStore.applyCommandRequest(request);
     this.dependencies.workbenchOverviewProvider?.refresh();
     this.dependencies.workspaceContextProvider?.refresh();
+    void this.dependencies.workflowStudioProvider?.refresh(request);
     await this.dependencies.reviewDetailProvider.refresh(request);
   }
 
@@ -402,6 +407,7 @@ export class VsCodeExtensionCommandController {
     this.selectionStore.applyCommandRequest(request);
     this.dependencies.workbenchOverviewProvider?.refresh();
     this.dependencies.workspaceContextProvider?.refresh();
+    void this.dependencies.workflowStudioProvider?.refresh(request);
     await this.dependencies.reviewDetailProvider.refresh(request);
   }
 
@@ -420,6 +426,7 @@ export class VsCodeExtensionCommandController {
     this.selectionStore.applyCommandRequest(request);
     this.dependencies.workbenchOverviewProvider?.refresh();
     this.dependencies.workspaceContextProvider?.refresh();
+    void this.dependencies.workflowStudioProvider?.refresh(request);
     await this.dependencies.reviewDetailProvider.refresh(request);
   }
 
@@ -436,6 +443,8 @@ export class VsCodeExtensionCommandController {
     }
 
     this.selectionStore.applyCommandRequest(request);
+    void this.dependencies.workflowStudioProvider?.refresh(request);
+    void this.dependencies.reviewDetailProvider.refresh(request);
   }
 
   private mergeCommandRequest(

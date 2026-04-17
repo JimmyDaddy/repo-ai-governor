@@ -34,6 +34,7 @@
     "onView:repoAiGovernor.reviewQueue",
     "onView:repoAiGovernor.automationQueue",
     "onView:repoAiGovernor.workspaceContext",
+    "onView:repoAiGovernor.workflowStudio",
     "onView:repoAiGovernor.reviewDetail",
     "onCommand:repoAiGovernor.refresh",
     "onCommand:repoAiGovernor.openReviewDetail",
@@ -79,6 +80,12 @@
         {
           "id": "repoAiGovernor.workspaceContext",
           "name": "%views.workbenchOverview.title%",
+          "contextualTitle": "%views.container.title%"
+        },
+        {
+          "id": "repoAiGovernor.workflowStudio",
+          "type": "webview",
+          "name": "%views.workflowStudio.title%",
           "contextualTitle": "%views.container.title%"
         },
         {
@@ -130,7 +137,7 @@
       "view/title": [
         {
           "command": "repoAiGovernor.refresh",
-          "when": "view == repoAiGovernor.executionBoard || view == repoAiGovernor.hitlInbox || view == repoAiGovernor.reviewQueue || view == repoAiGovernor.automationQueue || view == repoAiGovernor.workspaceContext",
+          "when": "view == repoAiGovernor.executionBoard || view == repoAiGovernor.hitlInbox || view == repoAiGovernor.reviewQueue || view == repoAiGovernor.automationQueue || view == repoAiGovernor.workspaceContext || view == repoAiGovernor.workflowStudio",
           "group": "navigation"
         }
       ],

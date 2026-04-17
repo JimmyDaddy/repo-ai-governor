@@ -13,5 +13,6 @@ export type {
   VsCodeExtensionTreeNodeCommandDescriptor,
   VsCodeExtensionTreeNodeDescriptor,
   VsCodeExtensionWorkbenchOverviewSnapshot,
+  VsCodeExtensionWorkflowStudioSnapshot,
   VsCodeExtensionWorkspaceContextSnapshot,
 } from './vscode-extension-surface.interface.js';

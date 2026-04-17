@@ -8,6 +8,7 @@
   "views.reviewQueue.title": "评审队列",
   "views.automationQueue.title": "自动化队列",
   "views.workbenchOverview.title": "Workbench 总览",
+  "views.workflowStudio.title": "Workflow Studio",
   "views.reviewDetail.title": "评审详情",
   "commands.category": "Governor",
   "commands.refresh.title": "刷新 Governor 视图",

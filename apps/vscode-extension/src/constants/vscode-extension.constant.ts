@@ -2,8 +2,9 @@
  * Freezes VS Code extension contribution identifiers and trust-gated command boundaries.
  *
  * Why this exists:
- * Phase B extends the primary workbench baseline without letting the extension host invent
- * queue truth or bypass the shared local orchestration service seam.
+ * Phase C extends the primary workbench baseline with one workflow-studio evidence surface
+ * without letting the extension host invent queue truth or bypass the shared local orchestration
+ * service seam.
  */
 export const VSCODE_EXTENSION_DEFAULT_EXECUTION_LIMIT = 5;
 export const VSCODE_EXTENSION_DEFAULT_QUEUE_LIMIT = 5;
@@ -43,6 +44,7 @@ export const VSCODE_EXTENSION_VIEW_IDS = {
   AUTOMATION_QUEUE: 'repoAiGovernor.automationQueue',
   WORKBENCH_OVERVIEW: 'repoAiGovernor.workspaceContext',
   WORKSPACE_CONTEXT: 'repoAiGovernor.workspaceContext',
+  WORKFLOW_STUDIO: 'repoAiGovernor.workflowStudio',
   REVIEW_DETAIL: 'repoAiGovernor.reviewDetail',
 } as const;
 export const VSCODE_EXTENSION_COMMAND_IDS = {
@@ -71,6 +73,7 @@ export const VSCODE_EXTENSION_WORKBENCH_PANELS = [
   'task_board',
   'review_queue',
   'automation_queue',
+  'workflow_studio',
   'artifact_workbench',
   'workbench_overview',
 ] as const;

@@ -8,6 +8,7 @@
   "views.reviewQueue.title": "Review Queue",
   "views.automationQueue.title": "Automation Queue",
   "views.workbenchOverview.title": "Workbench Overview",
+  "views.workflowStudio.title": "Workflow Studio",
   "views.reviewDetail.title": "Review Detail",
   "commands.category": "Governor",
   "commands.refresh.title": "Refresh Governor Views",

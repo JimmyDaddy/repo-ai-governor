@@ -12,5 +12,6 @@ export type {
   VsCodeExtensionTreeNodeDescriptor,
   VsCodeExtensionViewContribution,
   VsCodeExtensionWorkbenchOverviewSnapshot,
+  VsCodeExtensionWorkflowStudioSnapshot,
   VsCodeExtensionWorkspaceContextSnapshot,
 } from './interfaces/index.js';

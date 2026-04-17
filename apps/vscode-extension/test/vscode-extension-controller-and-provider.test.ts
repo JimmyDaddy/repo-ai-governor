@@ -1,5 +1,6 @@
 import { vi } from 'vitest';
 
+import { OrchestrationClientSurface } from '@repo-ai-governor/orchestration-service-client';
 import { OrchestrationGovernanceActionKind } from '@repo-ai-governor/orchestration-service-client';
 import { OrchestrationGovernanceAttentionLevel } from '@repo-ai-governor/orchestration-service-client';
 import { OrchestrationGovernanceFollowUpSlaState } from '@repo-ai-governor/orchestration-service-client';
@@ -78,6 +79,7 @@ vi.mock(
 import { VsCodeExtensionCommandController } from '../src/runtime/vscode-extension-command-controller.js';
 import { VsCodeExtensionReviewDetailProvider } from '../src/runtime/vscode-extension-review-detail-provider.js';
 import { VsCodeExtensionSelectionStore } from '../src/runtime/vscode-extension-selection-store.js';
+import { VsCodeExtensionWorkflowStudioProvider } from '../src/runtime/vscode-extension-workflow-studio-provider.js';
 
 describe('VsCode extension controller/provider integration', () => {
   beforeEach(() => {
@@ -98,6 +100,9 @@ describe('VsCode extension controller/provider integration', () => {
     const reviewDetailProvider = {
       refresh: vi.fn(),
     };
+    const workflowStudioProvider = {
+      refresh: vi.fn(),
+    };
     const controller = new VsCodeExtensionCommandController(
       {} as never,
       selectionStore,
@@ -114,6 +119,7 @@ describe('VsCode extension controller/provider integration', () => {
         workspaceContextProvider: {
           refresh: vi.fn(),
         } as never,
+        workflowStudioProvider: workflowStudioProvider as never,
         reviewDetailProvider: reviewDetailProvider as never,
       },
     );
@@ -135,6 +141,7 @@ describe('VsCode extension controller/provider integration', () => {
       temporaryBridge: undefined,
     });
     expect(reviewDetailProvider.refresh).toHaveBeenCalledWith(request);
+    expect(workflowStudioProvider.refresh).toHaveBeenCalledWith(request);
   });
 
   it('clears stale execution selection when review-queue selection only carries review source metadata', async () => {
@@ -576,6 +583,56 @@ describe('VsCode extension controller/provider integration', () => {
     });
     expect(show).toHaveBeenCalledWith(false);
     expect(buildReviewDetailHtml).toHaveBeenCalledTimes(2);
+  });
+
+  it('renders workflow-studio html from the current service-backed selection snapshot', async () => {
+    const selectionStore = new VsCodeExtensionSelectionStore();
+    const workflowStudioProvider = new VsCodeExtensionWorkflowStudioProvider(
+      {
+        resolveWorkflowStudioSnapshot: vi.fn().mockResolvedValue({
+          workspaceContext: {
+            workspaceLabel: 'ai-governor',
+            workspaceRoot: '/repo',
+            workspaceTrusted: true,
+          },
+          queueOverview: {
+            generatedAt: '2026-04-17T10:20:00.000Z',
+            automationInbox: [],
+            reviewQueue: [],
+            parallelLanes: [],
+            workspaceSummary: [],
+            temporaryBridges: [],
+            notificationOwnership: {
+              ownerSurface: OrchestrationClientSurface.DESKTOP,
+              pendingItemCount: 0,
+              dueSoonItemCount: 0,
+              overdueItemCount: 0,
+              activeWorkspaceCount: 1,
+              defaultFollowUpSlaMinutes: 60,
+              notificationStatus: OrchestrationGovernanceNotificationStatus.IDLE,
+            },
+          },
+        }),
+      } as never,
+      selectionStore,
+      {
+        buildWorkflowStudioHtml: vi.fn().mockReturnValue('<html>workflow-studio</html>'),
+      } as never,
+    );
+    const webviewView = {
+      webview: {
+        options: {},
+        html: '',
+      },
+    };
+
+    await workflowStudioProvider.resolveWebviewView(webviewView as never);
+    await workflowStudioProvider.refresh({
+      executionId: 'execution-1',
+      reviewSourcePath: '/repo/review.md',
+    });
+
+    expect(webviewView.webview.html).toBe('<html>workflow-studio</html>');
   });
 
   it('stages a temporary bridge command in a trusted terminal without executing it', async () => {

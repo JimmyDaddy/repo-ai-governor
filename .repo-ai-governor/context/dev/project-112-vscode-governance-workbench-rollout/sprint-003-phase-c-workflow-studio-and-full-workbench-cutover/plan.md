@@ -18,8 +18,8 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-940 | plan workflow studio cutover and primary workbench support-truth evidence | DA-934 | in_progress |
-| TK-941 | finalize project-112 rollout closeout and delivery evidence handoff | plan workflow studio cutover and primary workbench support-truth evidence | planned |
+| TK-940 | plan workflow studio cutover and primary workbench support-truth evidence | DA-934 | completed |
+| TK-941 | finalize project-112 rollout closeout and delivery evidence handoff | plan workflow studio cutover and primary workbench support-truth evidence | in_progress |
 
 ## 3. Exit Criteria
 
@@ -29,3 +29,6 @@
 
 1. 只有 evidence 与 support-truth 一起收口后，才允许 public claim 切到 primary workbench。
 2. `2026-04-17` sprint-002 已在 `CR-012` clean round 与 `DA-939` handoff 后完成 closeout；当前 sprint 被激活为新的 primary execution surface，`TK-940` 切换为 `in_progress`。
+3. `2026-04-17` `TK-940` 已完成 workflow studio、desktop decision surface 与 support-truth gate evidence 的 implementation boundary，并通过 targeted vitest bundle + `pnpm run build`；当前 sprint 进入 fresh reviewer CR loop，clean 后再激活 `TK-941`。
+4. `2026-04-17` latest fresh reviewer round `CR-002` 已 clean `resolved`；当前 sprint 已达到 sprint-level exit acceptance 条件，但因 project-112 仍需额外执行一次 `project-final` fresh reviewer loop，`TK-941` 现负责保留 sprint-003 为 active review surface 并写入 handoff truth。
+5. `2026-04-17` `DA-941`、closeout ledger sync 与 `pnpm run check` 已通过；当前 sprint-003 已满足本地 boundary commit 条件，但在 project-final clean round 完成前仍保持 `active`。

@@ -75,6 +75,7 @@ describe('vscode extension contract freeze', () => {
       VSCODE_EXTENSION_VIEW_IDS.REVIEW_QUEUE,
       VSCODE_EXTENSION_VIEW_IDS.AUTOMATION_QUEUE,
       VSCODE_EXTENSION_VIEW_IDS.WORKBENCH_OVERVIEW,
+      VSCODE_EXTENSION_VIEW_IDS.WORKFLOW_STUDIO,
       VSCODE_EXTENSION_VIEW_IDS.REVIEW_DETAIL,
     ]);
     expect(contract.commands.map((command) => command.id)).toEqual([
@@ -110,6 +111,7 @@ describe('vscode extension contract freeze', () => {
         `onView:${VSCODE_EXTENSION_VIEW_IDS.REVIEW_QUEUE}`,
         `onView:${VSCODE_EXTENSION_VIEW_IDS.AUTOMATION_QUEUE}`,
         `onView:${VSCODE_EXTENSION_VIEW_IDS.WORKBENCH_OVERVIEW}`,
+        `onView:${VSCODE_EXTENSION_VIEW_IDS.WORKFLOW_STUDIO}`,
         `onView:${VSCODE_EXTENSION_VIEW_IDS.REVIEW_DETAIL}`,
         `onCommand:${VSCODE_EXTENSION_COMMAND_IDS.REFRESH}`,
         `onCommand:${VSCODE_EXTENSION_COMMAND_IDS.STAGE_TEMPORARY_BRIDGE}`,

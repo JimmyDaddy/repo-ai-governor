@@ -44,8 +44,8 @@
 | TK-937 | sprint-001-phase-a-primary-workbench-baseline | close sprint-001 and hand off phase-b outer-loop consolidation | governance handoff | freeze vscode primary workbench baseline and service-owned task-review seams | completed |
 | TK-938 | sprint-002-phase-b-outer-loop-consolidation-and-operations | land outer-loop consolidation and typed cli bridge governance baseline | workbench operations baseline | DA-934 | completed |
 | TK-939 | sprint-002-phase-b-outer-loop-consolidation-and-operations | close sprint-002 and hand off phase-c full-workbench cutover | governance handoff | land outer-loop consolidation and typed cli bridge governance baseline | completed |
-| TK-940 | sprint-003-phase-c-workflow-studio-and-full-workbench-cutover | plan workflow studio cutover and primary workbench support-truth evidence | workflow studio and support-truth cutover | DA-934 | in_progress |
-| TK-941 | sprint-003-phase-c-workflow-studio-and-full-workbench-cutover | finalize project-112 rollout closeout and delivery evidence handoff | closeout and delivery evidence | plan workflow studio cutover and primary workbench support-truth evidence | planned |
+| TK-940 | sprint-003-phase-c-workflow-studio-and-full-workbench-cutover | plan workflow studio cutover and primary workbench support-truth evidence | workflow studio and support-truth cutover | DA-934 | completed |
+| TK-941 | sprint-003-phase-c-workflow-studio-and-full-workbench-cutover | finalize project-112 rollout closeout and delivery evidence handoff | closeout and delivery evidence | plan workflow studio cutover and primary workbench support-truth evidence | in_progress |
 
 ## 4. 依赖产物策略
 
@@ -65,6 +65,9 @@
 2. 2026-04-17：`project-110` 完成 final closeout 后，`project-112 / sprint-001` 被激活为新的 active primary stream；`TK-936` 切换为 `in_progress`，开始冻结 VS Code primary workbench baseline 与 service-owned task/review seams。
 3. 2026-04-17：`project-112 / sprint-001` 在 `CR-003` clean round 与 `DA-937` handoff 后完成 closeout；`sprint-002-phase-b-outer-loop-consolidation-and-operations` 被激活为新的 active primary stream，`TK-938` 切换为 `in_progress`。
 4. 2026-04-17：`project-112 / sprint-002` 在 `CR-012` clean round 与 `DA-939` handoff 后完成 closeout；`sprint-003-phase-c-workflow-studio-and-full-workbench-cutover` 被激活为新的 active primary stream，`TK-940` 切换为 `in_progress`。
+5. 2026-04-17：`TK-940` 已完成 workflow studio / desktop decision surface / support-truth gate implementation boundary，并产出 `DA-940`；当前 `project-112 / sprint-003` 进入 fresh reviewer CR loop，clean 后继续 `TK-941`。
+6. 2026-04-17：latest fresh reviewer round `CR-002` 已 clean `resolved`；`TK-941` 已切换为 `in_progress`，开始写入 sprint-003 exit acceptance packet，并为后续 project-final scoped CR loop 保留 final sprint 作为 active review surface。
+7. 2026-04-17：`DA-941` 与 sprint-003 boundary `pnpm run check` 已完成；当前 project 已达到进入 `project-final` fresh reviewer loop 的前置条件，但 final closeout 与 public support-truth cutover 仍待 clean project-final round 放行。
 
 ## 7. 里程碑记录入口
 

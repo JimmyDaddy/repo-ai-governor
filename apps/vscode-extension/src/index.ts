@@ -26,4 +26,5 @@ export type {
   VsCodeExtensionTreeNodeDescriptor,
   VsCodeExtensionViewContribution,
   VsCodeExtensionWorkspaceContextSnapshot,
+  VsCodeExtensionWorkflowStudioSnapshot,
 } from './types/index.js';

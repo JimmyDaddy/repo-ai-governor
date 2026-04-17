@@ -32,8 +32,8 @@ import type {
  * Builds the frozen extension contribution snapshot that package.json must mirror.
  *
  * Why this exists:
- * sprint-002 contract freeze should keep one code-level truth for Phase B views, trust-sensitive
- * commands, and temporary bridge affordances before packaging or UI drift appears.
+ * the Phase C contract freeze should keep one code-level truth for workflow-studio, trust-
+ * sensitive commands, and temporary bridge affordances before packaging or UI drift appears.
  */
 export class VsCodeExtensionContract {
   public createSnapshot(): VsCodeExtensionContractSnapshot {
@@ -91,6 +91,12 @@ export class VsCodeExtensionContract {
         id: VSCODE_EXTENSION_VIEW_IDS.WORKBENCH_OVERVIEW,
         titleKey: 'views.workbenchOverview.title',
         kind: 'tree',
+        trustSensitive: false,
+      },
+      {
+        id: VSCODE_EXTENSION_VIEW_IDS.WORKFLOW_STUDIO,
+        titleKey: 'views.workflowStudio.title',
+        kind: 'webview',
         trustSensitive: false,
       },
       {

@@ -15,13 +15,15 @@ import { VsCodeExtensionReviewDetailProvider } from './vscode-extension-review-d
 import { VsCodeExtensionSelectionStore } from './vscode-extension-selection-store.js';
 import { VsCodeExtensionServiceRuntime } from './vscode-extension-service-runtime.js';
 import { VsCodeExtensionTreeDataProvider } from './vscode-extension-tree-data-provider.js';
+import { VsCodeExtensionWorkflowStudioProvider } from './vscode-extension-workflow-studio-provider.js';
 
 /**
- * Wires the Phase B VS Code primary workbench baseline during extension activation.
+ * Wires the Phase C VS Code primary workbench baseline during extension activation.
  *
  * Why this exists:
- * activation should assemble task/review/automation/workbench surfaces around the frozen contract
- * while keeping service access and presentation logic delegated to focused runtime classes.
+ * activation should assemble task/review/automation/workbench/workflow-studio surfaces around the
+ * frozen contract while keeping service access and presentation logic delegated to focused runtime
+ * classes.
  */
 export class VsCodeExtensionHost {
   private readonly localizer = new VsCodeExtensionLocalizer();
@@ -57,6 +59,11 @@ export class VsCodeExtensionHost {
       return [...this.presentationBuilder.buildWorkbenchOverviewNodes(overviewSnapshot)];
     });
     const reviewDetailProvider = new VsCodeExtensionReviewDetailProvider(
+      this.serviceRuntime,
+      this.selectionStore,
+      this.presentationBuilder,
+    );
+    const workflowStudioProvider = new VsCodeExtensionWorkflowStudioProvider(
       this.serviceRuntime,
       this.selectionStore,
       this.presentationBuilder,
@@ -97,6 +104,7 @@ export class VsCodeExtensionHost {
         reviewQueueProvider,
         automationQueueProvider,
         workbenchOverviewProvider,
+        workflowStudioProvider,
         reviewDetailProvider,
       },
     );
@@ -118,6 +126,10 @@ export class VsCodeExtensionHost {
       reviewQueueView,
       automationQueueView,
       workbenchOverviewView,
+      vscode.window.registerWebviewViewProvider(
+        VSCODE_EXTENSION_VIEW_IDS.WORKFLOW_STUDIO,
+        workflowStudioProvider,
+      ),
       vscode.window.registerWebviewViewProvider(
         VSCODE_EXTENSION_VIEW_IDS.REVIEW_DETAIL,
         reviewDetailProvider,

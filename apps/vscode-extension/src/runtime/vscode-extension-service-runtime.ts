@@ -41,6 +41,7 @@ import type {
   VsCodeExtensionSelectionSnapshot,
   VsCodeExtensionServiceDiagnosticsSnapshot,
   VsCodeExtensionWorkbenchOverviewSnapshot,
+  VsCodeExtensionWorkflowStudioSnapshot,
   VsCodeExtensionWorkspaceContextSnapshot,
 } from '../types/index.js';
 
@@ -357,6 +358,47 @@ export class VsCodeExtensionServiceRuntime {
       ...(selectedExecution
         ? {
             selectedExecution,
+          }
+        : {}),
+      ...(selection.reviewSourcePath
+        ? {
+            reviewSourcePath: selection.reviewSourcePath,
+          }
+        : {}),
+    };
+  }
+
+  /**
+   * Resolves one workflow-studio snapshot from the current selection plus service-owned read models.
+   * @param selection Current transient selection snapshot.
+   * @returns Workflow-studio evidence inputs for the Phase C webview.
+   */
+  public async resolveWorkflowStudioSnapshot(
+    selection: VsCodeExtensionSelectionSnapshot,
+  ): Promise<VsCodeExtensionWorkflowStudioSnapshot> {
+    const [workspaceContext, queueOverview, selectedExecution] = await Promise.all([
+      this.resolveWorkspaceContextSnapshot(),
+      this.queryQueueOverview(),
+      this.resolveSelectedExecution(selection),
+    ]);
+    const artifactPane = selectedExecution
+      ? await this.queryArtifactPaneForExecution(
+          selectedExecution.execution.executionId,
+          selectedExecution.execution.executionSessionId,
+        )
+      : undefined;
+
+    return {
+      workspaceContext,
+      queueOverview,
+      ...(selectedExecution
+        ? {
+            selectedExecution,
+          }
+        : {}),
+      ...(artifactPane
+        ? {
+            artifactPane,
           }
         : {}),
       ...(selection.reviewSourcePath

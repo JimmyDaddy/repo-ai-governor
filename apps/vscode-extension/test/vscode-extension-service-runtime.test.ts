@@ -340,6 +340,117 @@ describe('VsCodeExtensionServiceRuntime', () => {
     );
   });
 
+  it('resolves workflow-studio snapshots from queue overview, selected execution, and artifact evidence', async () => {
+    serviceClientMock.queryExecutionBoard.mockResolvedValueOnce({
+      executions: [
+        {
+          execution: {
+            executionId: 'execution-1',
+            executionSessionId: 'session-1',
+            processId: 'process-1',
+            workspaceId: 'workspace-1',
+            workspaceRoot: '/repo',
+            executionKind: OrchestrationExecutionKind.RUN,
+            clientSurface: OrchestrationClientSurface.DESKTOP,
+            eventStreamToken: 'stream-1',
+            serviceHostKind: OrchestrationServiceHostKind.SIDECAR,
+            serviceTransportKind: OrchestrationServiceTransportKind.IPC,
+            status: OrchestrationExecutionStatus.RUNNING,
+            checkpointCapable: true,
+            recoveryCapable: true,
+            acceptedAt: '2026-04-07T03:00:00.000Z',
+            updatedAt: '2026-04-07T03:05:00.000Z',
+            pendingHitl: false,
+            currentStageId: 'review_verify',
+            latestEventSequence: 1,
+            nextCursor: 'cursor-1',
+            taskId: 'TK-940',
+          },
+          actions: [],
+          handoffTargets: [],
+        },
+      ],
+      returnedCount: 1,
+      totalMatchedCount: 1,
+    });
+    serviceClientMock.queryQueueOverview.mockResolvedValueOnce({
+      generatedAt: '2026-04-07T03:05:00.000Z',
+      automationInbox: [],
+      reviewQueue: [],
+      parallelLanes: [],
+      workspaceSummary: [],
+      temporaryBridges: [],
+      notificationOwnership: {
+        ownerSurface: OrchestrationClientSurface.DESKTOP,
+        pendingItemCount: 0,
+        dueSoonItemCount: 0,
+        overdueItemCount: 0,
+        activeWorkspaceCount: 1,
+        defaultFollowUpSlaMinutes: 60,
+        notificationStatus: OrchestrationGovernanceNotificationStatus.IDLE,
+      },
+    });
+    serviceClientMock.queryArtifactPane.mockResolvedValueOnce({
+      artifacts: [],
+      reviews: [],
+      transcript: [],
+      resolvedExecutionId: 'execution-1',
+      resolvedSessionId: 'session-1',
+      reviewSourcePath: '/repo/.repo-ai-governor/review/resolved.md',
+      reviewLifecycle: {
+        totalReviewCount: 1,
+        pendingReviewCount: 0,
+        verifiedReviewCount: 0,
+        resolvedReviewCount: 1,
+        latestReviewId: 'review-1',
+        latestLifecycleStatus: 'resolved',
+        latestReviewFilePath: '/repo/.repo-ai-governor/review/resolved.md',
+        navigationReviewIds: ['review-1'],
+      },
+      workbench: {
+        artifactCount: 1,
+        reviewCount: 1,
+        transcriptCount: 0,
+        latestArtifactId: 'artifact-1',
+      },
+      evidenceBacklinks: {
+        governanceWorkspacePath: '/repo/.repo-ai-governor',
+        artifactPaths: ['/repo/.repo-ai-governor/context/review.md'],
+        reviewPaths: ['/repo/.repo-ai-governor/review/resolved.md'],
+        transcriptEntryIds: [],
+      },
+    });
+
+    const runtime = new VsCodeExtensionServiceRuntime();
+
+    await expect(
+      runtime.resolveWorkflowStudioSnapshot({
+        executionId: 'execution-1',
+        reviewSourcePath: '/repo/.repo-ai-governor/review/resolved.md',
+      }),
+    ).resolves.toMatchObject({
+      workspaceContext: {
+        workspaceLabel: 'ai-governor',
+        workspaceRoot: '/repo',
+        workspaceTrusted: true,
+      },
+      queueOverview: {
+        generatedAt: '2026-04-07T03:05:00.000Z',
+      },
+      selectedExecution: {
+        execution: {
+          executionId: 'execution-1',
+          currentStageId: 'review_verify',
+          taskId: 'TK-940',
+        },
+      },
+      artifactPane: {
+        reviewSourcePath: '/repo/.repo-ai-governor/review/resolved.md',
+      },
+      reviewSourcePath: '/repo/.repo-ai-governor/review/resolved.md',
+    });
+  });
+
   it('refreshes the resolved governance workspace after an in-session config change', async () => {
     const scratchRoot = mkdtempSync(join(tmpdir(), 'repo-ai-governor-vscode-runtime-'));
     const repositoryRoot = join(scratchRoot, 'repo');

@@ -343,6 +343,8 @@ describe('VsCodeExtensionPresentationBuilder', () => {
         'Workspace trust',
         'Trust-sensitive actions',
         'Public support level',
+        'Desktop relationship',
+        'Workflow studio gate',
         'Queue ownership',
         'Review queue',
         'Automation queue',
@@ -362,6 +364,12 @@ describe('VsCodeExtensionPresentationBuilder', () => {
     );
     expect(nodes.find((node) => node.nodeId === 'public-support-level')?.description).toBe(
       'Workbench baseline in progress',
+    );
+    expect(nodes.find((node) => node.nodeId === 'desktop-relationship')?.description).toBe(
+      'Foundation-only secondary surface',
+    );
+    expect(nodes.find((node) => node.nodeId === 'workflow-studio-gate')?.description).toBe(
+      'Evidence in progress',
     );
     expect(nodes.find((node) => node.nodeId === 'service-topology')?.description).toBe(
       'sidecar via ipc',
@@ -398,6 +406,177 @@ describe('VsCodeExtensionPresentationBuilder', () => {
     expect(nodes[0]?.children?.map((child) => child.label)).toEqual(
       expect.arrayContaining(['Queue kind', 'Execution status', 'Follow-up SLA', 'Workspace root']),
     );
+  });
+
+  it('renders workflow-studio html with desktop decision and support-truth evidence', () => {
+    const html = builder.buildWorkflowStudioHtml({
+      workspaceContext: {
+        workspaceLabel: 'ai-governor',
+        workspaceRoot: '/repo',
+        workspaceTrusted: true,
+        serviceHealth: {
+          lifecycleStatus: OrchestrationServiceLifecycleStatus.READY,
+          serviceHostKind: OrchestrationServiceHostKind.SIDECAR,
+          serviceTransportKind: OrchestrationServiceTransportKind.IPC,
+          checkpointCapable: true,
+          memoryStoreProviderId: '@repo-ai-governor/memory-provider-sqlite-fs',
+          pid: 4321,
+        },
+      },
+      queueOverview: {
+        generatedAt: '2026-04-17T10:15:00.000Z',
+        automationInbox: [],
+        reviewQueue: [],
+        parallelLanes: [],
+        workspaceSummary: [],
+        temporaryBridges: [
+          {
+            bridgeId: 'temporary-bridge-host-verify',
+            capabilityClass: OrchestrationGovernanceTemporaryBridgeCapabilityClass.HOST_VERIFY,
+            workspaceRoot: '/repo/.repo-ai-governor',
+            commandWorkingDirectory: '/repo',
+            previewCommandLine:
+              'repo-ai-governor host verify --output-dir /repo/.repo-ai-governor/generated/hosts/github-copilot',
+            receiptKind: OrchestrationGovernanceTemporaryBridgeReceiptKind.HOST_VERIFY_RECEIPT,
+            backlinkSurface:
+              OrchestrationGovernanceTemporaryBridgeBacklinkSurface.ARTIFACT_WORKBENCH,
+            exitCriteria: [
+              OrchestrationGovernanceTemporaryBridgeExitCriterion.SERVICE_NATIVE_HOST_QUERY,
+              OrchestrationGovernanceTemporaryBridgeExitCriterion.ARTIFACT_BACKLINK_PROJECTED,
+            ],
+          },
+        ],
+        notificationOwnership: {
+          ownerSurface: OrchestrationClientSurface.DESKTOP,
+          pendingItemCount: 1,
+          dueSoonItemCount: 1,
+          overdueItemCount: 0,
+          activeWorkspaceCount: 1,
+          defaultFollowUpSlaMinutes: 60,
+          notificationStatus: OrchestrationGovernanceNotificationStatus.FOLLOW_UP_REQUIRED,
+        },
+      },
+      selectedExecution: createExecutionBoardEntry({
+        currentStageId: 'review_verify',
+      }),
+      artifactPane: {
+        artifacts: [],
+        reviews: [],
+        transcript: [],
+        resolvedExecutionId: 'execution-1',
+        resolvedSessionId: 'session-1',
+        reviewSourcePath: '/repo/.repo-ai-governor/review/resolved.md',
+        reviewLifecycle: {
+          totalReviewCount: 1,
+          pendingReviewCount: 0,
+          verifiedReviewCount: 0,
+          resolvedReviewCount: 1,
+          latestReviewId: 'review-1',
+          latestLifecycleStatus: 'resolved',
+          latestReviewFilePath: '/repo/.repo-ai-governor/review/resolved.md',
+          navigationReviewIds: ['review-1'],
+        },
+        workbench: {
+          artifactCount: 1,
+          reviewCount: 1,
+          transcriptCount: 0,
+          latestArtifactId: 'artifact-1',
+          latestArtifactPath: '/repo/.repo-ai-governor/context/review.md',
+          latestReviewId: 'review-1',
+          latestReviewFilePath: '/repo/.repo-ai-governor/review/resolved.md',
+        },
+        evidenceBacklinks: {
+          governanceWorkspacePath: '/repo/.repo-ai-governor',
+          artifactPaths: ['/repo/.repo-ai-governor/context/review.md'],
+          reviewPaths: ['/repo/.repo-ai-governor/review/resolved.md'],
+          transcriptEntryIds: [],
+        },
+        policyTrace: {
+          executionId: 'execution-1',
+          executionStatus: OrchestrationExecutionStatus.RUNNING,
+          pendingHitl: false,
+          recoveryCapable: true,
+          currentStageId: 'review_verify',
+          latestEventType: 'execution_progress',
+          latestArtifactId: 'artifact-1',
+          latestArtifactPath: '/repo/.repo-ai-governor/context/review.md',
+          taskId: 'TK-563',
+          projectId: 'project-112-vscode-governance-workbench-rollout',
+          sprintId: 'sprint-003-phase-c-workflow-studio-and-full-workbench-cutover',
+          reviewDocumentPath: '/repo/.repo-ai-governor/review/resolved.md',
+        },
+      },
+      reviewSourcePath: '/repo/.repo-ai-governor/review/resolved.md',
+    });
+
+    expect(html).toContain('Governor workflow studio');
+    expect(html).toContain('Support-truth gate');
+    expect(html).toContain('Desktop decision surface');
+    expect(html).toContain('Foundation-only secondary surface');
+    expect(html).toContain('Workbench baseline in progress');
+    expect(html).toContain('review_verify');
+    expect(html).toContain('Service-native host query replaces this bridge.');
+  });
+
+  it('surfaces the ready support-truth branch when the selected execution stage is present and no bridge remains', () => {
+    const html = builder.buildWorkflowStudioHtml({
+      workspaceContext: {
+        workspaceLabel: 'ai-governor',
+        workspaceRoot: '/repo',
+        workspaceTrusted: true,
+      },
+      queueOverview: {
+        generatedAt: '2026-04-17T10:20:00.000Z',
+        automationInbox: [],
+        reviewQueue: [],
+        parallelLanes: [],
+        workspaceSummary: [],
+        temporaryBridges: [],
+        notificationOwnership: {
+          ownerSurface: OrchestrationClientSurface.DESKTOP,
+          pendingItemCount: 0,
+          dueSoonItemCount: 0,
+          overdueItemCount: 0,
+          activeWorkspaceCount: 1,
+          defaultFollowUpSlaMinutes: 60,
+          notificationStatus: OrchestrationGovernanceNotificationStatus.IDLE,
+        },
+      },
+      selectedExecution: createExecutionBoardEntry({
+        currentStageId: 'support_truth_review',
+      }),
+      artifactPane: {
+        artifacts: [],
+        reviews: [],
+        transcript: [],
+        resolvedExecutionId: 'execution-1',
+        resolvedSessionId: 'session-1',
+        reviewSourcePath: '/repo/.repo-ai-governor/review/resolved.md',
+        reviewLifecycle: {
+          totalReviewCount: 1,
+          pendingReviewCount: 0,
+          verifiedReviewCount: 0,
+          resolvedReviewCount: 1,
+          latestReviewId: 'review-1',
+          latestLifecycleStatus: 'resolved',
+          latestReviewFilePath: '/repo/.repo-ai-governor/review/resolved.md',
+          navigationReviewIds: ['review-1'],
+        },
+        workbench: {
+          artifactCount: 1,
+          reviewCount: 1,
+          transcriptCount: 0,
+        },
+        evidenceBacklinks: {
+          governanceWorkspacePath: '/repo/.repo-ai-governor',
+          artifactPaths: [],
+          reviewPaths: ['/repo/.repo-ai-governor/review/resolved.md'],
+          transcriptEntryIds: [],
+        },
+      },
+    });
+
+    expect(html).toContain('Ready for support-truth review');
   });
 });
 

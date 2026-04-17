@@ -80,6 +80,14 @@ export interface VsCodeExtensionWorkbenchOverviewSnapshot {
   reviewSourcePath?: string;
 }
 
+export interface VsCodeExtensionWorkflowStudioSnapshot {
+  workspaceContext: VsCodeExtensionWorkspaceContextSnapshot;
+  queueOverview: OrchestrationQueueOverviewQueryResponse;
+  selectedExecution?: OrchestrationExecutionBoardEntry;
+  artifactPane?: OrchestrationArtifactPaneQueryResponse;
+  reviewSourcePath?: string;
+}
+
 export interface VsCodeExtensionReviewQueueSelectionRequest extends VsCodeExtensionCommandRequest {
   reviewQueueEntry?: OrchestrationGovernanceQueueEntry;
 }

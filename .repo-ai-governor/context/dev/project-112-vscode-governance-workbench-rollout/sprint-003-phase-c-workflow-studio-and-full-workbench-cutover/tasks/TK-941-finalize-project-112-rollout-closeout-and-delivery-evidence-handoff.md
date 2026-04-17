@@ -1,6 +1,6 @@
 # TK-941 finalize project-112 rollout closeout and delivery evidence handoff
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-04-16
 - Owner: AI-Agent
 - Priority: P1
@@ -53,8 +53,12 @@
 ## 9. 执行记录
 
 1. 2026-04-16：任务创建，状态初始化为 `planned`。
+2. 2026-04-17：`TK-940` 已在 `CR-002` clean round 后保持 `completed`，当前任务切换为 `in_progress`，开始写入 sprint-003 exit acceptance packet、project-final review handoff 与后续 project closeout 输入。
+3. 2026-04-17：已完成 `DA-941`、`TK-941` canonical ledger sync、`check-task-required-inputs`、`check-task-ledger-sync`、`check-sprint-plan-status-sync`、`check-code-review-status-sync`、`check-worktree-review-target`，并在清理 `DA-934 -> TK-940` stale artifact dependency 后通过同窗口 `pnpm run check`；当前 sprint-003 boundary 已具备本地 commit 条件，但任务仍保留 `in_progress` 以等待 project-final fresh reviewer loop。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. /Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-003-phase-c-workflow-studio-and-full-workbench-cutover/tasks/DA-941-sprint-003-exit-acceptance-and-project-final-review-handoff.md
+2. /Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/plan.md
+3. /Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-003-phase-c-workflow-studio-and-full-workbench-cutover/plan.md
+4. /Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/artifact-registry/artifacts.csv
