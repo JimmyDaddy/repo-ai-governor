@@ -56,14 +56,21 @@ export class VsCodeExtensionReviewDetailProvider implements vscode.WebviewViewPr
       return;
     }
 
-    const detailSnapshot = await this.serviceRuntime.resolveReviewDetailSnapshot(
-      this.selectionStore.getSnapshot(),
-    );
+    const currentSelection = this.selectionStore.getSnapshot();
+    const detailSnapshot = await this.serviceRuntime.resolveReviewDetailSnapshot(currentSelection);
     if (detailSnapshot.selectedExecution) {
-      this.selectionStore.rememberExecution(
-        detailSnapshot.selectedExecution.execution.executionId,
-        detailSnapshot.selectedExecution.execution.executionSessionId,
-      );
+      const preservedQueueEntry =
+        currentSelection.queueEntry?.executionId ===
+        detailSnapshot.selectedExecution.execution.executionId
+          ? currentSelection.queueEntry
+          : undefined;
+      this.selectionStore.applyCommandRequest({
+        executionId: detailSnapshot.selectedExecution.execution.executionId,
+        executionSessionId: detailSnapshot.selectedExecution.execution.executionSessionId,
+        reviewSourcePath: currentSelection.reviewSourcePath,
+        queueEntry: preservedQueueEntry,
+        temporaryBridge: currentSelection.temporaryBridge,
+      });
     }
     this.selectionStore.rememberReviewSourcePath(
       detailSnapshot.artifactPane?.reviewSourcePath ?? detailSnapshot.requestedReviewSourcePath,

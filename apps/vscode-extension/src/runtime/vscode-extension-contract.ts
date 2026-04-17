@@ -32,8 +32,8 @@ import type {
  * Builds the frozen extension contribution snapshot that package.json must mirror.
  *
  * Why this exists:
- * sprint-002 contract freeze should keep one code-level truth for IDs and trust-sensitive
- * boundaries before implementation adds actual view/chat/command behavior.
+ * sprint-002 contract freeze should keep one code-level truth for Phase B views, trust-sensitive
+ * commands, and temporary bridge affordances before packaging or UI drift appears.
  */
 export class VsCodeExtensionContract {
   public createSnapshot(): VsCodeExtensionContractSnapshot {
@@ -82,6 +82,12 @@ export class VsCodeExtensionContract {
         trustSensitive: false,
       },
       {
+        id: VSCODE_EXTENSION_VIEW_IDS.AUTOMATION_QUEUE,
+        titleKey: 'views.automationQueue.title',
+        kind: 'tree',
+        trustSensitive: false,
+      },
+      {
         id: VSCODE_EXTENSION_VIEW_IDS.WORKBENCH_OVERVIEW,
         titleKey: 'views.workbenchOverview.title',
         kind: 'tree',
@@ -106,6 +112,10 @@ export class VsCodeExtensionContract {
       this.createCommand(
         VSCODE_EXTENSION_COMMAND_IDS.OPEN_HANDOFF_TARGET,
         'commands.openHandoffTarget.title',
+      ),
+      this.createCommand(
+        VSCODE_EXTENSION_COMMAND_IDS.STAGE_TEMPORARY_BRIDGE,
+        'commands.stageTemporaryBridge.title',
       ),
       this.createCommand(
         VSCODE_EXTENSION_COMMAND_IDS.SUBMIT_HITL_DECISION,

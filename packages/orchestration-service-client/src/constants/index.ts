@@ -1,6 +1,10 @@
 export {
   ORCHESTRATION_SESSION_DISPLAY_USER_MESSAGE_METADATA_KEY,
   OrchestrationGovernanceAttentionLevel,
+  OrchestrationGovernanceTemporaryBridgeBacklinkSurface,
+  OrchestrationGovernanceTemporaryBridgeCapabilityClass,
+  OrchestrationGovernanceTemporaryBridgeExitCriterion,
+  OrchestrationGovernanceTemporaryBridgeReceiptKind,
   OrchestrationClientSurface,
   OrchestrationExecutionKind,
   OrchestrationGovernanceActionDisabledReason,

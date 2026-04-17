@@ -1,5 +1,16 @@
 import { vi } from 'vitest';
 
+import { OrchestrationGovernanceActionKind } from '@repo-ai-governor/orchestration-service-client';
+import { OrchestrationGovernanceAttentionLevel } from '@repo-ai-governor/orchestration-service-client';
+import { OrchestrationGovernanceFollowUpSlaState } from '@repo-ai-governor/orchestration-service-client';
+import { OrchestrationGovernanceNotificationStatus } from '@repo-ai-governor/orchestration-service-client';
+import { OrchestrationGovernanceQueueKind } from '@repo-ai-governor/orchestration-service-client';
+import { OrchestrationGovernanceTemporaryBridgeCapabilityClass } from '@repo-ai-governor/orchestration-service-client';
+import { OrchestrationGovernanceTemporaryBridgeBacklinkSurface } from '@repo-ai-governor/orchestration-service-client';
+import { OrchestrationGovernanceTemporaryBridgeExitCriterion } from '@repo-ai-governor/orchestration-service-client';
+import { OrchestrationGovernanceTemporaryBridgeReceiptKind } from '@repo-ai-governor/orchestration-service-client';
+import { OrchestrationHandoffTargetKind } from '@repo-ai-governor/orchestration-service-client';
+
 const vscodeMock = vi.hoisted(() => {
   const showInformationMessage = vi.fn();
   const showWarningMessage = vi.fn();
@@ -7,8 +18,10 @@ const vscodeMock = vi.hoisted(() => {
   const openTextDocument = vi.fn();
   const showTextDocument = vi.fn();
   const executeCommand = vi.fn();
+  const sendText = vi.fn();
   const createTerminal = vi.fn(() => ({
     show: vi.fn(),
+    sendText,
   }));
 
   return {
@@ -21,6 +34,7 @@ const vscodeMock = vi.hoisted(() => {
     openTextDocument,
     showTextDocument,
     executeCommand,
+    sendText,
     createTerminal,
   };
 });
@@ -74,6 +88,7 @@ describe('VsCode extension controller/provider integration', () => {
     vscodeMock.openTextDocument.mockReset();
     vscodeMock.showTextDocument.mockReset();
     vscodeMock.executeCommand.mockReset();
+    vscodeMock.sendText.mockReset();
     vscodeMock.createTerminal.mockClear();
   });
 
@@ -114,7 +129,11 @@ describe('VsCode extension controller/provider integration', () => {
       },
     ] as never);
 
-    expect(selectionStore.getSnapshot()).toEqual(request);
+    expect(selectionStore.getSnapshot()).toEqual({
+      ...request,
+      queueEntry: undefined,
+      temporaryBridge: undefined,
+    });
     expect(reviewDetailProvider.refresh).toHaveBeenCalledWith(request);
   });
 
@@ -165,6 +184,8 @@ describe('VsCode extension controller/provider integration', () => {
       executionId: undefined,
       executionSessionId: undefined,
       reviewSourcePath: '/repo/review-queue.md',
+      queueEntry: undefined,
+      temporaryBridge: undefined,
     });
     expect(workbenchOverviewProvider.refresh).toHaveBeenCalledTimes(1);
     expect(reviewDetailProvider.refresh).toHaveBeenCalledWith(request);
@@ -185,6 +206,9 @@ describe('VsCode extension controller/provider integration', () => {
           refresh: vi.fn(),
         } as never,
         workspaceContextProvider: {
+          refresh: vi.fn(),
+        } as never,
+        workbenchOverviewProvider: {
           refresh: vi.fn(),
         } as never,
         reviewDetailProvider: {
@@ -260,6 +284,86 @@ describe('VsCode extension controller/provider integration', () => {
       executionId: undefined,
       executionSessionId: undefined,
       reviewSourcePath: '/repo/review-only.md',
+      queueEntry: undefined,
+      temporaryBridge: undefined,
+    });
+  });
+
+  it('prefers queue-selected handoff targets before execution-board fallback for queue-only items', async () => {
+    vscodeMock.state.trusted = true;
+    vscodeMock.openTextDocument.mockResolvedValue({
+      uri: {
+        fsPath: '/repo/review-older.md',
+      },
+    });
+    vscodeMock.showTextDocument.mockResolvedValue(undefined);
+
+    const selectionStore = new VsCodeExtensionSelectionStore();
+    const resolveExecutionBoardEntry = vi.fn();
+    const controller = new VsCodeExtensionCommandController(
+      {
+        resolveExecutionBoardEntry,
+      } as never,
+      selectionStore,
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        taskBoardProvider: {
+          refresh: vi.fn(),
+        } as never,
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewQueueProvider: {
+          refresh: vi.fn(),
+        } as never,
+        workbenchOverviewProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    await controller.openHandoffTarget({
+      executionId: 'execution-older',
+      executionSessionId: undefined,
+      queueEntry: {
+        queueEntryId: 'automation:execution-older',
+        queueKind: OrchestrationGovernanceQueueKind.AUTOMATION_INBOX,
+        workspaceId: 'workspace-1',
+        workspaceRoot: '/repo',
+        executionId: 'execution-older',
+        attentionLevel: OrchestrationGovernanceAttentionLevel.WARNING,
+        notificationStatus: OrchestrationGovernanceNotificationStatus.FOLLOW_UP_REQUIRED,
+        followUpSlaState: OrchestrationGovernanceFollowUpSlaState.OVERDUE,
+        actions: [],
+        handoffTargets: [
+          {
+            targetId: 'execution-older:review',
+            executionId: 'execution-older',
+            targetKind: OrchestrationHandoffTargetKind.REVIEW_DOCUMENT,
+            targetPath: '/repo/review-older.md',
+            exists: true,
+          },
+        ],
+      },
+    });
+
+    expect(resolveExecutionBoardEntry).not.toHaveBeenCalled();
+    expect(vscodeMock.openTextDocument).toHaveBeenCalledWith({
+      fsPath: '/repo/review-older.md',
+    });
+    expect(selectionStore.getSnapshot()).toEqual({
+      executionId: 'execution-older',
+      executionSessionId: undefined,
+      reviewSourcePath: undefined,
+      queueEntry: expect.objectContaining({
+        queueEntryId: 'automation:execution-older',
+      }),
+      temporaryBridge: undefined,
     });
   });
 
@@ -301,7 +405,99 @@ describe('VsCode extension controller/provider integration', () => {
       executionId: 'execution-2',
       executionSessionId: 'session-2',
       reviewSourcePath: undefined,
+      queueEntry: undefined,
+      temporaryBridge: undefined,
     });
+  });
+
+  it('preserves queue-driven selection across repeated detail renders for older queue items', async () => {
+    const selectionStore = new VsCodeExtensionSelectionStore();
+    selectionStore.applyCommandRequest({
+      executionId: 'execution-older',
+      reviewSourcePath: undefined,
+      queueEntry: {
+        queueEntryId: 'automation:execution-older',
+        queueKind: OrchestrationGovernanceQueueKind.AUTOMATION_INBOX,
+        workspaceId: 'workspace-1',
+        workspaceRoot: '/repo',
+        executionId: 'execution-older',
+        attentionLevel: OrchestrationGovernanceAttentionLevel.WARNING,
+        notificationStatus: OrchestrationGovernanceNotificationStatus.FOLLOW_UP_REQUIRED,
+        followUpSlaState: OrchestrationGovernanceFollowUpSlaState.OVERDUE,
+        actions: [
+          {
+            actionId: 'execution-older:recover',
+            actionKind: OrchestrationGovernanceActionKind.RECOVER_EXECUTION,
+            executionId: 'execution-older',
+            enabled: true,
+            requiresConfirmation: false,
+          },
+        ],
+        handoffTargets: [
+          {
+            targetId: 'execution-older:review',
+            executionId: 'execution-older',
+            targetKind: OrchestrationHandoffTargetKind.REVIEW_DOCUMENT,
+            targetPath: '/repo/review-older.md',
+            exists: true,
+          },
+        ],
+      },
+    });
+    const resolveReviewDetailSnapshot = vi.fn().mockResolvedValue({
+      workspaceContext: {
+        workspaceLabel: 'ai-governor',
+        workspaceRoot: '/repo',
+        workspaceTrusted: true,
+      },
+      selectedExecution: {
+        execution: {
+          executionId: 'execution-older',
+          executionSessionId: 'session-older',
+        },
+        actions: [
+          {
+            actionId: 'execution-older:recover',
+          },
+        ],
+        handoffTargets: [
+          {
+            targetId: 'execution-older:review',
+          },
+        ],
+      },
+    });
+    const reviewDetailProvider = new VsCodeExtensionReviewDetailProvider(
+      {
+        resolveReviewDetailSnapshot,
+      } as never,
+      selectionStore,
+      {
+        buildReviewDetailHtml: vi.fn().mockReturnValue('<html></html>'),
+      } as never,
+    );
+
+    await reviewDetailProvider.resolveWebviewView({
+      webview: {
+        options: {},
+        html: '',
+      },
+    } as never);
+    await reviewDetailProvider.refresh();
+
+    expect(resolveReviewDetailSnapshot).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        executionId: 'execution-older',
+        executionSessionId: 'session-older',
+        queueEntry: expect.objectContaining({
+          queueEntryId: 'automation:execution-older',
+        }),
+      }),
+    );
+    expect(selectionStore.getSnapshot().queueEntry?.queueEntryId).toBe(
+      'automation:execution-older',
+    );
   });
 
   it('opens review detail from a review-only queue request without restoring stale execution state', async () => {
@@ -375,8 +571,113 @@ describe('VsCode extension controller/provider integration', () => {
       executionId: undefined,
       executionSessionId: undefined,
       reviewSourcePath: '/repo/review-only.md',
+      queueEntry: undefined,
+      temporaryBridge: undefined,
     });
     expect(show).toHaveBeenCalledWith(false);
     expect(buildReviewDetailHtml).toHaveBeenCalledTimes(2);
+  });
+
+  it('stages a temporary bridge command in a trusted terminal without executing it', async () => {
+    vscodeMock.state.trusted = true;
+
+    const selectionStore = new VsCodeExtensionSelectionStore();
+    const controller = new VsCodeExtensionCommandController(
+      {} as never,
+      selectionStore,
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    await controller.stageTemporaryBridge({
+      temporaryBridge: {
+        bridgeId: 'temporary-bridge-host-verify',
+        capabilityClass: OrchestrationGovernanceTemporaryBridgeCapabilityClass.HOST_VERIFY,
+        workspaceRoot: '/repo/.repo-ai-governor',
+        commandWorkingDirectory: '/repo',
+        previewCommandLine:
+          'repo-ai-governor host verify --output-dir /repo/.repo-ai-governor/generated/hosts/github-copilot',
+        receiptKind: OrchestrationGovernanceTemporaryBridgeReceiptKind.HOST_VERIFY_RECEIPT,
+        backlinkSurface: OrchestrationGovernanceTemporaryBridgeBacklinkSurface.ARTIFACT_WORKBENCH,
+        exitCriteria: [
+          OrchestrationGovernanceTemporaryBridgeExitCriterion.SERVICE_NATIVE_HOST_QUERY,
+        ],
+      },
+    });
+
+    expect(vscodeMock.createTerminal).toHaveBeenCalledWith({
+      name: 'Governor Bridge',
+      cwd: '/repo',
+    });
+    expect(vscodeMock.sendText).toHaveBeenCalledWith(
+      'repo-ai-governor host verify --output-dir /repo/.repo-ai-governor/generated/hosts/github-copilot',
+      false,
+    );
+    expect(vscodeMock.showInformationMessage).toHaveBeenCalled();
+    expect(selectionStore.getSnapshot().temporaryBridge?.bridgeId).toBe(
+      'temporary-bridge-host-verify',
+    );
+  });
+
+  it('stages the selected temporary bridge from workbench-overview selection when the palette command has no args', async () => {
+    vscodeMock.state.trusted = true;
+
+    const selectionStore = new VsCodeExtensionSelectionStore();
+    const controller = new VsCodeExtensionCommandController(
+      {} as never,
+      selectionStore,
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    controller.handleWorkbenchOverviewSelection([
+      {
+        selectionRequest: {
+          temporaryBridge: {
+            bridgeId: 'temporary-bridge-host-pack',
+            capabilityClass: OrchestrationGovernanceTemporaryBridgeCapabilityClass.HOST_PACK,
+            workspaceRoot: '/repo/.repo-ai-governor',
+            commandWorkingDirectory: '/repo',
+            previewCommandLine:
+              'repo-ai-governor host pack --host claude-code --mode plugin-bundle --bundle-dir /repo/.repo-ai-governor/generated/bundles/claude',
+            receiptKind: OrchestrationGovernanceTemporaryBridgeReceiptKind.HOST_PACK_RECEIPT,
+            backlinkSurface:
+              OrchestrationGovernanceTemporaryBridgeBacklinkSurface.ARTIFACT_WORKBENCH,
+            exitCriteria: [
+              OrchestrationGovernanceTemporaryBridgeExitCriterion.SERVICE_NATIVE_HOST_QUERY,
+            ],
+          },
+        },
+      },
+    ] as never);
+
+    await controller.stageTemporaryBridge();
+
+    expect(vscodeMock.createTerminal).toHaveBeenCalledWith({
+      name: 'Governor Bridge',
+      cwd: '/repo',
+    });
+    expect(vscodeMock.sendText).toHaveBeenCalledWith(
+      'repo-ai-governor host pack --host claude-code --mode plugin-bundle --bundle-dir /repo/.repo-ai-governor/generated/bundles/claude',
+      false,
+    );
   });
 });

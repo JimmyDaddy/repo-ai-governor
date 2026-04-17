@@ -31,6 +31,7 @@ export type {
   DesktopHitlInboxEntryViewModel,
   DesktopLifecycleSnapshot,
   DesktopOrchestrationServiceOwner,
+  DesktopOrchestrationServiceOwnerContext,
   DesktopOrchestrationServiceRuntimeDependencies,
   DesktopPreloadBridgeApi,
   DesktopShellBaseline,

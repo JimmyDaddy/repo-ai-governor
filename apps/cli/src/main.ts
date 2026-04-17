@@ -474,6 +474,7 @@ export async function runCli(
     sessionShellOrchestrationServiceRuntime = new CliOrchestrationServiceRuntime(
       runtimeContext.workspace.workspaceRoot,
       {
+        repositoryRoot: runtimeContext.workspace.repositoryRoot,
         memoryConfig: runtimeContext.memory,
         embeddedShellDependencies: {
           sessionMainSupervisorRuntime: new CliSessionMainSupervisorRuntime({

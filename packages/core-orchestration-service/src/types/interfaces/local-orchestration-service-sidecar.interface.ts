@@ -154,6 +154,7 @@ export interface LocalOrchestrationServiceSidecarHostDependencies
 export interface LocalOrchestrationServiceSidecarClientDependencies {
   sidecarEntryPath?: string;
   requestTimeoutMs?: number;
+  repositoryRoot?: string;
   memoryConfig?: MemoryRuntimeConfig;
   env?: NodeJS.ProcessEnv;
   execArgv?: string[];

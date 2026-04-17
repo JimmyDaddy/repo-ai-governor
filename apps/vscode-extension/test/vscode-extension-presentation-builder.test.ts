@@ -7,6 +7,10 @@ import {
   OrchestrationGovernanceFollowUpSlaState,
   OrchestrationGovernanceNotificationStatus,
   OrchestrationGovernanceQueueKind,
+  OrchestrationGovernanceTemporaryBridgeBacklinkSurface,
+  OrchestrationGovernanceTemporaryBridgeCapabilityClass,
+  OrchestrationGovernanceTemporaryBridgeExitCriterion,
+  OrchestrationGovernanceTemporaryBridgeReceiptKind,
   OrchestrationHandoffTargetKind,
   OrchestrationServiceHostKind,
   OrchestrationServiceLifecycleStatus,
@@ -101,12 +105,53 @@ describe('VsCodeExtensionPresentationBuilder', () => {
         resolvedExecutionId: 'execution-1',
         resolvedSessionId: 'session-1',
         reviewSourcePath: '/repo/.repo-ai-governor/review/resolved.md',
+        reviewLifecycle: {
+          totalReviewCount: 1,
+          pendingReviewCount: 0,
+          verifiedReviewCount: 0,
+          resolvedReviewCount: 1,
+          latestReviewId: 'review-1',
+          latestLifecycleStatus: 'resolved',
+          latestReviewFilePath: '/repo/.repo-ai-governor/review/resolved.md',
+          navigationReviewIds: ['review-1'],
+        },
+        workbench: {
+          artifactCount: 1,
+          reviewCount: 1,
+          transcriptCount: 1,
+          latestArtifactId: 'artifact-1',
+          latestArtifactPath: '/repo/.repo-ai-governor/context/review.md',
+          latestReviewId: 'review-1',
+          latestReviewFilePath: '/repo/.repo-ai-governor/review/resolved.md',
+          latestTranscriptEntryId: 'entry-1',
+          latestTranscriptCreatedAt: '2026-04-05T09:15:00.000Z',
+        },
+        evidenceBacklinks: {
+          governanceWorkspacePath: '/repo',
+          artifactPaths: ['/repo/.repo-ai-governor/context/review.md'],
+          reviewPaths: ['/repo/.repo-ai-governor/review/resolved.md'],
+          transcriptEntryIds: ['entry-1'],
+        },
+        policyTrace: {
+          executionId: 'execution-1',
+          executionStatus: OrchestrationExecutionStatus.RUNNING,
+          pendingHitl: false,
+          recoveryCapable: true,
+          currentStageId: 'review',
+          latestEventType: 'execution.started',
+          taskId: 'TK-563',
+          projectId: 'project-048-governance-surface-clients-rollout',
+          sprintId: 'sprint-002-vscode-editor-companion-mvp',
+          reviewDocumentPath: '/repo/.repo-ai-governor/review/resolved.md',
+        },
       },
     });
 
     expect(html).toContain('Governor review detail');
     expect(html).toContain('Sprint 002 review');
     expect(html).toContain('/repo/.repo-ai-governor/review/resolved.md');
+    expect(html).toContain('Artifact workbench');
+    expect(html).toContain('Evidence backlinks');
     expect(html).toContain('review · active');
     expect(html).toContain('Service lifecycle');
     expect(html).toContain('sidecar via ipc');
@@ -156,6 +201,23 @@ describe('VsCodeExtensionPresentationBuilder', () => {
             },
           ],
           transcript: [],
+          reviewLifecycle: {
+            totalReviewCount: 1,
+            pendingReviewCount: 0,
+            verifiedReviewCount: 0,
+            resolvedReviewCount: 1,
+            navigationReviewIds: ['review-1'],
+          },
+          workbench: {
+            artifactCount: 0,
+            reviewCount: 1,
+            transcriptCount: 0,
+          },
+          evidenceBacklinks: {
+            artifactPaths: [],
+            reviewPaths: ['/repo/.repo-ai-governor/review/resolved.md'],
+            transcriptEntryIds: [],
+          },
         },
       },
     });
@@ -244,6 +306,23 @@ describe('VsCodeExtensionPresentationBuilder', () => {
             latestUpdatedAt: '2026-04-17T10:00:00.000Z',
           },
         ],
+        temporaryBridges: [
+          {
+            bridgeId: 'temporary-bridge-host-verify',
+            capabilityClass: OrchestrationGovernanceTemporaryBridgeCapabilityClass.HOST_VERIFY,
+            workspaceRoot: '/repo/.repo-ai-governor',
+            commandWorkingDirectory: '/repo',
+            previewCommandLine:
+              'repo-ai-governor host verify --output-dir /repo/.repo-ai-governor/generated/hosts/github-copilot',
+            receiptKind: OrchestrationGovernanceTemporaryBridgeReceiptKind.HOST_VERIFY_RECEIPT,
+            backlinkSurface:
+              OrchestrationGovernanceTemporaryBridgeBacklinkSurface.ARTIFACT_WORKBENCH,
+            exitCriteria: [
+              OrchestrationGovernanceTemporaryBridgeExitCriterion.SERVICE_NATIVE_HOST_QUERY,
+              OrchestrationGovernanceTemporaryBridgeExitCriterion.ARTIFACT_BACKLINK_PROJECTED,
+            ],
+          },
+        ],
         notificationOwnership: {
           ownerSurface: OrchestrationClientSurface.DESKTOP,
           pendingItemCount: 2,
@@ -267,13 +346,17 @@ describe('VsCodeExtensionPresentationBuilder', () => {
         'Queue ownership',
         'Review queue',
         'Automation queue',
-        'Workspace summary',
+        'Multi-workspace overview',
+        'Temporary CLI bridges',
         'Service lifecycle',
         'Service topology',
         'Checkpoint support',
         'Memory provider',
       ]),
     );
+    expect(
+      nodes.find((node) => node.nodeId === 'temporary-bridges')?.children?.[0]?.command?.command,
+    ).toBe(VSCODE_EXTENSION_COMMAND_IDS.STAGE_TEMPORARY_BRIDGE);
     expect(nodes.find((node) => node.nodeId === 'trust-sensitive-actions')?.description).toBe(
       'Blocked',
     );
@@ -285,6 +368,35 @@ describe('VsCodeExtensionPresentationBuilder', () => {
     );
     expect(nodes.find((node) => node.nodeId === 'memory-provider')?.description).toBe(
       '@repo-ai-governor/memory-provider-sqlite-fs',
+    );
+  });
+
+  it('renders automation-queue nodes with bridge-safe service-owned follow-up metadata', () => {
+    const nodes = builder.buildAutomationQueueNodes([
+      {
+        queueEntryId: 'automation:execution-1',
+        queueKind: OrchestrationGovernanceQueueKind.AUTOMATION_INBOX,
+        workspaceId: 'workspace-1',
+        workspaceRoot: '/repo',
+        executionId: 'execution-1',
+        executionKind: OrchestrationExecutionKind.RUN,
+        executionStatus: OrchestrationExecutionStatus.RUNNING,
+        taskId: 'TK-563',
+        projectId: 'project-048-governance-surface-clients-rollout',
+        sprintId: 'sprint-002-vscode-editor-companion-mvp',
+        attentionLevel: OrchestrationGovernanceAttentionLevel.WARNING,
+        notificationStatus: OrchestrationGovernanceNotificationStatus.FOLLOW_UP_REQUIRED,
+        followUpSlaState: OrchestrationGovernanceFollowUpSlaState.DUE_SOON,
+        actions: [],
+        handoffTargets: [],
+      },
+    ]);
+
+    expect(nodes[0]?.label).toBe('TK-563');
+    expect(nodes[0]?.description).toContain('Due soon');
+    expect(nodes[0]?.selectionRequest?.queueEntry?.queueEntryId).toBe('automation:execution-1');
+    expect(nodes[0]?.children?.map((child) => child.label)).toEqual(
+      expect.arrayContaining(['Queue kind', 'Execution status', 'Follow-up SLA', 'Workspace root']),
     );
   });
 });

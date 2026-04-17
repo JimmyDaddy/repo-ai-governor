@@ -109,11 +109,22 @@ export interface DesktopOrchestrationServiceOwner {
 }
 
 /**
+ * Defines the workspace/repository facts that desktop threads into service-owner resolution.
+ */
+export interface DesktopOrchestrationServiceOwnerContext {
+  workspaceRoot: string;
+  repositoryRoot?: string;
+}
+
+/**
  * Defines desktop runtime wiring options while keeping service ownership in the sidecar host.
  */
 export interface DesktopOrchestrationServiceRuntimeDependencies {
   runtimeMode?: DesktopOrchestrationRuntimeMode;
+  repositoryRoot?: string;
   memoryConfig?: MemoryRuntimeConfig;
-  serviceOwnerProvider?: (workspaceRoot: string) => Promise<DesktopOrchestrationServiceOwner>;
+  serviceOwnerProvider?: (
+    context: DesktopOrchestrationServiceOwnerContext,
+  ) => Promise<DesktopOrchestrationServiceOwner>;
   sidecarClientDependencies?: LocalOrchestrationServiceSidecarClientDependencies;
 }

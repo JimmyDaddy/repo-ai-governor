@@ -7,12 +7,15 @@ import { DesktopShellBootstrap } from '../src/runtime/desktop-shell-bootstrap.js
 describe('DesktopShellBootstrap', () => {
   it('freezes shell baseline ownership and supports restart-aware preload lifecycle snapshots', async () => {
     let disposeCount = 0;
+    const ownerContexts: Array<{ workspaceRoot: string; repositoryRoot?: string }> = [];
     const bootstrap = new DesktopShellBootstrap('/tmp/workspace/.repo-ai-governor', {
       artifactQueryGateState: DesktopArtifactQueryGateState.BLOCKED,
       runtimeDependencies: {
+        repositoryRoot: '/tmp/workspace',
         runtimeMode: DesktopOrchestrationRuntimeMode.SIDECAR_IPC,
-        serviceOwnerProvider: async () =>
-          ({
+        serviceOwnerProvider: async (context) => {
+          ownerContexts.push(context);
+          return {
             getHealth: async () => ({
               serviceHostKind: 'sidecar',
               serviceTransportKind: 'ipc',
@@ -208,7 +211,8 @@ describe('DesktopShellBootstrap', () => {
             dispose: async () => {
               disposeCount += 1;
             },
-          }) as never,
+          } as never;
+        },
       },
     });
 
@@ -233,6 +237,16 @@ describe('DesktopShellBootstrap', () => {
     expect(notificationSnapshot.notificationCount).toBe(1);
     expect(restartSnapshot.restartCount).toBe(1);
     expect(restartSnapshot.lastRestartReason).toBe('desktop-smoke-restart');
+    expect(ownerContexts).toEqual([
+      {
+        workspaceRoot: '/tmp/workspace/.repo-ai-governor',
+        repositoryRoot: '/tmp/workspace',
+      },
+      {
+        workspaceRoot: '/tmp/workspace/.repo-ai-governor',
+        repositoryRoot: '/tmp/workspace',
+      },
+    ]);
     expect(disposeCount).toBe(1);
   });
 });

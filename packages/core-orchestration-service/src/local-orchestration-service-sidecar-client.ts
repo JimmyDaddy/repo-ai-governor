@@ -50,6 +50,7 @@ import type {
 import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
   LOCAL_ORCHESTRATION_SERVICE_SIDECAR_MEMORY_CONFIG_ENV,
+  LOCAL_ORCHESTRATION_SERVICE_SIDECAR_REPOSITORY_ROOT_ENV,
   LocalOrchestrationServiceSidecarOperation,
 } from './constants/index.js';
 import type {
@@ -520,6 +521,10 @@ export class LocalOrchestrationServiceSidecarClient {
       resolvedEnvironment[LOCAL_ORCHESTRATION_SERVICE_SIDECAR_MEMORY_CONFIG_ENV] = JSON.stringify(
         this.dependencies.memoryConfig,
       );
+    }
+    if (this.dependencies.repositoryRoot) {
+      resolvedEnvironment[LOCAL_ORCHESTRATION_SERVICE_SIDECAR_REPOSITORY_ROOT_ENV] =
+        this.dependencies.repositoryRoot;
     }
     return resolvedEnvironment;
   }

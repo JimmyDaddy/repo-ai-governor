@@ -7,6 +7,10 @@ import {
   OrchestrationGovernanceFollowUpSlaState,
   OrchestrationGovernanceNotificationStatus,
   OrchestrationGovernanceQueueKind,
+  OrchestrationGovernanceTemporaryBridgeBacklinkSurface,
+  OrchestrationGovernanceTemporaryBridgeCapabilityClass,
+  OrchestrationGovernanceTemporaryBridgeExitCriterion,
+  OrchestrationGovernanceTemporaryBridgeReceiptKind,
   OrchestrationHandoffTargetKind,
   OrchestrationServiceLifecycleStatus,
 } from '@repo-ai-governor/orchestration-service-client';
@@ -14,7 +18,9 @@ import type {
   OrchestrationExecutionBoardEntry,
   OrchestrationExecutionSummary,
   OrchestrationGovernanceActionAffordance,
+  OrchestrationGovernanceParallelLaneEntry,
   OrchestrationGovernanceQueueEntry,
+  OrchestrationGovernanceTemporaryBridgeEntry,
   OrchestrationGovernanceWorkspaceSummary,
   OrchestrationHandoffTarget,
   OrchestrationHitlInboxEntry,
@@ -137,6 +143,8 @@ export class VsCodeExtensionPresentationBuilder {
    * @param entries Service-owned review queue entries.
    * @returns Tree-node descriptors for the review queue view.
    */
+  // god-object-exception: TK-938 Phase B temporarily keeps queue/workbench/bridge presentation
+  // shaping in one builder; sprint-003 / TK-940 will extract focused builders after clean rollout.
   public buildReviewQueueNodes(
     entries: readonly OrchestrationGovernanceQueueEntry[],
   ): readonly VsCodeExtensionTreeNodeDescriptor[] {
@@ -178,6 +186,58 @@ export class VsCodeExtensionPresentationBuilder {
         children: [
           ...this.buildReviewQueueSummaryNodes(entry),
           ...this.buildReviewQueueActionNodes(entry, request),
+          ...this.buildQueueEntryHandoffNodes(entry, request),
+        ],
+      };
+    });
+  }
+
+  /**
+   * Builds automation-queue tree nodes from service-owned queue-overview DTOs.
+   * @param entries Service-owned automation queue entries.
+   * @returns Tree-node descriptors for the automation queue view.
+   */
+  public buildAutomationQueueNodes(
+    entries: readonly OrchestrationGovernanceQueueEntry[],
+  ): readonly VsCodeExtensionTreeNodeDescriptor[] {
+    if (entries.length === 0) {
+      return [
+        this.createInfoNode(
+          'automation-queue-empty',
+          'No automation follow-up item currently needs workbench attention.',
+          '当前没有需要 workbench 处理的自动化跟进项。',
+        ),
+      ];
+    }
+
+    return entries.map((entry) => {
+      const request = this.createAutomationQueueRequest(entry);
+      const topLevelCommand = request.executionId
+        ? this.createCommandDescriptor(
+            VSCODE_EXTENSION_COMMAND_IDS.OPEN_REVIEW_DETAIL,
+            'Open review detail',
+            '打开评审详情',
+            request,
+          )
+        : undefined;
+
+      return {
+        nodeId: entry.queueEntryId,
+        label: entry.taskId ?? entry.executionId ?? entry.queueEntryId,
+        description: this.getAutomationQueueDescription(entry),
+        tooltip: this.getAutomationQueueTooltip(entry),
+        themeIconId: this.getAutomationQueueIconId(entry),
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.REVIEW_QUEUE_ENTRY,
+        selectionRequest: request,
+        ...(topLevelCommand
+          ? {
+              command: topLevelCommand,
+            }
+          : {}),
+        children: [
+          ...this.buildAutomationQueueSummaryNodes(entry, request),
+          ...this.buildQueueEntryActionNodes(entry, request),
+          ...this.buildQueueEntryHandoffNodes(entry, request),
         ],
       };
     });
@@ -205,8 +265,12 @@ export class VsCodeExtensionPresentationBuilder {
     const queueOverview = snapshot.queueOverview;
     const selectedExecution = snapshot.selectedExecution;
     const reviewSourcePath = snapshot.reviewSourcePath;
-    const latestWorkspaceSummary = queueOverview.workspaceSummary[0];
     const latestAutomationEntry = queueOverview.automationInbox[0];
+    const projectedWorkspaceNodes = this.buildProjectedWorkspaceNodes(
+      queueOverview.workspaceSummary,
+    );
+    const parallelLaneNodes = this.buildParallelLaneNodes(queueOverview.parallelLanes);
+    const temporaryBridgeNodes = this.buildTemporaryBridgeNodes(queueOverview.temporaryBridges);
 
     return [
       {
@@ -250,8 +314,8 @@ export class VsCodeExtensionPresentationBuilder {
         label: this.localizer.localizeText('Public support level', '公开支持级别'),
         description: this.localizePublicSupportLevel(VSCODE_EXTENSION_PUBLIC_SUPPORT_LEVEL),
         tooltip: this.localizer.localizeText(
-          'Phase A keeps the VS Code surface at workbench baseline in progress until later evidence is complete.',
-          'Phase A 会让 VS Code 保持在 workbench baseline in progress，直到后续证据面闭环。',
+          'Phase B keeps the VS Code surface at workbench baseline in progress until workflow-studio and support-truth evidence are complete.',
+          'Phase B 会让 VS Code 保持在 workbench baseline in progress，直到 workflow studio 与支持口径证据闭环。',
         ),
         themeIconId: 'workspace-trusted',
         contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
@@ -305,22 +369,91 @@ export class VsCodeExtensionPresentationBuilder {
         contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
       },
       {
-        nodeId: 'workspace-summary',
-        label: this.localizer.localizeText('Workspace summary', '工作区摘要'),
-        description: latestWorkspaceSummary
-          ? this.localizer.localizeText(
-              `${latestWorkspaceSummary.activeExecutionCount} active execution(s)`,
-              `${latestWorkspaceSummary.activeExecutionCount} 个活跃执行`,
-            )
-          : this.localizer.localizeText('No workspace summary yet', '暂时没有工作区摘要'),
-        tooltip: latestWorkspaceSummary
-          ? this.getWorkspaceSummaryTooltip(latestWorkspaceSummary)
-          : this.localizer.localizeText(
-              'The service will project governed workspace summary here when executions exist.',
-              '当存在执行记录时，服务会在这里投影治理工作区摘要。',
-            ),
-        themeIconId: latestWorkspaceSummary ? 'organization' : 'circle-slash',
+        nodeId: 'multi-workspace-overview',
+        label: this.localizer.localizeText('Multi-workspace overview', '多工作区总览'),
+        description:
+          projectedWorkspaceNodes.length > 0
+            ? this.localizer.localizeText(
+                `${projectedWorkspaceNodes.length} projected workspace(s)`,
+                `${projectedWorkspaceNodes.length} 个已投影工作区`,
+              )
+            : this.localizer.localizeText('No workspace projection yet', '暂时没有工作区投影'),
+        tooltip:
+          projectedWorkspaceNodes.length > 0
+            ? this.localizer.localizeText(
+                'Service-owned workspace summaries stay aggregated here so VS Code does not recompute cross-workspace truth.',
+                'service-owned 的工作区摘要会聚合显示在这里，避免 VS Code 自己重算跨工作区真值。',
+              )
+            : this.localizer.localizeText(
+                'The service will project governed workspace summary here when executions exist.',
+                '当存在执行记录时，服务会在这里投影治理工作区摘要。',
+              ),
+        themeIconId: projectedWorkspaceNodes.length > 0 ? 'organization' : 'circle-slash',
         contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+        children:
+          projectedWorkspaceNodes.length > 0
+            ? projectedWorkspaceNodes
+            : [
+                this.createInfoNode(
+                  'multi-workspace-overview-empty',
+                  'No governed workspace summary is available yet.',
+                  '暂时没有可用的治理工作区摘要。',
+                ),
+              ],
+      },
+      {
+        nodeId: 'parallel-lanes',
+        label: this.localizer.localizeText('Parallel execution lanes', '并行执行泳道'),
+        description:
+          parallelLaneNodes.length > 0
+            ? this.localizer.localizeText(
+                `${parallelLaneNodes.length} lane(s) visible`,
+                `${parallelLaneNodes.length} 条泳道可见`,
+              )
+            : this.localizer.localizeText('No active lane right now', '当前没有活跃泳道'),
+        tooltip: this.localizer.localizeText(
+          'Parallel-lane summaries remain service-owned and reflect active execution pressure across workspaces.',
+          '并行泳道摘要保持为 service-owned，用于反映跨工作区的活跃执行压力。',
+        ),
+        themeIconId: parallelLaneNodes.length > 0 ? 'split-horizontal' : 'circle-slash',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+        children:
+          parallelLaneNodes.length > 0
+            ? parallelLaneNodes
+            : [
+                this.createInfoNode(
+                  'parallel-lanes-empty',
+                  'No parallel lane currently needs workbench supervision.',
+                  '当前没有需要 workbench 监督的并行泳道。',
+                ),
+              ],
+      },
+      {
+        nodeId: 'temporary-bridges',
+        label: this.localizer.localizeText('Temporary CLI bridges', '临时 CLI bridge'),
+        description:
+          temporaryBridgeNodes.length > 0
+            ? this.localizer.localizeText(
+                `${temporaryBridgeNodes.length} governed bridge(s)`,
+                `${temporaryBridgeNodes.length} 个受治理 bridge`,
+              )
+            : this.localizer.localizeText('No bridge metadata projected', '暂时没有 bridge 元数据'),
+        tooltip: this.localizer.localizeText(
+          'Temporary bridge metadata keeps adopt/host/upgrade flows explicit until service-native seams replace them.',
+          '临时 bridge 元数据会在 adopt/host/upgrade 流程切到 service-native seam 前继续保持显式。',
+        ),
+        themeIconId: temporaryBridgeNodes.length > 0 ? 'terminal' : 'circle-slash',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+        children:
+          temporaryBridgeNodes.length > 0
+            ? temporaryBridgeNodes
+            : [
+                this.createInfoNode(
+                  'temporary-bridges-empty',
+                  'No temporary bridge is currently projected into this workbench.',
+                  '当前没有临时 bridge 被投影到这个 workbench 中。',
+                ),
+              ],
       },
       ...this.buildServiceDiagnosticsNodes(context),
       {
@@ -398,6 +531,7 @@ export class VsCodeExtensionPresentationBuilder {
         reviewQueue: [],
         parallelLanes: [],
         workspaceSummary: [],
+        temporaryBridges: [],
         notificationOwnership: {
           ownerSurface: OrchestrationClientSurface.DESKTOP,
           pendingItemCount: 0,
@@ -444,6 +578,10 @@ export class VsCodeExtensionPresentationBuilder {
     const requestedReviewSourcePath =
       artifactPane?.reviewSourcePath ?? snapshot.requestedReviewSourcePath;
     const workspaceFacts = this.buildWorkspaceFactLines(snapshot.workspaceContext);
+    const workbenchLines = artifactPane ? this.buildArtifactWorkbenchLines(artifactPane) : [];
+    const reviewLifecycleLines = artifactPane ? this.buildReviewLifecycleLines(artifactPane) : [];
+    const policyTraceLines = artifactPane ? this.buildPolicyTraceLines(artifactPane) : [];
+    const evidenceBacklinkLines = artifactPane ? this.buildEvidenceBacklinkLines(artifactPane) : [];
     const body =
       selectedExecution && artifactPane
         ? `
@@ -463,11 +601,20 @@ export class VsCodeExtensionPresentationBuilder {
           </ul>
         </section>
         ${this.renderStringSection(
+          this.localizer.localizeText('Artifact workbench', '产物工作台'),
+          workbenchLines,
+        )}
+        ${this.renderStringSection(
           this.localizer.localizeText('Review lifecycle', '评审生命周期'),
-          artifactPane.reviews.map(
-            (review) =>
-              `${review.title} (${review.lifecycleStatus})${review.scope ? ` · ${review.scope}` : ''}`,
-          ),
+          reviewLifecycleLines,
+        )}
+        ${this.renderStringSection(
+          this.localizer.localizeText('Policy trace', '策略轨迹'),
+          policyTraceLines,
+        )}
+        ${this.renderStringSection(
+          this.localizer.localizeText('Evidence backlinks', '证据回链'),
+          evidenceBacklinkLines,
         )}
         ${this.renderStringSection(
           this.localizer.localizeText('Artifacts', '产物'),
@@ -565,6 +712,7 @@ export class VsCodeExtensionPresentationBuilder {
         `- ${this.localizer.localizeText('Review queue count', '评审队列数量')}: ${queueOverview.reviewQueue.length}`,
         `- ${this.localizer.localizeText('Automation queue count', '自动化队列数量')}: ${queueOverview.automationInbox.length}`,
         `- ${this.localizer.localizeText('Active workspace count', '活跃工作区数量')}: ${queueOverview.notificationOwnership.activeWorkspaceCount}`,
+        `- ${this.localizer.localizeText('Temporary bridge count', '临时 bridge 数量')}: ${queueOverview.temporaryBridges.length}`,
       );
     }
     if (options.workspaceContext.serviceHealth) {
@@ -704,6 +852,313 @@ export class VsCodeExtensionPresentationBuilder {
         value: this.getMemoryProviderDescription(context.serviceHealth),
       },
     ];
+  }
+
+  private buildArtifactWorkbenchLines(
+    artifactPane: NonNullable<VsCodeExtensionReviewDetailSnapshot['artifactPane']>,
+  ): string[] {
+    const lines = [
+      `${this.localizer.localizeText('Artifact count', '产物数量')}: ${artifactPane.workbench.artifactCount}`,
+      `${this.localizer.localizeText('Review count', '评审数量')}: ${artifactPane.workbench.reviewCount}`,
+      `${this.localizer.localizeText('Transcript count', '转录数量')}: ${artifactPane.workbench.transcriptCount}`,
+    ];
+    if (artifactPane.workbench.latestArtifactId) {
+      lines.push(
+        `${this.localizer.localizeText('Latest artifact', '最新产物')}: ${artifactPane.workbench.latestArtifactId}`,
+      );
+    }
+    if (artifactPane.workbench.latestReviewId) {
+      lines.push(
+        `${this.localizer.localizeText('Latest review', '最新评审')}: ${artifactPane.workbench.latestReviewId}`,
+      );
+    }
+    if (artifactPane.workbench.latestTranscriptEntryId) {
+      lines.push(
+        `${this.localizer.localizeText('Latest transcript entry', '最新转录条目')}: ${artifactPane.workbench.latestTranscriptEntryId}`,
+      );
+    }
+
+    return lines;
+  }
+
+  private buildReviewLifecycleLines(
+    artifactPane: NonNullable<VsCodeExtensionReviewDetailSnapshot['artifactPane']>,
+  ): string[] {
+    const lines = [
+      `${this.localizer.localizeText('Total review records', '评审记录总数')}: ${artifactPane.reviewLifecycle.totalReviewCount}`,
+      `${this.localizer.localizeText('Pending reviews', '待处理评审')}: ${artifactPane.reviewLifecycle.pendingReviewCount}`,
+      `${this.localizer.localizeText('Verified reviews', '已验证评审')}: ${artifactPane.reviewLifecycle.verifiedReviewCount}`,
+      `${this.localizer.localizeText('Resolved reviews', '已解决评审')}: ${artifactPane.reviewLifecycle.resolvedReviewCount}`,
+    ];
+    if (artifactPane.reviewLifecycle.latestReviewId) {
+      lines.push(
+        `${this.localizer.localizeText('Latest lifecycle record', '最新生命周期记录')}: ${artifactPane.reviewLifecycle.latestReviewId}`,
+      );
+    }
+    if (artifactPane.reviewLifecycle.latestLifecycleStatus) {
+      lines.push(
+        `${this.localizer.localizeText('Latest lifecycle status', '最新生命周期状态')}: ${artifactPane.reviewLifecycle.latestLifecycleStatus}`,
+      );
+    }
+    for (const review of artifactPane.reviews.slice(0, 3)) {
+      lines.push(
+        `${review.title} (${review.lifecycleStatus})${review.scope ? ` · ${review.scope}` : ''}`,
+      );
+    }
+
+    return lines;
+  }
+
+  private buildPolicyTraceLines(
+    artifactPane: NonNullable<VsCodeExtensionReviewDetailSnapshot['artifactPane']>,
+  ): string[] {
+    if (!artifactPane.policyTrace) {
+      return [];
+    }
+
+    const lines = [
+      `${this.localizer.localizeText('Execution status', '执行状态')}: ${this.localizeExecutionStatus(artifactPane.policyTrace.executionStatus)}`,
+      `${this.localizer.localizeText('Pending HITL', '待处理 HITL')}: ${artifactPane.policyTrace.pendingHitl ? this.localizer.localizeText('Yes', '是') : this.localizer.localizeText('No', '否')}`,
+      `${this.localizer.localizeText('Recovery capable', '可恢复')}: ${artifactPane.policyTrace.recoveryCapable ? this.localizer.localizeText('Yes', '是') : this.localizer.localizeText('No', '否')}`,
+    ];
+    if (artifactPane.policyTrace.currentStageId) {
+      lines.push(
+        `${this.localizer.localizeText('Current stage', '当前阶段')}: ${artifactPane.policyTrace.currentStageId}`,
+      );
+    }
+    if (artifactPane.policyTrace.latestEventType) {
+      lines.push(
+        `${this.localizer.localizeText('Latest event type', '最新事件类型')}: ${artifactPane.policyTrace.latestEventType}`,
+      );
+    }
+    if (artifactPane.policyTrace.reviewDocumentPath) {
+      lines.push(
+        `${this.localizer.localizeText('Review document backlink', '评审文档回链')}: ${artifactPane.policyTrace.reviewDocumentPath}`,
+      );
+    }
+
+    return lines;
+  }
+
+  private buildEvidenceBacklinkLines(
+    artifactPane: NonNullable<VsCodeExtensionReviewDetailSnapshot['artifactPane']>,
+  ): string[] {
+    const lines: string[] = [];
+    if (artifactPane.evidenceBacklinks.governanceWorkspacePath) {
+      lines.push(
+        `${this.localizer.localizeText('Governance workspace', '治理工作区')}: ${artifactPane.evidenceBacklinks.governanceWorkspacePath}`,
+      );
+    }
+    lines.push(
+      `${this.localizer.localizeText('Artifact backlinks', '产物回链')}: ${artifactPane.evidenceBacklinks.artifactPaths.length}`,
+      `${this.localizer.localizeText('Review backlinks', '评审回链')}: ${artifactPane.evidenceBacklinks.reviewPaths.length}`,
+      `${this.localizer.localizeText('Transcript backlinks', '转录回链')}: ${artifactPane.evidenceBacklinks.transcriptEntryIds.length}`,
+    );
+    for (const artifactPath of artifactPane.evidenceBacklinks.artifactPaths.slice(0, 3)) {
+      lines.push(`${this.localizer.localizeText('Artifact path', '产物路径')}: ${artifactPath}`);
+    }
+    for (const reviewPath of artifactPane.evidenceBacklinks.reviewPaths.slice(0, 3)) {
+      lines.push(`${this.localizer.localizeText('Review path', '评审路径')}: ${reviewPath}`);
+    }
+
+    return lines;
+  }
+
+  private buildAutomationQueueSummaryNodes(
+    entry: OrchestrationGovernanceQueueEntry,
+    request: VsCodeExtensionCommandRequest,
+  ): readonly VsCodeExtensionTreeNodeDescriptor[] {
+    const nodes: VsCodeExtensionTreeNodeDescriptor[] = [
+      {
+        nodeId: `${entry.queueEntryId}:queue-kind`,
+        label: this.localizer.localizeText('Queue kind', '队列类型'),
+        description: this.localizeQueueKind(entry.queueKind),
+        tooltip: this.getAutomationQueueTooltip(entry),
+        themeIconId: 'list-tree',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.INFO,
+        selectionRequest: request,
+      },
+      {
+        nodeId: `${entry.queueEntryId}:execution-status`,
+        label: this.localizer.localizeText('Execution status', '执行状态'),
+        description: entry.executionStatus
+          ? this.localizeExecutionStatus(entry.executionStatus)
+          : this.localizer.localizeText('Unavailable', '不可用'),
+        tooltip:
+          entry.executionId ?? this.localizer.localizeText('Execution unavailable', '执行不可用'),
+        themeIconId: 'history',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.INFO,
+        selectionRequest: request,
+      },
+      {
+        nodeId: `${entry.queueEntryId}:follow-up`,
+        label: this.localizer.localizeText('Follow-up SLA', '跟进 SLA'),
+        description: this.localizeFollowUpState(entry.followUpSlaState),
+        tooltip:
+          entry.followUpDueAt ??
+          this.localizer.localizeText('No due time recorded yet.', '暂时没有记录到截止时间。'),
+        themeIconId: this.getFollowUpIconId(entry.followUpSlaState),
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.INFO,
+        selectionRequest: request,
+      },
+      {
+        nodeId: `${entry.queueEntryId}:workspace`,
+        label: this.localizer.localizeText('Workspace root', '工作区根目录'),
+        description: entry.workspaceRoot,
+        tooltip: entry.workspaceRoot,
+        themeIconId: 'folder-library',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.INFO,
+        selectionRequest: request,
+      },
+    ];
+
+    if (entry.projectId) {
+      nodes.push({
+        nodeId: `${entry.queueEntryId}:project`,
+        label: this.localizer.localizeText('Project', '项目'),
+        description: entry.projectId,
+        tooltip: entry.projectId,
+        themeIconId: 'briefcase',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.INFO,
+        selectionRequest: request,
+      });
+    }
+    if (entry.sprintId) {
+      nodes.push({
+        nodeId: `${entry.queueEntryId}:sprint`,
+        label: this.localizer.localizeText('Sprint', '迭代'),
+        description: entry.sprintId,
+        tooltip: entry.sprintId,
+        themeIconId: 'list-tree',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.INFO,
+        selectionRequest: request,
+      });
+    }
+
+    return nodes;
+  }
+
+  private buildProjectedWorkspaceNodes(
+    entries: readonly OrchestrationGovernanceWorkspaceSummary[],
+  ): readonly VsCodeExtensionTreeNodeDescriptor[] {
+    return entries.map((entry, index) => ({
+      nodeId: `workspace-summary:${entry.workspaceId}:${index}`,
+      label: entry.workspaceId,
+      description: this.localizer.localizeText(
+        `${entry.activeExecutionCount} active · ${entry.reviewQueueCount} review · ${entry.automationInboxCount} automation`,
+        `${entry.activeExecutionCount} 活跃 · ${entry.reviewQueueCount} 评审 · ${entry.automationInboxCount} 自动化`,
+      ),
+      tooltip: this.getWorkspaceSummaryTooltip(entry),
+      themeIconId: entry.activeExecutionCount > 0 ? 'organization' : 'folder-opened',
+      contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+      resourceUriPath: entry.workspaceRoot,
+    }));
+  }
+
+  private buildParallelLaneNodes(
+    entries: readonly OrchestrationGovernanceParallelLaneEntry[],
+  ): readonly VsCodeExtensionTreeNodeDescriptor[] {
+    return entries.map((entry) => ({
+      nodeId: `parallel-lane:${entry.laneId}`,
+      label: entry.laneId,
+      description: this.localizer.localizeText(
+        `${entry.activeExecutionCount} active · ${entry.pendingHitlCount} pending HITL`,
+        `${entry.activeExecutionCount} 活跃 · ${entry.pendingHitlCount} 个待处理 HITL`,
+      ),
+      tooltip: [
+        `${this.localizer.localizeText('Workspace', '工作区')}: ${entry.workspaceRoot}`,
+        `${this.localizer.localizeText('Running executions', '运行中执行')}: ${entry.runningExecutionCount}`,
+        `${this.localizer.localizeText('Interrupted', '已中断')}: ${entry.interruptedCount}`,
+        `${this.localizer.localizeText('Attention level', '关注级别')}: ${this.localizeAttentionLevel(entry.attentionLevel)}`,
+      ].join('\n'),
+      themeIconId:
+        entry.attentionLevel === OrchestrationGovernanceAttentionLevel.CRITICAL
+          ? 'error'
+          : entry.attentionLevel === OrchestrationGovernanceAttentionLevel.WARNING
+            ? 'warning'
+            : 'pass-filled',
+      contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+    }));
+  }
+
+  private buildTemporaryBridgeNodes(
+    entries: readonly OrchestrationGovernanceTemporaryBridgeEntry[],
+  ): readonly VsCodeExtensionTreeNodeDescriptor[] {
+    return entries.map((entry) => {
+      const request = {
+        executionId: undefined,
+        executionSessionId: undefined,
+        reviewSourcePath: undefined,
+        queueEntry: undefined,
+        temporaryBridge: entry,
+      } satisfies VsCodeExtensionCommandRequest;
+
+      return {
+        nodeId: entry.bridgeId,
+        label: this.localizeTemporaryBridgeCapability(entry.capabilityClass),
+        description: this.localizer.localizeText(
+          `${this.localizeTemporaryBridgeReceiptKind(entry.receiptKind)} -> ${this.localizeTemporaryBridgeBacklinkSurface(entry.backlinkSurface)}`,
+          `${this.localizeTemporaryBridgeReceiptKind(entry.receiptKind)} -> ${this.localizeTemporaryBridgeBacklinkSurface(entry.backlinkSurface)}`,
+        ),
+        tooltip: entry.previewCommandLine,
+        themeIconId: 'terminal',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.HANDOFF_ACTION,
+        selectionRequest: request,
+        command: this.createCommandDescriptor(
+          VSCODE_EXTENSION_COMMAND_IDS.STAGE_TEMPORARY_BRIDGE,
+          'Stage bridge command',
+          '预填 bridge 命令',
+          request,
+        ),
+        children: [
+          {
+            nodeId: `${entry.bridgeId}:preview`,
+            label: this.localizer.localizeText('Command preview', '命令预览'),
+            description: entry.previewCommandLine,
+            tooltip: entry.previewCommandLine,
+            themeIconId: 'terminal',
+            contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.INFO,
+            selectionRequest: request,
+          },
+          {
+            nodeId: `${entry.bridgeId}:receipt`,
+            label: this.localizer.localizeText('Receipt contract', '回执契约'),
+            description: this.localizeTemporaryBridgeReceiptKind(entry.receiptKind),
+            tooltip: this.localizer.localizeText(
+              'Temporary bridge execution must emit the declared receipt artifact.',
+              '临时 bridge 执行后必须产出声明的 receipt 产物。',
+            ),
+            themeIconId: 'note',
+            contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.INFO,
+            selectionRequest: request,
+          },
+          {
+            nodeId: `${entry.bridgeId}:backlink`,
+            label: this.localizer.localizeText('Backlink surface', '回链面'),
+            description: this.localizeTemporaryBridgeBacklinkSurface(entry.backlinkSurface),
+            tooltip: this.localizer.localizeText(
+              'Bridge receipts must remain discoverable from the declared governed surface.',
+              'bridge receipt 必须能从声明的受治理表面中被发现。',
+            ),
+            themeIconId: 'link',
+            contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.INFO,
+            selectionRequest: request,
+          },
+          ...entry.exitCriteria.map((criterion, index) => ({
+            nodeId: `${entry.bridgeId}:exit-criterion:${index + 1}`,
+            label: this.localizer.localizeText('Exit criterion', '退出条件'),
+            description: this.localizeTemporaryBridgeExitCriterion(criterion),
+            tooltip: this.localizer.localizeText(
+              'The bridge should retire once this criterion is satisfied.',
+              '满足该条件后，这个 bridge 就应当退场。',
+            ),
+            themeIconId: 'checklist',
+            contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.INFO,
+            selectionRequest: request,
+          })),
+        ],
+      };
+    });
   }
 
   private buildTaskBoardSummaryNodes(
@@ -998,6 +1453,44 @@ export class VsCodeExtensionPresentationBuilder {
     return nodes;
   }
 
+  private buildQueueEntryHandoffNodes(
+    entry: OrchestrationGovernanceQueueEntry,
+    request: VsCodeExtensionCommandRequest,
+  ): readonly VsCodeExtensionTreeNodeDescriptor[] {
+    return entry.handoffTargets.map((target) => ({
+      nodeId: `${entry.queueEntryId}:${target.targetId}`,
+      label: this.getHandoffLabel(target.targetKind),
+      description: target.targetPath,
+      tooltip: target.targetPath ?? this.localizer.localizeText('Target unavailable', '目标不可用'),
+      themeIconId: this.getHandoffIconId(target),
+      contextValue: target.exists
+        ? VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.HANDOFF_ACTION
+        : VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.INFO,
+      selectionRequest: {
+        ...request,
+        handoffTarget: target,
+      },
+      ...(target.targetPath
+        ? {
+            resourceUriPath: target.targetPath,
+          }
+        : {}),
+      ...(target.exists && target.targetPath
+        ? {
+            command: this.createCommandDescriptor(
+              VSCODE_EXTENSION_COMMAND_IDS.OPEN_HANDOFF_TARGET,
+              'Open handoff target',
+              '打开交接目标',
+              {
+                ...request,
+                handoffTarget: target,
+              },
+            ),
+          }
+        : {}),
+    }));
+  }
+
   private createActionNode(
     action: OrchestrationGovernanceActionAffordance,
     entry: OrchestrationExecutionBoardEntry | OrchestrationHitlInboxEntry,
@@ -1063,6 +1556,7 @@ export class VsCodeExtensionPresentationBuilder {
       executionId: entry.execution.executionId,
       executionSessionId: entry.execution.executionSessionId,
       reviewSourcePath: undefined,
+      queueEntry: undefined,
     };
   }
 
@@ -1073,6 +1567,18 @@ export class VsCodeExtensionPresentationBuilder {
       executionId: entry.executionId,
       executionSessionId: undefined,
       reviewSourcePath: entry.reviewFilePath,
+      queueEntry: entry,
+    };
+  }
+
+  private createAutomationQueueRequest(
+    entry: OrchestrationGovernanceQueueEntry,
+  ): VsCodeExtensionCommandRequest {
+    return {
+      executionId: entry.executionId,
+      executionSessionId: undefined,
+      reviewSourcePath: undefined,
+      queueEntry: entry,
     };
   }
 
@@ -1153,6 +1659,18 @@ export class VsCodeExtensionPresentationBuilder {
     return parts.join(' · ');
   }
 
+  private getAutomationQueueDescription(entry: OrchestrationGovernanceQueueEntry): string {
+    const parts = [this.localizeFollowUpState(entry.followUpSlaState)];
+    if (entry.executionStatus) {
+      parts.push(this.localizeExecutionStatus(entry.executionStatus));
+    }
+    if (entry.projectId) {
+      parts.push(entry.projectId);
+    }
+
+    return parts.join(' · ');
+  }
+
   private getExecutionTooltip(execution: OrchestrationExecutionSummary): string {
     return [
       `${this.localizer.localizeText('Execution', '执行')}: ${execution.executionId}`,
@@ -1167,6 +1685,15 @@ export class VsCodeExtensionPresentationBuilder {
       `${this.localizer.localizeText('Attention', '关注级别')}: ${this.localizeAttentionLevel(entry.attentionLevel)}`,
       `${this.localizer.localizeText('Notification', '通知状态')}: ${this.localizeNotificationStatus(entry.notificationStatus)}`,
       `${this.localizer.localizeText('Review source', '评审来源')}: ${entry.reviewFilePath ?? this.localizer.localizeText('Unavailable', '不可用')}`,
+    ].join('\n');
+  }
+
+  private getAutomationQueueTooltip(entry: OrchestrationGovernanceQueueEntry): string {
+    return [
+      `${this.localizer.localizeText('Queue kind', '队列类型')}: ${this.localizeQueueKind(entry.queueKind)}`,
+      `${this.localizer.localizeText('Execution', '执行')}: ${entry.executionId ?? this.localizer.localizeText('Unavailable', '不可用')}`,
+      `${this.localizer.localizeText('Notification', '通知状态')}: ${this.localizeNotificationStatus(entry.notificationStatus)}`,
+      `${this.localizer.localizeText('Workspace', '工作区')}: ${entry.workspaceRoot}`,
     ].join('\n');
   }
 
@@ -1199,6 +1726,20 @@ export class VsCodeExtensionPresentationBuilder {
     }
 
     return 'note';
+  }
+
+  private getAutomationQueueIconId(entry: OrchestrationGovernanceQueueEntry): string {
+    if (entry.followUpSlaState === OrchestrationGovernanceFollowUpSlaState.OVERDUE) {
+      return 'warning';
+    }
+    if (entry.attentionLevel === OrchestrationGovernanceAttentionLevel.CRITICAL) {
+      return 'error';
+    }
+    if (entry.executionStatus === OrchestrationExecutionStatus.RUNNING) {
+      return 'sync~spin';
+    }
+
+    return 'clock';
   }
 
   private localizeExecutionStatus(status: OrchestrationExecutionStatus): string {
@@ -1309,6 +1850,93 @@ export class VsCodeExtensionPresentationBuilder {
         return this.localizer.localizeText('Review queue', '评审队列');
       default:
         return this.localizer.localizeText('Automation inbox', '自动化收件箱');
+    }
+  }
+
+  private localizeTemporaryBridgeCapability(
+    capabilityClass: OrchestrationGovernanceTemporaryBridgeCapabilityClass,
+  ): string {
+    switch (capabilityClass) {
+      case OrchestrationGovernanceTemporaryBridgeCapabilityClass.ADOPT_BOOTSTRAP:
+        return this.localizer.localizeText('Adopt bootstrap bridge', '采用 bootstrap bridge');
+      case OrchestrationGovernanceTemporaryBridgeCapabilityClass.ADOPTION_APPLY:
+        return this.localizer.localizeText('Adoption apply bridge', '采用 apply bridge');
+      case OrchestrationGovernanceTemporaryBridgeCapabilityClass.HOST_EXPORT:
+        return this.localizer.localizeText('Host export bridge', '宿主 export bridge');
+      case OrchestrationGovernanceTemporaryBridgeCapabilityClass.HOST_VERIFY:
+        return this.localizer.localizeText('Host verify bridge', '宿主 verify bridge');
+      case OrchestrationGovernanceTemporaryBridgeCapabilityClass.HOST_PACK:
+        return this.localizer.localizeText('Host pack bridge', '宿主 pack bridge');
+      case OrchestrationGovernanceTemporaryBridgeCapabilityClass.UPGRADE:
+        return this.localizer.localizeText('Upgrade bridge', '升级 bridge');
+      default:
+        return capabilityClass;
+    }
+  }
+
+  private localizeTemporaryBridgeReceiptKind(
+    receiptKind: OrchestrationGovernanceTemporaryBridgeReceiptKind,
+  ): string {
+    switch (receiptKind) {
+      case OrchestrationGovernanceTemporaryBridgeReceiptKind.ADOPTION_INSTALL_RECEIPT:
+        return this.localizer.localizeText('Adoption install receipt', '采用安装回执');
+      case OrchestrationGovernanceTemporaryBridgeReceiptKind.HOST_EXPORT_RECEIPT:
+        return this.localizer.localizeText('Host export receipt', '宿主 export 回执');
+      case OrchestrationGovernanceTemporaryBridgeReceiptKind.HOST_VERIFY_RECEIPT:
+        return this.localizer.localizeText('Host verify receipt', '宿主 verify 回执');
+      case OrchestrationGovernanceTemporaryBridgeReceiptKind.HOST_PACK_RECEIPT:
+        return this.localizer.localizeText('Host pack receipt', '宿主 pack 回执');
+      case OrchestrationGovernanceTemporaryBridgeReceiptKind.UPGRADE_APPLY_RECEIPT:
+        return this.localizer.localizeText('Upgrade apply receipt', '升级 apply 回执');
+      default:
+        return receiptKind;
+    }
+  }
+
+  private localizeTemporaryBridgeBacklinkSurface(
+    backlinkSurface: OrchestrationGovernanceTemporaryBridgeBacklinkSurface,
+  ): string {
+    switch (backlinkSurface) {
+      case OrchestrationGovernanceTemporaryBridgeBacklinkSurface.ARTIFACT_WORKBENCH:
+        return this.localizer.localizeText('Artifact workbench', '产物工作台');
+      case OrchestrationGovernanceTemporaryBridgeBacklinkSurface.WORKBENCH_OVERVIEW:
+        return this.localizer.localizeText('Workbench overview', 'Workbench 总览');
+      default:
+        return backlinkSurface;
+    }
+  }
+
+  private localizeTemporaryBridgeExitCriterion(
+    criterion: OrchestrationGovernanceTemporaryBridgeExitCriterion,
+  ): string {
+    switch (criterion) {
+      case OrchestrationGovernanceTemporaryBridgeExitCriterion.SERVICE_NATIVE_ADOPTION_QUERY:
+        return this.localizer.localizeText(
+          'Service-native adoption query replaces this bridge.',
+          'service-native adoption query 取代该 bridge。',
+        );
+      case OrchestrationGovernanceTemporaryBridgeExitCriterion.SERVICE_NATIVE_HOST_QUERY:
+        return this.localizer.localizeText(
+          'Service-native host query replaces this bridge.',
+          'service-native host query 取代该 bridge。',
+        );
+      case OrchestrationGovernanceTemporaryBridgeExitCriterion.SERVICE_NATIVE_UPGRADE_QUERY:
+        return this.localizer.localizeText(
+          'Service-native upgrade query replaces this bridge.',
+          'service-native upgrade query 取代该 bridge。',
+        );
+      case OrchestrationGovernanceTemporaryBridgeExitCriterion.ARTIFACT_BACKLINK_PROJECTED:
+        return this.localizer.localizeText(
+          'Artifact workbench backlink is projected.',
+          '产物工作台回链已投影。',
+        );
+      case OrchestrationGovernanceTemporaryBridgeExitCriterion.COMMAND_SEAM_REPLACES_BRIDGE:
+        return this.localizer.localizeText(
+          'A service-owned command seam replaces this bridge.',
+          'service-owned 命令接缝已取代该 bridge。',
+        );
+      default:
+        return criterion;
     }
   }
 

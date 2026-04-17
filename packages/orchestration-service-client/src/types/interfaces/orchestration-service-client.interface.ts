@@ -9,6 +9,10 @@ import type {
   OrchestrationGovernanceFollowUpSlaState,
   OrchestrationGovernanceNotificationStatus,
   OrchestrationGovernanceQueueKind,
+  OrchestrationGovernanceTemporaryBridgeBacklinkSurface,
+  OrchestrationGovernanceTemporaryBridgeCapabilityClass,
+  OrchestrationGovernanceTemporaryBridgeExitCriterion,
+  OrchestrationGovernanceTemporaryBridgeReceiptKind,
   OrchestrationHandoffTargetKind,
   OrchestrationServiceEventType,
   OrchestrationServiceHostKind,
@@ -448,6 +452,17 @@ export interface OrchestrationGovernanceWorkspaceSummary {
   latestUpdatedAt?: string;
 }
 
+export interface OrchestrationGovernanceTemporaryBridgeEntry {
+  bridgeId: string;
+  capabilityClass: OrchestrationGovernanceTemporaryBridgeCapabilityClass;
+  workspaceRoot: string;
+  commandWorkingDirectory: string;
+  previewCommandLine: string;
+  receiptKind: OrchestrationGovernanceTemporaryBridgeReceiptKind;
+  backlinkSurface: OrchestrationGovernanceTemporaryBridgeBacklinkSurface;
+  exitCriteria: OrchestrationGovernanceTemporaryBridgeExitCriterion[];
+}
+
 export interface OrchestrationGovernanceNotificationOwnership {
   ownerSurface: OrchestrationClientSurface;
   pendingItemCount: number;
@@ -464,6 +479,7 @@ export interface OrchestrationQueueOverviewQueryResponse {
   reviewQueue: OrchestrationGovernanceQueueEntry[];
   parallelLanes: OrchestrationGovernanceParallelLaneEntry[];
   workspaceSummary: OrchestrationGovernanceWorkspaceSummary[];
+  temporaryBridges: OrchestrationGovernanceTemporaryBridgeEntry[];
   notificationOwnership: OrchestrationGovernanceNotificationOwnership;
 }
 

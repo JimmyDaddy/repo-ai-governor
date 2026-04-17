@@ -1,6 +1,6 @@
 # sprint-003-phase-c-workflow-studio-and-full-workbench-cutover 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-16
 - Sprint Goal: 规划 workflow studio、support-truth evidence 与 full workbench cutover
 - Project: `project-112-vscode-governance-workbench-rollout`
@@ -18,7 +18,7 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-940 | plan workflow studio cutover and primary workbench support-truth evidence | DA-934 | planned |
+| TK-940 | plan workflow studio cutover and primary workbench support-truth evidence | DA-934 | in_progress |
 | TK-941 | finalize project-112 rollout closeout and delivery evidence handoff | plan workflow studio cutover and primary workbench support-truth evidence | planned |
 
 ## 3. Exit Criteria
@@ -28,3 +28,4 @@
 ## 4. Sprint Notes
 
 1. 只有 evidence 与 support-truth 一起收口后，才允许 public claim 切到 primary workbench。
+2. `2026-04-17` sprint-002 已在 `CR-012` clean round 与 `DA-939` handoff 后完成 closeout；当前 sprint 被激活为新的 primary execution surface，`TK-940` 切换为 `in_progress`。

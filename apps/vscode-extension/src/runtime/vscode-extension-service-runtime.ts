@@ -1,10 +1,19 @@
+import { existsSync } from 'node:fs';
+
 import * as vscode from 'vscode';
 
+import {
+  ConfigLoader,
+  WorkspaceConfigDiscoveryService,
+  WorkspaceResolver,
+} from '@repo-ai-governor/config';
 import { LocalOrchestrationServiceSidecarClient } from '@repo-ai-governor/core-orchestration-service/sidecar-client';
 import type {
   OrchestrationArtifactPaneQueryResponse,
   OrchestrationExecutionBoardEntry,
   OrchestrationExecutionBoardQueryResponse,
+  OrchestrationExecutionSummary,
+  OrchestrationGovernanceQueueEntry,
   OrchestrationHitlInboxEntry,
   OrchestrationHitlInboxQueryResponse,
   OrchestrationQueueOverviewQueryResponse,
@@ -37,16 +46,42 @@ import type {
 
 const EXECUTION_LOOKUP_LIMIT = 20;
 
+interface VsCodeExtensionServiceRuntimeDependencies {
+  configLoader?: Pick<ConfigLoader, 'loadFromFile'>;
+  workspaceResolver?: Pick<WorkspaceResolver, 'resolve'>;
+  pathExists?: (path: string) => boolean;
+}
+
 /**
  * Owns lazy local-orchestration-service access for the VS Code extension host.
  *
  * Why this exists:
  * the extension must consume the same service-owned query/command seam as desktop without
- * importing CLI internals or building extension-only orchestration state.
+ * importing CLI internals, building extension-only orchestration state, or recreating bridge
+ * governance metadata outside the local orchestration service.
  */
 export class VsCodeExtensionServiceRuntime {
   private clientPromise: Promise<LocalOrchestrationServiceSidecarClient> | null = null;
   private clientWorkspaceRoot: string | undefined;
+  private clientRepositoryRoot: string | undefined;
+  private readonly configLoader: Pick<ConfigLoader, 'loadFromFile'>;
+  private readonly workspaceResolver: Pick<WorkspaceResolver, 'resolve'>;
+  private readonly pathExists: (path: string) => boolean;
+  private readonly workspaceConfigDiscovery: Pick<
+    WorkspaceConfigDiscoveryService,
+    'loadRepositoryWorkspaceConfig'
+  >;
+
+  public constructor(dependencies: VsCodeExtensionServiceRuntimeDependencies = {}) {
+    this.configLoader = dependencies.configLoader ?? new ConfigLoader();
+    this.workspaceResolver = dependencies.workspaceResolver ?? new WorkspaceResolver();
+    this.pathExists = dependencies.pathExists ?? existsSync;
+    this.workspaceConfigDiscovery = new WorkspaceConfigDiscoveryService(
+      this.configLoader,
+      this.workspaceResolver,
+      this.pathExists,
+    );
+  }
 
   /**
    * Returns the current workspace-root path used by the extension host.
@@ -170,7 +205,8 @@ export class VsCodeExtensionServiceRuntime {
    * @param limit Maximum number of queue entries to request per queue slice.
    * @param laneLimit Maximum number of parallel lanes to request.
    * @param workspaceLimit Maximum number of workspace summaries to request.
-   * @returns Queue/workbench overview payload, or an empty payload without a workspace.
+   * @returns Queue/workbench overview payload plus temporary bridge metadata, or an empty payload
+   * without a workspace.
    */
   public async queryQueueOverview(
     limit = VSCODE_EXTENSION_DEFAULT_QUEUE_LIMIT,
@@ -185,6 +221,7 @@ export class VsCodeExtensionServiceRuntime {
         reviewQueue: [],
         parallelLanes: [],
         workspaceSummary: [],
+        temporaryBridges: [],
         notificationOwnership: {
           ownerSurface: OrchestrationClientSurfaceValue.DESKTOP,
           pendingItemCount: 0,
@@ -223,7 +260,23 @@ export class VsCodeExtensionServiceRuntime {
   ): Promise<OrchestrationExecutionBoardEntry | undefined> {
     const executionBoard = await this.queryExecutionBoard(EXECUTION_LOOKUP_LIMIT);
     if (executionId) {
-      return executionBoard.executions.find((entry) => entry.execution.executionId === executionId);
+      const executionEntry = executionBoard.executions.find(
+        (entry) => entry.execution.executionId === executionId,
+      );
+      if (executionEntry) {
+        return executionEntry;
+      }
+
+      const execution = await this.getExecutionSummary(executionId);
+      if (!execution) {
+        return undefined;
+      }
+
+      return {
+        execution,
+        actions: [],
+        handoffTargets: [],
+      };
     }
 
     return executionBoard.executions[0];
@@ -370,12 +423,14 @@ export class VsCodeExtensionServiceRuntime {
   public async dispose(): Promise<void> {
     if (!this.clientPromise) {
       this.clientWorkspaceRoot = undefined;
+      this.clientRepositoryRoot = undefined;
       return;
     }
 
     const client = await this.clientPromise.catch(() => undefined);
     this.clientPromise = null;
     this.clientWorkspaceRoot = undefined;
+    this.clientRepositoryRoot = undefined;
     await client?.dispose();
   }
 
@@ -398,6 +453,35 @@ export class VsCodeExtensionServiceRuntime {
     });
   }
 
+  private async getExecutionSummary(
+    executionId: string,
+  ): Promise<OrchestrationExecutionSummary | undefined> {
+    const client = await this.resolveClient();
+    return client?.getExecution(executionId);
+  }
+
+  private async resolveQueueSelectionExecution(
+    queueEntry: OrchestrationGovernanceQueueEntry,
+  ): Promise<OrchestrationExecutionBoardEntry | undefined> {
+    if (!queueEntry.executionId) {
+      return undefined;
+    }
+
+    const executionEntry = await this.resolveExecutionBoardEntry(queueEntry.executionId);
+    if (!executionEntry) {
+      return undefined;
+    }
+    if (executionEntry.actions.length > 0 || executionEntry.handoffTargets.length > 0) {
+      return executionEntry;
+    }
+
+    return {
+      execution: executionEntry.execution,
+      actions: [...queueEntry.actions],
+      handoffTargets: [...queueEntry.handoffTargets],
+    };
+  }
+
   /**
    * Resolves the transient execution selection without reintroducing fallback when the caller
    * explicitly cleared execution identifiers in favor of a review-only selection.
@@ -409,9 +493,15 @@ export class VsCodeExtensionServiceRuntime {
     selection: VsCodeExtensionSelectionSnapshot,
   ): Promise<OrchestrationExecutionBoardEntry | undefined> {
     if ('executionId' in selection) {
-      return selection.executionId
-        ? this.resolveExecutionBoardEntry(selection.executionId)
-        : undefined;
+      if (!selection.executionId) {
+        return undefined;
+      }
+
+      if (selection.queueEntry?.executionId === selection.executionId) {
+        return this.resolveQueueSelectionExecution(selection.queueEntry);
+      }
+
+      return this.resolveExecutionBoardEntry(selection.executionId);
     }
 
     return this.resolveExecutionBoardEntry();
@@ -433,22 +523,61 @@ export class VsCodeExtensionServiceRuntime {
   }
 
   private async resolveClient(): Promise<LocalOrchestrationServiceSidecarClient | undefined> {
-    const workspaceRoot = this.getWorkspaceRoot();
-    if (!workspaceRoot) {
+    const openedWorkspaceRoot = this.getWorkspaceRoot();
+    if (!openedWorkspaceRoot) {
       await this.dispose();
       return undefined;
     }
 
-    if (this.clientPromise && this.clientWorkspaceRoot === workspaceRoot) {
+    const serviceWorkspaceContext = this.resolveServiceWorkspaceContext(openedWorkspaceRoot);
+    if (
+      this.clientPromise &&
+      this.clientWorkspaceRoot === serviceWorkspaceContext.governanceWorkspaceRoot &&
+      this.clientRepositoryRoot === serviceWorkspaceContext.repositoryRoot
+    ) {
       return this.clientPromise;
     }
 
-    if (this.clientPromise && this.clientWorkspaceRoot !== workspaceRoot) {
+    if (
+      this.clientPromise &&
+      (this.clientWorkspaceRoot !== serviceWorkspaceContext.governanceWorkspaceRoot ||
+        this.clientRepositoryRoot !== serviceWorkspaceContext.repositoryRoot)
+    ) {
       await this.dispose();
     }
 
-    this.clientWorkspaceRoot = workspaceRoot;
-    this.clientPromise = Promise.resolve(new LocalOrchestrationServiceSidecarClient(workspaceRoot));
+    this.clientWorkspaceRoot = serviceWorkspaceContext.governanceWorkspaceRoot;
+    this.clientRepositoryRoot = serviceWorkspaceContext.repositoryRoot;
+    this.clientPromise = Promise.resolve(
+      new LocalOrchestrationServiceSidecarClient(serviceWorkspaceContext.governanceWorkspaceRoot, {
+        repositoryRoot: serviceWorkspaceContext.repositoryRoot,
+      }),
+    );
     return this.clientPromise;
+  }
+
+  private resolveServiceWorkspaceContext(openedWorkspaceRoot: string): {
+    repositoryRoot: string;
+    governanceWorkspaceRoot: string;
+  } {
+    const baselineWorkspace = this.workspaceResolver.resolve({
+      currentWorkingDirectory: openedWorkspaceRoot,
+    });
+    const repositoryWorkspaceConfig = this.workspaceConfigDiscovery.loadRepositoryWorkspaceConfig(
+      baselineWorkspace.repositoryRoot,
+    );
+    const resolvedWorkspace = this.workspaceResolver.resolve({
+      currentWorkingDirectory: openedWorkspaceRoot,
+      ...(repositoryWorkspaceConfig
+        ? {
+            config: repositoryWorkspaceConfig,
+          }
+        : {}),
+    });
+
+    return {
+      repositoryRoot: resolvedWorkspace.repositoryRoot,
+      governanceWorkspaceRoot: resolvedWorkspace.workspaceRoot,
+    };
   }
 }

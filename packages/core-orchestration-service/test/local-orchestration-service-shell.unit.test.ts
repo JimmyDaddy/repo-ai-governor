@@ -268,18 +268,31 @@ describe('core-orchestration-service local shell', () => {
 
   it('builds execution-board and HITL inbox read models with service-owned actions and handoff targets', async () => {
     const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-governance-'));
-    const workspaceRoot = join(temporaryRoot, '.repo-ai-governor');
-    const executionWorkspaceRoot = join(temporaryRoot, 'workspace');
+    const repositoryRoot = join(temporaryRoot, 'governed repo');
+    const workspaceRoot = join(
+      temporaryRoot,
+      'tool managed',
+      'workspace governance',
+      '.repo-ai-governor',
+    );
+    const executionWorkspaceRoot = repositoryRoot;
     const reviewDirectoryPath = join(workspaceRoot, 'context/dev/project-048/sprint-001/review');
     const artifactPath = join(executionWorkspaceRoot, 'artifacts/summary.md');
     const orchestrationService = new LocalOrchestrationServiceShell({
       workspaceRoot,
+      repositoryRoot,
     });
 
     try {
-      await mkdir(join(workspaceRoot, 'context'), { recursive: true });
+      await mkdir(join(workspaceRoot, 'context', 'upgrade'), { recursive: true });
       await mkdir(join(executionWorkspaceRoot, 'artifacts'), { recursive: true });
       await mkdir(reviewDirectoryPath, { recursive: true });
+      const upgradeReportPath = join(
+        workspaceRoot,
+        'context',
+        'upgrade',
+        'upgrade-202604171203.report.json',
+      );
       await writeFile(
         join(workspaceRoot, 'context/current-context.md'),
         `# Workspace Current Context
@@ -293,6 +306,12 @@ describe('core-orchestration-service local shell', () => {
 - Task records: \`.repo-ai-governor/context/dev/project-048/sprint-001/tasks/\`
 - Review records: \`.repo-ai-governor/context/dev/project-048/sprint-001/review\`
 `,
+      );
+      await writeFile(
+        upgradeReportPath,
+        JSON.stringify({
+          upgradeId: 'upgrade-202604171203',
+        }),
       );
       const reviewDocumentPath560 = join(reviewDirectoryPath, 'code_review_tk-560.md');
       const reviewDocumentPath561 = join(reviewDirectoryPath, 'code_review_tk-561.md');
@@ -444,6 +463,17 @@ describe('core-orchestration-service local shell', () => {
       expect(queueOverview.parallelLanes).toHaveLength(1);
       expect(queueOverview.parallelLanes[0]?.activeExecutionCount).toBe(2);
       expect(queueOverview.workspaceSummary).toHaveLength(1);
+      expect(queueOverview.temporaryBridges).toHaveLength(6);
+      expect(queueOverview.temporaryBridges[0]?.workspaceRoot).toBe(workspaceRoot);
+      expect(queueOverview.temporaryBridges[0]?.commandWorkingDirectory).toBe(repositoryRoot);
+      expect(queueOverview.temporaryBridges.map((entry) => entry.previewCommandLine)).toEqual([
+        `repo-ai-governor adopt bootstrap adopter-complete --repo '${repositoryRoot}' --hosts codex,claude-code`,
+        `repo-ai-governor adopt apply adopter-complete --repo '${repositoryRoot}' --hosts codex,claude-code,github-copilot`,
+        `repo-ai-governor host export --host codex --mode project-local --output-dir '${join(workspaceRoot, 'generated', 'hosts', 'codex')}'`,
+        `repo-ai-governor host verify --output-dir '${join(workspaceRoot, 'generated', 'hosts', 'github-copilot')}'`,
+        `repo-ai-governor host pack --host claude-code --mode plugin-bundle --bundle-dir '${join(workspaceRoot, 'generated', 'bundles', 'claude')}'`,
+        `repo-ai-governor upgrade apply '${upgradeReportPath}' --confirm-upgrade approve --output pretty`,
+      ]);
       expect(queueOverview.workspaceSummary[0]?.workspaceId).toBe('workspace-governance');
       expect(queueOverview.workspaceSummary[0]?.reviewQueueCount).toBe(2);
       expect(queueOverview.notificationOwnership.ownerSurface).toBe(
@@ -459,6 +489,81 @@ describe('core-orchestration-service local shell', () => {
       );
       expect(queueOverview.reviewQueue[0]?.reviewId).toContain('code_review_tk-');
       expect(queueOverview.reviewQueue[0]?.reviewFilePath).toContain('/review/code_review_tk-');
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('treats custom repo-local workspace roots as the authoritative bridge workspace root', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-custom-bridge-'));
+    const repositoryRoot = join(temporaryRoot, 'governed repo');
+    const workspaceRoot = join(repositoryRoot, 'governance', 'state');
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot,
+      repositoryRoot,
+    });
+
+    try {
+      await mkdir(join(workspaceRoot, 'context'), { recursive: true });
+      const queueOverview = await orchestrationService.queryQueueOverview();
+
+      expect(queueOverview.temporaryBridges).toHaveLength(5);
+      expect(queueOverview.temporaryBridges[0]?.workspaceRoot).toBe(workspaceRoot);
+      expect(queueOverview.temporaryBridges[0]?.commandWorkingDirectory).toBe(repositoryRoot);
+      expect(queueOverview.temporaryBridges.map((entry) => entry.previewCommandLine)).toEqual([
+        `repo-ai-governor adopt bootstrap adopter-complete --repo '${repositoryRoot}' --hosts codex,claude-code`,
+        `repo-ai-governor adopt apply adopter-complete --repo '${repositoryRoot}' --hosts codex,claude-code,github-copilot`,
+        `repo-ai-governor host export --host codex --mode project-local --output-dir '${join(workspaceRoot, 'generated', 'hosts', 'codex')}'`,
+        `repo-ai-governor host verify --output-dir '${join(workspaceRoot, 'generated', 'hosts', 'github-copilot')}'`,
+        `repo-ai-governor host pack --host claude-code --mode plugin-bundle --bundle-dir '${join(workspaceRoot, 'generated', 'bundles', 'claude')}'`,
+      ]);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('suppresses temporary bridges when repository-root facts are unavailable', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-no-repo-root-'));
+    const workspaceRoot = join(temporaryRoot, 'governance', 'state');
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot,
+    });
+
+    try {
+      await mkdir(join(workspaceRoot, 'context'), { recursive: true });
+      const queueOverview = await orchestrationService.queryQueueOverview();
+
+      expect(queueOverview.temporaryBridges).toEqual([]);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('suppresses the upgrade temporary bridge when no upgrade report artifact exists', async () => {
+    const temporaryRoot = await mkdtemp(
+      join(tmpdir(), 'local-orchestration-shell-upgrade-bridge-'),
+    );
+    const repositoryRoot = join(temporaryRoot, 'governed-repo');
+    const workspaceRoot = join(
+      temporaryRoot,
+      'tool-managed',
+      'workspace-upgrade',
+      '.repo-ai-governor',
+    );
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot,
+      repositoryRoot,
+    });
+
+    try {
+      await mkdir(join(workspaceRoot, 'context'), { recursive: true });
+      const queueOverview = await orchestrationService.queryQueueOverview();
+
+      expect(
+        queueOverview.temporaryBridges.some(
+          (entry) => entry.bridgeId === 'temporary-bridge-upgrade',
+        ),
+      ).toBe(false);
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }

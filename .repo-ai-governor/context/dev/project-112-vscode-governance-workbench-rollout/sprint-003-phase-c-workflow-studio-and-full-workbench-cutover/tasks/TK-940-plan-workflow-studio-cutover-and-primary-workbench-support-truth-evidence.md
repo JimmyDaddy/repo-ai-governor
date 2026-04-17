@@ -1,6 +1,6 @@
 # TK-940 plan workflow studio cutover and primary workbench support-truth evidence
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-04-16
 - Owner: AI-Agent
 - Priority: P1
@@ -53,6 +53,7 @@
 ## 9. 执行记录
 
 1. 2026-04-16：任务创建，状态初始化为 `planned`。
+2. 2026-04-17：随着 sprint-002 在 latest fresh reviewer clean round `CR-012` 与 `DA-939` handoff 后完成 closeout，当前任务已切换为 `in_progress`，开始承接 workflow studio、desktop decision surface 与 support-truth evidence 的 Phase C 实施。
 
 ## 10. 产出
 

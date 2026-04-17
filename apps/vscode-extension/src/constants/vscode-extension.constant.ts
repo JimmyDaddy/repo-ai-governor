@@ -2,8 +2,8 @@
  * Freezes VS Code extension contribution identifiers and trust-gated command boundaries.
  *
  * Why this exists:
- * Phase A must lock the VS Code primary workbench baseline before richer task/review/workbench
- * presentation grows around the shared local orchestration service seam.
+ * Phase B extends the primary workbench baseline without letting the extension host invent
+ * queue truth or bypass the shared local orchestration service seam.
  */
 export const VSCODE_EXTENSION_DEFAULT_EXECUTION_LIMIT = 5;
 export const VSCODE_EXTENSION_DEFAULT_QUEUE_LIMIT = 5;
@@ -17,7 +17,7 @@ export const VSCODE_EXTENSION_CHAT_COMMAND_REVIEW = 'review';
 export const VSCODE_EXTENSION_SURFACE_ID = 'vscode_governance_workbench';
 export const VSCODE_EXTENSION_SURFACE_ROLE = 'primary_governance_workbench';
 export const VSCODE_EXTENSION_TRUTH_OWNER = 'local_orchestration_service';
-export const VSCODE_EXTENSION_WEBVIEW_USAGE_MODE = 'detail_only';
+export const VSCODE_EXTENSION_WEBVIEW_USAGE_MODE = 'workbench_panel_allowed';
 export const VSCODE_EXTENSION_PUBLIC_SUPPORT_LEVEL = 'workbench_baseline_in_progress';
 export const VSCODE_EXTENSION_DESKTOP_RELATIONSHIP = 'foundation_only_secondary_surface';
 export const VSCODE_EXTENSION_CONTEXT_KEYS = {
@@ -40,6 +40,7 @@ export const VSCODE_EXTENSION_VIEW_IDS = {
   EXECUTION_BOARD: 'repoAiGovernor.executionBoard',
   HITL_INBOX: 'repoAiGovernor.hitlInbox',
   REVIEW_QUEUE: 'repoAiGovernor.reviewQueue',
+  AUTOMATION_QUEUE: 'repoAiGovernor.automationQueue',
   WORKBENCH_OVERVIEW: 'repoAiGovernor.workspaceContext',
   WORKSPACE_CONTEXT: 'repoAiGovernor.workspaceContext',
   REVIEW_DETAIL: 'repoAiGovernor.reviewDetail',
@@ -48,12 +49,14 @@ export const VSCODE_EXTENSION_COMMAND_IDS = {
   REFRESH: 'repoAiGovernor.refresh',
   OPEN_REVIEW_DETAIL: 'repoAiGovernor.openReviewDetail',
   OPEN_HANDOFF_TARGET: 'repoAiGovernor.openHandoffTarget',
+  STAGE_TEMPORARY_BRIDGE: 'repoAiGovernor.stageTemporaryBridge',
   SUBMIT_HITL_DECISION: 'repoAiGovernor.submitHitlDecision',
   RECOVER_EXECUTION: 'repoAiGovernor.recoverExecution',
   TERMINATE_EXECUTION: 'repoAiGovernor.terminateExecution',
 } as const;
 export const VSCODE_EXTENSION_TRUST_GATED_COMMAND_IDS = [
   VSCODE_EXTENSION_COMMAND_IDS.OPEN_HANDOFF_TARGET,
+  VSCODE_EXTENSION_COMMAND_IDS.STAGE_TEMPORARY_BRIDGE,
   VSCODE_EXTENSION_COMMAND_IDS.SUBMIT_HITL_DECISION,
   VSCODE_EXTENSION_COMMAND_IDS.RECOVER_EXECUTION,
   VSCODE_EXTENSION_COMMAND_IDS.TERMINATE_EXECUTION,
@@ -67,7 +70,8 @@ export const VSCODE_EXTENSION_NATIVE_ENTRYPOINTS = [
 export const VSCODE_EXTENSION_WORKBENCH_PANELS = [
   'task_board',
   'review_queue',
-  'review_detail',
+  'automation_queue',
+  'artifact_workbench',
   'workbench_overview',
 ] as const;
 // Contract-level capability metadata must stay aligned with the frozen workbench/facade vocabulary.
@@ -86,7 +90,14 @@ export const VSCODE_EXTENSION_COMMAND_CAPABILITY_CLASSES = [
   'execution_recover',
   'execution_terminate',
 ] as const;
-export const VSCODE_EXTENSION_TEMPORARY_BRIDGE_CAPABILITY_CLASSES = [] as const;
+export const VSCODE_EXTENSION_TEMPORARY_BRIDGE_CAPABILITY_CLASSES = [
+  'adopt_bootstrap',
+  'adoption_apply',
+  'host_export',
+  'host_verify',
+  'host_pack',
+  'upgrade',
+] as const;
 export const VSCODE_EXTENSION_HANDOFF_TARGET_CLASSES = [
   'review_document',
   'editor',

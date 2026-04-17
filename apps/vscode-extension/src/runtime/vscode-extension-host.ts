@@ -17,10 +17,10 @@ import { VsCodeExtensionServiceRuntime } from './vscode-extension-service-runtim
 import { VsCodeExtensionTreeDataProvider } from './vscode-extension-tree-data-provider.js';
 
 /**
- * Wires the Phase A VS Code primary workbench baseline during extension activation.
+ * Wires the Phase B VS Code primary workbench baseline during extension activation.
  *
  * Why this exists:
- * activation should assemble task/review/workbench baseline surfaces around the frozen contract
+ * activation should assemble task/review/automation/workbench surfaces around the frozen contract
  * while keeping service access and presentation logic delegated to focused runtime classes.
  */
 export class VsCodeExtensionHost {
@@ -46,6 +46,10 @@ export class VsCodeExtensionHost {
       const queueOverview = await this.serviceRuntime.queryQueueOverview();
       return [...this.presentationBuilder.buildReviewQueueNodes(queueOverview.reviewQueue)];
     });
+    const automationQueueProvider = new VsCodeExtensionTreeDataProvider(async () => {
+      const queueOverview = await this.serviceRuntime.queryQueueOverview();
+      return [...this.presentationBuilder.buildAutomationQueueNodes(queueOverview.automationInbox)];
+    });
     const workbenchOverviewProvider = new VsCodeExtensionTreeDataProvider(async () => {
       const overviewSnapshot = await this.serviceRuntime.resolveWorkbenchOverviewSnapshot(
         this.selectionStore.getSnapshot(),
@@ -69,6 +73,13 @@ export class VsCodeExtensionHost {
       treeDataProvider: reviewQueueProvider,
       showCollapseAll: true,
     });
+    const automationQueueView = vscode.window.createTreeView(
+      VSCODE_EXTENSION_VIEW_IDS.AUTOMATION_QUEUE,
+      {
+        treeDataProvider: automationQueueProvider,
+        showCollapseAll: true,
+      },
+    );
     const workbenchOverviewView = vscode.window.createTreeView(
       VSCODE_EXTENSION_VIEW_IDS.WORKBENCH_OVERVIEW,
       {
@@ -84,6 +95,7 @@ export class VsCodeExtensionHost {
         taskBoardProvider,
         hitlInboxProvider,
         reviewQueueProvider,
+        automationQueueProvider,
         workbenchOverviewProvider,
         reviewDetailProvider,
       },
@@ -104,6 +116,7 @@ export class VsCodeExtensionHost {
       taskBoardView,
       hitlInboxView,
       reviewQueueView,
+      automationQueueView,
       workbenchOverviewView,
       vscode.window.registerWebviewViewProvider(
         VSCODE_EXTENSION_VIEW_IDS.REVIEW_DETAIL,
@@ -129,6 +142,10 @@ export class VsCodeExtensionHost {
         async (request) => commandController.openHandoffTarget(request),
       ),
       vscode.commands.registerCommand(
+        VSCODE_EXTENSION_COMMAND_IDS.STAGE_TEMPORARY_BRIDGE,
+        async (request) => commandController.stageTemporaryBridge(request),
+      ),
+      vscode.commands.registerCommand(
         VSCODE_EXTENSION_COMMAND_IDS.SUBMIT_HITL_DECISION,
         async (request) => commandController.submitHitlDecision(request),
       ),
@@ -148,6 +165,12 @@ export class VsCodeExtensionHost {
       }),
       reviewQueueView.onDidChangeSelection((event) => {
         void commandController.handleReviewQueueSelection(event.selection);
+      }),
+      automationQueueView.onDidChangeSelection((event) => {
+        void commandController.handleAutomationQueueSelection(event.selection);
+      }),
+      workbenchOverviewView.onDidChangeSelection((event) => {
+        commandController.handleWorkbenchOverviewSelection(event.selection);
       }),
       vscode.workspace.onDidGrantWorkspaceTrust(() => {
         void this.refreshContextKeys();

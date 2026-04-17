@@ -2,6 +2,7 @@ import type {
   OrchestrationArtifactPaneQueryResponse,
   OrchestrationExecutionBoardEntry,
   OrchestrationGovernanceQueueEntry,
+  OrchestrationGovernanceTemporaryBridgeEntry,
   OrchestrationHandoffTarget,
   OrchestrationHitlDecisionOption,
   OrchestrationQueueOverviewQueryResponse,
@@ -51,13 +52,17 @@ export interface VsCodeExtensionSelectionSnapshot {
   executionId?: string;
   executionSessionId?: string;
   reviewSourcePath?: string;
+  queueEntry?: OrchestrationGovernanceQueueEntry;
+  temporaryBridge?: OrchestrationGovernanceTemporaryBridgeEntry;
 }
 
 export interface VsCodeExtensionCommandRequest {
   executionId?: string;
   executionSessionId?: string;
   reviewSourcePath?: string;
+  queueEntry?: OrchestrationGovernanceQueueEntry;
   handoffTarget?: OrchestrationHandoffTarget;
+  temporaryBridge?: OrchestrationGovernanceTemporaryBridgeEntry;
   hitlDecisionOption?: OrchestrationHitlDecisionOption;
 }
 

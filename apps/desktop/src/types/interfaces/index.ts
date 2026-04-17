@@ -1,5 +1,6 @@
 export type {
   DesktopOrchestrationServiceOwner,
+  DesktopOrchestrationServiceOwnerContext,
   DesktopOrchestrationServiceRuntimeDependencies,
 } from './desktop-orchestration-runtime.interface.js';
 export type {

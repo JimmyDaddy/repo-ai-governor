@@ -23,6 +23,7 @@ import {
   LOCAL_ORCHESTRATION_SERVICE_WORKSPACE_SUMMARY_DEFAULT_LIMIT,
 } from './constants/index.js';
 import { LocalOrchestrationServiceGovernanceAffordanceBuilder } from './local-orchestration-service-governance-affordance-builder.js';
+import { LocalOrchestrationServiceGovernanceTemporaryBridgeCatalog } from './local-orchestration-service-governance-temporary-bridge-catalog.js';
 import {
   type LocalOrchestrationServiceReviewDocumentDescriptor,
   LocalOrchestrationServiceReviewRoutingRuntime,
@@ -30,6 +31,7 @@ import {
 
 interface LocalOrchestrationServiceQueueOverviewQueryRuntimeDependencies {
   workspaceRoot: string;
+  repositoryRoot?: string;
   listExecutions: (
     request?: OrchestrationListExecutionsRequest,
   ) => Promise<OrchestrationListExecutionsResponse>;
@@ -84,6 +86,7 @@ const OPEN_REVIEW_LIFECYCLE_STATUSES = new Set(['review_pending', 'verified']);
  */
 export class LocalOrchestrationServiceQueueOverviewQueryRuntime {
   private readonly affordanceBuilder: LocalOrchestrationServiceGovernanceAffordanceBuilder;
+  private readonly temporaryBridgeCatalog: LocalOrchestrationServiceGovernanceTemporaryBridgeCatalog;
   private readonly reviewRoutingRuntime: LocalOrchestrationServiceReviewRoutingRuntime;
   private readonly nowProvider: () => Date;
 
@@ -92,6 +95,14 @@ export class LocalOrchestrationServiceQueueOverviewQueryRuntime {
   ) {
     this.affordanceBuilder = new LocalOrchestrationServiceGovernanceAffordanceBuilder({
       workspaceRoot: dependencies.workspaceRoot,
+    });
+    this.temporaryBridgeCatalog = new LocalOrchestrationServiceGovernanceTemporaryBridgeCatalog({
+      workspaceRoot: dependencies.workspaceRoot,
+      ...(dependencies.repositoryRoot
+        ? {
+            repositoryRoot: dependencies.repositoryRoot,
+          }
+        : {}),
     });
     this.reviewRoutingRuntime = new LocalOrchestrationServiceReviewRoutingRuntime({
       workspaceRoot: dependencies.workspaceRoot,
@@ -184,6 +195,7 @@ export class LocalOrchestrationServiceQueueOverviewQueryRuntime {
       reviewQueue,
       parallelLanes,
       workspaceSummary,
+      temporaryBridges: this.temporaryBridgeCatalog.list(),
       notificationOwnership: {
         ownerSurface: OrchestrationClientSurface.DESKTOP,
         pendingItemCount,

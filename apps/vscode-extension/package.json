@@ -32,11 +32,13 @@
     "onView:repoAiGovernor.executionBoard",
     "onView:repoAiGovernor.hitlInbox",
     "onView:repoAiGovernor.reviewQueue",
+    "onView:repoAiGovernor.automationQueue",
     "onView:repoAiGovernor.workspaceContext",
     "onView:repoAiGovernor.reviewDetail",
     "onCommand:repoAiGovernor.refresh",
     "onCommand:repoAiGovernor.openReviewDetail",
     "onCommand:repoAiGovernor.openHandoffTarget",
+    "onCommand:repoAiGovernor.stageTemporaryBridge",
     "onCommand:repoAiGovernor.submitHitlDecision",
     "onCommand:repoAiGovernor.recoverExecution",
     "onCommand:repoAiGovernor.terminateExecution",
@@ -70,6 +72,11 @@
           "contextualTitle": "%views.container.title%"
         },
         {
+          "id": "repoAiGovernor.automationQueue",
+          "name": "%views.automationQueue.title%",
+          "contextualTitle": "%views.container.title%"
+        },
+        {
           "id": "repoAiGovernor.workspaceContext",
           "name": "%views.workbenchOverview.title%",
           "contextualTitle": "%views.container.title%"
@@ -99,6 +106,11 @@
         "category": "%commands.category%"
       },
       {
+        "command": "repoAiGovernor.stageTemporaryBridge",
+        "title": "%commands.stageTemporaryBridge.title%",
+        "category": "%commands.category%"
+      },
+      {
         "command": "repoAiGovernor.submitHitlDecision",
         "title": "%commands.submitHitlDecision.title%",
         "category": "%commands.category%"
@@ -118,20 +130,24 @@
       "view/title": [
         {
           "command": "repoAiGovernor.refresh",
-          "when": "view == repoAiGovernor.executionBoard || view == repoAiGovernor.hitlInbox || view == repoAiGovernor.reviewQueue || view == repoAiGovernor.workspaceContext",
+          "when": "view == repoAiGovernor.executionBoard || view == repoAiGovernor.hitlInbox || view == repoAiGovernor.reviewQueue || view == repoAiGovernor.automationQueue || view == repoAiGovernor.workspaceContext",
           "group": "navigation"
         }
       ],
       "view/item/context": [
         {
           "command": "repoAiGovernor.openReviewDetail",
-          "when": "view == repoAiGovernor.executionBoard || view == repoAiGovernor.hitlInbox || view == repoAiGovernor.reviewQueue || view == repoAiGovernor.workspaceContext",
+          "when": "view == repoAiGovernor.executionBoard || view == repoAiGovernor.hitlInbox || view == repoAiGovernor.reviewQueue || view == repoAiGovernor.automationQueue || view == repoAiGovernor.workspaceContext",
           "group": "inline"
         }
       ],
       "commandPalette": [
         {
           "command": "repoAiGovernor.openHandoffTarget",
+          "when": "isWorkspaceTrusted"
+        },
+        {
+          "command": "repoAiGovernor.stageTemporaryBridge",
           "when": "isWorkspaceTrusted"
         },
         {
@@ -175,6 +191,7 @@
     }
   },
   "dependencies": {
+    "@repo-ai-governor/config": "workspace:*",
     "@repo-ai-governor/core-orchestration-service": "workspace:*",
     "@repo-ai-governor/orchestration-service-client": "workspace:*",
     "@repo-ai-governor/shared": "workspace:*"

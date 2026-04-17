@@ -131,6 +131,48 @@ export enum OrchestrationGovernanceNotificationStatus {
 }
 
 /**
+ * Defines the temporary CLI-bridge capability classes exposed to governed workbench consumers.
+ */
+export enum OrchestrationGovernanceTemporaryBridgeCapabilityClass {
+  ADOPT_BOOTSTRAP = 'adopt_bootstrap',
+  ADOPTION_APPLY = 'adoption_apply',
+  HOST_EXPORT = 'host_export',
+  HOST_VERIFY = 'host_verify',
+  HOST_PACK = 'host_pack',
+  UPGRADE = 'upgrade',
+}
+
+/**
+ * Defines the receipt artifacts that temporary bridges must keep visible to clients.
+ */
+export enum OrchestrationGovernanceTemporaryBridgeReceiptKind {
+  ADOPTION_INSTALL_RECEIPT = 'adoption_install_receipt',
+  HOST_EXPORT_RECEIPT = 'host_export_receipt',
+  HOST_VERIFY_RECEIPT = 'host_verify_receipt',
+  HOST_PACK_RECEIPT = 'host_pack_receipt',
+  UPGRADE_APPLY_RECEIPT = 'upgrade_apply_receipt',
+}
+
+/**
+ * Defines the governed consumer surface that should expose bridge receipt backlinks.
+ */
+export enum OrchestrationGovernanceTemporaryBridgeBacklinkSurface {
+  ARTIFACT_WORKBENCH = 'artifact_workbench',
+  WORKBENCH_OVERVIEW = 'workbench_overview',
+}
+
+/**
+ * Defines the explicit exit-criteria codes that justify retiring one temporary CLI bridge.
+ */
+export enum OrchestrationGovernanceTemporaryBridgeExitCriterion {
+  SERVICE_NATIVE_ADOPTION_QUERY = 'service_native_adoption_query',
+  SERVICE_NATIVE_HOST_QUERY = 'service_native_host_query',
+  SERVICE_NATIVE_UPGRADE_QUERY = 'service_native_upgrade_query',
+  ARTIFACT_BACKLINK_PROJECTED = 'artifact_backlink_projected',
+  COMMAND_SEAM_REPLACES_BRIDGE = 'command_seam_replaces_bridge',
+}
+
+/**
  * Defines stable handoff target kinds exposed through service-owned governance read models.
  */
 export enum OrchestrationHandoffTargetKind {

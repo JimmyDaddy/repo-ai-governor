@@ -4,6 +4,7 @@ export type {
   DesktopArtifactPaneViewModel,
   DesktopExecutionBoardEntryViewModel,
   DesktopOrchestrationServiceOwner,
+  DesktopOrchestrationServiceOwnerContext,
   DesktopOrchestrationServiceRuntimeDependencies,
   DesktopLifecycleSnapshot,
   DesktopShellBaseline,

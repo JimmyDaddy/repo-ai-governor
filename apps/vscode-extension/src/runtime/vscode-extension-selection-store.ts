@@ -39,6 +39,16 @@ export class VsCodeExtensionSelectionStore {
     if ('reviewSourcePath' in request) {
       this.snapshot.reviewSourcePath = request.reviewSourcePath;
     }
+    if (
+      'queueEntry' in request ||
+      'temporaryBridge' in request ||
+      'executionId' in request ||
+      'executionSessionId' in request ||
+      'reviewSourcePath' in request
+    ) {
+      this.snapshot.queueEntry = request.queueEntry;
+      this.snapshot.temporaryBridge = request.temporaryBridge;
+    }
   }
 
   /**
@@ -59,8 +69,6 @@ export class VsCodeExtensionSelectionStore {
    * @param reviewSourcePath Optional review path.
    */
   public rememberReviewSourcePath(reviewSourcePath?: string): void {
-    this.applyCommandRequest({
-      reviewSourcePath,
-    });
+    this.snapshot.reviewSourcePath = reviewSourcePath;
   }
 }

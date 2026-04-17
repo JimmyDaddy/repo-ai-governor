@@ -22,6 +22,7 @@ export type {
   OrchestrationGovernanceNotificationOwnership,
   OrchestrationGovernanceParallelLaneEntry,
   OrchestrationGovernanceQueueEntry,
+  OrchestrationGovernanceTemporaryBridgeEntry,
   OrchestrationGovernanceWorkspaceSummary,
   OrchestrationHandoffTarget,
   OrchestrationHitlDecisionOption,

@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 
 import {
   OrchestrationGovernanceActionKind,
+  type OrchestrationHandoffTarget,
   OrchestrationHandoffTargetKind,
 } from '@repo-ai-governor/orchestration-service-client';
 import { standardizeError } from '@repo-ai-governor/shared';
@@ -21,6 +22,7 @@ interface VsCodeExtensionCommandControllerDependencies {
   executionBoardProvider?: VsCodeExtensionTreeDataProvider;
   hitlInboxProvider: VsCodeExtensionTreeDataProvider;
   reviewQueueProvider?: VsCodeExtensionTreeDataProvider;
+  automationQueueProvider?: VsCodeExtensionTreeDataProvider;
   workbenchOverviewProvider?: VsCodeExtensionTreeDataProvider;
   workspaceContextProvider?: VsCodeExtensionTreeDataProvider;
   reviewDetailProvider: VsCodeExtensionReviewDetailProvider;
@@ -51,6 +53,7 @@ export class VsCodeExtensionCommandController {
     this.dependencies.executionBoardProvider?.refresh();
     this.dependencies.hitlInboxProvider.refresh();
     this.dependencies.reviewQueueProvider?.refresh();
+    this.dependencies.automationQueueProvider?.refresh();
     this.dependencies.workbenchOverviewProvider?.refresh();
     this.dependencies.workspaceContextProvider?.refresh();
     await this.dependencies.reviewDetailProvider.refresh();
@@ -126,6 +129,42 @@ export class VsCodeExtensionCommandController {
         '打开指定交接目标失败。',
       );
     }
+  }
+
+  /**
+   * Stages one temporary bridge command inside a trusted terminal without auto-executing it.
+   * @param commandRequest Optional command request carrying the typed bridge metadata.
+   */
+  public async stageTemporaryBridge(commandRequest?: VsCodeExtensionCommandRequest): Promise<void> {
+    if (!(await this.ensureTrusted())) {
+      return;
+    }
+
+    const mergedRequest = this.mergeCommandRequest(commandRequest);
+    const temporaryBridge = mergedRequest.temporaryBridge;
+    if (!temporaryBridge) {
+      void vscode.window.showInformationMessage(
+        this.localizer.localizeText(
+          'No temporary bridge command is available right now.',
+          '当前没有可用的临时 bridge 命令。',
+        ),
+      );
+      return;
+    }
+
+    this.selectionStore.applyCommandRequest(mergedRequest);
+    const terminal = vscode.window.createTerminal({
+      name: this.localizer.localizeText('Governor Bridge', 'Governor Bridge'),
+      cwd: temporaryBridge.commandWorkingDirectory,
+    });
+    terminal.show();
+    terminal.sendText(temporaryBridge.previewCommandLine, false);
+    void vscode.window.showInformationMessage(
+      this.localizer.localizeText(
+        'Staged the bridge command in a terminal. Review receipt/backlink guidance before running it.',
+        '已在终端中预填 bridge 命令。执行前请先确认 receipt 与回链约束。',
+      ),
+    );
   }
 
   /**
@@ -366,6 +405,39 @@ export class VsCodeExtensionCommandController {
     await this.dependencies.reviewDetailProvider.refresh(request);
   }
 
+  /**
+   * Records selection changes from the automation queue view.
+   * @param selection Newly selected tree nodes.
+   */
+  public async handleAutomationQueueSelection(
+    selection: readonly VsCodeExtensionTreeNodeDescriptor[],
+  ): Promise<void> {
+    const request = selection[0]?.selectionRequest;
+    if (!request) {
+      return;
+    }
+
+    this.selectionStore.applyCommandRequest(request);
+    this.dependencies.workbenchOverviewProvider?.refresh();
+    this.dependencies.workspaceContextProvider?.refresh();
+    await this.dependencies.reviewDetailProvider.refresh(request);
+  }
+
+  /**
+   * Records selection changes from the workbench-overview view.
+   * @param selection Newly selected tree nodes.
+   */
+  public handleWorkbenchOverviewSelection(
+    selection: readonly VsCodeExtensionTreeNodeDescriptor[],
+  ): void {
+    const request = selection[0]?.selectionRequest;
+    if (!request) {
+      return;
+    }
+
+    this.selectionStore.applyCommandRequest(request);
+  }
+
   private mergeCommandRequest(
     commandRequest?: VsCodeExtensionCommandRequest,
   ): VsCodeExtensionCommandRequest {
@@ -383,11 +455,24 @@ export class VsCodeExtensionCommandController {
         commandRequest && 'reviewSourcePath' in commandRequest
           ? commandRequest.reviewSourcePath
           : selection.reviewSourcePath,
+      queueEntry:
+        commandRequest && 'queueEntry' in commandRequest
+          ? commandRequest.queueEntry
+          : selection.queueEntry,
       ...(commandRequest?.handoffTarget
         ? {
             handoffTarget: commandRequest.handoffTarget,
           }
         : {}),
+      ...(commandRequest && 'temporaryBridge' in commandRequest
+        ? {
+            temporaryBridge: commandRequest.temporaryBridge,
+          }
+        : selection.temporaryBridge
+          ? {
+              temporaryBridge: selection.temporaryBridge,
+            }
+          : {}),
       ...(commandRequest?.hitlDecisionOption
         ? {
             hitlDecisionOption: commandRequest.hitlDecisionOption,
@@ -397,6 +482,13 @@ export class VsCodeExtensionCommandController {
   }
 
   private async resolvePreferredHandoffTarget(commandRequest: VsCodeExtensionCommandRequest) {
+    const queueEntryHandoffTarget = this.selectPreferredHandoffTarget(
+      commandRequest.queueEntry?.handoffTargets,
+    );
+    if (queueEntryHandoffTarget) {
+      return queueEntryHandoffTarget;
+    }
+
     if (!commandRequest.executionId) {
       return undefined;
     }
@@ -408,17 +500,7 @@ export class VsCodeExtensionCommandController {
       return undefined;
     }
 
-    const targetPriority = [
-      OrchestrationHandoffTargetKind.REVIEW_DOCUMENT,
-      OrchestrationHandoffTargetKind.EDITOR,
-      OrchestrationHandoffTargetKind.WORKTREE,
-      OrchestrationHandoffTargetKind.TERMINAL,
-    ];
-    return targetPriority
-      .flatMap((targetKind) =>
-        executionEntry.handoffTargets.filter((target) => target.targetKind === targetKind),
-      )
-      .find((target) => target.exists && target.targetPath);
+    return this.selectPreferredHandoffTarget(executionEntry.handoffTargets);
   }
 
   private createReviewSourceHandoffTarget(reviewSourcePath?: string) {
@@ -433,6 +515,29 @@ export class VsCodeExtensionCommandController {
       targetPath: reviewSourcePath,
       exists: true,
     };
+  }
+
+  /**
+   * Keeps queue-only selections actionable when the execution-board window cannot rehydrate them.
+   * @param handoffTargets Candidate handoff targets from queue or execution-board state.
+   * @returns Highest-priority existing handoff target when one is available.
+   */
+  private selectPreferredHandoffTarget(
+    handoffTargets?: readonly OrchestrationHandoffTarget[],
+  ): OrchestrationHandoffTarget | undefined {
+    if (!handoffTargets || handoffTargets.length === 0) {
+      return undefined;
+    }
+
+    const targetPriority = [
+      OrchestrationHandoffTargetKind.REVIEW_DOCUMENT,
+      OrchestrationHandoffTargetKind.EDITOR,
+      OrchestrationHandoffTargetKind.WORKTREE,
+      OrchestrationHandoffTargetKind.TERMINAL,
+    ];
+    return targetPriority
+      .flatMap((targetKind) => handoffTargets.filter((target) => target.targetKind === targetKind))
+      .find((target) => target.exists && target.targetPath);
   }
 
   private async promptForHitlDecisionOption(hitlEntry: {

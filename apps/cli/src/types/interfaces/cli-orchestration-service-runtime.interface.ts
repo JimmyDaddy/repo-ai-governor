@@ -27,6 +27,11 @@ import type {
 import type { MemoryRuntimeConfig } from '@repo-ai-governor/shared';
 import type { CliOrchestrationServiceRuntimeMode } from '../../constants/orchestration-service-runtime.constant.js';
 
+export interface CliOrchestrationServiceOwnerContext {
+  workspaceRoot: string;
+  repositoryRoot?: string;
+}
+
 /**
  * Defines the minimal owner-side orchestration service surface required by CLI runtime.
  */
@@ -66,8 +71,11 @@ export interface CliOrchestrationServiceOwner extends OrchestrationServiceClient
  */
 export interface CliOrchestrationServiceRuntimeDependencies {
   runtimeMode?: CliOrchestrationServiceRuntimeMode;
+  repositoryRoot?: string;
   memoryConfig?: MemoryRuntimeConfig;
-  serviceOwnerProvider?: (workspaceRoot: string) => Promise<CliOrchestrationServiceOwner>;
+  serviceOwnerProvider?: (
+    ownerContext: CliOrchestrationServiceOwnerContext,
+  ) => Promise<CliOrchestrationServiceOwner>;
   sidecarClientDependencies?: LocalOrchestrationServiceSidecarClientDependencies;
   embeddedShellDependencies?: Omit<LocalOrchestrationServiceShellDependencies, 'memoryConfig'>;
 }

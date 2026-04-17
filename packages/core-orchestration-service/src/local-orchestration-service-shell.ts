@@ -187,6 +187,11 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
     });
     this.queueOverviewQueryRuntime = new LocalOrchestrationServiceQueueOverviewQueryRuntime({
       workspaceRoot: dependencies.workspaceRoot,
+      ...(dependencies.repositoryRoot
+        ? {
+            repositoryRoot: dependencies.repositoryRoot,
+          }
+        : {}),
       listExecutions: async (request) => this.listExecutions(request),
       nowProvider: this.nowProvider,
     });

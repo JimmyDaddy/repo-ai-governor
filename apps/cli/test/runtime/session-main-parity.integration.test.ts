@@ -982,7 +982,7 @@ function createRuntime(
   shellDependencies: Omit<LocalOrchestrationServiceShellDependencies, 'memoryConfig'> = {},
 ): CliOrchestrationServiceRuntime {
   return new CliOrchestrationServiceRuntime(workspaceRoot, {
-    serviceOwnerProvider: async (root) =>
+    serviceOwnerProvider: async ({ workspaceRoot: root }) =>
       new LocalOrchestrationServiceShell({
         workspaceRoot: root,
         ...shellDependencies,

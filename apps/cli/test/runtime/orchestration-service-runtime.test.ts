@@ -41,7 +41,7 @@ describe('CliOrchestrationServiceRuntime', () => {
             storeEngine: MemoryStoreEngine.FS_CSV,
             storeRoot: 'context/memory/runtime-test',
           },
-          serviceOwnerProvider: async (root) =>
+          serviceOwnerProvider: async ({ workspaceRoot: root }) =>
             new LocalOrchestrationServiceShell({
               workspaceRoot: root,
               memoryConfig: {
@@ -83,7 +83,7 @@ describe('CliOrchestrationServiceRuntime', () => {
         });
 
         const replayedRuntime = new CliOrchestrationServiceRuntime(workspaceRoot, {
-          serviceOwnerProvider: async (root) =>
+          serviceOwnerProvider: async ({ workspaceRoot: root }) =>
             new LocalOrchestrationServiceShell({
               workspaceRoot: root,
               serviceHostKind: hostKind,
