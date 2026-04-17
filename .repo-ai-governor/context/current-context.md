@@ -3,20 +3,20 @@
 ## Primary Stream
 
 - Status: active
-- Stream: `stream-project-112-sprint-001`
+- Stream: `stream-project-112-sprint-002`
 - Project: `project-112-vscode-governance-workbench-rollout`
-- Sprint: `sprint-001-phase-a-primary-workbench-baseline`
+- Sprint: `sprint-002-phase-b-outer-loop-consolidation-and-operations`
 - Docs: `.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout`
-- Plan: `.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/plan.md`
-- Tasks: `.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/tasks/`
-- Checklist: `.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/tasks/checklist.md`
-- CSV: `.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/tasks/tasks.csv`
-- Review: `.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/review/`
-- Note: `2026-04-16` 已完成 execution baseline checkpoint commit `bdfec1f5`；`2026-04-17` 已完成 sprint-001 boundary commit `51cad3ca` 与 sprint-002 boundary commit `ff09fb6c`；project-110 已在 project-final `CR-006` clean round、completion audit summary 与 `DA-933` handoff 后完成 closeout，并正式激活 `project-112 / sprint-001` 作为新的 active primary stream。
+- Plan: `.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-002-phase-b-outer-loop-consolidation-and-operations/plan.md`
+- Tasks: `.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-002-phase-b-outer-loop-consolidation-and-operations/tasks/`
+- Checklist: `.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-002-phase-b-outer-loop-consolidation-and-operations/tasks/checklist.md`
+- CSV: `.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-002-phase-b-outer-loop-consolidation-and-operations/tasks/tasks.csv`
+- Review: `.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-002-phase-b-outer-loop-consolidation-and-operations/review/`
+- Note: `2026-04-16` 已完成 execution baseline checkpoint commit `bdfec1f5`；`2026-04-17` 已完成 project-110 sprint boundary commits `51cad3ca` 与 `ff09fb6c`；project-110 已在 project-final `CR-006` clean round、completion audit summary 与 `DA-933` handoff 后完成 closeout，并正式激活 `project-112 / sprint-001` 作为新的 active primary stream；`2026-04-17` project-112 sprint-001 已在 `CR-003` clean round 与 `DA-937` handoff 后完成 closeout，当前正式激活 `project-112 / sprint-002` 作为新的 active primary stream。
 
 ## Active Streams
 
-- `stream-project-112-sprint-001`: project=`project-112-vscode-governance-workbench-rollout`, sprint=`sprint-001-phase-a-primary-workbench-baseline`, docs=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout`, plan=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/plan.md`, tasks=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/tasks/`, checklist=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/review/`, status=`in_progress`, role=`primary`
+- `stream-project-112-sprint-002`: project=`project-112-vscode-governance-workbench-rollout`, sprint=`sprint-002-phase-b-outer-loop-consolidation-and-operations`, docs=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout`, plan=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-002-phase-b-outer-loop-consolidation-and-operations/plan.md`, tasks=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-002-phase-b-outer-loop-consolidation-and-operations/tasks/`, checklist=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-002-phase-b-outer-loop-consolidation-and-operations/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-002-phase-b-outer-loop-consolidation-and-operations/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-002-phase-b-outer-loop-consolidation-and-operations/review/`, status=`in_progress`, role=`primary`
 
 ## Planned Follow-Up Streams
 

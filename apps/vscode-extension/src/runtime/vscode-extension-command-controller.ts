@@ -17,9 +17,12 @@ import type { VsCodeExtensionServiceRuntime } from './vscode-extension-service-r
 import type { VsCodeExtensionTreeDataProvider } from './vscode-extension-tree-data-provider.js';
 
 interface VsCodeExtensionCommandControllerDependencies {
-  executionBoardProvider: VsCodeExtensionTreeDataProvider;
+  taskBoardProvider?: VsCodeExtensionTreeDataProvider;
+  executionBoardProvider?: VsCodeExtensionTreeDataProvider;
   hitlInboxProvider: VsCodeExtensionTreeDataProvider;
-  workspaceContextProvider: VsCodeExtensionTreeDataProvider;
+  reviewQueueProvider?: VsCodeExtensionTreeDataProvider;
+  workbenchOverviewProvider?: VsCodeExtensionTreeDataProvider;
+  workspaceContextProvider?: VsCodeExtensionTreeDataProvider;
   reviewDetailProvider: VsCodeExtensionReviewDetailProvider;
 }
 
@@ -44,14 +47,17 @@ export class VsCodeExtensionCommandController {
    */
   public async refresh(commandRequest?: VsCodeExtensionCommandRequest): Promise<void> {
     this.selectionStore.applyCommandRequest(commandRequest);
-    this.dependencies.executionBoardProvider.refresh();
+    this.dependencies.taskBoardProvider?.refresh();
+    this.dependencies.executionBoardProvider?.refresh();
     this.dependencies.hitlInboxProvider.refresh();
-    this.dependencies.workspaceContextProvider.refresh();
+    this.dependencies.reviewQueueProvider?.refresh();
+    this.dependencies.workbenchOverviewProvider?.refresh();
+    this.dependencies.workspaceContextProvider?.refresh();
     await this.dependencies.reviewDetailProvider.refresh();
   }
 
   /**
-   * Opens the detail-only review webview for the selected or latest execution.
+   * Opens the detail-only review webview for the selected execution or one review-only backlink.
    * @param commandRequest Optional selection override.
    */
   public async openReviewDetail(commandRequest?: VsCodeExtensionCommandRequest): Promise<void> {
@@ -72,7 +78,9 @@ export class VsCodeExtensionCommandController {
     try {
       const mergedRequest = this.mergeCommandRequest(commandRequest);
       const handoffTarget =
-        mergedRequest.handoffTarget ?? (await this.resolvePreferredHandoffTarget(mergedRequest));
+        mergedRequest.handoffTarget ??
+        (await this.resolvePreferredHandoffTarget(mergedRequest)) ??
+        this.createReviewSourceHandoffTarget(mergedRequest.reviewSourcePath);
       if (!handoffTarget?.targetPath || !handoffTarget.exists) {
         void vscode.window.showInformationMessage(
           this.localizer.localizeText(
@@ -177,6 +185,7 @@ export class VsCodeExtensionCommandController {
       await this.refresh({
         executionId: response.executionSummary.executionId,
         executionSessionId: response.executionSummary.executionSessionId,
+        reviewSourcePath: undefined,
       });
       void vscode.window.showInformationMessage(
         this.localizer.localizeText('HITL decision submitted.', 'HITL 决策已提交。'),
@@ -224,6 +233,7 @@ export class VsCodeExtensionCommandController {
       await this.refresh({
         executionId: response.executionSummary.executionId,
         executionSessionId: response.executionSummary.executionSessionId,
+        reviewSourcePath: undefined,
       });
       void vscode.window.showInformationMessage(
         this.localizer.localizeText('Execution recovery requested.', '已请求执行恢复。'),
@@ -288,6 +298,7 @@ export class VsCodeExtensionCommandController {
       await this.refresh({
         executionId: response.executionSummary.executionId,
         executionSessionId: response.executionSummary.executionSessionId,
+        reviewSourcePath: undefined,
       });
       void vscode.window.showInformationMessage(
         this.localizer.localizeText('Execution termination requested.', '已请求终止执行。'),
@@ -314,7 +325,8 @@ export class VsCodeExtensionCommandController {
     }
 
     this.selectionStore.applyCommandRequest(request);
-    this.dependencies.workspaceContextProvider.refresh();
+    this.dependencies.workbenchOverviewProvider?.refresh();
+    this.dependencies.workspaceContextProvider?.refresh();
     await this.dependencies.reviewDetailProvider.refresh(request);
   }
 
@@ -331,7 +343,26 @@ export class VsCodeExtensionCommandController {
     }
 
     this.selectionStore.applyCommandRequest(request);
-    this.dependencies.workspaceContextProvider.refresh();
+    this.dependencies.workbenchOverviewProvider?.refresh();
+    this.dependencies.workspaceContextProvider?.refresh();
+    await this.dependencies.reviewDetailProvider.refresh(request);
+  }
+
+  /**
+   * Records selection changes from the review queue view.
+   * @param selection Newly selected tree nodes.
+   */
+  public async handleReviewQueueSelection(
+    selection: readonly VsCodeExtensionTreeNodeDescriptor[],
+  ): Promise<void> {
+    const request = selection[0]?.selectionRequest;
+    if (!request) {
+      return;
+    }
+
+    this.selectionStore.applyCommandRequest(request);
+    this.dependencies.workbenchOverviewProvider?.refresh();
+    this.dependencies.workspaceContextProvider?.refresh();
     await this.dependencies.reviewDetailProvider.refresh(request);
   }
 
@@ -340,9 +371,18 @@ export class VsCodeExtensionCommandController {
   ): VsCodeExtensionCommandRequest {
     const selection = this.selectionStore.getSnapshot();
     return {
-      executionId: commandRequest?.executionId ?? selection.executionId,
-      executionSessionId: commandRequest?.executionSessionId ?? selection.executionSessionId,
-      reviewSourcePath: commandRequest?.reviewSourcePath ?? selection.reviewSourcePath,
+      executionId:
+        commandRequest && 'executionId' in commandRequest
+          ? commandRequest.executionId
+          : selection.executionId,
+      executionSessionId:
+        commandRequest && 'executionSessionId' in commandRequest
+          ? commandRequest.executionSessionId
+          : selection.executionSessionId,
+      reviewSourcePath:
+        commandRequest && 'reviewSourcePath' in commandRequest
+          ? commandRequest.reviewSourcePath
+          : selection.reviewSourcePath,
       ...(commandRequest?.handoffTarget
         ? {
             handoffTarget: commandRequest.handoffTarget,
@@ -357,6 +397,10 @@ export class VsCodeExtensionCommandController {
   }
 
   private async resolvePreferredHandoffTarget(commandRequest: VsCodeExtensionCommandRequest) {
+    if (!commandRequest.executionId) {
+      return undefined;
+    }
+
     const executionEntry = await this.serviceRuntime.resolveExecutionBoardEntry(
       commandRequest.executionId,
     );
@@ -375,6 +419,20 @@ export class VsCodeExtensionCommandController {
         executionEntry.handoffTargets.filter((target) => target.targetKind === targetKind),
       )
       .find((target) => target.exists && target.targetPath);
+  }
+
+  private createReviewSourceHandoffTarget(reviewSourcePath?: string) {
+    if (!reviewSourcePath) {
+      return undefined;
+    }
+
+    return {
+      targetId: `review-source:${reviewSourcePath}`,
+      executionId: `review-source:${reviewSourcePath}`,
+      targetKind: OrchestrationHandoffTargetKind.REVIEW_DOCUMENT,
+      targetPath: reviewSourcePath,
+      exists: true,
+    };
   }
 
   private async promptForHitlDecisionOption(hitlEntry: {

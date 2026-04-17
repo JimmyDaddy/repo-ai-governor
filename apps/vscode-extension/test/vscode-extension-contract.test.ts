@@ -3,10 +3,23 @@ import { resolve } from 'node:path';
 
 import {
   VSCODE_EXTENSION_CHAT_PARTICIPANT_ID,
+  VSCODE_EXTENSION_COMMAND_CAPABILITY_CLASSES,
   VSCODE_EXTENSION_COMMAND_IDS,
   VSCODE_EXTENSION_CONTAINER_ID,
+  VSCODE_EXTENSION_CONTINUITY_TOKENS,
+  VSCODE_EXTENSION_DESKTOP_RELATIONSHIP,
+  VSCODE_EXTENSION_HANDOFF_TARGET_CLASSES,
+  VSCODE_EXTENSION_NATIVE_ENTRYPOINTS,
+  VSCODE_EXTENSION_PUBLIC_SUPPORT_LEVEL,
+  VSCODE_EXTENSION_QUERY_CAPABILITY_CLASSES,
+  VSCODE_EXTENSION_SURFACE_ID,
+  VSCODE_EXTENSION_SURFACE_ROLE,
+  VSCODE_EXTENSION_TEMPORARY_BRIDGE_CAPABILITY_CLASSES,
   VSCODE_EXTENSION_TRUST_GATED_COMMAND_IDS,
+  VSCODE_EXTENSION_TRUTH_OWNER,
   VSCODE_EXTENSION_VIEW_IDS,
+  VSCODE_EXTENSION_WEBVIEW_USAGE_MODE,
+  VSCODE_EXTENSION_WORKBENCH_PANELS,
 } from '../src/constants/index.js';
 import { VsCodeExtensionContract } from '../src/runtime/vscode-extension-contract.js';
 
@@ -39,10 +52,28 @@ describe('vscode extension contract freeze', () => {
 
     expect(contract.containerId).toBe(VSCODE_EXTENSION_CONTAINER_ID);
     expect(contract.chatParticipantId).toBe(VSCODE_EXTENSION_CHAT_PARTICIPANT_ID);
+    expect(contract.surfaceId).toBe(VSCODE_EXTENSION_SURFACE_ID);
+    expect(contract.surfaceRole).toBe(VSCODE_EXTENSION_SURFACE_ROLE);
+    expect(contract.truthOwner).toBe(VSCODE_EXTENSION_TRUTH_OWNER);
+    expect(contract.nativeEntrypoints).toEqual([...VSCODE_EXTENSION_NATIVE_ENTRYPOINTS]);
+    expect(contract.workbenchPanels).toEqual([...VSCODE_EXTENSION_WORKBENCH_PANELS]);
+    expect(contract.queryCapabilityClasses).toEqual([...VSCODE_EXTENSION_QUERY_CAPABILITY_CLASSES]);
+    expect(contract.commandCapabilityClasses).toEqual([
+      ...VSCODE_EXTENSION_COMMAND_CAPABILITY_CLASSES,
+    ]);
+    expect(contract.temporaryBridgeCapabilityClasses).toEqual([
+      ...VSCODE_EXTENSION_TEMPORARY_BRIDGE_CAPABILITY_CLASSES,
+    ]);
+    expect(contract.webviewUsageMode).toBe(VSCODE_EXTENSION_WEBVIEW_USAGE_MODE);
+    expect(contract.publicSupportLevel).toBe(VSCODE_EXTENSION_PUBLIC_SUPPORT_LEVEL);
+    expect(contract.desktopRelationship).toBe(VSCODE_EXTENSION_DESKTOP_RELATIONSHIP);
+    expect(contract.handoffTargets).toEqual([...VSCODE_EXTENSION_HANDOFF_TARGET_CLASSES]);
+    expect(contract.continuityTokens).toEqual([...VSCODE_EXTENSION_CONTINUITY_TOKENS]);
     expect(contract.views.map((view) => view.id)).toEqual([
-      VSCODE_EXTENSION_VIEW_IDS.EXECUTION_BOARD,
+      VSCODE_EXTENSION_VIEW_IDS.TASK_BOARD,
       VSCODE_EXTENSION_VIEW_IDS.HITL_INBOX,
-      VSCODE_EXTENSION_VIEW_IDS.WORKSPACE_CONTEXT,
+      VSCODE_EXTENSION_VIEW_IDS.REVIEW_QUEUE,
+      VSCODE_EXTENSION_VIEW_IDS.WORKBENCH_OVERVIEW,
       VSCODE_EXTENSION_VIEW_IDS.REVIEW_DETAIL,
     ]);
     expect(contract.commands.map((command) => command.id)).toEqual([
@@ -72,9 +103,10 @@ describe('vscode extension contract freeze', () => {
     ).toEqual(contract.chatCommands.map((command) => command.name));
     expect(manifest.activationEvents).toEqual(
       expect.arrayContaining([
-        `onView:${VSCODE_EXTENSION_VIEW_IDS.EXECUTION_BOARD}`,
+        `onView:${VSCODE_EXTENSION_VIEW_IDS.TASK_BOARD}`,
         `onView:${VSCODE_EXTENSION_VIEW_IDS.HITL_INBOX}`,
-        `onView:${VSCODE_EXTENSION_VIEW_IDS.WORKSPACE_CONTEXT}`,
+        `onView:${VSCODE_EXTENSION_VIEW_IDS.REVIEW_QUEUE}`,
+        `onView:${VSCODE_EXTENSION_VIEW_IDS.WORKBENCH_OVERVIEW}`,
         `onView:${VSCODE_EXTENSION_VIEW_IDS.REVIEW_DETAIL}`,
         `onCommand:${VSCODE_EXTENSION_COMMAND_IDS.REFRESH}`,
         `onChatParticipant:${VSCODE_EXTENSION_CHAT_PARTICIPANT_ID}`,

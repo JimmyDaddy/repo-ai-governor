@@ -30,10 +30,10 @@ export class VsCodeExtensionSelectionStore {
       return;
     }
 
-    if (request.executionId) {
+    if ('executionId' in request) {
       this.snapshot.executionId = request.executionId;
     }
-    if (request.executionSessionId) {
+    if ('executionSessionId' in request) {
       this.snapshot.executionSessionId = request.executionSessionId;
     }
     if ('reviewSourcePath' in request) {
@@ -42,7 +42,7 @@ export class VsCodeExtensionSelectionStore {
   }
 
   /**
-   * Remembers the selected execution identifiers.
+   * Remembers the selected execution identifiers and clears any stale review-only backlink.
    * @param executionId Execution identifier.
    * @param executionSessionId Optional execution-session identifier.
    */
@@ -50,6 +50,7 @@ export class VsCodeExtensionSelectionStore {
     this.applyCommandRequest({
       executionId,
       executionSessionId,
+      reviewSourcePath: undefined,
     });
   }
 

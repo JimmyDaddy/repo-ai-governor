@@ -7,6 +7,7 @@ import type {
   OrchestrationExecutionBoardQueryResponse,
   OrchestrationHitlInboxEntry,
   OrchestrationHitlInboxQueryResponse,
+  OrchestrationQueueOverviewQueryResponse,
   OrchestrationRecoverExecutionRequest,
   OrchestrationRecoverExecutionResponse,
   OrchestrationServiceHealthResponse,
@@ -15,12 +16,22 @@ import type {
   OrchestrationTerminateExecutionRequest,
   OrchestrationTerminateExecutionResponse,
 } from '@repo-ai-governor/orchestration-service-client';
+import {
+  OrchestrationClientSurface as OrchestrationClientSurfaceValue,
+  OrchestrationGovernanceNotificationStatus as OrchestrationGovernanceNotificationStatusValue,
+} from '@repo-ai-governor/orchestration-service-client';
 import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
-import { VSCODE_EXTENSION_DEFAULT_EXECUTION_LIMIT } from '../constants/index.js';
+import {
+  VSCODE_EXTENSION_DEFAULT_EXECUTION_LIMIT,
+  VSCODE_EXTENSION_DEFAULT_LANE_LIMIT,
+  VSCODE_EXTENSION_DEFAULT_QUEUE_LIMIT,
+  VSCODE_EXTENSION_DEFAULT_WORKSPACE_SUMMARY_LIMIT,
+} from '../constants/index.js';
 import type {
   VsCodeExtensionReviewDetailSnapshot,
   VsCodeExtensionSelectionSnapshot,
   VsCodeExtensionServiceDiagnosticsSnapshot,
+  VsCodeExtensionWorkbenchOverviewSnapshot,
   VsCodeExtensionWorkspaceContextSnapshot,
 } from '../types/index.js';
 
@@ -155,6 +166,45 @@ export class VsCodeExtensionServiceRuntime {
   }
 
   /**
+   * Queries the orchestration-owned queue/workbench overview read model.
+   * @param limit Maximum number of queue entries to request per queue slice.
+   * @param laneLimit Maximum number of parallel lanes to request.
+   * @param workspaceLimit Maximum number of workspace summaries to request.
+   * @returns Queue/workbench overview payload, or an empty payload without a workspace.
+   */
+  public async queryQueueOverview(
+    limit = VSCODE_EXTENSION_DEFAULT_QUEUE_LIMIT,
+    laneLimit = VSCODE_EXTENSION_DEFAULT_LANE_LIMIT,
+    workspaceLimit = VSCODE_EXTENSION_DEFAULT_WORKSPACE_SUMMARY_LIMIT,
+  ): Promise<OrchestrationQueueOverviewQueryResponse> {
+    const client = await this.resolveClient();
+    if (!client) {
+      return {
+        generatedAt: '',
+        automationInbox: [],
+        reviewQueue: [],
+        parallelLanes: [],
+        workspaceSummary: [],
+        notificationOwnership: {
+          ownerSurface: OrchestrationClientSurfaceValue.DESKTOP,
+          pendingItemCount: 0,
+          dueSoonItemCount: 0,
+          overdueItemCount: 0,
+          activeWorkspaceCount: 0,
+          defaultFollowUpSlaMinutes: 0,
+          notificationStatus: OrchestrationGovernanceNotificationStatusValue.IDLE,
+        },
+      };
+    }
+
+    return client.queryQueueOverview({
+      limit,
+      laneLimit,
+      workspaceLimit,
+    });
+  }
+
+  /**
    * Queries service health for workspace status views.
    * @returns Service health payload when a workspace is open.
    */
@@ -206,7 +256,7 @@ export class VsCodeExtensionServiceRuntime {
     selection: VsCodeExtensionSelectionSnapshot,
   ): Promise<VsCodeExtensionReviewDetailSnapshot> {
     const workspaceContext = await this.resolveWorkspaceContextSnapshot();
-    const selectedExecution = await this.resolveExecutionBoardEntry(selection.executionId);
+    const selectedExecution = await this.resolveSelectedExecution(selection);
     const artifactPane = selectedExecution
       ? await this.queryArtifactPaneForExecution(
           selectedExecution.execution.executionId,
@@ -224,6 +274,41 @@ export class VsCodeExtensionServiceRuntime {
       ...(artifactPane
         ? {
             artifactPane,
+          }
+        : {}),
+      ...(selection.reviewSourcePath
+        ? {
+            requestedReviewSourcePath: selection.reviewSourcePath,
+          }
+        : {}),
+    };
+  }
+
+  /**
+   * Resolves one workbench-overview snapshot from workspace facts plus service-owned queue data.
+   * @param selection Current transient selection snapshot.
+   * @returns Workbench overview facts for the primary VS Code governance workbench baseline.
+   */
+  public async resolveWorkbenchOverviewSnapshot(
+    selection: VsCodeExtensionSelectionSnapshot,
+  ): Promise<VsCodeExtensionWorkbenchOverviewSnapshot> {
+    const [workspaceContext, queueOverview, selectedExecution] = await Promise.all([
+      this.resolveWorkspaceContextSnapshot(),
+      this.queryQueueOverview(),
+      this.resolveSelectedExecution(selection),
+    ]);
+
+    return {
+      workspaceContext,
+      queueOverview,
+      ...(selectedExecution
+        ? {
+            selectedExecution,
+          }
+        : {}),
+      ...(selection.reviewSourcePath
+        ? {
+            reviewSourcePath: selection.reviewSourcePath,
           }
         : {}),
     };
@@ -311,6 +396,25 @@ export class VsCodeExtensionServiceRuntime {
           }
         : {}),
     });
+  }
+
+  /**
+   * Resolves the transient execution selection without reintroducing fallback when the caller
+   * explicitly cleared execution identifiers in favor of a review-only selection.
+   * @param selection Current transient selection snapshot.
+   * @returns Matching execution entry, the newest execution when no explicit selection exists, or
+   * `undefined` when the caller intentionally cleared execution selection.
+   */
+  private async resolveSelectedExecution(
+    selection: VsCodeExtensionSelectionSnapshot,
+  ): Promise<OrchestrationExecutionBoardEntry | undefined> {
+    if ('executionId' in selection) {
+      return selection.executionId
+        ? this.resolveExecutionBoardEntry(selection.executionId)
+        : undefined;
+    }
+
+    return this.resolveExecutionBoardEntry();
   }
 
   private async requireClient(): Promise<LocalOrchestrationServiceSidecarClient> {

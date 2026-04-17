@@ -1067,18 +1067,19 @@ deliveries:
     rollout_status: in_progress
     owner: runtime
     project_ref: project-112-vscode-governance-workbench-rollout
-    sprint_ref: sprint-001-phase-a-primary-workbench-baseline
+    sprint_ref: sprint-002-phase-b-outer-loop-consolidation-and-operations
     task_ids:
-      - TK-936
-      - TK-937
+      - TK-938
+      - TK-939
     project_plan_path: .repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/plan.md
-    sprint_plan_path: .repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/plan.md
-    task_csv_path: .repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/tasks/tasks.csv
-    handoff_artifact_path: .repo-ai-governor/context/dev/project-111-vscode-workbench-solution-promotion-and-decomposition/sprint-001-promotion-and-rollout-handoff/tasks/DA-934-vscode-workbench-promotion-and-rollout-decomposition-handoff.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-002-phase-b-outer-loop-consolidation-and-operations/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-002-phase-b-outer-loop-consolidation-and-operations/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/tasks/DA-937-sprint-001-closeout-and-sprint-002-activation-handoff.md
     rollout_artifacts:
       - .repo-ai-governor/context/dev/project-111-vscode-workbench-solution-promotion-and-decomposition/sprint-001-promotion-and-rollout-handoff/tasks/DA-934-vscode-workbench-promotion-and-rollout-decomposition-handoff.md
       - .repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/plan.md
       - .repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/plan.md
+      - .repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-001-phase-a-primary-workbench-baseline/tasks/DA-937-sprint-001-closeout-and-sprint-002-activation-handoff.md
       - .repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-002-phase-b-outer-loop-consolidation-and-operations/plan.md
       - .repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-003-phase-c-workflow-studio-and-full-workbench-cutover/plan.md
     accepted_at: 2026-04-16

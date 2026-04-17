@@ -17,10 +17,10 @@ import { VsCodeExtensionServiceRuntime } from './vscode-extension-service-runtim
 import { VsCodeExtensionTreeDataProvider } from './vscode-extension-tree-data-provider.js';
 
 /**
- * Wires the full VS Code companion MVP during extension activation.
+ * Wires the Phase A VS Code primary workbench baseline during extension activation.
  *
  * Why this exists:
- * activation should assemble lightweight views, chat, and commands around the frozen contract
+ * activation should assemble task/review/workbench baseline surfaces around the frozen contract
  * while keeping service access and presentation logic delegated to focused runtime classes.
  */
 export class VsCodeExtensionHost {
@@ -30,53 +30,49 @@ export class VsCodeExtensionHost {
   private readonly presentationBuilder = new VsCodeExtensionPresentationBuilder(this.localizer);
 
   /**
-   * Activates the Governor companion inside the VS Code extension host.
+   * Activates the Governor workbench baseline inside the VS Code extension host.
    * @param context Extension activation context.
    */
   public async activate(context: vscode.ExtensionContext): Promise<void> {
-    const executionBoardProvider = new VsCodeExtensionTreeDataProvider(async () => {
+    const taskBoardProvider = new VsCodeExtensionTreeDataProvider(async () => {
       const executionBoard = await this.serviceRuntime.queryExecutionBoard();
-      return [...this.presentationBuilder.buildExecutionBoardNodes(executionBoard.executions)];
+      return [...this.presentationBuilder.buildTaskBoardNodes(executionBoard.executions)];
     });
     const hitlInboxProvider = new VsCodeExtensionTreeDataProvider(async () => {
       const hitlInbox = await this.serviceRuntime.queryHitlInbox();
       return [...this.presentationBuilder.buildHitlInboxNodes(hitlInbox.pendingDecisions)];
     });
-    const workspaceContextProvider = new VsCodeExtensionTreeDataProvider(async () => {
-      const [workspaceContext, selectedExecution] = await Promise.all([
-        this.serviceRuntime.resolveWorkspaceContextSnapshot(),
-        this.serviceRuntime.resolveExecutionBoardEntry(
-          this.selectionStore.getSnapshot().executionId,
-        ),
-      ]);
-      return [
-        ...this.presentationBuilder.buildWorkspaceContextNodes(
-          workspaceContext,
-          selectedExecution,
-          this.selectionStore.getSnapshot().reviewSourcePath,
-        ),
-      ];
+    const reviewQueueProvider = new VsCodeExtensionTreeDataProvider(async () => {
+      const queueOverview = await this.serviceRuntime.queryQueueOverview();
+      return [...this.presentationBuilder.buildReviewQueueNodes(queueOverview.reviewQueue)];
+    });
+    const workbenchOverviewProvider = new VsCodeExtensionTreeDataProvider(async () => {
+      const overviewSnapshot = await this.serviceRuntime.resolveWorkbenchOverviewSnapshot(
+        this.selectionStore.getSnapshot(),
+      );
+      return [...this.presentationBuilder.buildWorkbenchOverviewNodes(overviewSnapshot)];
     });
     const reviewDetailProvider = new VsCodeExtensionReviewDetailProvider(
       this.serviceRuntime,
       this.selectionStore,
       this.presentationBuilder,
     );
-    const executionBoardView = vscode.window.createTreeView(
-      VSCODE_EXTENSION_VIEW_IDS.EXECUTION_BOARD,
-      {
-        treeDataProvider: executionBoardProvider,
-        showCollapseAll: true,
-      },
-    );
+    const taskBoardView = vscode.window.createTreeView(VSCODE_EXTENSION_VIEW_IDS.TASK_BOARD, {
+      treeDataProvider: taskBoardProvider,
+      showCollapseAll: true,
+    });
     const hitlInboxView = vscode.window.createTreeView(VSCODE_EXTENSION_VIEW_IDS.HITL_INBOX, {
       treeDataProvider: hitlInboxProvider,
       showCollapseAll: true,
     });
-    const workspaceContextView = vscode.window.createTreeView(
-      VSCODE_EXTENSION_VIEW_IDS.WORKSPACE_CONTEXT,
+    const reviewQueueView = vscode.window.createTreeView(VSCODE_EXTENSION_VIEW_IDS.REVIEW_QUEUE, {
+      treeDataProvider: reviewQueueProvider,
+      showCollapseAll: true,
+    });
+    const workbenchOverviewView = vscode.window.createTreeView(
+      VSCODE_EXTENSION_VIEW_IDS.WORKBENCH_OVERVIEW,
       {
-        treeDataProvider: workspaceContextProvider,
+        treeDataProvider: workbenchOverviewProvider,
         showCollapseAll: false,
       },
     );
@@ -85,9 +81,10 @@ export class VsCodeExtensionHost {
       this.selectionStore,
       this.localizer,
       {
-        executionBoardProvider,
+        taskBoardProvider,
         hitlInboxProvider,
-        workspaceContextProvider,
+        reviewQueueProvider,
+        workbenchOverviewProvider,
         reviewDetailProvider,
       },
     );
@@ -104,9 +101,10 @@ export class VsCodeExtensionHost {
     );
 
     context.subscriptions.push(
-      executionBoardView,
+      taskBoardView,
       hitlInboxView,
-      workspaceContextView,
+      reviewQueueView,
+      workbenchOverviewView,
       vscode.window.registerWebviewViewProvider(
         VSCODE_EXTENSION_VIEW_IDS.REVIEW_DETAIL,
         reviewDetailProvider,
@@ -142,11 +140,14 @@ export class VsCodeExtensionHost {
         VSCODE_EXTENSION_COMMAND_IDS.TERMINATE_EXECUTION,
         async (request) => commandController.terminateExecution(request),
       ),
-      executionBoardView.onDidChangeSelection((event) => {
+      taskBoardView.onDidChangeSelection((event) => {
         void commandController.handleExecutionBoardSelection(event.selection);
       }),
       hitlInboxView.onDidChangeSelection((event) => {
         void commandController.handleHitlInboxSelection(event.selection);
+      }),
+      reviewQueueView.onDidChangeSelection((event) => {
+        void commandController.handleReviewQueueSelection(event.selection);
       }),
       vscode.workspace.onDidGrantWorkspaceTrust(() => {
         void this.refreshContextKeys();
@@ -156,7 +157,7 @@ export class VsCodeExtensionHost {
         void commandController.refresh();
       }),
       vscode.window.onDidChangeActiveTextEditor(() => {
-        workspaceContextProvider.refresh();
+        workbenchOverviewProvider.refresh();
       }),
       {
         dispose: () => {

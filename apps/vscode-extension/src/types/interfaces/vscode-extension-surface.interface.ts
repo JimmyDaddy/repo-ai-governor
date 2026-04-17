@@ -1,8 +1,10 @@
 import type {
   OrchestrationArtifactPaneQueryResponse,
   OrchestrationExecutionBoardEntry,
+  OrchestrationGovernanceQueueEntry,
   OrchestrationHandoffTarget,
   OrchestrationHitlDecisionOption,
+  OrchestrationQueueOverviewQueryResponse,
   OrchestrationServiceHostKind,
   OrchestrationServiceLifecycleStatus,
   OrchestrationServiceTransportKind,
@@ -63,4 +65,16 @@ export interface VsCodeExtensionReviewDetailSnapshot {
   workspaceContext: VsCodeExtensionWorkspaceContextSnapshot;
   selectedExecution?: OrchestrationExecutionBoardEntry;
   artifactPane?: OrchestrationArtifactPaneQueryResponse;
+  requestedReviewSourcePath?: string;
+}
+
+export interface VsCodeExtensionWorkbenchOverviewSnapshot {
+  workspaceContext: VsCodeExtensionWorkspaceContextSnapshot;
+  queueOverview: OrchestrationQueueOverviewQueryResponse;
+  selectedExecution?: OrchestrationExecutionBoardEntry;
+  reviewSourcePath?: string;
+}
+
+export interface VsCodeExtensionReviewQueueSelectionRequest extends VsCodeExtensionCommandRequest {
+  reviewQueueEntry?: OrchestrationGovernanceQueueEntry;
 }

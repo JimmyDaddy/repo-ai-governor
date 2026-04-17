@@ -19,6 +19,19 @@ export interface VsCodeExtensionChatCommandContribution {
 }
 
 export interface VsCodeExtensionContractSnapshot {
+  surfaceId: string;
+  surfaceRole: string;
+  truthOwner: string;
+  nativeEntrypoints: readonly string[];
+  workbenchPanels: readonly string[];
+  queryCapabilityClasses: readonly string[];
+  commandCapabilityClasses: readonly string[];
+  temporaryBridgeCapabilityClasses: readonly string[];
+  webviewUsageMode: string;
+  publicSupportLevel: string;
+  desktopRelationship: string;
+  handoffTargets: readonly string[];
+  continuityTokens: readonly string[];
   containerId: string;
   chatParticipantId: string;
   chatParticipantName: string;

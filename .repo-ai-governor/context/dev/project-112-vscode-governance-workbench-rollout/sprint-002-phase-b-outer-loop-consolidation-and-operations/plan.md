@@ -1,6 +1,6 @@
 # sprint-002-phase-b-outer-loop-consolidation-and-operations 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-16
 - Sprint Goal: 收口 automation queue、artifact workbench、multi-workspace overview 与 typed CLI bridge governance
 - Project: `project-112-vscode-governance-workbench-rollout`
@@ -18,7 +18,7 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-938 | land outer-loop consolidation and typed cli bridge governance baseline | DA-934 | planned |
+| TK-938 | land outer-loop consolidation and typed cli bridge governance baseline | DA-934 | in_progress |
 | TK-939 | close sprint-002 and hand off phase-c full-workbench cutover | land outer-loop consolidation and typed cli bridge governance baseline | planned |
 
 ## 3. Exit Criteria
@@ -28,3 +28,4 @@
 ## 4. Sprint Notes
 
 1. typed CLI bridge 只允许作为 temporary path，必须带 exit criteria。
+2. `2026-04-17` sprint-001 已在 latest fresh reviewer clean round `CR-003` 后完成 closeout；当前 sprint 被激活为新的 primary execution surface，`TK-938` 切换为 `in_progress`。

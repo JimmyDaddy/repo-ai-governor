@@ -39,9 +39,10 @@ export class VsCodeExtensionChatParticipantRuntime {
           ),
         );
         const workspaceContext = await this.serviceRuntime.resolveWorkspaceContextSnapshot();
-        const [executionBoard, hitlInbox] = await Promise.all([
+        const [executionBoard, hitlInbox, queueOverview] = await Promise.all([
           this.serviceRuntime.queryExecutionBoard(),
           this.serviceRuntime.queryHitlInbox(),
+          this.serviceRuntime.queryQueueOverview(),
         ]);
         const reviewDetailSnapshot =
           request.command === VSCODE_EXTENSION_CHAT_COMMAND_REVIEW
@@ -67,6 +68,7 @@ export class VsCodeExtensionChatParticipantRuntime {
             workspaceContext,
             executionBoardEntries: executionBoard.executions,
             hitlInboxEntries: hitlInbox.pendingDecisions,
+            queueOverview,
             ...(reviewDetailSnapshot
               ? {
                   reviewDetailSnapshot,
@@ -95,6 +97,7 @@ export class VsCodeExtensionChatParticipantRuntime {
           metadata: {
             executionCount: executionBoard.executions.length,
             pendingHitlCount: hitlInbox.pendingDecisions.length,
+            reviewQueueCount: queueOverview.reviewQueue.length,
           },
         };
       } catch (error) {

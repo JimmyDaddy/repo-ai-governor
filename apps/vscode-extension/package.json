@@ -31,6 +31,7 @@
     "workspaceContains:.repo-ai-governor",
     "onView:repoAiGovernor.executionBoard",
     "onView:repoAiGovernor.hitlInbox",
+    "onView:repoAiGovernor.reviewQueue",
     "onView:repoAiGovernor.workspaceContext",
     "onView:repoAiGovernor.reviewDetail",
     "onCommand:repoAiGovernor.refresh",
@@ -55,7 +56,7 @@
       "repoAiGovernor": [
         {
           "id": "repoAiGovernor.executionBoard",
-          "name": "%views.executionBoard.title%",
+          "name": "%views.taskBoard.title%",
           "contextualTitle": "%views.container.title%"
         },
         {
@@ -64,8 +65,13 @@
           "contextualTitle": "%views.container.title%"
         },
         {
+          "id": "repoAiGovernor.reviewQueue",
+          "name": "%views.reviewQueue.title%",
+          "contextualTitle": "%views.container.title%"
+        },
+        {
           "id": "repoAiGovernor.workspaceContext",
-          "name": "%views.workspaceContext.title%",
+          "name": "%views.workbenchOverview.title%",
           "contextualTitle": "%views.container.title%"
         },
         {
@@ -112,14 +118,14 @@
       "view/title": [
         {
           "command": "repoAiGovernor.refresh",
-          "when": "view == repoAiGovernor.executionBoard || view == repoAiGovernor.hitlInbox || view == repoAiGovernor.workspaceContext",
+          "when": "view == repoAiGovernor.executionBoard || view == repoAiGovernor.hitlInbox || view == repoAiGovernor.reviewQueue || view == repoAiGovernor.workspaceContext",
           "group": "navigation"
         }
       ],
       "view/item/context": [
         {
           "command": "repoAiGovernor.openReviewDetail",
-          "when": "view == repoAiGovernor.executionBoard || view == repoAiGovernor.hitlInbox || view == repoAiGovernor.workspaceContext",
+          "when": "view == repoAiGovernor.executionBoard || view == repoAiGovernor.hitlInbox || view == repoAiGovernor.reviewQueue || view == repoAiGovernor.workspaceContext",
           "group": "inline"
         }
       ],

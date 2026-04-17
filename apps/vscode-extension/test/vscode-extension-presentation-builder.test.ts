@@ -3,6 +3,10 @@ import {
   OrchestrationExecutionKind,
   OrchestrationExecutionStatus,
   OrchestrationGovernanceActionKind,
+  OrchestrationGovernanceAttentionLevel,
+  OrchestrationGovernanceFollowUpSlaState,
+  OrchestrationGovernanceNotificationStatus,
+  OrchestrationGovernanceQueueKind,
   OrchestrationHandoffTargetKind,
   OrchestrationServiceHostKind,
   OrchestrationServiceLifecycleStatus,
@@ -21,8 +25,8 @@ describe('VsCodeExtensionPresentationBuilder', () => {
     localizeText: (english: string) => english,
   });
 
-  it('renders execution-board nodes from service-owned actions and handoff targets', () => {
-    const nodes = builder.buildExecutionBoardNodes([
+  it('renders task-board nodes from service-owned actions and handoff targets', () => {
+    const nodes = builder.buildTaskBoardNodes([
       createExecutionBoardEntry({
         pendingHitl: true,
       }),
@@ -33,6 +37,7 @@ describe('VsCodeExtensionPresentationBuilder', () => {
     expect(nodes[0]?.children?.map((child) => child.label)).toEqual(
       expect.arrayContaining([
         'Status',
+        'Workflow stage',
         'Latest event',
         'Open review detail',
         'Approve and resume',
@@ -165,9 +170,9 @@ describe('VsCodeExtensionPresentationBuilder', () => {
     expect(markdown).toContain('Memory provider: @repo-ai-governor/memory-provider-sqlite-fs');
   });
 
-  it('renders workspace-context nodes with trust-sensitive and service diagnostics', () => {
-    const nodes = builder.buildWorkspaceContextNodes(
-      {
+  it('renders workbench-overview nodes with trust-sensitive and service diagnostics', () => {
+    const nodes = builder.buildWorkbenchOverviewNodes({
+      workspaceContext: {
         workspaceLabel: 'ai-governor',
         workspaceRoot: '/repo',
         workspaceTrusted: false,
@@ -180,15 +185,89 @@ describe('VsCodeExtensionPresentationBuilder', () => {
           pid: 4321,
         },
       },
-      createExecutionBoardEntry(),
-      '/repo/.repo-ai-governor/review/resolved.md',
-    );
+      queueOverview: {
+        generatedAt: '2026-04-17T10:00:00.000Z',
+        automationInbox: [
+          {
+            queueEntryId: 'automation:execution-1',
+            queueKind: OrchestrationGovernanceQueueKind.AUTOMATION_INBOX,
+            workspaceId: 'workspace-1',
+            workspaceRoot: '/repo',
+            executionId: 'execution-1',
+            executionKind: OrchestrationExecutionKind.RUN,
+            executionStatus: OrchestrationExecutionStatus.RUNNING,
+            taskId: 'TK-563',
+            projectId: 'project-048-governance-surface-clients-rollout',
+            sprintId: 'sprint-002-vscode-editor-companion-mvp',
+            attentionLevel: OrchestrationGovernanceAttentionLevel.WARNING,
+            notificationStatus: OrchestrationGovernanceNotificationStatus.FOLLOW_UP_REQUIRED,
+            followUpSlaState: OrchestrationGovernanceFollowUpSlaState.DUE_SOON,
+            actions: [],
+            handoffTargets: [],
+          },
+        ],
+        reviewQueue: [
+          {
+            queueEntryId: 'review:review-1',
+            queueKind: OrchestrationGovernanceQueueKind.REVIEW_QUEUE,
+            workspaceId: 'workspace-1',
+            workspaceRoot: '/repo',
+            executionId: 'execution-1',
+            executionKind: OrchestrationExecutionKind.RUN,
+            executionStatus: OrchestrationExecutionStatus.RUNNING,
+            taskId: 'TK-563',
+            projectId: 'project-048-governance-surface-clients-rollout',
+            sprintId: 'sprint-002-vscode-editor-companion-mvp',
+            reviewId: 'review-1',
+            reviewLifecycleStatus: 'review_pending',
+            reviewFilePath: '/repo/.repo-ai-governor/review/resolved.md',
+            attentionLevel: OrchestrationGovernanceAttentionLevel.WARNING,
+            notificationStatus: OrchestrationGovernanceNotificationStatus.FOLLOW_UP_REQUIRED,
+            followUpSlaState: OrchestrationGovernanceFollowUpSlaState.DUE_SOON,
+            actions: [],
+            handoffTargets: [],
+          },
+        ],
+        parallelLanes: [],
+        workspaceSummary: [
+          {
+            workspaceId: 'workspace-1',
+            workspaceRoot: '/repo',
+            totalExecutionCount: 1,
+            activeExecutionCount: 1,
+            pendingHitlCount: 0,
+            automationInboxCount: 1,
+            reviewQueueCount: 1,
+            overdueFollowUpCount: 0,
+            attentionLevel: OrchestrationGovernanceAttentionLevel.WARNING,
+            latestExecutionId: 'execution-1',
+            latestUpdatedAt: '2026-04-17T10:00:00.000Z',
+          },
+        ],
+        notificationOwnership: {
+          ownerSurface: OrchestrationClientSurface.DESKTOP,
+          pendingItemCount: 2,
+          dueSoonItemCount: 2,
+          overdueItemCount: 0,
+          activeWorkspaceCount: 1,
+          defaultFollowUpSlaMinutes: 60,
+          notificationStatus: OrchestrationGovernanceNotificationStatus.FOLLOW_UP_REQUIRED,
+        },
+      },
+      selectedExecution: createExecutionBoardEntry(),
+      reviewSourcePath: '/repo/.repo-ai-governor/review/resolved.md',
+    });
 
     expect(nodes.map((node) => node.label)).toEqual(
       expect.arrayContaining([
         'Workspace root',
         'Workspace trust',
         'Trust-sensitive actions',
+        'Public support level',
+        'Queue ownership',
+        'Review queue',
+        'Automation queue',
+        'Workspace summary',
         'Service lifecycle',
         'Service topology',
         'Checkpoint support',
@@ -197,6 +276,9 @@ describe('VsCodeExtensionPresentationBuilder', () => {
     );
     expect(nodes.find((node) => node.nodeId === 'trust-sensitive-actions')?.description).toBe(
       'Blocked',
+    );
+    expect(nodes.find((node) => node.nodeId === 'public-support-level')?.description).toBe(
+      'Workbench baseline in progress',
     );
     expect(nodes.find((node) => node.nodeId === 'service-topology')?.description).toBe(
       'sidecar via ipc',

@@ -65,13 +65,15 @@ export class VsCodeExtensionReviewDetailProvider implements vscode.WebviewViewPr
         detailSnapshot.selectedExecution.execution.executionSessionId,
       );
     }
-    this.selectionStore.rememberReviewSourcePath(detailSnapshot.artifactPane?.reviewSourcePath);
+    this.selectionStore.rememberReviewSourcePath(
+      detailSnapshot.artifactPane?.reviewSourcePath ?? detailSnapshot.requestedReviewSourcePath,
+    );
 
     this.webviewView.webview.html = this.presentationBuilder.buildReviewDetailHtml(detailSnapshot);
     await vscode.commands.executeCommand(
       'setContext',
       VSCODE_EXTENSION_CONTEXT_KEYS.REVIEW_DETAIL_AVAILABLE,
-      Boolean(detailSnapshot.selectedExecution),
+      Boolean(detailSnapshot.selectedExecution || detailSnapshot.requestedReviewSourcePath),
     );
   }
 }

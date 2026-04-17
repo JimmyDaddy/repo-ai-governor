@@ -77,8 +77,9 @@ describe('VsCode extension controller/provider integration', () => {
     vscodeMock.createTerminal.mockClear();
   });
 
-  it('refreshes review detail when execution-board selection changes', async () => {
+  it('refreshes review detail and clears stale review-source routing when execution-board selection changes', async () => {
     const selectionStore = new VsCodeExtensionSelectionStore();
+    selectionStore.rememberReviewSourcePath('/repo/review-stale.md');
     const reviewDetailProvider = {
       refresh: vi.fn(),
     };
@@ -105,6 +106,7 @@ describe('VsCode extension controller/provider integration', () => {
     const request = {
       executionId: 'execution-1',
       executionSessionId: 'session-1',
+      reviewSourcePath: undefined,
     };
     await controller.handleExecutionBoardSelection([
       {
@@ -113,6 +115,58 @@ describe('VsCode extension controller/provider integration', () => {
     ] as never);
 
     expect(selectionStore.getSnapshot()).toEqual(request);
+    expect(reviewDetailProvider.refresh).toHaveBeenCalledWith(request);
+  });
+
+  it('clears stale execution selection when review-queue selection only carries review source metadata', async () => {
+    const selectionStore = new VsCodeExtensionSelectionStore();
+    selectionStore.rememberExecution('execution-stale', 'session-stale');
+    selectionStore.rememberReviewSourcePath('/repo/review-stale.md');
+
+    const workbenchOverviewProvider = {
+      refresh: vi.fn(),
+    };
+    const reviewDetailProvider = {
+      refresh: vi.fn(),
+    };
+    const controller = new VsCodeExtensionCommandController(
+      {} as never,
+      selectionStore,
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        taskBoardProvider: {
+          refresh: vi.fn(),
+        } as never,
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewQueueProvider: {
+          refresh: vi.fn(),
+        } as never,
+        workbenchOverviewProvider: workbenchOverviewProvider as never,
+        reviewDetailProvider: reviewDetailProvider as never,
+      },
+    );
+
+    const request = {
+      executionId: undefined,
+      executionSessionId: undefined,
+      reviewSourcePath: '/repo/review-queue.md',
+    };
+    await controller.handleReviewQueueSelection([
+      {
+        selectionRequest: request,
+      },
+    ] as never);
+
+    expect(selectionStore.getSnapshot()).toEqual({
+      executionId: undefined,
+      executionSessionId: undefined,
+      reviewSourcePath: '/repo/review-queue.md',
+    });
+    expect(workbenchOverviewProvider.refresh).toHaveBeenCalledTimes(1);
     expect(reviewDetailProvider.refresh).toHaveBeenCalledWith(request);
   });
 
@@ -151,6 +205,62 @@ describe('VsCode extension controller/provider integration', () => {
 
     expect(vscodeMock.showWarningMessage).toHaveBeenCalled();
     expect(vscodeMock.openTextDocument).not.toHaveBeenCalled();
+  });
+
+  it('falls back to reviewSourcePath handoff without reusing stale execution selection', async () => {
+    vscodeMock.state.trusted = true;
+    vscodeMock.openTextDocument.mockResolvedValue({
+      uri: {
+        fsPath: '/repo/review-only.md',
+      },
+    });
+    vscodeMock.showTextDocument.mockResolvedValue(undefined);
+
+    const selectionStore = new VsCodeExtensionSelectionStore();
+    selectionStore.rememberExecution('execution-stale', 'session-stale');
+    const resolveExecutionBoardEntry = vi.fn();
+    const controller = new VsCodeExtensionCommandController(
+      {
+        resolveExecutionBoardEntry,
+      } as never,
+      selectionStore,
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        taskBoardProvider: {
+          refresh: vi.fn(),
+        } as never,
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewQueueProvider: {
+          refresh: vi.fn(),
+        } as never,
+        workbenchOverviewProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    await controller.openHandoffTarget({
+      executionId: undefined,
+      executionSessionId: undefined,
+      reviewSourcePath: '/repo/review-only.md',
+    });
+
+    expect(resolveExecutionBoardEntry).not.toHaveBeenCalled();
+    expect(vscodeMock.openTextDocument).toHaveBeenCalledWith({
+      fsPath: '/repo/review-only.md',
+    });
+    expect(selectionStore.getSnapshot()).toEqual({
+      executionId: undefined,
+      executionSessionId: undefined,
+      reviewSourcePath: '/repo/review-only.md',
+    });
   });
 
   it('clears stale reviewSourcePath when the refreshed detail has no routed review source', async () => {
@@ -192,5 +302,81 @@ describe('VsCode extension controller/provider integration', () => {
       executionSessionId: 'session-2',
       reviewSourcePath: undefined,
     });
+  });
+
+  it('opens review detail from a review-only queue request without restoring stale execution state', async () => {
+    const selectionStore = new VsCodeExtensionSelectionStore();
+    const resolveReviewDetailSnapshot = vi
+      .fn()
+      .mockResolvedValueOnce({
+        workspaceContext: {
+          workspaceLabel: 'ai-governor',
+          workspaceRoot: '/repo',
+          workspaceTrusted: true,
+        },
+      })
+      .mockResolvedValueOnce({
+        workspaceContext: {
+          workspaceLabel: 'ai-governor',
+          workspaceRoot: '/repo',
+          workspaceTrusted: true,
+        },
+        requestedReviewSourcePath: '/repo/review-only.md',
+      });
+    const buildReviewDetailHtml = vi.fn().mockReturnValue('<html></html>');
+    const show = vi.fn();
+    const reviewDetailProvider = new VsCodeExtensionReviewDetailProvider(
+      {
+        resolveReviewDetailSnapshot,
+      } as never,
+      selectionStore,
+      {
+        buildReviewDetailHtml,
+      } as never,
+    );
+
+    await reviewDetailProvider.resolveWebviewView({
+      webview: {
+        options: {},
+        html: '',
+      },
+      show,
+    } as never);
+
+    selectionStore.rememberExecution('execution-stale', 'session-stale');
+    selectionStore.rememberReviewSourcePath('/repo/review-stale.md');
+
+    const controller = new VsCodeExtensionCommandController(
+      {} as never,
+      selectionStore,
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider,
+      },
+    );
+
+    await controller.openReviewDetail({
+      executionId: undefined,
+      executionSessionId: undefined,
+      reviewSourcePath: '/repo/review-only.md',
+    });
+
+    expect(resolveReviewDetailSnapshot).toHaveBeenLastCalledWith({
+      executionId: undefined,
+      executionSessionId: undefined,
+      reviewSourcePath: '/repo/review-only.md',
+    });
+    expect(selectionStore.getSnapshot()).toEqual({
+      executionId: undefined,
+      executionSessionId: undefined,
+      reviewSourcePath: '/repo/review-only.md',
+    });
+    expect(show).toHaveBeenCalledWith(false);
+    expect(buildReviewDetailHtml).toHaveBeenCalledTimes(2);
   });
 });
