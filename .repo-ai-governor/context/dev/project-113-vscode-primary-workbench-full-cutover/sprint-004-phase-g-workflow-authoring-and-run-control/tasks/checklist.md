@@ -1,13 +1,30 @@
 # checklist
 
-- [ ] TK-954 freeze phase-g workflow authoring and run-control contract
+- [x] TK-954 freeze phase-g workflow authoring and run-control contract
   - 2026-04-17：任务创建，状态初始化为 `planned`。
   - 2026-04-17：随着 sprint-003 在 `CR-002` resolved round 后完成 closeout，当前任务已切换为 `in_progress`，开始从 clean baseline 冻结 workflow authoring、governed run-control 与 workflow studio continuity boundary，并显式保持 Phase E degraded fallback 与 Phase F secure-authoring contract 不回退。
-- [ ] TK-955 implement workflow authoring and governed run-control seams
+  - 2026-04-17：当前边界已正式冻结为“workflow studio 继续只消费 service-owned DTO / query / command seam，但允许在 webview 内直接触发 governed run-control、handoff 与 temporary-bridge authoring affordance；session continuity 通过 `executionSessionId -> getSession / resumeSession` 投影，不引入 extension-local runtime truth”，同窗口定向 vitest 与 `pnpm run build` 已通过，当前任务切换为 `completed`。
+- [x] TK-955 implement workflow authoring and governed run-control seams
   - 2026-04-17：任务创建，状态初始化为 `planned`。
-- [ ] TK-956 land workflow studio control surfaces and continuity ux
+  - 2026-04-17：当前任务已完成 workflow authoring / governed run-control seam 的代码落地：`VsCodeExtensionServiceRuntime.resolveWorkflowStudioSnapshot()` 现在会增量投影 `sessionContinuity`，通过 `getSession / resumeSession` 收口 continuity selector 与 cursor metadata，同时把 `resumeSession` 失败保持为 additive degraded continuity，而不是新的 workbench blocker。
+  - 2026-04-17：`VsCodeExtensionWorkflowStudioProvider` 已开启 `enableCommandUris`，允许 workflow studio 在保持 service-backed command contract 的前提下直接触发现有 `openReviewDetail / openHandoffTarget / stageTemporaryBridge / submitHitlDecision / recoverExecution / terminateExecution` seam；同窗口定向 vitest 与 `pnpm run build` 已通过，当前任务切换为 `completed`。
+- [x] TK-956 land workflow studio control surfaces and continuity ux
   - 2026-04-17：任务创建，状态初始化为 `planned`。
-- [ ] TK-957 prepare sprint-004 exit acceptance and phase-h handoff
+  - 2026-04-17：workflow studio 已补齐 governed run-control / handoff / temporary bridge authoring surface：当前 webview 会把 selected execution action、handoff target、review-only fallback 与 temporary bridge staging command 渲染为 command-uri affordance，并保留 support-truth / desktop decision / bridge-exit evidence 面不回退。
+  - 2026-04-17：continuity UX 已落地为独立 section，展示 session status、route、latest turn、latest event sequence、next cursor 与 resume selector；builder/provider/runtime 三层配套测试已通过，当前任务切换为 `completed`。
+- [x] TK-957 prepare sprint-004 exit acceptance and phase-h handoff
   - 2026-04-17：任务创建，状态初始化为 `planned`。
-- [ ] CR-001 verify phase-g workflow authoring and run control
+  - 2026-04-17：当前任务切换为 `in_progress`，开始整理 Phase G exit acceptance 与 Phase H activation-ready inputs；本窗口已完成 workflow studio run-control/continuity 实现，并通过定向 vitest 与 `pnpm run build`，下一步进入 ledger refresh、sprint 门禁与 fresh reviewer round 前的治理收口。
+  - 2026-04-17：当前 sprint gate 已 clean 通过：`check-task-required-inputs`、`check-task-ledger-sync`、`check-sprint-plan-status-sync`、`check-code-review-status-sync` 与整仓 `pnpm run check` 已全部通过，Phase G exit acceptance 固定为“workflow studio 现在可直接触发 service-backed run-control / handoff / temporary bridge action，并以 additive continuity section 投影 session metadata；Phase E degraded fallback 与 Phase F secure authoring baseline 均未回退”。
+  - 2026-04-17：Phase H handoff 已固定为“从 `.tmp/project-113-boundary-parking/phase-h.patch` 重放 distribution readiness 代码边界，并在 sprint-005 同窗口同步 `apps/vscode-extension/README.md`、`docs/support-matrix.zh-CN.md`、`docs/local-adoption-playbook.zh-CN.md`、`docs/maintainer-validation-playbook.zh-CN.md` 的 support-truth wording 与 packaged evidence”；当前任务切换为 `completed`，下一步进入 `CR-001` fresh reviewer round。
+  - 2026-04-17：`CR-001` 已完成 accepted finding 修复并进入 `resolved`；当前 `CR-002` 已被激活为 fresh post-fix recheck round，sprint-004 closeout 与 sprint-005 activation 需等待该轮 clean verdict。
+- [x] CR-001 verify phase-g workflow authoring and run control
   - 2026-04-17：任务创建，状态初始化为 `planned`。
+  - 2026-04-17：当前 sprint-004 implementation boundary 已在同窗口通过 targeted vitest、`pnpm run build` 与整仓 `pnpm run check`；现已调起 fresh reviewer 子 agent 启动 round-1 审查，并将 canonical pending report 固定为 `review/code_review_working-tree-20260417-2226.md`。
+  - 2026-04-17：delegated reviewer round-1 返回 2 条 actionable findings；主 agent 已逐条复核并全部认可，将 lifecycle 推进到 `verified`，并开始执行 accepted fixes。
+  - 2026-04-17：accepted fixes 已完成并通过 targeted vitest、`pnpm run build`、`check-task-required-inputs`、`check-task-ledger-sync`、`check-sprint-plan-status-sync`、`check-code-review-status-sync` 与整仓 `pnpm run check`；当前 round 推进到 `resolved`。
+- [x] CR-002 sprint-004-phase-g-workflow-authoring-and-run-control delegated recheck loop round 2
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：fresh reviewer round-2 返回 1 条新的 P2 actionable finding；主 agent 已复核并认可，当前 round 推进到 `verified`，并开始补 transport-safe clear marker 与真实 command-URI round-trip 回归测试。
+  - 2026-04-17：accepted finding 已完成修复，并通过 targeted vitest 与 `pnpm run build`；当前 round 已推进到 `resolved`，待同窗口台账同步与整仓 gate 复跑确认 clean closeout。
+  - 2026-04-17：`check-task-required-inputs`、`check-task-ledger-sync`、`check-sprint-plan-status-sync`、`check-code-review-status-sync`、`check-worktree-review-target` 与整仓 `pnpm run check` 已全部再次通过；sprint-004 review blocker 已清零，并已进入 closeout / sprint-005 activation。

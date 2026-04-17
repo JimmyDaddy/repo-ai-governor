@@ -1,6 +1,6 @@
 # TK-955 implement workflow authoring and governed run-control seams
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-17
 - Owner: AI-Agent
 - Priority: P1
@@ -43,7 +43,8 @@
 
 ## 7. Development Verification
 
-1. 待执行：按任务范围补充 fast/targeted verification。
+1. pnpm run build
+2. pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test/vscode-extension-service-runtime.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts
 2. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-004-phase-g-workflow-authoring-and-run-control/tasks" --task-id TK-955
 
 ## 8. Delivery Verification
@@ -56,8 +57,10 @@
 ## 9. 执行记录
 
 1. 2026-04-17：任务创建，状态初始化为 `planned`。
+2. 2026-04-17：当前任务已完成 workflow authoring / governed run-control seam 的代码落地：`VsCodeExtensionServiceRuntime.resolveWorkflowStudioSnapshot()` 现在会增量投影 `sessionContinuity`，通过 `getSession / resumeSession` 收口 continuity selector 与 cursor metadata，同时把 `resumeSession` 失败保持为 additive degraded continuity，而不是新的 workbench blocker。
+3. 2026-04-17：`VsCodeExtensionWorkflowStudioProvider` 已开启 `enableCommandUris`，允许 workflow studio 在保持 service-backed command contract 的前提下直接触发现有 `openReviewDetail / openHandoffTarget / stageTemporaryBridge / submitHitlDecision / recoverExecution / terminateExecution` seam；同窗口定向 vitest 与 `pnpm run build` 已通过，当前任务切换为 `completed`。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. workflow authoring / run-control seam 已完成：workflow studio snapshot 现在会附带 session continuity additive projection，且 command-uri capability 已从 provider 层显式打开。
+2. continuity service seam 已完成失败收敛：`resumeSession` 失败只写入 `degradedReason`，不会回退 Phase E 的 degraded fallback contract 或重新让 workbench 卡死在 loading。

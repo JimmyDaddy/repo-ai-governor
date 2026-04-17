@@ -621,21 +621,30 @@ export class VsCodeExtensionCommandController {
     commandRequest?: VsCodeExtensionCommandRequest,
   ): VsCodeExtensionCommandRequest {
     const selection = this.selectionStore.getSnapshot();
+    const clearExecutionSelection = commandRequest?.clearExecutionSelection === true;
     return {
-      executionId:
-        commandRequest && 'executionId' in commandRequest
+      executionId: clearExecutionSelection
+        ? undefined
+        : commandRequest && 'executionId' in commandRequest
           ? commandRequest.executionId
           : selection.executionId,
-      executionSessionId:
-        commandRequest && 'executionSessionId' in commandRequest
+      executionSessionId: clearExecutionSelection
+        ? undefined
+        : commandRequest && 'executionSessionId' in commandRequest
           ? commandRequest.executionSessionId
           : selection.executionSessionId,
       reviewSourcePath:
         commandRequest && 'reviewSourcePath' in commandRequest
           ? commandRequest.reviewSourcePath
           : selection.reviewSourcePath,
-      queueEntry:
-        commandRequest && 'queueEntry' in commandRequest
+      ...(clearExecutionSelection
+        ? {
+            clearExecutionSelection: true,
+          }
+        : {}),
+      queueEntry: clearExecutionSelection
+        ? undefined
+        : commandRequest && 'queueEntry' in commandRequest
           ? commandRequest.queueEntry
           : selection.queueEntry,
       ...(commandRequest?.handoffTarget
@@ -643,15 +652,19 @@ export class VsCodeExtensionCommandController {
             handoffTarget: commandRequest.handoffTarget,
           }
         : {}),
-      ...(commandRequest && 'temporaryBridge' in commandRequest
+      ...(clearExecutionSelection
         ? {
-            temporaryBridge: commandRequest.temporaryBridge,
+            temporaryBridge: undefined,
           }
-        : selection.temporaryBridge
+        : commandRequest && 'temporaryBridge' in commandRequest
           ? {
-              temporaryBridge: selection.temporaryBridge,
+              temporaryBridge: commandRequest.temporaryBridge,
             }
-          : {}),
+          : selection.temporaryBridge
+            ? {
+                temporaryBridge: selection.temporaryBridge,
+              }
+            : {}),
       ...(commandRequest?.hitlDecisionOption
         ? {
             hitlDecisionOption: commandRequest.hitlDecisionOption,

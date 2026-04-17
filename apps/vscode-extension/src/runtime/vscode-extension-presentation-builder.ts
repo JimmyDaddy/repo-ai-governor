@@ -732,6 +732,12 @@ export class VsCodeExtensionPresentationBuilder {
         '    .card { border: 1px solid var(--vscode-panel-border); border-radius: 10px; padding: 12px; margin-bottom: 12px; background: color-mix(in srgb, var(--vscode-editor-background) 92%, var(--vscode-list-hoverBackground) 8%); }',
         '    .facts { margin: 8px 0 0; padding-left: 16px; }',
         '    .section-list { margin: 0; padding-left: 16px; }',
+        '    .action-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }',
+        '    .action-item { border: 1px solid var(--vscode-panel-border); border-radius: 8px; padding: 10px; background: color-mix(in srgb, var(--vscode-editor-background) 88%, var(--vscode-button-secondaryBackground) 12%); }',
+        '    .action-link { color: var(--vscode-textLink-foreground); text-decoration: none; font-weight: 600; }',
+        '    .action-link:hover { text-decoration: underline; }',
+        '    .action-disabled { font-weight: 600; color: var(--vscode-disabledForeground); }',
+        '    .action-description { margin: 6px 0 0; color: var(--vscode-descriptionForeground); }',
         '    p, li { line-height: 1.5; }',
         '  </style>',
         '</head>',
@@ -744,13 +750,23 @@ export class VsCodeExtensionPresentationBuilder {
     }
 
     const queueOverview = snapshot.queueOverview;
-    const selectedExecution = snapshot.selectedExecution?.execution;
+    const selectedExecutionEntry = snapshot.selectedExecution;
+    const selectedExecution = selectedExecutionEntry?.execution;
     const artifactPane = snapshot.artifactPane;
     const secureAuthoringLines = this.buildSecureAuthoringLines(snapshot.secureAuthoring);
     const workflowLines = this.buildWorkflowStudioSelectionLines(
       selectedExecution,
       artifactPane,
       snapshot.reviewSourcePath,
+    );
+    const runControlActions = this.buildWorkflowStudioActionDescriptors(
+      selectedExecutionEntry,
+      queueOverview.temporaryBridges,
+      snapshot.reviewSourcePath,
+    );
+    const continuityLines = this.buildWorkflowStudioContinuityLines(
+      snapshot.sessionContinuity,
+      selectedExecution,
     );
     const queueLines = this.buildWorkflowStudioQueueLines(queueOverview);
     const supportTruthLines = this.buildWorkflowStudioSupportTruthLines(
@@ -781,6 +797,12 @@ export class VsCodeExtensionPresentationBuilder {
       '    .card { border: 1px solid var(--vscode-panel-border); border-radius: 10px; padding: 12px; margin-bottom: 12px; background: color-mix(in srgb, var(--vscode-editor-background) 92%, var(--vscode-list-hoverBackground) 8%); }',
       '    .facts { margin: 8px 0 0; padding-left: 16px; }',
       '    .section-list { margin: 0; padding-left: 16px; }',
+      '    .action-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }',
+      '    .action-item { border: 1px solid var(--vscode-panel-border); border-radius: 8px; padding: 10px; background: color-mix(in srgb, var(--vscode-editor-background) 88%, var(--vscode-button-secondaryBackground) 12%); }',
+      '    .action-link { color: var(--vscode-textLink-foreground); text-decoration: none; font-weight: 600; }',
+      '    .action-link:hover { text-decoration: underline; }',
+      '    .action-disabled { font-weight: 600; color: var(--vscode-disabledForeground); }',
+      '    .action-description { margin: 6px 0 0; color: var(--vscode-descriptionForeground); }',
       '    p, li { line-height: 1.5; }',
       '  </style>',
       '</head>',
@@ -808,6 +830,14 @@ export class VsCodeExtensionPresentationBuilder {
       this.renderStringSection(
         this.localizer.localizeText('Workflow focus', 'Workflow 聚焦'),
         workflowLines,
+      ),
+      this.renderActionSection(
+        this.localizer.localizeText('Governed run control', '受治理 Run Control'),
+        runControlActions,
+      ),
+      this.renderStringSection(
+        this.localizer.localizeText('Continuity and handoff', '连续性与交接'),
+        continuityLines,
       ),
       this.renderStringSection(
         this.localizer.localizeText('Secure authoring readiness', '安全 Authoring Readiness'),
@@ -2846,6 +2876,214 @@ export class VsCodeExtensionPresentationBuilder {
     return lines;
   }
 
+  private buildWorkflowStudioActionDescriptors(
+    selectedExecution: OrchestrationExecutionBoardEntry | undefined,
+    temporaryBridges: readonly OrchestrationGovernanceTemporaryBridgeEntry[],
+    reviewSourcePath?: string,
+  ): Array<{
+    label: string;
+    description: string;
+    href?: string;
+    disabledReason?: string;
+  }> {
+    const actions: Array<{
+      label: string;
+      description: string;
+      href?: string;
+      disabledReason?: string;
+    }> = [];
+
+    if (selectedExecution) {
+      const request = this.createExecutionRequest(selectedExecution);
+      actions.push({
+        label: this.localizer.localizeText('Open review detail', '打开评审详情'),
+        description: this.localizer.localizeText(
+          'Inspect the current service-backed artifact, review, and transcript projection.',
+          '查看当前 service-backed 的产物、评审与转录投影。',
+        ),
+        href: this.createCommandUri(VSCODE_EXTENSION_COMMAND_IDS.OPEN_REVIEW_DETAIL, request),
+      });
+
+      for (const action of selectedExecution.actions) {
+        if (
+          action.actionKind === OrchestrationGovernanceActionKind.OPEN_HANDOFF_TARGET ||
+          action.actionKind === OrchestrationGovernanceActionKind.VIEW_EXECUTION
+        ) {
+          continue;
+        }
+
+        if (action.actionKind === OrchestrationGovernanceActionKind.SUBMIT_HITL_DECISION) {
+          if (action.enabled && action.hitlDecisionOptions) {
+            for (const option of action.hitlDecisionOptions) {
+              actions.push({
+                label: this.getHitlDecisionLabel(option.decision, option.resumeAction),
+                description: this.localizer.localizeText(
+                  'Replay one human approval back into the orchestration runtime.',
+                  '将人工决策回灌到编排运行时。',
+                ),
+                href: this.createCommandUri(VSCODE_EXTENSION_COMMAND_IDS.SUBMIT_HITL_DECISION, {
+                  ...request,
+                  hitlDecisionOption: option,
+                }),
+              });
+            }
+          } else {
+            actions.push({
+              label: this.getDisabledActionLabel(action.actionKind),
+              description: this.localizer.localizeText(
+                'Human review is not currently waiting on this execution.',
+                '当前执行暂时不需要人工复核。',
+              ),
+              disabledReason: action.disabledReason
+                ? this.localizeDisabledReason(action.disabledReason)
+                : undefined,
+            });
+          }
+          continue;
+        }
+
+        const actionLabels = this.getActionCommandLabels(action.actionKind);
+        actions.push({
+          label: actionLabels.label,
+          description: action.enabled
+            ? this.localizer.localizeText(
+                'Run this service-backed command without leaving the workflow studio.',
+                '直接在 Workflow Studio 内触发这个 service-backed 命令。',
+              )
+            : this.localizer.localizeText(
+                'This service-backed command is currently unavailable.',
+                '这个 service-backed 命令当前不可用。',
+              ),
+          ...(action.enabled
+            ? {
+                href: this.createCommandUri(actionLabels.commandId, request),
+              }
+            : {
+                disabledReason: action.disabledReason
+                  ? this.localizeDisabledReason(action.disabledReason)
+                  : undefined,
+              }),
+        });
+      }
+
+      for (const target of selectedExecution.handoffTargets) {
+        actions.push({
+          label: this.getHandoffLabel(target.targetKind),
+          description: target.targetPath
+            ? this.localizer.localizeText(
+                `Open the canonical handoff target at ${target.targetPath}.`,
+                `打开规范交接目标 ${target.targetPath}。`,
+              )
+            : this.localizer.localizeText(
+                'The handoff target is currently unavailable.',
+                '当前交接目标不可用。',
+              ),
+          ...(target.exists && target.targetPath
+            ? {
+                href: this.createCommandUri(VSCODE_EXTENSION_COMMAND_IDS.OPEN_HANDOFF_TARGET, {
+                  ...request,
+                  handoffTarget: target,
+                }),
+              }
+            : {
+                disabledReason: this.localizer.localizeText('Target unavailable', '目标不可用'),
+              }),
+        });
+      }
+    } else if (reviewSourcePath) {
+      const reviewOnlyRequest = this.createReviewOnlyRequest(reviewSourcePath);
+      actions.push({
+        label: this.localizer.localizeText('Open review detail', '打开评审详情'),
+        description: this.localizer.localizeText(
+          'Inspect the review-only projection that is currently selected.',
+          '查看当前选中的 review-only 投影。',
+        ),
+        href: this.createCommandUri(
+          VSCODE_EXTENSION_COMMAND_IDS.OPEN_REVIEW_DETAIL,
+          reviewOnlyRequest,
+        ),
+      });
+      actions.push({
+        label: this.localizer.localizeText('Open review document', '打开评审文档'),
+        description: this.localizer.localizeText(
+          'Open the canonical review document directly from the workflow studio.',
+          '直接从 Workflow Studio 打开规范评审文档。',
+        ),
+        href: this.createCommandUri(VSCODE_EXTENSION_COMMAND_IDS.OPEN_HANDOFF_TARGET, {
+          ...reviewOnlyRequest,
+          handoffTarget: this.createReviewSourceHandoffTarget(reviewSourcePath),
+        }),
+      });
+    }
+
+    for (const entry of temporaryBridges) {
+      actions.push({
+        label: this.localizer.localizeText(
+          `Stage bridge command: ${this.localizeTemporaryBridgeCapability(entry.capabilityClass)}`,
+          `预填 bridge 命令：${this.localizeTemporaryBridgeCapability(entry.capabilityClass)}`,
+        ),
+        description: this.localizer.localizeText(
+          `Receipt ${this.localizeTemporaryBridgeReceiptKind(entry.receiptKind)} · Exit ${entry.exitCriteria.map((criterion) => this.localizeTemporaryBridgeExitCriterion(criterion)).join('; ')}`,
+          `回执 ${this.localizeTemporaryBridgeReceiptKind(entry.receiptKind)} · 退出条件 ${entry.exitCriteria.map((criterion) => this.localizeTemporaryBridgeExitCriterion(criterion)).join('；')}`,
+        ),
+        href: this.createCommandUri(VSCODE_EXTENSION_COMMAND_IDS.STAGE_TEMPORARY_BRIDGE, {
+          executionId: selectedExecution?.execution.executionId,
+          executionSessionId: selectedExecution?.execution.executionSessionId,
+          reviewSourcePath,
+          temporaryBridge: entry,
+        }),
+      });
+    }
+
+    return actions;
+  }
+
+  private buildWorkflowStudioContinuityLines(
+    sessionContinuity: VsCodeExtensionWorkflowStudioSnapshot['sessionContinuity'],
+    selectedExecution: OrchestrationExecutionSummary | undefined,
+  ): string[] {
+    if (!selectedExecution) {
+      return [
+        this.localizer.localizeText(
+          'Select one execution to inspect continuity, resume, and handoff metadata.',
+          '请选择一个执行以查看连续性、恢复与交接元数据。',
+        ),
+      ];
+    }
+
+    if (!sessionContinuity) {
+      return [
+        `${this.localizer.localizeText('Session', '会话')}: ${selectedExecution.executionSessionId ?? this.localizer.localizeText('Unavailable', '不可用')}`,
+        this.localizer.localizeText(
+          'Continuity metadata is not projected yet.',
+          '当前还没有投影出连续性元数据。',
+        ),
+      ];
+    }
+
+    const unavailable = this.localizer.localizeText('Unavailable', '不可用');
+    const lines = [
+      `${this.localizer.localizeText('Session', '会话')}: ${sessionContinuity.sessionId}`,
+      `${this.localizer.localizeText('Session status', '会话状态')}: ${sessionContinuity.sessionStatus ?? unavailable}`,
+      `${this.localizer.localizeText('Current route', '当前路由')}: ${sessionContinuity.currentRouteId ?? unavailable}`,
+      `${this.localizer.localizeText('Latest turn', '最近轮次')}: ${sessionContinuity.latestTurnId ?? unavailable}`,
+      `${this.localizer.localizeText('Latest event sequence', '最近事件序号')}: ${String(sessionContinuity.latestEventSequence ?? unavailable)}`,
+      `${this.localizer.localizeText('Next cursor', '下一个游标')}: ${sessionContinuity.nextCursor ?? unavailable}`,
+    ];
+    if (sessionContinuity.resumeSelector) {
+      lines.push(
+        `${this.localizer.localizeText('Resume selector', '恢复选择器')}: ${sessionContinuity.resumeSelector}`,
+      );
+    }
+    if (sessionContinuity.degradedReason) {
+      lines.push(
+        `${this.localizer.localizeText('Continuity degradation', '连续性降级')}: ${sessionContinuity.degradedReason}`,
+      );
+    }
+
+    return lines;
+  }
+
   private buildWorkflowStudioQueueLines(
     queueOverview: OrchestrationQueueOverviewQueryResponse,
   ): string[] {
@@ -2959,6 +3197,64 @@ export class VsCodeExtensionPresentationBuilder {
 
   private isPrimaryWorkbenchClaimActive(): boolean {
     return String(VSCODE_EXTENSION_PUBLIC_SUPPORT_LEVEL) === 'primary_workbench_claim';
+  }
+
+  private createReviewSourceHandoffTarget(reviewSourcePath: string): OrchestrationHandoffTarget {
+    return {
+      targetId: `review-source:${reviewSourcePath}`,
+      executionId: `review-source:${reviewSourcePath}`,
+      targetKind: OrchestrationHandoffTargetKind.REVIEW_DOCUMENT,
+      targetPath: reviewSourcePath,
+      exists: true,
+    };
+  }
+
+  private createReviewOnlyRequest(reviewSourcePath: string): VsCodeExtensionCommandRequest {
+    return {
+      reviewSourcePath,
+      clearExecutionSelection: true,
+    };
+  }
+
+  private createCommandUri(command: string, request?: VsCodeExtensionCommandRequest): string {
+    if (!request) {
+      return `command:${command}`;
+    }
+
+    return `command:${command}?${encodeURIComponent(JSON.stringify([request]))}`;
+  }
+
+  private renderActionSection(
+    title: string,
+    actions: ReadonlyArray<{
+      label: string;
+      description: string;
+      href?: string;
+      disabledReason?: string;
+    }>,
+  ): string {
+    if (actions.length === 0) {
+      return this.renderStringSection(title, []);
+    }
+
+    return `
+      <section class="card">
+        <h2>${this.escapeHtml(title)}</h2>
+        <ul class="action-list">
+          ${actions
+            .map((action) => {
+              const labelMarkup = action.href
+                ? `<a class="action-link" href="${this.escapeHtml(action.href)}">${this.escapeHtml(action.label)}</a>`
+                : `<span class="action-disabled">${this.escapeHtml(action.label)}</span>`;
+              const description = action.disabledReason
+                ? `${action.description} ${this.localizer.localizeText('Reason', '原因')}: ${action.disabledReason}`
+                : action.description;
+              return `<li class="action-item">${labelMarkup}<p class="action-description">${this.escapeHtml(description)}</p></li>`;
+            })
+            .join('')}
+        </ul>
+      </section>
+    `;
   }
 
   private renderStringSection(title: string, lines: readonly string[]): string {

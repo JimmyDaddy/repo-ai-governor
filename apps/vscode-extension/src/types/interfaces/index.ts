@@ -8,6 +8,7 @@ export type {
   VsCodeExtensionCommandRequest,
   VsCodeExtensionReviewDetailSnapshot,
   VsCodeExtensionReviewQueueSelectionRequest,
+  VsCodeExtensionSessionContinuitySnapshot,
   VsCodeExtensionSelectionSnapshot,
   VsCodeExtensionSecretBackendStatusSnapshot,
   VsCodeExtensionSecretReadinessSnapshot,

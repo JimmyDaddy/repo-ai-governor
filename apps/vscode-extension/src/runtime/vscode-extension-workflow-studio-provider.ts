@@ -29,7 +29,7 @@ export class VsCodeExtensionWorkflowStudioProvider implements vscode.WebviewView
   public async resolveWebviewView(webviewView: vscode.WebviewView): Promise<void> {
     this.webviewView = webviewView;
     webviewView.webview.options = {
-      enableCommandUris: false,
+      enableCommandUris: true,
     };
     await this.render();
   }

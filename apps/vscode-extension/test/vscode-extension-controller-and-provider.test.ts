@@ -83,7 +83,9 @@ vi.mock(
   { virtual: true },
 );
 
+import { VSCODE_EXTENSION_COMMAND_IDS } from '../src/constants/index.js';
 import { VsCodeExtensionCommandController } from '../src/runtime/vscode-extension-command-controller.js';
+import { VsCodeExtensionPresentationBuilder } from '../src/runtime/vscode-extension-presentation-builder.js';
 import { VsCodeExtensionReviewDetailProvider } from '../src/runtime/vscode-extension-review-detail-provider.js';
 import { VsCodeExtensionSelectionStore } from '../src/runtime/vscode-extension-selection-store.js';
 import { VsCodeExtensionWorkflowStudioProvider } from '../src/runtime/vscode-extension-workflow-studio-provider.js';
@@ -291,6 +293,311 @@ describe('VsCode extension controller/provider integration', () => {
       executionSessionId: undefined,
       reviewSourcePath: '/repo/review-only.md',
     });
+
+    expect(resolveExecutionBoardEntry).not.toHaveBeenCalled();
+    expect(vscodeMock.openTextDocument).toHaveBeenCalledWith({
+      fsPath: '/repo/review-only.md',
+    });
+    expect(selectionStore.getSnapshot()).toEqual({
+      executionId: undefined,
+      executionSessionId: undefined,
+      reviewSourcePath: '/repo/review-only.md',
+      queueEntry: undefined,
+      temporaryBridge: undefined,
+    });
+  });
+
+  it('prefers an explicit review-only handoff target over stale queue-selected targets', async () => {
+    vscodeMock.state.trusted = true;
+    vscodeMock.openTextDocument.mockResolvedValue({
+      uri: {
+        fsPath: '/repo/review-only.md',
+      },
+    });
+    vscodeMock.showTextDocument.mockResolvedValue(undefined);
+
+    const selectionStore = new VsCodeExtensionSelectionStore();
+    selectionStore.applyCommandRequest({
+      executionId: 'execution-stale',
+      executionSessionId: 'session-stale',
+      reviewSourcePath: '/repo/review-stale.md',
+      queueEntry: {
+        queueEntryId: 'automation:execution-stale',
+        queueKind: OrchestrationGovernanceQueueKind.AUTOMATION_INBOX,
+        workspaceId: 'workspace-1',
+        workspaceRoot: '/repo',
+        executionId: 'execution-stale',
+        attentionLevel: OrchestrationGovernanceAttentionLevel.WARNING,
+        notificationStatus: OrchestrationGovernanceNotificationStatus.FOLLOW_UP_REQUIRED,
+        followUpSlaState: OrchestrationGovernanceFollowUpSlaState.OVERDUE,
+        actions: [],
+        handoffTargets: [
+          {
+            targetId: 'execution-stale:review',
+            executionId: 'execution-stale',
+            targetKind: OrchestrationHandoffTargetKind.REVIEW_DOCUMENT,
+            targetPath: '/repo/review-stale.md',
+            exists: true,
+          },
+        ],
+      },
+    });
+    const resolveExecutionBoardEntry = vi.fn();
+    const controller = new VsCodeExtensionCommandController(
+      {
+        resolveExecutionBoardEntry,
+      } as never,
+      selectionStore,
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        taskBoardProvider: {
+          refresh: vi.fn(),
+        } as never,
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewQueueProvider: {
+          refresh: vi.fn(),
+        } as never,
+        workbenchOverviewProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    await controller.openHandoffTarget({
+      executionId: undefined,
+      executionSessionId: undefined,
+      reviewSourcePath: '/repo/review-only.md',
+      handoffTarget: {
+        targetId: 'review-source:/repo/review-only.md',
+        executionId: 'review-source:/repo/review-only.md',
+        targetKind: OrchestrationHandoffTargetKind.REVIEW_DOCUMENT,
+        targetPath: '/repo/review-only.md',
+        exists: true,
+      },
+    });
+
+    expect(resolveExecutionBoardEntry).not.toHaveBeenCalled();
+    expect(vscodeMock.openTextDocument).toHaveBeenCalledWith({
+      fsPath: '/repo/review-only.md',
+    });
+    expect(selectionStore.getSnapshot()).toEqual({
+      executionId: undefined,
+      executionSessionId: undefined,
+      reviewSourcePath: '/repo/review-only.md',
+      queueEntry: expect.objectContaining({
+        queueEntryId: 'automation:execution-stale',
+      }),
+      temporaryBridge: undefined,
+    });
+  });
+
+  it('clears stale execution state on the actual review-only open-review-detail command-uri path', async () => {
+    const selectionStore = new VsCodeExtensionSelectionStore();
+    const resolveReviewDetailSnapshot = vi
+      .fn()
+      .mockResolvedValueOnce({
+        workspaceContext: {
+          workspaceLabel: 'ai-governor',
+          workspaceRoot: '/repo',
+          workspaceTrusted: true,
+        },
+      })
+      .mockResolvedValueOnce({
+        workspaceContext: {
+          workspaceLabel: 'ai-governor',
+          workspaceRoot: '/repo',
+          workspaceTrusted: true,
+        },
+        requestedReviewSourcePath: '/repo/review-only.md',
+      });
+    const reviewDetailProvider = new VsCodeExtensionReviewDetailProvider(
+      {
+        resolveReviewDetailSnapshot,
+      } as never,
+      selectionStore,
+      {
+        buildReviewDetailHtml: vi.fn().mockReturnValue('<html></html>'),
+      } as never,
+    );
+    await reviewDetailProvider.resolveWebviewView({
+      webview: {
+        options: {},
+        html: '',
+      },
+      show: vi.fn(),
+    } as never);
+
+    selectionStore.applyCommandRequest({
+      executionId: 'execution-stale',
+      executionSessionId: 'session-stale',
+      reviewSourcePath: '/repo/review-stale.md',
+      queueEntry: {
+        queueEntryId: 'automation:execution-stale',
+        queueKind: OrchestrationGovernanceQueueKind.AUTOMATION_INBOX,
+        workspaceId: 'workspace-1',
+        workspaceRoot: '/repo',
+        executionId: 'execution-stale',
+        attentionLevel: OrchestrationGovernanceAttentionLevel.WARNING,
+        notificationStatus: OrchestrationGovernanceNotificationStatus.FOLLOW_UP_REQUIRED,
+        followUpSlaState: OrchestrationGovernanceFollowUpSlaState.OVERDUE,
+        actions: [],
+        handoffTargets: [],
+      },
+    });
+
+    const builder = new VsCodeExtensionPresentationBuilder({
+      localizeText: (english: string) => english,
+    } as never);
+    const request = readCommandRequestFromWorkflowStudioHtml(
+      builder.buildWorkflowStudioHtml({
+        workspaceContext: {
+          workspaceLabel: 'ai-governor',
+          workspaceRoot: '/repo',
+          workspaceTrusted: true,
+        },
+        queueOverview: {
+          generatedAt: '2026-04-17T10:20:00.000Z',
+          automationInbox: [],
+          reviewQueue: [],
+          parallelLanes: [],
+          workspaceSummary: [],
+          temporaryBridges: [],
+          notificationOwnership: {
+            ownerSurface: OrchestrationClientSurface.DESKTOP,
+            pendingItemCount: 0,
+            dueSoonItemCount: 0,
+            overdueItemCount: 0,
+            activeWorkspaceCount: 1,
+            defaultFollowUpSlaMinutes: 60,
+            notificationStatus: OrchestrationGovernanceNotificationStatus.IDLE,
+          },
+        },
+        reviewSourcePath: '/repo/review-only.md',
+      }),
+      VSCODE_EXTENSION_COMMAND_IDS.OPEN_REVIEW_DETAIL,
+    );
+    const controller = new VsCodeExtensionCommandController(
+      {} as never,
+      selectionStore,
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider,
+      },
+    );
+
+    await controller.openReviewDetail(request as never);
+
+    expect(resolveReviewDetailSnapshot).toHaveBeenLastCalledWith({
+      reviewSourcePath: '/repo/review-only.md',
+    });
+    expect(selectionStore.getSnapshot()).toEqual({
+      executionId: undefined,
+      executionSessionId: undefined,
+      reviewSourcePath: '/repo/review-only.md',
+      queueEntry: undefined,
+      temporaryBridge: undefined,
+    });
+  });
+
+  it('clears stale queue selection on the actual review-only handoff command-uri path', async () => {
+    vscodeMock.state.trusted = true;
+    vscodeMock.openTextDocument.mockResolvedValue({
+      uri: {
+        fsPath: '/repo/review-only.md',
+      },
+    });
+    vscodeMock.showTextDocument.mockResolvedValue(undefined);
+
+    const selectionStore = new VsCodeExtensionSelectionStore();
+    selectionStore.applyCommandRequest({
+      executionId: 'execution-stale',
+      executionSessionId: 'session-stale',
+      reviewSourcePath: '/repo/review-stale.md',
+      queueEntry: {
+        queueEntryId: 'automation:execution-stale',
+        queueKind: OrchestrationGovernanceQueueKind.AUTOMATION_INBOX,
+        workspaceId: 'workspace-1',
+        workspaceRoot: '/repo',
+        executionId: 'execution-stale',
+        attentionLevel: OrchestrationGovernanceAttentionLevel.WARNING,
+        notificationStatus: OrchestrationGovernanceNotificationStatus.FOLLOW_UP_REQUIRED,
+        followUpSlaState: OrchestrationGovernanceFollowUpSlaState.OVERDUE,
+        actions: [],
+        handoffTargets: [
+          {
+            targetId: 'execution-stale:review',
+            executionId: 'execution-stale',
+            targetKind: OrchestrationHandoffTargetKind.REVIEW_DOCUMENT,
+            targetPath: '/repo/review-stale.md',
+            exists: true,
+          },
+        ],
+      },
+    });
+
+    const builder = new VsCodeExtensionPresentationBuilder({
+      localizeText: (english: string) => english,
+    } as never);
+    const request = readCommandRequestFromWorkflowStudioHtml(
+      builder.buildWorkflowStudioHtml({
+        workspaceContext: {
+          workspaceLabel: 'ai-governor',
+          workspaceRoot: '/repo',
+          workspaceTrusted: true,
+        },
+        queueOverview: {
+          generatedAt: '2026-04-17T10:20:00.000Z',
+          automationInbox: [],
+          reviewQueue: [],
+          parallelLanes: [],
+          workspaceSummary: [],
+          temporaryBridges: [],
+          notificationOwnership: {
+            ownerSurface: OrchestrationClientSurface.DESKTOP,
+            pendingItemCount: 0,
+            dueSoonItemCount: 0,
+            overdueItemCount: 0,
+            activeWorkspaceCount: 1,
+            defaultFollowUpSlaMinutes: 60,
+            notificationStatus: OrchestrationGovernanceNotificationStatus.IDLE,
+          },
+        },
+        reviewSourcePath: '/repo/review-only.md',
+      }),
+      VSCODE_EXTENSION_COMMAND_IDS.OPEN_HANDOFF_TARGET,
+    );
+    const resolveExecutionBoardEntry = vi.fn();
+    const controller = new VsCodeExtensionCommandController(
+      {
+        resolveExecutionBoardEntry,
+      } as never,
+      selectionStore,
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    await controller.openHandoffTarget(request as never);
 
     expect(resolveExecutionBoardEntry).not.toHaveBeenCalled();
     expect(vscodeMock.openTextDocument).toHaveBeenCalledWith({
@@ -936,6 +1243,9 @@ describe('VsCode extension controller/provider integration', () => {
       reviewSourcePath: '/repo/review.md',
     });
 
+    expect(webviewView.webview.options).toEqual({
+      enableCommandUris: true,
+    });
     expect(webviewView.webview.html).toBe('<html>workflow-studio</html>');
   });
 
@@ -968,6 +1278,9 @@ describe('VsCode extension controller/provider integration', () => {
       undefined,
     );
 
+    expect(webviewView.webview.options).toEqual({
+      enableCommandUris: true,
+    });
     expect(webviewView.webview.html).toBe('<html>workflow-studio-failure</html>');
   });
 
@@ -1074,3 +1387,19 @@ describe('VsCode extension controller/provider integration', () => {
     );
   });
 });
+
+function readCommandRequestFromWorkflowStudioHtml(
+  html: string,
+  commandId: string,
+): Record<string, unknown> {
+  const escapedCommandId = commandId.replaceAll('.', '\\.');
+  const commandMatch = html.match(new RegExp(`command:${escapedCommandId}\\?([^"]+)`));
+  expect(commandMatch).toBeTruthy();
+  const encodedRequest = commandMatch?.[1];
+  expect(encodedRequest).toBeTruthy();
+
+  const [request] = JSON.parse(decodeURIComponent(String(encodedRequest))) as Array<
+    Record<string, unknown>
+  >;
+  return request;
+}

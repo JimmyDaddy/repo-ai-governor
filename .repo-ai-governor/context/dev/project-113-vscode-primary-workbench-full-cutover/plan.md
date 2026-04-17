@@ -39,13 +39,13 @@
 
 ## 2.4 sprint-004-phase-g-workflow-authoring-and-run-control
 
-- Status: active
+- Status: completed
 - Sprint Goal: 完成 workflow authoring、governed run-control 与 workflow studio continuity 的标准执行骨架
-- Task Package: `TK-954、TK-955、TK-956、TK-957、CR-001`
+- Task Package: `TK-954、TK-955、TK-956、TK-957、CR-001、CR-002`
 
 ## 2.5 sprint-005-phase-h-support-promotion-and-distribution-readiness
 
-- Status: planned
+- Status: active
 - Sprint Goal: 完成 support-truth promotion、distribution readiness evidence 与 public-claim gate package 的标准执行骨架
 - Task Package: `TK-958、TK-959、TK-960、TK-961、CR-001`
 
@@ -73,12 +73,13 @@
 | TK-953 | sprint-003-phase-f-secure-authoring-and-user-settings | prepare sprint-003 exit acceptance and phase-g handoff | governance handoff | land user settings and secret readiness ux | completed |
 | CR-001 | sprint-003-phase-f-secure-authoring-and-user-settings | verify phase-f secure authoring baseline | review | prepare sprint-003 exit acceptance and phase-g handoff | resolved |
 | CR-002 | sprint-003-phase-f-secure-authoring-and-user-settings | sprint-003-phase-f-secure-authoring-and-user-settings delegated review loop round 2 | review recheck | verify phase-f secure authoring baseline | resolved |
-| TK-954 | sprint-004-phase-g-workflow-authoring-and-run-control | freeze phase-g workflow authoring and run-control contract | workflow authoring contract | prepare sprint-003 exit acceptance and phase-g handoff | in_progress |
-| TK-955 | sprint-004-phase-g-workflow-authoring-and-run-control | implement workflow authoring and governed run-control seams | workflow run-control seam | freeze phase-g workflow authoring and run-control contract | planned |
-| TK-956 | sprint-004-phase-g-workflow-authoring-and-run-control | land workflow studio control surfaces and continuity ux | workflow studio surface | implement workflow authoring and governed run-control seams | planned |
-| TK-957 | sprint-004-phase-g-workflow-authoring-and-run-control | prepare sprint-004 exit acceptance and phase-h handoff | governance handoff | land workflow studio control surfaces and continuity ux | planned |
-| CR-001 | sprint-004-phase-g-workflow-authoring-and-run-control | verify phase-g workflow authoring and run control | review | prepare sprint-004 exit acceptance and phase-h handoff | planned |
-| TK-958 | sprint-005-phase-h-support-promotion-and-distribution-readiness | freeze phase-h promotion and distribution-readiness boundary | promotion boundary | prepare sprint-004 exit acceptance and phase-h handoff | planned |
+| TK-954 | sprint-004-phase-g-workflow-authoring-and-run-control | freeze phase-g workflow authoring and run-control contract | workflow authoring contract | prepare sprint-003 exit acceptance and phase-g handoff | completed |
+| TK-955 | sprint-004-phase-g-workflow-authoring-and-run-control | implement workflow authoring and governed run-control seams | workflow run-control seam | freeze phase-g workflow authoring and run-control contract | completed |
+| TK-956 | sprint-004-phase-g-workflow-authoring-and-run-control | land workflow studio control surfaces and continuity ux | workflow studio surface | implement workflow authoring and governed run-control seams | completed |
+| TK-957 | sprint-004-phase-g-workflow-authoring-and-run-control | prepare sprint-004 exit acceptance and phase-h handoff | governance handoff | land workflow studio control surfaces and continuity ux | completed |
+| CR-001 | sprint-004-phase-g-workflow-authoring-and-run-control | verify phase-g workflow authoring and run control | review | prepare sprint-004 exit acceptance and phase-h handoff | resolved |
+| CR-002 | sprint-004-phase-g-workflow-authoring-and-run-control | sprint-004-phase-g-workflow-authoring-and-run-control delegated recheck loop round 2 | review recheck | verify phase-g workflow authoring and run control | resolved |
+| TK-958 | sprint-005-phase-h-support-promotion-and-distribution-readiness | freeze phase-h promotion and distribution-readiness boundary | promotion boundary | prepare sprint-004 exit acceptance and phase-h handoff | in_progress |
 | TK-959 | sprint-005-phase-h-support-promotion-and-distribution-readiness | execute gui and distribution readiness evidence bundle | evidence bundle | freeze phase-h promotion and distribution-readiness boundary | planned |
 | TK-960 | sprint-005-phase-h-support-promotion-and-distribution-readiness | refresh support-truth docs and claim-promotion package | support truth package | execute gui and distribution readiness evidence bundle | planned |
 | TK-961 | sprint-005-phase-h-support-promotion-and-distribution-readiness | prepare project-final closeout and next-stream recommendation | project closeout handoff | refresh support-truth docs and claim-promotion package | planned |
@@ -108,6 +109,11 @@
 8. 2026-04-17：`CR-002` 已接受并修复 `CS-022` standardized-error gate 命中与 `CS-017` helper annotation 缺口；随后 `CR-003` 被激活为 fresh clean recheck round。
 9. 2026-04-17：`CR-003` clean round 未发现 actionable finding，sprint-002 正式完成 closeout；当前 primary stream 已切换到 sprint-003，`TK-950` 进入 `in_progress` activation truth，下一步从 clean baseline 开始推进 secure authoring / settings / secret readiness UX。
 10. 2026-04-17：`CR-002` 已在 sprint-003 同窗口完成 accepted finding 修复与复验，当前 sprint-003 正式完成 closeout；primary stream 已切换到 sprint-004，`TK-954` 进入 `in_progress` activation truth，下一步从 clean baseline 推进 workflow authoring / governed run-control / workflow studio continuity UX。
+11. 2026-04-17：Phase G 的实现边界已在当前窗口落地：workflow studio 现支持 service-backed command URI action surface、session continuity additive projection 与 temporary bridge authoring affordance；`TK-954 ~ TK-956` 已切到 `completed`，`TK-957` 当前进入 sprint gate / review-ready 收口阶段。
+12. 2026-04-17：sprint-004 implementation gate 已 clean 通过，`TK-957` 已完成 exit acceptance 与 Phase H handoff 收口；下一步固定进入 `CR-001` fresh delegated reviewer round，review clean 后再执行 sprint-004 closeout 与 sprint-005 activation。
+13. 2026-04-17：`CR-001` 已完成 accepted finding 修复并进入 `resolved`；当前 `CR-002` 已被激活为 sprint-004 的 fresh post-fix recheck round，用于在 closeout 前确认 Phase G boundary clean。
+14. 2026-04-17：`CR-002` fresh reviewer round-2 新发现 review-only command URI clear-marker 漏口；主 agent 已接受该 P2，并补上 transport-safe clear flag 与真实 URI round-trip coverage，当前 round 进入 `verified`，等待同窗口复验后收口。
+15. 2026-04-17：`CR-002` 已在同窗口完成 accepted P2 修复、review lifecycle 收口与 ledger sync；sprint-004 正式完成 closeout，`stream-project-113-sprint-004` 转入 completed history，当前 primary stream 已切换到 sprint-005，`TK-958` 进入 `in_progress` activation truth。
 
 ## 7. 里程碑记录入口
 

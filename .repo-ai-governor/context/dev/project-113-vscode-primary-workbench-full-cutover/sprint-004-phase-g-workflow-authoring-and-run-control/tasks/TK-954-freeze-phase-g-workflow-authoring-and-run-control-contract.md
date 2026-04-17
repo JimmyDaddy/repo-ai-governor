@@ -1,6 +1,6 @@
 # TK-954 freeze phase-g workflow authoring and run-control contract
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-04-17
 - Owner: AI-Agent
 - Priority: P1
@@ -43,7 +43,8 @@
 
 ## 7. Development Verification
 
-1. 待执行：按任务范围补充 fast/targeted verification。
+1. pnpm run build
+2. pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test/vscode-extension-service-runtime.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts
 2. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-004-phase-g-workflow-authoring-and-run-control/tasks" --task-id TK-954
 
 ## 8. Delivery Verification
@@ -57,8 +58,9 @@
 
 1. 2026-04-17：任务创建，状态初始化为 `planned`。
 2. 2026-04-17：随着 sprint-003 在 `CR-002` resolved round 后完成 closeout，当前任务已切换为 `in_progress`，开始从 clean baseline 冻结 workflow authoring、governed run-control 与 workflow studio continuity boundary，并显式保持 Phase E degraded fallback 与 Phase F secure-authoring contract 不回退。
+3. 2026-04-17：当前边界已正式冻结为“workflow studio 继续只消费 service-owned DTO / query / command seam，但允许在 webview 内直接触发 governed run-control、handoff 与 temporary-bridge authoring affordance；session continuity 通过 `executionSessionId -> getSession / resumeSession` 投影，不引入 extension-local runtime truth”，同窗口定向 vitest 与 `pnpm run build` 已通过，当前任务切换为 `completed`。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. Phase G contract 已固定为：workflow studio 从只读证据页提升为 service-backed actionable surface，但 run-control、handoff、temporary bridge 与 continuity metadata 仍全部复用既有 command/query seam，不新增本地 shadow state。
+2. continuity contract 已固定为：`sessionId / currentRouteId / latestTurnId / latestEventSequence / nextCursor / resumeSelector` 只作为 additive continuity projection 进入 workflow studio；`resumeSession` 失败时仅降级 continuity 区块，不放大为整个 workflow studio restore failure。

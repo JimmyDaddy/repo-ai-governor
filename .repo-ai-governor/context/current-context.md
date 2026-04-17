@@ -3,24 +3,22 @@
 ## Primary Stream
 
 - Status: active
-- Stream: `stream-project-113-sprint-004`
+- Stream: `stream-project-113-sprint-005`
 - Project: `project-113-vscode-primary-workbench-full-cutover`
-- Sprint: `sprint-004-phase-g-workflow-authoring-and-run-control`
+- Sprint: `sprint-005-phase-h-support-promotion-and-distribution-readiness`
 - Docs: `.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover`
-- Plan: `.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-004-phase-g-workflow-authoring-and-run-control/plan.md`
-- Tasks: `.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-004-phase-g-workflow-authoring-and-run-control/tasks/`
-- Checklist: `.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-004-phase-g-workflow-authoring-and-run-control/tasks/checklist.md`
-- CSV: `.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-004-phase-g-workflow-authoring-and-run-control/tasks/tasks.csv`
-- Review: `.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-004-phase-g-workflow-authoring-and-run-control/review/`
-- Note: `2026-04-17` sprint-003 已在 `CR-002` resolved round 后完成 closeout，并移入 completed history；当前 primary surface 已切到 sprint-004，`TK-954` 已进入 `in_progress`，下一步从 clean baseline 推进 workflow authoring、governed run-control 与 workflow studio continuity UX，同时保持 Phase E degraded fallback 与 Phase F secure-authoring contract 不回退。
+- Plan: `.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/plan.md`
+- Tasks: `.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/tasks/`
+- Checklist: `.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/tasks/checklist.md`
+- CSV: `.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/tasks/tasks.csv`
+- Review: `.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/review/`
+- Note: `2026-04-17` sprint-004 已在 `CR-002` resolved round 后完成 closeout 并移入 completed history；当前 primary surface 已切换到 sprint-005，`TK-958` 作为 activation truth 进入 `in_progress`，下一步从 `.tmp/project-113-boundary-parking/phase-h.patch` 与 support-truth docs handoff 开始 Phase H 边界冻结。
 
 ## Active Streams
 
-- `stream-project-113-sprint-004`: role=`primary`, project=`project-113-vscode-primary-workbench-full-cutover`, sprint=`sprint-004-phase-g-workflow-authoring-and-run-control`, docs=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover`, plan=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-004-phase-g-workflow-authoring-and-run-control/plan.md`, tasks=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-004-phase-g-workflow-authoring-and-run-control/tasks/`, checklist=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-004-phase-g-workflow-authoring-and-run-control/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-004-phase-g-workflow-authoring-and-run-control/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-004-phase-g-workflow-authoring-and-run-control/review/`, status=`active`
+- `stream-project-113-sprint-005`: role=`primary`, project=`project-113-vscode-primary-workbench-full-cutover`, sprint=`sprint-005-phase-h-support-promotion-and-distribution-readiness`, docs=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover`, plan=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/plan.md`, tasks=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/tasks/`, checklist=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/review/`, status=`active`
 
 ## Planned Follow-Up Streams
-
-- `stream-project-113-sprint-005`: project=`project-113-vscode-primary-workbench-full-cutover`, sprint=`sprint-005-phase-h-support-promotion-and-distribution-readiness`, docs=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover`, plan=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/plan.md`, tasks=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/tasks/`, checklist=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/review/`, status=`planned`
 
 ## Completed Stream History
 

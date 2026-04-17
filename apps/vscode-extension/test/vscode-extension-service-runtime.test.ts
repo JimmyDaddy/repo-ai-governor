@@ -24,6 +24,7 @@ import {
   OrchestrationServiceHostKind,
   OrchestrationServiceLifecycleStatus,
   OrchestrationServiceTransportKind,
+  OrchestrationSessionStatus,
 } from '@repo-ai-governor/orchestration-service-client';
 import { GovernorErrorCode, MemoryStoreEngine, RuntimeError } from '@repo-ai-governor/shared';
 
@@ -35,6 +36,8 @@ const serviceClientMock = vi.hoisted(() => ({
   queryHitlInbox: vi.fn(),
   queryQueueOverview: vi.fn(),
   queryArtifactPane: vi.fn(),
+  getSession: vi.fn(),
+  resumeSession: vi.fn(),
   dispose: vi.fn(),
 }));
 
@@ -88,6 +91,8 @@ vi.mock('@repo-ai-governor/core-orchestration-service/sidecar-client', () => ({
     public readonly queryHitlInbox = serviceClientMock.queryHitlInbox;
     public readonly queryQueueOverview = serviceClientMock.queryQueueOverview;
     public readonly queryArtifactPane = serviceClientMock.queryArtifactPane;
+    public readonly getSession = serviceClientMock.getSession;
+    public readonly resumeSession = serviceClientMock.resumeSession;
 
     public readonly dispose = serviceClientMock.dispose;
   },
@@ -148,6 +153,8 @@ describe('VsCodeExtensionServiceRuntime', () => {
     serviceClientMock.queryHitlInbox.mockReset();
     serviceClientMock.queryQueueOverview.mockReset();
     serviceClientMock.queryArtifactPane.mockReset();
+    serviceClientMock.getSession.mockReset();
+    serviceClientMock.resumeSession.mockReset();
     serviceClientMock.dispose.mockReset();
     vscodeMock.state.trusted = true;
     vscodeMock.state.workspaceFolders = [
@@ -489,6 +496,18 @@ describe('VsCodeExtensionServiceRuntime', () => {
         transcriptEntryIds: [],
       },
     });
+    serviceClientMock.getSession.mockResolvedValueOnce({
+      sessionId: 'session-1',
+      status: OrchestrationSessionStatus.OPEN,
+      openedAt: '2026-04-07T03:00:00.000Z',
+      latestTurnId: 'turn-1',
+      latestEventSequence: 5,
+      nextCursor: 'cursor-session-1',
+      eventCount: 5,
+      currentRouteId: 'workflow_authoring',
+      executionId: 'execution-1',
+      context: {},
+    });
 
     const runtime = new VsCodeExtensionServiceRuntime();
 
@@ -516,8 +535,137 @@ describe('VsCodeExtensionServiceRuntime', () => {
       artifactPane: {
         reviewSourcePath: '/repo/.repo-ai-governor/review/resolved.md',
       },
+      sessionContinuity: {
+        sessionId: 'session-1',
+        sessionStatus: OrchestrationSessionStatus.OPEN,
+        currentRouteId: 'workflow_authoring',
+        latestTurnId: 'turn-1',
+        latestEventSequence: 5,
+        nextCursor: 'cursor-session-1',
+        resumeSelector: 'session-1',
+      },
       reviewSourcePath: '/repo/.repo-ai-governor/review/resolved.md',
     });
+    expect(serviceClientMock.resumeSession).not.toHaveBeenCalled();
+  });
+
+  it('keeps workflow-studio continuity read-only and never resumes the session during snapshot resolution', async () => {
+    serviceClientMock.getHealth.mockResolvedValueOnce({
+      serviceHostKind: OrchestrationServiceHostKind.SIDECAR,
+      serviceTransportKind: OrchestrationServiceTransportKind.IPC,
+      lifecycleStatus: OrchestrationServiceLifecycleStatus.READY,
+      checkpointCapable: true,
+      workspaceRoot: '/repo',
+      startedAt: '2026-04-07T03:00:00.000Z',
+      protocolVersion: '1',
+    });
+    serviceClientMock.queryQueueOverview.mockResolvedValueOnce({
+      generatedAt: '2026-04-07T03:05:00.000Z',
+      automationInbox: [],
+      reviewQueue: [],
+      parallelLanes: [],
+      workspaceSummary: [],
+      temporaryBridges: [],
+      notificationOwnership: {
+        ownerSurface: OrchestrationClientSurface.DESKTOP,
+        pendingItemCount: 0,
+        dueSoonItemCount: 0,
+        overdueItemCount: 0,
+        activeWorkspaceCount: 1,
+        defaultFollowUpSlaMinutes: 60,
+        notificationStatus: OrchestrationGovernanceNotificationStatus.IDLE,
+      },
+    });
+    serviceClientMock.queryExecutionBoard.mockResolvedValueOnce({
+      executions: [
+        {
+          execution: {
+            executionId: 'execution-1',
+            executionSessionId: 'session-1',
+            processId: 'process-1',
+            workspaceId: 'workspace-1',
+            workspaceRoot: '/repo',
+            executionKind: OrchestrationExecutionKind.RUN,
+            clientSurface: OrchestrationClientSurface.DESKTOP,
+            eventStreamToken: 'stream-1',
+            serviceHostKind: OrchestrationServiceHostKind.SIDECAR,
+            serviceTransportKind: OrchestrationServiceTransportKind.IPC,
+            status: OrchestrationExecutionStatus.RUNNING,
+            checkpointCapable: true,
+            recoveryCapable: true,
+            acceptedAt: '2026-04-07T03:00:00.000Z',
+            updatedAt: '2026-04-07T03:10:00.000Z',
+            pendingHitl: false,
+            latestEventSequence: 7,
+            nextCursor: 'cursor-1',
+            taskId: 'TK-956',
+          },
+          actions: [],
+          handoffTargets: [],
+        },
+      ],
+      returnedCount: 1,
+      totalMatchedCount: 1,
+    });
+    serviceClientMock.queryArtifactPane.mockResolvedValueOnce({
+      artifacts: [],
+      reviews: [],
+      transcript: [],
+      resolvedExecutionId: 'execution-1',
+      resolvedSessionId: 'session-1',
+      reviewSourcePath: '/repo/.repo-ai-governor/review/resolved.md',
+      reviewLifecycle: {
+        totalReviewCount: 1,
+        pendingReviewCount: 0,
+        verifiedReviewCount: 0,
+        resolvedReviewCount: 1,
+        latestReviewId: 'review-1',
+        latestLifecycleStatus: 'resolved',
+        latestReviewFilePath: '/repo/.repo-ai-governor/review/resolved.md',
+        navigationReviewIds: ['review-1'],
+      },
+      workbench: {
+        artifactCount: 1,
+        reviewCount: 1,
+        transcriptCount: 0,
+      },
+      evidenceBacklinks: {
+        governanceWorkspacePath: '/repo/.repo-ai-governor',
+        artifactPaths: [],
+        reviewPaths: ['/repo/.repo-ai-governor/review/resolved.md'],
+        transcriptEntryIds: [],
+      },
+    });
+    serviceClientMock.getSession.mockResolvedValueOnce({
+      sessionId: 'session-1',
+      status: OrchestrationSessionStatus.OPEN,
+      openedAt: '2026-04-07T03:00:00.000Z',
+      latestTurnId: 'turn-1',
+      latestEventSequence: 7,
+      nextCursor: 'cursor-1',
+      eventCount: 7,
+      currentRouteId: 'workflow_authoring',
+      executionId: 'execution-1',
+      context: {},
+    });
+
+    const runtime = new VsCodeExtensionServiceRuntime();
+
+    await expect(
+      runtime.resolveWorkflowStudioSnapshot({
+        executionId: 'execution-1',
+      }),
+    ).resolves.toMatchObject({
+      sessionContinuity: {
+        sessionId: 'session-1',
+        sessionStatus: OrchestrationSessionStatus.OPEN,
+        latestTurnId: 'turn-1',
+        latestEventSequence: 7,
+        nextCursor: 'cursor-1',
+        resumeSelector: 'session-1',
+      },
+    });
+    expect(serviceClientMock.resumeSession).not.toHaveBeenCalled();
   });
 
   it('resolves secure-authoring diagnostics through the embedded CLI JSON contract and caches the snapshot per repository root', async () => {

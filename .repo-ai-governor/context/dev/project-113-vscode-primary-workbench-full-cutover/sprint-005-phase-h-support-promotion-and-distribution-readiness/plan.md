@@ -1,6 +1,6 @@
 # sprint-005-phase-h-support-promotion-and-distribution-readiness 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-17
 - Sprint Goal: 完成 support-truth promotion、distribution readiness evidence 与 public-claim gate package 的标准执行骨架
 - Project: `project-113-vscode-primary-workbench-full-cutover`
@@ -19,7 +19,7 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-958 | freeze phase-h promotion and distribution-readiness boundary | prepare sprint-004 exit acceptance and phase-h handoff | planned |
+| TK-958 | freeze phase-h promotion and distribution-readiness boundary | prepare sprint-004 exit acceptance and phase-h handoff | in_progress |
 | TK-959 | execute gui and distribution readiness evidence bundle | freeze phase-h promotion and distribution-readiness boundary | planned |
 | TK-960 | refresh support-truth docs and claim-promotion package | execute gui and distribution readiness evidence bundle | planned |
 | TK-961 | prepare project-final closeout and next-stream recommendation | refresh support-truth docs and claim-promotion package | planned |
@@ -34,3 +34,4 @@
 1. bootstrap 阶段不预生成 code_review 生命周期文件。
 2. 若用户只要求拆解，不自动修改 current-context.md。
 3. 该 sprint 默认保持 planned，等待 sprint-004-phase-g-workflow-authoring-and-run-control handoff 或用户显式激活。
+4. `2026-04-17` sprint-004 已在 `CR-002` resolved round 后完成 closeout；当前 sprint 已激活为新的 primary execution surface，`TK-958` 切换为 `in_progress`，下一步从 `.tmp/project-113-boundary-parking/phase-h.patch` 重放 distribution-readiness 代码边界，并同步冻结 docs truth-sync 与 support-claim gate 输入。

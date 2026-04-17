@@ -46,6 +46,7 @@ import type {
   VsCodeExtensionSecureAuthoringSnapshot,
   VsCodeExtensionSelectionSnapshot,
   VsCodeExtensionServiceDiagnosticsSnapshot,
+  VsCodeExtensionSessionContinuitySnapshot,
   VsCodeExtensionUserConfigEntrySnapshot,
   VsCodeExtensionUserConfigStatusSnapshot,
   VsCodeExtensionWorkbenchOverviewSnapshot,
@@ -464,12 +465,15 @@ export class VsCodeExtensionServiceRuntime {
         this.resolveSelectedExecution(selection),
       ],
     );
-    const artifactPane = selectedExecution
-      ? await this.queryArtifactPaneForExecution(
-          selectedExecution.execution.executionId,
-          selectedExecution.execution.executionSessionId,
-        )
-      : undefined;
+    const [artifactPane, sessionContinuity] = await Promise.all([
+      selectedExecution
+        ? this.queryArtifactPaneForExecution(
+            selectedExecution.execution.executionId,
+            selectedExecution.execution.executionSessionId,
+          )
+        : Promise.resolve(undefined),
+      this.resolveSessionContinuitySnapshot(selectedExecution?.execution.executionSessionId),
+    ]);
 
     return {
       workspaceContext,
@@ -487,6 +491,11 @@ export class VsCodeExtensionServiceRuntime {
       ...(artifactPane
         ? {
             artifactPane,
+          }
+        : {}),
+      ...(sessionContinuity
+        ? {
+            sessionContinuity,
           }
         : {}),
       ...(selection.reviewSourcePath
@@ -749,6 +758,47 @@ export class VsCodeExtensionServiceRuntime {
     }
 
     return this.resolveExecutionBoardEntry();
+  }
+
+  private async resolveSessionContinuitySnapshot(
+    sessionId?: string,
+  ): Promise<VsCodeExtensionSessionContinuitySnapshot | undefined> {
+    if (!sessionId) {
+      return undefined;
+    }
+
+    try {
+      const client = await this.resolveClient();
+      if (!client) {
+        return {
+          sessionId,
+          degradedReason: 'Local orchestration service is unavailable.',
+        };
+      }
+
+      const session = await client.getSession(sessionId);
+      if (!session) {
+        return {
+          sessionId,
+          degradedReason: 'Session continuity is unavailable.',
+        };
+      }
+
+      return {
+        sessionId: session.sessionId,
+        sessionStatus: session.status,
+        currentRouteId: session.currentRouteId,
+        latestTurnId: session.latestTurnId,
+        latestEventSequence: session.latestEventSequence,
+        nextCursor: session.nextCursor,
+        resumeSelector: session.sessionId,
+      };
+    } catch (error) {
+      return {
+        sessionId,
+        degradedReason: standardizeError(error).message,
+      };
+    }
   }
 
   private async requireClient(): Promise<LocalOrchestrationServiceSidecarClient> {

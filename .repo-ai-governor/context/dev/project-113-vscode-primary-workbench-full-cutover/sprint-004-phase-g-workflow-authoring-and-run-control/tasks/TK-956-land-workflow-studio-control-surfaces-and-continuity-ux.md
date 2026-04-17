@@ -1,6 +1,6 @@
 # TK-956 land workflow studio control surfaces and continuity ux
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-17
 - Owner: AI-Agent
 - Priority: P1
@@ -43,7 +43,8 @@
 
 ## 7. Development Verification
 
-1. 待执行：按任务范围补充 fast/targeted verification。
+1. pnpm run build
+2. pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test/vscode-extension-service-runtime.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts
 2. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-004-phase-g-workflow-authoring-and-run-control/tasks" --task-id TK-956
 
 ## 8. Delivery Verification
@@ -56,8 +57,10 @@
 ## 9. 执行记录
 
 1. 2026-04-17：任务创建，状态初始化为 `planned`。
+2. 2026-04-17：workflow studio 已补齐 governed run-control / handoff / temporary bridge authoring surface：当前 webview 会把 selected execution action、handoff target、review-only fallback 与 temporary bridge staging command 渲染为 command-uri affordance，并保留 support-truth / desktop decision / bridge-exit evidence 面不回退。
+3. 2026-04-17：continuity UX 已落地为独立 section，展示 session status、route、latest turn、latest event sequence、next cursor 与 resume selector；builder/provider/runtime 三层配套测试已通过，当前任务切换为 `completed`。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. workflow studio control surface 已从“只读 evidence HTML”升级为“service-backed actionable panel”，可以在不离开 VS Code 的情况下触发 run-control、handoff 与 temporary bridge stage affordance。
+2. continuity UX 已完成 additive 投影与失败降级：用户可直接看到 session continuity metadata，而 failure 只会收敛到 continuity 区块，不会破坏整个 workflow studio surface。

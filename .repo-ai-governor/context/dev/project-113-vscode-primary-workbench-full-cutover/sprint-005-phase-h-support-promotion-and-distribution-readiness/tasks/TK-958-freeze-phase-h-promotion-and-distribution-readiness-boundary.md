@@ -1,6 +1,6 @@
 # TK-958 freeze phase-h promotion and distribution-readiness boundary
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-04-17
 - Owner: AI-Agent
 - Priority: P1
@@ -56,6 +56,7 @@
 ## 9. 执行记录
 
 1. 2026-04-17：任务创建，状态初始化为 `planned`。
+2. 2026-04-17：随着 sprint-004 在 `CR-002` resolved round 后完成 closeout，当前任务已切换为 `in_progress`，开始从 `.tmp/project-113-boundary-parking/phase-h.patch` 与 Phase H docs truth-sync handoff 固定 promotion/distribution-readiness boundary，并继续保持 `scripts/governance/check-sprint-plan-status-sync.js` 不纳入本项目交付。
 
 ## 10. 产出
 

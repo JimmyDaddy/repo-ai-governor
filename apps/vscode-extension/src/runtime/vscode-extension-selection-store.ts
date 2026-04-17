@@ -30,6 +30,13 @@ export class VsCodeExtensionSelectionStore {
       return;
     }
 
+    if (request.clearExecutionSelection) {
+      this.snapshot.executionId = undefined;
+      this.snapshot.executionSessionId = undefined;
+      this.snapshot.queueEntry = undefined;
+      this.snapshot.temporaryBridge = undefined;
+    }
+
     if ('executionId' in request) {
       this.snapshot.executionId = request.executionId;
     }

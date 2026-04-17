@@ -104,6 +104,7 @@ export interface VsCodeExtensionCommandRequest {
   executionId?: string;
   executionSessionId?: string;
   reviewSourcePath?: string;
+  clearExecutionSelection?: boolean;
   queueEntry?: OrchestrationGovernanceQueueEntry;
   handoffTarget?: OrchestrationHandoffTarget;
   temporaryBridge?: OrchestrationGovernanceTemporaryBridgeEntry;
@@ -133,7 +134,19 @@ export interface VsCodeExtensionWorkflowStudioSnapshot {
   secureAuthoring?: VsCodeExtensionSecureAuthoringSnapshot;
   selectedExecution?: OrchestrationExecutionBoardEntry;
   artifactPane?: OrchestrationArtifactPaneQueryResponse;
+  sessionContinuity?: VsCodeExtensionSessionContinuitySnapshot;
   reviewSourcePath?: string;
+}
+
+export interface VsCodeExtensionSessionContinuitySnapshot {
+  sessionId: string;
+  sessionStatus?: string;
+  currentRouteId?: string;
+  latestTurnId?: string;
+  latestEventSequence?: number;
+  nextCursor?: string;
+  resumeSelector?: string;
+  degradedReason?: string;
 }
 
 export interface VsCodeExtensionReviewQueueSelectionRequest extends VsCodeExtensionCommandRequest {

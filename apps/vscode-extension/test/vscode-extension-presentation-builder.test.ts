@@ -15,6 +15,7 @@ import {
   OrchestrationServiceHostKind,
   OrchestrationServiceLifecycleStatus,
   OrchestrationServiceTransportKind,
+  OrchestrationSessionStatus,
 } from '@repo-ai-governor/orchestration-service-client';
 import type {
   OrchestrationExecutionBoardEntry,
@@ -638,10 +639,21 @@ describe('VsCodeExtensionPresentationBuilder', () => {
           reviewDocumentPath: '/repo/.repo-ai-governor/review/resolved.md',
         },
       },
+      sessionContinuity: {
+        sessionId: 'session-1',
+        sessionStatus: OrchestrationSessionStatus.OPEN,
+        currentRouteId: 'workflow_authoring',
+        latestTurnId: 'turn-1',
+        latestEventSequence: 7,
+        nextCursor: 'cursor-session-1:latest',
+        resumeSelector: 'session://execution-1',
+      },
       reviewSourcePath: '/repo/.repo-ai-governor/review/resolved.md',
     });
 
     expect(html).toContain('Governor workflow studio');
+    expect(html).toContain('Governed run control');
+    expect(html).toContain('Continuity and handoff');
     expect(html).toContain('Support-truth gate');
     expect(html).toContain('Desktop decision surface');
     expect(html).toContain('Foundation-only secondary surface');
@@ -650,6 +662,12 @@ describe('VsCodeExtensionPresentationBuilder', () => {
     expect(html).toContain('Service-native host query replaces this bridge.');
     expect(html).toContain('Selected backend: os-keychain');
     expect(html).toContain('Theme default: calm');
+    expect(html).toContain('Resume selector: session://execution-1');
+    expect(html).toContain('command:repoAiGovernor.openReviewDetail');
+    expect(html).toContain('command:repoAiGovernor.recoverExecution');
+    expect(html).toContain('command:repoAiGovernor.terminateExecution');
+    expect(html).toContain('command:repoAiGovernor.openHandoffTarget');
+    expect(html).toContain('command:repoAiGovernor.stageTemporaryBridge');
   });
 
   it('surfaces the ready support-truth branch when the selected execution stage is present and no bridge remains', () => {
@@ -711,6 +729,57 @@ describe('VsCodeExtensionPresentationBuilder', () => {
     });
 
     expect(html).toContain('Ready for support-truth review');
+  });
+
+  it('encodes an explicit review-document handoff target for review-only workflow-studio actions', () => {
+    const html = builder.buildWorkflowStudioHtml({
+      workspaceContext: {
+        workspaceLabel: 'ai-governor',
+        workspaceRoot: '/repo',
+        workspaceTrusted: true,
+      },
+      queueOverview: {
+        generatedAt: '2026-04-17T10:20:00.000Z',
+        automationInbox: [],
+        reviewQueue: [],
+        parallelLanes: [],
+        workspaceSummary: [],
+        temporaryBridges: [],
+        notificationOwnership: {
+          ownerSurface: OrchestrationClientSurface.DESKTOP,
+          pendingItemCount: 0,
+          dueSoonItemCount: 0,
+          overdueItemCount: 0,
+          activeWorkspaceCount: 1,
+          defaultFollowUpSlaMinutes: 60,
+          notificationStatus: OrchestrationGovernanceNotificationStatus.IDLE,
+        },
+      },
+      reviewSourcePath: '/repo/review-only.md',
+    });
+
+    const commandMatch = html.match(/command:repoAiGovernor\.openHandoffTarget\?([^"]+)/);
+    expect(commandMatch).toBeTruthy();
+    const encodedRequest = commandMatch?.[1];
+    expect(encodedRequest).toBeTruthy();
+
+    const [request] = JSON.parse(decodeURIComponent(String(encodedRequest))) as Array<{
+      reviewSourcePath?: string;
+      handoffTarget?: {
+        targetKind?: string;
+        targetPath?: string;
+        exists?: boolean;
+      };
+    }>;
+    expect(request).toMatchObject({
+      reviewSourcePath: '/repo/review-only.md',
+      clearExecutionSelection: true,
+      handoffTarget: {
+        targetKind: OrchestrationHandoffTargetKind.REVIEW_DOCUMENT,
+        targetPath: '/repo/review-only.md',
+        exists: true,
+      },
+    });
   });
 });
 

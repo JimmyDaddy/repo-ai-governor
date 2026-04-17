@@ -6,6 +6,7 @@ export type {
   VsCodeExtensionContractSnapshot,
   VsCodeExtensionReviewDetailSnapshot,
   VsCodeExtensionReviewQueueSelectionRequest,
+  VsCodeExtensionSessionContinuitySnapshot,
   VsCodeExtensionSelectionSnapshot,
   VsCodeExtensionSecretBackendStatusSnapshot,
   VsCodeExtensionSecretReadinessSnapshot,
