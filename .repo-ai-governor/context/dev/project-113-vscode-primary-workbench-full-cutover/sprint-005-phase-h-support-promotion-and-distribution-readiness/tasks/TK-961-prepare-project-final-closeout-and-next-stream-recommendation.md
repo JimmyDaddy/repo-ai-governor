@@ -1,6 +1,6 @@
 # TK-961 prepare project-final closeout and next-stream recommendation
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-17
 - Owner: AI-Agent
 - Priority: P1
@@ -43,8 +43,8 @@
 
 ## 7. Development Verification
 
-1. 待执行：按任务范围补充 fast/targeted verification。
-2. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/tasks" --task-id TK-961
+1. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/tasks" --task-id TK-961
+2. node ./scripts/governance/check-task-required-inputs.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/tasks" --task-id TK-961
 
 ## 8. Delivery Verification
 
@@ -52,12 +52,15 @@
 2. node ./scripts/governance/check-task-required-inputs.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/tasks" --task-id TK-961
 3. node ./scripts/governance/check-task-ledger-sync.js
 4. node ./scripts/governance/check-sprint-plan-status-sync.js
+5. node ./scripts/governance/check-code-review-status-sync.js
 
 ## 9. 执行记录
 
 1. 2026-04-17：任务创建，状态初始化为 `planned`。
+2. 2026-04-17：project-final closeout 输入已准备完毕：sprint-005 的 implementation / evidence / docs truth 已全部完成，下一步固定进入 sprint-005 `CR-001` fresh reviewer round；若该轮 clean，则先做 sprint-005 boundary commit，再进入 whole-project final reviewer round、completion audit summary 与 `current-context.md -> idle` 收口。
+3. 2026-04-17：project plan、sprint plan 与 `current-context.md` 已同步写回“implementation complete, review pending”真值；当前任务切换为 `completed`。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. sprint-005 与 project-113 已具备进入 fresh reviewer round 的 closeout-prep truth，且后续顺序已固定为 `sprint-005 CR -> sprint-005 commit -> project-final CR -> completion audit -> final commit`。
+2. 当前 active stream 仍保持 sprint-005，直到 sprint/project 两级 review lifecycle 全部 clean 收口后再回到 `idle`。

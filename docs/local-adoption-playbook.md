@@ -273,11 +273,11 @@ pnpm exec repo-ai-governor workspace set-ui-theme --output pretty
 pnpm exec repo-ai-governor set-ui-theme calm --theme-scope workspace --output pretty
 ```
 
-## 9. Optional Secondary Surfaces And Lower-level Paths
+## 9. Optional Editor-native Surfaces And Lower-level Paths
 
 These surfaces are real, but they are not the default adopter story.
 
-### VS Code companion
+### VS Code primary workbench
 
 ```bash
 cd <governor-repo>
@@ -285,7 +285,7 @@ pnpm run build
 code --extensionDevelopmentPath <governor-repo>/apps/vscode-extension <target-repo>
 ```
 
-Use this only when you want the editor-native companion on top of the normal CLI path. Current support is limited to a built source checkout and local VSIX or packaged-extension-root rehearsal.
+Use this when you want the built-source editor-native primary workbench on top of the normal CLI path. Public support currently covers the built source checkout plus one locally generated VSIX or packaged extension root. It does not replace CLI ownership of automation, CI, or session-shell entry points, and it does not widen support to Marketplace or published npm/tgz install surfaces.
 
 ### Desktop foundation
 

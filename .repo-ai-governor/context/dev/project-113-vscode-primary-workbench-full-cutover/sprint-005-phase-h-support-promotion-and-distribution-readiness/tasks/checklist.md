@@ -1,13 +1,46 @@
 # checklist
 
-- [ ] TK-958 freeze phase-h promotion and distribution-readiness boundary
+- [x] TK-958 freeze phase-h promotion and distribution-readiness boundary
   - 2026-04-17：任务创建，状态初始化为 `planned`。
   - 2026-04-17：随着 sprint-004 在 `CR-002` resolved round 后完成 closeout，当前任务已切换为 `in_progress`，开始从 `.tmp/project-113-boundary-parking/phase-h.patch` 与 Phase H docs truth-sync handoff 固定 promotion/distribution-readiness boundary，并继续保持 `scripts/governance/check-sprint-plan-status-sync.js` 不纳入本项目交付。
-- [ ] TK-959 execute gui and distribution readiness evidence bundle
+  - 2026-04-17：Phase H boundary 已冻结为“VS Code built-source checkout + local VSIX / packaged extension root 维持 `primary_workbench_claim`，Desktop 继续保持 `foundation_only_secondary_surface`，且 packaged runtime 必须保留 pnpm metadata、sidecar readiness 与 symlink-safe payload 边界”；当前代码与 targeted vitest、`pnpm run build` 已在同窗口通过，任务切换为 `completed`。
+  - 2026-04-18：根据 fresh reviewer round 的 P2 复核，当前任务把 package-scoped vitest 与根级 `test/release-vscode-extension-distribution-working-root.integration.test.ts` 分拆记录，避免 `vitest.packages.config.ts` 遗漏 root integration guard 的证据漂移。
+- [x] TK-959 execute gui and distribution readiness evidence bundle
   - 2026-04-17：任务创建，状态初始化为 `planned`。
-- [ ] TK-960 refresh support-truth docs and claim-promotion package
+  - 2026-04-17：distribution-readiness evidence bundle 已在同窗口完成：`pnpm run release:verify-vscode-extension-distribution -- --output .tmp/project-113-sprint-005-vscode-distribution-report.json` 通过，报告确认 packaged root / extracted VSIX 的 `packageSymlinks=[]`、`extractedSymlinks=[]`，且两条 sidecar smoke 都返回 `serviceLifecycle=ready`。
+  - 2026-04-17：`pnpm pack --json --dry-run`、`pnpm run check:ide-entry-smoke` 继续保持绿色，说明本地 VSIX / packaged root 证据与 IDE 官方模板入口 smoke 已具备 release-facing evidence bundle；当前任务切换为 `completed`。
+- [x] TK-960 refresh support-truth docs and claim-promotion package
   - 2026-04-17：任务创建，状态初始化为 `planned`。
-- [ ] TK-961 prepare project-final closeout and next-stream recommendation
+  - 2026-04-17：support-truth docs 与 claim-promotion package 已在同窗口刷新：`apps/vscode-extension/README.md`、`docs/support-matrix.md`、`docs/support-matrix.zh-CN.md`、`docs/local-adoption-playbook.md`、`docs/local-adoption-playbook.zh-CN.md`、`docs/maintainer-validation-playbook.md`、`docs/maintainer-validation-playbook.zh-CN.md` 现统一声明 built-source checkout 与本地 VSIX / packaged extension root 的 `primary_workbench_claim`。
+  - 2026-04-17：`pnpm run check:ide-docs-parity` 与 distribution evidence 在同窗口均保持通过，且文档继续明确排除 Marketplace 与已发布 npm/tgz 安装面的支持承诺；当前任务切换为 `completed`。
+- [x] TK-961 prepare project-final closeout and next-stream recommendation
   - 2026-04-17：任务创建，状态初始化为 `planned`。
-- [ ] CR-001 verify phase-h promotion evidence and readiness deltas
+  - 2026-04-17：project-final closeout 输入已准备完毕：sprint-005 的 implementation / evidence / docs truth 已全部完成，下一步固定进入 sprint-005 `CR-001` fresh reviewer round；若该轮 clean，则先做 sprint-005 boundary commit，再进入 whole-project final reviewer round、completion audit summary 与 `current-context.md -> idle` 收口。
+  - 2026-04-17：project plan、sprint plan 与 `current-context.md` 已同步写回“implementation complete, review pending”真值；当前任务切换为 `completed`。
+- [x] CR-001 verify phase-h promotion evidence and readiness deltas
   - 2026-04-17：任务创建，状态初始化为 `planned`。
+  - 2026-04-18：已复用 sprint-005 预留的 `CR-001` 启动 initial fresh reviewer round；当前任务切换为 `review_pending`，pending report 路径固定为 `/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/review/code_review_working-tree-20260418-0007.md`。
+  - 2026-04-18：fresh reviewer round 的 3 条 finding 已全部认可并完成修复/复验；当前任务切换为 `resolved`，review lifecycle 报告路径更新为 `/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/review/resolved_code_review_working-tree-20260418-0007.md`。
+- [x] CR-002 sprint-005-phase-h-support-promotion-and-distribution-readiness delegated recheck loop round 2
+  - 2026-04-18：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-18：fresh reviewer 在本轮发现 packaged sidecar smoke 对非 `ready` lifecycle 未执行 fail-fast；当前 finding 已认可并完成修复/复验，任务切换为 `resolved`，review lifecycle 报告路径更新为 `/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/review/resolved_code_review_working-tree-20260418-0035.md`。
+- [x] CR-003 sprint-005-phase-h-support-promotion-and-distribution-readiness delegated recheck loop round 3
+  - 2026-04-18：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-18：fresh reviewer 在本轮发现 support-matrix evidence time 漂移与 extracted-VSIX / symlink guard 缺少 focused regression coverage；两条 finding 已全部认可并完成修复/复验，任务切换为 `resolved`，review lifecycle 报告路径更新为 `/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/review/resolved_code_review_working-tree-20260418-0053.md`。
+- [x] CR-004 sprint-005-phase-h-support-promotion-and-distribution-readiness delegated recheck loop round 4
+  - 2026-04-18：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-18：fresh reviewer 在本轮指出 support-truth 仍回链可变 `.tmp` distribution report；当前 finding 已认可并通过 immutable evidence snapshot + docs refresh 修复，任务切换为 `resolved`，review lifecycle 报告路径固定为 `/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/review/resolved_code_review_working-tree-20260418-0108.md`。
+- [x] CR-005 sprint-005-phase-h-support-promotion-and-distribution-readiness delegated recheck loop round 5
+  - 2026-04-18：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-18：fresh reviewer 在本轮指出 maintainer playbook 仍把 VS Code primary-workbench 的 evidence path 固定到可变 `.tmp` report；主 agent 复核后认可该 P2，并确认 support-matrix 的 immutable snapshot fix 还需要在 maintainer runbook/backlink guidance 同窗收口。
+  - 2026-04-18：中英文 maintainer playbook 已明确 `.tmp/project-113-sprint-005-vscode-distribution-report.json` 仅为 rerun 工作输出，权威回链切换为 timestamped immutable snapshot；`pnpm run check:ide-docs-parity` 通过，当前任务切换为 `resolved`，review lifecycle 报告路径固定为 `/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/review/resolved_code_review_working-tree-20260418-0122.md`。
+- [x] CR-006 sprint-005-phase-h-support-promotion-and-distribution-readiness delegated review loop round 6
+  - 2026-04-18：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-18：fresh reviewer 在本轮指出 VS Code distribution gate 与 focused sidecar-readiness test 仍以 raw string 维护 orchestration lifecycle contract；主 agent 复核后认可该 `CS-009` finding，并确认这条 release-blocking gate 需要切到 shared enum 真值。
+  - 2026-04-18：`scripts/release/verify-vscode-extension-distribution.js` 与 `test/release-vscode-extension-distribution-sidecar-readiness.integration.test.ts` 已改为复用 `OrchestrationServiceLifecycleStatus`；`pnpm exec vitest run test/release-vscode-extension-distribution-sidecar-readiness.integration.test.ts`、`pnpm run build`、`pnpm run release:verify-vscode-extension-distribution -- --output .tmp/project-113-sprint-005-vscode-distribution-report.json` 与 `pnpm run check:ide-docs-parity` 通过，当前任务切换为 `resolved`，review lifecycle 报告路径固定为 `/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/review/resolved_code_review_working-tree-20260418-0138.md`。
+- [x] CR-007 sprint-005-phase-h-support-promotion-and-distribution-readiness delegated review loop round 7
+  - 2026-04-18：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-18：fresh reviewer 对 Phase H 当前边界执行 clean recheck 后未发现新的 actionable finding；当前任务切换为 `resolved`，review lifecycle 报告路径固定为 `/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/review/resolved_code_review_working-tree-20260418-0150.md`。
+- [ ] TK-962 close sprint-005 boundary and activate project-final reviewer loop
+  - 2026-04-18：任务创建，状态初始化为 `in_progress`；当前 sprint-005 的 `CR-007` clean round 已返回无 actionable finding，下一步执行 sprint final gate、boundary commit 与 project-final reviewer bootstrap。
+  - 2026-04-18：TK-962 已激活为 sprint-005 closeout 任务；当前开始执行 sprint final gate、boundary commit 与 project-final reviewer bootstrap。

@@ -39,7 +39,7 @@ Pick the runbook that matches the question you are trying to answer.
 | Rehearse a clean-room install path | `pnpm run release:verify-cleanroom-local-install` | Install-mode evidence |
 | Rehearse real-project interactive behavior | Build once, then run the real-target command chain | Real target operator flow |
 | Recheck examples and docs-backed scenarios | `pnpm run check:examples-doc-smoke`, `pnpm run check:examples-runtime-smoke` | Example coherence and runnable scenario contract |
-| Recheck VS Code companion boundary | targeted vitest slice plus `release:verify-vscode-extension-distribution` | Editor-native companion packaging and contract |
+| Recheck VS Code primary-workbench boundary | targeted vitest slice plus `release:verify-vscode-extension-distribution` | Editor-native primary-workbench packaging and contract |
 | Recheck host-native asset boundary | targeted vitest slice plus `release:verify-host-distribution` | Codex / Claude Code / GitHub Copilot host follow-up boundary |
 | Recheck desktop foundation boundary | targeted vitest slice plus `check:desktop-entry-smoke` and `release:verify-local` | Desktop foundation-only truth |
 | Recheck official governance pack catalog | targeted vitest slice plus `pnpm run build` | Pack catalog contract and runtime loader compatibility |
@@ -61,7 +61,7 @@ Expect this to answer:
 
 1. Does the packaged CLI still behave like the currently documented local distribution?
 2. Does the tarball still ship the expected adopter docs and reference assets?
-3. Are we accidentally overstating packaged support for secondary surfaces?
+3. Are we accidentally overstating packaged support for non-CLI surfaces?
 
 Published tarballs are expected to carry:
 
@@ -131,16 +131,16 @@ This runbook is most valuable when you need to answer:
 2. Do example assertions still match actual output contracts?
 3. Did documentation drift away from the example assets without anyone noticing?
 
-## 6. Secondary-surface Validation
+## 6. Editor-native And Secondary-surface Validation
 
-### VS Code companion
+### VS Code primary workbench
 
-Use this runbook when refreshing the editor-native companion boundary:
+Use this runbook when refreshing the editor-native primary-workbench boundary:
 
 ```bash
 pnpm exec vitest run apps/vscode-extension/test/vscode-extension-service-runtime.test.ts apps/vscode-extension/test/vscode-extension-contract.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-selection-store.test.ts apps/vscode-extension/test/vscode-extension-packaging-boundary.test.ts --maxWorkers=1 --maxConcurrency=1
 pnpm run build
-pnpm run release:verify-vscode-extension-distribution -- --output .tmp/project-064-vscode-extension-distribution-report.json
+pnpm run release:verify-vscode-extension-distribution -- --output .tmp/project-113-sprint-005-vscode-distribution-report.json
 pnpm pack --json --dry-run
 pnpm run check:ide-entry-smoke
 pnpm run check:ide-docs-parity
@@ -151,6 +151,9 @@ Optional manual rehearsal:
 ```bash
 code --extensionDevelopmentPath <governor-repo>/apps/vscode-extension <target-repo>
 ```
+
+This refresh now expects the packaged extension root and the extracted VSIX to both pass module smoke, sidecar smoke, pnpm-metadata closure checks, and the symlink-payload allowlist gate before public docs can stay at `primary_workbench_claim`.
+Treat `.tmp/project-113-sprint-005-vscode-distribution-report.json` as scratch rerun output only. Before refreshing `docs/support-matrix*` or any maintainer-facing backlink, promote the rerun result into a timestamped immutable snapshot under `.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/` and use that snapshot as the authoritative evidence backlink.
 
 ### Host-native asset boundary
 
@@ -218,13 +221,14 @@ When you update docs or support claims, keep the evidence model disciplined:
 1. Update `docs/support-matrix.md` first when the supported boundary changes.
 2. Keep this playbook focused on command order, operator intent, and evidence backlinks.
 3. Prefer one authoritative evidence file per validation chain over scattered status notes.
-4. Do not turn this playbook into a second support matrix.
+4. For the `project-113` VS Code primary-workbench boundary, keep the timestamped snapshot under `.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/` as the authoritative backlink; `.tmp/project-113-sprint-005-vscode-distribution-report.json` is scratch rerun output only.
+5. Do not turn this playbook into a second support matrix.
 
 Common evidence paths referenced by this runbook include:
 
 1. `.tmp/project-063-sprint-001-local-distribution-report.json`
 2. `.tmp/project-063-sprint-001-cleanroom-tgz-report.json`
-3. `.tmp/project-064-vscode-extension-distribution-report.json`
+3. `.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/project-113-sprint-005-vscode-distribution-report-20260417T171401Z.json` (authoritative snapshot for the current VS Code primary-workbench claim)
 4. `.tmp/project-065-sprint-001-desktop-foundation-report.json`
 5. `.tmp/project-067-sprint-001-host-distribution-report.json`
 6. `.tmp/project-068-sprint-002-github-com-agent-reserved-target-report.json`

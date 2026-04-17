@@ -2,9 +2,9 @@
  * Freezes VS Code extension contribution identifiers and trust-gated command boundaries.
  *
  * Why this exists:
- * Phase C extends the primary workbench baseline with one workflow-studio evidence surface
- * without letting the extension host invent queue truth or bypass the shared local orchestration
- * service seam.
+ * Phase H keeps the public primary-workbench claim aligned with packaged-evidence truth
+ * without letting the extension host invent queue truth or bypass the shared local
+ * orchestration service seam.
  */
 export const VSCODE_EXTENSION_DEFAULT_EXECUTION_LIMIT = 5;
 export const VSCODE_EXTENSION_DEFAULT_QUEUE_LIMIT = 5;
@@ -19,7 +19,7 @@ export const VSCODE_EXTENSION_SURFACE_ID = 'vscode_governance_workbench';
 export const VSCODE_EXTENSION_SURFACE_ROLE = 'primary_governance_workbench';
 export const VSCODE_EXTENSION_TRUTH_OWNER = 'local_orchestration_service';
 export const VSCODE_EXTENSION_WEBVIEW_USAGE_MODE = 'workbench_panel_allowed';
-export const VSCODE_EXTENSION_PUBLIC_SUPPORT_LEVEL = 'workbench_baseline_in_progress';
+export const VSCODE_EXTENSION_PUBLIC_SUPPORT_LEVEL = 'primary_workbench_claim';
 export const VSCODE_EXTENSION_DESKTOP_RELATIONSHIP = 'foundation_only_secondary_surface';
 export const VSCODE_EXTENSION_CONTEXT_KEYS = {
   WORKSPACE_TRUSTED: 'repoAiGovernor.workspaceTrusted',

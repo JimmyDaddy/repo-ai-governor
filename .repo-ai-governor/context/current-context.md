@@ -12,7 +12,7 @@
 - Checklist: `.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/tasks/checklist.md`
 - CSV: `.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/tasks/tasks.csv`
 - Review: `.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/review/`
-- Note: `2026-04-17` sprint-004 已在 `CR-002` resolved round 后完成 closeout 并移入 completed history；当前 primary surface 已切换到 sprint-005，`TK-958` 作为 activation truth 进入 `in_progress`，下一步从 `.tmp/project-113-boundary-parking/phase-h.patch` 与 support-truth docs handoff 开始 Phase H 边界冻结。
+- Note: `2026-04-18` sprint-005 的 `TK-958 ~ TK-961` 与 `CR-001 ~ CR-007` 已全部完成并收口，Phase H implementation / distribution evidence / support docs truth 已稳定在 VS Code `primary_workbench_claim`；当前 primary surface 保持在 sprint-005 closeout surface，`TK-962` 已激活为 sprint final gate / boundary commit / project-final reviewer bootstrap 任务。
 
 ## Active Streams
 

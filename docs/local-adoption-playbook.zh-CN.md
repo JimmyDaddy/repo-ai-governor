@@ -273,11 +273,11 @@ pnpm exec repo-ai-governor workspace set-ui-theme --output pretty
 pnpm exec repo-ai-governor set-ui-theme calm --theme-scope workspace --output pretty
 ```
 
-## 9. 可选的 secondary surface 和更低层路径
+## 9. 可选的 editor-native surface 和更低层路径
 
 这些 surface 是真实存在的，但它们不是默认 adopter story。
 
-### VS Code companion
+### VS Code 主工作台
 
 ```bash
 cd <governor-repo>
@@ -285,7 +285,8 @@ pnpm run build
 code --extensionDevelopmentPath <governor-repo>/apps/vscode-extension <target-repo>
 ```
 
-只有当你想在正常 CLI 路径之上，再验证 editor-native companion 时才使用。当前正式支持限定在 built source checkout 和本地 VSIX / packaged extension root 演练。
+只有当你想在正常 CLI 路径之上，再验证 editor-native 主工作台时才使用。当前正式支持限定在 built source checkout 和本地 VSIX / packaged extension root 演练。
+当前 support-truth 已把这两条路径提升为 VS Code 的公开主工作台口径，但它仍不替代 CLI 的 automation / CI / session-shell 入口职责，也不会把 Marketplace 或已发布 npm/tgz 安装面变成正式支持的扩展分发方式。
 
 ### Desktop foundation
 

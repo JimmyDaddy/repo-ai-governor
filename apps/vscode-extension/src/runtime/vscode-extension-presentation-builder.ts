@@ -323,8 +323,8 @@ export class VsCodeExtensionPresentationBuilder {
         label: this.localizer.localizeText('Public support level', '公开支持级别'),
         description: this.localizePublicSupportLevel(VSCODE_EXTENSION_PUBLIC_SUPPORT_LEVEL),
         tooltip: this.localizer.localizeText(
-          'Phase C keeps the VS Code surface at workbench baseline in progress until workflow-studio and support-truth evidence are complete.',
-          'Phase C 会让 VS Code 保持在 workbench baseline in progress，直到 workflow studio 与支持口径证据闭环。',
+          'Phase H keeps the VS Code surface at the public primary-workbench claim for built-source checkout and local VSIX paths.',
+          'Phase H 会让 VS Code 在已构建源码仓与本地 VSIX 路径上维持公开主工作台口径。',
         ),
         themeIconId: 'workspace-trusted',
         contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
@@ -334,8 +334,8 @@ export class VsCodeExtensionPresentationBuilder {
         label: this.localizer.localizeText('Desktop relationship', 'Desktop 关系'),
         description: this.localizeDesktopRelationship(VSCODE_EXTENSION_DESKTOP_RELATIONSHIP),
         tooltip: this.localizer.localizeText(
-          'Desktop remains a governed secondary surface until workflow-studio evidence and support-truth cutover both close cleanly.',
-          '在 workflow studio 证据面与 support-truth cutover 一起 clean 收口前，Desktop 继续保持受治理的 secondary surface。',
+          'Desktop remains the governed foundation-only secondary surface after the VS Code primary-workbench claim promotion; it does not become a co-primary workbench.',
+          '即使 VS Code 已提升为公开主工作台，Desktop 仍保持 foundation-only 的受治理 secondary surface，不会同步变成并列主工作台。',
         ),
         themeIconId: 'device-desktop',
         contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
@@ -345,8 +345,8 @@ export class VsCodeExtensionPresentationBuilder {
         label: this.localizer.localizeText('Workflow studio gate', 'Workflow Studio 门槛'),
         description: this.getSupportTruthGateLabel(queueOverview, selectedExecution?.execution),
         tooltip: this.localizer.localizeText(
-          'Phase C uses one explicit workflow-studio + desktop-decision evidence surface before support-truth can claim VS Code as the public primary workbench.',
-          'Phase C 需要 workflow studio 与 desktop decision 的显式证据面一起闭环，之后 support-truth 才能把 VS Code 改口为公开主工作台。',
+          'Workflow studio, review detail, and packaged-distribution evidence now keep VS Code on the public primary-workbench claim while desktop remains secondary.',
+          'Workflow Studio、Review Detail 与打包分发证据现在会共同维持 VS Code 的公开主工作台口径，而 Desktop 继续保持 secondary surface。',
         ),
         themeIconId: this.isPrimaryWorkbenchClaimActive() ? 'pass-filled' : 'clock',
         contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
@@ -809,7 +809,7 @@ export class VsCodeExtensionPresentationBuilder {
       '<body>',
       `  <h1>${this.escapeHtml(title)}</h1>`,
       `  <section class="card">
-        <h2>${this.escapeHtml(this.localizer.localizeText('Phase C evidence surface', 'Phase C 证据面'))}</h2>
+        <h2>${this.escapeHtml(this.localizer.localizeText('Primary workbench evidence surface', '主工作台证据面'))}</h2>
         <p>${this.escapeHtml(
           this.localizer.localizeText(
             'Workflow studio stays service-backed: it shows workflow, queue, bridge, and support-truth evidence without turning VS Code into the owner of governance truth.',
@@ -3117,8 +3117,8 @@ export class VsCodeExtensionPresentationBuilder {
     }
     lines.push(
       this.localizer.localizeText(
-        'Keep public docs at workbench baseline in progress until workflow-studio evidence, desktop decision, and support-truth refresh all close in one governed window.',
-        '在 workflow studio 证据、desktop decision 与 support-truth refresh 同窗收口前，公开文档仍需保持 workbench baseline in progress。',
+        'Keep public docs aligned with the primary-workbench claim evidence window; Marketplace and published npm/tgz install surfaces remain unsupported.',
+        '公开文档现在要与主工作台口径证据窗保持一致；Marketplace 与已发布 npm/tgz 安装面仍然不在支持范围内。',
       ),
     );
 
@@ -3184,8 +3184,8 @@ export class VsCodeExtensionPresentationBuilder {
   ): string {
     if (this.isPrimaryWorkbenchClaimActive() && queueOverview.temporaryBridges.length === 0) {
       return this.localizer.localizeText(
-        'Desktop may be re-evaluated as a coexisting secondary surface.',
-        'Desktop 可以重新评估为并存的 secondary surface。',
+        'Desktop remains the foundation-only secondary surface while VS Code owns the public primary-workbench claim.',
+        '当 VS Code 维持公开主工作台口径时，Desktop 继续保持 foundation-only secondary surface。',
       );
     }
 

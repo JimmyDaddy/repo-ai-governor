@@ -403,13 +403,13 @@ describe('VsCodeExtensionPresentationBuilder', () => {
       'Blocked',
     );
     expect(nodes.find((node) => node.nodeId === 'public-support-level')?.description).toBe(
-      'Workbench baseline in progress',
+      'Primary workbench claim active',
     );
     expect(nodes.find((node) => node.nodeId === 'desktop-relationship')?.description).toBe(
       'Foundation-only secondary surface',
     );
     expect(nodes.find((node) => node.nodeId === 'workflow-studio-gate')?.description).toBe(
-      'Evidence in progress',
+      'Primary-workbench claim active',
     );
     expect(nodes.find((node) => node.nodeId === 'service-topology')?.description).toBe(
       'sidecar via ipc',
@@ -657,7 +657,7 @@ describe('VsCodeExtensionPresentationBuilder', () => {
     expect(html).toContain('Support-truth gate');
     expect(html).toContain('Desktop decision surface');
     expect(html).toContain('Foundation-only secondary surface');
-    expect(html).toContain('Workbench baseline in progress');
+    expect(html).toContain('Primary workbench claim active');
     expect(html).toContain('review_verify');
     expect(html).toContain('Service-native host query replaces this bridge.');
     expect(html).toContain('Selected backend: os-keychain');
@@ -728,7 +728,10 @@ describe('VsCodeExtensionPresentationBuilder', () => {
       },
     });
 
-    expect(html).toContain('Ready for support-truth review');
+    expect(html).toContain('Primary-workbench claim active');
+    expect(html).toContain(
+      'Desktop remains the foundation-only secondary surface while VS Code owns the public primary-workbench claim.',
+    );
   });
 
   it('encodes an explicit review-document handoff target for review-only workflow-studio actions', () => {
