@@ -108,17 +108,6 @@ export class VsCodeExtensionHost {
         reviewDetailProvider,
       },
     );
-    const chatParticipant = new VsCodeExtensionChatParticipantRuntime(
-      this.serviceRuntime,
-      this.selectionStore,
-      this.presentationBuilder,
-      this.localizer,
-    ).createParticipant(VSCODE_EXTENSION_CHAT_PARTICIPANT_ID);
-    chatParticipant.iconPath = vscode.Uri.joinPath(
-      context.extensionUri,
-      'resources',
-      'governor.svg',
-    );
 
     context.subscriptions.push(
       taskBoardView,
@@ -141,7 +130,6 @@ export class VsCodeExtensionHost {
           providedCodeActionKinds: [vscode.CodeActionKind.QuickFix],
         },
       ),
-      chatParticipant,
       vscode.commands.registerCommand(VSCODE_EXTENSION_COMMAND_IDS.REFRESH, async (request) =>
         commandController.refresh(request),
       ),
@@ -201,6 +189,11 @@ export class VsCodeExtensionHost {
       },
     );
 
+    const chatParticipant = this.createOptionalChatParticipant(context);
+    if (chatParticipant) {
+      context.subscriptions.push(chatParticipant);
+    }
+
     await this.refreshContextKeys();
     await commandController.refresh();
   }
@@ -217,6 +210,34 @@ export class VsCodeExtensionHost {
       'setContext',
       VSCODE_EXTENSION_CONTEXT_KEYS.WORKSPACE_TRUSTED,
       vscode.workspace.isTrusted,
+    );
+  }
+
+  private createOptionalChatParticipant(
+    context: vscode.ExtensionContext,
+  ): vscode.Disposable | undefined {
+    if (!this.hasChatParticipantSupport()) {
+      return undefined;
+    }
+
+    const chatParticipant = new VsCodeExtensionChatParticipantRuntime(
+      this.serviceRuntime,
+      this.selectionStore,
+      this.presentationBuilder,
+      this.localizer,
+    ).createParticipant(VSCODE_EXTENSION_CHAT_PARTICIPANT_ID);
+    chatParticipant.iconPath = vscode.Uri.joinPath(
+      context.extensionUri,
+      'resources',
+      'governor.svg',
+    );
+    return chatParticipant;
+  }
+
+  private hasChatParticipantSupport(): boolean {
+    return (
+      typeof (vscode as typeof vscode & { chat?: { createChatParticipant?: unknown } }).chat
+        ?.createChatParticipant === 'function'
     );
   }
 }

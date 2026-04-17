@@ -2,25 +2,27 @@
 
 ## Primary Stream
 
-- Status: idle
-- Stream: `none`
-- Project: `none`
-- Sprint: `none`
-- Docs: `none`
-- Plan: `none`
-- Tasks: `none`
-- Checklist: `none`
-- CSV: `none`
-- Review: `none`
-- Note: `2026-04-16` 已完成 execution baseline checkpoint commit `bdfec1f5`；`2026-04-17` 已完成 project-110 sprint boundary commits `51cad3ca` 与 `ff09fb6c`，并在 project-final `CR-006` clean round、completion audit summary 与 `DA-933` handoff 后完成 closeout；`2026-04-17` project-112 已依次完成 sprint-001 `DA-937`、sprint-002 `DA-939`、sprint-003 `DA-941`、project-final `CR-003` clean round、completion audit summary 与 `DA-942` final closeout write-back，当前 worktree 已恢复为 `idle` primary state。
+- Status: active
+- Stream: `stream-project-113-sprint-002`
+- Project: `project-113-vscode-primary-workbench-full-cutover`
+- Sprint: `sprint-002-phase-e-operations-cutover`
+- Docs: `.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover`
+- Plan: `.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-002-phase-e-operations-cutover/plan.md`
+- Tasks: `.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-002-phase-e-operations-cutover/tasks/`
+- Checklist: `.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-002-phase-e-operations-cutover/tasks/checklist.md`
+- CSV: `.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-002-phase-e-operations-cutover/tasks/tasks.csv`
+- Review: `.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-002-phase-e-operations-cutover/review/`
+- Note: `2026-04-17` sprint-001 已在 `CR-003` clean round 后完成 closeout，并移入 completed history；当前 primary surface 已切到 sprint-002，下一步从 `.tmp/project-113-boundary-parking/phase-e.patch` 重放 Phase E degraded fallback delta，继续收敛 review detail / workflow studio / queue query restore failure。
 
 ## Active Streams
 
-- None.
+- `stream-project-113-sprint-002`: role=`primary`, project=`project-113-vscode-primary-workbench-full-cutover`, sprint=`sprint-002-phase-e-operations-cutover`, docs=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover`, plan=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-002-phase-e-operations-cutover/plan.md`, tasks=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-002-phase-e-operations-cutover/tasks/`, checklist=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-002-phase-e-operations-cutover/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-002-phase-e-operations-cutover/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-002-phase-e-operations-cutover/review/`, status=`active`
 
 ## Planned Follow-Up Streams
 
-- None.
+- `stream-project-113-sprint-003`: project=`project-113-vscode-primary-workbench-full-cutover`, sprint=`sprint-003-phase-f-secure-authoring-and-user-settings`, docs=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover`, plan=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-003-phase-f-secure-authoring-and-user-settings/plan.md`, tasks=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-003-phase-f-secure-authoring-and-user-settings/tasks/`, checklist=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-003-phase-f-secure-authoring-and-user-settings/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-003-phase-f-secure-authoring-and-user-settings/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-003-phase-f-secure-authoring-and-user-settings/review/`, status=`planned`
+- `stream-project-113-sprint-004`: project=`project-113-vscode-primary-workbench-full-cutover`, sprint=`sprint-004-phase-g-workflow-authoring-and-run-control`, docs=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover`, plan=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-004-phase-g-workflow-authoring-and-run-control/plan.md`, tasks=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-004-phase-g-workflow-authoring-and-run-control/tasks/`, checklist=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-004-phase-g-workflow-authoring-and-run-control/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-004-phase-g-workflow-authoring-and-run-control/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-004-phase-g-workflow-authoring-and-run-control/review/`, status=`planned`
+- `stream-project-113-sprint-005`: project=`project-113-vscode-primary-workbench-full-cutover`, sprint=`sprint-005-phase-h-support-promotion-and-distribution-readiness`, docs=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover`, plan=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/plan.md`, tasks=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/tasks/`, checklist=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/review/`, status=`planned`
 
 ## Completed Stream History
 
