@@ -86,6 +86,9 @@ describe('vscode extension contract freeze', () => {
       VSCODE_EXTENSION_COMMAND_IDS.SUBMIT_HITL_DECISION,
       VSCODE_EXTENSION_COMMAND_IDS.RECOVER_EXECUTION,
       VSCODE_EXTENSION_COMMAND_IDS.TERMINATE_EXECUTION,
+      VSCODE_EXTENSION_COMMAND_IDS.OPEN_USER_CONFIG,
+      VSCODE_EXTENSION_COMMAND_IDS.CONFIGURE_USER_DEFAULT,
+      VSCODE_EXTENSION_COMMAND_IDS.SET_MANAGED_SECRET,
     ]);
     expect(
       contract.commands.filter((command) => command.trustSensitive).map((command) => command.id),
@@ -115,6 +118,9 @@ describe('vscode extension contract freeze', () => {
         `onView:${VSCODE_EXTENSION_VIEW_IDS.REVIEW_DETAIL}`,
         `onCommand:${VSCODE_EXTENSION_COMMAND_IDS.REFRESH}`,
         `onCommand:${VSCODE_EXTENSION_COMMAND_IDS.STAGE_TEMPORARY_BRIDGE}`,
+        `onCommand:${VSCODE_EXTENSION_COMMAND_IDS.OPEN_USER_CONFIG}`,
+        `onCommand:${VSCODE_EXTENSION_COMMAND_IDS.CONFIGURE_USER_DEFAULT}`,
+        `onCommand:${VSCODE_EXTENSION_COMMAND_IDS.SET_MANAGED_SECRET}`,
         `onChatParticipant:${VSCODE_EXTENSION_CHAT_PARTICIPANT_ID}`,
       ]),
     );

@@ -55,13 +55,33 @@ export const VSCODE_EXTENSION_COMMAND_IDS = {
   SUBMIT_HITL_DECISION: 'repoAiGovernor.submitHitlDecision',
   RECOVER_EXECUTION: 'repoAiGovernor.recoverExecution',
   TERMINATE_EXECUTION: 'repoAiGovernor.terminateExecution',
+  OPEN_USER_CONFIG: 'repoAiGovernor.openUserConfig',
+  CONFIGURE_USER_DEFAULT: 'repoAiGovernor.configureUserDefault',
+  SET_MANAGED_SECRET: 'repoAiGovernor.setManagedSecret',
 } as const;
+export const VSCODE_EXTENSION_USER_DEFAULT_KEY_PATHS = {
+  WORKSPACE_MODE: 'workspace.mode_preference',
+  REACT_THEME: 'ui.react.theme',
+} as const;
+export const VSCODE_EXTENSION_TOOL_USER_DEFAULT_KEY_SUFFIXES = [
+  'transport',
+  'remoteApi.provider',
+  'remoteApi.vendorBinding',
+  'remoteApi.model',
+  'remoteApi.credentialEnvVar',
+  'remoteApi.credentialRef',
+  'remoteApi.endpoint',
+] as const;
+export const VSCODE_EXTENSION_SECRET_SELECTOR_PREFIX = 'secret://';
 export const VSCODE_EXTENSION_TRUST_GATED_COMMAND_IDS = [
   VSCODE_EXTENSION_COMMAND_IDS.OPEN_HANDOFF_TARGET,
   VSCODE_EXTENSION_COMMAND_IDS.STAGE_TEMPORARY_BRIDGE,
   VSCODE_EXTENSION_COMMAND_IDS.SUBMIT_HITL_DECISION,
   VSCODE_EXTENSION_COMMAND_IDS.RECOVER_EXECUTION,
   VSCODE_EXTENSION_COMMAND_IDS.TERMINATE_EXECUTION,
+  VSCODE_EXTENSION_COMMAND_IDS.OPEN_USER_CONFIG,
+  VSCODE_EXTENSION_COMMAND_IDS.CONFIGURE_USER_DEFAULT,
+  VSCODE_EXTENSION_COMMAND_IDS.SET_MANAGED_SECRET,
 ] as const;
 export const VSCODE_EXTENSION_NATIVE_ENTRYPOINTS = [
   'tree_view',
@@ -92,6 +112,8 @@ export const VSCODE_EXTENSION_QUERY_CAPABILITY_CLASSES = [
 export const VSCODE_EXTENSION_COMMAND_CAPABILITY_CLASSES = [
   'execution_recover',
   'execution_terminate',
+  'user_default_authoring',
+  'secret_authoring',
 ] as const;
 export const VSCODE_EXTENSION_TEMPORARY_BRIDGE_CAPABILITY_CLASSES = [
   'adopt_bootstrap',

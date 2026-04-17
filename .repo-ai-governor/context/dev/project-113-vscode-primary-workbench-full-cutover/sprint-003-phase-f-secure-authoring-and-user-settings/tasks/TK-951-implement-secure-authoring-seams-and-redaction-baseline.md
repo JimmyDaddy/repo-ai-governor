@@ -1,6 +1,6 @@
 # TK-951 implement secure authoring seams and redaction baseline
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-17
 - Owner: AI-Agent
 - Priority: P1
@@ -43,7 +43,8 @@
 
 ## 7. Development Verification
 
-1. 待执行：按任务范围补充 fast/targeted verification。
+1. pnpm run build
+2. pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test/vscode-extension-contract.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-host.activation.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-service-runtime.test.ts
 2. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-003-phase-f-secure-authoring-and-user-settings/tasks" --task-id TK-951
 
 ## 8. Delivery Verification
@@ -56,8 +57,11 @@
 ## 9. 执行记录
 
 1. 2026-04-17：任务创建，状态初始化为 `planned`。
+2. 2026-04-17：当前任务切换为 `in_progress`，开始把 secure authoring readiness、redaction baseline 与 managed secret mutation 全部收口到 embedded CLI seam，而不是在 VS Code 扩展内重写 config/secret 规则。
+3. 2026-04-17：`VsCodeExtensionServiceRuntime` 已补齐 secure authoring snapshot cache、`config/secret status/list` 解析、`setUserConfigValue()`、`setManagedSecret()` 与 degraded snapshot fallback；managed secret 写入固定使用 `stdin`，不把 raw secret 放到 argv、preview 或 UI message 中。
+4. 2026-04-17：`apps/vscode-extension/test/vscode-extension-service-runtime.test.ts` 已补齐 embedded CLI contract/caching 覆盖，`pnpm run build` 与 5 个 VS Code extension 定向 vitest 已通过，当前任务切换为 `completed`。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. `apps/vscode-extension/src/runtime/vscode-extension-service-runtime.ts` 已冻结 Phase F secure authoring seam：config/secret diagnostics 通过 embedded CLI JSON payload 投影为 additive snapshot；失败时回到 `degradedReason`，不会阻断 workbench 渲染。
+2. `apps/vscode-extension/test/vscode-extension-service-runtime.test.ts` 已锁定 stdin-only managed secret mutation contract、selector unresolved 诊断与 per-repository secure authoring cache 行为。

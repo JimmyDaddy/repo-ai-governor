@@ -43,6 +43,9 @@
     "onCommand:repoAiGovernor.submitHitlDecision",
     "onCommand:repoAiGovernor.recoverExecution",
     "onCommand:repoAiGovernor.terminateExecution",
+    "onCommand:repoAiGovernor.openUserConfig",
+    "onCommand:repoAiGovernor.configureUserDefault",
+    "onCommand:repoAiGovernor.setManagedSecret",
     "onChatParticipant:repo-ai-governor.governor"
   ],
   "contributes": {
@@ -131,6 +134,21 @@
         "command": "repoAiGovernor.terminateExecution",
         "title": "%commands.terminateExecution.title%",
         "category": "%commands.category%"
+      },
+      {
+        "command": "repoAiGovernor.openUserConfig",
+        "title": "%commands.openUserConfig.title%",
+        "category": "%commands.category%"
+      },
+      {
+        "command": "repoAiGovernor.configureUserDefault",
+        "title": "%commands.configureUserDefault.title%",
+        "category": "%commands.category%"
+      },
+      {
+        "command": "repoAiGovernor.setManagedSecret",
+        "title": "%commands.setManagedSecret.title%",
+        "category": "%commands.category%"
       }
     ],
     "menus": {
@@ -168,6 +186,18 @@
         {
           "command": "repoAiGovernor.terminateExecution",
           "when": "isWorkspaceTrusted"
+        },
+        {
+          "command": "repoAiGovernor.openUserConfig",
+          "when": "isWorkspaceTrusted"
+        },
+        {
+          "command": "repoAiGovernor.configureUserDefault",
+          "when": "isWorkspaceTrusted"
+        },
+        {
+          "command": "repoAiGovernor.setManagedSecret",
+          "when": "isWorkspaceTrusted"
         }
       ]
     },
@@ -198,6 +228,7 @@
     }
   },
   "dependencies": {
+    "@repo-ai-governor/cli": "workspace:*",
     "@repo-ai-governor/config": "workspace:*",
     "@repo-ai-governor/core-orchestration-service": "workspace:*",
     "@repo-ai-governor/orchestration-service-client": "workspace:*",

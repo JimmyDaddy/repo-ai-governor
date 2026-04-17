@@ -135,6 +135,18 @@ export class VsCodeExtensionContract {
         VSCODE_EXTENSION_COMMAND_IDS.TERMINATE_EXECUTION,
         'commands.terminateExecution.title',
       ),
+      this.createCommand(
+        VSCODE_EXTENSION_COMMAND_IDS.OPEN_USER_CONFIG,
+        'commands.openUserConfig.title',
+      ),
+      this.createCommand(
+        VSCODE_EXTENSION_COMMAND_IDS.CONFIGURE_USER_DEFAULT,
+        'commands.configureUserDefault.title',
+      ),
+      this.createCommand(
+        VSCODE_EXTENSION_COMMAND_IDS.SET_MANAGED_SECRET,
+        'commands.setManagedSecret.title',
+      ),
     ];
   }
 

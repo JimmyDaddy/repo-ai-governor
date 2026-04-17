@@ -1,6 +1,6 @@
 # TK-950 freeze phase-f secure authoring boundary
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-04-17
 - Owner: AI-Agent
 - Priority: P1
@@ -43,7 +43,8 @@
 
 ## 7. Development Verification
 
-1. 待执行：按任务范围补充 fast/targeted verification。
+1. pnpm run build
+2. pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test/vscode-extension-contract.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-host.activation.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-service-runtime.test.ts
 2. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-003-phase-f-secure-authoring-and-user-settings/tasks" --task-id TK-950
 
 ## 8. Delivery Verification
@@ -57,8 +58,10 @@
 
 1. 2026-04-17：任务创建，状态初始化为 `planned`。
 2. 2026-04-17：随着 sprint-002 在 `CR-003` clean round 后完成 closeout，当前任务已切换为 `in_progress`，开始从 clean baseline 冻结 secure authoring、user settings、secret readiness 与 trust-sensitive interaction boundary。
+3. 2026-04-17：已将 Phase F boundary 冻结为“VS Code 只通过 embedded CLI `config|secret status/list/set` JSON contract 投影和写入 secure authoring truth；`user-config.yaml` 与 secret backend 仍保持 CLI/runtime canonical ownership，不在扩展内复制第二份 config/secret state”。
+4. 2026-04-17：`repoAiGovernor.openUserConfig`、`repoAiGovernor.configureUserDefault` 与 `repoAiGovernor.setManagedSecret` 已纳入 trust-gated command surface；同窗口 `pnpm run build` 与 5 个 VS Code extension 定向 vitest 已通过，当前任务切换为 `completed`。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. Phase F secure authoring boundary 已固定为：扩展 host 只负责 editor-native UX、service-backed projection 与 stdin-only mutation handoff；canonical user config 与 managed secret backend 真值继续由 embedded CLI/runtime 持有。
+2. `apps/vscode-extension/src/runtime/vscode-extension-command-controller.ts`、`vscode-extension-service-runtime.ts`、`vscode-extension-presentation-builder.ts` 与 `apps/vscode-extension/package.json` 已对齐同一 Phase F contract，不把 secure authoring 真值散落到 extension-local state。

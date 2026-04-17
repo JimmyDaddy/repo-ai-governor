@@ -29,6 +29,7 @@ import type {
 import {
   VSCODE_EXTENSION_DESKTOP_RELATIONSHIP,
   VSCODE_EXTENSION_PUBLIC_SUPPORT_LEVEL,
+  VSCODE_EXTENSION_SECRET_SELECTOR_PREFIX,
 } from '../constants/index.js';
 import {
   VSCODE_EXTENSION_CHAT_COMMAND_REVIEW,
@@ -38,6 +39,7 @@ import {
 import type {
   VsCodeExtensionCommandRequest,
   VsCodeExtensionReviewDetailSnapshot,
+  VsCodeExtensionSecureAuthoringSnapshot,
   VsCodeExtensionTreeNodeDescriptor,
   VsCodeExtensionWorkbenchOverviewSnapshot,
   VsCodeExtensionWorkflowStudioSnapshot,
@@ -267,6 +269,7 @@ export class VsCodeExtensionPresentationBuilder {
     }
 
     const queueOverview = snapshot.queueOverview;
+    const secureAuthoring = snapshot.secureAuthoring;
     const selectedExecution = snapshot.selectedExecution;
     const reviewSourcePath = snapshot.reviewSourcePath;
     const latestAutomationEntry = queueOverview.automationInbox[0];
@@ -313,6 +316,8 @@ export class VsCodeExtensionPresentationBuilder {
         themeIconId: 'shield',
         contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
       },
+      this.buildUserConfigAuthoringNode(secureAuthoring),
+      this.buildSecretReadinessNode(secureAuthoring),
       {
         nodeId: 'public-support-level',
         label: this.localizer.localizeText('Public support level', '公开支持级别'),
@@ -741,6 +746,7 @@ export class VsCodeExtensionPresentationBuilder {
     const queueOverview = snapshot.queueOverview;
     const selectedExecution = snapshot.selectedExecution?.execution;
     const artifactPane = snapshot.artifactPane;
+    const secureAuthoringLines = this.buildSecureAuthoringLines(snapshot.secureAuthoring);
     const workflowLines = this.buildWorkflowStudioSelectionLines(
       selectedExecution,
       artifactPane,
@@ -802,6 +808,10 @@ export class VsCodeExtensionPresentationBuilder {
       this.renderStringSection(
         this.localizer.localizeText('Workflow focus', 'Workflow 聚焦'),
         workflowLines,
+      ),
+      this.renderStringSection(
+        this.localizer.localizeText('Secure authoring readiness', '安全 Authoring Readiness'),
+        secureAuthoringLines,
       ),
       this.renderStringSection(
         this.localizer.localizeText('Queue and rollout overview', '队列与 rollout 总览'),
@@ -1694,6 +1704,435 @@ export class VsCodeExtensionPresentationBuilder {
     }));
   }
 
+  private buildUserConfigAuthoringNode(
+    secureAuthoring?: VsCodeExtensionSecureAuthoringSnapshot,
+  ): VsCodeExtensionTreeNodeDescriptor {
+    const degradedReason = secureAuthoring?.degradedReason;
+    const userConfig = secureAuthoring?.userConfig;
+    const remoteApiEntries =
+      userConfig?.entries.filter((entry) => entry.keyPath.startsWith('tools.')) ?? [];
+
+    return {
+      nodeId: 'user-default-authoring',
+      label: this.localizer.localizeText('User-local defaults', '用户本地默认值'),
+      description: degradedReason
+        ? this.localizer.localizeText('Degraded', '已降级')
+        : userConfig && userConfig.entries.length > 0
+          ? this.localizer.localizeText(
+              `${userConfig.entries.length} configured value(s)`,
+              `${userConfig.entries.length} 个已配置值`,
+            )
+          : this.localizer.localizeText('No configured default yet', '当前还没有已配置默认值'),
+      tooltip: degradedReason
+        ? degradedReason
+        : this.localizer.localizeText(
+            'User-local defaults stay on the canonical user-config.yaml surface. Explicit CLI args and workspace governor.yaml still override these values.',
+            '用户本地默认值始终写入 canonical user-config.yaml；显式 CLI 参数和工作区 governor.yaml 仍然拥有更高优先级。',
+          ),
+      themeIconId: degradedReason ? 'warning' : 'settings-gear',
+      contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+      children: degradedReason
+        ? [
+            this.createInfoNode(
+              'user-default-authoring-degraded',
+              'Embedded config diagnostics are temporarily unavailable.',
+              '内嵌 config 诊断暂时不可用。',
+            ),
+          ]
+        : [
+            {
+              nodeId: 'user-default-authoring:config-path',
+              label: this.localizer.localizeText('Canonical config path', 'Canonical 配置路径'),
+              description: userConfig?.configPath,
+              tooltip: userConfig?.configPath,
+              themeIconId: 'go-to-file',
+              contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+              ...(userConfig?.configPath
+                ? {
+                    resourceUriPath: userConfig.configPath,
+                    command: this.createCommandDescriptor(
+                      VSCODE_EXTENSION_COMMAND_IDS.OPEN_USER_CONFIG,
+                      'Open canonical user-config',
+                      '打开 canonical user-config',
+                    ),
+                  }
+                : {}),
+            },
+            {
+              nodeId: 'user-default-authoring:theme',
+              label: this.localizer.localizeText('React theme default', 'React 主题默认值'),
+              description:
+                userConfig?.themePreference ?? this.localizer.localizeText('Unset', '未设置'),
+              tooltip: this.localizer.localizeText(
+                'Controls the global React-shell theme fallback when no higher-precedence override is present.',
+                '当不存在更高优先级覆盖时，这里控制全局 React shell 主题回退值。',
+              ),
+              themeIconId: 'symbol-color',
+              contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+            },
+            {
+              nodeId: 'user-default-authoring:workspace-mode',
+              label: this.localizer.localizeText('Workspace mode preference', '工作区模式偏好'),
+              description:
+                userConfig?.workspaceModePreference ??
+                this.localizer.localizeText('Unset', '未设置'),
+              tooltip: this.localizer.localizeText(
+                'Lets VS Code surface the user-local fallback for tool-managed versus repo-local workspace mode.',
+                '让 VS Code 显示 tool-managed 与 repo-local 工作区模式的用户本地回退偏好。',
+              ),
+              themeIconId: 'repo',
+              contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+            },
+            {
+              nodeId: 'user-default-authoring:remote-api-defaults',
+              label: this.localizer.localizeText('Remote API defaults', 'Remote API 默认值'),
+              description:
+                remoteApiEntries.length > 0
+                  ? this.localizer.localizeText(
+                      `${remoteApiEntries.length} configured entry(s)`,
+                      `${remoteApiEntries.length} 个已配置项`,
+                    )
+                  : this.localizer.localizeText('No tool default yet', '当前还没有工具默认值'),
+              tooltip: this.localizer.localizeText(
+                'Tool-scoped remote API defaults stay in user-config.yaml so host surfaces can author them without creating a second runtime truth.',
+                '工具级 remote API 默认值始终保留在 user-config.yaml 中，这样宿主 surface 可以编写它们，而不会制造第二份 runtime 真值。',
+              ),
+              themeIconId: remoteApiEntries.length > 0 ? 'plug' : 'circle-slash',
+              contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+              children:
+                remoteApiEntries.length > 0
+                  ? remoteApiEntries.map((entry) => ({
+                      nodeId: `user-default-authoring:remote-api:${entry.keyPath}`,
+                      label: entry.keyPath,
+                      description: entry.value,
+                      tooltip: `${entry.keyPath}=${entry.value}`,
+                      themeIconId: entry.keyPath.endsWith('.credentialRef') ? 'key' : 'settings',
+                      contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+                      selectionRequest: {
+                        userConfigKeyPath: entry.keyPath,
+                      },
+                      command: this.createCommandDescriptor(
+                        VSCODE_EXTENSION_COMMAND_IDS.CONFIGURE_USER_DEFAULT,
+                        'Configure user-local default',
+                        '配置用户本地默认值',
+                        {
+                          userConfigKeyPath: entry.keyPath,
+                        },
+                      ),
+                    }))
+                  : [
+                      this.createInfoNode(
+                        'user-default-authoring:remote-api-empty',
+                        'Use the configure-default action to seed remote API defaults for one tool.',
+                        '使用 configure-default 动作为某个工具写入 remote API 默认值。',
+                      ),
+                    ],
+            },
+            this.createInfoNode(
+              'user-default-authoring:precedence-boundary',
+              'Precedence boundary: explicit CLI args and workspace governor.yaml stay above user-config defaults.',
+              '优先级边界：显式 CLI 参数和工作区 governor.yaml 始终高于 user-config 默认值。',
+            ),
+            this.createWorkbenchActionNode(
+              'user-default-authoring:configure',
+              'Configure user-local default',
+              '配置用户本地默认值',
+              'Theme, workspace mode, and remote API defaults',
+              '主题、工作区模式与 Remote API 默认值',
+              VSCODE_EXTENSION_COMMAND_IDS.CONFIGURE_USER_DEFAULT,
+            ),
+            this.createWorkbenchActionNode(
+              'user-default-authoring:open-config',
+              'Open canonical user-config',
+              '打开 canonical user-config',
+              userConfig?.configExists
+                ? 'Open the current canonical user-config file.'
+                : 'Open the canonical user-config surface when it already exists.',
+              userConfig?.configExists
+                ? '打开当前 canonical user-config 文件。'
+                : '当 canonical user-config 已存在时打开它。',
+              VSCODE_EXTENSION_COMMAND_IDS.OPEN_USER_CONFIG,
+            ),
+          ],
+    };
+  }
+
+  private buildSecretReadinessNode(
+    secureAuthoring?: VsCodeExtensionSecureAuthoringSnapshot,
+  ): VsCodeExtensionTreeNodeDescriptor {
+    const degradedReason = secureAuthoring?.degradedReason;
+    const secretReadiness = secureAuthoring?.secretReadiness;
+    const availableBackends =
+      secretReadiness?.backends.filter((backend) => backend.available) ?? [];
+    const warningBearingBackends =
+      secretReadiness?.backends.filter((backend) => backend.available && backend.warning) ?? [];
+
+    return {
+      nodeId: 'secret-readiness',
+      label: this.localizer.localizeText('Secret readiness', 'Secret Readiness'),
+      description: degradedReason
+        ? this.localizer.localizeText('Degraded', '已降级')
+        : warningBearingBackends.length > 0
+          ? this.localizer.localizeText('Warning', '有警告')
+          : secretReadiness && secretReadiness.unresolvedCredentialRefs.length > 0
+            ? this.localizer.localizeText(
+                `${secretReadiness.unresolvedCredentialRefs.length} unresolved selector(s)`,
+                `${secretReadiness.unresolvedCredentialRefs.length} 个未解析 selector`,
+              )
+            : availableBackends.length > 0
+              ? this.localizer.localizeText('Ready', '已就绪')
+              : this.localizer.localizeText('No writable backend', '没有可写 backend'),
+      tooltip: degradedReason
+        ? degradedReason
+        : this.localizer.localizeText(
+            'Managed secrets stay in the backend only. user-config.yaml and governor.yaml keep selectors such as secret://... instead of plaintext values.',
+            '受管 secret 始终只留在 backend 中；user-config.yaml 和 governor.yaml 只保留 secret://... 这样的 selector，而不会写入明文值。',
+          ),
+      themeIconId: degradedReason
+        ? 'warning'
+        : warningBearingBackends.length > 0
+          ? 'warning'
+          : secretReadiness && secretReadiness.unresolvedCredentialRefs.length > 0
+            ? 'warning'
+            : availableBackends.length > 0
+              ? 'key'
+              : 'circle-slash',
+      contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+      children: degradedReason
+        ? [
+            this.createInfoNode(
+              'secret-readiness-degraded',
+              'Embedded secret diagnostics are temporarily unavailable.',
+              '内嵌 secret 诊断暂时不可用。',
+            ),
+          ]
+        : [
+            {
+              nodeId: 'secret-readiness:selected-backend',
+              label: this.localizer.localizeText('Selected backend', '当前选定 backend'),
+              description:
+                secretReadiness?.selectedBackendId ?? this.localizer.localizeText('None', '无'),
+              tooltip: this.localizer.localizeText(
+                'The selected backend is the current write target after CLI overrides and default-resolution rules are applied.',
+                '选定 backend 表示在应用 CLI 覆盖和默认解析规则之后，当前的写入目标。',
+              ),
+              themeIconId: 'key',
+              contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+            },
+            {
+              nodeId: 'secret-readiness:default-backend',
+              label: this.localizer.localizeText('Default backend', '默认 backend'),
+              description:
+                secretReadiness?.defaultBackendId ?? this.localizer.localizeText('None', '无'),
+              tooltip: this.localizer.localizeText(
+                'The default backend should prefer OS keychain support when it is available.',
+                '默认 backend 应该在可用时优先选择 OS keychain。',
+              ),
+              themeIconId: 'shield',
+              contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+            },
+            {
+              nodeId: 'secret-readiness:index-path',
+              label: this.localizer.localizeText('Managed index path', '受管索引路径'),
+              description: secretReadiness?.indexPath,
+              tooltip: secretReadiness?.indexPath,
+              themeIconId: 'database',
+              contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+              ...(secretReadiness?.indexPath
+                ? {
+                    resourceUriPath: secretReadiness.indexPath,
+                  }
+                : {}),
+            },
+            {
+              nodeId: 'secret-readiness:selectors',
+              label: this.localizer.localizeText('Configured selectors', '已配置 selector'),
+              description:
+                secretReadiness && secretReadiness.configuredCredentialRefs.length > 0
+                  ? this.localizer.localizeText(
+                      `${secretReadiness.configuredCredentialRefs.length} selector(s)`,
+                      `${secretReadiness.configuredCredentialRefs.length} 个 selector`,
+                    )
+                  : this.localizer.localizeText('None yet', '当前没有'),
+              tooltip: this.localizer.localizeText(
+                'These selectors are referenced by user-local remote API defaults.',
+                '这些 selector 当前被用户本地 remote API 默认值引用。',
+              ),
+              themeIconId:
+                secretReadiness && secretReadiness.configuredCredentialRefs.length > 0
+                  ? 'link'
+                  : 'circle-slash',
+              contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+              children:
+                secretReadiness && secretReadiness.configuredCredentialRefs.length > 0
+                  ? secretReadiness.configuredCredentialRefs.map((selector) => ({
+                      nodeId: `secret-readiness:selector:${selector}`,
+                      label: selector,
+                      description: secretReadiness.unresolvedCredentialRefs.includes(selector)
+                        ? this.localizer.localizeText('Missing backend value', '缺少 backend 值')
+                        : this.localizer.localizeText('Resolved', '已解析'),
+                      tooltip: selector,
+                      themeIconId: secretReadiness.unresolvedCredentialRefs.includes(selector)
+                        ? 'warning'
+                        : 'pass-filled',
+                      contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+                      ...(this.extractManagedSecretKeyName(selector)
+                        ? {
+                            selectionRequest: {
+                              secretKeyName: this.extractManagedSecretKeyName(selector),
+                            },
+                            command: this.createCommandDescriptor(
+                              VSCODE_EXTENSION_COMMAND_IDS.SET_MANAGED_SECRET,
+                              'Set managed secret',
+                              '设置受管 secret',
+                              {
+                                secretKeyName: this.extractManagedSecretKeyName(selector),
+                              },
+                            ),
+                          }
+                        : {}),
+                    }))
+                  : [
+                      this.createInfoNode(
+                        'secret-readiness:selectors-empty',
+                        'No user-local credentialRef selector is configured yet.',
+                        '当前还没有已配置的用户本地 credentialRef selector。',
+                      ),
+                    ],
+            },
+            {
+              nodeId: 'secret-readiness:backend-availability',
+              label: this.localizer.localizeText('Backend availability', 'Backend 可用性'),
+              description:
+                secretReadiness && secretReadiness.backends.length > 0
+                  ? this.localizer.localizeText(
+                      `${secretReadiness.backends.length} backend probe(s)`,
+                      `${secretReadiness.backends.length} 个 backend 探测`,
+                    )
+                  : this.localizer.localizeText('No backend status', '没有 backend 状态'),
+              tooltip: this.localizer.localizeText(
+                'Warnings stay visible here so unsafe-local fallback never looks equivalent to the default OS-backed path.',
+                '这里会保留 warning，从而确保 unsafe-local fallback 不会看起来与默认 OS-backed 路径等价。',
+              ),
+              themeIconId: secretReadiness?.backends.some((backend) => backend.available)
+                ? 'key'
+                : 'circle-slash',
+              contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+              children:
+                secretReadiness && secretReadiness.backends.length > 0
+                  ? secretReadiness.backends.map((backend) => ({
+                      nodeId: `secret-readiness:backend:${backend.backendId}`,
+                      label: backend.backendId,
+                      description: backend.warning
+                        ? this.localizer.localizeText('Available with warning', '可用但有警告')
+                        : backend.available
+                          ? this.localizer.localizeText('Available', '可用')
+                          : this.localizer.localizeText('Unavailable', '不可用'),
+                      tooltip: backend.warning
+                        ? `${backend.detail}\n${backend.warning}`
+                        : backend.detail,
+                      themeIconId: backend.warning
+                        ? 'warning'
+                        : backend.available
+                          ? 'pass-filled'
+                          : 'warning',
+                      contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+                    }))
+                  : [
+                      this.createInfoNode(
+                        'secret-readiness:backend-empty',
+                        'No embedded secret backend status is available right now.',
+                        '当前没有可用的内嵌 secret backend 状态。',
+                      ),
+                    ],
+            },
+            this.createWorkbenchActionNode(
+              'secret-readiness:set-managed-secret',
+              'Set managed secret',
+              '设置受管 secret',
+              'Prompt for one secret value locally, then write it through the managed backend seam.',
+              '在本地安全提示一个 secret 值，然后通过受管 backend 接缝写入。',
+              VSCODE_EXTENSION_COMMAND_IDS.SET_MANAGED_SECRET,
+            ),
+          ],
+    };
+  }
+
+  private buildSecureAuthoringLines(
+    secureAuthoring?: VsCodeExtensionSecureAuthoringSnapshot,
+  ): readonly string[] {
+    if (secureAuthoring?.degradedReason) {
+      return [
+        this.localizer.localizeText(
+          `Authoring diagnostics are degraded: ${secureAuthoring.degradedReason}`,
+          `Authoring 诊断已降级：${secureAuthoring.degradedReason}`,
+        ),
+      ];
+    }
+
+    const lines: string[] = [];
+    if (secureAuthoring?.userConfig) {
+      lines.push(
+        this.localizer.localizeText(
+          `Canonical user-config: ${secureAuthoring.userConfig.configPath}`,
+          `Canonical user-config：${secureAuthoring.userConfig.configPath}`,
+        ),
+        this.localizer.localizeText(
+          `Theme default: ${secureAuthoring.userConfig.themePreference ?? 'unset'}`,
+          `主题默认值：${secureAuthoring.userConfig.themePreference ?? '未设置'}`,
+        ),
+        this.localizer.localizeText(
+          `Workspace mode preference: ${secureAuthoring.userConfig.workspaceModePreference ?? 'unset'}`,
+          `工作区模式偏好：${secureAuthoring.userConfig.workspaceModePreference ?? '未设置'}`,
+        ),
+        this.localizer.localizeText(
+          `Remote API defaults: ${secureAuthoring.userConfig.entries.filter((entry) => entry.keyPath.startsWith('tools.')).length}`,
+          `Remote API 默认值：${secureAuthoring.userConfig.entries.filter((entry) => entry.keyPath.startsWith('tools.')).length}`,
+        ),
+      );
+    }
+    if (secureAuthoring?.secretReadiness) {
+      lines.push(
+        this.localizer.localizeText(
+          `Selected backend: ${secureAuthoring.secretReadiness.selectedBackendId ?? 'none'}`,
+          `当前选定 backend：${secureAuthoring.secretReadiness.selectedBackendId ?? '无'}`,
+        ),
+        this.localizer.localizeText(
+          `Default backend: ${secureAuthoring.secretReadiness.defaultBackendId ?? 'none'}`,
+          `默认 backend：${secureAuthoring.secretReadiness.defaultBackendId ?? '无'}`,
+        ),
+        this.localizer.localizeText(
+          `Configured selectors: ${secureAuthoring.secretReadiness.configuredCredentialRefs.length}`,
+          `已配置 selector：${secureAuthoring.secretReadiness.configuredCredentialRefs.length}`,
+        ),
+        this.localizer.localizeText(
+          `Unresolved selectors: ${secureAuthoring.secretReadiness.unresolvedCredentialRefs.length}`,
+          `未解析 selector：${secureAuthoring.secretReadiness.unresolvedCredentialRefs.length}`,
+        ),
+      );
+      const warningBearingBackends = secureAuthoring.secretReadiness.backends.filter(
+        (backend) => backend.available && backend.warning,
+      );
+      if (warningBearingBackends.length > 0) {
+        lines.push(
+          this.localizer.localizeText(
+            `Warning-bearing backends: ${warningBearingBackends.map((backend) => backend.backendId).join(', ')}`,
+            `带警告的 backend：${warningBearingBackends.map((backend) => backend.backendId).join('、')}`,
+          ),
+        );
+      }
+    }
+
+    return lines.length > 0
+      ? lines
+      : [
+          this.localizer.localizeText(
+            'No secure authoring readiness is projected yet.',
+            '当前还没有投影出安全 authoring readiness。',
+          ),
+        ];
+  }
+
   private createActionNode(
     action: OrchestrationGovernanceActionAffordance,
     entry: OrchestrationExecutionBoardEntry | OrchestrationHitlInboxEntry,
@@ -1819,6 +2258,40 @@ export class VsCodeExtensionPresentationBuilder {
             arguments: [request],
           }
         : {}),
+    };
+  }
+
+  private extractManagedSecretKeyName(selector: string): string | undefined {
+    if (!selector.startsWith(VSCODE_EXTENSION_SECRET_SELECTOR_PREFIX)) {
+      return undefined;
+    }
+
+    const keyName = selector.slice(VSCODE_EXTENSION_SECRET_SELECTOR_PREFIX.length).trim();
+    return keyName.length > 0 ? keyName : undefined;
+  }
+
+  private createWorkbenchActionNode(
+    nodeId: string,
+    englishLabel: string,
+    chineseLabel: string,
+    englishDescription: string,
+    chineseDescription: string,
+    commandId: string,
+    request?: VsCodeExtensionCommandRequest,
+  ): VsCodeExtensionTreeNodeDescriptor {
+    return {
+      nodeId,
+      label: this.localizer.localizeText(englishLabel, chineseLabel),
+      description: this.localizer.localizeText(englishDescription, chineseDescription),
+      tooltip: this.localizer.localizeText(englishDescription, chineseDescription),
+      themeIconId: 'play-circle',
+      contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+      ...(request
+        ? {
+            selectionRequest: request,
+          }
+        : {}),
+      command: this.createCommandDescriptor(commandId, englishLabel, chineseLabel, request),
     };
   }
 

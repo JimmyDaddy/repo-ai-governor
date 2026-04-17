@@ -1,6 +1,6 @@
 # TK-952 land user settings and secret readiness ux
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-17
 - Owner: AI-Agent
 - Priority: P1
@@ -43,7 +43,8 @@
 
 ## 7. Development Verification
 
-1. 待执行：按任务范围补充 fast/targeted verification。
+1. pnpm run build
+2. pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test/vscode-extension-contract.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-host.activation.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-service-runtime.test.ts
 2. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-003-phase-f-secure-authoring-and-user-settings/tasks" --task-id TK-952
 
 ## 8. Delivery Verification
@@ -56,8 +57,11 @@
 ## 9. 执行记录
 
 1. 2026-04-17：任务创建，状态初始化为 `planned`。
+2. 2026-04-17：当前任务切换为 `in_progress`，开始把 user settings、secret readiness 与 trust-sensitive UX 从 scaffold 补成 editor-native quick pick / password prompt 行为。
+3. 2026-04-17：`VsCodeExtensionCommandController` 已补齐 `openUserConfig / configureUserDefault / setManagedSecret` 三个 trust-gated command；workbench overview / workflow studio 现可投影 user-local defaults、selector readiness 与 backend availability，并允许从 secure-authoring 节点直接触发配置或 secret rotation。
+4. 2026-04-17：`apps/vscode-extension/package.json`、`package.nls*.json` 与 host/contract/presentation tests 已同步新增命令贡献、激活事件、本地化标题与 embedded CLI 依赖，`pnpm run build` 与 5 个 VS Code extension 定向 vitest 已通过，当前任务切换为 `completed`。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. `apps/vscode-extension/src/runtime/vscode-extension-command-controller.ts`、`vscode-extension-presentation-builder.ts` 与 `apps/vscode-extension/package.json` 已完成 Phase F UX 收口：用户可以在 trusted workspace 中原生查看 canonical user-config、配置 user-local defaults，并通过 password input 写入 managed secret。
+2. `apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts`、`vscode-extension-contract.test.ts`、`vscode-extension-host.activation.test.ts` 与 `vscode-extension-presentation-builder.test.ts` 已锁定 secure authoring 节点、命令贡献与 trust-gated UX 行为。

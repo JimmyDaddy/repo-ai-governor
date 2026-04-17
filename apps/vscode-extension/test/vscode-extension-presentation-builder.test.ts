@@ -333,6 +333,43 @@ describe('VsCodeExtensionPresentationBuilder', () => {
           notificationStatus: OrchestrationGovernanceNotificationStatus.FOLLOW_UP_REQUIRED,
         },
       },
+      secureAuthoring: {
+        userConfig: {
+          configPath: '/Users/test/.repo-ai-governor/user-config.yaml',
+          configExists: true,
+          legacyPreferencePath: '/Users/test/.repo-ai-governor/cli-preferences.yaml',
+          legacyPreferenceExists: false,
+          themePreference: 'calm',
+          workspaceModePreference: 'repo_local',
+          entries: [
+            {
+              keyPath: 'tools.codex.remoteApi.credentialRef',
+              value: 'secret://openai/api-key',
+            },
+          ],
+        },
+        secretReadiness: {
+          selectedBackendId: 'os-keychain',
+          defaultBackendId: 'os-keychain',
+          indexPath: '/Users/test/.repo-ai-governor/secret-index.json',
+          backends: [
+            {
+              backendId: 'os-keychain',
+              available: true,
+              detail: 'Ready',
+            },
+          ],
+          records: [
+            {
+              keyName: 'openai/api-key',
+              backendId: 'os-keychain',
+              exists: true,
+            },
+          ],
+          configuredCredentialRefs: ['secret://openai/api-key'],
+          unresolvedCredentialRefs: [],
+        },
+      },
       selectedExecution: createExecutionBoardEntry(),
       reviewSourcePath: '/repo/.repo-ai-governor/review/resolved.md',
     });
@@ -350,6 +387,8 @@ describe('VsCodeExtensionPresentationBuilder', () => {
         'Automation queue',
         'Multi-workspace overview',
         'Temporary CLI bridges',
+        'User-local defaults',
+        'Secret readiness',
         'Service lifecycle',
         'Service topology',
         'Checkpoint support',
@@ -377,6 +416,20 @@ describe('VsCodeExtensionPresentationBuilder', () => {
     expect(nodes.find((node) => node.nodeId === 'memory-provider')?.description).toBe(
       '@repo-ai-governor/memory-provider-sqlite-fs',
     );
+    expect(
+      nodes
+        .find((node) => node.nodeId === 'user-default-authoring')
+        ?.children?.some(
+          (child) => child.command?.command === VSCODE_EXTENSION_COMMAND_IDS.CONFIGURE_USER_DEFAULT,
+        ),
+    ).toBe(true);
+    expect(
+      nodes
+        .find((node) => node.nodeId === 'secret-readiness')
+        ?.children?.some(
+          (child) => child.command?.command === VSCODE_EXTENSION_COMMAND_IDS.SET_MANAGED_SECRET,
+        ),
+    ).toBe(true);
   });
 
   it('renders automation-queue nodes with bridge-safe service-owned follow-up metadata', () => {
@@ -406,6 +459,59 @@ describe('VsCodeExtensionPresentationBuilder', () => {
     expect(nodes[0]?.children?.map((child) => child.label)).toEqual(
       expect.arrayContaining(['Queue kind', 'Execution status', 'Follow-up SLA', 'Workspace root']),
     );
+  });
+
+  it('surfaces warning-bearing secret backends in workbench overview nodes', () => {
+    const nodes = builder.buildWorkbenchOverviewNodes({
+      workspaceContext: {
+        workspaceLabel: 'ai-governor',
+        workspaceRoot: '/repo',
+        workspaceTrusted: true,
+      },
+      queueOverview: {
+        generatedAt: '2026-04-17T10:00:00.000Z',
+        automationInbox: [],
+        reviewQueue: [],
+        parallelLanes: [],
+        workspaceSummary: [],
+        temporaryBridges: [],
+        notificationOwnership: {
+          ownerSurface: OrchestrationClientSurface.DESKTOP,
+          pendingItemCount: 0,
+          dueSoonItemCount: 0,
+          overdueItemCount: 0,
+          activeWorkspaceCount: 1,
+          defaultFollowUpSlaMinutes: 60,
+          notificationStatus: OrchestrationGovernanceNotificationStatus.IDLE,
+        },
+      },
+      secureAuthoring: {
+        secretReadiness: {
+          selectedBackendId: 'unsafe-local-file',
+          defaultBackendId: 'unsafe-local-file',
+          indexPath: '/Users/test/.repo-ai-governor/secrets.json',
+          backends: [
+            {
+              backendId: 'unsafe-local-file',
+              available: true,
+              detail: '/Users/test/.repo-ai-governor/secrets.json',
+              warning: 'plaintext fallback',
+            },
+          ],
+          records: [],
+          configuredCredentialRefs: [],
+          unresolvedCredentialRefs: [],
+        },
+      },
+    });
+
+    expect(nodes.find((node) => node.nodeId === 'secret-readiness')?.description).toBe('Warning');
+    expect(
+      nodes
+        .find((node) => node.nodeId === 'secret-readiness')
+        ?.children?.find((child) => child.nodeId === 'secret-readiness:backend-availability')
+        ?.children?.[0]?.description,
+    ).toBe('Available with warning');
   });
 
   it('renders workflow-studio html with desktop decision and support-truth evidence', () => {
@@ -459,6 +565,32 @@ describe('VsCodeExtensionPresentationBuilder', () => {
       selectedExecution: createExecutionBoardEntry({
         currentStageId: 'review_verify',
       }),
+      secureAuthoring: {
+        userConfig: {
+          configPath: '/Users/test/.repo-ai-governor/user-config.yaml',
+          configExists: true,
+          legacyPreferencePath: '/Users/test/.repo-ai-governor/cli-preferences.yaml',
+          legacyPreferenceExists: false,
+          themePreference: 'calm',
+          workspaceModePreference: 'repo_local',
+          entries: [],
+        },
+        secretReadiness: {
+          selectedBackendId: 'os-keychain',
+          defaultBackendId: 'os-keychain',
+          indexPath: '/Users/test/.repo-ai-governor/secret-index.json',
+          backends: [
+            {
+              backendId: 'os-keychain',
+              available: true,
+              detail: 'Ready',
+            },
+          ],
+          records: [],
+          configuredCredentialRefs: [],
+          unresolvedCredentialRefs: [],
+        },
+      },
       artifactPane: {
         artifacts: [],
         reviews: [],
@@ -516,6 +648,8 @@ describe('VsCodeExtensionPresentationBuilder', () => {
     expect(html).toContain('Workbench baseline in progress');
     expect(html).toContain('review_verify');
     expect(html).toContain('Service-native host query replaces this bridge.');
+    expect(html).toContain('Selected backend: os-keychain');
+    expect(html).toContain('Theme default: calm');
   });
 
   it('surfaces the ready support-truth branch when the selected execution stage is present and no bridge remains', () => {

@@ -1,4 +1,6 @@
+import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
+import { createRequire } from 'node:module';
 
 import * as vscode from 'vscode';
 
@@ -38,14 +40,26 @@ import {
 } from '../constants/index.js';
 import type {
   VsCodeExtensionReviewDetailSnapshot,
+  VsCodeExtensionSecretBackendStatusSnapshot,
+  VsCodeExtensionSecretReadinessSnapshot,
+  VsCodeExtensionSecretRecordSnapshot,
+  VsCodeExtensionSecureAuthoringSnapshot,
   VsCodeExtensionSelectionSnapshot,
   VsCodeExtensionServiceDiagnosticsSnapshot,
+  VsCodeExtensionUserConfigEntrySnapshot,
+  VsCodeExtensionUserConfigStatusSnapshot,
   VsCodeExtensionWorkbenchOverviewSnapshot,
   VsCodeExtensionWorkflowStudioSnapshot,
   VsCodeExtensionWorkspaceContextSnapshot,
 } from '../types/index.js';
 
 const EXECUTION_LOOKUP_LIMIT = 20;
+const EMBEDDED_CLI_PACKAGE_SPECIFIER = '@repo-ai-governor/cli';
+const DEFAULT_USER_CONFIG_ENTRY_DELIMITER = ' | ';
+const DEFAULT_SECRET_RECORD_DELIMITER = ' | ';
+const CREDENTIAL_SELECTOR_PREFIX = 'secret://';
+const UNSAFE_LOCAL_FILE_SECRET_BACKEND_ID = 'unsafe-local-file';
+const requireFromRuntime = createRequire(import.meta.url);
 
 // oop-function-allowed: These fallback DTO builders are pure value factories that keep the
 // service-owned catch branches concise without adding mutable state or orchestration behavior.
@@ -89,6 +103,30 @@ interface VsCodeExtensionServiceRuntimeDependencies {
   configLoader?: Pick<ConfigLoader, 'loadFromFile'>;
   workspaceResolver?: Pick<WorkspaceResolver, 'resolve'>;
   pathExists?: (path: string) => boolean;
+  embeddedCliExecutor?: (request: VsCodeExtensionEmbeddedCliRequest) => Promise<unknown>;
+}
+
+interface VsCodeExtensionEmbeddedCliRequest {
+  args: readonly string[];
+  currentWorkingDirectory: string;
+  stdin?: string;
+}
+
+interface VsCodeExtensionCliCommandSuccessPayload {
+  message?: string;
+  command_result?: {
+    details?: Record<string, unknown>;
+    checks?: Array<{
+      id?: string;
+      status?: string;
+      detail?: string;
+    }>;
+    experience?: {
+      interactionPrompts?: Array<{
+        action?: string;
+      }>;
+    };
+  };
 }
 
 /**
@@ -106,15 +144,23 @@ export class VsCodeExtensionServiceRuntime {
   private readonly configLoader: Pick<ConfigLoader, 'loadFromFile'>;
   private readonly workspaceResolver: Pick<WorkspaceResolver, 'resolve'>;
   private readonly pathExists: (path: string) => boolean;
+  private readonly embeddedCliExecutor: (
+    request: VsCodeExtensionEmbeddedCliRequest,
+  ) => Promise<unknown>;
   private readonly workspaceConfigDiscovery: Pick<
     WorkspaceConfigDiscoveryService,
     'loadRepositoryWorkspaceConfig'
   >;
+  private secureAuthoringSnapshotPromise: Promise<VsCodeExtensionSecureAuthoringSnapshot> | null =
+    null;
+  private secureAuthoringRepositoryRoot: string | undefined;
 
   public constructor(dependencies: VsCodeExtensionServiceRuntimeDependencies = {}) {
     this.configLoader = dependencies.configLoader ?? new ConfigLoader();
     this.workspaceResolver = dependencies.workspaceResolver ?? new WorkspaceResolver();
     this.pathExists = dependencies.pathExists ?? existsSync;
+    this.embeddedCliExecutor =
+      dependencies.embeddedCliExecutor ?? this.executeEmbeddedCliCommand.bind(this);
     this.workspaceConfigDiscovery = new WorkspaceConfigDiscoveryService(
       this.configLoader,
       this.workspaceResolver,
@@ -372,15 +418,23 @@ export class VsCodeExtensionServiceRuntime {
   public async resolveWorkbenchOverviewSnapshot(
     selection: VsCodeExtensionSelectionSnapshot,
   ): Promise<VsCodeExtensionWorkbenchOverviewSnapshot> {
-    const [workspaceContext, queueOverview, selectedExecution] = await Promise.all([
-      this.resolveWorkspaceContextSnapshot(),
-      this.queryQueueOverview(),
-      this.resolveSelectedExecution(selection),
-    ]);
+    const [workspaceContext, queueOverview, secureAuthoring, selectedExecution] = await Promise.all(
+      [
+        this.resolveWorkspaceContextSnapshot(),
+        this.queryQueueOverview(),
+        this.resolveSecureAuthoringSnapshot(),
+        this.resolveSelectedExecution(selection),
+      ],
+    );
 
     return {
       workspaceContext,
       queueOverview,
+      ...(secureAuthoring
+        ? {
+            secureAuthoring,
+          }
+        : {}),
       ...(selectedExecution
         ? {
             selectedExecution,
@@ -402,11 +456,14 @@ export class VsCodeExtensionServiceRuntime {
   public async resolveWorkflowStudioSnapshot(
     selection: VsCodeExtensionSelectionSnapshot,
   ): Promise<VsCodeExtensionWorkflowStudioSnapshot> {
-    const [workspaceContext, queueOverview, selectedExecution] = await Promise.all([
-      this.resolveWorkspaceContextSnapshot(),
-      this.queryQueueOverview(),
-      this.resolveSelectedExecution(selection),
-    ]);
+    const [workspaceContext, queueOverview, secureAuthoring, selectedExecution] = await Promise.all(
+      [
+        this.resolveWorkspaceContextSnapshot(),
+        this.queryQueueOverview(),
+        this.resolveSecureAuthoringSnapshot(),
+        this.resolveSelectedExecution(selection),
+      ],
+    );
     const artifactPane = selectedExecution
       ? await this.queryArtifactPaneForExecution(
           selectedExecution.execution.executionId,
@@ -417,6 +474,11 @@ export class VsCodeExtensionServiceRuntime {
     return {
       workspaceContext,
       queueOverview,
+      ...(secureAuthoring
+        ? {
+            secureAuthoring,
+          }
+        : {}),
       ...(selectedExecution
         ? {
             selectedExecution,
@@ -485,6 +547,107 @@ export class VsCodeExtensionServiceRuntime {
   }
 
   /**
+   * Resolves user-config + secret-backend readiness through the embedded CLI JSON contract.
+   * @returns One additive readiness snapshot, or a degraded snapshot when the embedded contract
+   * cannot be reached safely.
+   */
+  public async resolveSecureAuthoringSnapshot(): Promise<
+    VsCodeExtensionSecureAuthoringSnapshot | undefined
+  > {
+    const openedWorkspaceRoot = this.getWorkspaceRoot();
+    if (!openedWorkspaceRoot) {
+      return undefined;
+    }
+
+    const serviceWorkspaceContext = this.resolveServiceWorkspaceContext(openedWorkspaceRoot);
+    if (
+      this.secureAuthoringSnapshotPromise &&
+      this.secureAuthoringRepositoryRoot === serviceWorkspaceContext.repositoryRoot
+    ) {
+      return this.secureAuthoringSnapshotPromise;
+    }
+
+    this.secureAuthoringRepositoryRoot = serviceWorkspaceContext.repositoryRoot;
+    this.secureAuthoringSnapshotPromise = this.loadSecureAuthoringSnapshot(
+      serviceWorkspaceContext.repositoryRoot,
+    ).then((snapshot) => {
+      if (snapshot.degradedReason) {
+        this.clearSecureAuthoringSnapshotCache();
+      }
+      return snapshot;
+    });
+    return this.secureAuthoringSnapshotPromise;
+  }
+
+  /**
+   * Persists one user-local default value through the embedded CLI contract.
+   * @param keyPath Canonical user-config key path.
+   * @param value Validated user-local default value.
+   * @returns Redacted mutation summary plus canonical config path.
+   */
+  public async setUserConfigValue(
+    keyPath: string,
+    value: string,
+  ): Promise<{
+    message: string;
+    configPath?: string;
+    persistedValue?: string;
+  }> {
+    const repositoryRoot = this.requireRepositoryRootForEmbeddedCli();
+    const payload = await this.executeEmbeddedCliJsonCommand(
+      {
+        args: ['config', 'set', keyPath, value],
+        currentWorkingDirectory: repositoryRoot,
+      },
+      'Failed to persist the requested user-local default.',
+      '写入请求的用户本地默认值失败。',
+    );
+    this.clearSecureAuthoringSnapshotCache();
+    return {
+      message: this.readPayloadMessage(payload),
+      configPath: this.readDetailString(payload, 'config_path'),
+      persistedValue: this.readDetailString(payload, 'value'),
+    };
+  }
+
+  /**
+   * Persists one managed secret value through the embedded CLI contract without exposing the raw
+   * value to argv, transcript, or local command previews.
+   * @param keyName Canonical managed secret key.
+   * @param value Raw secret value that will be written through stdin only.
+   * @param backendId Optional explicit backend override.
+   * @returns Redacted mutation summary and selector/backend metadata.
+   */
+  public async setManagedSecret(
+    keyName: string,
+    value: string,
+    backendId?: string,
+  ): Promise<{
+    message: string;
+    selector?: string;
+    backendId?: string;
+    warning?: string;
+  }> {
+    const repositoryRoot = this.requireRepositoryRootForEmbeddedCli();
+    const payload = await this.executeEmbeddedCliJsonCommand(
+      {
+        args: ['secret', 'set', keyName, ...(backendId ? ['--backend', backendId] : []), '--stdin'],
+        currentWorkingDirectory: repositoryRoot,
+        stdin: value,
+      },
+      'Failed to write the requested managed secret.',
+      '写入请求的受管 secret 失败。',
+    );
+    this.clearSecureAuthoringSnapshotCache();
+    return {
+      message: this.readPayloadMessage(payload),
+      selector: this.readDetailString(payload, 'selector'),
+      backendId: this.readDetailString(payload, 'backend'),
+      warning: this.readDetailString(payload, 'warning'),
+    };
+  }
+
+  /**
    * Disposes any live sidecar client owned by the extension host.
    * @returns Promise that settles after disposal finishes.
    */
@@ -499,6 +662,7 @@ export class VsCodeExtensionServiceRuntime {
     this.clientPromise = null;
     this.clientWorkspaceRoot = undefined;
     this.clientRepositoryRoot = undefined;
+    this.clearSecureAuthoringSnapshotCache();
     await client?.dispose();
   }
 
@@ -659,5 +823,429 @@ export class VsCodeExtensionServiceRuntime {
       repositoryRoot: resolvedWorkspace.repositoryRoot,
       governanceWorkspaceRoot: resolvedWorkspace.workspaceRoot,
     };
+  }
+
+  private async loadSecureAuthoringSnapshot(
+    repositoryRoot: string,
+  ): Promise<VsCodeExtensionSecureAuthoringSnapshot> {
+    try {
+      const [configStatusPayload, configListPayload, secretStatusPayload, secretListPayload] =
+        await Promise.all([
+          this.executeEmbeddedCliJsonCommand(
+            {
+              args: ['config', 'status'],
+              currentWorkingDirectory: repositoryRoot,
+            },
+            'Failed to resolve user-local config readiness.',
+            '解析用户本地配置 readiness 失败。',
+          ),
+          this.executeEmbeddedCliJsonCommand(
+            {
+              args: ['config', 'list'],
+              currentWorkingDirectory: repositoryRoot,
+            },
+            'Failed to list user-local config defaults.',
+            '列出用户本地配置默认值失败。',
+          ),
+          this.executeEmbeddedCliJsonCommand(
+            {
+              args: ['secret', 'status'],
+              currentWorkingDirectory: repositoryRoot,
+            },
+            'Failed to resolve secret-backend readiness.',
+            '解析 secret backend readiness 失败。',
+          ),
+          this.executeEmbeddedCliJsonCommand(
+            {
+              args: ['secret', 'list'],
+              currentWorkingDirectory: repositoryRoot,
+            },
+            'Failed to list managed secret readiness.',
+            '列出受管 secret readiness 失败。',
+          ),
+        ]);
+
+      const userConfigStatus = this.parseUserConfigStatusSnapshot(
+        configStatusPayload,
+        configListPayload,
+      );
+      const secretReadiness = this.parseSecretReadinessSnapshot(
+        secretStatusPayload,
+        secretListPayload,
+        userConfigStatus.entries,
+      );
+
+      return {
+        userConfig: userConfigStatus,
+        secretReadiness,
+      };
+    } catch (error) {
+      const standardizedError = standardizeError(error);
+      return {
+        degradedReason: standardizedError.message,
+      };
+    }
+  }
+
+  private parseUserConfigStatusSnapshot(
+    configStatusPayload: VsCodeExtensionCliCommandSuccessPayload,
+    configListPayload: VsCodeExtensionCliCommandSuccessPayload,
+  ): VsCodeExtensionUserConfigStatusSnapshot {
+    return {
+      configPath: this.readRequiredDetailString(configStatusPayload, 'config_path'),
+      configExists: this.readDetailBoolean(configStatusPayload, 'config_exists'),
+      legacyPreferencePath: this.readRequiredDetailString(
+        configStatusPayload,
+        'legacy_preference_path',
+      ),
+      legacyPreferenceExists: this.readDetailBoolean(
+        configStatusPayload,
+        'legacy_preference_exists',
+      ),
+      ...(this.readDetailString(configStatusPayload, 'theme_preference')
+        ? {
+            themePreference: this.readDetailString(configStatusPayload, 'theme_preference'),
+          }
+        : {}),
+      ...(this.readDetailString(configStatusPayload, 'workspace_mode_preference')
+        ? {
+            workspaceModePreference: this.readDetailString(
+              configStatusPayload,
+              'workspace_mode_preference',
+            ),
+          }
+        : {}),
+      entries: this.parseUserConfigEntries(this.readDetailString(configListPayload, 'entries')),
+    };
+  }
+
+  private parseSecretReadinessSnapshot(
+    secretStatusPayload: VsCodeExtensionCliCommandSuccessPayload,
+    secretListPayload: VsCodeExtensionCliCommandSuccessPayload,
+    userConfigEntries: readonly VsCodeExtensionUserConfigEntrySnapshot[],
+  ): VsCodeExtensionSecretReadinessSnapshot {
+    const records = this.parseSecretRecords(this.readDetailString(secretListPayload, 'records'));
+    const configuredCredentialRefs = userConfigEntries
+      .filter((entry) => entry.keyPath.endsWith('.remoteApi.credentialRef'))
+      .map((entry) => entry.value)
+      .filter((value) => value.startsWith(CREDENTIAL_SELECTOR_PREFIX));
+    const resolvedSelectors = new Set(
+      records
+        .filter((record) => record.exists)
+        .map((record) => `${CREDENTIAL_SELECTOR_PREFIX}${record.keyName}`),
+    );
+
+    return {
+      ...(this.readDetailString(secretStatusPayload, 'selected_backend')
+        ? {
+            selectedBackendId: this.readDetailString(secretStatusPayload, 'selected_backend'),
+          }
+        : {}),
+      ...(this.readDetailString(secretStatusPayload, 'default_backend')
+        ? {
+            defaultBackendId: this.readDetailString(secretStatusPayload, 'default_backend'),
+          }
+        : {}),
+      indexPath: this.readRequiredDetailString(secretStatusPayload, 'index_path'),
+      backends: this.parseSecretBackendStatuses(secretStatusPayload),
+      records,
+      configuredCredentialRefs,
+      unresolvedCredentialRefs: configuredCredentialRefs.filter(
+        (selector) => !resolvedSelectors.has(selector),
+      ),
+    };
+  }
+
+  private parseUserConfigEntries(
+    entriesSummary?: string,
+  ): readonly VsCodeExtensionUserConfigEntrySnapshot[] {
+    if (!entriesSummary) {
+      return [];
+    }
+
+    return entriesSummary
+      .split(DEFAULT_USER_CONFIG_ENTRY_DELIMITER)
+      .map((entrySummary) => {
+        const dividerIndex = entrySummary.indexOf('=');
+        if (dividerIndex <= 0) {
+          return undefined;
+        }
+
+        return {
+          keyPath: entrySummary.slice(0, dividerIndex).trim(),
+          value: entrySummary.slice(dividerIndex + 1).trim(),
+        } satisfies VsCodeExtensionUserConfigEntrySnapshot;
+      })
+      .filter((entry): entry is VsCodeExtensionUserConfigEntrySnapshot => Boolean(entry));
+  }
+
+  private parseSecretBackendStatuses(
+    payload: VsCodeExtensionCliCommandSuccessPayload,
+  ): readonly VsCodeExtensionSecretBackendStatusSnapshot[] {
+    const checks = payload.command_result?.checks ?? [];
+    const unsafeFallbackWarning =
+      this.readDetailString(payload, 'warning') ?? this.readInteractionPromptAction(payload);
+    return checks
+      .filter((check) => check.id?.startsWith('secret_backend_'))
+      .map((check) => ({
+        backendId: check.id?.replace('secret_backend_', '') ?? 'unknown',
+        available: check.status === 'pass',
+        detail: check.detail ?? '',
+        ...(check.id?.replace('secret_backend_', '') === UNSAFE_LOCAL_FILE_SECRET_BACKEND_ID &&
+        unsafeFallbackWarning
+          ? {
+              warning: unsafeFallbackWarning,
+            }
+          : {}),
+      }));
+  }
+
+  private parseSecretRecords(
+    recordsSummary?: string,
+  ): readonly VsCodeExtensionSecretRecordSnapshot[] {
+    if (!recordsSummary) {
+      return [];
+    }
+
+    return recordsSummary
+      .split(DEFAULT_SECRET_RECORD_DELIMITER)
+      .map((recordSummary) => {
+        const [backendDescriptor, existsDescriptor] = recordSummary.split(':');
+        const dividerIndex = backendDescriptor?.lastIndexOf('@') ?? -1;
+        if (!backendDescriptor || dividerIndex <= 0) {
+          return undefined;
+        }
+
+        return {
+          keyName: backendDescriptor.slice(0, dividerIndex).trim(),
+          backendId: backendDescriptor.slice(dividerIndex + 1).trim(),
+          exists: existsDescriptor?.trim() === 'present',
+        } satisfies VsCodeExtensionSecretRecordSnapshot;
+      })
+      .filter((record): record is VsCodeExtensionSecretRecordSnapshot => Boolean(record));
+  }
+
+  private async executeEmbeddedCliJsonCommand(
+    request: VsCodeExtensionEmbeddedCliRequest,
+    englishFailurePrefix: string,
+    chineseFailurePrefix: string,
+  ): Promise<VsCodeExtensionCliCommandSuccessPayload> {
+    const payload = await this.embeddedCliExecutor(request);
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+      throw new RuntimeError(
+        GovernorErrorCode.UNKNOWN,
+        vscode.env.language.trim().toLowerCase().startsWith('zh')
+          ? `${chineseFailurePrefix}：CLI 返回了无法识别的 JSON 结构。`
+          : `${englishFailurePrefix}: embedded CLI returned an unexpected JSON payload.`,
+      );
+    }
+
+    return payload as VsCodeExtensionCliCommandSuccessPayload;
+  }
+
+  private async executeEmbeddedCliCommand(
+    request: VsCodeExtensionEmbeddedCliRequest,
+  ): Promise<unknown> {
+    const cliEntryPath = this.resolveEmbeddedCliEntryPath();
+    return new Promise<unknown>((resolvePromise, reject) => {
+      const childProcess = spawn(
+        process.execPath,
+        [
+          cliEntryPath,
+          '--locale',
+          this.resolveEmbeddedCliLocale(),
+          '--output',
+          'json',
+          '--no-color',
+          '--no-interactive',
+          ...request.args,
+        ],
+        {
+          cwd: request.currentWorkingDirectory,
+          env: process.env,
+          stdio: 'pipe',
+        },
+      );
+      let stdout = '';
+      let stderr = '';
+
+      childProcess.stdout.on('data', (chunk) => {
+        stdout += typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString('utf8');
+      });
+      childProcess.stderr.on('data', (chunk) => {
+        stderr += typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString('utf8');
+      });
+      childProcess.on('error', (error) => {
+        reject(standardizeError(error));
+      });
+      childProcess.on('close', (exitCode) => {
+        const successPayload = this.tryParseJsonPayload(stdout);
+        if (exitCode === 0 && successPayload) {
+          resolvePromise(successPayload);
+          return;
+        }
+
+        const failurePayload = this.tryParseJsonPayload(stderr) ?? this.tryParseJsonPayload(stdout);
+        if (
+          failurePayload &&
+          typeof failurePayload === 'object' &&
+          !Array.isArray(failurePayload)
+        ) {
+          const payloadRecord = failurePayload as Record<string, unknown>;
+          reject(
+            new RuntimeError(
+              this.readGovernorErrorCode(payloadRecord.error_code),
+              this.readGovernorErrorMessage(payloadRecord.message, stderr, stdout),
+              {
+                exitCode,
+              },
+            ),
+          );
+          return;
+        }
+
+        reject(
+          new RuntimeError(
+            GovernorErrorCode.UNKNOWN,
+            this.readGovernorErrorMessage(undefined, stderr, stdout),
+            {
+              exitCode,
+            },
+          ),
+        );
+      });
+
+      if (request.stdin !== undefined) {
+        childProcess.stdin.end(request.stdin);
+      } else {
+        childProcess.stdin.end();
+      }
+    });
+  }
+
+  private resolveEmbeddedCliEntryPath(): string {
+    try {
+      return requireFromRuntime.resolve(EMBEDDED_CLI_PACKAGE_SPECIFIER);
+    } catch (error) {
+      throw new RuntimeError(
+        GovernorErrorCode.WORKSPACE_SOURCE_NOT_FOUND,
+        vscode.env.language.trim().toLowerCase().startsWith('zh')
+          ? '当前 VS Code 安装中缺少内嵌的 Repo AI Governor CLI 依赖。'
+          : 'The embedded Repo AI Governor CLI dependency is missing from this VS Code installation.',
+        undefined,
+        error,
+      );
+    }
+  }
+
+  private resolveEmbeddedCliLocale(): string {
+    const normalizedLanguage = vscode.env.language.trim();
+    return normalizedLanguage.length > 0 ? normalizedLanguage : 'en-US';
+  }
+
+  private tryParseJsonPayload(content: string): unknown {
+    const trimmedContent = content.trim();
+    if (trimmedContent.length === 0) {
+      return undefined;
+    }
+
+    try {
+      return JSON.parse(trimmedContent) as unknown;
+    } catch {
+      return undefined;
+    }
+  }
+
+  private readGovernorErrorCode(errorCode: unknown): GovernorErrorCode {
+    return typeof errorCode === 'string' &&
+      Object.values(GovernorErrorCode).includes(errorCode as GovernorErrorCode)
+      ? (errorCode as GovernorErrorCode)
+      : GovernorErrorCode.UNKNOWN;
+  }
+
+  private readGovernorErrorMessage(message: unknown, stderr: string, stdout: string): string {
+    if (typeof message === 'string' && message.trim().length > 0) {
+      return message;
+    }
+
+    const stderrContent = stderr.trim();
+    if (stderrContent.length > 0) {
+      return stderrContent;
+    }
+
+    const stdoutContent = stdout.trim();
+    if (stdoutContent.length > 0) {
+      return stdoutContent;
+    }
+
+    return vscode.env.language.trim().toLowerCase().startsWith('zh')
+      ? '内嵌 CLI 没有返回可解析的结果。'
+      : 'The embedded CLI did not return a parseable result.';
+  }
+
+  private readPayloadMessage(payload: VsCodeExtensionCliCommandSuccessPayload): string {
+    return typeof payload.message === 'string' && payload.message.trim().length > 0
+      ? payload.message
+      : vscode.env.language.trim().toLowerCase().startsWith('zh')
+        ? '命令已完成。'
+        : 'Command completed.';
+  }
+
+  private readRequiredDetailString(
+    payload: VsCodeExtensionCliCommandSuccessPayload,
+    key: string,
+  ): string {
+    const value = this.readDetailString(payload, key);
+    if (value) {
+      return value;
+    }
+
+    throw new RuntimeError(
+      GovernorErrorCode.UNKNOWN,
+      vscode.env.language.trim().toLowerCase().startsWith('zh')
+        ? `内嵌 CLI 缺少必需字段：${key}。`
+        : `The embedded CLI payload is missing required field "${key}".`,
+    );
+  }
+
+  private readDetailString(
+    payload: VsCodeExtensionCliCommandSuccessPayload,
+    key: string,
+  ): string | undefined {
+    const value = payload.command_result?.details?.[key];
+    return typeof value === 'string' && value.trim().length > 0 ? value : undefined;
+  }
+
+  private readDetailBoolean(
+    payload: VsCodeExtensionCliCommandSuccessPayload,
+    key: string,
+  ): boolean {
+    return payload.command_result?.details?.[key] === true;
+  }
+
+  private readInteractionPromptAction(
+    payload: VsCodeExtensionCliCommandSuccessPayload,
+  ): string | undefined {
+    const action = payload.command_result?.experience?.interactionPrompts?.[0]?.action;
+    return typeof action === 'string' && action.trim().length > 0 ? action : undefined;
+  }
+
+  private requireRepositoryRootForEmbeddedCli(): string {
+    const openedWorkspaceRoot = this.getWorkspaceRoot();
+    if (!openedWorkspaceRoot) {
+      throw new RuntimeError(
+        GovernorErrorCode.WORKSPACE_SOURCE_NOT_FOUND,
+        vscode.env.language.trim().toLowerCase().startsWith('zh')
+          ? '请先打开一个受治理的工作区后再执行本地 authoring 操作。'
+          : 'Open one governed workspace before running local authoring actions.',
+      );
+    }
+
+    return this.resolveServiceWorkspaceContext(openedWorkspaceRoot).repositoryRoot;
+  }
+
+  private clearSecureAuthoringSnapshotCache(): void {
+    this.secureAuthoringSnapshotPromise = null;
+    this.secureAuthoringRepositoryRoot = undefined;
   }
 }

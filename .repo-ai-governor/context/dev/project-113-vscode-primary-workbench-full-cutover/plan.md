@@ -33,13 +33,13 @@
 
 ## 2.3 sprint-003-phase-f-secure-authoring-and-user-settings
 
-- Status: active
+- Status: completed
 - Sprint Goal: 完成 secure authoring、user settings 与 secret readiness UX 的标准执行骨架
-- Task Package: `TK-950、TK-951、TK-952、TK-953、CR-001`
+- Task Package: `TK-950、TK-951、TK-952、TK-953、CR-001、CR-002`
 
 ## 2.4 sprint-004-phase-g-workflow-authoring-and-run-control
 
-- Status: planned
+- Status: active
 - Sprint Goal: 完成 workflow authoring、governed run-control 与 workflow studio continuity 的标准执行骨架
 - Task Package: `TK-954、TK-955、TK-956、TK-957、CR-001`
 
@@ -67,12 +67,13 @@
 | CR-001 | sprint-002-phase-e-operations-cutover | verify phase-e operations cutover | review | prepare sprint-002 exit acceptance and phase-f handoff | resolved |
 | CR-002 | sprint-002-phase-e-operations-cutover | sprint-002-phase-e-operations-cutover delegated recheck loop round 2 | review recheck | verify phase-e operations cutover | resolved |
 | CR-003 | sprint-002-phase-e-operations-cutover | sprint-002-phase-e-operations-cutover delegated review loop round 3 | review recheck | sprint-002-phase-e-operations-cutover delegated recheck loop round 2 | resolved |
-| TK-950 | sprint-003-phase-f-secure-authoring-and-user-settings | freeze phase-f secure authoring boundary | secure authoring contract | prepare sprint-002 exit acceptance and phase-f handoff | in_progress |
-| TK-951 | sprint-003-phase-f-secure-authoring-and-user-settings | implement secure authoring seams and redaction baseline | secure authoring seam | freeze phase-f secure authoring boundary | planned |
-| TK-952 | sprint-003-phase-f-secure-authoring-and-user-settings | land user settings and secret readiness ux | secure authoring ux | implement secure authoring seams and redaction baseline | planned |
-| TK-953 | sprint-003-phase-f-secure-authoring-and-user-settings | prepare sprint-003 exit acceptance and phase-g handoff | governance handoff | land user settings and secret readiness ux | planned |
-| CR-001 | sprint-003-phase-f-secure-authoring-and-user-settings | verify phase-f secure authoring baseline | review | prepare sprint-003 exit acceptance and phase-g handoff | planned |
-| TK-954 | sprint-004-phase-g-workflow-authoring-and-run-control | freeze phase-g workflow authoring and run-control contract | workflow authoring contract | prepare sprint-003 exit acceptance and phase-g handoff | planned |
+| TK-950 | sprint-003-phase-f-secure-authoring-and-user-settings | freeze phase-f secure authoring boundary | secure authoring contract | prepare sprint-002 exit acceptance and phase-f handoff | completed |
+| TK-951 | sprint-003-phase-f-secure-authoring-and-user-settings | implement secure authoring seams and redaction baseline | secure authoring seam | freeze phase-f secure authoring boundary | completed |
+| TK-952 | sprint-003-phase-f-secure-authoring-and-user-settings | land user settings and secret readiness ux | secure authoring ux | implement secure authoring seams and redaction baseline | completed |
+| TK-953 | sprint-003-phase-f-secure-authoring-and-user-settings | prepare sprint-003 exit acceptance and phase-g handoff | governance handoff | land user settings and secret readiness ux | completed |
+| CR-001 | sprint-003-phase-f-secure-authoring-and-user-settings | verify phase-f secure authoring baseline | review | prepare sprint-003 exit acceptance and phase-g handoff | resolved |
+| CR-002 | sprint-003-phase-f-secure-authoring-and-user-settings | sprint-003-phase-f-secure-authoring-and-user-settings delegated review loop round 2 | review recheck | verify phase-f secure authoring baseline | resolved |
+| TK-954 | sprint-004-phase-g-workflow-authoring-and-run-control | freeze phase-g workflow authoring and run-control contract | workflow authoring contract | prepare sprint-003 exit acceptance and phase-g handoff | in_progress |
 | TK-955 | sprint-004-phase-g-workflow-authoring-and-run-control | implement workflow authoring and governed run-control seams | workflow run-control seam | freeze phase-g workflow authoring and run-control contract | planned |
 | TK-956 | sprint-004-phase-g-workflow-authoring-and-run-control | land workflow studio control surfaces and continuity ux | workflow studio surface | implement workflow authoring and governed run-control seams | planned |
 | TK-957 | sprint-004-phase-g-workflow-authoring-and-run-control | prepare sprint-004 exit acceptance and phase-h handoff | governance handoff | land workflow studio control surfaces and continuity ux | planned |
@@ -106,6 +107,7 @@
 7. 2026-04-17：`CR-001` 已接受并修复“artifact-pane restore failure 假空态 + HITL fallback 证据缺口”两条 finding；当前 `CR-002` 已被激活为 fresh post-fix recheck round，继续作为 sprint-002 closeout 前的 blocking review surface。
 8. 2026-04-17：`CR-002` 已接受并修复 `CS-022` standardized-error gate 命中与 `CS-017` helper annotation 缺口；随后 `CR-003` 被激活为 fresh clean recheck round。
 9. 2026-04-17：`CR-003` clean round 未发现 actionable finding，sprint-002 正式完成 closeout；当前 primary stream 已切换到 sprint-003，`TK-950` 进入 `in_progress` activation truth，下一步从 clean baseline 开始推进 secure authoring / settings / secret readiness UX。
+10. 2026-04-17：`CR-002` 已在 sprint-003 同窗口完成 accepted finding 修复与复验，当前 sprint-003 正式完成 closeout；primary stream 已切换到 sprint-004，`TK-954` 进入 `in_progress` activation truth，下一步从 clean baseline 推进 workflow authoring / governed run-control / workflow studio continuity UX。
 
 ## 7. 里程碑记录入口
 

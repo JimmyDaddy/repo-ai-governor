@@ -17,6 +17,8 @@ const vscodeMock = vi.hoisted(() => {
   const showInformationMessage = vi.fn();
   const showWarningMessage = vi.fn();
   const showErrorMessage = vi.fn();
+  const showQuickPick = vi.fn();
+  const showInputBox = vi.fn();
   const openTextDocument = vi.fn();
   const showTextDocument = vi.fn();
   const executeCommand = vi.fn();
@@ -33,6 +35,8 @@ const vscodeMock = vi.hoisted(() => {
     showInformationMessage,
     showWarningMessage,
     showErrorMessage,
+    showQuickPick,
+    showInputBox,
     openTextDocument,
     showTextDocument,
     executeCommand,
@@ -62,6 +66,8 @@ vi.mock(
       showInformationMessage: vscodeMock.showInformationMessage,
       showWarningMessage: vscodeMock.showWarningMessage,
       showErrorMessage: vscodeMock.showErrorMessage,
+      showQuickPick: vscodeMock.showQuickPick,
+      showInputBox: vscodeMock.showInputBox,
       showTextDocument: vscodeMock.showTextDocument,
       createTerminal: vscodeMock.createTerminal,
     },
@@ -88,6 +94,8 @@ describe('VsCode extension controller/provider integration', () => {
     vscodeMock.showInformationMessage.mockReset();
     vscodeMock.showWarningMessage.mockReset();
     vscodeMock.showErrorMessage.mockReset();
+    vscodeMock.showQuickPick.mockReset();
+    vscodeMock.showInputBox.mockReset();
     vscodeMock.openTextDocument.mockReset();
     vscodeMock.showTextDocument.mockReset();
     vscodeMock.executeCommand.mockReset();
@@ -295,6 +303,267 @@ describe('VsCode extension controller/provider integration', () => {
       queueEntry: undefined,
       temporaryBridge: undefined,
     });
+  });
+
+  it('opens the canonical user-config file when secure-authoring diagnostics report one existing file', async () => {
+    vscodeMock.state.trusted = true;
+    vscodeMock.openTextDocument.mockResolvedValue({
+      uri: {
+        fsPath: '/Users/test/.repo-ai-governor/user-config.yaml',
+      },
+    });
+    vscodeMock.showTextDocument.mockResolvedValue(undefined);
+
+    const controller = new VsCodeExtensionCommandController(
+      {
+        resolveSecureAuthoringSnapshot: vi.fn().mockResolvedValue({
+          userConfig: {
+            configPath: '/Users/test/.repo-ai-governor/user-config.yaml',
+            configExists: true,
+            legacyPreferencePath: '/Users/test/.repo-ai-governor/cli-preferences.yaml',
+            legacyPreferenceExists: false,
+            entries: [],
+          },
+        }),
+      } as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    await controller.openUserConfig();
+
+    expect(vscodeMock.openTextDocument).toHaveBeenCalledWith({
+      fsPath: '/Users/test/.repo-ai-governor/user-config.yaml',
+    });
+    expect(vscodeMock.showTextDocument).toHaveBeenCalledWith(
+      expect.objectContaining({
+        uri: {
+          fsPath: '/Users/test/.repo-ai-governor/user-config.yaml',
+        },
+      }),
+      {
+        preview: false,
+      },
+    );
+  });
+
+  it('configures one preselected user-local default through the embedded CLI seam and refreshes the workbench', async () => {
+    vscodeMock.state.trusted = true;
+    vscodeMock.showQuickPick.mockResolvedValueOnce({
+      value: 'calm',
+    });
+
+    const taskBoardProvider = {
+      refresh: vi.fn(),
+    };
+    const workbenchOverviewProvider = {
+      refresh: vi.fn(),
+    };
+    const workspaceContextProvider = {
+      refresh: vi.fn(),
+    };
+    const workflowStudioProvider = {
+      refresh: vi.fn(),
+    };
+    const reviewDetailProvider = {
+      refresh: vi.fn(),
+    };
+    const setUserConfigValue = vi.fn().mockResolvedValue({
+      message: 'configured',
+      configPath: '/Users/test/.repo-ai-governor/user-config.yaml',
+      persistedValue: 'calm',
+    });
+    const controller = new VsCodeExtensionCommandController(
+      {
+        resolveSecureAuthoringSnapshot: vi.fn().mockResolvedValue({
+          userConfig: {
+            configPath: '/Users/test/.repo-ai-governor/user-config.yaml',
+            configExists: true,
+            legacyPreferencePath: '/Users/test/.repo-ai-governor/cli-preferences.yaml',
+            legacyPreferenceExists: false,
+            themePreference: 'governor',
+            entries: [],
+          },
+        }),
+        setUserConfigValue,
+      } as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        taskBoardProvider: taskBoardProvider as never,
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        workbenchOverviewProvider: workbenchOverviewProvider as never,
+        workspaceContextProvider: workspaceContextProvider as never,
+        workflowStudioProvider: workflowStudioProvider as never,
+        reviewDetailProvider: reviewDetailProvider as never,
+      },
+    );
+
+    await controller.configureUserDefault({
+      userConfigKeyPath: 'ui.react.theme',
+    });
+
+    expect(vscodeMock.showQuickPick).toHaveBeenCalled();
+    expect(setUserConfigValue).toHaveBeenCalledWith('ui.react.theme', 'calm');
+    expect(taskBoardProvider.refresh).toHaveBeenCalledTimes(1);
+    expect(workbenchOverviewProvider.refresh).toHaveBeenCalledTimes(1);
+    expect(workspaceContextProvider.refresh).toHaveBeenCalledTimes(1);
+    expect(workflowStudioProvider.refresh).toHaveBeenCalledTimes(1);
+    expect(reviewDetailProvider.refresh).toHaveBeenCalledTimes(1);
+    expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith(
+      'Configured ui.react.theme=calm.',
+    );
+  });
+
+  it('captures one managed secret through a password input and never echoes the raw value back to UI notifications', async () => {
+    vscodeMock.state.trusted = true;
+    vscodeMock.showInputBox.mockResolvedValueOnce('sk-secret-value');
+
+    const setManagedSecret = vi.fn().mockResolvedValue({
+      message: 'stored',
+      selector: 'secret://openai/api-key',
+      backendId: 'os-keychain',
+    });
+    const workbenchOverviewProvider = {
+      refresh: vi.fn(),
+    };
+    const controller = new VsCodeExtensionCommandController(
+      {
+        resolveSecureAuthoringSnapshot: vi.fn().mockResolvedValue({
+          secretReadiness: {
+            selectedBackendId: 'os-keychain',
+            defaultBackendId: 'os-keychain',
+            indexPath: '/Users/test/.repo-ai-governor/secret-index.json',
+            backends: [
+              {
+                backendId: 'os-keychain',
+                available: true,
+                detail: 'Ready',
+              },
+            ],
+            records: [
+              {
+                keyName: 'openai/api-key',
+                backendId: 'os-keychain',
+                exists: true,
+              },
+            ],
+            configuredCredentialRefs: ['secret://openai/api-key'],
+            unresolvedCredentialRefs: [],
+          },
+        }),
+        setManagedSecret,
+      } as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        workbenchOverviewProvider: workbenchOverviewProvider as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    await controller.setManagedSecret({
+      secretKeyName: 'openai/api-key',
+    });
+
+    expect(vscodeMock.showInputBox).toHaveBeenCalledWith(
+      expect.objectContaining({
+        password: true,
+        ignoreFocusOut: true,
+      }),
+    );
+    expect(setManagedSecret).toHaveBeenCalledWith('openai/api-key', 'sk-secret-value', undefined);
+    expect(workbenchOverviewProvider.refresh).toHaveBeenCalledTimes(1);
+    expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith(
+      'Managed secret updated for secret://openai/api-key.',
+    );
+    expect(vscodeMock.showInformationMessage.mock.calls[0]?.[0]).not.toContain('sk-secret-value');
+  });
+
+  it('requires explicit confirmation before writing through a warning-bearing unsafe backend', async () => {
+    vscodeMock.state.trusted = true;
+    vscodeMock.showWarningMessage.mockResolvedValueOnce('Use Warning Backend');
+    vscodeMock.showInputBox.mockResolvedValueOnce('sk-unsafe-secret');
+
+    const setManagedSecret = vi.fn().mockResolvedValue({
+      message: 'stored',
+      selector: 'secret://openai/api-key',
+      backendId: 'unsafe-local-file',
+      warning: 'plaintext fallback',
+    });
+    const controller = new VsCodeExtensionCommandController(
+      {
+        resolveSecureAuthoringSnapshot: vi.fn().mockResolvedValue({
+          secretReadiness: {
+            selectedBackendId: 'unsafe-local-file',
+            defaultBackendId: 'unsafe-local-file',
+            indexPath: '/Users/test/.repo-ai-governor/secrets.json',
+            backends: [
+              {
+                backendId: 'unsafe-local-file',
+                available: true,
+                detail: '/Users/test/.repo-ai-governor/secrets.json',
+                warning: 'plaintext fallback',
+              },
+            ],
+            records: [],
+            configuredCredentialRefs: ['secret://openai/api-key'],
+            unresolvedCredentialRefs: ['secret://openai/api-key'],
+          },
+        }),
+        setManagedSecret,
+      } as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    await controller.setManagedSecret({
+      secretKeyName: 'openai/api-key',
+    });
+
+    expect(vscodeMock.showWarningMessage).toHaveBeenCalledWith(
+      expect.stringContaining('unsafe-local-file backend is warning-bearing'),
+      {
+        modal: true,
+      },
+      'Use Warning Backend',
+    );
+    expect(setManagedSecret).toHaveBeenCalledWith(
+      'openai/api-key',
+      'sk-unsafe-secret',
+      'unsafe-local-file',
+    );
   });
 
   it('prefers queue-selected handoff targets before execution-board fallback for queue-only items', async () => {

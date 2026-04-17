@@ -1,6 +1,6 @@
 # TK-954 freeze phase-g workflow authoring and run-control contract
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-04-17
 - Owner: AI-Agent
 - Priority: P1
@@ -56,6 +56,7 @@
 ## 9. 执行记录
 
 1. 2026-04-17：任务创建，状态初始化为 `planned`。
+2. 2026-04-17：随着 sprint-003 在 `CR-002` resolved round 后完成 closeout，当前任务已切换为 `in_progress`，开始从 clean baseline 冻结 workflow authoring、governed run-control 与 workflow studio continuity boundary，并显式保持 Phase E degraded fallback 与 Phase F secure-authoring contract 不回退。
 
 ## 10. 产出
 

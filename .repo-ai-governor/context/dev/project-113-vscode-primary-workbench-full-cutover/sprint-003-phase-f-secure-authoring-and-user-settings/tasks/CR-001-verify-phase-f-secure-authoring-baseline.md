@@ -1,6 +1,6 @@
 # CR-001 verify phase-f secure authoring baseline
 
-- Status: planned
+- Status: resolved
 - Date: 2026-04-17
 - Owner: AI-Agent
 - Priority: P1
@@ -56,8 +56,10 @@
 ## 9. 执行记录
 
 1. 2026-04-17：任务创建，状态初始化为 `planned`。
+2. 2026-04-17：decomposition scaffold 预种下的 `CR-001` 未被作为首个 fresh reviewer round 实际消费；当前 worktree 在 bootstrap 时自动分配了 `CR-002` 作为真实 delegated review surface。
+3. 2026-04-17：为避免保留一个悬挂的非终态 scaffold CR 阻塞 sprint closeout，当前任务切换为 `resolved`，并将实际 findings / verification / repair lifecycle 全部收口到 `CR-002` 与 `resolved_code_review_working-tree-20260417-2126.md`。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. /Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-003-phase-f-secure-authoring-and-user-settings/tasks/CR-002.md
+2. /Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-003-phase-f-secure-authoring-and-user-settings/review/resolved_code_review_working-tree-20260417-2126.md

@@ -147,6 +147,18 @@ describe('VsCodeExtensionHost activation', () => {
       'repoAiGovernor.openReviewDetail',
       expect.any(Function),
     );
+    expect(vscodeActivationMock.registerCommand).toHaveBeenCalledWith(
+      'repoAiGovernor.openUserConfig',
+      expect.any(Function),
+    );
+    expect(vscodeActivationMock.registerCommand).toHaveBeenCalledWith(
+      'repoAiGovernor.configureUserDefault',
+      expect.any(Function),
+    );
+    expect(vscodeActivationMock.registerCommand).toHaveBeenCalledWith(
+      'repoAiGovernor.setManagedSecret',
+      expect.any(Function),
+    );
     expect(vscodeActivationMock.createTreeView).toHaveBeenCalled();
     expect(vscodeActivationMock.registerWebviewViewProvider).toHaveBeenCalled();
   });

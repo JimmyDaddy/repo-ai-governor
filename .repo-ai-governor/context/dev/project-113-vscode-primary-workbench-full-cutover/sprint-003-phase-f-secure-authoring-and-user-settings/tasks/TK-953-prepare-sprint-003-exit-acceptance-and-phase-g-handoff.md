@@ -1,6 +1,6 @@
 # TK-953 prepare sprint-003 exit acceptance and phase-g handoff
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-17
 - Owner: AI-Agent
 - Priority: P1
@@ -43,7 +43,8 @@
 
 ## 7. Development Verification
 
-1. 待执行：按任务范围补充 fast/targeted verification。
+1. pnpm run build
+2. pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test/vscode-extension-contract.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-host.activation.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-service-runtime.test.ts
 2. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-003-phase-f-secure-authoring-and-user-settings/tasks" --task-id TK-953
 
 ## 8. Delivery Verification
@@ -56,8 +57,13 @@
 ## 9. 执行记录
 
 1. 2026-04-17：任务创建，状态初始化为 `planned`。
+2. 2026-04-17：当前任务切换为 `in_progress`，开始整理 Phase F exit evidence，并把 secure authoring / user settings / secret readiness 的 activation-ready truth 写回 sprint surface。
+3. 2026-04-17：当前 sprint-003 exit acceptance 已固定为“embedded CLI dependency 被纳入 VS Code extension manifest；secure authoring diagnostics 可投影到 workbench overview / workflow studio；user-local defaults 与 managed secrets 通过 trust-gated editor-native UX 写入 canonical seam，raw secret 不会进入 argv 或 UI 回显”。
+4. 2026-04-17：Phase G handoff 已固定为“从当前 secure authoring baseline 继续实现 workflow authoring、run-control 与 continuity UX，同时保持 Phase E degraded fallback contract 不回退，也不在 sprint-004 提前混入 Phase H distribution/readme promotion 事项”；同窗口 `pnpm run build` 与 5 个 VS Code extension 定向 vitest 已通过，当前任务切换为 `completed`。
+5. 2026-04-17：`CR-002` 已在同窗口完成 accepted finding 修复与复验，当前 sprint-003 已完成 closeout，`current-context.md`、project plan 与 sprint plan 已切到 sprint-004 / `TK-954` activation truth。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. sprint-003 exit acceptance 已具备进入实际 delegated reviewer lifecycle（由 `CR-002` 收口）的代码证据：Phase F secure authoring seam、trust-gated UX、manifest contribution 与测试覆盖已在同一窗口完成并通过 build + targeted vitest。
+2. Phase G handoff 已固定为：后续 workflow authoring / governed run-control 只在当前 secure authoring baseline 之上增量实现，不重新分叉 config/secret truth，也不回退 Phase E degraded fallback 行为。
+3. sprint-003 closeout 已完成：`stream-project-113-sprint-003` 已移入 completed history，primary execution surface 已切换到 sprint-004-phase-g-workflow-authoring-and-run-control。

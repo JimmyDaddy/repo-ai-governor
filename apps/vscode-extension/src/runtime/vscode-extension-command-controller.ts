@@ -5,10 +5,24 @@ import {
   type OrchestrationHandoffTarget,
   OrchestrationHandoffTargetKind,
 } from '@repo-ai-governor/orchestration-service-client';
-import { standardizeError } from '@repo-ai-governor/shared';
-import { VSCODE_EXTENSION_TRUST_MANAGE_COMMAND_ID } from '../constants/index.js';
+import {
+  AdapterProviderKind,
+  AdapterSurface,
+  AdapterTransportKind,
+  AdapterVendorBindingKind,
+  CLI_REACT_THEME_VALUES,
+  WorkspaceMode,
+  standardizeError,
+} from '@repo-ai-governor/shared';
+import {
+  VSCODE_EXTENSION_SECRET_SELECTOR_PREFIX,
+  VSCODE_EXTENSION_TOOL_USER_DEFAULT_KEY_SUFFIXES,
+  VSCODE_EXTENSION_TRUST_MANAGE_COMMAND_ID,
+  VSCODE_EXTENSION_USER_DEFAULT_KEY_PATHS,
+} from '../constants/index.js';
 import type {
   VsCodeExtensionCommandRequest,
+  VsCodeExtensionSecureAuthoringSnapshot,
   VsCodeExtensionTreeNodeDescriptor,
 } from '../types/index.js';
 import type { VsCodeExtensionLocalizer } from './vscode-extension-localizer.js';
@@ -355,6 +369,162 @@ export class VsCodeExtensionCommandController {
   }
 
   /**
+   * Opens the canonical user-local config file when it already exists.
+   */
+  public async openUserConfig(): Promise<void> {
+    if (!(await this.ensureTrusted())) {
+      return;
+    }
+
+    try {
+      const secureAuthoring = await this.serviceRuntime.resolveSecureAuthoringSnapshot();
+      const configPath = secureAuthoring?.userConfig?.configPath;
+      if (!configPath) {
+        void vscode.window.showInformationMessage(
+          this.localizer.localizeText(
+            'Canonical user-config diagnostics are not available yet.',
+            '当前还无法获取 canonical user-config 诊断信息。',
+          ),
+        );
+        return;
+      }
+
+      if (!secureAuthoring.userConfig?.configExists) {
+        void vscode.window.showInformationMessage(
+          this.localizer.localizeText(
+            `Canonical user-config does not exist yet. Configure one user-local default first to initialize ${configPath}.`,
+            `canonical user-config 尚未创建。请先配置一个用户本地默认值来初始化 ${configPath}。`,
+          ),
+        );
+        return;
+      }
+
+      const document = await vscode.workspace.openTextDocument(vscode.Uri.file(configPath));
+      await vscode.window.showTextDocument(document, { preview: false });
+    } catch (error) {
+      await this.showCommandError(
+        error,
+        'Failed to open the canonical user-config file.',
+        '打开 canonical user-config 文件失败。',
+      );
+    }
+  }
+
+  /**
+   * Prompts for one user-local default and persists it through the embedded CLI seam.
+   * @param commandRequest Optional command request carrying one preselected key path.
+   */
+  public async configureUserDefault(commandRequest?: VsCodeExtensionCommandRequest): Promise<void> {
+    if (!(await this.ensureTrusted())) {
+      return;
+    }
+
+    try {
+      const mergedRequest = this.mergeCommandRequest(commandRequest);
+      const secureAuthoring = await this.serviceRuntime.resolveSecureAuthoringSnapshot();
+      const keyPath = await this.promptForUserConfigKeyPath(
+        mergedRequest.userConfigKeyPath,
+        secureAuthoring,
+      );
+      if (!keyPath) {
+        return;
+      }
+
+      const value = await this.promptForUserConfigValue(
+        keyPath,
+        this.readCurrentUserConfigValue(secureAuthoring, keyPath),
+      );
+      if (!value) {
+        return;
+      }
+
+      const result = await this.serviceRuntime.setUserConfigValue(keyPath, value);
+      this.selectionStore.applyCommandRequest(mergedRequest);
+      await this.refresh();
+      void vscode.window.showInformationMessage(
+        this.localizer.localizeText(
+          `Configured ${keyPath}=${result.persistedValue ?? value}.`,
+          `已配置 ${keyPath}=${result.persistedValue ?? value}。`,
+        ),
+      );
+    } catch (error) {
+      await this.showCommandError(
+        error,
+        'Failed to configure the requested user-local default.',
+        '配置请求的用户本地默认值失败。',
+      );
+    }
+  }
+
+  /**
+   * Securely captures one managed secret and writes it through stdin-only mutation.
+   * @param commandRequest Optional command request carrying one preselected secret key.
+   */
+  public async setManagedSecret(commandRequest?: VsCodeExtensionCommandRequest): Promise<void> {
+    if (!(await this.ensureTrusted())) {
+      return;
+    }
+
+    try {
+      const mergedRequest = this.mergeCommandRequest(commandRequest);
+      const secureAuthoring = await this.serviceRuntime.resolveSecureAuthoringSnapshot();
+      const keyName = await this.promptForManagedSecretKeyName(
+        mergedRequest.secretKeyName,
+        secureAuthoring,
+      );
+      if (!keyName) {
+        return;
+      }
+
+      const backendSelection = await this.promptForManagedSecretBackend(secureAuthoring);
+      if (backendSelection === false) {
+        return;
+      }
+
+      const secretValue = await vscode.window.showInputBox({
+        title: this.localizer.localizeText('Set managed secret', '设置受管 secret'),
+        prompt: this.localizer.localizeText(
+          `Enter the managed secret value for ${keyName}.`,
+          `请输入 ${keyName} 的受管 secret 值。`,
+        ),
+        password: true,
+        ignoreFocusOut: true,
+        validateInput: (candidate) =>
+          candidate.trim().length > 0
+            ? undefined
+            : this.localizer.localizeText('Secret value is required.', '请输入 secret 值。'),
+      });
+      if (!secretValue) {
+        return;
+      }
+
+      const result = await this.serviceRuntime.setManagedSecret(
+        keyName,
+        secretValue,
+        typeof backendSelection === 'string' ? backendSelection : undefined,
+      );
+      this.selectionStore.applyCommandRequest(mergedRequest);
+      await this.refresh();
+      void vscode.window.showInformationMessage(
+        this.localizer.localizeText(
+          result.warning
+            ? `Managed secret updated for ${result.selector ?? keyName}. Warning: ${result.warning}`
+            : `Managed secret updated for ${result.selector ?? keyName}.`,
+          result.warning
+            ? `${result.selector ?? keyName} 的受管 secret 已更新。警告：${result.warning}`
+            : `${result.selector ?? keyName} 的受管 secret 已更新。`,
+        ),
+      );
+    } catch (error) {
+      await this.showCommandError(
+        error,
+        'Failed to write the requested managed secret.',
+        '写入请求的受管 secret 失败。',
+      );
+    }
+  }
+
+  /**
    * Records selection changes from the execution board view.
    * @param selection Newly selected tree nodes.
    */
@@ -487,7 +657,405 @@ export class VsCodeExtensionCommandController {
             hitlDecisionOption: commandRequest.hitlDecisionOption,
           }
         : {}),
+      ...(commandRequest && 'userConfigKeyPath' in commandRequest
+        ? {
+            userConfigKeyPath: commandRequest.userConfigKeyPath,
+          }
+        : {}),
+      ...(commandRequest && 'secretKeyName' in commandRequest
+        ? {
+            secretKeyName: commandRequest.secretKeyName,
+          }
+        : {}),
     };
+  }
+
+  private async promptForUserConfigKeyPath(
+    preselectedKeyPath?: string,
+    secureAuthoring?: VsCodeExtensionSecureAuthoringSnapshot,
+  ): Promise<string | undefined> {
+    if (preselectedKeyPath) {
+      return preselectedKeyPath;
+    }
+
+    const directChoice = await vscode.window.showQuickPick(
+      [
+        {
+          label: this.localizer.localizeText('React theme default', 'React 主题默认值'),
+          description: this.readCurrentUserConfigValue(
+            secureAuthoring,
+            VSCODE_EXTENSION_USER_DEFAULT_KEY_PATHS.REACT_THEME,
+          ),
+          keyPath: VSCODE_EXTENSION_USER_DEFAULT_KEY_PATHS.REACT_THEME,
+        },
+        {
+          label: this.localizer.localizeText('Workspace mode preference', '工作区模式偏好'),
+          description: this.readCurrentUserConfigValue(
+            secureAuthoring,
+            VSCODE_EXTENSION_USER_DEFAULT_KEY_PATHS.WORKSPACE_MODE,
+          ),
+          keyPath: VSCODE_EXTENSION_USER_DEFAULT_KEY_PATHS.WORKSPACE_MODE,
+        },
+        {
+          label: this.localizer.localizeText('Tool remote API default', '工具 Remote API 默认值'),
+          description: this.localizer.localizeText(
+            'Choose one tool and one field to author.',
+            '选择一个工具和一个字段进行配置。',
+          ),
+          scope: 'tool',
+        },
+      ],
+      {
+        title: this.localizer.localizeText(
+          'Choose one user-local default to configure',
+          '选择一个要配置的用户本地默认值',
+        ),
+      },
+    );
+    if (!directChoice) {
+      return undefined;
+    }
+    if (directChoice.keyPath) {
+      return directChoice.keyPath;
+    }
+
+    const toolChoice = await vscode.window.showQuickPick(
+      Object.values(AdapterSurface).map((toolId) => ({
+        label: toolId,
+        description:
+          (secureAuthoring?.userConfig?.entries?.filter((entry) =>
+            entry.keyPath.startsWith(`tools.${toolId}.`),
+          ).length ?? 0) > 0
+            ? this.localizer.localizeText('Has existing defaults', '已有默认值')
+            : this.localizer.localizeText('No current default', '当前无默认值'),
+        toolId,
+      })),
+      {
+        title: this.localizer.localizeText(
+          'Choose one tool for user-local defaults',
+          '选择一个要配置默认值的工具',
+        ),
+      },
+    );
+    if (!toolChoice) {
+      return undefined;
+    }
+
+    const fieldChoice = await vscode.window.showQuickPick(
+      VSCODE_EXTENSION_TOOL_USER_DEFAULT_KEY_SUFFIXES.map((keySuffix) => ({
+        label: keySuffix,
+        description: this.readCurrentUserConfigValue(
+          secureAuthoring,
+          `tools.${toolChoice.toolId}.${keySuffix}`,
+        ),
+        keyPath: `tools.${toolChoice.toolId}.${keySuffix}`,
+      })),
+      {
+        title: this.localizer.localizeText(
+          'Choose one tool default field',
+          '选择一个工具默认值字段',
+        ),
+      },
+    );
+    return fieldChoice?.keyPath;
+  }
+
+  private async promptForUserConfigValue(
+    keyPath: string,
+    currentValue?: string,
+  ): Promise<string | undefined> {
+    if (keyPath === VSCODE_EXTENSION_USER_DEFAULT_KEY_PATHS.WORKSPACE_MODE) {
+      const picked = await vscode.window.showQuickPick(
+        Object.values(WorkspaceMode).map((value) => ({
+          label: value,
+          description:
+            currentValue === value
+              ? this.localizer.localizeText('Current value', '当前值')
+              : undefined,
+          value,
+        })),
+        {
+          title: this.localizer.localizeText(
+            'Choose one workspace mode preference',
+            '选择一个工作区模式偏好',
+          ),
+        },
+      );
+      return picked?.value;
+    }
+
+    if (keyPath === VSCODE_EXTENSION_USER_DEFAULT_KEY_PATHS.REACT_THEME) {
+      const picked = await vscode.window.showQuickPick(
+        Array.from(CLI_REACT_THEME_VALUES).map((value) => ({
+          label: value,
+          description:
+            currentValue === value
+              ? this.localizer.localizeText('Current value', '当前值')
+              : undefined,
+          value,
+        })),
+        {
+          title: this.localizer.localizeText(
+            'Choose one React shell theme',
+            '选择一个 React shell 主题',
+          ),
+        },
+      );
+      return picked?.value;
+    }
+
+    if (keyPath.endsWith('.transport')) {
+      const picked = await vscode.window.showQuickPick(
+        Object.values(AdapterTransportKind).map((value) => ({
+          label: value,
+          description:
+            currentValue === value
+              ? this.localizer.localizeText('Current value', '当前值')
+              : undefined,
+          value,
+        })),
+        {
+          title: this.localizer.localizeText(
+            'Choose one transport default',
+            '选择一个 transport 默认值',
+          ),
+        },
+      );
+      return picked?.value;
+    }
+
+    if (keyPath.endsWith('.remoteApi.provider')) {
+      const picked = await vscode.window.showQuickPick(
+        Object.values(AdapterProviderKind).map((value) => ({
+          label: value,
+          description:
+            currentValue === value
+              ? this.localizer.localizeText('Current value', '当前值')
+              : undefined,
+          value,
+        })),
+        {
+          title: this.localizer.localizeText(
+            'Choose one remote API provider',
+            '选择一个 Remote API Provider',
+          ),
+        },
+      );
+      return picked?.value;
+    }
+
+    if (keyPath.endsWith('.remoteApi.vendorBinding')) {
+      const picked = await vscode.window.showQuickPick(
+        Object.values(AdapterVendorBindingKind).map((value) => ({
+          label: value,
+          description:
+            currentValue === value
+              ? this.localizer.localizeText('Current value', '当前值')
+              : undefined,
+          value,
+        })),
+        {
+          title: this.localizer.localizeText(
+            'Choose one remote API vendor binding',
+            '选择一个 Remote API vendor binding',
+          ),
+        },
+      );
+      return picked?.value;
+    }
+
+    return vscode.window.showInputBox({
+      title: this.localizer.localizeText('Configure user-local default', '配置用户本地默认值'),
+      prompt: this.localizer.localizeText(
+        `Enter the value for ${keyPath}.`,
+        `请输入 ${keyPath} 的值。`,
+      ),
+      value: currentValue,
+      validateInput: (candidate) => {
+        const normalizedCandidate = candidate.trim();
+        if (normalizedCandidate.length === 0) {
+          return this.localizer.localizeText('A value is required.', '请输入一个值。');
+        }
+        if (
+          keyPath.endsWith('.remoteApi.credentialRef') &&
+          !normalizedCandidate.startsWith(VSCODE_EXTENSION_SECRET_SELECTOR_PREFIX)
+        ) {
+          return this.localizer.localizeText(
+            'credentialRef must use secret://... selector syntax.',
+            'credentialRef 必须使用 secret://... selector 语法。',
+          );
+        }
+        return undefined;
+      },
+    });
+  }
+
+  private async promptForManagedSecretKeyName(
+    preselectedKeyName?: string,
+    secureAuthoring?: VsCodeExtensionSecureAuthoringSnapshot,
+  ): Promise<string | undefined> {
+    if (preselectedKeyName) {
+      return preselectedKeyName;
+    }
+
+    const candidateKeyNames = [
+      ...(secureAuthoring?.secretReadiness?.configuredCredentialRefs ?? [])
+        .map((selector) => this.extractManagedSecretKeyName(selector))
+        .filter((value): value is string => Boolean(value)),
+      ...(secureAuthoring?.secretReadiness?.records ?? []).map((record) => record.keyName),
+    ];
+    const uniqueKeyNames = [...new Set(candidateKeyNames)];
+
+    if (uniqueKeyNames.length > 0) {
+      const picked = await vscode.window.showQuickPick(
+        [
+          ...uniqueKeyNames.map((keyName) => ({
+            label: keyName,
+            description: this.localizer.localizeText('Managed secret key', '受管 secret key'),
+            keyName,
+          })),
+          {
+            label: this.localizer.localizeText('Custom key...', '自定义 key...'),
+            description: this.localizer.localizeText(
+              'Enter a different managed secret key name.',
+              '输入另一个受管 secret key 名称。',
+            ),
+            keyName: '__custom__',
+          },
+        ],
+        {
+          title: this.localizer.localizeText(
+            'Choose one managed secret key',
+            '选择一个受管 secret key',
+          ),
+        },
+      );
+      if (!picked) {
+        return undefined;
+      }
+      if (picked.keyName !== '__custom__') {
+        return picked.keyName;
+      }
+    }
+
+    return vscode.window.showInputBox({
+      title: this.localizer.localizeText('Set managed secret', '设置受管 secret'),
+      prompt: this.localizer.localizeText(
+        'Enter the managed secret key name.',
+        '请输入受管 secret key 名称。',
+      ),
+      validateInput: (candidate) =>
+        candidate.trim().length > 0
+          ? undefined
+          : this.localizer.localizeText('Secret key name is required.', '请输入 secret key 名称。'),
+    });
+  }
+
+  private async promptForManagedSecretBackend(
+    secureAuthoring?: VsCodeExtensionSecureAuthoringSnapshot,
+  ): Promise<string | undefined | false> {
+    const secretReadiness = secureAuthoring?.secretReadiness;
+    const availableBackends =
+      secretReadiness?.backends.filter((backend) => backend.available) ?? [];
+    const defaultBackend =
+      availableBackends.find(
+        (backend) => backend.backendId === secretReadiness?.selectedBackendId,
+      ) ??
+      availableBackends.find(
+        (backend) => backend.backendId === secretReadiness?.defaultBackendId,
+      ) ??
+      availableBackends[0];
+    if (availableBackends.length <= 1) {
+      if (!defaultBackend?.warning) {
+        return undefined;
+      }
+
+      return (await this.confirmWarningBearingManagedSecretBackend(defaultBackend))
+        ? defaultBackend.backendId
+        : false;
+    }
+
+    const picked = await vscode.window.showQuickPick(
+      [
+        {
+          label: this.localizer.localizeText('Use CLI default backend', '使用 CLI 默认 backend'),
+          description:
+            secretReadiness?.selectedBackendId ??
+            secretReadiness?.defaultBackendId ??
+            this.localizer.localizeText('No explicit default reported', '当前没有显式默认值'),
+          backendId: undefined,
+        },
+        ...availableBackends.map((backend) => ({
+          label: backend.backendId,
+          description: backend.warning
+            ? this.localizer.localizeText('Available with warning', '可用但有警告')
+            : backend.detail,
+          detail: backend.detail,
+          warning: backend.warning,
+          backendId: backend.backendId,
+        })),
+      ],
+      {
+        title: this.localizer.localizeText(
+          'Choose one backend for this secret mutation',
+          '为这次 secret 写入选择一个 backend',
+        ),
+      },
+    );
+    if (!picked) {
+      return false;
+    }
+
+    const selectedBackend =
+      (picked.backendId
+        ? availableBackends.find((backend) => backend.backendId === picked.backendId)
+        : defaultBackend) ?? defaultBackend;
+    if (selectedBackend?.warning) {
+      return (await this.confirmWarningBearingManagedSecretBackend(selectedBackend))
+        ? selectedBackend.backendId
+        : false;
+    }
+
+    return picked.backendId;
+  }
+
+  private readCurrentUserConfigValue(
+    secureAuthoring: VsCodeExtensionSecureAuthoringSnapshot | undefined,
+    keyPath: string,
+  ): string | undefined {
+    const userConfig = secureAuthoring?.userConfig;
+    if (!userConfig) {
+      return undefined;
+    }
+    if (keyPath === VSCODE_EXTENSION_USER_DEFAULT_KEY_PATHS.REACT_THEME) {
+      return userConfig.themePreference;
+    }
+    if (keyPath === VSCODE_EXTENSION_USER_DEFAULT_KEY_PATHS.WORKSPACE_MODE) {
+      return userConfig.workspaceModePreference;
+    }
+    return userConfig.entries.find((entry) => entry.keyPath === keyPath)?.value;
+  }
+
+  private extractManagedSecretKeyName(selector: string): string | undefined {
+    if (!selector.startsWith(VSCODE_EXTENSION_SECRET_SELECTOR_PREFIX)) {
+      return undefined;
+    }
+
+    const keyName = selector.slice(VSCODE_EXTENSION_SECRET_SELECTOR_PREFIX.length).trim();
+    return keyName.length > 0 ? keyName : undefined;
+  }
+
+  private async confirmWarningBearingManagedSecretBackend(backend: {
+    backendId: string;
+    warning?: string;
+  }): Promise<boolean> {
+    return this.confirmCommand(
+      this.localizer.localizeText(
+        `The ${backend.backendId} backend is warning-bearing and may store plaintext secrets locally. ${backend.warning ?? ''}`.trim(),
+        `${backend.backendId} backend 带有警告，可能会在本地存储明文 secret。${backend.warning ?? ''}`.trim(),
+      ),
+      this.localizer.localizeText('Use Warning Backend', '继续使用告警 backend'),
+    );
   }
 
   private async resolvePreferredHandoffTarget(commandRequest: VsCodeExtensionCommandRequest) {

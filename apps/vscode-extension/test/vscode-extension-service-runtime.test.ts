@@ -69,6 +69,9 @@ vi.mock(
         return vscodeMock.state.activeTextEditor;
       },
     },
+    env: {
+      language: 'en-US',
+    },
   }),
   { virtual: true },
 );
@@ -517,6 +520,303 @@ describe('VsCodeExtensionServiceRuntime', () => {
     });
   });
 
+  it('resolves secure-authoring diagnostics through the embedded CLI JSON contract and caches the snapshot per repository root', async () => {
+    const embeddedCliExecutor = vi
+      .fn()
+      .mockResolvedValueOnce({
+        command_result: {
+          details: {
+            config_path: '/Users/test/.repo-ai-governor/user-config.yaml',
+            config_exists: true,
+            legacy_preference_path: '/Users/test/.repo-ai-governor/cli-preferences.yaml',
+            legacy_preference_exists: false,
+            theme_preference: 'calm',
+            workspace_mode_preference: 'repo_local',
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        command_result: {
+          details: {
+            entries:
+              'ui.react.theme=calm | tools.codex.remoteApi.credentialRef=secret://openai/api-key | tools.claude-code.remoteApi.credentialRef=secret://anthropic/api-key',
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        command_result: {
+          details: {
+            selected_backend: 'os-keychain',
+            default_backend: 'os-keychain',
+            index_path: '/Users/test/.repo-ai-governor/secret-index.json',
+          },
+          checks: [
+            {
+              id: 'secret_backend_os-keychain',
+              status: 'pass',
+              detail: 'Ready',
+            },
+            {
+              id: 'secret_backend_unsafe-local-file',
+              status: 'pass',
+              detail: 'Explicit opt-in only',
+            },
+          ],
+          experience: {
+            interactionPrompts: [
+              {
+                action:
+                  'unsafe-local-file stores plaintext secrets on disk; use it only with explicit local-only opt-in.',
+              },
+            ],
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        command_result: {
+          details: {
+            records:
+              'openai/api-key@os-keychain:present | anthropic/api-key@unsafe-local-file:missing',
+          },
+        },
+      });
+
+    const runtime = new VsCodeExtensionServiceRuntime({
+      embeddedCliExecutor,
+    });
+
+    await expect(runtime.resolveSecureAuthoringSnapshot()).resolves.toEqual({
+      userConfig: {
+        configPath: '/Users/test/.repo-ai-governor/user-config.yaml',
+        configExists: true,
+        legacyPreferencePath: '/Users/test/.repo-ai-governor/cli-preferences.yaml',
+        legacyPreferenceExists: false,
+        themePreference: 'calm',
+        workspaceModePreference: 'repo_local',
+        entries: [
+          {
+            keyPath: 'ui.react.theme',
+            value: 'calm',
+          },
+          {
+            keyPath: 'tools.codex.remoteApi.credentialRef',
+            value: 'secret://openai/api-key',
+          },
+          {
+            keyPath: 'tools.claude-code.remoteApi.credentialRef',
+            value: 'secret://anthropic/api-key',
+          },
+        ],
+      },
+      secretReadiness: {
+        selectedBackendId: 'os-keychain',
+        defaultBackendId: 'os-keychain',
+        indexPath: '/Users/test/.repo-ai-governor/secret-index.json',
+        backends: [
+          {
+            backendId: 'os-keychain',
+            available: true,
+            detail: 'Ready',
+          },
+          {
+            backendId: 'unsafe-local-file',
+            available: true,
+            detail: 'Explicit opt-in only',
+            warning:
+              'unsafe-local-file stores plaintext secrets on disk; use it only with explicit local-only opt-in.',
+          },
+        ],
+        records: [
+          {
+            keyName: 'openai/api-key',
+            backendId: 'os-keychain',
+            exists: true,
+          },
+          {
+            keyName: 'anthropic/api-key',
+            backendId: 'unsafe-local-file',
+            exists: false,
+          },
+        ],
+        configuredCredentialRefs: ['secret://openai/api-key', 'secret://anthropic/api-key'],
+        unresolvedCredentialRefs: ['secret://anthropic/api-key'],
+      },
+    });
+
+    await runtime.resolveSecureAuthoringSnapshot();
+
+    expect(embeddedCliExecutor).toHaveBeenCalledTimes(4);
+    expect(embeddedCliExecutor).toHaveBeenNthCalledWith(1, {
+      args: ['config', 'status'],
+      currentWorkingDirectory: '/repo',
+    });
+    expect(embeddedCliExecutor).toHaveBeenNthCalledWith(4, {
+      args: ['secret', 'list'],
+      currentWorkingDirectory: '/repo',
+    });
+  });
+
+  it('retries secure-authoring diagnostics after one transient degraded snapshot instead of pinning the cache', async () => {
+    let statusAttempt = 0;
+    const embeddedCliExecutor = vi.fn(async (request: { args: readonly string[] }) => {
+      if (request.args[0] === 'config' && request.args[1] === 'status') {
+        statusAttempt += 1;
+        if (statusAttempt === 1) {
+          throw new RuntimeError(
+            GovernorErrorCode.PROCESS_RUNTIME_CANCELLED,
+            'transient secure-authoring failure',
+          );
+        }
+
+        return {
+          command_result: {
+            details: {
+              config_path: '/Users/test/.repo-ai-governor/user-config.yaml',
+              config_exists: true,
+              legacy_preference_path: '/Users/test/.repo-ai-governor/cli-preferences.yaml',
+              legacy_preference_exists: false,
+            },
+          },
+        };
+      }
+
+      if (request.args[0] === 'config' && request.args[1] === 'list') {
+        return {
+          command_result: {
+            details: {
+              entries: 'ui.react.theme=calm',
+            },
+          },
+        };
+      }
+
+      if (request.args[0] === 'secret' && request.args[1] === 'status') {
+        return {
+          command_result: {
+            details: {
+              selected_backend: 'os-keychain',
+              default_backend: 'os-keychain',
+              index_path: '/Users/test/.repo-ai-governor/secret-index.json',
+            },
+            checks: [
+              {
+                id: 'secret_backend_os-keychain',
+                status: 'pass',
+                detail: 'Ready',
+              },
+            ],
+          },
+        };
+      }
+
+      return {
+        command_result: {
+          details: {
+            records: 'openai/api-key@os-keychain:present',
+          },
+        },
+      };
+    });
+
+    const runtime = new VsCodeExtensionServiceRuntime({
+      embeddedCliExecutor,
+    });
+
+    await expect(runtime.resolveSecureAuthoringSnapshot()).resolves.toEqual({
+      degradedReason: 'transient secure-authoring failure',
+    });
+    await expect(runtime.resolveSecureAuthoringSnapshot()).resolves.toEqual({
+      userConfig: {
+        configPath: '/Users/test/.repo-ai-governor/user-config.yaml',
+        configExists: true,
+        legacyPreferencePath: '/Users/test/.repo-ai-governor/cli-preferences.yaml',
+        legacyPreferenceExists: false,
+        entries: [
+          {
+            keyPath: 'ui.react.theme',
+            value: 'calm',
+          },
+        ],
+      },
+      secretReadiness: {
+        selectedBackendId: 'os-keychain',
+        defaultBackendId: 'os-keychain',
+        indexPath: '/Users/test/.repo-ai-governor/secret-index.json',
+        backends: [
+          {
+            backendId: 'os-keychain',
+            available: true,
+            detail: 'Ready',
+          },
+        ],
+        records: [
+          {
+            keyName: 'openai/api-key',
+            backendId: 'os-keychain',
+            exists: true,
+          },
+        ],
+        configuredCredentialRefs: [],
+        unresolvedCredentialRefs: [],
+      },
+    });
+
+    expect(statusAttempt).toBe(2);
+  });
+
+  it('writes user defaults and managed secrets through the embedded CLI bridge without putting secrets on argv', async () => {
+    const embeddedCliExecutor = vi
+      .fn()
+      .mockResolvedValueOnce({
+        message: 'config updated',
+        command_result: {
+          details: {
+            config_path: '/Users/test/.repo-ai-governor/user-config.yaml',
+            value: 'tool_managed',
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        message: 'secret updated',
+        command_result: {
+          details: {
+            selector: 'secret://openai/api-key',
+            backend: 'os-keychain',
+          },
+        },
+      });
+
+    const runtime = new VsCodeExtensionServiceRuntime({
+      embeddedCliExecutor,
+    });
+
+    await expect(
+      runtime.setUserConfigValue('workspace.mode_preference', 'tool_managed'),
+    ).resolves.toEqual({
+      message: 'config updated',
+      configPath: '/Users/test/.repo-ai-governor/user-config.yaml',
+      persistedValue: 'tool_managed',
+    });
+    await expect(
+      runtime.setManagedSecret('openai/api-key', 'sk-managed-secret', 'os-keychain'),
+    ).resolves.toEqual({
+      message: 'secret updated',
+      selector: 'secret://openai/api-key',
+      backendId: 'os-keychain',
+      warning: undefined,
+    });
+
+    expect(embeddedCliExecutor).toHaveBeenNthCalledWith(1, {
+      args: ['config', 'set', 'workspace.mode_preference', 'tool_managed'],
+      currentWorkingDirectory: '/repo',
+    });
+    expect(embeddedCliExecutor).toHaveBeenNthCalledWith(2, {
+      args: ['secret', 'set', 'openai/api-key', '--backend', 'os-keychain', '--stdin'],
+      currentWorkingDirectory: '/repo',
+      stdin: 'sk-managed-secret',
+    });
+  });
+
   it('refreshes the resolved governance workspace after an in-session config change', async () => {
     const scratchRoot = mkdtempSync(join(tmpdir(), 'repo-ai-governor-vscode-runtime-'));
     const repositoryRoot = join(scratchRoot, 'repo');
@@ -750,7 +1050,7 @@ describe('VsCodeExtensionServiceRuntime', () => {
         executionSessionId: undefined,
         reviewSourcePath: '/repo/review-only.md',
       }),
-    ).resolves.toEqual({
+    ).resolves.toMatchObject({
       workspaceContext: {
         workspaceLabel: 'ai-governor',
         workspaceRoot: '/repo',

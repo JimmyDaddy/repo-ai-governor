@@ -157,6 +157,17 @@ export class VsCodeExtensionHost {
         VSCODE_EXTENSION_COMMAND_IDS.TERMINATE_EXECUTION,
         async (request) => commandController.terminateExecution(request),
       ),
+      vscode.commands.registerCommand(VSCODE_EXTENSION_COMMAND_IDS.OPEN_USER_CONFIG, async () =>
+        commandController.openUserConfig(),
+      ),
+      vscode.commands.registerCommand(
+        VSCODE_EXTENSION_COMMAND_IDS.CONFIGURE_USER_DEFAULT,
+        async (request) => commandController.configureUserDefault(request),
+      ),
+      vscode.commands.registerCommand(
+        VSCODE_EXTENSION_COMMAND_IDS.SET_MANAGED_SECRET,
+        async (request) => commandController.setManagedSecret(request),
+      ),
       taskBoardView.onDidChangeSelection((event) => {
         void commandController.handleExecutionBoardSelection(event.selection);
       }),
