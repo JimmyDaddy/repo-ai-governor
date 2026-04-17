@@ -41,6 +41,10 @@
 - [x] CR-007 sprint-005-phase-h-support-promotion-and-distribution-readiness delegated review loop round 7
   - 2026-04-18：任务创建，状态初始化为 `review_pending`。
   - 2026-04-18：fresh reviewer 对 Phase H 当前边界执行 clean recheck 后未发现新的 actionable finding；当前任务切换为 `resolved`，review lifecycle 报告路径固定为 `/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/review/resolved_code_review_working-tree-20260418-0150.md`。
-- [ ] TK-962 close sprint-005 boundary and activate project-final reviewer loop
+- [x] TK-962 close sprint-005 boundary and activate project-final reviewer loop
   - 2026-04-18：任务创建，状态初始化为 `in_progress`；当前 sprint-005 的 `CR-007` clean round 已返回无 actionable finding，下一步执行 sprint final gate、boundary commit 与 project-final reviewer bootstrap。
-  - 2026-04-18：TK-962 已激活为 sprint-005 closeout 任务；当前开始执行 sprint final gate、boundary commit 与 project-final reviewer bootstrap。
+  - 2026-04-18：`pnpm run check` 已通过，sprint-005 boundary-level local commit 已创建为 `befe4700 feat(project-113-sprint-005): complete sprint and clear cr loop`；当前任务切换为 `completed`，下一步开始 project-final fresh reviewer loop。
+- [x] CR-008 project-113-vscode-primary-workbench-full-cutover final delegated review loop round 8
+  - 2026-04-18：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-18：fresh reviewer 对 `project-113` 当前 closeout-ready state 执行 whole-project clean review 后未发现新的 actionable finding；同窗口已补齐 sprint-005 `Task Package` 的 `CR-008` 漏记并完成 project closeout write-back，当前任务切换为 `resolved`，review lifecycle 报告路径固定为 `/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/review/resolved_code_review_working-tree-20260418-0205.md`。
+  - 2026-04-18：fresh reviewer 对 project-final whole-project scope 执行 clean review 后未发现新的 actionable finding；同窗口已补齐 sprint-005 Task Package 的 CR-008 漏记、写入 completion audit summary，并将 current-context 恢复为 idle。

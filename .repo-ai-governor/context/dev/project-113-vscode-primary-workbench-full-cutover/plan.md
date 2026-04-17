@@ -1,7 +1,7 @@
 # project-113-vscode-primary-workbench-full-cutover 计划
 
-- Status: active
-- Date: 2026-04-17
+- Status: completed
+- Date: 2026-04-18
 - Stage Mapping: technical solution rollout follow-up
 - Phase Mapping: phase-d onboarding / phase-e operations / phase-f secure authoring / phase-g workflow authoring / phase-h support promotion
 - Upstream:
@@ -45,9 +45,9 @@
 
 ## 2.5 sprint-005-phase-h-support-promotion-and-distribution-readiness
 
-- Status: active
+- Status: completed
 - Sprint Goal: 完成 support-truth promotion、distribution readiness evidence 与 public-claim gate package 的标准执行骨架
-- Task Package: `TK-958、TK-959、TK-960、TK-961、TK-962、CR-001、CR-002、CR-003、CR-004、CR-005、CR-006、CR-007`
+- Task Package: `TK-958、TK-959、TK-960、TK-961、TK-962、CR-001、CR-002、CR-003、CR-004、CR-005、CR-006、CR-007、CR-008`
 
 ## 3. 任务拆解矩阵（WBS）
 
@@ -83,7 +83,7 @@
 | TK-959 | sprint-005-phase-h-support-promotion-and-distribution-readiness | execute gui and distribution readiness evidence bundle | evidence bundle | freeze phase-h promotion and distribution-readiness boundary | completed |
 | TK-960 | sprint-005-phase-h-support-promotion-and-distribution-readiness | refresh support-truth docs and claim-promotion package | support truth package | execute gui and distribution readiness evidence bundle | completed |
 | TK-961 | sprint-005-phase-h-support-promotion-and-distribution-readiness | prepare project-final closeout and next-stream recommendation | project closeout handoff | refresh support-truth docs and claim-promotion package | completed |
-| TK-962 | sprint-005-phase-h-support-promotion-and-distribution-readiness | close sprint-005 boundary and activate project-final reviewer loop | sprint closeout | sprint-005-phase-h-support-promotion-and-distribution-readiness delegated recheck loop round 7 | in_progress |
+| TK-962 | sprint-005-phase-h-support-promotion-and-distribution-readiness | close sprint-005 boundary and activate project-final reviewer loop | sprint closeout | sprint-005-phase-h-support-promotion-and-distribution-readiness delegated recheck loop round 7 | completed |
 | CR-001 | sprint-005-phase-h-support-promotion-and-distribution-readiness | verify phase-h promotion evidence and readiness deltas | review | prepare project-final closeout and next-stream recommendation | resolved |
 | CR-002 | sprint-005-phase-h-support-promotion-and-distribution-readiness | sprint-005-phase-h-support-promotion-and-distribution-readiness delegated recheck loop round 2 | review recheck | verify phase-h promotion evidence and readiness deltas | resolved |
 | CR-003 | sprint-005-phase-h-support-promotion-and-distribution-readiness | sprint-005-phase-h-support-promotion-and-distribution-readiness delegated recheck loop round 3 | review recheck | sprint-005-phase-h-support-promotion-and-distribution-readiness delegated recheck loop round 2 | resolved |
@@ -91,6 +91,7 @@
 | CR-005 | sprint-005-phase-h-support-promotion-and-distribution-readiness | sprint-005-phase-h-support-promotion-and-distribution-readiness delegated recheck loop round 5 | review recheck | sprint-005-phase-h-support-promotion-and-distribution-readiness delegated recheck loop round 4 | resolved |
 | CR-006 | sprint-005-phase-h-support-promotion-and-distribution-readiness | sprint-005-phase-h-support-promotion-and-distribution-readiness delegated recheck loop round 6 | review recheck | sprint-005-phase-h-support-promotion-and-distribution-readiness delegated recheck loop round 5 | resolved |
 | CR-007 | sprint-005-phase-h-support-promotion-and-distribution-readiness | sprint-005-phase-h-support-promotion-and-distribution-readiness delegated recheck loop round 7 | review recheck | sprint-005-phase-h-support-promotion-and-distribution-readiness delegated recheck loop round 6 | resolved |
+| CR-008 | sprint-005-phase-h-support-promotion-and-distribution-readiness | project-113-vscode-primary-workbench-full-cutover final delegated review loop round 8 | review recheck | close sprint-005 boundary and activate project-final reviewer loop | resolved |
 
 ## 4. 依赖产物策略
 
@@ -129,7 +130,10 @@
 21. 2026-04-18：`CR-005` 已完成 maintainer playbook immutable-backlink guidance 修复并进入 `resolved`；当前 `CR-006` 已作为 sprint-005 的 fresh post-fix recheck round 分配完成，用于最终确认 Phase H boundary 已无 remaining actionable finding。
 22. 2026-04-18：`CR-006` 已完成 shared orchestration lifecycle enum 收口并进入 `resolved`；当前 `CR-007` 已作为 sprint-005 的 fresh post-fix recheck round 分配完成，用于最终确认 Phase H boundary 已无 remaining actionable finding。
 23. 2026-04-18：`CR-007` clean round 已返回无 actionable finding；当前 `TK-962` 已激活为 sprint-005 final gate、boundary commit 与 project-final reviewer bootstrap 收口任务。
+24. 2026-04-18：`TK-962` 已完成 sprint-005 final gate 与 boundary commit，本地 sprint boundary commit 固定为 `befe4700 feat(project-113-sprint-005): complete sprint and clear cr loop`；下一步进入 project-final fresh reviewer loop。
+25. 2026-04-18：`CR-008` 已作为 `project-final` fresh reviewer round 分配完成；当前 project-113 进入 final closeout review window，clean 后再推进 completion audit summary、`current-context.md -> idle` 与 final project commit。
+26. 2026-04-18：`CR-008` clean round 已返回无 actionable finding；project-final closeout 已在同窗口完成 write-back，包含 sprint-005 `Task Package` 对 `CR-008` 的补记、completion audit summary 回链、`stream-project-113-sprint-005` completed history 迁移与 `current-context.md` idle 恢复，`project-113` 正式进入 `completed`。
 
 ## 7. 里程碑记录入口
 
-1. 待 closeout 后补齐 completion audit summary。
+1. [project-113-vscode-primary-workbench-full-cutover-completion-audit-summary.md](./project-113-vscode-primary-workbench-full-cutover-completion-audit-summary.md)

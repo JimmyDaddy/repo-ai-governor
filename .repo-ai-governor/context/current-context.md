@@ -2,23 +2,25 @@
 
 ## Primary Stream
 
-- Status: active
-- Stream: `stream-project-113-sprint-005`
-- Project: `project-113-vscode-primary-workbench-full-cutover`
-- Sprint: `sprint-005-phase-h-support-promotion-and-distribution-readiness`
-- Docs: `.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover`
-- Plan: `.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/plan.md`
-- Tasks: `.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/tasks/`
-- Checklist: `.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/tasks/checklist.md`
-- CSV: `.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/tasks/tasks.csv`
-- Review: `.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/review/`
-- Note: `2026-04-18` sprint-005 的 `TK-958 ~ TK-961` 与 `CR-001 ~ CR-007` 已全部完成并收口，Phase H implementation / distribution evidence / support docs truth 已稳定在 VS Code `primary_workbench_claim`；当前 primary surface 保持在 sprint-005 closeout surface，`TK-962` 已激活为 sprint final gate / boundary commit / project-final reviewer bootstrap 任务。
+- Status: idle
+- Stream: `none`
+- Project: `none`
+- Sprint: `none`
+- Docs: `none`
+- Plan: `none`
+- Tasks: `none`
+- Checklist: `none`
+- CSV: `none`
+- Review: `none`
+- Note: `2026-04-18` `project-113-vscode-primary-workbench-full-cutover` 已完成 project-final closeout；`stream-project-113-sprint-005` 已移入 `completed-streams-history.md`，当前 worktree 已恢复为 idle primary stream。
 
 ## Active Streams
 
-- `stream-project-113-sprint-005`: role=`primary`, project=`project-113-vscode-primary-workbench-full-cutover`, sprint=`sprint-005-phase-h-support-promotion-and-distribution-readiness`, docs=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover`, plan=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/plan.md`, tasks=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/tasks/`, checklist=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-005-phase-h-support-promotion-and-distribution-readiness/review/`, status=`active`
+- none.
 
 ## Planned Follow-Up Streams
+
+- none.
 
 ## Completed Stream History
 

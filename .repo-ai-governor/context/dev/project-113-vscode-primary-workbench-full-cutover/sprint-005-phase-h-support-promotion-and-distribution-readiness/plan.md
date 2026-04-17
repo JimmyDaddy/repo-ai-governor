@@ -1,7 +1,7 @@
 # sprint-005-phase-h-support-promotion-and-distribution-readiness 计划
 
-- Status: active
-- Date: 2026-04-17
+- Status: completed
+- Date: 2026-04-18
 - Sprint Goal: 完成 support-truth promotion、distribution readiness evidence 与 public-claim gate package 的标准执行骨架
 - Project: `project-113-vscode-primary-workbench-full-cutover`
 - Upstream:
@@ -23,7 +23,7 @@
 | TK-959 | execute gui and distribution readiness evidence bundle | freeze phase-h promotion and distribution-readiness boundary | completed |
 | TK-960 | refresh support-truth docs and claim-promotion package | execute gui and distribution readiness evidence bundle | completed |
 | TK-961 | prepare project-final closeout and next-stream recommendation | refresh support-truth docs and claim-promotion package | completed |
-| TK-962 | close sprint-005 boundary and activate project-final reviewer loop | sprint-005-phase-h-support-promotion-and-distribution-readiness delegated recheck loop round 7 | in_progress |
+| TK-962 | close sprint-005 boundary and activate project-final reviewer loop | sprint-005-phase-h-support-promotion-and-distribution-readiness delegated recheck loop round 7 | completed |
 | CR-001 | verify phase-h promotion evidence and readiness deltas | prepare project-final closeout and next-stream recommendation | resolved |
 | CR-002 | sprint-005-phase-h-support-promotion-and-distribution-readiness delegated recheck loop round 2 | verify phase-h promotion evidence and readiness deltas | resolved |
 | CR-003 | sprint-005-phase-h-support-promotion-and-distribution-readiness delegated recheck loop round 3 | sprint-005-phase-h-support-promotion-and-distribution-readiness delegated recheck loop round 2 | resolved |
@@ -31,6 +31,7 @@
 | CR-005 | sprint-005-phase-h-support-promotion-and-distribution-readiness delegated recheck loop round 5 | sprint-005-phase-h-support-promotion-and-distribution-readiness delegated recheck loop round 4 | resolved |
 | CR-006 | sprint-005-phase-h-support-promotion-and-distribution-readiness delegated recheck loop round 6 | sprint-005-phase-h-support-promotion-and-distribution-readiness delegated recheck loop round 5 | resolved |
 | CR-007 | sprint-005-phase-h-support-promotion-and-distribution-readiness delegated recheck loop round 7 | sprint-005-phase-h-support-promotion-and-distribution-readiness delegated recheck loop round 6 | resolved |
+| CR-008 | project-113-vscode-primary-workbench-full-cutover final delegated review loop round 8 | close sprint-005 boundary and activate project-final reviewer loop | resolved |
 
 ## 3. Exit Criteria
 
@@ -50,3 +51,6 @@
 10. `2026-04-18`：`CR-005` 已完成“maintainer playbook 仍把 VS Code evidence path 固定到可变 `.tmp` report”的 accepted finding 修复并在同窗口进入 `resolved`；当前 `CR-006` 已被分配为新的 fresh post-fix recheck round，用于确认 maintainer runbook/backlink guidance 收口后 Phase H boundary 已 clean。
 11. `2026-04-18`：`CR-006` 已完成“distribution gate 与 focused test 仍以 raw string 维护 lifecycle contract”的 accepted finding 修复并在同窗口进入 `resolved`；当前 `CR-007` 已被分配为新的 fresh post-fix recheck round，用于确认 shared enum 收口后 Phase H boundary 已 clean。
 12. `2026-04-18`：`CR-007` clean round 已返回无 actionable finding；当前 sprint-005 的 implementation / review loop 已全部 clean，`TK-962` 已激活为 sprint final gate、boundary commit 与 project-final reviewer bootstrap 收口任务。
+13. `2026-04-18`：`TK-962` 已完成 sprint-005 final gate 与 boundary commit，当前本地提交固定为 `befe4700 feat(project-113-sprint-005): complete sprint and clear cr loop`；下一步进入 project-final fresh reviewer loop，同时继续把 sprint-005 保持为 active closeout surface。
+14. `2026-04-18`：`CR-008` 已作为 `project-final` fresh reviewer round 分配完成；当前 sprint-005 继续复用 active closeout surface，直到 project-final CR 收口后再进入 completion audit summary 与 final commit。
+15. `2026-04-18`：`CR-008` clean round 已返回无 actionable finding；project-final closeout 在同窗口完成 write-back，sprint-005 已恢复为最终 `completed` 真值，并将 `stream-project-113-sprint-005` 移入 completed history。

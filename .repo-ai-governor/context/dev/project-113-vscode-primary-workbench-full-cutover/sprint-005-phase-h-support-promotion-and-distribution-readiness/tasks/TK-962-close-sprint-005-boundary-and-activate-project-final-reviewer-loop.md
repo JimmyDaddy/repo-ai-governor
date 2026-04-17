@@ -1,6 +1,6 @@
 # TK-962 close sprint-005 boundary and activate project-final reviewer loop
 
-- Status: `in_progress`
+- Status: `completed`
 - Date: 2026-04-18
 - Owner: `AI-Agent`
 - Priority: `P1`
@@ -59,9 +59,10 @@
 ## 9. 执行记录
 
 1. 2026-04-18：任务创建，状态初始化为 `in_progress`；当前 sprint-005 的 `CR-007` clean round 已返回无 actionable finding，下一步执行 sprint final gate、boundary commit 与 project-final reviewer bootstrap。
+2. 2026-04-18：`pnpm run check` 已通过，sprint-005 boundary-level local commit 已创建为 `befe4700 feat(project-113-sprint-005): complete sprint and clear cr loop`；当前任务切换为 `completed`，下一步开始 project-final fresh reviewer loop。
 
 ## 10. 产出
 
-1. 待执行：sprint-005 closeout-ready write-back
-2. 待执行：`feat(project-113-sprint-005): complete sprint and clear cr loop`
-3. 待执行：project-final reviewer bootstrap artifact
+1. sprint-005 closeout-ready write-back
+2. `befe4700 feat(project-113-sprint-005): complete sprint and clear cr loop`
+3. project-final reviewer bootstrap next step已固定
