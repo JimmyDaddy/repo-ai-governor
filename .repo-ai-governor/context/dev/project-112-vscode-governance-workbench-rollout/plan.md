@@ -1,6 +1,6 @@
 # project-112-vscode-governance-workbench-rollout 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-16
 - Stage Mapping: technical solution rollout
 - Phase Mapping: primary workbench baseline / outer-loop consolidation / workflow studio and full workbench cutover
@@ -32,7 +32,7 @@
 
 ## 2.3 sprint-003-phase-c-workflow-studio-and-full-workbench-cutover
 
-- Status: active
+- Status: completed
 - Sprint Goal: 规划 workflow studio、support-truth evidence 与 full workbench cutover
 - Task Package: `TK-940、TK-941`
 
@@ -45,7 +45,7 @@
 | TK-938 | sprint-002-phase-b-outer-loop-consolidation-and-operations | land outer-loop consolidation and typed cli bridge governance baseline | workbench operations baseline | DA-934 | completed |
 | TK-939 | sprint-002-phase-b-outer-loop-consolidation-and-operations | close sprint-002 and hand off phase-c full-workbench cutover | governance handoff | land outer-loop consolidation and typed cli bridge governance baseline | completed |
 | TK-940 | sprint-003-phase-c-workflow-studio-and-full-workbench-cutover | plan workflow studio cutover and primary workbench support-truth evidence | workflow studio and support-truth cutover | DA-934 | completed |
-| TK-941 | sprint-003-phase-c-workflow-studio-and-full-workbench-cutover | finalize project-112 rollout closeout and delivery evidence handoff | closeout and delivery evidence | plan workflow studio cutover and primary workbench support-truth evidence | in_progress |
+| TK-941 | sprint-003-phase-c-workflow-studio-and-full-workbench-cutover | finalize project-112 rollout closeout and delivery evidence handoff | closeout and delivery evidence | plan workflow studio cutover and primary workbench support-truth evidence | completed |
 
 ## 4. 依赖产物策略
 
@@ -68,7 +68,8 @@
 5. 2026-04-17：`TK-940` 已完成 workflow studio / desktop decision surface / support-truth gate implementation boundary，并产出 `DA-940`；当前 `project-112 / sprint-003` 进入 fresh reviewer CR loop，clean 后继续 `TK-941`。
 6. 2026-04-17：latest fresh reviewer round `CR-002` 已 clean `resolved`；`TK-941` 已切换为 `in_progress`，开始写入 sprint-003 exit acceptance packet，并为后续 project-final scoped CR loop 保留 final sprint 作为 active review surface。
 7. 2026-04-17：`DA-941` 与 sprint-003 boundary `pnpm run check` 已完成；当前 project 已达到进入 `project-final` fresh reviewer loop 的前置条件，但 final closeout 与 public support-truth cutover 仍待 clean project-final round 放行。
+8. 2026-04-17：project-final `CR-003` 已在 README public-surface drift 修复后 clean `resolved`；`project-112` completion audit summary、`DA-942`、delivery registry completed write-back 与 idle current-context 已全部落盘，项目正式切换为 `completed`。
 
 ## 7. 里程碑记录入口
 
-1. 待 closeout 后补齐 completion audit summary。
+1. `.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/project-112-vscode-governance-workbench-rollout-completion-audit-summary.md`

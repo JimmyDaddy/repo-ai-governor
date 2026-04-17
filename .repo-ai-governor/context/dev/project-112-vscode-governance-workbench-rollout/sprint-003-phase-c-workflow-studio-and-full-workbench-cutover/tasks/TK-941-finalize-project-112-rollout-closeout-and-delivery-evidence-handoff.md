@@ -1,6 +1,6 @@
 # TK-941 finalize project-112 rollout closeout and delivery evidence handoff
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-04-16
 - Owner: AI-Agent
 - Priority: P1
@@ -49,12 +49,18 @@
 2. node ./scripts/governance/check-task-required-inputs.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-003-phase-c-workflow-studio-and-full-workbench-cutover/tasks" --task-id TK-941
 3. node ./scripts/governance/check-task-ledger-sync.js
 4. node ./scripts/governance/check-sprint-plan-status-sync.js
+5. node ./scripts/governance/check-code-review-status-sync.js
+6. node ./scripts/governance/check-worktree-review-target.js
+7. node ./scripts/governance/check-technical-solution-delivery-registry.js
+8. node ./scripts/governance/check-artifact-registry-lifecycle.js
+9. pnpm run check
 
 ## 9. 执行记录
 
 1. 2026-04-16：任务创建，状态初始化为 `planned`。
 2. 2026-04-17：`TK-940` 已在 `CR-002` clean round 后保持 `completed`，当前任务切换为 `in_progress`，开始写入 sprint-003 exit acceptance packet、project-final review handoff 与后续 project closeout 输入。
 3. 2026-04-17：已完成 `DA-941`、`TK-941` canonical ledger sync、`check-task-required-inputs`、`check-task-ledger-sync`、`check-sprint-plan-status-sync`、`check-code-review-status-sync`、`check-worktree-review-target`，并在清理 `DA-934 -> TK-940` stale artifact dependency 后通过同窗口 `pnpm run check`；当前 sprint-003 boundary 已具备本地 commit 条件，但任务仍保留 `in_progress` 以等待 project-final fresh reviewer loop。
+4. 2026-04-17：project-final `CR-003` 在 README public-surface drift 修复后已 clean `resolved`；当前任务已完成 project completion audit summary、`DA-942` final closeout artifact、delivery registry completed write-back 与 `current-context` idle 恢复，正式切换为 `completed`。
 
 ## 10. 产出
 
@@ -62,3 +68,7 @@
 2. /Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/plan.md
 3. /Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-003-phase-c-workflow-studio-and-full-workbench-cutover/plan.md
 4. /Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/artifact-registry/artifacts.csv
+5. /Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/project-112-vscode-governance-workbench-rollout-completion-audit-summary.md
+6. /Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-003-phase-c-workflow-studio-and-full-workbench-cutover/tasks/DA-942-project-112-final-closeout-and-idle-primary-stream-handoff.md
+7. /Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/current-context.md
+8. /Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/completed-streams-history.md
