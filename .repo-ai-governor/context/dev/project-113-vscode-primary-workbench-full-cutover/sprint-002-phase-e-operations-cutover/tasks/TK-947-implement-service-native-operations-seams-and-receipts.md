@@ -1,6 +1,6 @@
 # TK-947 implement service-native operations seams and receipts
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-17
 - Owner: AI-Agent
 - Priority: P1
@@ -43,7 +43,8 @@
 
 ## 7. Development Verification
 
-1. 待执行：按任务范围补充 fast/targeted verification。
+1. pnpm run build
+2. pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-service-runtime.test.ts
 2. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-002-phase-e-operations-cutover/tasks" --task-id TK-947
 
 ## 8. Delivery Verification
@@ -56,8 +57,11 @@
 ## 9. 执行记录
 
 1. 2026-04-17：任务创建，状态初始化为 `planned`。
+2. 2026-04-17：当前任务切换为 `in_progress`，开始将 Phase E sidecar/query restore failure 收敛到 service-native empty response / undefined fallback，而不是让 provider 侧承受未处理异常。
+3. 2026-04-17：`VsCodeExtensionServiceRuntime` 已补齐 execution board / HITL inbox / queue overview 的 empty DTO fallback，以及 execution lookup 的 catch-and-return-undefined 语义；同窗口 `pnpm run build` 与 2 个 VS Code extension 定向 vitest 已通过，当前任务切换为 `completed`。
+4. 2026-04-17：`CR-001` accepted finding 已补齐 `queryHitlInbox()` 的 reject-path 回归覆盖，并把 artifact-pane restore failure 从 runtime swallow 调整为显式交给 provider degraded surface 处理；同窗口 `pnpm run build` 与定向 vitest 已重跑通过。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. `apps/vscode-extension/src/runtime/vscode-extension-service-runtime.ts` 已冻结 Phase E service-native fallback seam，使 execution board / HITL inbox / queue overview restore 失败时回到 empty DTO，execution lookup 失败时回到 `undefined`，而 artifact-pane restore failure 会显式交给 provider degraded surface 处理。
+2. `apps/vscode-extension/test/vscode-extension-service-runtime.test.ts` 已补齐 queue overview / execution board / HITL inbox packaged-sidecar failure 覆盖，并锁定 artifact-pane restore failure 会把 review-detail / workflow-studio snapshot 推入 degraded 路径。

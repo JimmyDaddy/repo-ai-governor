@@ -27,13 +27,13 @@
 
 ## 2.2 sprint-002-phase-e-operations-cutover
 
-- Status: active
+- Status: completed
 - Sprint Goal: 完成 operations cutover、service-native operations seam 与 bridge-exit governance 的标准执行骨架
-- Task Package: `TK-946、TK-947、TK-948、TK-949、CR-001`
+- Task Package: `TK-946、TK-947、TK-948、TK-949、CR-001、CR-002、CR-003`
 
 ## 2.3 sprint-003-phase-f-secure-authoring-and-user-settings
 
-- Status: planned
+- Status: active
 - Sprint Goal: 完成 secure authoring、user settings 与 secret readiness UX 的标准执行骨架
 - Task Package: `TK-950、TK-951、TK-952、TK-953、CR-001`
 
@@ -60,12 +60,14 @@
 | CR-001 | sprint-001-phase-d-onboarding-cutover | verify phase-d onboarding cutover | review | prepare sprint-001 exit acceptance and phase-e handoff | resolved |
 | CR-002 | sprint-001-phase-d-onboarding-cutover | sprint-001-phase-d-onboarding-cutover delegated recheck loop round 2 | review recheck | verify phase-d onboarding cutover | resolved |
 | CR-003 | sprint-001-phase-d-onboarding-cutover | sprint-001-phase-d-onboarding-cutover delegated recheck loop round 3 | review recheck | sprint-001-phase-d-onboarding-cutover delegated recheck loop round 2 | resolved |
-| TK-946 | sprint-002-phase-e-operations-cutover | freeze phase-e operations cutover and bridge-exit criteria | operations cutover contract | prepare sprint-001 exit acceptance and phase-e handoff | in_progress |
-| TK-947 | sprint-002-phase-e-operations-cutover | implement service-native operations seams and receipts | operations service seam | freeze phase-e operations cutover and bridge-exit criteria | planned |
-| TK-948 | sprint-002-phase-e-operations-cutover | land operations workbench surfaces and bridge fallback governance | operations workbench surface | implement service-native operations seams and receipts | planned |
-| TK-949 | sprint-002-phase-e-operations-cutover | prepare sprint-002 exit acceptance and phase-f handoff | governance handoff | land operations workbench surfaces and bridge fallback governance | planned |
-| CR-001 | sprint-002-phase-e-operations-cutover | verify phase-e operations cutover | review | prepare sprint-002 exit acceptance and phase-f handoff | planned |
-| TK-950 | sprint-003-phase-f-secure-authoring-and-user-settings | freeze phase-f secure authoring boundary | secure authoring contract | prepare sprint-002 exit acceptance and phase-f handoff | planned |
+| TK-946 | sprint-002-phase-e-operations-cutover | freeze phase-e operations cutover and bridge-exit criteria | operations cutover contract | prepare sprint-001 exit acceptance and phase-e handoff | completed |
+| TK-947 | sprint-002-phase-e-operations-cutover | implement service-native operations seams and receipts | operations service seam | freeze phase-e operations cutover and bridge-exit criteria | completed |
+| TK-948 | sprint-002-phase-e-operations-cutover | land operations workbench surfaces and bridge fallback governance | operations workbench surface | implement service-native operations seams and receipts | completed |
+| TK-949 | sprint-002-phase-e-operations-cutover | prepare sprint-002 exit acceptance and phase-f handoff | governance handoff | land operations workbench surfaces and bridge fallback governance | completed |
+| CR-001 | sprint-002-phase-e-operations-cutover | verify phase-e operations cutover | review | prepare sprint-002 exit acceptance and phase-f handoff | resolved |
+| CR-002 | sprint-002-phase-e-operations-cutover | sprint-002-phase-e-operations-cutover delegated recheck loop round 2 | review recheck | verify phase-e operations cutover | resolved |
+| CR-003 | sprint-002-phase-e-operations-cutover | sprint-002-phase-e-operations-cutover delegated review loop round 3 | review recheck | sprint-002-phase-e-operations-cutover delegated recheck loop round 2 | resolved |
+| TK-950 | sprint-003-phase-f-secure-authoring-and-user-settings | freeze phase-f secure authoring boundary | secure authoring contract | prepare sprint-002 exit acceptance and phase-f handoff | in_progress |
 | TK-951 | sprint-003-phase-f-secure-authoring-and-user-settings | implement secure authoring seams and redaction baseline | secure authoring seam | freeze phase-f secure authoring boundary | planned |
 | TK-952 | sprint-003-phase-f-secure-authoring-and-user-settings | land user settings and secret readiness ux | secure authoring ux | implement secure authoring seams and redaction baseline | planned |
 | TK-953 | sprint-003-phase-f-secure-authoring-and-user-settings | prepare sprint-003 exit acceptance and phase-g handoff | governance handoff | land user settings and secret readiness ux | planned |
@@ -100,6 +102,10 @@
 3. 2026-04-17：`CR-001` 已接受并修复“chat-capable activation path 缺少正向回归覆盖”的 risk-based finding，随后 `CR-002` 被激活为 fresh post-fix recheck round。
 4. 2026-04-17：`CR-002` 已接受并修复“plan surfaces 未同步当前 blocking review round”的治理漂移；随后 `CR-003` 被激活为 fresh clean recheck round。
 5. 2026-04-17：`CR-003` clean round 已返回无 actionable finding，sprint-001 正式完成 closeout；当前 primary stream 已切换到 sprint-002，`TK-946` 进入 `in_progress`，下一步从停放的 `phase-e.patch` 重放 degraded fallback 实现边界。
+6. 2026-04-17：Phase E degraded fallback delta 已从 `.tmp/project-113-boundary-parking/phase-e.patch` 重放到工作树；service runtime、review detail、workflow studio 与 presenter failure surfaces 已完成实现并通过定向测试，当前进入 sprint-002 `CR-001` fresh reviewer round。
+7. 2026-04-17：`CR-001` 已接受并修复“artifact-pane restore failure 假空态 + HITL fallback 证据缺口”两条 finding；当前 `CR-002` 已被激活为 fresh post-fix recheck round，继续作为 sprint-002 closeout 前的 blocking review surface。
+8. 2026-04-17：`CR-002` 已接受并修复 `CS-022` standardized-error gate 命中与 `CS-017` helper annotation 缺口；随后 `CR-003` 被激活为 fresh clean recheck round。
+9. 2026-04-17：`CR-003` clean round 未发现 actionable finding，sprint-002 正式完成 closeout；当前 primary stream 已切换到 sprint-003，`TK-950` 进入 `in_progress` activation truth，下一步从 clean baseline 开始推进 secure authoring / settings / secret readiness UX。
 
 ## 7. 里程碑记录入口
 

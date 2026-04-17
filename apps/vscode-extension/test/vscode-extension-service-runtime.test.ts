@@ -32,6 +32,7 @@ const serviceClientMock = vi.hoisted(() => ({
   getHealth: vi.fn(),
   getExecution: vi.fn(),
   queryExecutionBoard: vi.fn(),
+  queryHitlInbox: vi.fn(),
   queryQueueOverview: vi.fn(),
   queryArtifactPane: vi.fn(),
   dispose: vi.fn(),
@@ -81,6 +82,7 @@ vi.mock('@repo-ai-governor/core-orchestration-service/sidecar-client', () => ({
     public readonly getHealth = serviceClientMock.getHealth;
     public readonly getExecution = serviceClientMock.getExecution;
     public readonly queryExecutionBoard = serviceClientMock.queryExecutionBoard;
+    public readonly queryHitlInbox = serviceClientMock.queryHitlInbox;
     public readonly queryQueueOverview = serviceClientMock.queryQueueOverview;
     public readonly queryArtifactPane = serviceClientMock.queryArtifactPane;
 
@@ -140,6 +142,7 @@ describe('VsCodeExtensionServiceRuntime', () => {
     serviceClientMock.getHealth.mockReset();
     serviceClientMock.getExecution.mockReset();
     serviceClientMock.queryExecutionBoard.mockReset();
+    serviceClientMock.queryHitlInbox.mockReset();
     serviceClientMock.queryQueueOverview.mockReset();
     serviceClientMock.queryArtifactPane.mockReset();
     serviceClientMock.dispose.mockReset();
@@ -292,6 +295,69 @@ describe('VsCodeExtensionServiceRuntime', () => {
         },
       },
       reviewSourcePath: '/repo/review.md',
+    });
+  });
+
+  it('falls back to an empty queue overview when the sidecar-backed queue query fails', async () => {
+    serviceClientMock.queryQueueOverview.mockRejectedValueOnce(
+      new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_CANCELLED,
+        'queue overview failed during packaged-sidecar startup',
+      ),
+    );
+
+    const runtime = new VsCodeExtensionServiceRuntime();
+
+    await expect(runtime.queryQueueOverview()).resolves.toEqual({
+      generatedAt: '',
+      automationInbox: [],
+      reviewQueue: [],
+      parallelLanes: [],
+      workspaceSummary: [],
+      temporaryBridges: [],
+      notificationOwnership: {
+        ownerSurface: OrchestrationClientSurface.DESKTOP,
+        pendingItemCount: 0,
+        dueSoonItemCount: 0,
+        overdueItemCount: 0,
+        activeWorkspaceCount: 0,
+        defaultFollowUpSlaMinutes: 0,
+        notificationStatus: OrchestrationGovernanceNotificationStatus.IDLE,
+      },
+    });
+  });
+
+  it('falls back to an empty execution board when the sidecar-backed execution query fails', async () => {
+    serviceClientMock.queryExecutionBoard.mockRejectedValueOnce(
+      new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_CANCELLED,
+        'execution board failed during packaged-sidecar startup',
+      ),
+    );
+
+    const runtime = new VsCodeExtensionServiceRuntime();
+
+    await expect(runtime.queryExecutionBoard()).resolves.toEqual({
+      executions: [],
+      returnedCount: 0,
+      totalMatchedCount: 0,
+    });
+  });
+
+  it('falls back to an empty HITL inbox when the sidecar-backed inbox query fails', async () => {
+    serviceClientMock.queryHitlInbox.mockRejectedValueOnce(
+      new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_CANCELLED,
+        'HITL inbox failed during packaged-sidecar startup',
+      ),
+    );
+
+    const runtime = new VsCodeExtensionServiceRuntime();
+
+    await expect(runtime.queryHitlInbox()).resolves.toEqual({
+      pendingDecisions: [],
+      returnedCount: 0,
+      totalMatchedCount: 0,
     });
   });
 
@@ -830,6 +896,120 @@ describe('VsCodeExtensionServiceRuntime', () => {
     expect(serviceClientMock.queryArtifactPane).toHaveBeenCalledWith({
       executionId: 'execution-older',
       sessionId: 'session-older',
+    });
+  });
+
+  it('rejects review-detail snapshot restoration when the artifact pane query fails', async () => {
+    serviceClientMock.queryExecutionBoard.mockResolvedValueOnce({
+      executions: [
+        {
+          execution: {
+            executionId: 'execution-restore-failure',
+            executionSessionId: 'session-restore-failure',
+            processId: 'process-restore-failure',
+            workspaceId: 'workspace-1',
+            workspaceRoot: '/repo',
+            executionKind: OrchestrationExecutionKind.RUN,
+            clientSurface: OrchestrationClientSurface.DESKTOP,
+            eventStreamToken: 'stream-restore-failure',
+            serviceHostKind: OrchestrationServiceHostKind.SIDECAR,
+            serviceTransportKind: OrchestrationServiceTransportKind.IPC,
+            status: OrchestrationExecutionStatus.RUNNING,
+            checkpointCapable: true,
+            recoveryCapable: true,
+            acceptedAt: '2026-04-07T03:00:00.000Z',
+            updatedAt: '2026-04-07T03:10:00.000Z',
+            pendingHitl: false,
+            latestEventSequence: 7,
+            nextCursor: 'cursor-restore-failure',
+            taskId: 'TK-949',
+          },
+          actions: [],
+          handoffTargets: [],
+        },
+      ],
+      returnedCount: 1,
+      totalMatchedCount: 1,
+    });
+    serviceClientMock.queryArtifactPane.mockRejectedValueOnce(
+      new RuntimeError(GovernorErrorCode.PROCESS_RUNTIME_CANCELLED, 'artifact pane restore failed'),
+    );
+
+    const runtime = new VsCodeExtensionServiceRuntime();
+
+    await expect(
+      runtime.resolveReviewDetailSnapshot({
+        executionId: 'execution-restore-failure',
+      }),
+    ).rejects.toMatchObject({
+      message: 'artifact pane restore failed',
+    });
+  });
+
+  it('rejects workflow-studio snapshot restoration when the artifact pane query fails', async () => {
+    serviceClientMock.queryQueueOverview.mockResolvedValueOnce({
+      generatedAt: '2026-04-07T03:05:00.000Z',
+      automationInbox: [],
+      reviewQueue: [],
+      parallelLanes: [],
+      workspaceSummary: [],
+      temporaryBridges: [],
+      notificationOwnership: {
+        ownerSurface: OrchestrationClientSurface.DESKTOP,
+        pendingItemCount: 0,
+        dueSoonItemCount: 0,
+        overdueItemCount: 0,
+        activeWorkspaceCount: 1,
+        defaultFollowUpSlaMinutes: 60,
+        notificationStatus: OrchestrationGovernanceNotificationStatus.IDLE,
+      },
+    });
+    serviceClientMock.queryExecutionBoard.mockResolvedValueOnce({
+      executions: [
+        {
+          execution: {
+            executionId: 'execution-workflow-restore-failure',
+            executionSessionId: 'session-workflow-restore-failure',
+            processId: 'process-workflow-restore-failure',
+            workspaceId: 'workspace-1',
+            workspaceRoot: '/repo',
+            executionKind: OrchestrationExecutionKind.RUN,
+            clientSurface: OrchestrationClientSurface.DESKTOP,
+            eventStreamToken: 'stream-workflow-restore-failure',
+            serviceHostKind: OrchestrationServiceHostKind.SIDECAR,
+            serviceTransportKind: OrchestrationServiceTransportKind.IPC,
+            status: OrchestrationExecutionStatus.RUNNING,
+            checkpointCapable: true,
+            recoveryCapable: true,
+            acceptedAt: '2026-04-07T03:00:00.000Z',
+            updatedAt: '2026-04-07T03:10:00.000Z',
+            pendingHitl: false,
+            latestEventSequence: 7,
+            nextCursor: 'cursor-workflow-restore-failure',
+            taskId: 'TK-949',
+          },
+          actions: [],
+          handoffTargets: [],
+        },
+      ],
+      returnedCount: 1,
+      totalMatchedCount: 1,
+    });
+    serviceClientMock.queryArtifactPane.mockRejectedValueOnce(
+      new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_CANCELLED,
+        'workflow studio artifact restore failed',
+      ),
+    );
+
+    const runtime = new VsCodeExtensionServiceRuntime();
+
+    await expect(
+      runtime.resolveWorkflowStudioSnapshot({
+        executionId: 'execution-workflow-restore-failure',
+      }),
+    ).rejects.toMatchObject({
+      message: 'workflow studio artifact restore failed',
     });
   });
 });

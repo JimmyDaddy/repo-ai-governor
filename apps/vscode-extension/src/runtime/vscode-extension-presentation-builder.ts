@@ -825,6 +825,55 @@ export class VsCodeExtensionPresentationBuilder {
   }
 
   /**
+   * Builds one failure-state HTML payload for webviews that could not resolve service-backed data.
+   * @param options Localized title/summary inputs plus optional error detail.
+   * @returns Standalone HTML payload for degraded-but-restorable webview rendering.
+   */
+  public buildServiceFailureHtml(options: {
+    titleEnglish: string;
+    titleChinese: string;
+    summaryEnglish: string;
+    summaryChinese: string;
+    errorMessage?: string;
+  }): string {
+    const title = this.localizer.localizeText(options.titleEnglish, options.titleChinese);
+    const summary = this.localizer.localizeText(options.summaryEnglish, options.summaryChinese);
+    const detailHeading = this.localizer.localizeText('Diagnostic detail', '诊断详情');
+    const guidance = this.localizer.localizeText(
+      'The workbench stays loaded, but the local orchestration sidecar did not return a usable snapshot. Reinstall the latest VSIX or reopen the workspace after the local service dependency chain is available.',
+      'Workbench 会保持可见，但本地 orchestration sidecar 没有返回可用快照。请安装最新 VSIX，或在本地服务依赖链可用后重新打开工作区。',
+    );
+
+    return [
+      '<!DOCTYPE html>',
+      '<html lang="en">',
+      '<head>',
+      '  <meta charset="UTF-8" />',
+      '  <meta name="viewport" content="width=device-width, initial-scale=1.0" />',
+      `  <title>${this.escapeHtml(title)}</title>`,
+      '  <style>',
+      '    :root { color-scheme: light dark; }',
+      '    body { font-family: var(--vscode-font-family); padding: 12px; color: var(--vscode-editor-foreground); background: var(--vscode-editor-background); }',
+      '    h1, h2 { margin: 0 0 8px; }',
+      '    .card { border: 1px solid var(--vscode-panel-border); border-radius: 10px; padding: 12px; margin-bottom: 12px; background: color-mix(in srgb, var(--vscode-editor-background) 92%, var(--vscode-list-hoverBackground) 8%); }',
+      '    p, li, pre { line-height: 1.5; }',
+      '    pre { white-space: pre-wrap; overflow-wrap: anywhere; }',
+      '  </style>',
+      '</head>',
+      '<body>',
+      `  <h1>${this.escapeHtml(title)}</h1>`,
+      `  <section class="card"><h2>${this.escapeHtml(title)}</h2><p>${this.escapeHtml(summary)}</p><p>${this.escapeHtml(guidance)}</p></section>`,
+      ...(options.errorMessage
+        ? [
+            `  <section class="card"><h2>${this.escapeHtml(detailHeading)}</h2><pre>${this.escapeHtml(options.errorMessage)}</pre></section>`,
+          ]
+        : []),
+      '</body>',
+      '</html>',
+    ].join('\n');
+  }
+
+  /**
    * Builds markdown for chat-participant responses.
    * @param options Chat response inputs.
    * @returns Markdown summary for the chat stream.

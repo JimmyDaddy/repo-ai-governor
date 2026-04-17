@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 
+import { standardizeError } from '@repo-ai-governor/shared';
 import { VSCODE_EXTENSION_CONTEXT_KEYS } from '../constants/index.js';
 import type { VsCodeExtensionCommandRequest } from '../types/index.js';
 import type { VsCodeExtensionPresentationBuilder } from './vscode-extension-presentation-builder.js';
@@ -56,31 +57,50 @@ export class VsCodeExtensionReviewDetailProvider implements vscode.WebviewViewPr
       return;
     }
 
-    const currentSelection = this.selectionStore.getSnapshot();
-    const detailSnapshot = await this.serviceRuntime.resolveReviewDetailSnapshot(currentSelection);
-    if (detailSnapshot.selectedExecution) {
-      const preservedQueueEntry =
-        currentSelection.queueEntry?.executionId ===
-        detailSnapshot.selectedExecution.execution.executionId
-          ? currentSelection.queueEntry
-          : undefined;
-      this.selectionStore.applyCommandRequest({
-        executionId: detailSnapshot.selectedExecution.execution.executionId,
-        executionSessionId: detailSnapshot.selectedExecution.execution.executionSessionId,
-        reviewSourcePath: currentSelection.reviewSourcePath,
-        queueEntry: preservedQueueEntry,
-        temporaryBridge: currentSelection.temporaryBridge,
-      });
-    }
-    this.selectionStore.rememberReviewSourcePath(
-      detailSnapshot.artifactPane?.reviewSourcePath ?? detailSnapshot.requestedReviewSourcePath,
-    );
+    try {
+      const currentSelection = this.selectionStore.getSnapshot();
+      const detailSnapshot =
+        await this.serviceRuntime.resolveReviewDetailSnapshot(currentSelection);
+      if (detailSnapshot.selectedExecution) {
+        const preservedQueueEntry =
+          currentSelection.queueEntry?.executionId ===
+          detailSnapshot.selectedExecution.execution.executionId
+            ? currentSelection.queueEntry
+            : undefined;
+        this.selectionStore.applyCommandRequest({
+          executionId: detailSnapshot.selectedExecution.execution.executionId,
+          executionSessionId: detailSnapshot.selectedExecution.execution.executionSessionId,
+          reviewSourcePath: currentSelection.reviewSourcePath,
+          queueEntry: preservedQueueEntry,
+          temporaryBridge: currentSelection.temporaryBridge,
+        });
+      }
+      this.selectionStore.rememberReviewSourcePath(
+        detailSnapshot.artifactPane?.reviewSourcePath ?? detailSnapshot.requestedReviewSourcePath,
+      );
 
-    this.webviewView.webview.html = this.presentationBuilder.buildReviewDetailHtml(detailSnapshot);
-    await vscode.commands.executeCommand(
-      'setContext',
-      VSCODE_EXTENSION_CONTEXT_KEYS.REVIEW_DETAIL_AVAILABLE,
-      Boolean(detailSnapshot.selectedExecution || detailSnapshot.requestedReviewSourcePath),
-    );
+      this.webviewView.webview.html =
+        this.presentationBuilder.buildReviewDetailHtml(detailSnapshot);
+      await vscode.commands.executeCommand(
+        'setContext',
+        VSCODE_EXTENSION_CONTEXT_KEYS.REVIEW_DETAIL_AVAILABLE,
+        Boolean(detailSnapshot.selectedExecution || detailSnapshot.requestedReviewSourcePath),
+      );
+    } catch (error) {
+      const standardizedError = standardizeError(error);
+      this.webviewView.webview.html = this.presentationBuilder.buildServiceFailureHtml({
+        titleEnglish: 'Governor review detail',
+        titleChinese: 'Governor 评审详情',
+        summaryEnglish:
+          'Review detail could not be restored from the local orchestration service snapshot.',
+        summaryChinese: '无法从本地 orchestration service 快照恢复评审详情视图。',
+        errorMessage: standardizedError.message,
+      });
+      await vscode.commands.executeCommand(
+        'setContext',
+        VSCODE_EXTENSION_CONTEXT_KEYS.REVIEW_DETAIL_AVAILABLE,
+        false,
+      );
+    }
   }
 }

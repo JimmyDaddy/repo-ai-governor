@@ -1,6 +1,6 @@
 # TK-948 land operations workbench surfaces and bridge fallback governance
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-17
 - Owner: AI-Agent
 - Priority: P1
@@ -43,7 +43,8 @@
 
 ## 7. Development Verification
 
-1. 待执行：按任务范围补充 fast/targeted verification。
+1. pnpm run build
+2. pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-service-runtime.test.ts
 2. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-002-phase-e-operations-cutover/tasks" --task-id TK-948
 
 ## 8. Delivery Verification
@@ -56,8 +57,11 @@
 ## 9. 执行记录
 
 1. 2026-04-17：任务创建，状态初始化为 `planned`。
+2. 2026-04-17：当前任务切换为 `in_progress`，开始把 review detail / workflow studio 的 restore failure 从抛错或无限 loading 收敛到可恢复的 degraded service-backed page。
+3. 2026-04-17：`VsCodeExtensionPresentationBuilder` 已新增通用 `buildServiceFailureHtml()`，review detail 与 workflow studio provider 均改为捕获 restore 异常并渲染 degraded page；controller/provider 定向测试已补齐对应 failure-state coverage，同窗口 `pnpm run build` 与 2 个 VS Code extension 定向 vitest 已通过，当前任务切换为 `completed`。
+4. 2026-04-17：`CR-001` accepted finding 已把 artifact-pane restore failure 调整为由 runtime 显式抛给 provider degraded path，而不再伪装成“未选中执行”的假空态；同窗口 `pnpm run build` 与定向 vitest 已重跑通过。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. `apps/vscode-extension/src/runtime/vscode-extension-presentation-builder.ts`、`vscode-extension-review-detail-provider.ts` 与 `vscode-extension-workflow-studio-provider.ts` 已完成 degraded failure surface 收口；artifact-pane restore failure 现在不会再被错误投影为“未选中执行”空态。
+2. `apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts` 已补齐 review detail / workflow studio restore failure 的 degraded render coverage。

@@ -11,6 +11,7 @@ import { OrchestrationGovernanceTemporaryBridgeBacklinkSurface } from '@repo-ai-
 import { OrchestrationGovernanceTemporaryBridgeExitCriterion } from '@repo-ai-governor/orchestration-service-client';
 import { OrchestrationGovernanceTemporaryBridgeReceiptKind } from '@repo-ai-governor/orchestration-service-client';
 import { OrchestrationHandoffTargetKind } from '@repo-ai-governor/orchestration-service-client';
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 
 const vscodeMock = vi.hoisted(() => {
   const showInformationMessage = vi.fn();
@@ -417,6 +418,40 @@ describe('VsCode extension controller/provider integration', () => {
     });
   });
 
+  it('renders a degraded review-detail page instead of throwing when snapshot restore fails', async () => {
+    const reviewDetailProvider = new VsCodeExtensionReviewDetailProvider(
+      {
+        resolveReviewDetailSnapshot: vi
+          .fn()
+          .mockRejectedValue(
+            new RuntimeError(GovernorErrorCode.PROCESS_RUNTIME_CANCELLED, 'sidecar restore failed'),
+          ),
+      } as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        buildReviewDetailHtml: vi.fn(),
+        buildServiceFailureHtml: vi.fn().mockReturnValue('<html>review-detail-failure</html>'),
+      } as never,
+    );
+    const webviewView = {
+      webview: {
+        options: {},
+        html: '',
+      },
+    };
+
+    await expect(reviewDetailProvider.resolveWebviewView(webviewView as never)).resolves.toBe(
+      undefined,
+    );
+
+    expect(webviewView.webview.html).toBe('<html>review-detail-failure</html>');
+    expect(vscodeMock.executeCommand).toHaveBeenCalledWith(
+      'setContext',
+      'repoAiGovernor.reviewDetailAvailable',
+      false,
+    );
+  });
+
   it('preserves queue-driven selection across repeated detail renders for older queue items', async () => {
     const selectionStore = new VsCodeExtensionSelectionStore();
     selectionStore.applyCommandRequest({
@@ -633,6 +668,38 @@ describe('VsCode extension controller/provider integration', () => {
     });
 
     expect(webviewView.webview.html).toBe('<html>workflow-studio</html>');
+  });
+
+  it('renders a degraded workflow-studio page instead of throwing when snapshot restore fails', async () => {
+    const workflowStudioProvider = new VsCodeExtensionWorkflowStudioProvider(
+      {
+        resolveWorkflowStudioSnapshot: vi
+          .fn()
+          .mockRejectedValue(
+            new RuntimeError(
+              GovernorErrorCode.PROCESS_RUNTIME_CANCELLED,
+              'queue overview restore failed',
+            ),
+          ),
+      } as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        buildWorkflowStudioHtml: vi.fn(),
+        buildServiceFailureHtml: vi.fn().mockReturnValue('<html>workflow-studio-failure</html>'),
+      } as never,
+    );
+    const webviewView = {
+      webview: {
+        options: {},
+        html: '',
+      },
+    };
+
+    await expect(workflowStudioProvider.resolveWebviewView(webviewView as never)).resolves.toBe(
+      undefined,
+    );
+
+    expect(webviewView.webview.html).toBe('<html>workflow-studio-failure</html>');
   });
 
   it('stages a temporary bridge command in a trusted terminal without executing it', async () => {

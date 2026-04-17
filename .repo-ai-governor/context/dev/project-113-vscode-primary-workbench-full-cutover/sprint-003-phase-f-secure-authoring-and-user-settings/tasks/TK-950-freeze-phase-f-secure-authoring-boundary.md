@@ -1,6 +1,6 @@
 # TK-950 freeze phase-f secure authoring boundary
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-04-17
 - Owner: AI-Agent
 - Priority: P1
@@ -56,6 +56,7 @@
 ## 9. 执行记录
 
 1. 2026-04-17：任务创建，状态初始化为 `planned`。
+2. 2026-04-17：随着 sprint-002 在 `CR-003` clean round 后完成 closeout，当前任务已切换为 `in_progress`，开始从 clean baseline 冻结 secure authoring、user settings、secret readiness 与 trust-sensitive interaction boundary。
 
 ## 10. 产出
 

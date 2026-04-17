@@ -1,5 +1,6 @@
 import type * as vscode from 'vscode';
 
+import { standardizeError } from '@repo-ai-governor/shared';
 import type { VsCodeExtensionCommandRequest } from '../types/index.js';
 import type { VsCodeExtensionPresentationBuilder } from './vscode-extension-presentation-builder.js';
 import type { VsCodeExtensionSelectionStore } from './vscode-extension-selection-store.js';
@@ -47,9 +48,21 @@ export class VsCodeExtensionWorkflowStudioProvider implements vscode.WebviewView
       return;
     }
 
-    const snapshot = await this.serviceRuntime.resolveWorkflowStudioSnapshot(
-      this.selectionStore.getSnapshot(),
-    );
-    this.webviewView.webview.html = this.presentationBuilder.buildWorkflowStudioHtml(snapshot);
+    try {
+      const snapshot = await this.serviceRuntime.resolveWorkflowStudioSnapshot(
+        this.selectionStore.getSnapshot(),
+      );
+      this.webviewView.webview.html = this.presentationBuilder.buildWorkflowStudioHtml(snapshot);
+    } catch (error) {
+      const standardizedError = standardizeError(error);
+      this.webviewView.webview.html = this.presentationBuilder.buildServiceFailureHtml({
+        titleEnglish: 'Governor workflow studio',
+        titleChinese: 'Governor Workflow Studio',
+        summaryEnglish:
+          'Workflow studio could not restore the latest service-backed evidence snapshot.',
+        summaryChinese: 'Workflow Studio 无法恢复最新的 service-backed 证据快照。',
+        errorMessage: standardizedError.message,
+      });
+    }
   }
 }

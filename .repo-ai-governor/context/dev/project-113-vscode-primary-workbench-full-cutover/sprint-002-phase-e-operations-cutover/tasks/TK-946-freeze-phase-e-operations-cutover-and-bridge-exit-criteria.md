@@ -1,6 +1,6 @@
 # TK-946 freeze phase-e operations cutover and bridge-exit criteria
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-04-17
 - Owner: AI-Agent
 - Priority: P1
@@ -43,7 +43,8 @@
 
 ## 7. Development Verification
 
-1. 待执行：在 `phase-e.patch` 重放后补充 provider/service-runtime 定向验证。
+1. pnpm run build
+2. pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-service-runtime.test.ts
 2. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-002-phase-e-operations-cutover/tasks" --task-id TK-946
 
 ## 8. Delivery Verification
@@ -58,8 +59,9 @@
 1. 2026-04-17：任务创建，状态初始化为 `planned`。
 2. 2026-04-17：随着 sprint-001 在 `CR-003` clean round 后完成 closeout，当前任务已切换为 `in_progress`，开始冻结 Phase E operations cutover 与 degraded fallback boundary。
 3. 2026-04-17：当前仍保持 clean baseline；下一步从 `.tmp/project-113-boundary-parking/phase-e.patch` 重放 review detail / workflow studio / queue query fallback delta，并将 review surface 收敛在 service-backed empty/degraded view，而不是继续扩展 Phase D activation 范围。
+4. 2026-04-17：已将 Phase E contract 冻结为“`queryExecutionBoard` / `queryHitlInbox` / `queryQueueOverview` 失败时返回 empty DTO，review detail 与 workflow studio restore 失败时渲染 degraded-but-restorable HTML，而不是把异常直接冒泡到 UI”；同窗口 `pnpm run build` 与 2 个 VS Code extension 定向 vitest 已通过，当前任务切换为 `completed`。
 
 ## 10. 产出
 
-1. 当前 sprint-002 已被激活为 primary execution surface，`TK-946` 负责锁定 Phase E 的 degraded fallback contract 与 bridge-exit criteria。
-2. `.tmp/project-113-boundary-parking/phase-e.patch` 已保留为下一步可回放输入，不参与 sprint-001 boundary commit。
+1. 当前 sprint-002 已被激活为 primary execution surface，`TK-946` 已锁定 Phase E 的 degraded fallback contract 与 bridge-exit criteria。
+2. `.tmp/project-113-boundary-parking/phase-e.patch` 已在当前窗口重放完成，后续 CR 只围绕已落盘的 Phase E delta 执行。

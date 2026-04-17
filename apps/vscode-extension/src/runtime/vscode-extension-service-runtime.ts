@@ -29,7 +29,7 @@ import {
   OrchestrationClientSurface as OrchestrationClientSurfaceValue,
   OrchestrationGovernanceNotificationStatus as OrchestrationGovernanceNotificationStatusValue,
 } from '@repo-ai-governor/orchestration-service-client';
-import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
+import { GovernorErrorCode, RuntimeError, standardizeError } from '@repo-ai-governor/shared';
 import {
   VSCODE_EXTENSION_DEFAULT_EXECUTION_LIMIT,
   VSCODE_EXTENSION_DEFAULT_LANE_LIMIT,
@@ -46,6 +46,44 @@ import type {
 } from '../types/index.js';
 
 const EXECUTION_LOOKUP_LIMIT = 20;
+
+// oop-function-allowed: These fallback DTO builders are pure value factories that keep the
+// service-owned catch branches concise without adding mutable state or orchestration behavior.
+function createEmptyExecutionBoardResponse(): OrchestrationExecutionBoardQueryResponse {
+  return {
+    executions: [],
+    returnedCount: 0,
+    totalMatchedCount: 0,
+  };
+}
+
+function createEmptyHitlInboxResponse(): OrchestrationHitlInboxQueryResponse {
+  return {
+    pendingDecisions: [],
+    returnedCount: 0,
+    totalMatchedCount: 0,
+  };
+}
+
+function createEmptyQueueOverviewResponse(): OrchestrationQueueOverviewQueryResponse {
+  return {
+    generatedAt: '',
+    automationInbox: [],
+    reviewQueue: [],
+    parallelLanes: [],
+    workspaceSummary: [],
+    temporaryBridges: [],
+    notificationOwnership: {
+      ownerSurface: OrchestrationClientSurfaceValue.DESKTOP,
+      pendingItemCount: 0,
+      dueSoonItemCount: 0,
+      overdueItemCount: 0,
+      activeWorkspaceCount: 0,
+      defaultFollowUpSlaMinutes: 0,
+      notificationStatus: OrchestrationGovernanceNotificationStatusValue.IDLE,
+    },
+  };
+}
 
 interface VsCodeExtensionServiceRuntimeDependencies {
   configLoader?: Pick<ConfigLoader, 'loadFromFile'>;
@@ -167,16 +205,16 @@ export class VsCodeExtensionServiceRuntime {
   ): Promise<OrchestrationExecutionBoardQueryResponse> {
     const client = await this.resolveClient();
     if (!client) {
-      return {
-        executions: [],
-        returnedCount: 0,
-        totalMatchedCount: 0,
-      };
+      return createEmptyExecutionBoardResponse();
     }
 
-    return client.queryExecutionBoard({
-      limit,
-    });
+    try {
+      return await client.queryExecutionBoard({
+        limit,
+      });
+    } catch {
+      return createEmptyExecutionBoardResponse();
+    }
   }
 
   /**
@@ -189,16 +227,16 @@ export class VsCodeExtensionServiceRuntime {
   ): Promise<OrchestrationHitlInboxQueryResponse> {
     const client = await this.resolveClient();
     if (!client) {
-      return {
-        pendingDecisions: [],
-        returnedCount: 0,
-        totalMatchedCount: 0,
-      };
+      return createEmptyHitlInboxResponse();
     }
 
-    return client.queryHitlInbox({
-      limit,
-    });
+    try {
+      return await client.queryHitlInbox({
+        limit,
+      });
+    } catch {
+      return createEmptyHitlInboxResponse();
+    }
   }
 
   /**
@@ -216,30 +254,18 @@ export class VsCodeExtensionServiceRuntime {
   ): Promise<OrchestrationQueueOverviewQueryResponse> {
     const client = await this.resolveClient();
     if (!client) {
-      return {
-        generatedAt: '',
-        automationInbox: [],
-        reviewQueue: [],
-        parallelLanes: [],
-        workspaceSummary: [],
-        temporaryBridges: [],
-        notificationOwnership: {
-          ownerSurface: OrchestrationClientSurfaceValue.DESKTOP,
-          pendingItemCount: 0,
-          dueSoonItemCount: 0,
-          overdueItemCount: 0,
-          activeWorkspaceCount: 0,
-          defaultFollowUpSlaMinutes: 0,
-          notificationStatus: OrchestrationGovernanceNotificationStatusValue.IDLE,
-        },
-      };
+      return createEmptyQueueOverviewResponse();
     }
 
-    return client.queryQueueOverview({
-      limit,
-      laneLimit,
-      workspaceLimit,
-    });
+    try {
+      return await client.queryQueueOverview({
+        limit,
+        laneLimit,
+        workspaceLimit,
+      });
+    } catch {
+      return createEmptyQueueOverviewResponse();
+    }
   }
 
   /**
@@ -485,21 +511,33 @@ export class VsCodeExtensionServiceRuntime {
       return undefined;
     }
 
-    return client.queryArtifactPane({
-      executionId,
-      ...(executionSessionId
-        ? {
-            sessionId: executionSessionId,
-          }
-        : {}),
-    });
+    try {
+      return await client.queryArtifactPane({
+        executionId,
+        ...(executionSessionId
+          ? {
+              sessionId: executionSessionId,
+            }
+          : {}),
+      });
+    } catch (error) {
+      throw standardizeError(error);
+    }
   }
 
   private async getExecutionSummary(
     executionId: string,
   ): Promise<OrchestrationExecutionSummary | undefined> {
     const client = await this.resolveClient();
-    return client?.getExecution(executionId);
+    if (!client) {
+      return undefined;
+    }
+
+    try {
+      return await client.getExecution(executionId);
+    } catch {
+      return undefined;
+    }
   }
 
   private async resolveQueueSelectionExecution(
