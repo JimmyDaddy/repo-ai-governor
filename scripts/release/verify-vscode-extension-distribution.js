@@ -10,7 +10,7 @@ import {
   rmSync,
   writeFileSync,
 } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { dirname, isAbsolute, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { OrchestrationServiceLifecycleStatus } from '../../packages/orchestration-service-client/dist/src/constants/orchestration-service.constant.js';
@@ -35,12 +35,66 @@ const REQUIRED_ARCHIVE_ENTRIES = [
   'extension/dist/src/index.js',
   'extension/node_modules/.modules.yaml',
   'extension/node_modules/.pnpm/lock.yaml',
+  'extension/node_modules/@repo-ai-governor/cli/package.json',
+  'extension/node_modules/@repo-ai-governor/config/package.json',
 ];
 const ALLOWED_SYMLINK_SEGMENTS = [
   '/node_modules/.bin/',
   '/node_modules/@langchain/core/node_modules/.bin/',
   '/node_modules/@langchain/langgraph-sdk/node_modules/.bin/',
 ];
+
+/**
+ * Resolves one isolated scratch workspace root for CLI-backed packaged smoke runs.
+ * This keeps release verification from mutating the maintainer's live workspace truth surfaces.
+ * @param {string} workingRoot Absolute packaging working root.
+ * @param {string} smokeId Human-readable smoke lane label.
+ * @returns {string}
+ */
+export function resolveCliBackedSmokeWorkspaceRoot(workingRoot, smokeId) {
+  const normalizedSmokeId = smokeId
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/gu, '-')
+    .replace(/^-+|-+$/gu, '');
+  return resolve(
+    workingRoot,
+    'cli-backed-smoke-workspaces',
+    normalizedSmokeId.length > 0 ? normalizedSmokeId : 'default',
+  );
+}
+
+/**
+ * Checks whether one candidate path stays inside the declared parent root.
+ * @param {string} parentRoot Absolute parent root.
+ * @param {string} candidatePath Candidate path to validate.
+ * @returns {boolean}
+ */
+function isPathInside(parentRoot, candidatePath) {
+  const relativePath = relative(resolve(parentRoot), resolve(candidatePath));
+  return relativePath === '' || (!relativePath.startsWith('..') && !isAbsolute(relativePath));
+}
+
+/**
+ * Reads one `key=value` entry from layered log lines.
+ * @param {string[] | undefined} logLines Candidate layered log lines.
+ * @param {string} key Key prefix to match.
+ * @returns {string | null}
+ */
+function readLayeredLogValue(logLines, key) {
+  if (!Array.isArray(logLines)) {
+    return null;
+  }
+
+  const prefix = `${key}=`;
+  const matchedLine = logLines.find((line) => typeof line === 'string' && line.startsWith(prefix));
+  if (!matchedLine) {
+    return null;
+  }
+
+  const value = matchedLine.slice(prefix.length).trim();
+  return value.length > 0 ? value : null;
+}
 
 /**
  * Parses CLI options for packaged-extension verification.
@@ -229,6 +283,55 @@ async function runPackagedSidecarSmoke(packageRoot) {
 }
 
 /**
+ * Executes one packaged secure-authoring + doctor smoke so CLI-backed runtime seams stay truthful.
+ * Any temporary workspace-operation snapshot written during the smoke is restored afterwards.
+ * @param {string} packageRoot Absolute packaged extension root.
+ * @param {string} workingRoot Absolute packaging working root.
+ * @param {string} smokeId Human-readable smoke lane label.
+ * @returns {Promise<{smokeWorkspaceRoot: string; secureAuthoringDegradedReason: string | null; doctorOperation: string; doctorSummary: string; doctorDiagnosticsPath: string | null; resolvedWorkspaceRoot: string | null; doctorCheckTotals?: {pass?: number; warn?: number; fail?: number}}>}
+ */
+async function runPackagedCliBackedSmoke(packageRoot, workingRoot, smokeId) {
+  const workspaceOpsModulePath = resolve(
+    packageRoot,
+    'node_modules/@repo-ai-governor/core-orchestration-service/dist/src/local-orchestration-service-workspace-ops-runtime.js',
+  );
+  const workspaceOpsModule = await import(
+    `${pathToFileURL(workspaceOpsModulePath).href}?smoke=${Date.now()}`
+  );
+  const smokeWorkspaceRoot = resolveCliBackedSmokeWorkspaceRoot(workingRoot, smokeId);
+  rmSync(smokeWorkspaceRoot, { recursive: true, force: true });
+  mkdirSync(smokeWorkspaceRoot, { recursive: true });
+  const runtime = new workspaceOpsModule.LocalOrchestrationServiceWorkspaceOpsRuntime({
+    workspaceRoot: smokeWorkspaceRoot,
+    repositoryRoot: PROJECT_ROOT,
+  });
+
+  const secureAuthoring = await runtime.querySecureAuthoring({
+    locale: 'en-US',
+  });
+  const doctorResponse = await runtime.runWorkspaceOperation({
+    operationKind: 'doctor',
+    locale: 'en-US',
+  });
+  return {
+    smokeWorkspaceRoot,
+    secureAuthoringDegradedReason: secureAuthoring.degradedReason ?? null,
+    doctorOperation: doctorResponse.result.operation,
+    doctorSummary: doctorResponse.result.summary,
+    doctorDiagnosticsPath:
+      doctorResponse.result.artifacts?.find((artifact) => artifact.id === 'doctor_diagnostics')
+        ?.path ?? null,
+    resolvedWorkspaceRoot:
+      readLayeredLogValue(doctorResponse.result.layeredLogs?.detailed, 'workspace_root') ?? null,
+    ...(doctorResponse.result.checkTotals
+      ? {
+          doctorCheckTotals: doctorResponse.result.checkTotals,
+        }
+      : {}),
+  };
+}
+
+/**
  * Enforces the release-evidence contract for one packaged sidecar smoke path.
  * @param {string} smokeLabel Human-readable packaged path label.
  * @param {{serviceLifecycle: string; queueGeneratedAt: string}} sidecarSmoke Recorded smoke result.
@@ -242,6 +345,93 @@ export function assertReadySidecarSmoke(smokeLabel, sidecarSmoke) {
   }
 
   return sidecarSmoke;
+}
+
+/**
+ * Enforces the supported release-evidence contract for one packaged CLI-backed smoke path.
+ *
+ * Why this exists:
+ * the packaging gate proves executable secure-authoring plus scratch-isolated doctor diagnostics
+ * capture for the packaged root and extracted VSIX views. The recorded doctor check totals remain
+ * truth-carrying evidence and may still contain non-blocking warnings under the current contract.
+ *
+ * @param {string} smokeLabel Human-readable packaged path label.
+ * @param {{smokeWorkspaceRoot: string; secureAuthoringDegradedReason: string | null; doctorOperation: string; doctorSummary: string; doctorDiagnosticsPath: string | null; resolvedWorkspaceRoot: string | null; doctorCheckTotals?: {pass?: number; warn?: number; fail?: number}}} cliBackedSmoke Recorded smoke result.
+ * @returns {{smokeWorkspaceRoot: string; secureAuthoringDegradedReason: string | null; doctorOperation: string; doctorSummary: string; doctorDiagnosticsPath: string | null; resolvedWorkspaceRoot: string | null; doctorCheckTotals?: {pass?: number; warn?: number; fail?: number}}}
+ */
+export function assertSupportedCliBackedSmoke(smokeLabel, cliBackedSmoke) {
+  if (
+    typeof cliBackedSmoke.secureAuthoringDegradedReason === 'string' &&
+    cliBackedSmoke.secureAuthoringDegradedReason.trim().length > 0
+  ) {
+    throw new Error(
+      `${smokeLabel} secure-authoring smoke must not degrade before distribution verification can pass (received "${cliBackedSmoke.secureAuthoringDegradedReason}")`,
+    );
+  }
+
+  if (cliBackedSmoke.doctorOperation !== 'env_doctor') {
+    throw new Error(
+      `${smokeLabel} doctor smoke must report operation "env_doctor" before distribution verification can pass (received "${cliBackedSmoke.doctorOperation}")`,
+    );
+  }
+
+  if (
+    typeof cliBackedSmoke.doctorSummary !== 'string' ||
+    cliBackedSmoke.doctorSummary.trim().length === 0
+  ) {
+    throw new Error(
+      `${smokeLabel} doctor smoke must return a non-empty summary before distribution verification can pass.`,
+    );
+  }
+
+  if (
+    typeof cliBackedSmoke.smokeWorkspaceRoot !== 'string' ||
+    cliBackedSmoke.smokeWorkspaceRoot.trim().length === 0
+  ) {
+    throw new Error(
+      `${smokeLabel} doctor smoke must declare the scratch workspace root before distribution verification can pass.`,
+    );
+  }
+
+  if (
+    typeof cliBackedSmoke.resolvedWorkspaceRoot !== 'string' ||
+    cliBackedSmoke.resolvedWorkspaceRoot.trim().length === 0
+  ) {
+    throw new Error(
+      `${smokeLabel} doctor smoke must report the effective workspace_root before distribution verification can pass.`,
+    );
+  }
+
+  if (
+    resolve(cliBackedSmoke.smokeWorkspaceRoot) !== resolve(cliBackedSmoke.resolvedWorkspaceRoot)
+  ) {
+    throw new Error(
+      `${smokeLabel} doctor smoke must resolve workspace_root to "${cliBackedSmoke.smokeWorkspaceRoot}" (received "${cliBackedSmoke.resolvedWorkspaceRoot}")`,
+    );
+  }
+
+  if (
+    typeof cliBackedSmoke.doctorDiagnosticsPath !== 'string' ||
+    cliBackedSmoke.doctorDiagnosticsPath.trim().length === 0
+  ) {
+    throw new Error(
+      `${smokeLabel} doctor smoke must report the diagnostics artifact path before distribution verification can pass.`,
+    );
+  }
+
+  const expectedDiagnosticsRoot = resolve(
+    cliBackedSmoke.smokeWorkspaceRoot,
+    'context',
+    'diagnostics',
+    'doctor',
+  );
+  if (!isPathInside(expectedDiagnosticsRoot, cliBackedSmoke.doctorDiagnosticsPath)) {
+    throw new Error(
+      `${smokeLabel} doctor smoke must keep diagnostics inside "${expectedDiagnosticsRoot}" (received "${cliBackedSmoke.doctorDiagnosticsPath}")`,
+    );
+  }
+
+  return cliBackedSmoke;
 }
 
 /**
@@ -349,6 +539,14 @@ async function main() {
       'packaged root',
       await runPackagedSidecarSmoke(packReport.packageRoot),
     );
+    const packageCliBackedSmoke = assertSupportedCliBackedSmoke(
+      'packaged root',
+      await runPackagedCliBackedSmoke(
+        packReport.packageRoot,
+        packReport.workingRoot,
+        'packaged-root',
+      ),
+    );
     const packageSymlinks = verifySymlinkPayload(packReport.packageRoot);
     const extractedExtensionRoot = extractVsix(packReport.vsixPath, packReport.workingRoot);
     const extractedSymlinks = verifySymlinkPayload(extractedExtensionRoot);
@@ -356,6 +554,14 @@ async function main() {
     const installedSidecarSmoke = assertReadySidecarSmoke(
       'extracted VSIX',
       await runPackagedSidecarSmoke(extractedExtensionRoot),
+    );
+    const installedCliBackedSmoke = assertSupportedCliBackedSmoke(
+      'extracted VSIX',
+      await runPackagedCliBackedSmoke(
+        extractedExtensionRoot,
+        packReport.workingRoot,
+        'installed-vsix',
+      ),
     );
 
     const report = {
@@ -366,10 +572,12 @@ async function main() {
       packageSymlinks,
       moduleSmoke,
       packageSidecarSmoke,
+      packageCliBackedSmoke,
       extractedExtensionRoot,
       extractedSymlinks,
       installedModuleSmoke,
       installedSidecarSmoke,
+      installedCliBackedSmoke,
     };
 
     writeReport(options.outputPath, report);

@@ -97,7 +97,7 @@ The current public-support wording is now `primary_workbench_claim` for the buil
 2. For built-source checkout and the packaged-artifact boundary of one locally generated VSIX / packaged extension root, the extension is now the primary human-facing workbench for bootstrap/readiness, `doctor`, `check`, workflow authoring, run/review, automation interaction, and governed `adopt / host / verify / upgrade` follow-up.
 3. CLI remains supported, but only as an optional automation / CI / scriptable / session-shell / debugging path. Users no longer need to open a manual CLI path before the extension becomes useful.
 4. Compatibility bridge metadata may still be rendered as exit evidence, but the supported user path now executes these operations through service-owned workspace commands inside VS Code instead of asking the user to hand off into a visible CLI flow.
-5. Automated evidence now proves contract/controller/presentation parity, activation coverage, packaged module smoke, package-root/extracted-VSIX sidecar smoke, and symlink-safe payload boundaries. A real extension-development-host launch or GUI `Install from VSIX...` rehearsal remains optional manual evidence rather than a release-blocking automated gate.
+5. Automated evidence now proves contract/controller/presentation parity, activation coverage, packaged module smoke, package-root/extracted-VSIX sidecar smoke, packaged/extracted CLI-backed secure-authoring, scratch-isolated `doctor` diagnostics capture with surfaced check totals, and symlink-safe payload boundaries. A real extension-development-host launch or GUI `Install from VSIX...` rehearsal remains optional manual evidence rather than a release-blocking automated gate.
 6. Public docs now describe the extension as the editor-native primary workbench for built-source checkout and local VSIX / packaged-extension paths only. This does not extend support to published npm/tgz install bundles, direct registry delivery, or Marketplace rollout.
 
 ## Verification
@@ -105,7 +105,7 @@ The current public-support wording is now `primary_workbench_claim` for the buil
 1. `pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test/vscode-extension-contract.test.ts apps/vscode-extension/test/vscode-extension-host.activation.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-service-runtime.test.ts apps/vscode-extension/test/vscode-extension-selection-store.test.ts apps/vscode-extension/test/vscode-extension-packaging-boundary.test.ts`
 2. `pnpm run build`
 3. `pnpm run check`
-4. `pnpm run release:verify-vscode-extension-distribution -- --output .tmp/project-114-sprint-005-vscode-distribution-report.json`
+4. `pnpm run release:verify-vscode-extension-distribution -- --output .tmp/project-114-project-final-vscode-distribution-report.json`
 5. `pnpm pack --json --dry-run`
 6. `pnpm run check:ide-entry-smoke`
 7. `pnpm run check:ide-docs-parity`

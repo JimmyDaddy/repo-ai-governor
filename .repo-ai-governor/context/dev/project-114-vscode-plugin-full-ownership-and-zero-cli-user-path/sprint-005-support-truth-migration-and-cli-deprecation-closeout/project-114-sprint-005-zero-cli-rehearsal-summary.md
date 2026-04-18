@@ -2,7 +2,7 @@
 
 - Status: completed
 - Date: 2026-04-18
-- Evidence Time (UTC): `2026-04-18T07:53:44Z`
+- Evidence Time (UTC): `2026-04-18T12:48:24Z`
 - Project: `project-114-vscode-plugin-full-ownership-and-zero-cli-user-path`
 - Sprint: `sprint-005-support-truth-migration-and-cli-deprecation-closeout`
 
@@ -16,7 +16,7 @@
 
 1. `pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test/vscode-extension-contract.test.ts apps/vscode-extension/test/vscode-extension-host.activation.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-service-runtime.test.ts apps/vscode-extension/test/vscode-extension-selection-store.test.ts apps/vscode-extension/test/vscode-extension-packaging-boundary.test.ts` (`74/74` tests passed)
 2. `pnpm run build` (passed)
-3. `pnpm run release:verify-vscode-extension-distribution -- --output .tmp/project-114-sprint-005-vscode-distribution-report.json` (passed)
+3. `pnpm run release:verify-vscode-extension-distribution -- --output .tmp/project-114-project-final-vscode-distribution-report.json` (passed)
 4. `pnpm pack --json --dry-run` (passed; `repo-ai-governor-0.0.1.tgz`, `2445` packed files)
 5. `pnpm run check:ide-entry-smoke` (passed)
 6. `pnpm run check:ide-docs-parity` (passed)
@@ -32,13 +32,13 @@
 
 ## 4. Evidence artifacts
 
-1. Scratch distribution report: `.tmp/project-114-sprint-005-vscode-distribution-report.json`
-2. Immutable distribution snapshot: `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/project-114-sprint-005-vscode-distribution-report-20260418T075344Z.json`
-3. Pack dry-run manifest: `.tmp/project-114-sprint-005-pack-dry-run.json`
+1. Scratch distribution report: `.tmp/project-114-project-final-vscode-distribution-report.json`
+2. Immutable distribution snapshot: `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/project-114-sprint-005-vscode-distribution-report-20260418T124824Z.json`
+3. Pack dry-run manifest: `.tmp/project-114-project-final-pack-dry-run.json`
 4. Support contract freeze: `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/project-114-sprint-005-zero-cli-support-truth-contract.md`
 
 ## 5. Residual risk
 
-1. Automated evidence already covers packaged root and extracted VSIX module smoke, sidecar smoke, pnpm metadata closure, symlink-safe payload, and IDE template smoke.
+1. Automated evidence already covers packaged root and extracted VSIX module smoke, sidecar smoke, CLI-backed secure-authoring, scratch-isolated `doctor` diagnostics capture with surfaced check totals, pnpm metadata closure, symlink-safe payload, IDE template smoke, and durable scratch-isolation fields (`smokeWorkspaceRoot`, `resolvedWorkspaceRoot`, `doctorDiagnosticsPath`) inside the immutable rerun snapshot.
 2. A real GUI extension-development-host launch or VS Code `Install from VSIX...` rehearsal remains additive manual evidence only.
 3. `command -v code` returned no executable in this environment, so the optional GUI proof path was not executed in this rerun window.

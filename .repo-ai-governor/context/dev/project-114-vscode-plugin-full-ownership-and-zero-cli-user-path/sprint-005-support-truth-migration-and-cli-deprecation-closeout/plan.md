@@ -1,6 +1,6 @@
 # sprint-005-support-truth-migration-and-cli-deprecation-closeout 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-18
 - Sprint Goal: Use plugin-first evidence to close support truth, migration guidance, and CLI deprecation posture for the zero-CLI user path.
 - Project: `project-114-vscode-plugin-full-ownership-and-zero-cli-user-path`
@@ -27,7 +27,7 @@
 | TK-981 | refresh support docs deprecation posture and adoption guidance | execute plugin-first evidence and migration rehearsal bundle | completed |
 | TK-982 | prepare project-final closeout and zero-cli delivery recommendation | refresh support docs deprecation posture and adoption guidance | completed |
 | TK-987 | close sprint-005 boundary and activate project-final reviewer loop | prepare project-final closeout and zero-cli delivery recommendation | completed |
-| TK-988 | finalize project-114 closeout and restore idle context | close sprint-005 boundary and activate project-final reviewer loop | planned |
+| TK-988 | finalize project-114 closeout and restore idle context | close sprint-005 boundary and activate project-final reviewer loop | completed |
 
 ## 3. Exit Criteria
 
@@ -42,3 +42,4 @@
 4. `2026-04-18`：`TK-979` 已切换为当前首个 implementation lane，用于冻结 support truth / migration / CLI optional posture 的 evidence-gated contract。
 5. `2026-04-18`：`TK-979 ~ TK-982` 已在同一窗口完成 contract freeze、zero-cli rehearsal evidence、public support docs refresh 与 project-final handoff 准备；当前 sprint-005 进入 implementation complete / CR pending 状态，下一步固定执行 fresh reviewer round。
 6. `2026-04-18`：sprint-005 的 `CR-001` 已 resolved，installed-VSIX public wording 与 activation-coverage runbook drift 已修复并验证；当前 sprint 保持 `active`，仅作为 project-final closeout surface 继续复用其 `tasks/` 与 `review/` 路径。
+7. `2026-04-18`：project-final delegated reviewer loop 在 `CR-009` clean 收口，`TK-988` 随后完成 completion audit、idle context restoration 与 completed history 回写；当前 sprint 的 project-final closeout 面已恢复到 `completed` 真值。

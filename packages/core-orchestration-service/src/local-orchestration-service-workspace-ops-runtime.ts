@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import {
   ConfigLoader,
@@ -33,13 +34,15 @@ import {
 import { GovernorErrorCode, RuntimeError, standardizeError } from '@repo-ai-governor/shared';
 
 const EMBEDDED_CLI_PACKAGE_SPECIFIER = '@repo-ai-governor/cli';
+const EMBEDDED_CLI_ARGV_ENVIRONMENT_KEY = 'REPO_AI_GOVERNOR_EMBEDDED_CLI_ARGV';
 const DEFAULT_USER_CONFIG_ENTRY_DELIMITER = ' | ';
 const DEFAULT_SECRET_RECORD_DELIMITER = ' | ';
 const CREDENTIAL_SELECTOR_PREFIX = 'secret://';
 const UNSAFE_LOCAL_FILE_SECRET_BACKEND_ID = 'unsafe-local-file';
 const UPGRADE_REPORT_FILE_PATTERN = /^upgrade-(\d+)\.report\.json$/u;
 const LATEST_WORKSPACE_OPERATION_SNAPSHOT_FILE_NAME = 'latest-workspace-operation.snapshot.json';
-const WORKSPACE_DOCTOR_ARGS = ['doctor', '--adapters', '--output', 'pretty'] as const;
+// Service-owned workspace ops must stay machine-readable so embedded CLI execution can be parsed.
+const WORKSPACE_DOCTOR_ARGS = ['doctor', '--adapters'] as const;
 const requireFromRuntime = createRequire(import.meta.url);
 
 interface CliCommandResultCheckPayload {
@@ -394,6 +397,16 @@ export class LocalOrchestrationServiceWorkspaceOpsRuntime {
   private resolveWorkspaceContext(): WorkspaceOpsContext {
     const currentWorkingDirectory =
       this.dependencies.repositoryRoot ?? this.dependencies.workspaceRoot;
+    const explicitWorkspaceRootOverride = this.dependencies.workspaceRoot.trim().length
+      ? this.dependencies.workspaceRoot
+      : undefined;
+    const runtimeWorkspaceOverrides = explicitWorkspaceRootOverride
+      ? {
+          runtimeOverrides: {
+            workspaceRoot: explicitWorkspaceRootOverride,
+          },
+        }
+      : {};
     const baselineWorkspace = this.workspaceResolver.resolve({
       currentWorkingDirectory,
       ...(this.dependencies.repositoryRoot
@@ -401,6 +414,7 @@ export class LocalOrchestrationServiceWorkspaceOpsRuntime {
             repositoryRootOverride: this.dependencies.repositoryRoot,
           }
         : {}),
+      ...runtimeWorkspaceOverrides,
     });
     const repositoryWorkspaceConfig = this.workspaceConfigDiscovery.loadRepositoryWorkspaceConfig(
       baselineWorkspace.repositoryRoot,
@@ -413,6 +427,7 @@ export class LocalOrchestrationServiceWorkspaceOpsRuntime {
             config: repositoryWorkspaceConfig,
           }
         : {}),
+      ...runtimeWorkspaceOverrides,
     });
 
     return {
@@ -601,23 +616,38 @@ export class LocalOrchestrationServiceWorkspaceOpsRuntime {
     stdin?: string;
     locale?: string;
   }): Promise<CliSuccessOutputPayload> {
-    const cliEntryPath = this.resolveEmbeddedCliEntryPath(request.locale);
+    const cliModulePath = this.resolveEmbeddedCliModulePath(request.locale);
+    const context = this.resolveWorkspaceContext();
+    const cliArgv = [
+      '--locale',
+      this.normalizeLocale(request.locale),
+      '--output',
+      'json',
+      '--no-color',
+      '--no-interactive',
+      '--workspace-mode',
+      context.workspaceMode,
+      '--workspace-root',
+      context.workspaceRoot,
+      ...request.args,
+    ];
     return new Promise<CliSuccessOutputPayload>((resolvePromise, reject) => {
       const childProcess = spawn(
         process.execPath,
         [
-          cliEntryPath,
-          '--locale',
-          this.normalizeLocale(request.locale),
-          '--output',
-          'json',
-          '--no-color',
-          '--no-interactive',
-          ...request.args,
+          '--input-type=module',
+          '--eval',
+          this.renderEmbeddedCliBootstrapSource(
+            cliModulePath,
+            this.resolveEmbeddedCliBootstrapFailureMessage(request.locale),
+          ),
         ],
         {
           cwd: request.currentWorkingDirectory,
-          env: process.env,
+          env: {
+            ...process.env,
+            [EMBEDDED_CLI_ARGV_ENVIRONMENT_KEY]: JSON.stringify(cliArgv),
+          },
           stdio: 'pipe',
         },
       );
@@ -678,7 +708,7 @@ export class LocalOrchestrationServiceWorkspaceOpsRuntime {
     });
   }
 
-  private resolveEmbeddedCliEntryPath(locale?: string): string {
+  private resolveEmbeddedCliModulePath(locale?: string): string {
     try {
       return requireFromRuntime.resolve(EMBEDDED_CLI_PACKAGE_SPECIFIER);
     } catch (error) {
@@ -693,6 +723,26 @@ export class LocalOrchestrationServiceWorkspaceOpsRuntime {
         error,
       );
     }
+  }
+
+  private renderEmbeddedCliBootstrapSource(cliModulePath: string, failureMessage: string): string {
+    return [
+      `const cliModule = await import(${JSON.stringify(pathToFileURL(cliModulePath).href)});`,
+      "if (typeof cliModule.runCli !== 'function') {",
+      `  process.stderr.write(JSON.stringify({ error_code: ${JSON.stringify(GovernorErrorCode.UNKNOWN)}, message: ${JSON.stringify(failureMessage)} }));`,
+      '  process.exit(1);',
+      '}',
+      `const cliArgv = JSON.parse(process.env.${EMBEDDED_CLI_ARGV_ENVIRONMENT_KEY} ?? '[]');`,
+      "process.exitCode = await cliModule.runCli(['node', 'repo-ai-governor', ...cliArgv]);",
+    ].join('\n');
+  }
+
+  private resolveEmbeddedCliBootstrapFailureMessage(locale?: string): string {
+    return this.localizeText(
+      locale,
+      'The embedded CLI module did not expose runCli().',
+      '当前内嵌 CLI 模块未导出 runCli()。',
+    );
   }
 
   private tryParseJsonPayload(content: string): CliSuccessOutputPayload | undefined {

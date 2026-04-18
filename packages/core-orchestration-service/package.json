@@ -26,6 +26,7 @@
     }
   },
   "dependencies": {
+    "@repo-ai-governor/config": "workspace:*",
     "@repo-ai-governor/artifact-registry": "workspace:*",
     "@repo-ai-governor/core-memory": "workspace:*",
     "@repo-ai-governor/core-runtime-langgraph": "workspace:*",

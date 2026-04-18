@@ -1,6 +1,6 @@
 # project-114-vscode-plugin-full-ownership-and-zero-cli-user-path 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-18
 - Stage Mapping: technical solution rollout follow-up
 - Phase Mapping: plugin-full-ownership contract / zero-cli bootstrap / service-native adopt-host / plugin-primary authoring / support-truth migration
@@ -47,7 +47,7 @@
 
 ## 2.5 sprint-005-support-truth-migration-and-cli-deprecation-closeout
 
-- Status: active
+- Status: completed
 - Sprint Goal: Use plugin-first evidence to close support truth, migration guidance, and CLI deprecation posture for the zero-CLI user path.
 - Task Package: `TK-979、TK-980、TK-981、TK-982、TK-987、TK-988`
 
@@ -80,7 +80,7 @@
 | TK-981 | sprint-005-support-truth-migration-and-cli-deprecation-closeout | refresh support docs deprecation posture and adoption guidance | support truth package | execute plugin-first evidence and migration rehearsal bundle | completed |
 | TK-982 | sprint-005-support-truth-migration-and-cli-deprecation-closeout | prepare project-final closeout and zero-cli delivery recommendation | project closeout handoff | refresh support docs deprecation posture and adoption guidance | completed |
 | TK-987 | sprint-005-support-truth-migration-and-cli-deprecation-closeout | close sprint-005 boundary and activate project-final reviewer loop | sprint closeout | prepare project-final closeout and zero-cli delivery recommendation | completed |
-| TK-988 | sprint-005-support-truth-migration-and-cli-deprecation-closeout | finalize project-114 closeout and restore idle context | project final closeout | close sprint-005 boundary and activate project-final reviewer loop | planned |
+| TK-988 | sprint-005-support-truth-migration-and-cli-deprecation-closeout | finalize project-114 closeout and restore idle context | project final closeout | close sprint-005 boundary and activate project-final reviewer loop | completed |
 
 ## 4. 依赖产物策略
 
@@ -105,7 +105,8 @@
 7. 2026-04-18：sprint-004 已完成 fresh reviewer loop 与 closeout；automation queue inline action 的 context-loss 回归已修复并验证，current-context 已切换到 sprint-005-support-truth-migration-and-cli-deprecation-closeout 作为新的 active execution surface，同时预留 sprint-005 `CR-001`。
 8. 2026-04-18：sprint-005 implementation boundary 已完成：zero-cli support-truth contract、distribution snapshot、zero-cli rehearsal summary、README/support matrix/playbook 刷新与 project-final handoff 已全部落盘，当前窗口进入 sprint-005 delegated CR loop。
 9. 2026-04-18：sprint-005 fresh reviewer round `CR-001` 已 resolved，installed-VSIX public wording 与 activation-coverage runbook drift 已修复并验证；当前窗口完成 sprint-005 boundary closeout 写回并准备本地 sprint commit，随后进入 project-final fresh reviewer loop。
+10. 2026-04-18：project-final delegated reviewer loop 在 `CR-009` clean 收口；`TK-988` 已完成 completion audit、idle context restoration 与 completed-stream history 回写，`project-114` 正式切换为 `completed`。
 
 ## 7. 里程碑记录入口
 
-1. 待 closeout 后补齐 completion audit summary。
+1. `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path-completion-audit-summary.md`

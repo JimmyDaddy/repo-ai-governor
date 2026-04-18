@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import { pathToFileURL } from 'node:url';
 
 import * as vscode from 'vscode';
 
@@ -59,6 +60,7 @@ import type {
 
 const EXECUTION_LOOKUP_LIMIT = 20;
 const EMBEDDED_CLI_PACKAGE_SPECIFIER = '@repo-ai-governor/cli';
+const EMBEDDED_CLI_ARGV_ENVIRONMENT_KEY = 'REPO_AI_GOVERNOR_EMBEDDED_CLI_ARGV';
 const DEFAULT_USER_CONFIG_ENTRY_DELIMITER = ' | ';
 const DEFAULT_SECRET_RECORD_DELIMITER = ' | ';
 const CREDENTIAL_SELECTOR_PREFIX = 'secret://';
@@ -1210,23 +1212,33 @@ export class VsCodeExtensionServiceRuntime {
   private async executeEmbeddedCliCommand(
     request: VsCodeExtensionEmbeddedCliRequest,
   ): Promise<unknown> {
-    const cliEntryPath = this.resolveEmbeddedCliEntryPath();
+    const cliModulePath = this.resolveEmbeddedCliModulePath();
+    const cliArgv = [
+      '--locale',
+      this.resolveEmbeddedCliLocale(),
+      '--output',
+      'json',
+      '--no-color',
+      '--no-interactive',
+      ...request.args,
+    ];
     return new Promise<unknown>((resolvePromise, reject) => {
       const childProcess = spawn(
         process.execPath,
         [
-          cliEntryPath,
-          '--locale',
-          this.resolveEmbeddedCliLocale(),
-          '--output',
-          'json',
-          '--no-color',
-          '--no-interactive',
-          ...request.args,
+          '--input-type=module',
+          '--eval',
+          this.renderEmbeddedCliBootstrapSource(
+            cliModulePath,
+            this.resolveEmbeddedCliBootstrapFailureMessage(),
+          ),
         ],
         {
           cwd: request.currentWorkingDirectory,
-          env: process.env,
+          env: {
+            ...process.env,
+            [EMBEDDED_CLI_ARGV_ENVIRONMENT_KEY]: JSON.stringify(cliArgv),
+          },
           stdio: 'pipe',
         },
       );
@@ -1287,7 +1299,7 @@ export class VsCodeExtensionServiceRuntime {
     });
   }
 
-  private resolveEmbeddedCliEntryPath(): string {
+  private resolveEmbeddedCliModulePath(): string {
     try {
       return requireFromRuntime.resolve(EMBEDDED_CLI_PACKAGE_SPECIFIER);
     } catch (error) {
@@ -1302,9 +1314,32 @@ export class VsCodeExtensionServiceRuntime {
     }
   }
 
+  private renderEmbeddedCliBootstrapSource(cliModulePath: string, failureMessage: string): string {
+    return [
+      `const cliModule = await import(${JSON.stringify(pathToFileURL(cliModulePath).href)});`,
+      "if (typeof cliModule.runCli !== 'function') {",
+      `  process.stderr.write(JSON.stringify({ error_code: ${JSON.stringify(GovernorErrorCode.UNKNOWN)}, message: ${JSON.stringify(failureMessage)} }));`,
+      '  process.exit(1);',
+      '}',
+      `const cliArgv = JSON.parse(process.env.${EMBEDDED_CLI_ARGV_ENVIRONMENT_KEY} ?? '[]');`,
+      "process.exitCode = await cliModule.runCli(['node', 'repo-ai-governor', ...cliArgv]);",
+    ].join('\n');
+  }
+
+  private resolveEmbeddedCliBootstrapFailureMessage(): string {
+    return this.localizeText(
+      'The embedded CLI module did not expose runCli().',
+      '当前内嵌 CLI 模块未导出 runCli()。',
+    );
+  }
+
   private resolveEmbeddedCliLocale(): string {
     const normalizedLanguage = vscode.env.language.trim();
     return normalizedLanguage.length > 0 ? normalizedLanguage : 'en-US';
+  }
+
+  private localizeText(english: string, chinese: string): string {
+    return vscode.env.language.trim().toLowerCase().startsWith('zh') ? chinese : english;
   }
 
   private tryParseJsonPayload(content: string): unknown {

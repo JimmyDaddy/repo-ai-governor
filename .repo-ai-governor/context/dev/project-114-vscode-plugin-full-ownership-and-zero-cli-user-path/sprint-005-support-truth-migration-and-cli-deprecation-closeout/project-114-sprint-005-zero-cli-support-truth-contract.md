@@ -25,7 +25,7 @@
 
 1. Public support wording may only stay promoted when the sprint-005 evidence window includes:
    - extension workbench/runtime verification
-   - one fresh packaged-distribution verification report
+   - one fresh packaged-distribution verification report with packaged-root + extracted-VSIX module smoke, sidecar smoke, and CLI-backed secure-authoring + `doctor` smoke
    - `pnpm pack --json --dry-run`
    - `pnpm run check:ide-entry-smoke`
    - `pnpm run check:ide-docs-parity`

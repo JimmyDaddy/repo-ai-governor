@@ -23,9 +23,42 @@
   - 2026-04-18：任务创建，状态初始化为 `planned`。
   - 2026-04-18：sprint-005 的 `CR-001` 已完成 `review_pending -> verified -> resolved` 全流程，fresh reviewer 提出的 installed-VSIX wording / activation-coverage drift 均已修复并通过 targeted vitest、`pnpm run build`、`pnpm run check:ide-docs-parity`、governance gates 与 `pnpm run check`。
   - 2026-04-18：project plan、sprint plan 与 `current-context.md` 已写回 sprint-005 clean / project-final-next 的当前真值；当前任务切换为 `completed`，下一步固定执行 sprint-005 boundary local commit 并启动 project-final fresh reviewer loop。
-- [ ] TK-988 finalize project-114 closeout and restore idle context
+- [x] TK-988 finalize project-114 closeout and restore idle context
   - 2026-04-18：任务创建，状态初始化为 `planned`。
+  - 2026-04-18：project-final delegated reviewer loop 在 `CR-009` clean 收口，machine-readable findings 为 `[]`；随后写入 `project-114` completion audit summary，将 project / sprint 计划面恢复为 `completed`，并把 `current-context.md` 恢复到 idle。
+  - 2026-04-18：本次 closeout delta 仅包含治理台账、completion audit 与上下文恢复；未再修改 `apps/**`、`packages/**`、`scripts/**` 或 `test/**` 的可执行代码，因此沿用 `CR-009` 同窗口的真实 `pnpm run build` 证据，并额外重跑 task-ledger / review / worktree gates 与 `pnpm run check` 后将当前任务切换为 `completed`。
 - [x] CR-001 sprint-005-support-truth-migration-and-cli-deprecation-closeout delegated review loop round 1
   - 2026-04-18：随着 sprint-005 activation 完成，预留 `CR-001` 作为本 sprint 的首轮 fresh reviewer 编号，状态初始化为 `review_pending`。
   - 2026-04-18：fresh reviewer round `working-tree-20260418-1606` 已完成，主 agent 复核后认可两条 findings：一条要求收紧 installed-VSIX public wording 到当前 proof boundary，另一条要求把 activation coverage 补回 maintainer rerun command；当前任务推进到 `verified`。
   - 2026-04-18：accepted findings 已全部修复并验证：public support wording 已收敛到 packaged-root / extracted-VSIX 的当前 proof boundary，maintainer runbook 与 README verification slice 已补回 activation coverage；当前任务推进到 `resolved`。
+- [x] CR-002 project-114-vscode-plugin-full-ownership-and-zero-cli-user-path final delegated review loop round 2
+  - 2026-04-18：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-18：fresh reviewer round `working-tree-20260418-1628` 已完成，主 agent 复核后认可两条 findings：一条要求补齐 packaged zero-cli path 的 CLI dependency / executable bootstrap / CLI-backed smoke 合同，另一条要求把 public support truth 与 sprint-local evidence 收敛到新的 prove chain；当前任务推进到 `verified`。
+  - 2026-04-18：accepted findings 已全部修复并验证：packaged root / extracted VSIX 现在都通过 module / sidecar / CLI-backed secure-authoring + `doctor` smoke，support docs 与 sprint-local evidence 也已同步回链新的 immutable snapshot；当前任务推进到 `resolved`。
+- [x] CR-003 project-114-vscode-plugin-full-ownership-and-zero-cli-user-path delegated recheck loop round 3
+  - 2026-04-18：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-18：fresh reviewer round `working-tree-20260418-1715` 已完成，主 agent 复核后认可一条 finding：project-final handoff 仍回链 pre-fix `20260418T075344Z` snapshot，必须与当前 zero-cli support truth / rehearsal summary 使用的 `20260418T090755Z` immutable evidence 对齐；当前任务推进到 `verified`。
+  - 2026-04-18：accepted finding 已全部修复并验证：project-final handoff、README、maintainer playbook 与 sprint-local summary 现已统一回链 `20260418T090755Z` immutable snapshot，并收敛到 `.tmp/project-114-project-final-vscode-distribution-report.json` / `.tmp/project-114-project-final-pack-dry-run.json` scratch output；当前任务推进到 `resolved`。
+- [x] CR-004 project-114-vscode-plugin-full-ownership-and-zero-cli-user-path delegated recheck loop round 4
+  - 2026-04-18：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-18：fresh reviewer round `working-tree-20260418-1737` 已完成，主 agent 复核后认可两条 findings：其一要求把 packaged/extracted CLI-backed smoke 从真实 workspace truth 隔离出去，其二要求把 embedded CLI bootstrap failure copy 收敛回 locale-aware i18n 契约；当前任务推进到 `verified`。
+  - 2026-04-18：accepted findings 已全部修复并验证：distribution verify 现改为在 packaging `workingRoot` 下运行隔离 smoke workspace，embedded CLI bootstrap failure copy 也已恢复 locale-aware 输出；targeted vitest、integration、`pnpm run build`、distribution verify、pack dry-run、IDE smoke/docs parity、governance gates 与 `pnpm run check` 全部通过，当前任务推进到 `resolved`。
+- [x] CR-005 project-114-vscode-plugin-full-ownership-and-zero-cli-user-path delegated recheck loop round 5
+  - 2026-04-18：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-18：fresh reviewer round `working-tree-20260418-1804` 已完成，主 agent 复核后认可两条 findings：其一要求把 embedded CLI 的 `--workspace-root` override 真正贯通到 CLI runtime / workspace resolver，其二要求让 release integration 与 distribution gate 同时覆盖 scratch-isolation contract；当前任务推进到 `verified`。
+  - 2026-04-18：accepted findings 已全部修复并验证：CLI runtime 现在会消费顶层 `--workspace-root` 并通过 `WorkspaceResolver` 显式覆盖最终 workspace root，distribution verify 也会把 `workspace_root` / `doctor_diagnostics.path` 越界视为硬失败；新增 packages/config regression test 与真实 release integration 均已通过，连同 `pnpm run build`、distribution verify、pack dry-run、IDE smoke/docs parity、governance gates 与 `pnpm run check` 一并全绿，当前任务推进到 `resolved`。
+- [x] CR-006 project-114-vscode-plugin-full-ownership-and-zero-cli-user-path final delegated review loop round 6
+  - 2026-04-18：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-18：fresh reviewer round `working-tree-20260418-1908` 已完成，主 agent 复核后认可三条 findings：其一要求让 `LocalOrchestrationServiceWorkspaceOpsRuntime` 的构造参数 `workspaceRoot` 真正进入生产 `resolveWorkspaceContext()` 路径，其二要求 release verifier 去掉 custom resolver shim 并直接证明 constructor-level scratch root 合同，其三要求把 VS Code embedded CLI bootstrap failure message 接回 `localizeText` i18n bridge；当前任务推进到 `verified`。
+  - 2026-04-18：accepted findings 已全部修复并验证：workspace-ops runtime 现在会通过 `runtimeOverrides.workspaceRoot` 消费构造参数 scratch root，release verifier 也已移除 custom resolver shim 并要求 `resolvedWorkspaceRoot === smokeWorkspaceRoot`，VS Code bootstrap failure copy 则通过 localizeText helper 输出；targeted vitest、真实 release integration、`pnpm run build`、distribution verify 与 `pnpm run check` 全部通过，当前任务推进到 `resolved`。
+- [x] CR-007 project-114-vscode-plugin-full-ownership-and-zero-cli-user-path final delegated review loop round 7
+  - 2026-04-18：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-18：fresh reviewer round `working-tree-20260418-1948` 已完成，主 agent 复核后认可一条 findings：当前 support-truth / sprint-local handoff 仍回链到旧的 immutable distribution snapshot，未把最新 rerun 的 scratch-isolation 证据提升为新的权威 snapshot；当前任务推进到 `verified`。
+  - 2026-04-18：accepted finding 已修复并验证：最新 `.tmp/project-114-project-final-vscode-distribution-report.json` 已提升为 `project-114-sprint-005-vscode-distribution-report-20260418T120910Z.json`，`docs/support-matrix*`、maintainer playbook、zero-cli rehearsal summary 与 project-final handoff 均已回链到新 snapshot；distribution verify、docs parity、governance sync checks 与 `pnpm run check` 全部通过，当前任务推进到 `resolved`。
+- [x] CR-008 project-114-vscode-plugin-full-ownership-and-zero-cli-user-path final delegated review loop round 8
+  - 2026-04-18：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-18：fresh reviewer round `working-tree-20260418-2021` 已完成，主 agent 复核后认可两条 findings：其一指出 `core-orchestration-service` 反向声明了对 CLI app 的 package 依赖，违反仓库依赖方向约束；其二指出 packaged VSIX verifier 与 support truth 把 CLI-backed `doctor` 结果说得比当前 gate 实际证明的更强。当前任务推进到 `verified`。
+  - 2026-04-18：accepted findings 已全部修复并验证：`packages/core-orchestration-service/package.json` 已移除对 `@repo-ai-governor/cli` 的反向依赖，lockfile 与 packaging-boundary test 已同步到“extension 持有 CLI、core 不反向持有”的 package-graph 契约；release verifier / integration test / public docs 则统一收敛到“CLI-backed secure-authoring + scratch-isolated doctor diagnostics capture with surfaced check totals”这一支持口径，并把最新 rerun 证据提升为 `project-114-sprint-005-vscode-distribution-report-20260418T124824Z.json`。targeted vitest、integration、`pnpm run build`、distribution verify、docs parity 与 `pnpm run check` 全部通过，当前任务推进到 `resolved`。
+- [x] CR-009 project-114-vscode-plugin-full-ownership-and-zero-cli-user-path final delegated review loop round 9
+  - 2026-04-18：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-18：fresh reviewer round `working-tree-20260418-2100` 已完成，machine-readable findings 为 `[]`。主 agent 复核后确认本轮没有新的 actionable finding；reviewer 只保留一条 residual testing-gap note，指出 CLI output-contract 的完整矩阵未整套重跑，但其额外 spot-check 的 `cli-output-contract.integration.test.ts` stable JSON case 与临时 `workspace execute --workspace-mode repo_local` 路径均正常，因此该观察项不阻断 project-final closeout。沿用本轮已通过的 `pnpm install --lockfile-only`、targeted vitest、integration、`pnpm run build`、distribution verify、`pnpm run check:ide-docs-parity`、`pnpm run check` 与治理校验结果，将当前任务直接推进到 `resolved`。

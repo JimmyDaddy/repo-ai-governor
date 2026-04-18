@@ -1,0 +1,63 @@
+{
+  "status": "pass",
+  "vsixPath": "/Users/jimmydaddy/study/ai-governor/.tmp/release-vscode-extension-package/cjhdev.repo-ai-governor-vscode-0.0.1.vsix",
+  "packageRoot": "/Users/jimmydaddy/study/ai-governor/.tmp/release-vscode-extension-package/packaged-extension",
+  "archiveEntriesChecked": [
+    "extension/package.json",
+    "extension/package.nls.json",
+    "extension/package.nls.zh-cn.json",
+    "extension/readme.md",
+    "extension/resources/governor.svg",
+    "extension/dist/src/extension.js",
+    "extension/dist/src/index.js",
+    "extension/node_modules/.modules.yaml",
+    "extension/node_modules/.pnpm/lock.yaml",
+    "extension/node_modules/@repo-ai-governor/cli/package.json",
+    "extension/node_modules/@repo-ai-governor/config/package.json"
+  ],
+  "packageSymlinks": [],
+  "moduleSmoke": {
+    "mainEntry": "/Users/jimmydaddy/study/ai-governor/.tmp/release-vscode-extension-package/packaged-extension/dist/src/extension.js",
+    "exportEntry": "/Users/jimmydaddy/study/ai-governor/.tmp/release-vscode-extension-package/packaged-extension/dist/src/index.js"
+  },
+  "packageSidecarSmoke": {
+    "serviceLifecycle": "ready",
+    "queueGeneratedAt": "2026-04-18T12:07:45.818Z"
+  },
+  "packageCliBackedSmoke": {
+    "smokeWorkspaceRoot": "/Users/jimmydaddy/study/ai-governor/.tmp/release-vscode-extension-package/cli-backed-smoke-workspaces/packaged-root",
+    "secureAuthoringDegradedReason": null,
+    "doctorOperation": "env_doctor",
+    "doctorSummary": "Doctor completed with attach_mode=read_write.",
+    "doctorDiagnosticsPath": "/Users/jimmydaddy/study/ai-governor/.tmp/release-vscode-extension-package/cli-backed-smoke-workspaces/packaged-root/context/diagnostics/doctor/doctor-1776514067578.json",
+    "resolvedWorkspaceRoot": "/Users/jimmydaddy/study/ai-governor/.tmp/release-vscode-extension-package/cli-backed-smoke-workspaces/packaged-root",
+    "doctorCheckTotals": {
+      "pass": 12,
+      "warn": 6,
+      "fail": 0
+    }
+  },
+  "extractedExtensionRoot": "/Users/jimmydaddy/study/ai-governor/.tmp/release-vscode-extension-package/vsix-extracted/extension",
+  "extractedSymlinks": [],
+  "installedModuleSmoke": {
+    "mainEntry": "/Users/jimmydaddy/study/ai-governor/.tmp/release-vscode-extension-package/vsix-extracted/extension/dist/src/extension.js",
+    "exportEntry": "/Users/jimmydaddy/study/ai-governor/.tmp/release-vscode-extension-package/vsix-extracted/extension/dist/src/index.js"
+  },
+  "installedSidecarSmoke": {
+    "serviceLifecycle": "ready",
+    "queueGeneratedAt": "2026-04-18T12:08:25.894Z"
+  },
+  "installedCliBackedSmoke": {
+    "smokeWorkspaceRoot": "/Users/jimmydaddy/study/ai-governor/.tmp/release-vscode-extension-package/cli-backed-smoke-workspaces/installed-vsix",
+    "secureAuthoringDegradedReason": null,
+    "doctorOperation": "env_doctor",
+    "doctorSummary": "Doctor completed with attach_mode=read_write.",
+    "doctorDiagnosticsPath": "/Users/jimmydaddy/study/ai-governor/.tmp/release-vscode-extension-package/cli-backed-smoke-workspaces/installed-vsix/context/diagnostics/doctor/doctor-1776514109685.json",
+    "resolvedWorkspaceRoot": "/Users/jimmydaddy/study/ai-governor/.tmp/release-vscode-extension-package/cli-backed-smoke-workspaces/installed-vsix",
+    "doctorCheckTotals": {
+      "pass": 12,
+      "warn": 6,
+      "fail": 0
+    }
+  }
+}

@@ -226,6 +226,21 @@ describe('LocalOrchestrationServiceWorkspaceOpsRuntime', () => {
     });
   });
 
+  it('honors the constructor workspaceRoot override even when repositoryRoot is present', async () => {
+    const runtime = new LocalOrchestrationServiceWorkspaceOpsRuntime({
+      workspaceRoot: '/tmp/scratch-workspace/.repo-ai-governor',
+      repositoryRoot: '/repo',
+      pathExists: () => false,
+      cliExecutor: vi.fn(),
+    });
+
+    await expect(runtime.queryBootstrapReadiness()).resolves.toMatchObject({
+      repositoryRoot: '/repo',
+      workspaceRoot: '/tmp/scratch-workspace/.repo-ai-governor',
+      configPath: '/tmp/scratch-workspace/.repo-ai-governor/governor.yaml',
+    });
+  });
+
   it('passes the explicit upgrade confirmation decision through to the CLI layer', async () => {
     const { runtime, cliExecutor } = createWorkspaceOpsRuntime();
 
@@ -250,7 +265,7 @@ describe('LocalOrchestrationServiceWorkspaceOpsRuntime', () => {
     });
   });
 
-  it('routes doctor through the adapter-readiness CLI variant', async () => {
+  it('routes doctor through the adapter-readiness CLI variant without overriding service-owned json output', async () => {
     const { runtime, cliExecutor } = createWorkspaceOpsRuntime();
 
     await runtime.runWorkspaceOperation({
@@ -258,10 +273,31 @@ describe('LocalOrchestrationServiceWorkspaceOpsRuntime', () => {
     });
 
     expect(cliExecutor).toHaveBeenCalledWith({
-      args: ['doctor', '--adapters', '--output', 'pretty'],
+      args: ['doctor', '--adapters'],
       currentWorkingDirectory: '/repo',
       locale: undefined,
     });
+  });
+
+  it('localizes embedded CLI bootstrap failure copy before injecting it into the child process', () => {
+    const { runtime } = createWorkspaceOpsRuntime();
+
+    const zhBootstrapSource = (
+      runtime as unknown as {
+        renderEmbeddedCliBootstrapSource: (cliModulePath: string, failureMessage: string) => string;
+        resolveEmbeddedCliBootstrapFailureMessage: (locale?: string) => string;
+      }
+    ).renderEmbeddedCliBootstrapSource(
+      '/repo/node_modules/@repo-ai-governor/cli/dist/src/index.js',
+      (
+        runtime as unknown as {
+          resolveEmbeddedCliBootstrapFailureMessage: (locale?: string) => string;
+        }
+      ).resolveEmbeddedCliBootstrapFailureMessage('zh-CN'),
+    );
+
+    expect(zhBootstrapSource).toContain('当前内嵌 CLI 模块未导出 runCli()。');
+    expect(zhBootstrapSource).not.toContain('Embedded CLI module did not expose runCli().');
   });
 
   it('captures layered logs and the latest service-owned workspace-operation snapshot', async () => {

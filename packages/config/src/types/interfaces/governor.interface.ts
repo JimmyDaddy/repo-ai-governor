@@ -38,6 +38,7 @@ export interface WorkspaceRuntimeOverrides {
   mode?: WorkspaceMode;
   toolManagedRoot?: string;
   repoLocalRoot?: string;
+  workspaceRoot?: string;
 }
 
 /**

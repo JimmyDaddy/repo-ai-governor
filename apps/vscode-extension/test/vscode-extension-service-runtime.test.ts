@@ -242,6 +242,28 @@ describe('VsCodeExtensionServiceRuntime', () => {
     });
   });
 
+  it('localizes embedded CLI bootstrap failure copy from the active VS Code locale', () => {
+    vscodeMock.state.language = 'zh-CN';
+    const runtime = new VsCodeExtensionServiceRuntime();
+
+    const zhBootstrapSource = (
+      runtime as unknown as {
+        renderEmbeddedCliBootstrapSource: (cliModulePath: string, failureMessage: string) => string;
+        resolveEmbeddedCliBootstrapFailureMessage: () => string;
+      }
+    ).renderEmbeddedCliBootstrapSource(
+      '/repo/node_modules/@repo-ai-governor/cli/dist/src/index.js',
+      (
+        runtime as unknown as {
+          resolveEmbeddedCliBootstrapFailureMessage: () => string;
+        }
+      ).resolveEmbeddedCliBootstrapFailureMessage(),
+    );
+
+    expect(zhBootstrapSource).toContain('当前内嵌 CLI 模块未导出 runCli()。');
+    expect(zhBootstrapSource).not.toContain('Embedded CLI module did not expose runCli().');
+  });
+
   it('resolves workbench overview from the service-owned queue seam', async () => {
     serviceClientMock.getHealth.mockResolvedValueOnce({
       serviceHostKind: OrchestrationServiceHostKind.SIDECAR,

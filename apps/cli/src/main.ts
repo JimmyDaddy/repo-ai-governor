@@ -435,6 +435,7 @@ export async function runCli(
       commandName,
       adoptCommandOptions,
     );
+    const runtimeWorkspaceRootOverride = resolveRuntimeWorkspaceRootOverride(rawArgs);
     const runtimeContext = resolveRuntimeContext(
       io.cwd(),
       requestedProfileId ?? undefined,
@@ -444,6 +445,7 @@ export async function runCli(
       undefined,
       runtimeRepositoryRootOverride,
       runtimeWorkspaceModeOverride,
+      runtimeWorkspaceRootOverride,
     );
     const configCommandOptions = resolveConfigCommandOptions(rawArgs);
     const secretCommandOptions = resolveSecretCommandOptions(rawArgs);
@@ -1731,6 +1733,7 @@ function resolveRuntimeContext(
   }),
   repositoryRootOverride?: string,
   workspaceModeOverride?: ResolvedWorkspace['mode'],
+  workspaceRootOverride?: string,
 ): ResolvedCliRuntimeContext {
   const configLoader = new ConfigLoader();
   const profileResolver = new ProfileResolver();
@@ -1738,13 +1741,23 @@ function resolveRuntimeContext(
   const runtimeRepositoryRoot = repositoryRootOverride
     ? resolve(repositoryRootOverride)
     : resolve(currentWorkingDirectory);
-  const explicitRuntimeWorkspaceOverrides = workspaceModeOverride
-    ? {
-        runtimeOverrides: {
-          mode: workspaceModeOverride,
-        },
-      }
-    : {};
+  const explicitRuntimeWorkspaceOverrides =
+    workspaceModeOverride || workspaceRootOverride
+      ? {
+          runtimeOverrides: {
+            ...(workspaceModeOverride
+              ? {
+                  mode: workspaceModeOverride,
+                }
+              : {}),
+            ...(workspaceRootOverride
+              ? {
+                  workspaceRoot: workspaceRootOverride,
+                }
+              : {}),
+          },
+        }
+      : {};
   const defaultWorkspace = workspaceResolver.resolve({
     currentWorkingDirectory: runtimeRepositoryRoot,
     repositoryRootOverride,
@@ -1806,10 +1819,19 @@ function resolveRuntimeContext(
   const fallbackWorkspace = workspaceResolver.resolve({
     currentWorkingDirectory: runtimeRepositoryRoot,
     repositoryRootOverride,
-    ...(effectiveRuntimeWorkspaceMode
+    ...(effectiveRuntimeWorkspaceMode || workspaceRootOverride
       ? {
           runtimeOverrides: {
-            mode: effectiveRuntimeWorkspaceMode,
+            ...(effectiveRuntimeWorkspaceMode
+              ? {
+                  mode: effectiveRuntimeWorkspaceMode,
+                }
+              : {}),
+            ...(workspaceRootOverride
+              ? {
+                  workspaceRoot: workspaceRootOverride,
+                }
+              : {}),
           },
         }
       : {}),
@@ -1853,6 +1875,10 @@ function resolveRuntimeWorkspaceModeOverride(
   }
 
   return adoptCommandOptions.workspaceMode ?? undefined;
+}
+
+function resolveRuntimeWorkspaceRootOverride(args: string[]): string | undefined {
+  return readOptionValue(args, '--workspace-root') ?? undefined;
 }
 
 function buildDefaultGovernorConfig(workspaceMode: ResolvedWorkspace['mode']): GovernorConfig {

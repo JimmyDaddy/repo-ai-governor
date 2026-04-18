@@ -9,12 +9,11 @@
 
 1. Support-truth contract freeze is recorded in `project-114-sprint-005-zero-cli-support-truth-contract.md`.
 2. Zero-CLI evidence is recorded in `project-114-sprint-005-zero-cli-rehearsal-summary.md`.
-3. The immutable VS Code distribution snapshot is recorded in `project-114-sprint-005-vscode-distribution-report-20260418T075344Z.json`.
+3. The immutable VS Code distribution snapshot is recorded in `project-114-sprint-005-vscode-distribution-report-20260418T124824Z.json`, which is the post-fix rerun snapshot that carries the packaged/extracted CLI-backed smoke workspace-isolation fields.
 4. Public support docs now describe VS Code as the primary human-facing workbench for built-source checkout plus local VSIX, while CLI remains the optional automation/scriptable/session-shell path.
 
-## 2. Remaining closeout sequence
+## 2. Closeout sequence completed
 
-1. Sync `TK-979` through `TK-982` and render the sprint ledger views.
-2. Run the sprint-005 delegated fresh reviewer round and resolve any actionable findings.
-3. Close the sprint boundary and create the local sprint commit.
-4. Run the project-final delegated reviewer round, then write the completion audit summary and restore `current-context.md` to idle.
+1. `TK-979` through `TK-982` have been synchronized into the sprint ledger views.
+2. sprint-005 delegated reviewer rounds and the project-final delegated reviewer loop have both closed clean, with `CR-009` returning `[]`.
+3. The sprint boundary, project completion audit, and idle-context restoration are complete, so the remaining delivery step is only the final local project commit.

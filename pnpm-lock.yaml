@@ -174,6 +174,12 @@ importers:
 
   apps/vscode-extension:
     dependencies:
+      '@repo-ai-governor/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@repo-ai-governor/config':
+        specifier: workspace:*
+        version: link:../../packages/config
       '@repo-ai-governor/core-orchestration-service':
         specifier: workspace:*
         version: link:../../packages/core-orchestration-service
@@ -294,6 +300,9 @@ importers:
       '@repo-ai-governor/artifact-registry':
         specifier: workspace:*
         version: link:../artifact-registry
+      '@repo-ai-governor/config':
+        specifier: workspace:*
+        version: link:../config
       '@repo-ai-governor/core-memory':
         specifier: workspace:*
         version: link:../core-memory

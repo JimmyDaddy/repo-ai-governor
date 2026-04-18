@@ -140,7 +140,7 @@ pnpm run check:examples-smoke
 ```bash
 pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test/vscode-extension-contract.test.ts apps/vscode-extension/test/vscode-extension-host.activation.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-service-runtime.test.ts apps/vscode-extension/test/vscode-extension-selection-store.test.ts apps/vscode-extension/test/vscode-extension-packaging-boundary.test.ts
 pnpm run build
-pnpm run release:verify-vscode-extension-distribution -- --output .tmp/project-114-sprint-005-vscode-distribution-report.json
+pnpm run release:verify-vscode-extension-distribution -- --output .tmp/project-114-project-final-vscode-distribution-report.json
 pnpm pack --json --dry-run
 pnpm run check:ide-entry-smoke
 pnpm run check:ide-docs-parity
@@ -152,8 +152,8 @@ pnpm run check:ide-docs-parity
 code --extensionDevelopmentPath <governor-repo>/apps/vscode-extension <target-repo>
 ```
 
-这一轮 VS Code refresh 现在要求 packaged extension root 与 extracted VSIX 两个视角都通过 module smoke、sidecar smoke、pnpm metadata 闭包检查与 symlink payload 白名单检查；只有在这组证据与 support docs 同窗收口后，才允许公开切到 `primary_workbench_claim`。
-这组 rerun 还要同时验证 zero-cli human path 的公开叙事：支持面已经不再是“CLI first、VS Code second”，而是“VS Code 承接支持范围内的人类工作，CLI 退到 optional automation / scriptable / session-shell 用途”。`.tmp/project-114-sprint-005-vscode-distribution-report.json` 只应作为本轮 rerun 的工作输出；在刷新 `docs/support-matrix*` 或任何 maintainer 回链之前，先把它提升为当前 active sprint 下带时间戳的 immutable snapshot，并和 sprint-local 的 zero-cli rehearsal summary 成对回链。
+这一轮 VS Code refresh 现在要求 packaged extension root 与 extracted VSIX 两个视角都通过 module smoke、sidecar smoke、CLI-backed secure-authoring、带有 check totals 读回的 scratch-isolated `doctor` diagnostics capture、pnpm metadata 闭包检查与 symlink payload 白名单检查；只有在这组证据与 support docs 同窗收口后，才允许公开切到 `primary_workbench_claim`。
+这组 rerun 还要同时验证 zero-cli human path 的公开叙事：支持面已经不再是“CLI first、VS Code second”，而是“VS Code 承接支持范围内的人类工作，CLI 退到 optional automation / scriptable / session-shell 用途”。`.tmp/project-114-project-final-vscode-distribution-report.json` 只应作为本轮 rerun 的工作输出；在刷新 `docs/support-matrix*` 或任何 maintainer 回链之前，先把它提升为当前 active sprint 下带时间戳的 immutable snapshot，并和 sprint-local 的 zero-cli rehearsal summary 成对回链。
 
 ### 宿主原生资产边界
 
@@ -221,14 +221,14 @@ pnpm run release:ga-check
 1. 支持边界变化时，先更新 `docs/support-matrix.zh-CN.md`
 2. 这份 playbook 只负责命令顺序、操作者意图和证据回链
 3. 每条验证链尽量只保留一份权威 evidence file，不要到处散落状态说明
-4. 对当前 `project-114` 的 VS Code 主工作台边界，权威回链固定为 `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/` 下的带时间戳 snapshot，并与 `project-114-sprint-005-zero-cli-rehearsal-summary.md` 配对使用；`.tmp/project-114-sprint-005-vscode-distribution-report.json` 只保留为 rerun 工作输出。
+4. 对当前 `project-114` 的 VS Code 主工作台边界，权威回链固定为 `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/` 下的带时间戳 snapshot，并与 `project-114-sprint-005-zero-cli-rehearsal-summary.md` 配对使用；`.tmp/project-114-project-final-vscode-distribution-report.json` 只保留为 rerun 工作输出。
 5. 不要把这份 playbook 写成第二张 support matrix
 
 这份 runbook 常引用的 evidence 路径包括：
 
 1. `.tmp/project-063-sprint-001-local-distribution-report.json`
 2. `.tmp/project-063-sprint-001-cleanroom-tgz-report.json`
-3. `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/project-114-sprint-005-vscode-distribution-report-20260418T075344Z.json`（当前 VS Code 主工作台声明的权威 snapshot）
+3. `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/project-114-sprint-005-vscode-distribution-report-20260418T124824Z.json`（当前 VS Code 主工作台声明的权威 snapshot）
 4. `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/project-114-sprint-005-zero-cli-rehearsal-summary.md`
 5. `.tmp/project-065-sprint-001-desktop-foundation-report.json`
 6. `.tmp/project-067-sprint-001-host-distribution-report.json`

@@ -34,6 +34,8 @@ const REQUIRED_PACKAGED_PATHS = [
   'dist/src/index.js',
   'src/index.ts',
   'node_modules/.modules.yaml',
+  'node_modules/@repo-ai-governor/cli/package.json',
+  'node_modules/@repo-ai-governor/config/package.json',
   'node_modules/@repo-ai-governor/core-orchestration-service/package.json',
   'node_modules/@repo-ai-governor/orchestration-service-client/package.json',
   'node_modules/@repo-ai-governor/shared/package.json',

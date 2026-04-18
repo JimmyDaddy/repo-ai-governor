@@ -23,6 +23,15 @@ describe('vscode extension packaging boundary', () => {
           default?: string;
         };
       };
+      dependencies?: Record<string, string>;
+    };
+    const workspaceOpsPackage = JSON.parse(
+      readFileSync(
+        resolve(process.cwd(), 'packages/core-orchestration-service/package.json'),
+        'utf8',
+      ),
+    ) as {
+      dependencies?: Record<string, string>;
     };
 
     expect(extensionPackage.name).toBe('repo-ai-governor-vscode');
@@ -42,6 +51,19 @@ describe('vscode extension packaging boundary', () => {
     );
     expect(extensionPackage.exports?.['.']?.types).toBe('./src/index.ts');
     expect(extensionPackage.exports?.['.']?.default).toBe('./dist/src/index.js');
+    expect(extensionPackage.dependencies).toEqual(
+      expect.objectContaining({
+        '@repo-ai-governor/cli': 'workspace:*',
+        '@repo-ai-governor/config': 'workspace:*',
+        '@repo-ai-governor/core-orchestration-service': 'workspace:*',
+      }),
+    );
+    expect(workspaceOpsPackage.dependencies).toEqual(
+      expect.objectContaining({
+        '@repo-ai-governor/config': 'workspace:*',
+      }),
+    );
+    expect(workspaceOpsPackage.dependencies?.['@repo-ai-governor/cli']).toBeUndefined();
     expect(rootPackage.files ?? []).not.toContain('apps/vscode-extension');
     expect(rootPackage.files ?? []).toEqual(
       expect.arrayContaining(['integrations/ide', 'integrations/desktop']),
