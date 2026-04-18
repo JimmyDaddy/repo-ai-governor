@@ -25,6 +25,8 @@ export type {
   OrchestrationGovernanceQueueEntry,
   OrchestrationGovernanceTemporaryBridgeEntry,
   OrchestrationGovernanceWorkspaceSummary,
+  OrchestrationWorkspaceOperationLayeredLogs,
+  OrchestrationWorkspaceOperationSnapshot,
   OrchestrationHandoffTarget,
   OrchestrationHitlDecisionOption,
   OrchestrationHitlInboxEntry,

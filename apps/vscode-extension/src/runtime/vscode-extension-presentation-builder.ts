@@ -14,6 +14,7 @@ import {
   OrchestrationGovernanceTemporaryBridgeReceiptKind,
   OrchestrationHandoffTargetKind,
   OrchestrationServiceLifecycleStatus,
+  OrchestrationWorkspaceOperationKind,
 } from '@repo-ai-governor/orchestration-service-client';
 import type {
   OrchestrationExecutionBoardEntry,
@@ -26,6 +27,7 @@ import type {
   OrchestrationHandoffTarget,
   OrchestrationHitlInboxEntry,
   OrchestrationQueueOverviewQueryResponse,
+  OrchestrationWorkspaceOperationSnapshot,
 } from '@repo-ai-governor/orchestration-service-client';
 import {
   VSCODE_EXTENSION_DESKTOP_RELATIONSHIP,
@@ -322,6 +324,7 @@ export class VsCodeExtensionPresentationBuilder {
       this.buildUserConfigAuthoringNode(secureAuthoring),
       this.buildSecretReadinessNode(secureAuthoring),
       this.buildBootstrapReadinessNode(bootstrapReadiness),
+      this.buildLatestWorkspaceOperationNode(queueOverview.latestWorkspaceOperation),
       {
         nodeId: 'public-support-level',
         label: this.localizer.localizeText('Public support level', '公开支持级别'),
@@ -791,6 +794,9 @@ export class VsCodeExtensionPresentationBuilder {
       selectedExecution,
     );
     const queueLines = this.buildWorkflowStudioQueueLines(queueOverview);
+    const latestWorkspaceOperationLines = this.buildLatestWorkspaceOperationLines(
+      queueOverview.latestWorkspaceOperation,
+    );
     const supportTruthLines = this.buildWorkflowStudioSupportTruthLines(
       queueOverview,
       selectedExecution,
@@ -852,6 +858,10 @@ export class VsCodeExtensionPresentationBuilder {
       this.renderStringSection(
         this.localizer.localizeText('Workflow focus', 'Workflow 聚焦'),
         workflowLines,
+      ),
+      this.renderStringSection(
+        this.localizer.localizeText('Latest workspace operation', '最近一次工作区操作'),
+        latestWorkspaceOperationLines,
       ),
       this.renderActionSection(
         this.localizer.localizeText('Governed run control', '受治理 Run Control'),
@@ -973,6 +983,35 @@ export class VsCodeExtensionPresentationBuilder {
         `- ${this.localizer.localizeText('Active workspace count', '活跃工作区数量')}: ${queueOverview.notificationOwnership.activeWorkspaceCount}`,
         `- ${this.localizer.localizeText('Temporary bridge count', '临时 bridge 数量')}: ${queueOverview.temporaryBridges.length}`,
       );
+      if (queueOverview.latestWorkspaceOperation) {
+        const localeMismatch = this.hasWorkspaceOperationLocaleMismatch(
+          queueOverview.latestWorkspaceOperation,
+        );
+        lines.push(
+          `- ${this.localizer.localizeText('Latest workspace operation', '最近一次工作区操作')}: ${this.localizeWorkspaceOperationKind(queueOverview.latestWorkspaceOperation.operationKind)}`,
+        );
+        if (
+          this.getVisibleWorkspaceOperationSummary(queueOverview.latestWorkspaceOperation).trim()
+            .length > 0
+        ) {
+          lines.push(
+            `- ${this.localizer.localizeText('Latest workspace summary', '最近一次工作区摘要')}: ${this.getVisibleWorkspaceOperationSummary(queueOverview.latestWorkspaceOperation)}`,
+          );
+        }
+        const checkSummary = this.formatWorkspaceOperationCheckTotals(
+          queueOverview.latestWorkspaceOperation.result.checkTotals,
+        );
+        if (checkSummary) {
+          lines.push(
+            `- ${this.localizer.localizeText('Latest workspace checks', '最近一次工作区检查')}: ${checkSummary}`,
+          );
+        }
+        if (localeMismatch) {
+          lines.push(
+            `- ${this.localizer.localizeText('Latest localized details', '最近一次本地化详情')}: ${this.buildWorkspaceOperationLocaleMismatchMessage(queueOverview.latestWorkspaceOperation)}`,
+          );
+        }
+      }
     }
     if (options.workspaceContext.serviceHealth) {
       lines.push(
@@ -1114,6 +1153,355 @@ export class VsCodeExtensionPresentationBuilder {
             '执行工作区初始化',
           ),
     };
+  }
+
+  private buildLatestWorkspaceOperationNode(
+    snapshot: OrchestrationWorkspaceOperationSnapshot | undefined,
+  ): VsCodeExtensionTreeNodeDescriptor {
+    if (!snapshot) {
+      return {
+        nodeId: 'latest-workspace-operation',
+        label: this.localizer.localizeText('Latest workspace operation', '最近一次工作区操作'),
+        description: this.localizer.localizeText(
+          'No service-backed result yet',
+          '暂时没有 service-backed 结果',
+        ),
+        tooltip: this.localizer.localizeText(
+          'Run workspace bootstrap, doctor, or check from the VS Code workbench to capture the latest service-owned result.',
+          '请先从 VS Code workbench 执行 workspace bootstrap、doctor 或 check，以获取最新的 service-owned 结果。',
+        ),
+        themeIconId: 'circle-slash',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+      };
+    }
+
+    const checkSummary = this.formatWorkspaceOperationCheckTotals(snapshot.result.checkTotals);
+    const descriptionParts = [this.localizeWorkspaceOperationKind(snapshot.operationKind)];
+    const localeMismatch = this.hasWorkspaceOperationLocaleMismatch(snapshot);
+    if (checkSummary) {
+      descriptionParts.push(checkSummary);
+    }
+
+    return {
+      nodeId: 'latest-workspace-operation',
+      label: this.localizer.localizeText('Latest workspace operation', '最近一次工作区操作'),
+      description: descriptionParts.join(' · '),
+      tooltip: localeMismatch
+        ? this.buildWorkspaceOperationLocaleMismatchMessage(snapshot)
+        : [
+            snapshot.result.summary,
+            `${this.localizer.localizeText('Completed at', '完成时间')}: ${snapshot.completedAt}`,
+          ].join('\n'),
+      themeIconId: this.getWorkspaceOperationIconId(snapshot),
+      contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+      children: this.buildLatestWorkspaceOperationDetailNodes(snapshot),
+    };
+  }
+
+  private buildLatestWorkspaceOperationDetailNodes(
+    snapshot: OrchestrationWorkspaceOperationSnapshot,
+  ): readonly VsCodeExtensionTreeNodeDescriptor[] {
+    const localeMismatch = this.hasWorkspaceOperationLocaleMismatch(snapshot);
+    const nodes: VsCodeExtensionTreeNodeDescriptor[] = [
+      {
+        nodeId: 'latest-workspace-operation:kind',
+        label: this.localizer.localizeText('Operation', '操作'),
+        description: this.localizeWorkspaceOperationKind(snapshot.operationKind),
+        tooltip: snapshot.message,
+        themeIconId: this.getWorkspaceOperationIconId(snapshot),
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.INFO,
+      },
+      {
+        nodeId: 'latest-workspace-operation:runtime-operation',
+        label: this.localizer.localizeText('Runtime operation', '运行时操作'),
+        description: snapshot.result.operation,
+        tooltip: snapshot.result.operation,
+        themeIconId: 'symbol-key',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.INFO,
+      },
+      {
+        nodeId: 'latest-workspace-operation:summary',
+        label: this.localizer.localizeText('Summary', '摘要'),
+        description: this.getVisibleWorkspaceOperationSummary(snapshot),
+        tooltip: localeMismatch
+          ? this.buildWorkspaceOperationLocaleMismatchMessage(snapshot)
+          : snapshot.message,
+        themeIconId: 'note',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.INFO,
+      },
+      {
+        nodeId: 'latest-workspace-operation:completed-at',
+        label: this.localizer.localizeText('Completed at', '完成时间'),
+        description: snapshot.completedAt,
+        tooltip: snapshot.completedAt,
+        themeIconId: 'history',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.INFO,
+      },
+    ];
+    if (snapshot.locale) {
+      nodes.push({
+        nodeId: 'latest-workspace-operation:locale',
+        label: this.localizer.localizeText('Captured locale', '采集语言'),
+        description: snapshot.locale,
+        tooltip: snapshot.locale,
+        themeIconId: 'globe',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.INFO,
+      });
+    }
+    const checkSummary = this.formatWorkspaceOperationCheckTotals(snapshot.result.checkTotals);
+    if (checkSummary) {
+      nodes.push({
+        nodeId: 'latest-workspace-operation:checks',
+        label: this.localizer.localizeText('Checks', '检查'),
+        description: checkSummary,
+        tooltip: checkSummary,
+        themeIconId: this.getWorkspaceOperationIconId(snapshot),
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.INFO,
+      });
+    }
+    if (localeMismatch) {
+      nodes.push({
+        nodeId: 'latest-workspace-operation:localized-details',
+        label: this.localizer.localizeText('Localized details', '本地化详情'),
+        description: this.localizer.localizeText('Rerun required', '需要重新执行'),
+        tooltip: this.buildWorkspaceOperationLocaleMismatchMessage(snapshot),
+        themeIconId: 'globe',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.INFO,
+      });
+    }
+
+    if (!localeMismatch) {
+      for (const [index, check] of (snapshot.result.checks ?? [])
+        .filter((entry) => entry.status === 'warn' || entry.status === 'fail')
+        .entries()) {
+        nodes.push({
+          nodeId: `latest-workspace-operation:check:${index}`,
+          label: check.id,
+          description: check.detail,
+          tooltip: check.detail,
+          themeIconId: check.status === 'fail' ? 'error' : 'warning',
+          contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.INFO,
+        });
+      }
+    }
+
+    for (const [index, artifact] of (snapshot.result.artifacts ?? []).entries()) {
+      nodes.push({
+        nodeId: `latest-workspace-operation:artifact:${index}`,
+        label: this.localizer.localizeText('Receipt/backlink', '回执或回链'),
+        description: `${artifact.id} · ${artifact.path}`,
+        tooltip: artifact.path,
+        themeIconId: 'go-to-file',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.INFO,
+        resourceUriPath: artifact.path,
+      });
+    }
+
+    if (!localeMismatch) {
+      for (const [index, prompt] of (snapshot.result.interactionPrompts ?? []).entries()) {
+        nodes.push({
+          nodeId: `latest-workspace-operation:prompt:${index}`,
+          label: prompt.title,
+          description: prompt.action,
+          tooltip: prompt.action,
+          themeIconId: prompt.blocking ? 'warning' : 'lightbulb',
+          contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.INFO,
+        });
+      }
+
+      for (const [index, line] of (snapshot.result.layeredLogs?.summary ?? []).entries()) {
+        nodes.push({
+          nodeId: `latest-workspace-operation:summary-log:${index}`,
+          label: this.localizer.localizeText('Progress', '进度'),
+          description: line,
+          tooltip: line,
+          themeIconId: 'list-selection',
+          contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.INFO,
+        });
+      }
+
+      for (const [index, line] of (snapshot.result.layeredLogs?.detailed ?? []).entries()) {
+        nodes.push({
+          nodeId: `latest-workspace-operation:detailed-log:${index}`,
+          label: this.localizer.localizeText('Detail', '详情'),
+          description: line,
+          tooltip: line,
+          themeIconId: 'list-tree',
+          contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.INFO,
+        });
+      }
+    }
+
+    return nodes;
+  }
+
+  private buildLatestWorkspaceOperationLines(
+    snapshot: OrchestrationWorkspaceOperationSnapshot | undefined,
+  ): string[] {
+    if (!snapshot) {
+      return [];
+    }
+
+    const localeMismatch = this.hasWorkspaceOperationLocaleMismatch(snapshot);
+    const lines = [
+      `${this.localizer.localizeText('Operation', '操作')}: ${this.localizeWorkspaceOperationKind(snapshot.operationKind)}`,
+      `${this.localizer.localizeText('Runtime operation', '运行时操作')}: ${snapshot.result.operation}`,
+      `${this.localizer.localizeText('Summary', '摘要')}: ${this.getVisibleWorkspaceOperationSummary(snapshot)}`,
+      `${this.localizer.localizeText('Completed at', '完成时间')}: ${snapshot.completedAt}`,
+    ];
+    if (snapshot.locale) {
+      lines.push(
+        `${this.localizer.localizeText('Captured locale', '采集语言')}: ${snapshot.locale}`,
+      );
+    }
+    const checkSummary = this.formatWorkspaceOperationCheckTotals(snapshot.result.checkTotals);
+    if (checkSummary) {
+      lines.push(`${this.localizer.localizeText('Checks', '检查')}: ${checkSummary}`);
+    }
+
+    if (localeMismatch) {
+      lines.push(
+        `${this.localizer.localizeText('Localized details', '本地化详情')}: ${this.buildWorkspaceOperationLocaleMismatchMessage(snapshot)}`,
+      );
+    } else {
+      for (const check of (snapshot.result.checks ?? []).filter(
+        (entry) => entry.status === 'warn' || entry.status === 'fail',
+      )) {
+        lines.push(
+          `${this.localizer.localizeText('Attention', '关注项')}: ${check.id} · ${check.detail}`,
+        );
+      }
+    }
+    for (const artifact of snapshot.result.artifacts ?? []) {
+      lines.push(
+        `${this.localizer.localizeText('Receipt/backlink', '回执或回链')}: ${artifact.id} · ${artifact.path}`,
+      );
+    }
+    if (!localeMismatch) {
+      for (const prompt of snapshot.result.interactionPrompts ?? []) {
+        lines.push(
+          `${this.localizer.localizeText('Suggested follow-up', '建议后续动作')}: ${prompt.title} · ${prompt.action}`,
+        );
+      }
+      for (const line of snapshot.result.layeredLogs?.summary ?? []) {
+        lines.push(`${this.localizer.localizeText('Progress', '进度')}: ${line}`);
+      }
+      for (const line of snapshot.result.layeredLogs?.detailed ?? []) {
+        lines.push(`${this.localizer.localizeText('Detail', '详情')}: ${line}`);
+      }
+    }
+
+    return lines;
+  }
+
+  private formatWorkspaceOperationCheckTotals(
+    checkTotals: OrchestrationWorkspaceOperationSnapshot['result']['checkTotals'] | undefined,
+  ): string | undefined {
+    if (!checkTotals) {
+      return undefined;
+    }
+
+    return this.localizer.localizeText(
+      `${checkTotals.pass} pass / ${checkTotals.warn} warn / ${checkTotals.fail} fail`,
+      `${checkTotals.pass} 通过 / ${checkTotals.warn} 警告 / ${checkTotals.fail} 失败`,
+    );
+  }
+
+  private getVisibleWorkspaceOperationSummary(
+    snapshot: OrchestrationWorkspaceOperationSnapshot,
+  ): string {
+    return this.hasWorkspaceOperationLocaleMismatch(snapshot)
+      ? this.localizer.localizeText(
+          'Captured in another locale. Rerun this workspace operation from the current workbench to refresh localized summary, prompts, and progress.',
+          '该结果是在另一种语言下采集的。请从当前 workbench 重新执行该工作区操作，以刷新本地化摘要、建议动作和进度。',
+        )
+      : snapshot.result.summary;
+  }
+
+  private hasWorkspaceOperationLocaleMismatch(
+    snapshot: OrchestrationWorkspaceOperationSnapshot,
+  ): boolean {
+    if (!snapshot.locale) {
+      return false;
+    }
+
+    return (
+      this.normalizeWorkspaceOperationLocaleFamily(snapshot.locale) !== this.getUiLocaleFamily()
+    );
+  }
+
+  private buildWorkspaceOperationLocaleMismatchMessage(
+    snapshot: OrchestrationWorkspaceOperationSnapshot,
+  ): string {
+    return this.localizer.localizeText(
+      `This result was captured in ${snapshot.locale ?? 'another locale'}. Rerun the workspace operation from the current VS Code language to refresh localized details.`,
+      `该结果是在 ${snapshot.locale ?? '另一种语言'} 下采集的。请在当前 VS Code 语言下重新执行该工作区操作，以刷新本地化详情。`,
+    );
+  }
+
+  private getUiLocaleFamily(): string {
+    return this.localizer.localizeText('__locale_en__', '__locale_zh__') === '__locale_zh__'
+      ? 'zh'
+      : 'en';
+  }
+
+  private normalizeWorkspaceOperationLocaleFamily(locale: string): string {
+    return locale.trim().toLowerCase().startsWith('zh') ? 'zh' : 'en';
+  }
+
+  private getWorkspaceOperationIconId(snapshot: OrchestrationWorkspaceOperationSnapshot): string {
+    if ((snapshot.result.checkTotals?.fail ?? 0) > 0) {
+      return 'error';
+    }
+    if ((snapshot.result.checkTotals?.warn ?? 0) > 0) {
+      return 'warning';
+    }
+
+    switch (snapshot.operationKind) {
+      case OrchestrationWorkspaceOperationKind.WORKSPACE_BOOTSTRAP:
+        return 'tools';
+      case OrchestrationWorkspaceOperationKind.DOCTOR:
+        return 'search';
+      case OrchestrationWorkspaceOperationKind.CHECK:
+        return 'pass-filled';
+      default:
+        return 'history';
+    }
+  }
+
+  private localizeWorkspaceOperationKind(
+    operationKind: OrchestrationWorkspaceOperationKind,
+  ): string {
+    switch (operationKind) {
+      case OrchestrationWorkspaceOperationKind.WORKSPACE_BOOTSTRAP:
+        return this.localizer.localizeText('Run workspace bootstrap', '执行工作区初始化');
+      case OrchestrationWorkspaceOperationKind.DOCTOR:
+        return this.localizer.localizeText('Run doctor', '执行 doctor');
+      case OrchestrationWorkspaceOperationKind.CHECK:
+        return this.localizer.localizeText('Run check', '执行 check');
+      case OrchestrationWorkspaceOperationKind.ADOPT_BOOTSTRAP:
+        return this.localizer.localizeText('Run adopt bootstrap', '执行 adopt bootstrap');
+      case OrchestrationWorkspaceOperationKind.ADOPTION_APPLY:
+        return this.localizer.localizeText('Apply adoption pack', '应用 adopt 包');
+      case OrchestrationWorkspaceOperationKind.HOST_EXPORT:
+        return this.localizer.localizeText('Export host assets', '导出宿主资产');
+      case OrchestrationWorkspaceOperationKind.HOST_VERIFY:
+        return this.localizer.localizeText('Verify host assets', '校验宿主资产');
+      case OrchestrationWorkspaceOperationKind.HOST_PACK:
+        return this.localizer.localizeText('Pack host bundle', '打包宿主 bundle');
+      case OrchestrationWorkspaceOperationKind.UPGRADE_PREVIEW:
+        return this.localizer.localizeText('Preview upgrade', '预览升级');
+      case OrchestrationWorkspaceOperationKind.UPGRADE_APPLY:
+        return this.localizer.localizeText('Apply upgrade', '应用升级');
+      case OrchestrationWorkspaceOperationKind.WORKFLOW_PREVIEW:
+        return this.localizer.localizeText('Preview workflow', '预览工作流');
+      case OrchestrationWorkspaceOperationKind.WORKFLOW_CREATE:
+        return this.localizer.localizeText('Create workflow', '创建工作流');
+      case OrchestrationWorkspaceOperationKind.WORKFLOW_EDIT:
+        return this.localizer.localizeText('Edit workflow', '编辑工作流');
+      default:
+        return operationKind;
+    }
   }
 
   private formatBootstrapReadinessActions(

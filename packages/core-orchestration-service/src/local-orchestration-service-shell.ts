@@ -195,6 +195,8 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
           }
         : {}),
       listExecutions: async (request) => this.listExecutions(request),
+      getLatestWorkspaceOperationSnapshot: () =>
+        this.workspaceOpsRuntime.getLatestWorkspaceOperationSnapshot(),
       nowProvider: this.nowProvider,
     });
     this.workspaceOpsRuntime = new LocalOrchestrationServiceWorkspaceOpsRuntime({

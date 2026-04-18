@@ -1,6 +1,6 @@
 # sprint-003-adopt-host-verify-upgrade-service-native-cutover 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-18
 - Sprint Goal: Complete service-native adopt, host, verify, and upgrade flows in VS Code and exit the temporary CLI bridge for user-facing execution.
 - Project: `project-114-vscode-plugin-full-ownership-and-zero-cli-user-path`
@@ -22,7 +22,7 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-971 | freeze adopt-host-verify-upgrade bridge-exit contract | prepare sprint-002 exit acceptance and sprint-003 handoff | planned |
+| TK-971 | freeze adopt-host-verify-upgrade bridge-exit contract | prepare sprint-002 exit acceptance and sprint-003 handoff | active |
 | TK-972 | implement service-native adopt-host-verify-upgrade orchestration seams | freeze adopt-host-verify-upgrade bridge-exit contract | planned |
 | TK-973 | land workbench-native adopt-host-verify-upgrade trust-sensitive surfaces | implement service-native adopt-host-verify-upgrade orchestration seams | planned |
 | TK-974 | prepare sprint-003 exit acceptance and sprint-004 handoff | land workbench-native adopt-host-verify-upgrade trust-sensitive surfaces | planned |
@@ -36,4 +36,5 @@
 ## 4. Sprint Notes
 
 1. Temporary bridge semantics may remain only as non-user-facing substrate compatibility, with explicit exit evidence.
-2. Keep this sprint `planned` until sprint-002 hands off; reserve local `CR-001` only after activation.
+2. `2026-04-18`：sprint-002 closeout 已完成，本 sprint 已激活为当前 execution surface；本地 `CR-001` 已在 activation 时预留，后续 fresh reviewer round 继续复用该编号。
+3. `2026-04-18`：`TK-971` 已切换为当前首个 implementation lane，用于冻结 adopt / host / verify / upgrade 的 bridge-exit contract，并为后续 service-native 实现收口边界。

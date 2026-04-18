@@ -1,6 +1,6 @@
 # TK-971 freeze adopt-host-verify-upgrade bridge-exit contract
 
-- Status: planned
+- Status: active
 - Date: 2026-04-18
 - Owner: AI-Agent
 - Priority: P1
@@ -55,6 +55,7 @@ Freeze the bridge-exit contract for adopt, host, verify, and upgrade so user-vis
 ## 9. 执行记录
 
 1. 2026-04-18：任务创建，状态初始化为 `planned`。
+2. 2026-04-18：随着 sprint-003 activation 完成，TK-971 状态切换为 `active`，并作为当前首个 implementation lane 开始冻结 adopt / host / verify / upgrade 的 bridge-exit contract。
 
 ## 10. 产出
 

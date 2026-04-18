@@ -477,6 +477,19 @@ export interface OrchestrationGovernanceNotificationOwnership {
   notificationStatus: OrchestrationGovernanceNotificationStatus;
 }
 
+export interface OrchestrationWorkspaceOperationLayeredLogs {
+  summary: string[];
+  detailed: string[];
+}
+
+export interface OrchestrationWorkspaceOperationSnapshot {
+  operationKind: OrchestrationWorkspaceOperationKind;
+  completedAt: string;
+  locale?: string;
+  message: string;
+  result: OrchestrationWorkspaceOperationResult;
+}
+
 export interface OrchestrationQueueOverviewQueryResponse {
   generatedAt: string;
   automationInbox: OrchestrationGovernanceQueueEntry[];
@@ -485,6 +498,7 @@ export interface OrchestrationQueueOverviewQueryResponse {
   workspaceSummary: OrchestrationGovernanceWorkspaceSummary[];
   temporaryBridges: OrchestrationGovernanceTemporaryBridgeEntry[];
   notificationOwnership: OrchestrationGovernanceNotificationOwnership;
+  latestWorkspaceOperation?: OrchestrationWorkspaceOperationSnapshot;
 }
 
 export interface OrchestrationBootstrapReadinessSnapshot {
@@ -600,6 +614,7 @@ export interface OrchestrationWorkspaceOperationResult {
   checks?: OrchestrationWorkspaceOperationCheck[];
   artifacts?: OrchestrationWorkspaceOperationArtifact[];
   interactionPrompts?: OrchestrationWorkspaceOperationInteractionPrompt[];
+  layeredLogs?: OrchestrationWorkspaceOperationLayeredLogs;
   details?: Record<string, boolean | number | string | null>;
 }
 

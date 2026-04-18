@@ -25,6 +25,7 @@ import {
   OrchestrationServiceLifecycleStatus,
   OrchestrationServiceTransportKind,
   OrchestrationSessionStatus,
+  OrchestrationWorkspaceOperationKind,
 } from '@repo-ai-governor/orchestration-service-client';
 import { GovernorErrorCode, MemoryStoreEngine, RuntimeError } from '@repo-ai-governor/shared';
 
@@ -298,6 +299,50 @@ describe('VsCodeExtensionServiceRuntime', () => {
         defaultFollowUpSlaMinutes: 60,
         notificationStatus: OrchestrationGovernanceNotificationStatus.IDLE,
       },
+      latestWorkspaceOperation: {
+        operationKind: OrchestrationWorkspaceOperationKind.DOCTOR,
+        completedAt: '2026-04-07T03:04:00.000Z',
+        message: 'Doctor completed.',
+        result: {
+          operation: 'env_doctor',
+          summary: 'Doctor completed.',
+          checkTotals: {
+            pass: 5,
+            warn: 1,
+            fail: 0,
+          },
+          checks: [
+            {
+              id: 'workspace_writable',
+              status: 'pass',
+              detail: 'Workspace is writable.',
+            },
+            {
+              id: 'artifact_registry_state',
+              status: 'warn',
+              detail: 'artifact registry is not initialized yet',
+            },
+          ],
+          artifacts: [
+            {
+              id: 'doctor_diagnostics',
+              path: '/repo/.repo-ai-governor/context/diagnostics/doctor/doctor-1.json',
+            },
+          ],
+          interactionPrompts: [
+            {
+              title: 'Workspace is read-only',
+              action:
+                'Switch to writable attach mode if you need to create/update governance artifacts.',
+              blocking: false,
+            },
+          ],
+          layeredLogs: {
+            summary: ['attach_mode=read_only'],
+            detailed: ['workspace_root=/repo/.repo-ai-governor'],
+          },
+        },
+      },
     });
 
     const runtime = new VsCodeExtensionServiceRuntime();
@@ -315,6 +360,14 @@ describe('VsCodeExtensionServiceRuntime', () => {
       },
       queueOverview: {
         generatedAt: '2026-04-07T03:05:00.000Z',
+        latestWorkspaceOperation: {
+          operationKind: OrchestrationWorkspaceOperationKind.DOCTOR,
+          completedAt: '2026-04-07T03:04:00.000Z',
+          message: 'Doctor completed.',
+          result: {
+            summary: 'Doctor completed.',
+          },
+        },
       },
       selectedExecution: {
         execution: {

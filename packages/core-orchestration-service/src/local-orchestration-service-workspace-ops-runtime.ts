@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
 
@@ -21,8 +21,10 @@ import type {
   OrchestrationSetUserConfigValueResponse,
   OrchestrationUserConfigEntry,
   OrchestrationUserConfigStatus,
+  OrchestrationWorkspaceOperationLayeredLogs,
   OrchestrationWorkspaceOperationRequest,
   OrchestrationWorkspaceOperationResponse,
+  OrchestrationWorkspaceOperationSnapshot,
 } from '@repo-ai-governor/orchestration-service-client';
 import {
   OrchestrationBootstrapReadinessActionId,
@@ -36,6 +38,7 @@ const DEFAULT_SECRET_RECORD_DELIMITER = ' | ';
 const CREDENTIAL_SELECTOR_PREFIX = 'secret://';
 const UNSAFE_LOCAL_FILE_SECRET_BACKEND_ID = 'unsafe-local-file';
 const UPGRADE_REPORT_FILE_PATTERN = /^upgrade-(\d+)\.report\.json$/u;
+const LATEST_WORKSPACE_OPERATION_SNAPSHOT_FILE_NAME = 'latest-workspace-operation.snapshot.json';
 const WORKSPACE_DOCTOR_ARGS = ['doctor', '--adapters', '--output', 'pretty'] as const;
 const requireFromRuntime = createRequire(import.meta.url);
 
@@ -56,6 +59,11 @@ interface CliInteractionPromptPayload {
   blocking?: boolean;
 }
 
+interface CliLayeredLogsPayload {
+  summary?: string[];
+  detailed?: string[];
+}
+
 interface CliSuccessOutputPayload {
   message?: string;
   command_result?: {
@@ -70,6 +78,7 @@ interface CliSuccessOutputPayload {
     artifacts?: CliCommandResultArtifactPayload[];
     experience?: {
       interactionPrompts?: CliInteractionPromptPayload[];
+      layeredLogs?: CliLayeredLogsPayload;
     };
     details?: Record<string, boolean | number | string | null>;
   };
@@ -96,6 +105,7 @@ interface LocalOrchestrationServiceWorkspaceOpsRuntimeDependencies {
     stdin?: string;
     locale?: string;
   }) => Promise<CliSuccessOutputPayload>;
+  nowProvider?: () => Date;
 }
 
 /**
@@ -119,6 +129,9 @@ export class LocalOrchestrationServiceWorkspaceOpsRuntime {
     stdin?: string;
     locale?: string;
   }) => Promise<CliSuccessOutputPayload>;
+  private readonly nowProvider: () => Date;
+  private latestWorkspaceOperationSnapshot?: OrchestrationWorkspaceOperationSnapshot;
+  private latestWorkspaceOperationSnapshotLoaded = false;
 
   public constructor(
     private readonly dependencies: LocalOrchestrationServiceWorkspaceOpsRuntimeDependencies,
@@ -132,6 +145,7 @@ export class LocalOrchestrationServiceWorkspaceOpsRuntime {
       this.pathExists,
     );
     this.cliExecutor = dependencies.cliExecutor ?? this.executeCliJsonCommand.bind(this);
+    this.nowProvider = dependencies.nowProvider ?? (() => new Date());
   }
 
   public async queryBootstrapReadiness(): Promise<OrchestrationBootstrapReadinessSnapshot> {
@@ -257,8 +271,9 @@ export class LocalOrchestrationServiceWorkspaceOpsRuntime {
       currentWorkingDirectory: context.repositoryRoot,
       locale: request.locale,
     });
+    const layeredLogs = this.parseLayeredLogs(payload.command_result?.experience?.layeredLogs);
 
-    return {
+    const response = {
       message: this.readPayloadMessage(payload, request.locale),
       result: {
         operation: payload.command_result?.operation ?? request.operationKind,
@@ -311,12 +326,68 @@ export class LocalOrchestrationServiceWorkspaceOpsRuntime {
                 })),
             }
           : {}),
+        ...(layeredLogs
+          ? {
+              layeredLogs,
+            }
+          : {}),
         ...(payload.command_result?.details
           ? {
               details: payload.command_result.details,
             }
           : {}),
       },
+    };
+
+    this.latestWorkspaceOperationSnapshot = {
+      operationKind: request.operationKind,
+      completedAt: this.nowProvider().toISOString(),
+      ...(request.locale?.trim().length
+        ? {
+            locale: this.normalizeLocale(request.locale),
+          }
+        : {}),
+      message: response.message,
+      result: this.cloneWorkspaceOperationResult(response.result),
+    };
+    this.latestWorkspaceOperationSnapshotLoaded = true;
+    this.persistLatestWorkspaceOperationSnapshot(context, this.latestWorkspaceOperationSnapshot);
+
+    return response;
+  }
+
+  /**
+   * Returns the latest service-owned workspace operation snapshot for overview consumers.
+   * @returns Cloned latest operation snapshot when at least one workspace operation completed.
+   */
+  public getLatestWorkspaceOperationSnapshot():
+    | OrchestrationWorkspaceOperationSnapshot
+    | undefined {
+    if (!this.latestWorkspaceOperationSnapshotLoaded) {
+      this.latestWorkspaceOperationSnapshotLoaded = true;
+      try {
+        this.latestWorkspaceOperationSnapshot = this.loadPersistedLatestWorkspaceOperationSnapshot(
+          this.resolveWorkspaceContext(),
+        );
+      } catch {
+        this.latestWorkspaceOperationSnapshot = undefined;
+      }
+    }
+
+    if (!this.latestWorkspaceOperationSnapshot) {
+      return undefined;
+    }
+
+    return {
+      operationKind: this.latestWorkspaceOperationSnapshot.operationKind,
+      completedAt: this.latestWorkspaceOperationSnapshot.completedAt,
+      ...(this.latestWorkspaceOperationSnapshot.locale
+        ? {
+            locale: this.latestWorkspaceOperationSnapshot.locale,
+          }
+        : {}),
+      message: this.latestWorkspaceOperationSnapshot.message,
+      result: this.cloneWorkspaceOperationResult(this.latestWorkspaceOperationSnapshot.result),
     };
   }
 
@@ -773,6 +844,353 @@ export class LocalOrchestrationServiceWorkspaceOpsRuntime {
         } satisfies OrchestrationSecretRecord;
       })
       .filter((record): record is OrchestrationSecretRecord => Boolean(record));
+  }
+
+  private parseLayeredLogs(
+    payload?: CliLayeredLogsPayload,
+  ): OrchestrationWorkspaceOperationLayeredLogs | undefined {
+    const summary = this.normalizeLayeredLogLines(payload?.summary);
+    const detailed = this.normalizeLayeredLogLines(payload?.detailed);
+    if (summary.length === 0 && detailed.length === 0) {
+      return undefined;
+    }
+
+    return {
+      summary,
+      detailed,
+    };
+  }
+
+  private normalizeLayeredLogLines(lines: unknown): string[] {
+    if (!Array.isArray(lines)) {
+      return [];
+    }
+
+    return lines.filter(
+      (line): line is string => typeof line === 'string' && line.trim().length > 0,
+    );
+  }
+
+  private cloneWorkspaceOperationResult(
+    result: OrchestrationWorkspaceOperationResponse['result'],
+  ): OrchestrationWorkspaceOperationResponse['result'] {
+    return {
+      ...result,
+      ...(result.checkTotals
+        ? {
+            checkTotals: {
+              ...result.checkTotals,
+            },
+          }
+        : {}),
+      ...(result.checks
+        ? {
+            checks: result.checks.map((check) => ({
+              ...check,
+            })),
+          }
+        : {}),
+      ...(result.artifacts
+        ? {
+            artifacts: result.artifacts.map((artifact) => ({
+              ...artifact,
+            })),
+          }
+        : {}),
+      ...(result.interactionPrompts
+        ? {
+            interactionPrompts: result.interactionPrompts.map((prompt) => ({
+              ...prompt,
+            })),
+          }
+        : {}),
+      ...(result.layeredLogs
+        ? {
+            layeredLogs: {
+              summary: [...result.layeredLogs.summary],
+              detailed: [...result.layeredLogs.detailed],
+            },
+          }
+        : {}),
+      ...(result.details
+        ? {
+            details: {
+              ...result.details,
+            },
+          }
+        : {}),
+    };
+  }
+
+  private persistLatestWorkspaceOperationSnapshot(
+    context: WorkspaceOpsContext,
+    snapshot: OrchestrationWorkspaceOperationSnapshot,
+  ): void {
+    try {
+      mkdirSync(this.resolveLatestWorkspaceOperationSnapshotDirectory(context.workspaceRoot), {
+        recursive: true,
+      });
+      writeFileSync(
+        this.resolveLatestWorkspaceOperationSnapshotPath(context.workspaceRoot),
+        `${JSON.stringify(
+          {
+            operationKind: snapshot.operationKind,
+            completedAt: snapshot.completedAt,
+            ...(snapshot.locale
+              ? {
+                  locale: snapshot.locale,
+                }
+              : {}),
+            message: snapshot.message,
+            result: this.cloneWorkspaceOperationResult(snapshot.result),
+          },
+          null,
+          2,
+        )}\n`,
+        'utf8',
+      );
+    } catch {
+      // best-effort persistence keeps restart hydration additive without breaking read-only flows
+    }
+  }
+
+  private loadPersistedLatestWorkspaceOperationSnapshot(
+    context: WorkspaceOpsContext,
+  ): OrchestrationWorkspaceOperationSnapshot | undefined {
+    const snapshotPath = this.resolveLatestWorkspaceOperationSnapshotPath(context.workspaceRoot);
+    if (!this.pathExists(snapshotPath)) {
+      return undefined;
+    }
+
+    try {
+      return this.parsePersistedLatestWorkspaceOperationSnapshot(
+        JSON.parse(readFileSync(snapshotPath, 'utf8')) as unknown,
+      );
+    } catch {
+      return undefined;
+    }
+  }
+
+  private parsePersistedLatestWorkspaceOperationSnapshot(
+    snapshot: unknown,
+  ): OrchestrationWorkspaceOperationSnapshot | undefined {
+    if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) {
+      return undefined;
+    }
+
+    const parsedSnapshot = snapshot as Record<string, unknown>;
+    const parsedResult = this.parsePersistedWorkspaceOperationResult(parsedSnapshot.result);
+    if (
+      typeof parsedSnapshot.operationKind !== 'string' ||
+      typeof parsedSnapshot.completedAt !== 'string' ||
+      typeof parsedSnapshot.message !== 'string' ||
+      !parsedResult
+    ) {
+      return undefined;
+    }
+
+    return {
+      operationKind: parsedSnapshot.operationKind as OrchestrationWorkspaceOperationKind,
+      completedAt: parsedSnapshot.completedAt,
+      ...(typeof parsedSnapshot.locale === 'string' && parsedSnapshot.locale.trim().length > 0
+        ? {
+            locale: parsedSnapshot.locale.trim(),
+          }
+        : {}),
+      message: parsedSnapshot.message,
+      result: parsedResult,
+    };
+  }
+
+  private parsePersistedWorkspaceOperationResult(
+    result: unknown,
+  ): OrchestrationWorkspaceOperationResponse['result'] | undefined {
+    if (!result || typeof result !== 'object' || Array.isArray(result)) {
+      return undefined;
+    }
+
+    const parsedResult = result as Record<string, unknown>;
+    if (typeof parsedResult.operation !== 'string' || typeof parsedResult.summary !== 'string') {
+      return undefined;
+    }
+
+    const checkTotals = this.parsePersistedWorkspaceOperationCheckTotals(parsedResult.checkTotals);
+    const checks = this.parsePersistedWorkspaceOperationChecks(parsedResult.checks);
+    const artifacts = this.parsePersistedWorkspaceOperationArtifacts(parsedResult.artifacts);
+    const interactionPrompts = this.parsePersistedWorkspaceOperationInteractionPrompts(
+      parsedResult.interactionPrompts,
+    );
+    const layeredLogs = this.parsePersistedWorkspaceOperationLayeredLogs(parsedResult.layeredLogs);
+    const details = this.parsePersistedWorkspaceOperationDetails(parsedResult.details);
+
+    return {
+      operation: parsedResult.operation,
+      summary: parsedResult.summary,
+      ...(checkTotals
+        ? {
+            checkTotals,
+          }
+        : {}),
+      ...(checks
+        ? {
+            checks,
+          }
+        : {}),
+      ...(artifacts
+        ? {
+            artifacts,
+          }
+        : {}),
+      ...(interactionPrompts
+        ? {
+            interactionPrompts,
+          }
+        : {}),
+      ...(layeredLogs
+        ? {
+            layeredLogs,
+          }
+        : {}),
+      ...(details
+        ? {
+            details,
+          }
+        : {}),
+    };
+  }
+
+  private parsePersistedWorkspaceOperationCheckTotals(
+    checkTotals: unknown,
+  ): OrchestrationWorkspaceOperationResponse['result']['checkTotals'] | undefined {
+    if (!checkTotals || typeof checkTotals !== 'object' || Array.isArray(checkTotals)) {
+      return undefined;
+    }
+
+    const parsedCheckTotals = checkTotals as Record<string, unknown>;
+    return {
+      pass: typeof parsedCheckTotals.pass === 'number' ? parsedCheckTotals.pass : 0,
+      warn: typeof parsedCheckTotals.warn === 'number' ? parsedCheckTotals.warn : 0,
+      fail: typeof parsedCheckTotals.fail === 'number' ? parsedCheckTotals.fail : 0,
+    };
+  }
+
+  private parsePersistedWorkspaceOperationChecks(
+    checks: unknown,
+  ): OrchestrationWorkspaceOperationResponse['result']['checks'] | undefined {
+    if (!Array.isArray(checks)) {
+      return undefined;
+    }
+
+    return checks
+      .filter(
+        (check): check is { detail?: unknown; id?: unknown; status?: unknown } =>
+          Boolean(check) && typeof check === 'object' && !Array.isArray(check),
+      )
+      .filter(
+        (check) =>
+          typeof check.id === 'string' &&
+          typeof check.status === 'string' &&
+          typeof check.detail === 'string',
+      )
+      .map((check) => ({
+        id: check.id as string,
+        status: check.status as string,
+        detail: check.detail as string,
+      }));
+  }
+
+  private parsePersistedWorkspaceOperationArtifacts(
+    artifacts: unknown,
+  ): OrchestrationWorkspaceOperationResponse['result']['artifacts'] | undefined {
+    if (!Array.isArray(artifacts)) {
+      return undefined;
+    }
+
+    return artifacts
+      .filter(
+        (artifact): artifact is { id?: unknown; path?: unknown } =>
+          Boolean(artifact) && typeof artifact === 'object' && !Array.isArray(artifact),
+      )
+      .filter((artifact) => typeof artifact.id === 'string' && typeof artifact.path === 'string')
+      .map((artifact) => ({
+        id: artifact.id as string,
+        path: artifact.path as string,
+      }));
+  }
+
+  private parsePersistedWorkspaceOperationInteractionPrompts(
+    prompts: unknown,
+  ): OrchestrationWorkspaceOperationResponse['result']['interactionPrompts'] | undefined {
+    if (!Array.isArray(prompts)) {
+      return undefined;
+    }
+
+    return prompts
+      .filter(
+        (prompt): prompt is { action?: unknown; blocking?: unknown; title?: unknown } =>
+          Boolean(prompt) && typeof prompt === 'object' && !Array.isArray(prompt),
+      )
+      .filter(
+        (prompt) =>
+          typeof prompt.title === 'string' &&
+          typeof prompt.action === 'string' &&
+          typeof prompt.blocking === 'boolean',
+      )
+      .map((prompt) => ({
+        title: prompt.title as string,
+        action: prompt.action as string,
+        blocking: prompt.blocking as boolean,
+      }));
+  }
+
+  private parsePersistedWorkspaceOperationLayeredLogs(
+    layeredLogs: unknown,
+  ): OrchestrationWorkspaceOperationResponse['result']['layeredLogs'] | undefined {
+    if (!layeredLogs || typeof layeredLogs !== 'object' || Array.isArray(layeredLogs)) {
+      return undefined;
+    }
+
+    const parsedLayeredLogs = layeredLogs as Record<string, unknown>;
+    const summary = this.normalizeLayeredLogLines(parsedLayeredLogs.summary);
+    const detailed = this.normalizeLayeredLogLines(parsedLayeredLogs.detailed);
+    if (summary.length === 0 && detailed.length === 0) {
+      return undefined;
+    }
+
+    return {
+      summary,
+      detailed,
+    };
+  }
+
+  private parsePersistedWorkspaceOperationDetails(
+    details: unknown,
+  ): OrchestrationWorkspaceOperationResponse['result']['details'] | undefined {
+    if (!details || typeof details !== 'object' || Array.isArray(details)) {
+      return undefined;
+    }
+
+    return Object.fromEntries(
+      Object.entries(details).filter(([, value]) => {
+        return (
+          value === null ||
+          typeof value === 'boolean' ||
+          typeof value === 'number' ||
+          typeof value === 'string'
+        );
+      }),
+    );
+  }
+
+  private resolveLatestWorkspaceOperationSnapshotDirectory(workspaceRoot: string): string {
+    return resolve(workspaceRoot, 'context', 'runtime');
+  }
+
+  private resolveLatestWorkspaceOperationSnapshotPath(workspaceRoot: string): string {
+    return resolve(
+      this.resolveLatestWorkspaceOperationSnapshotDirectory(workspaceRoot),
+      LATEST_WORKSPACE_OPERATION_SNAPSHOT_FILE_NAME,
+    );
   }
 
   private readPayloadMessage(payload: CliSuccessOutputPayload, locale?: string): string {

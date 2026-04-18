@@ -14,6 +14,7 @@ import {
   type OrchestrationListExecutionsResponse,
   type OrchestrationQueueOverviewQueryRequest,
   type OrchestrationQueueOverviewQueryResponse,
+  type OrchestrationWorkspaceOperationSnapshot,
 } from '@repo-ai-governor/orchestration-service-client';
 import {
   LOCAL_ORCHESTRATION_SERVICE_FOLLOW_UP_DUE_SOON_THRESHOLD_MINUTES,
@@ -35,6 +36,7 @@ interface LocalOrchestrationServiceQueueOverviewQueryRuntimeDependencies {
   listExecutions: (
     request?: OrchestrationListExecutionsRequest,
   ) => Promise<OrchestrationListExecutionsResponse>;
+  getLatestWorkspaceOperationSnapshot?: () => OrchestrationWorkspaceOperationSnapshot | undefined;
   nowProvider?: () => Date;
 }
 
@@ -188,6 +190,7 @@ export class LocalOrchestrationServiceQueueOverviewQueryRuntime {
         reviewAggregateEntries,
         OrchestrationGovernanceFollowUpSlaState.OVERDUE,
       );
+    const latestWorkspaceOperation = this.dependencies.getLatestWorkspaceOperationSnapshot?.();
 
     return {
       generatedAt: this.nowProvider().toISOString(),
@@ -206,6 +209,11 @@ export class LocalOrchestrationServiceQueueOverviewQueryRuntime {
         defaultFollowUpSlaMinutes: LOCAL_ORCHESTRATION_SERVICE_FOLLOW_UP_SLA_MINUTES,
         notificationStatus: this.resolveNotificationStatus(overdueItemCount, pendingItemCount),
       },
+      ...(latestWorkspaceOperation
+        ? {
+            latestWorkspaceOperation,
+          }
+        : {}),
     };
   }
 

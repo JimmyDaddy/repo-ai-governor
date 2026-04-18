@@ -1,6 +1,6 @@
 # TK-984 close sprint-002 boundary and activate sprint-003 execution surface
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-18
 - Owner: AI-Agent
 - Priority: P1
@@ -43,22 +43,27 @@ After sprint-002 reaches clean `TK/CR` terminal state, close the sprint boundary
 
 ## 7. Development Verification
 
-1. pnpm run check
-2. git status --short
+1. `pnpm run build`
+2. `pnpm run check`
+3. `git status --short`
 
 ## 8. Delivery Verification
 
-1. pnpm run check
-2. node ./scripts/governance/check-task-ledger-sync.js
-3. node ./scripts/governance/check-sprint-plan-status-sync.js
-4. node ./scripts/governance/check-code-review-status-sync.js
+1. `pnpm run build`
+2. `pnpm run check`
+3. `node ./scripts/governance/check-task-ledger-sync.js`
+4. `node ./scripts/governance/check-sprint-plan-status-sync.js`
+5. `node ./scripts/governance/check-code-review-status-sync.js`
+6. `node ./scripts/governance/check-worktree-review-target.js`
 
 ## 9. 执行记录
 
 1. 2026-04-18：任务创建，状态初始化为 `planned`。
+2. 2026-04-18：`CR-001` 已 resolved，sprint-002 的 task/review truth、current-context、project plan 与 sprint plan 已统一切换到 closeout-ready state。
+3. 2026-04-18：已将 sprint-002 标记为 completed，并激活 sprint-003 作为新的 primary execution surface；接下来只剩 boundary-level local commit 进入同窗口交付记录。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
-3. 待执行后补齐
+1. `.repo-ai-governor/context/current-context.md`
+2. `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/plan.md`
+3. `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-003-adopt-host-verify-upgrade-service-native-cutover/plan.md`

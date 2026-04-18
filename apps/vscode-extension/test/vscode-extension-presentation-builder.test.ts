@@ -17,6 +17,7 @@ import {
   OrchestrationServiceLifecycleStatus,
   OrchestrationServiceTransportKind,
   OrchestrationSessionStatus,
+  OrchestrationWorkspaceOperationKind,
 } from '@repo-ai-governor/orchestration-service-client';
 import type {
   OrchestrationExecutionBoardEntry,
@@ -334,6 +335,45 @@ describe('VsCodeExtensionPresentationBuilder', () => {
           defaultFollowUpSlaMinutes: 60,
           notificationStatus: OrchestrationGovernanceNotificationStatus.FOLLOW_UP_REQUIRED,
         },
+        latestWorkspaceOperation: {
+          operationKind: OrchestrationWorkspaceOperationKind.DOCTOR,
+          completedAt: '2026-04-17T09:59:30.000Z',
+          message: 'Doctor completed with attach_mode=read_only.',
+          result: {
+            operation: 'env_doctor',
+            summary: 'Doctor completed with attach_mode=read_only.',
+            checkTotals: {
+              pass: 5,
+              warn: 1,
+              fail: 0,
+            },
+            checks: [
+              {
+                id: 'artifact_registry_state',
+                status: 'warn',
+                detail: 'artifact registry is not initialized yet',
+              },
+            ],
+            artifacts: [
+              {
+                id: 'doctor_diagnostics',
+                path: '/repo/.repo-ai-governor/context/diagnostics/doctor/doctor-1.json',
+              },
+            ],
+            interactionPrompts: [
+              {
+                title: 'Workspace is read-only',
+                action:
+                  'Switch to writable attach mode if you need to create/update governance artifacts.',
+                blocking: false,
+              },
+            ],
+            layeredLogs: {
+              summary: ['attach_mode=read_only'],
+              detailed: ['workspace_root=/repo/.repo-ai-governor'],
+            },
+          },
+        },
       },
       secureAuthoring: {
         userConfig: {
@@ -397,6 +437,7 @@ describe('VsCodeExtensionPresentationBuilder', () => {
         'User-local defaults',
         'Secret readiness',
         'Bootstrap readiness',
+        'Latest workspace operation',
         'Public support level',
         'Desktop relationship',
         'Workflow studio gate',
@@ -439,6 +480,9 @@ describe('VsCodeExtensionPresentationBuilder', () => {
     );
     expect(nodes.find((node) => node.nodeId === 'bootstrap-readiness')?.tooltip).toContain(
       'Recommended actions: Run workspace bootstrap, Refresh governance views',
+    );
+    expect(nodes.find((node) => node.nodeId === 'latest-workspace-operation')?.description).toBe(
+      'Run doctor · 5 pass / 1 warn / 0 fail',
     );
     expect(
       nodes
@@ -503,6 +547,102 @@ describe('VsCodeExtensionPresentationBuilder', () => {
     expect(bootstrapNode?.label).toBe('初始化就绪度');
     expect(bootstrapNode?.tooltip).toContain('建议动作: 执行工作区初始化, 刷新治理视图');
     expect(bootstrapNode?.tooltip).not.toContain('run_workspace_bootstrap');
+  });
+
+  it('guards locale-sensitive workspace-operation details when the snapshot was captured in another locale', () => {
+    const zhBuilder = new VsCodeExtensionPresentationBuilder({
+      localizeText: (_english: string, chinese: string) => chinese,
+    });
+    const nodes = zhBuilder.buildWorkbenchOverviewNodes({
+      workspaceContext: {
+        workspaceLabel: 'ai-governor',
+        workspaceRoot: '/repo',
+        workspaceTrusted: true,
+      },
+      queueOverview: {
+        generatedAt: '2026-04-17T10:00:00.000Z',
+        automationInbox: [],
+        reviewQueue: [],
+        parallelLanes: [],
+        workspaceSummary: [],
+        temporaryBridges: [],
+        notificationOwnership: {
+          ownerSurface: OrchestrationClientSurface.DESKTOP,
+          pendingItemCount: 0,
+          dueSoonItemCount: 0,
+          overdueItemCount: 0,
+          activeWorkspaceCount: 1,
+          defaultFollowUpSlaMinutes: 60,
+          notificationStatus: OrchestrationGovernanceNotificationStatus.IDLE,
+        },
+        latestWorkspaceOperation: {
+          operationKind: OrchestrationWorkspaceOperationKind.DOCTOR,
+          completedAt: '2026-04-17T09:59:30.000Z',
+          locale: 'en-US',
+          message: 'Doctor completed with attach_mode=read_only.',
+          result: {
+            operation: 'env_doctor',
+            summary: 'Doctor completed with attach_mode=read_only.',
+            checkTotals: {
+              pass: 5,
+              warn: 1,
+              fail: 0,
+            },
+            checks: [
+              {
+                id: 'artifact_registry_state',
+                status: 'warn',
+                detail: 'artifact registry is not initialized yet',
+              },
+            ],
+            interactionPrompts: [
+              {
+                title: 'Workspace is read-only',
+                action:
+                  'Switch to writable attach mode if you need to create/update governance artifacts.',
+                blocking: false,
+              },
+            ],
+            layeredLogs: {
+              summary: ['attach_mode=read_only'],
+              detailed: ['workspace_root=/repo/.repo-ai-governor'],
+            },
+            artifacts: [
+              {
+                id: 'doctor_diagnostics',
+                path: '/repo/.repo-ai-governor/context/diagnostics/doctor/doctor-1.json',
+              },
+            ],
+          },
+        },
+      },
+    });
+
+    const latestWorkspaceOperationNode = nodes.find(
+      (node) => node.nodeId === 'latest-workspace-operation',
+    );
+
+    expect(latestWorkspaceOperationNode?.tooltip).toContain('请在当前 VS Code 语言下重新执行');
+    expect(
+      latestWorkspaceOperationNode?.children?.find(
+        (child) => child.nodeId === 'latest-workspace-operation:summary',
+      )?.description,
+    ).toContain('该结果是在另一种语言下采集的');
+    expect(
+      latestWorkspaceOperationNode?.children?.find(
+        (child) => child.nodeId === 'latest-workspace-operation:localized-details',
+      )?.description,
+    ).toBe('需要重新执行');
+    expect(
+      latestWorkspaceOperationNode?.children?.some(
+        (child) => child.nodeId === 'latest-workspace-operation:prompt:0',
+      ),
+    ).toBe(false);
+    expect(
+      latestWorkspaceOperationNode?.children?.some(
+        (child) => child.nodeId === 'latest-workspace-operation:summary-log:0',
+      ),
+    ).toBe(false);
   });
 
   it('renders automation-queue nodes with bridge-safe service-owned follow-up metadata', () => {
@@ -634,6 +774,45 @@ describe('VsCodeExtensionPresentationBuilder', () => {
           defaultFollowUpSlaMinutes: 60,
           notificationStatus: OrchestrationGovernanceNotificationStatus.FOLLOW_UP_REQUIRED,
         },
+        latestWorkspaceOperation: {
+          operationKind: OrchestrationWorkspaceOperationKind.DOCTOR,
+          completedAt: '2026-04-17T10:14:30.000Z',
+          message: 'Doctor completed with attach_mode=read_only.',
+          result: {
+            operation: 'env_doctor',
+            summary: 'Doctor completed with attach_mode=read_only.',
+            checkTotals: {
+              pass: 5,
+              warn: 1,
+              fail: 0,
+            },
+            checks: [
+              {
+                id: 'artifact_registry_state',
+                status: 'warn',
+                detail: 'artifact registry is not initialized yet',
+              },
+            ],
+            artifacts: [
+              {
+                id: 'doctor_diagnostics',
+                path: '/repo/.repo-ai-governor/context/diagnostics/doctor/doctor-1.json',
+              },
+            ],
+            interactionPrompts: [
+              {
+                title: 'Workspace is read-only',
+                action:
+                  'Switch to writable attach mode if you need to create/update governance artifacts.',
+                blocking: false,
+              },
+            ],
+            layeredLogs: {
+              summary: ['attach_mode=read_only'],
+              detailed: ['workspace_root=/repo/.repo-ai-governor'],
+            },
+          },
+        },
       },
       selectedExecution: createExecutionBoardEntry({
         currentStageId: 'review_verify',
@@ -724,6 +903,7 @@ describe('VsCodeExtensionPresentationBuilder', () => {
     });
 
     expect(html).toContain('Governor workflow studio');
+    expect(html).toContain('Latest workspace operation');
     expect(html).toContain('Governed run control');
     expect(html).toContain('Continuity and handoff');
     expect(html).toContain('Support-truth gate');
@@ -731,6 +911,10 @@ describe('VsCodeExtensionPresentationBuilder', () => {
     expect(html).toContain('Foundation-only secondary surface');
     expect(html).toContain('Primary workbench claim active');
     expect(html).toContain('review_verify');
+    expect(html).toContain('Run doctor');
+    expect(html).toContain('artifact registry is not initialized yet');
+    expect(html).toContain('/repo/.repo-ai-governor/context/diagnostics/doctor/doctor-1.json');
+    expect(html).toContain('attach_mode=read_only');
     expect(html).toContain('Service-native host query replaces this bridge.');
     expect(html).toContain('Selected backend: os-keychain');
     expect(html).toContain('Theme default: calm');

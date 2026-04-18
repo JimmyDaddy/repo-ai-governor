@@ -29,13 +29,13 @@
 
 ## 2.2 sprint-002-doctor-check-and-workspace-bootstrap-cutover
 
-- Status: active
+- Status: completed
 - Sprint Goal: Complete plugin-primary doctor, check, and workspace bootstrap flows so users no longer need a visible CLI bootstrap path.
 - Task Package: `TK-967、TK-968、TK-969、TK-970、TK-984`
 
 ## 2.3 sprint-003-adopt-host-verify-upgrade-service-native-cutover
 
-- Status: planned
+- Status: active
 - Sprint Goal: Complete service-native adopt, host, verify, and upgrade flows in VS Code and exit the temporary CLI bridge for user-facing execution.
 - Task Package: `TK-971、TK-972、TK-973、TK-974、TK-985`
 
@@ -60,12 +60,12 @@
 | TK-965 | sprint-001-contract-bootstrap-and-readiness-cutover | land editor-native bootstrap readiness and migration surfaces | workbench surface | implement plugin-native bootstrap and readiness service seams | completed |
 | TK-966 | sprint-001-contract-bootstrap-and-readiness-cutover | prepare sprint-001 exit acceptance and sprint-002 handoff | governance handoff | land editor-native bootstrap readiness and migration surfaces | completed |
 | TK-983 | sprint-001-contract-bootstrap-and-readiness-cutover | close sprint-001 boundary and activate sprint-002 execution surface | sprint closeout | prepare sprint-001 exit acceptance and sprint-002 handoff | completed |
-| TK-967 | sprint-002-doctor-check-and-workspace-bootstrap-cutover | freeze doctor-check and workspace bootstrap cutover contract | cutover contract | prepare sprint-001 exit acceptance and sprint-002 handoff | planned |
-| TK-968 | sprint-002-doctor-check-and-workspace-bootstrap-cutover | implement service-native doctor-check and workspace bootstrap seams | service seam | freeze doctor-check and workspace bootstrap cutover contract | planned |
-| TK-969 | sprint-002-doctor-check-and-workspace-bootstrap-cutover | land workbench-native doctor-check and workspace bootstrap surfaces | workbench surface | implement service-native doctor-check and workspace bootstrap seams | planned |
-| TK-970 | sprint-002-doctor-check-and-workspace-bootstrap-cutover | prepare sprint-002 exit acceptance and sprint-003 handoff | governance handoff | land workbench-native doctor-check and workspace bootstrap surfaces | planned |
-| TK-984 | sprint-002-doctor-check-and-workspace-bootstrap-cutover | close sprint-002 boundary and activate sprint-003 execution surface | sprint closeout | prepare sprint-002 exit acceptance and sprint-003 handoff | planned |
-| TK-971 | sprint-003-adopt-host-verify-upgrade-service-native-cutover | freeze adopt-host-verify-upgrade bridge-exit contract | bridge-exit contract | prepare sprint-002 exit acceptance and sprint-003 handoff | planned |
+| TK-967 | sprint-002-doctor-check-and-workspace-bootstrap-cutover | freeze doctor-check and workspace bootstrap cutover contract | cutover contract | prepare sprint-001 exit acceptance and sprint-002 handoff | completed |
+| TK-968 | sprint-002-doctor-check-and-workspace-bootstrap-cutover | implement service-native doctor-check and workspace bootstrap seams | service seam | freeze doctor-check and workspace bootstrap cutover contract | completed |
+| TK-969 | sprint-002-doctor-check-and-workspace-bootstrap-cutover | land workbench-native doctor-check and workspace bootstrap surfaces | workbench surface | implement service-native doctor-check and workspace bootstrap seams | completed |
+| TK-970 | sprint-002-doctor-check-and-workspace-bootstrap-cutover | prepare sprint-002 exit acceptance and sprint-003 handoff | governance handoff | land workbench-native doctor-check and workspace bootstrap surfaces | completed |
+| TK-984 | sprint-002-doctor-check-and-workspace-bootstrap-cutover | close sprint-002 boundary and activate sprint-003 execution surface | sprint closeout | prepare sprint-002 exit acceptance and sprint-003 handoff | completed |
+| TK-971 | sprint-003-adopt-host-verify-upgrade-service-native-cutover | freeze adopt-host-verify-upgrade bridge-exit contract | bridge-exit contract | prepare sprint-002 exit acceptance and sprint-003 handoff | active |
 | TK-972 | sprint-003-adopt-host-verify-upgrade-service-native-cutover | implement service-native adopt-host-verify-upgrade orchestration seams | service seam | freeze adopt-host-verify-upgrade bridge-exit contract | planned |
 | TK-973 | sprint-003-adopt-host-verify-upgrade-service-native-cutover | land workbench-native adopt-host-verify-upgrade trust-sensitive surfaces | workbench surface | implement service-native adopt-host-verify-upgrade orchestration seams | planned |
 | TK-974 | sprint-003-adopt-host-verify-upgrade-service-native-cutover | prepare sprint-003 exit acceptance and sprint-004 handoff | governance handoff | land workbench-native adopt-host-verify-upgrade trust-sensitive surfaces | planned |
@@ -99,6 +99,7 @@
 1. 2026-04-18：创建 project-114-vscode-plugin-full-ownership-and-zero-cli-user-path 全量执行流骨架，覆盖 sprint-001-contract-bootstrap-and-readiness-cutover、sprint-002-doctor-check-and-workspace-bootstrap-cutover、sprint-003-adopt-host-verify-upgrade-service-native-cutover、sprint-004-workflow-authoring-run-review-and-automation-primaryization、sprint-005-support-truth-migration-and-cli-deprecation-closeout。
 2. 2026-04-18：sprint-001 implementation gate 已完成首轮收敛，zero-cli bootstrap/readiness contract、service seam、editor-native surfaces、manifest parity 与 extension tests/build 证据已经落盘；随后进入多轮 fresh reviewer loop。
 3. 2026-04-18：sprint-001 已完成 closeout 并写回 completed truth；current-context 已切换到 sprint-002-doctor-check-and-workspace-bootstrap-cutover 作为新的 active execution surface。
+4. 2026-04-18：sprint-002 已完成 closeout 并写回 completed truth；current-context 已切换到 sprint-003-adopt-host-verify-upgrade-service-native-cutover 作为新的 active execution surface。
 
 ## 7. 里程碑记录入口
 

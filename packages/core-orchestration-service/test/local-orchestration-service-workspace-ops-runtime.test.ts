@@ -1,3 +1,7 @@
+import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
 import { describe, expect, it, vi } from 'vitest';
 
 import {
@@ -258,6 +262,241 @@ describe('LocalOrchestrationServiceWorkspaceOpsRuntime', () => {
       currentWorkingDirectory: '/repo',
       locale: undefined,
     });
+  });
+
+  it('captures layered logs and the latest service-owned workspace-operation snapshot', async () => {
+    const cliExecutor = vi.fn().mockResolvedValue({
+      message: 'Doctor completed.',
+      command_result: {
+        operation: 'env_doctor',
+        summary: 'Doctor completed.',
+        check_totals: {
+          pass: 5,
+          warn: 1,
+          fail: 0,
+        },
+        checks: [
+          {
+            id: 'artifact_registry_state',
+            status: 'warn',
+            detail: 'artifact registry is not initialized yet',
+          },
+        ],
+        artifacts: [
+          {
+            id: 'doctor_diagnostics',
+            path: '/repo/.repo-ai-governor/context/diagnostics/doctor/doctor-1.json',
+          },
+        ],
+        experience: {
+          interactionPrompts: [
+            {
+              title: 'Workspace is read-only',
+              action:
+                'Switch to writable attach mode if you need to create/update governance artifacts.',
+              blocking: false,
+            },
+          ],
+          layeredLogs: {
+            summary: ['attach_mode=read_only'],
+            detailed: ['workspace_root=/repo/.repo-ai-governor'],
+          },
+        },
+      },
+    });
+    const workspaceResolver = {
+      resolve: vi.fn(() => ({
+        repositoryRoot: '/repo',
+        workspaceId: 'workspace-1',
+        workspaceRoot: '/repo/.repo-ai-governor',
+        configPath: '/repo/.repo-ai-governor/governor.yaml',
+        mode: 'repo_local',
+        modeSource: 'config',
+      })),
+    };
+    const runtime = new LocalOrchestrationServiceWorkspaceOpsRuntime({
+      workspaceRoot: '/repo/.repo-ai-governor',
+      repositoryRoot: '/repo',
+      workspaceResolver,
+      pathExists: () => false,
+      cliExecutor,
+      nowProvider: () => new Date('2026-04-18T03:04:05.000Z'),
+    });
+
+    await expect(
+      runtime.runWorkspaceOperation({
+        operationKind: OrchestrationWorkspaceOperationKind.DOCTOR,
+      }),
+    ).resolves.toEqual({
+      message: 'Doctor completed.',
+      result: {
+        operation: 'env_doctor',
+        summary: 'Doctor completed.',
+        checkTotals: {
+          pass: 5,
+          warn: 1,
+          fail: 0,
+        },
+        checks: [
+          {
+            id: 'artifact_registry_state',
+            status: 'warn',
+            detail: 'artifact registry is not initialized yet',
+          },
+        ],
+        artifacts: [
+          {
+            id: 'doctor_diagnostics',
+            path: '/repo/.repo-ai-governor/context/diagnostics/doctor/doctor-1.json',
+          },
+        ],
+        interactionPrompts: [
+          {
+            title: 'Workspace is read-only',
+            action:
+              'Switch to writable attach mode if you need to create/update governance artifacts.',
+            blocking: false,
+          },
+        ],
+        layeredLogs: {
+          summary: ['attach_mode=read_only'],
+          detailed: ['workspace_root=/repo/.repo-ai-governor'],
+        },
+      },
+    });
+    expect(runtime.getLatestWorkspaceOperationSnapshot()).toEqual({
+      operationKind: OrchestrationWorkspaceOperationKind.DOCTOR,
+      completedAt: '2026-04-18T03:04:05.000Z',
+      message: 'Doctor completed.',
+      result: {
+        operation: 'env_doctor',
+        summary: 'Doctor completed.',
+        checkTotals: {
+          pass: 5,
+          warn: 1,
+          fail: 0,
+        },
+        checks: [
+          {
+            id: 'artifact_registry_state',
+            status: 'warn',
+            detail: 'artifact registry is not initialized yet',
+          },
+        ],
+        artifacts: [
+          {
+            id: 'doctor_diagnostics',
+            path: '/repo/.repo-ai-governor/context/diagnostics/doctor/doctor-1.json',
+          },
+        ],
+        interactionPrompts: [
+          {
+            title: 'Workspace is read-only',
+            action:
+              'Switch to writable attach mode if you need to create/update governance artifacts.',
+            blocking: false,
+          },
+        ],
+        layeredLogs: {
+          summary: ['attach_mode=read_only'],
+          detailed: ['workspace_root=/repo/.repo-ai-governor'],
+        },
+      },
+    });
+  });
+
+  it('rehydrates the latest workspace-operation snapshot from the workspace-owned read model', async () => {
+    const repositoryRoot = mkdtempSync(join(tmpdir(), 'workspace-ops-repo-'));
+    const workspaceRoot = join(repositoryRoot, '.repo-ai-governor');
+    mkdirSync(workspaceRoot, { recursive: true });
+    const workspaceResolver = {
+      resolve: vi.fn(() => ({
+        repositoryRoot,
+        workspaceId: 'workspace-1',
+        workspaceRoot,
+        configPath: join(workspaceRoot, 'governor.yaml'),
+        mode: 'repo_local',
+        modeSource: 'config',
+      })),
+    };
+    const cliExecutor = vi.fn().mockResolvedValue({
+      message: '医生检查完成。',
+      command_result: {
+        operation: 'env_doctor',
+        summary: '医生检查完成。',
+        check_totals: {
+          pass: 3,
+          warn: 1,
+          fail: 0,
+        },
+        experience: {
+          interactionPrompts: [
+            {
+              title: '当前工作区是只读模式',
+              action: '如需写入治理产物，请切换到可写 attach mode。',
+              blocking: false,
+            },
+          ],
+          layeredLogs: {
+            summary: ['attach_mode=read_only'],
+            detailed: ['workspace_root=.repo-ai-governor'],
+          },
+        },
+      },
+    });
+
+    try {
+      const writerRuntime = new LocalOrchestrationServiceWorkspaceOpsRuntime({
+        workspaceRoot,
+        repositoryRoot,
+        workspaceResolver,
+        pathExists: existsSync,
+        cliExecutor,
+        nowProvider: () => new Date('2026-04-18T09:10:11.000Z'),
+      });
+
+      await writerRuntime.runWorkspaceOperation({
+        operationKind: OrchestrationWorkspaceOperationKind.DOCTOR,
+        locale: 'zh-CN',
+      });
+
+      const readerRuntime = new LocalOrchestrationServiceWorkspaceOpsRuntime({
+        workspaceRoot,
+        repositoryRoot,
+        workspaceResolver,
+        pathExists: existsSync,
+        cliExecutor,
+      });
+
+      expect(readerRuntime.getLatestWorkspaceOperationSnapshot()).toEqual({
+        operationKind: OrchestrationWorkspaceOperationKind.DOCTOR,
+        completedAt: '2026-04-18T09:10:11.000Z',
+        locale: 'zh-CN',
+        message: '医生检查完成。',
+        result: {
+          operation: 'env_doctor',
+          summary: '医生检查完成。',
+          checkTotals: {
+            pass: 3,
+            warn: 1,
+            fail: 0,
+          },
+          interactionPrompts: [
+            {
+              title: '当前工作区是只读模式',
+              action: '如需写入治理产物，请切换到可写 attach mode。',
+              blocking: false,
+            },
+          ],
+          layeredLogs: {
+            summary: ['attach_mode=read_only'],
+            detailed: ['workspace_root=.repo-ai-governor'],
+          },
+        },
+      });
+    } finally {
+      rmSync(repositoryRoot, { recursive: true, force: true });
+    }
   });
 
   it('blocks upgrade apply when the client did not provide an explicit confirmation decision', async () => {

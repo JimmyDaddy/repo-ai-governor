@@ -1,6 +1,6 @@
 # sprint-002-doctor-check-and-workspace-bootstrap-cutover 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-18
 - Sprint Goal: Complete plugin-primary doctor, check, and workspace bootstrap flows so users no longer need a visible CLI bootstrap path.
 - Project: `project-114-vscode-plugin-full-ownership-and-zero-cli-user-path`
@@ -22,11 +22,11 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-967 | freeze doctor-check and workspace bootstrap cutover contract | prepare sprint-001 exit acceptance and sprint-002 handoff | planned |
-| TK-968 | implement service-native doctor-check and workspace bootstrap seams | freeze doctor-check and workspace bootstrap cutover contract | planned |
-| TK-969 | land workbench-native doctor-check and workspace bootstrap surfaces | implement service-native doctor-check and workspace bootstrap seams | planned |
-| TK-970 | prepare sprint-002 exit acceptance and sprint-003 handoff | land workbench-native doctor-check and workspace bootstrap surfaces | planned |
-| TK-984 | close sprint-002 boundary and activate sprint-003 execution surface | prepare sprint-002 exit acceptance and sprint-003 handoff | planned |
+| TK-967 | freeze doctor-check and workspace bootstrap cutover contract | prepare sprint-001 exit acceptance and sprint-002 handoff | completed |
+| TK-968 | implement service-native doctor-check and workspace bootstrap seams | freeze doctor-check and workspace bootstrap cutover contract | completed |
+| TK-969 | land workbench-native doctor-check and workspace bootstrap surfaces | implement service-native doctor-check and workspace bootstrap seams | completed |
+| TK-970 | prepare sprint-002 exit acceptance and sprint-003 handoff | land workbench-native doctor-check and workspace bootstrap surfaces | completed |
+| TK-984 | close sprint-002 boundary and activate sprint-003 execution surface | prepare sprint-002 exit acceptance and sprint-003 handoff | completed |
 
 ## 3. Exit Criteria
 
@@ -37,3 +37,5 @@
 
 1. Bootstrap and diagnostics should stay fail-closed; hidden shell fallbacks must not silently preserve the old user path.
 2. `2026-04-18`：sprint-001 已完成 handoff，本 sprint 已激活为当前 execution surface；下一步从 `TK-967` 开始推进 doctor/check/workspace-bootstrap 的 plugin-primary cutover。
+3. `2026-04-18`：`TK-967 ~ TK-970` 已完成实现与 handoff 收口；当前 sprint 进入 fresh reviewer 准备阶段，待 reviewer clean 后再推进 `TK-984` closeout。
+4. `2026-04-18`：`CR-001` 已 resolved，`TK-984` 已完成 closeout，sprint-002 现已切换为 completed truth，并把 sprint-003 激活为新的 execution surface。

@@ -1,13 +1,27 @@
 # checklist
 
-- [ ] TK-967 freeze doctor-check and workspace bootstrap cutover contract
+- [x] TK-967 freeze doctor-check and workspace bootstrap cutover contract
   - 2026-04-18：任务创建，状态初始化为 `planned`。
   - 2026-04-18：随着 sprint-002 activation 完成，TK-967 状态切换为 `active`，并作为当前首个 implementation lane 开始冻结 doctor/check/workspace-bootstrap 的 plugin-primary cutover contract。
-- [ ] TK-968 implement service-native doctor-check and workspace bootstrap seams
+  - 2026-04-18：冻结 contract，明确 VS Code 只消费 local orchestration service 的 workspace-operation result seam；最近一次 doctor/check/bootstrap 结果改为由 service query 投影，不再停留在 toast-only UI。
+  - 2026-04-18：补齐 sprint-002 的 locale guard 与 persisted snapshot contract，明确最近一次 workspace operation 需要在 sidecar restart 后回填，且不能把另一种 locale 的 user-facing copy 直接混入当前 workbench。
+- [x] TK-968 implement service-native doctor-check and workspace bootstrap seams
   - 2026-04-18：任务创建，状态初始化为 `planned`。
-- [ ] TK-969 land workbench-native doctor-check and workspace bootstrap surfaces
+  - 2026-04-18：扩展 workspace-operation contract，补齐 `layeredLogs` 与 `latestWorkspaceOperation` snapshot，并通过 queue overview query 将最近一次 doctor/check/bootstrap 结果稳定投影给 VS Code。
+  - 2026-04-18：为 snapshot 增加 workspace-owned persisted read model 与 locale metadata，确保 sidecar restart 后仍能回填最近一次结果，并让 presenter 能对跨 locale 的详情做 guard。
+- [x] TK-969 land workbench-native doctor-check and workspace bootstrap surfaces
   - 2026-04-18：任务创建，状态初始化为 `planned`。
-- [ ] TK-970 prepare sprint-002 exit acceptance and sprint-003 handoff
+  - 2026-04-18：workbench overview、workflow studio 与 `/status` 已接入最近一次 workspace operation，持续显示诊断摘要、attention checks、receipt/backlink、follow-up prompts 与 layered progress。
+  - 2026-04-18：对 latest workspace operation 增加 locale mismatch guard；当快照来自另一种语言时，workbench 继续显示 locale-neutral facts，并提示用户在当前 workbench 语言下重跑以刷新摘要、建议动作和进度文案。
+- [x] TK-970 prepare sprint-002 exit acceptance and sprint-003 handoff
   - 2026-04-18：任务创建，状态初始化为 `planned`。
-- [ ] TK-984 close sprint-002 boundary and activate sprint-003 execution surface
+  - 2026-04-18：整理 sprint-002 验收与 sprint-003 handoff，确认 adopt/host/verify/upgrade 将复用 `latestWorkspaceOperation` snapshot pattern，而不是退回 CLI-first bridge UX。
+  - 2026-04-18：在验收包中补充 persisted snapshot 与 locale guard 要求，锁定后续 sprint 不能把另一种 UI 语言下的旧文案直接回放为当前 workbench 真值。
+- [x] TK-984 close sprint-002 boundary and activate sprint-003 execution surface
   - 2026-04-18：任务创建，状态初始化为 `planned`。
+  - 2026-04-18：`CR-001` 已 resolved，sprint-002 的 task/review truth、current-context、project plan 与 sprint plan 已统一切换到 closeout-ready state。
+  - 2026-04-18：已将 sprint-002 标记为 completed，并激活 sprint-003 作为新的 primary execution surface；接下来只剩 boundary-level local commit 进入同窗口交付记录。
+- [x] CR-001 sprint-002-doctor-check-and-workspace-bootstrap-cutover delegated review loop round 1
+  - 2026-04-18：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-18：主 agent 已复核 reviewer findings，确认 `tasks.csv` terminal evidence、locale mismatch guard 与 persisted snapshot hydration 均为本 sprint 必修问题。
+  - 2026-04-18：accepted findings 已修复并完成 targeted vitest、`pnpm run build`、`pnpm run check`，CR-001 收口为 `resolved`。
