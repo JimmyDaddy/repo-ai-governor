@@ -7,6 +7,7 @@ import {
   OrchestrationGovernanceTemporaryBridgeCapabilityClass,
   OrchestrationGovernanceTemporaryBridgeExitCriterion,
   OrchestrationGovernanceTemporaryBridgeReceiptKind,
+  OrchestrationWorkspaceOperationKind,
 } from '@repo-ai-governor/orchestration-service-client';
 
 import { VsCodeExtensionSelectionStore } from '../src/runtime/vscode-extension-selection-store.js';
@@ -104,6 +105,34 @@ describe('VsCodeExtensionSelectionStore', () => {
           OrchestrationGovernanceTemporaryBridgeExitCriterion.SERVICE_NATIVE_HOST_QUERY,
         ],
       },
+    });
+  });
+
+  it('tracks direct workspace-operation requests and clears them when execution selection changes', () => {
+    const selectionStore = new VsCodeExtensionSelectionStore();
+
+    selectionStore.applyCommandRequest({
+      workspaceOperationKind: OrchestrationWorkspaceOperationKind.HOST_VERIFY,
+      workspaceOperationArguments: {
+        outputDir: '/repo/.repo-ai-governor/generated/hosts/github-copilot',
+      },
+    });
+
+    expect(selectionStore.getSnapshot()).toEqual({
+      workspaceOperationKind: OrchestrationWorkspaceOperationKind.HOST_VERIFY,
+      workspaceOperationArguments: {
+        outputDir: '/repo/.repo-ai-governor/generated/hosts/github-copilot',
+      },
+    });
+
+    selectionStore.rememberExecution('execution-1', 'session-1');
+
+    expect(selectionStore.getSnapshot()).toEqual({
+      executionId: 'execution-1',
+      executionSessionId: 'session-1',
+      reviewSourcePath: undefined,
+      queueEntry: undefined,
+      temporaryBridge: undefined,
     });
   });
 });

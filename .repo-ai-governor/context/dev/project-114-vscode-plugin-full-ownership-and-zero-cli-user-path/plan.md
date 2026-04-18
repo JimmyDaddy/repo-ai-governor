@@ -35,13 +35,13 @@
 
 ## 2.3 sprint-003-adopt-host-verify-upgrade-service-native-cutover
 
-- Status: active
+- Status: completed
 - Sprint Goal: Complete service-native adopt, host, verify, and upgrade flows in VS Code and exit the temporary CLI bridge for user-facing execution.
 - Task Package: `TK-971、TK-972、TK-973、TK-974、TK-985`
 
 ## 2.4 sprint-004-workflow-authoring-run-review-and-automation-primaryization
 
-- Status: planned
+- Status: active
 - Sprint Goal: Make workflow authoring, run-control, review, and automation a plugin-primary user path with continuity-safe UX.
 - Task Package: `TK-975、TK-976、TK-977、TK-978、TK-986`
 
@@ -65,12 +65,12 @@
 | TK-969 | sprint-002-doctor-check-and-workspace-bootstrap-cutover | land workbench-native doctor-check and workspace bootstrap surfaces | workbench surface | implement service-native doctor-check and workspace bootstrap seams | completed |
 | TK-970 | sprint-002-doctor-check-and-workspace-bootstrap-cutover | prepare sprint-002 exit acceptance and sprint-003 handoff | governance handoff | land workbench-native doctor-check and workspace bootstrap surfaces | completed |
 | TK-984 | sprint-002-doctor-check-and-workspace-bootstrap-cutover | close sprint-002 boundary and activate sprint-003 execution surface | sprint closeout | prepare sprint-002 exit acceptance and sprint-003 handoff | completed |
-| TK-971 | sprint-003-adopt-host-verify-upgrade-service-native-cutover | freeze adopt-host-verify-upgrade bridge-exit contract | bridge-exit contract | prepare sprint-002 exit acceptance and sprint-003 handoff | active |
-| TK-972 | sprint-003-adopt-host-verify-upgrade-service-native-cutover | implement service-native adopt-host-verify-upgrade orchestration seams | service seam | freeze adopt-host-verify-upgrade bridge-exit contract | planned |
-| TK-973 | sprint-003-adopt-host-verify-upgrade-service-native-cutover | land workbench-native adopt-host-verify-upgrade trust-sensitive surfaces | workbench surface | implement service-native adopt-host-verify-upgrade orchestration seams | planned |
-| TK-974 | sprint-003-adopt-host-verify-upgrade-service-native-cutover | prepare sprint-003 exit acceptance and sprint-004 handoff | governance handoff | land workbench-native adopt-host-verify-upgrade trust-sensitive surfaces | planned |
-| TK-985 | sprint-003-adopt-host-verify-upgrade-service-native-cutover | close sprint-003 boundary and activate sprint-004 execution surface | sprint closeout | prepare sprint-003 exit acceptance and sprint-004 handoff | planned |
-| TK-975 | sprint-004-workflow-authoring-run-review-and-automation-primaryization | freeze plugin-primary workflow and automation contract | workflow contract | prepare sprint-003 exit acceptance and sprint-004 handoff | planned |
+| TK-971 | sprint-003-adopt-host-verify-upgrade-service-native-cutover | freeze adopt-host-verify-upgrade bridge-exit contract | bridge-exit contract | prepare sprint-002 exit acceptance and sprint-003 handoff | completed |
+| TK-972 | sprint-003-adopt-host-verify-upgrade-service-native-cutover | implement service-native adopt-host-verify-upgrade orchestration seams | service seam | freeze adopt-host-verify-upgrade bridge-exit contract | completed |
+| TK-973 | sprint-003-adopt-host-verify-upgrade-service-native-cutover | land workbench-native adopt-host-verify-upgrade trust-sensitive surfaces | workbench surface | implement service-native adopt-host-verify-upgrade orchestration seams | completed |
+| TK-974 | sprint-003-adopt-host-verify-upgrade-service-native-cutover | prepare sprint-003 exit acceptance and sprint-004 handoff | governance handoff | land workbench-native adopt-host-verify-upgrade trust-sensitive surfaces | completed |
+| TK-985 | sprint-003-adopt-host-verify-upgrade-service-native-cutover | close sprint-003 boundary and activate sprint-004 execution surface | sprint closeout | prepare sprint-003 exit acceptance and sprint-004 handoff | completed |
+| TK-975 | sprint-004-workflow-authoring-run-review-and-automation-primaryization | freeze plugin-primary workflow and automation contract | workflow contract | prepare sprint-003 exit acceptance and sprint-004 handoff | active |
 | TK-976 | sprint-004-workflow-authoring-run-review-and-automation-primaryization | implement workflow authoring run-control review and automation seams | service seam | freeze plugin-primary workflow and automation contract | planned |
 | TK-977 | sprint-004-workflow-authoring-run-review-and-automation-primaryization | land workflow studio review and automation primary surfaces | workbench surface | implement workflow authoring run-control review and automation seams | planned |
 | TK-978 | sprint-004-workflow-authoring-run-review-and-automation-primaryization | prepare sprint-004 exit acceptance and sprint-005 handoff | governance handoff | land workflow studio review and automation primary surfaces | planned |
@@ -100,6 +100,7 @@
 2. 2026-04-18：sprint-001 implementation gate 已完成首轮收敛，zero-cli bootstrap/readiness contract、service seam、editor-native surfaces、manifest parity 与 extension tests/build 证据已经落盘；随后进入多轮 fresh reviewer loop。
 3. 2026-04-18：sprint-001 已完成 closeout 并写回 completed truth；current-context 已切换到 sprint-002-doctor-check-and-workspace-bootstrap-cutover 作为新的 active execution surface。
 4. 2026-04-18：sprint-002 已完成 closeout 并写回 completed truth；current-context 已切换到 sprint-003-adopt-host-verify-upgrade-service-native-cutover 作为新的 active execution surface。
+5. 2026-04-18：sprint-003 已完成 closeout 并写回 completed truth；current-context 已切换到 sprint-004-workflow-authoring-run-review-and-automation-primaryization 作为新的 active execution surface，并预留 sprint-004 `CR-001` 作为首轮 fresh reviewer 编号。
 
 ## 7. 里程碑记录入口
 

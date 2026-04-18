@@ -1119,6 +1119,72 @@ describe('VsCode extension controller/provider integration', () => {
     );
   });
 
+  it('preserves direct workspace-operation selection during review detail refresh', async () => {
+    const selectionStore = new VsCodeExtensionSelectionStore();
+    selectionStore.applyCommandRequest({
+      workspaceOperationKind: OrchestrationWorkspaceOperationKind.HOST_VERIFY,
+      workspaceOperationArguments: {
+        outputDir: '/repo/.repo-ai-governor/generated/hosts/github-copilot',
+      },
+    });
+
+    const resolveReviewDetailSnapshot = vi.fn().mockResolvedValue({
+      workspaceContext: {
+        workspaceLabel: 'ai-governor',
+        workspaceRoot: '/repo',
+        workspaceTrusted: true,
+      },
+      selectedExecution: {
+        execution: {
+          executionId: 'execution-direct',
+          executionSessionId: 'session-direct',
+        },
+        actions: [],
+        handoffTargets: [],
+      },
+    });
+    const reviewDetailProvider = new VsCodeExtensionReviewDetailProvider(
+      {
+        resolveReviewDetailSnapshot,
+      } as never,
+      selectionStore,
+      {
+        buildReviewDetailHtml: vi.fn().mockReturnValue('<html></html>'),
+      } as never,
+    );
+
+    await reviewDetailProvider.resolveWebviewView({
+      webview: {
+        options: {},
+        html: '',
+      },
+    } as never);
+    await reviewDetailProvider.refresh();
+
+    expect(resolveReviewDetailSnapshot).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        executionId: 'execution-direct',
+        executionSessionId: 'session-direct',
+        workspaceOperationKind: OrchestrationWorkspaceOperationKind.HOST_VERIFY,
+        workspaceOperationArguments: {
+          outputDir: '/repo/.repo-ai-governor/generated/hosts/github-copilot',
+        },
+      }),
+    );
+    expect(selectionStore.getSnapshot()).toEqual({
+      executionId: 'execution-direct',
+      executionSessionId: 'session-direct',
+      reviewSourcePath: undefined,
+      queueEntry: undefined,
+      temporaryBridge: undefined,
+      workspaceOperationKind: OrchestrationWorkspaceOperationKind.HOST_VERIFY,
+      workspaceOperationArguments: {
+        outputDir: '/repo/.repo-ai-governor/generated/hosts/github-copilot',
+      },
+    });
+  });
+
   it('opens review detail from a review-only queue request without restoring stale execution state', async () => {
     const selectionStore = new VsCodeExtensionSelectionStore();
     const resolveReviewDetailSnapshot = vi
@@ -1405,6 +1471,174 @@ describe('VsCode extension controller/provider integration', () => {
     expect(vscodeMock.createTerminal).not.toHaveBeenCalled();
     expect(vscodeMock.sendText).not.toHaveBeenCalled();
     expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith('Host pack started.');
+  });
+
+  it('prefers an explicit temporary bridge over stale direct workspace-operation selection', async () => {
+    vscodeMock.state.trusted = true;
+
+    const selectionStore = new VsCodeExtensionSelectionStore();
+    selectionStore.applyCommandRequest({
+      workspaceOperationKind: OrchestrationWorkspaceOperationKind.HOST_VERIFY,
+      workspaceOperationArguments: {
+        outputDir: '/repo/.repo-ai-governor/generated/hosts/github-copilot',
+      },
+    });
+
+    const serviceRuntime = {
+      runWorkspaceOperation: vi.fn().mockResolvedValue({
+        message: 'Host pack started.',
+        result: {},
+      }),
+    };
+    const controller = new VsCodeExtensionCommandController(
+      serviceRuntime as never,
+      selectionStore,
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    await controller.stageTemporaryBridge({
+      temporaryBridge: {
+        bridgeId: 'temporary-bridge-host-pack',
+        capabilityClass: OrchestrationGovernanceTemporaryBridgeCapabilityClass.HOST_PACK,
+        operationKind: OrchestrationWorkspaceOperationKind.HOST_PACK,
+        operationArguments: {
+          host: 'claude-code',
+          mode: 'plugin-bundle',
+          bundleDir: '/repo/.repo-ai-governor/generated/bundles/claude',
+        },
+        workspaceRoot: '/repo/.repo-ai-governor',
+        commandWorkingDirectory: '/repo',
+        previewCommandLine:
+          'repo-ai-governor host pack --host claude-code --mode plugin-bundle --bundle-dir /repo/.repo-ai-governor/generated/bundles/claude',
+        receiptKind: OrchestrationGovernanceTemporaryBridgeReceiptKind.HOST_PACK_RECEIPT,
+        backlinkSurface: OrchestrationGovernanceTemporaryBridgeBacklinkSurface.ARTIFACT_WORKBENCH,
+        exitCriteria: [
+          OrchestrationGovernanceTemporaryBridgeExitCriterion.SERVICE_NATIVE_HOST_QUERY,
+        ],
+      },
+    });
+
+    expect(serviceRuntime.runWorkspaceOperation).toHaveBeenCalledWith('host_pack', {
+      host: 'claude-code',
+      mode: 'plugin-bundle',
+      bundleDir: '/repo/.repo-ai-governor/generated/bundles/claude',
+    });
+    expect(selectionStore.getSnapshot()).toEqual({
+      queueEntry: undefined,
+      temporaryBridge: {
+        bridgeId: 'temporary-bridge-host-pack',
+        capabilityClass: OrchestrationGovernanceTemporaryBridgeCapabilityClass.HOST_PACK,
+        operationKind: OrchestrationWorkspaceOperationKind.HOST_PACK,
+        operationArguments: {
+          host: 'claude-code',
+          mode: 'plugin-bundle',
+          bundleDir: '/repo/.repo-ai-governor/generated/bundles/claude',
+        },
+        workspaceRoot: '/repo/.repo-ai-governor',
+        commandWorkingDirectory: '/repo',
+        previewCommandLine:
+          'repo-ai-governor host pack --host claude-code --mode plugin-bundle --bundle-dir /repo/.repo-ai-governor/generated/bundles/claude',
+        receiptKind: OrchestrationGovernanceTemporaryBridgeReceiptKind.HOST_PACK_RECEIPT,
+        backlinkSurface: OrchestrationGovernanceTemporaryBridgeBacklinkSurface.ARTIFACT_WORKBENCH,
+        exitCriteria: [
+          OrchestrationGovernanceTemporaryBridgeExitCriterion.SERVICE_NATIVE_HOST_QUERY,
+        ],
+      },
+    });
+    expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith('Host pack started.');
+  });
+
+  it('prompts for one service-native repository operation when no bridge or direct request is selected', async () => {
+    vscodeMock.state.trusted = true;
+    vscodeMock.showQuickPick.mockResolvedValueOnce({
+      label: 'Verify host assets',
+      workspaceOperationKind: OrchestrationWorkspaceOperationKind.HOST_VERIFY,
+      workspaceOperationArguments: {
+        outputDir: '/repo/.repo-ai-governor/generated/hosts/github-copilot',
+      },
+    });
+
+    const serviceRuntime = {
+      queryQueueOverview: vi.fn().mockResolvedValue({
+        generatedAt: '2026-04-18T13:30:00.000Z',
+        automationInbox: [],
+        reviewQueue: [],
+        parallelLanes: [],
+        workspaceSummary: [],
+        temporaryBridges: [
+          {
+            bridgeId: 'temporary-bridge-host-verify',
+            capabilityClass: OrchestrationGovernanceTemporaryBridgeCapabilityClass.HOST_VERIFY,
+            operationKind: OrchestrationWorkspaceOperationKind.HOST_VERIFY,
+            operationArguments: {
+              outputDir: '/repo/.repo-ai-governor/generated/hosts/github-copilot',
+            },
+            workspaceRoot: '/repo/.repo-ai-governor',
+            commandWorkingDirectory: '/repo',
+            previewCommandLine:
+              'repo-ai-governor host verify --output-dir /repo/.repo-ai-governor/generated/hosts/github-copilot',
+            receiptKind: OrchestrationGovernanceTemporaryBridgeReceiptKind.HOST_VERIFY_RECEIPT,
+            backlinkSurface:
+              OrchestrationGovernanceTemporaryBridgeBacklinkSurface.ARTIFACT_WORKBENCH,
+            exitCriteria: [
+              OrchestrationGovernanceTemporaryBridgeExitCriterion.SERVICE_NATIVE_HOST_QUERY,
+            ],
+          },
+        ],
+        notificationOwnership: {
+          ownerSurface: OrchestrationClientSurface.DESKTOP,
+          pendingItemCount: 0,
+          dueSoonItemCount: 0,
+          overdueItemCount: 0,
+          activeWorkspaceCount: 1,
+          defaultFollowUpSlaMinutes: 60,
+          notificationStatus: OrchestrationGovernanceNotificationStatus.IDLE,
+        },
+      }),
+      runWorkspaceOperation: vi.fn().mockResolvedValue({
+        message: 'Host verify started.',
+        result: {},
+      }),
+    };
+    const controller = new VsCodeExtensionCommandController(
+      serviceRuntime as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    await controller.stageTemporaryBridge();
+
+    expect(serviceRuntime.queryQueueOverview).toHaveBeenCalledTimes(1);
+    expect(vscodeMock.showQuickPick).toHaveBeenCalledTimes(1);
+    expect(
+      (vscodeMock.showQuickPick.mock.calls[0]?.[0] as Array<{ label: string }>).map(
+        (item) => item.label,
+      ),
+    ).toEqual(expect.arrayContaining(['Preview upgrade', 'Verify host assets']));
+    expect(serviceRuntime.runWorkspaceOperation).toHaveBeenCalledWith('host_verify', {
+      outputDir: '/repo/.repo-ai-governor/generated/hosts/github-copilot',
+    });
+    expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith('Host verify started.');
   });
 
   it('requires explicit confirmation before applying an upgrade temporary bridge', async () => {

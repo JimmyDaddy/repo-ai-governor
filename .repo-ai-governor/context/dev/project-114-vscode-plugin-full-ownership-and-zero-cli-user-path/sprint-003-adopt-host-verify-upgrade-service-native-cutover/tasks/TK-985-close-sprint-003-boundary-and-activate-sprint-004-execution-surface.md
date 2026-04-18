@@ -1,6 +1,6 @@
 # TK-985 close sprint-003 boundary and activate sprint-004 execution surface
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-18
 - Owner: AI-Agent
 - Priority: P1
@@ -43,22 +43,29 @@ After sprint-003 reaches clean `TK/CR` terminal state, close the sprint boundary
 
 ## 7. Development Verification
 
-1. pnpm run check
-2. git status --short
+1. `pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-selection-store.test.ts`
+2. `pnpm run build`
+3. `pnpm run check`
+4. `git status --short`
 
 ## 8. Delivery Verification
 
-1. pnpm run check
-2. node ./scripts/governance/check-task-ledger-sync.js
-3. node ./scripts/governance/check-sprint-plan-status-sync.js
-4. node ./scripts/governance/check-code-review-status-sync.js
+1. `pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-selection-store.test.ts`
+2. `pnpm run build`
+3. `pnpm run check`
+4. `node ./scripts/governance/check-task-ledger-sync.js`
+5. `node ./scripts/governance/check-sprint-plan-status-sync.js`
+6. `node ./scripts/governance/check-code-review-status-sync.js`
+7. `node ./scripts/governance/check-worktree-review-target.js`
 
 ## 9. 执行记录
 
 1. 2026-04-18：任务创建，状态初始化为 `planned`。
+2. 2026-04-18：`CR-001` 已 resolved，sprint-003 的 review/task truth、project plan、sprint plan 与 current-context 已统一切换到 closeout-ready state。
+3. 2026-04-18：已将 sprint-003 标记为 completed，并激活 sprint-004 作为新的 primary execution surface；sprint-004 `CR-001` 与 `TK-975` 已在同窗口完成 activation write-back。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
-3. 待执行后补齐
+1. `.repo-ai-governor/context/current-context.md`
+2. `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/plan.md`
+3. `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-004-workflow-authoring-run-review-and-automation-primaryization/plan.md`

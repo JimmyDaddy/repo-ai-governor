@@ -1896,24 +1896,81 @@ export class VsCodeExtensionPresentationBuilder {
   private buildTemporaryBridgeNodes(
     entries: readonly OrchestrationGovernanceTemporaryBridgeEntry[],
   ): readonly VsCodeExtensionTreeNodeDescriptor[] {
-    return entries.map((entry) => {
+    const nodes: VsCodeExtensionTreeNodeDescriptor[] = [
+      {
+        nodeId: 'workspace-operation:upgrade-preview',
+        label: this.localizeWorkspaceOperationKind(
+          OrchestrationWorkspaceOperationKind.UPGRADE_PREVIEW,
+        ),
+        description: this.localizer.localizeText(
+          'Inspect the latest upgrade plan before any apply step.',
+          '在任何应用步骤前先查看最新升级计划。',
+        ),
+        tooltip: this.localizer.localizeText(
+          'Runs the service-owned upgrade preview without applying host-native changes.',
+          '执行 service-owned 的升级预览，不会直接应用宿主原生变更。',
+        ),
+        themeIconId: 'preview',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.HANDOFF_ACTION,
+        selectionRequest: {
+          workspaceOperationKind: OrchestrationWorkspaceOperationKind.UPGRADE_PREVIEW,
+        },
+        command: this.createCommandDescriptor(
+          VSCODE_EXTENSION_COMMAND_IDS.STAGE_TEMPORARY_BRIDGE,
+          'Run Governor repository operation',
+          '运行 Governor 仓库操作',
+          {
+            workspaceOperationKind: OrchestrationWorkspaceOperationKind.UPGRADE_PREVIEW,
+          },
+        ),
+        children: [
+          {
+            nodeId: 'workspace-operation:upgrade-preview:contract',
+            label: this.localizer.localizeText('Operation contract', '操作契约'),
+            description: this.localizer.localizeText(
+              'Service-native preview with no direct apply side effect.',
+              'service-native 预览，不会直接产生应用副作用。',
+            ),
+            tooltip: this.localizer.localizeText(
+              'Use this entry to produce or refresh the latest governed upgrade report before apply.',
+              '使用这个入口在 apply 之前生成或刷新最新的受治理升级报告。',
+            ),
+            themeIconId: 'info',
+            contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.INFO,
+          },
+        ],
+      },
+    ];
+
+    for (const entry of entries) {
+      const operationKind =
+        entry.operationKind ?? this.resolveWorkspaceOperationKindFromTemporaryBridge(entry);
+      if (!operationKind) {
+        continue;
+      }
+
       const request = {
         executionId: undefined,
         executionSessionId: undefined,
         reviewSourcePath: undefined,
         queueEntry: undefined,
-        temporaryBridge: entry,
+        workspaceOperationKind: operationKind,
+        ...(entry.operationArguments
+          ? {
+              workspaceOperationArguments: entry.operationArguments,
+            }
+          : {}),
       } satisfies VsCodeExtensionCommandRequest;
 
-      return {
+      nodes.push({
         nodeId: entry.bridgeId,
-        label: this.localizeTemporaryBridgeCapability(entry.capabilityClass),
+        label: this.localizeWorkspaceOperationKind(operationKind),
         description: this.localizer.localizeText(
           `${this.localizeTemporaryBridgeReceiptKind(entry.receiptKind)} -> ${this.localizeTemporaryBridgeBacklinkSurface(entry.backlinkSurface)}`,
           `${this.localizeTemporaryBridgeReceiptKind(entry.receiptKind)} -> ${this.localizeTemporaryBridgeBacklinkSurface(entry.backlinkSurface)}`,
         ),
         tooltip: entry.previewCommandLine,
-        themeIconId: 'terminal',
+        themeIconId: 'tools',
         contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.HANDOFF_ACTION,
         selectionRequest: request,
         command: this.createCommandDescriptor(
@@ -1937,8 +1994,8 @@ export class VsCodeExtensionPresentationBuilder {
             label: this.localizer.localizeText('Receipt contract', '回执契约'),
             description: this.localizeTemporaryBridgeReceiptKind(entry.receiptKind),
             tooltip: this.localizer.localizeText(
-              'Temporary bridge execution must emit the declared receipt artifact.',
-              '临时 bridge 执行后必须产出声明的 receipt 产物。',
+              'Service-native execution must emit the declared receipt artifact.',
+              'service-native 执行后必须产出声明的 receipt 产物。',
             ),
             themeIconId: 'note',
             contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.INFO,
@@ -1949,8 +2006,8 @@ export class VsCodeExtensionPresentationBuilder {
             label: this.localizer.localizeText('Backlink surface', '回链面'),
             description: this.localizeTemporaryBridgeBacklinkSurface(entry.backlinkSurface),
             tooltip: this.localizer.localizeText(
-              'Bridge receipts must remain discoverable from the declared governed surface.',
-              'bridge receipt 必须能从声明的受治理表面中被发现。',
+              'Operation receipts must remain discoverable from the declared governed surface.',
+              '操作回执必须能从声明的受治理表面中被发现。',
             ),
             themeIconId: 'link',
             contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.INFO,
@@ -1958,19 +2015,21 @@ export class VsCodeExtensionPresentationBuilder {
           },
           ...entry.exitCriteria.map((criterion, index) => ({
             nodeId: `${entry.bridgeId}:exit-criterion:${index + 1}`,
-            label: this.localizer.localizeText('Exit criterion', '退出条件'),
+            label: this.localizer.localizeText('Compatibility evidence', '兼容性证据'),
             description: this.localizeTemporaryBridgeExitCriterion(criterion),
             tooltip: this.localizer.localizeText(
-              'The bridge should retire once this criterion is satisfied.',
-              '满足该条件后，这个 bridge 就应当退场。',
+              'The compatibility bridge should retire once this criterion is satisfied.',
+              '满足该条件后，对应的兼容性 bridge 就应当退场。',
             ),
             themeIconId: 'checklist',
             contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.INFO,
             selectionRequest: request,
           })),
         ],
-      };
-    });
+      });
+    }
+
+    return nodes;
   }
 
   private buildTaskBoardSummaryNodes(
@@ -3155,6 +3214,27 @@ export class VsCodeExtensionPresentationBuilder {
     }
   }
 
+  private resolveWorkspaceOperationKindFromTemporaryBridge(
+    temporaryBridge: OrchestrationGovernanceTemporaryBridgeEntry,
+  ): OrchestrationWorkspaceOperationKind | undefined {
+    switch (temporaryBridge.capabilityClass) {
+      case OrchestrationGovernanceTemporaryBridgeCapabilityClass.ADOPT_BOOTSTRAP:
+        return OrchestrationWorkspaceOperationKind.ADOPT_BOOTSTRAP;
+      case OrchestrationGovernanceTemporaryBridgeCapabilityClass.ADOPTION_APPLY:
+        return OrchestrationWorkspaceOperationKind.ADOPTION_APPLY;
+      case OrchestrationGovernanceTemporaryBridgeCapabilityClass.HOST_EXPORT:
+        return OrchestrationWorkspaceOperationKind.HOST_EXPORT;
+      case OrchestrationGovernanceTemporaryBridgeCapabilityClass.HOST_VERIFY:
+        return OrchestrationWorkspaceOperationKind.HOST_VERIFY;
+      case OrchestrationGovernanceTemporaryBridgeCapabilityClass.HOST_PACK:
+        return OrchestrationWorkspaceOperationKind.HOST_PACK;
+      case OrchestrationGovernanceTemporaryBridgeCapabilityClass.UPGRADE:
+        return OrchestrationWorkspaceOperationKind.UPGRADE_APPLY;
+      default:
+        return undefined;
+    }
+  }
+
   private localizeTemporaryBridgeCapability(
     capabilityClass: OrchestrationGovernanceTemporaryBridgeCapabilityClass,
   ): string {
@@ -3585,11 +3665,34 @@ export class VsCodeExtensionPresentationBuilder {
       });
     }
 
+    actions.push({
+      label: this.localizer.localizeText(
+        `Run repository operation: ${this.localizeWorkspaceOperationKind(OrchestrationWorkspaceOperationKind.UPGRADE_PREVIEW)}`,
+        `运行仓库操作：${this.localizeWorkspaceOperationKind(OrchestrationWorkspaceOperationKind.UPGRADE_PREVIEW)}`,
+      ),
+      description: this.localizer.localizeText(
+        'Inspect the latest upgrade plan through the local orchestration service before applying any host-native change.',
+        '在应用任何宿主原生改动前，通过本地编排服务查看最新升级计划。',
+      ),
+      href: this.createCommandUri(VSCODE_EXTENSION_COMMAND_IDS.STAGE_TEMPORARY_BRIDGE, {
+        executionId: selectedExecution?.execution.executionId,
+        executionSessionId: selectedExecution?.execution.executionSessionId,
+        reviewSourcePath,
+        workspaceOperationKind: OrchestrationWorkspaceOperationKind.UPGRADE_PREVIEW,
+      }),
+    });
+
     for (const entry of temporaryBridges) {
+      const operationKind =
+        entry.operationKind ?? this.resolveWorkspaceOperationKindFromTemporaryBridge(entry);
+      if (!operationKind) {
+        continue;
+      }
+
       actions.push({
         label: this.localizer.localizeText(
-          `Run repository operation: ${this.localizeTemporaryBridgeCapability(entry.capabilityClass)}`,
-          `运行仓库操作：${this.localizeTemporaryBridgeCapability(entry.capabilityClass)}`,
+          `Run repository operation: ${this.localizeWorkspaceOperationKind(operationKind)}`,
+          `运行仓库操作：${this.localizeWorkspaceOperationKind(operationKind)}`,
         ),
         description: this.localizer.localizeText(
           `Receipt ${this.localizeTemporaryBridgeReceiptKind(entry.receiptKind)} · Exit ${entry.exitCriteria.map((criterion) => this.localizeTemporaryBridgeExitCriterion(criterion)).join('; ')}`,
@@ -3599,7 +3702,12 @@ export class VsCodeExtensionPresentationBuilder {
           executionId: selectedExecution?.execution.executionId,
           executionSessionId: selectedExecution?.execution.executionSessionId,
           reviewSourcePath,
-          temporaryBridge: entry,
+          workspaceOperationKind: operationKind,
+          ...(entry.operationArguments
+            ? {
+                workspaceOperationArguments: entry.operationArguments,
+              }
+            : {}),
         }),
       });
     }

@@ -1,6 +1,6 @@
 # TK-974 prepare sprint-003 exit acceptance and sprint-004 handoff
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-18
 - Owner: AI-Agent
 - Priority: P1
@@ -54,8 +54,9 @@ Prepare the sprint-003 acceptance package and workflow/automation primaryization
 ## 9. 执行记录
 
 1. 2026-04-18：任务创建，状态初始化为 `planned`。
+2. 2026-04-18：完成 sprint-003 当前实现窗口的 acceptance package：`pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-selection-store.test.ts`、`pnpm run build`、`pnpm run check` 已通过；sprint-004 handoff 继续基于现有 workflow studio / review detail / automation primary surfaces 推进，不回退本 sprint 的 direct repository-operation 主路径。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. sprint-003 acceptance evidence recorded in task execution log
+2. sprint-004 handoff note recorded in task execution log

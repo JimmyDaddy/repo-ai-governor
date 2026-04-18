@@ -1,6 +1,6 @@
 # sprint-004-workflow-authoring-run-review-and-automation-primaryization 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-18
 - Sprint Goal: Make workflow authoring, run-control, review, and automation a plugin-primary user path with continuity-safe UX.
 - Project: `project-114-vscode-plugin-full-ownership-and-zero-cli-user-path`
@@ -22,7 +22,7 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-975 | freeze plugin-primary workflow and automation contract | prepare sprint-003 exit acceptance and sprint-004 handoff | planned |
+| TK-975 | freeze plugin-primary workflow and automation contract | prepare sprint-003 exit acceptance and sprint-004 handoff | active |
 | TK-976 | implement workflow authoring run-control review and automation seams | freeze plugin-primary workflow and automation contract | planned |
 | TK-977 | land workflow studio review and automation primary surfaces | implement workflow authoring run-control review and automation seams | planned |
 | TK-978 | prepare sprint-004 exit acceptance and sprint-005 handoff | land workflow studio review and automation primary surfaces | planned |
@@ -37,3 +37,5 @@
 
 1. This sprint must preserve project-113 degraded fallback behavior while changing the primary user journey ownership.
 2. Keep this sprint `planned` until sprint-003 hands off; reserve local `CR-001` only after activation.
+3. `2026-04-18`：sprint-003 已完成 handoff，本 sprint 已激活为当前 execution surface；本地 `CR-001` 已在 activation 时预留，后续 fresh reviewer round 继续复用该编号。
+4. `2026-04-18`：`TK-975` 已切换为当前首个 implementation lane，用于冻结 workflow authoring / run-control / review / automation 的 plugin-primary contract。

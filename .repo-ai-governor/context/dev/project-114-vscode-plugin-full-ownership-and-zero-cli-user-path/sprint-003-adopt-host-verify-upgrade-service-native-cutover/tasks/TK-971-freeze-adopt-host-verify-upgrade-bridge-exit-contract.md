@@ -1,6 +1,6 @@
 # TK-971 freeze adopt-host-verify-upgrade bridge-exit contract
 
-- Status: active
+- Status: completed
 - Date: 2026-04-18
 - Owner: AI-Agent
 - Priority: P1
@@ -56,8 +56,9 @@ Freeze the bridge-exit contract for adopt, host, verify, and upgrade so user-vis
 
 1. 2026-04-18：任务创建，状态初始化为 `planned`。
 2. 2026-04-18：随着 sprint-003 activation 完成，TK-971 状态切换为 `active`，并作为当前首个 implementation lane 开始冻结 adopt / host / verify / upgrade 的 bridge-exit contract。
+3. 2026-04-18：冻结 sprint-003 bridge-exit contract：VS Code 主用户路径改为直接携带 `workspaceOperationKind / workspaceOperationArguments` 的 service-native request；`temporaryBridge` 只保留为兼容性证据、receipt/backlink provenance 与 exit-criteria trace，不再承担主执行语义。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. `apps/vscode-extension/src/types/interfaces/vscode-extension-surface.interface.ts`
+2. `apps/vscode-extension/src/runtime/vscode-extension-command-controller.ts`

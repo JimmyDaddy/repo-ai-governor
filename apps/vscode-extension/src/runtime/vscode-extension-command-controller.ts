@@ -46,6 +46,11 @@ interface VsCodeExtensionCommandControllerDependencies {
   reviewDetailProvider: VsCodeExtensionReviewDetailProvider;
 }
 
+type VsCodeExtensionWorkspaceOperationArguments = Record<
+  string,
+  boolean | number | string | readonly string[] | null
+>;
+
 /**
  * Executes the frozen VS Code command contract against service-owned orchestration actions.
  *
@@ -151,50 +156,26 @@ export class VsCodeExtensionCommandController {
   }
 
   /**
-   * Executes one service-backed workspace operation routed from the legacy temporary-bridge
-   * affordance.
-   * @param commandRequest Optional command request carrying the typed bridge metadata.
+   * Executes one service-backed repository operation from either a compatibility bridge request or
+   * one direct workbench-native workspace-operation request.
+   * @param commandRequest Optional command request carrying a direct operation or bridge metadata.
    */
   public async stageTemporaryBridge(commandRequest?: VsCodeExtensionCommandRequest): Promise<void> {
     if (!(await this.ensureTrusted())) {
       return;
     }
 
-    const mergedRequest = this.mergeCommandRequest(commandRequest);
-    const temporaryBridge = mergedRequest.temporaryBridge;
-    if (!temporaryBridge) {
-      void vscode.window.showInformationMessage(
-        this.localizer.localizeText(
-          'No governed workspace operation is available right now.',
-          '当前没有可用的受治理工作区操作。',
-        ),
-      );
-      return;
-    }
-
-    const operationKind =
-      temporaryBridge.operationKind ??
-      this.resolveWorkspaceOperationKindFromTemporaryBridge(temporaryBridge);
-    if (!operationKind) {
-      void vscode.window.showInformationMessage(
-        this.localizer.localizeText(
-          'This workspace operation is not service-backed yet.',
-          '这个工作区操作目前还没有 service-backed 实现。',
-        ),
-      );
-      return;
-    }
-
     try {
-      const argumentsRecord = await this.resolveWorkspaceOperationArgumentsFromTemporaryBridge(
-        temporaryBridge,
-        operationKind,
-      );
-      if (argumentsRecord === null) {
+      const operationRequest = await this.resolveWorkspaceOperationRequest(commandRequest);
+      if (!operationRequest) {
         return;
       }
-      this.selectionStore.applyCommandRequest(mergedRequest);
-      await this.runWorkspaceOperationWithFeedback(operationKind, argumentsRecord, mergedRequest);
+      this.selectionStore.applyCommandRequest(operationRequest.commandRequest);
+      await this.runWorkspaceOperationWithFeedback(
+        operationRequest.operationKind,
+        operationRequest.argumentsRecord,
+        operationRequest.commandRequest,
+      );
     } catch (error) {
       await this.showCommandError(
         error,
@@ -731,6 +712,9 @@ export class VsCodeExtensionCommandController {
   ): VsCodeExtensionCommandRequest {
     const selection = this.selectionStore.getSnapshot();
     const clearExecutionSelection = commandRequest?.clearExecutionSelection === true;
+    const requestContainsTemporaryBridge = Boolean(
+      commandRequest && 'temporaryBridge' in commandRequest,
+    );
     return {
       executionId: clearExecutionSelection
         ? undefined
@@ -779,6 +763,26 @@ export class VsCodeExtensionCommandController {
             hitlDecisionOption: commandRequest.hitlDecisionOption,
           }
         : {}),
+      ...(commandRequest && 'workspaceOperationKind' in commandRequest
+        ? {
+            workspaceOperationKind: commandRequest.workspaceOperationKind,
+          }
+        : !requestContainsTemporaryBridge && selection.workspaceOperationKind
+          ? {
+              workspaceOperationKind: selection.workspaceOperationKind,
+            }
+          : {}),
+      ...(commandRequest && 'workspaceOperationArguments' in commandRequest
+        ? {
+            workspaceOperationArguments: commandRequest.workspaceOperationArguments
+              ? { ...commandRequest.workspaceOperationArguments }
+              : undefined,
+          }
+        : !requestContainsTemporaryBridge && selection.workspaceOperationArguments
+          ? {
+              workspaceOperationArguments: { ...selection.workspaceOperationArguments },
+            }
+          : {}),
       ...(commandRequest && 'userConfigKeyPath' in commandRequest
         ? {
             userConfigKeyPath: commandRequest.userConfigKeyPath,
@@ -1273,6 +1277,266 @@ export class VsCodeExtensionCommandController {
     return picked?.option;
   }
 
+  private async resolveWorkspaceOperationRequest(
+    commandRequest?: VsCodeExtensionCommandRequest,
+  ): Promise<{
+    commandRequest: VsCodeExtensionCommandRequest;
+    operationKind: OrchestrationWorkspaceOperationKind;
+    argumentsRecord?: VsCodeExtensionWorkspaceOperationArguments;
+  } | null> {
+    const mergedRequest = this.mergeCommandRequest(commandRequest);
+    const requestContainsWorkspaceOperationKind = Boolean(
+      commandRequest && 'workspaceOperationKind' in commandRequest,
+    );
+    const requestContainsTemporaryBridge = Boolean(
+      commandRequest && 'temporaryBridge' in commandRequest,
+    );
+    if (requestContainsWorkspaceOperationKind && mergedRequest.workspaceOperationKind) {
+      const argumentsRecord = await this.resolveWorkspaceOperationArguments(
+        mergedRequest.workspaceOperationKind,
+        mergedRequest.workspaceOperationArguments,
+      );
+      if (argumentsRecord === null) {
+        return null;
+      }
+
+      return {
+        commandRequest: mergedRequest,
+        operationKind: mergedRequest.workspaceOperationKind,
+        ...(argumentsRecord
+          ? {
+              argumentsRecord,
+            }
+          : {}),
+      };
+    }
+
+    if (requestContainsTemporaryBridge && mergedRequest.temporaryBridge) {
+      return this.resolveWorkspaceOperationRequestFromTemporaryBridge(
+        mergedRequest,
+        mergedRequest.temporaryBridge,
+      );
+    }
+
+    if (mergedRequest.workspaceOperationKind) {
+      const argumentsRecord = await this.resolveWorkspaceOperationArguments(
+        mergedRequest.workspaceOperationKind,
+        mergedRequest.workspaceOperationArguments,
+      );
+      if (argumentsRecord === null) {
+        return null;
+      }
+
+      return {
+        commandRequest: mergedRequest,
+        operationKind: mergedRequest.workspaceOperationKind,
+        ...(argumentsRecord
+          ? {
+              argumentsRecord,
+            }
+          : {}),
+      };
+    }
+
+    if (mergedRequest.temporaryBridge) {
+      return this.resolveWorkspaceOperationRequestFromTemporaryBridge(
+        mergedRequest,
+        mergedRequest.temporaryBridge,
+      );
+    }
+
+    const promptedOperation = await this.promptForWorkspaceOperationRequest();
+    if (!promptedOperation) {
+      return null;
+    }
+
+    const argumentsRecord = await this.resolveWorkspaceOperationArguments(
+      promptedOperation.workspaceOperationKind,
+      promptedOperation.workspaceOperationArguments,
+    );
+    if (argumentsRecord === null) {
+      return null;
+    }
+
+    return {
+      commandRequest: promptedOperation,
+      operationKind: promptedOperation.workspaceOperationKind,
+      ...(argumentsRecord
+        ? {
+            argumentsRecord,
+          }
+        : {}),
+    };
+  }
+
+  private async resolveWorkspaceOperationRequestFromTemporaryBridge(
+    commandRequest: VsCodeExtensionCommandRequest,
+    temporaryBridge: NonNullable<VsCodeExtensionCommandRequest['temporaryBridge']>,
+  ): Promise<{
+    commandRequest: VsCodeExtensionCommandRequest;
+    operationKind: OrchestrationWorkspaceOperationKind;
+    argumentsRecord?: VsCodeExtensionWorkspaceOperationArguments;
+  } | null> {
+    const operationKind =
+      temporaryBridge.operationKind ??
+      this.resolveWorkspaceOperationKindFromTemporaryBridge(temporaryBridge);
+    if (!operationKind) {
+      void vscode.window.showInformationMessage(
+        this.localizer.localizeText(
+          'This workspace operation is not service-backed yet.',
+          '这个工作区操作目前还没有 service-backed 实现。',
+        ),
+      );
+      return null;
+    }
+
+    const argumentsRecord = await this.resolveWorkspaceOperationArguments(
+      operationKind,
+      temporaryBridge.operationArguments,
+    );
+    if (argumentsRecord === null) {
+      return null;
+    }
+
+    return {
+      commandRequest,
+      operationKind,
+      ...(argumentsRecord
+        ? {
+            argumentsRecord,
+          }
+        : {}),
+    };
+  }
+
+  private async promptForWorkspaceOperationRequest(): Promise<{
+    workspaceOperationKind: OrchestrationWorkspaceOperationKind;
+    workspaceOperationArguments?: VsCodeExtensionWorkspaceOperationArguments;
+  } | null> {
+    const queueOverview = await this.serviceRuntime.queryQueueOverview();
+    const candidates = this.buildPromptableWorkspaceOperationRequests(
+      queueOverview.temporaryBridges,
+    );
+    if (candidates.length === 0) {
+      void vscode.window.showInformationMessage(
+        this.localizer.localizeText(
+          'No governed workspace operation is available right now.',
+          '当前没有可用的受治理工作区操作。',
+        ),
+      );
+      return null;
+    }
+
+    const picked = await vscode.window.showQuickPick(candidates, {
+      title: this.localizer.localizeText(
+        'Choose one governed repository operation',
+        '选择一个受治理仓库操作',
+      ),
+      matchOnDescription: true,
+      matchOnDetail: true,
+      ignoreFocusOut: true,
+    });
+    if (!picked) {
+      return null;
+    }
+
+    return {
+      workspaceOperationKind: picked.workspaceOperationKind,
+      ...(picked.workspaceOperationArguments
+        ? {
+            workspaceOperationArguments: {
+              ...picked.workspaceOperationArguments,
+            },
+          }
+        : {}),
+    };
+  }
+
+  private buildPromptableWorkspaceOperationRequests(
+    temporaryBridges: readonly NonNullable<VsCodeExtensionCommandRequest['temporaryBridge']>[],
+  ): Array<
+    vscode.QuickPickItem & {
+      workspaceOperationKind: OrchestrationWorkspaceOperationKind;
+      workspaceOperationArguments?: VsCodeExtensionWorkspaceOperationArguments;
+    }
+  > {
+    const items: Array<
+      vscode.QuickPickItem & {
+        workspaceOperationKind: OrchestrationWorkspaceOperationKind;
+        workspaceOperationArguments?: VsCodeExtensionWorkspaceOperationArguments;
+      }
+    > = [
+      {
+        label: this.localizeWorkspaceOperationKind(
+          OrchestrationWorkspaceOperationKind.UPGRADE_PREVIEW,
+        ),
+        description: this.localizer.localizeText(
+          'Inspect the latest upgrade plan before applying it.',
+          '在应用升级前先查看最新升级计划。',
+        ),
+        detail: this.localizer.localizeText(
+          'Runs the service-owned upgrade preview without applying changes.',
+          '执行 service-owned 的升级预览，不会直接应用变更。',
+        ),
+        workspaceOperationKind: OrchestrationWorkspaceOperationKind.UPGRADE_PREVIEW,
+      },
+    ];
+
+    for (const temporaryBridge of temporaryBridges) {
+      const operationKind =
+        temporaryBridge.operationKind ??
+        this.resolveWorkspaceOperationKindFromTemporaryBridge(temporaryBridge);
+      if (!operationKind) {
+        continue;
+      }
+
+      items.push({
+        label: this.localizeWorkspaceOperationKind(operationKind),
+        description: this.localizer.localizeText(
+          'Runs this repository operation through the local orchestration service.',
+          '通过本地编排服务执行这个仓库操作。',
+        ),
+        detail: temporaryBridge.previewCommandLine,
+        workspaceOperationKind: operationKind,
+        ...(temporaryBridge.operationArguments
+          ? {
+              workspaceOperationArguments: {
+                ...temporaryBridge.operationArguments,
+              },
+            }
+          : {}),
+      });
+    }
+
+    return items;
+  }
+
+  private async resolveWorkspaceOperationArguments(
+    operationKind: OrchestrationWorkspaceOperationKind,
+    argumentsRecord?: VsCodeExtensionWorkspaceOperationArguments,
+  ): Promise<VsCodeExtensionWorkspaceOperationArguments | null | undefined> {
+    const clonedArguments = argumentsRecord ? { ...argumentsRecord } : undefined;
+    if (operationKind !== OrchestrationWorkspaceOperationKind.UPGRADE_APPLY) {
+      return clonedArguments;
+    }
+
+    const confirmed = await this.confirmCommand(
+      this.localizer.localizeText(
+        'Applying this prepared upgrade may overwrite host-native assets. Continue?',
+        '应用这个已准备好的升级可能会覆盖宿主原生资产。是否继续？',
+      ),
+      this.localizer.localizeText('Apply Upgrade', '应用升级'),
+    );
+    if (!confirmed) {
+      return null;
+    }
+
+    return {
+      ...clonedArguments,
+      confirmUpgrade: VSCODE_EXTENSION_UPGRADE_CONFIRMATION_APPROVE,
+    };
+  }
+
   private resolveWorkspaceOperationKindFromTemporaryBridge(
     temporaryBridge: NonNullable<VsCodeExtensionCommandRequest['temporaryBridge']>,
   ): OrchestrationWorkspaceOperationKind | undefined {
@@ -1292,37 +1556,6 @@ export class VsCodeExtensionCommandController {
       default:
         return undefined;
     }
-  }
-
-  private async resolveWorkspaceOperationArgumentsFromTemporaryBridge(
-    temporaryBridge: NonNullable<VsCodeExtensionCommandRequest['temporaryBridge']>,
-    operationKind: OrchestrationWorkspaceOperationKind,
-  ): Promise<
-    Record<string, boolean | number | string | readonly string[] | null> | null | undefined
-  > {
-    const bridgeArguments = temporaryBridge.operationArguments
-      ? { ...temporaryBridge.operationArguments }
-      : undefined;
-
-    if (operationKind !== OrchestrationWorkspaceOperationKind.UPGRADE_APPLY) {
-      return bridgeArguments;
-    }
-
-    const confirmed = await this.confirmCommand(
-      this.localizer.localizeText(
-        'Applying this prepared upgrade may overwrite host-native assets. Continue?',
-        '应用这个已准备好的升级可能会覆盖宿主原生资产。是否继续？',
-      ),
-      this.localizer.localizeText('Apply Upgrade', '应用升级'),
-    );
-    if (!confirmed) {
-      return null;
-    }
-
-    return {
-      ...bridgeArguments,
-      confirmUpgrade: VSCODE_EXTENSION_UPGRADE_CONFIRMATION_APPROVE,
-    };
   }
 
   private async runWorkspaceOperationWithFeedback(
@@ -1382,6 +1615,29 @@ export class VsCodeExtensionCommandController {
     }
 
     return value?.trim().length ? value.trim() : undefined;
+  }
+
+  private localizeWorkspaceOperationKind(
+    operationKind: OrchestrationWorkspaceOperationKind,
+  ): string {
+    switch (operationKind) {
+      case OrchestrationWorkspaceOperationKind.ADOPT_BOOTSTRAP:
+        return this.localizer.localizeText('Run adopt bootstrap', '执行 adopt bootstrap');
+      case OrchestrationWorkspaceOperationKind.ADOPTION_APPLY:
+        return this.localizer.localizeText('Apply adoption pack', '应用 adopt 包');
+      case OrchestrationWorkspaceOperationKind.HOST_EXPORT:
+        return this.localizer.localizeText('Export host assets', '导出宿主资产');
+      case OrchestrationWorkspaceOperationKind.HOST_VERIFY:
+        return this.localizer.localizeText('Verify host assets', '校验宿主资产');
+      case OrchestrationWorkspaceOperationKind.HOST_PACK:
+        return this.localizer.localizeText('Pack host bundle', '打包宿主 bundle');
+      case OrchestrationWorkspaceOperationKind.UPGRADE_PREVIEW:
+        return this.localizer.localizeText('Preview upgrade', '预览升级');
+      case OrchestrationWorkspaceOperationKind.UPGRADE_APPLY:
+        return this.localizer.localizeText('Apply upgrade', '应用升级');
+      default:
+        return operationKind;
+    }
   }
 
   private async ensureTrusted(): Promise<boolean> {

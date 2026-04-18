@@ -10,6 +10,7 @@ import type {
   OrchestrationServiceHostKind,
   OrchestrationServiceLifecycleStatus,
   OrchestrationServiceTransportKind,
+  OrchestrationWorkspaceOperationKind,
 } from '@repo-ai-governor/orchestration-service-client';
 
 export interface VsCodeExtensionTreeNodeCommandDescriptor {
@@ -99,6 +100,11 @@ export interface VsCodeExtensionSelectionSnapshot {
   reviewSourcePath?: string;
   queueEntry?: OrchestrationGovernanceQueueEntry;
   temporaryBridge?: OrchestrationGovernanceTemporaryBridgeEntry;
+  workspaceOperationKind?: OrchestrationWorkspaceOperationKind;
+  workspaceOperationArguments?: Record<
+    string,
+    boolean | number | string | readonly string[] | null
+  >;
 }
 
 export interface VsCodeExtensionCommandRequest {
@@ -109,6 +115,11 @@ export interface VsCodeExtensionCommandRequest {
   queueEntry?: OrchestrationGovernanceQueueEntry;
   handoffTarget?: OrchestrationHandoffTarget;
   temporaryBridge?: OrchestrationGovernanceTemporaryBridgeEntry;
+  workspaceOperationKind?: OrchestrationWorkspaceOperationKind;
+  workspaceOperationArguments?: Record<
+    string,
+    boolean | number | string | readonly string[] | null
+  >;
   hitlDecisionOption?: OrchestrationHitlDecisionOption;
   userConfigKeyPath?: string;
   secretKeyName?: string;

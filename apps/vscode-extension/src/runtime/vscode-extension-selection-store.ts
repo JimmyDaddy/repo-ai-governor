@@ -18,7 +18,45 @@ export class VsCodeExtensionSelectionStore {
    * @returns One shallow-cloned selection snapshot.
    */
   public getSnapshot(): VsCodeExtensionSelectionSnapshot {
-    return { ...this.snapshot };
+    return {
+      ...('executionId' in this.snapshot
+        ? {
+            executionId: this.snapshot.executionId,
+          }
+        : {}),
+      ...('executionSessionId' in this.snapshot
+        ? {
+            executionSessionId: this.snapshot.executionSessionId,
+          }
+        : {}),
+      ...('reviewSourcePath' in this.snapshot
+        ? {
+            reviewSourcePath: this.snapshot.reviewSourcePath,
+          }
+        : {}),
+      ...('queueEntry' in this.snapshot
+        ? {
+            queueEntry: this.snapshot.queueEntry,
+          }
+        : {}),
+      ...('temporaryBridge' in this.snapshot
+        ? {
+            temporaryBridge: this.snapshot.temporaryBridge,
+          }
+        : {}),
+      ...(this.snapshot.workspaceOperationKind !== undefined
+        ? {
+            workspaceOperationKind: this.snapshot.workspaceOperationKind,
+          }
+        : {}),
+      ...(this.snapshot.workspaceOperationArguments
+        ? {
+            workspaceOperationArguments: {
+              ...this.snapshot.workspaceOperationArguments,
+            },
+          }
+        : {}),
+    };
   }
 
   /**
@@ -35,6 +73,8 @@ export class VsCodeExtensionSelectionStore {
       this.snapshot.executionSessionId = undefined;
       this.snapshot.queueEntry = undefined;
       this.snapshot.temporaryBridge = undefined;
+      this.snapshot.workspaceOperationKind = undefined;
+      this.snapshot.workspaceOperationArguments = undefined;
     }
 
     if ('executionId' in request) {
@@ -49,12 +89,20 @@ export class VsCodeExtensionSelectionStore {
     if (
       'queueEntry' in request ||
       'temporaryBridge' in request ||
+      'workspaceOperationKind' in request ||
+      'workspaceOperationArguments' in request ||
       'executionId' in request ||
       'executionSessionId' in request ||
       'reviewSourcePath' in request
     ) {
       this.snapshot.queueEntry = request.queueEntry;
       this.snapshot.temporaryBridge = request.temporaryBridge;
+      this.snapshot.workspaceOperationKind =
+        'workspaceOperationKind' in request ? request.workspaceOperationKind : undefined;
+      this.snapshot.workspaceOperationArguments =
+        'workspaceOperationArguments' in request && request.workspaceOperationArguments
+          ? { ...request.workspaceOperationArguments }
+          : undefined;
     }
   }
 

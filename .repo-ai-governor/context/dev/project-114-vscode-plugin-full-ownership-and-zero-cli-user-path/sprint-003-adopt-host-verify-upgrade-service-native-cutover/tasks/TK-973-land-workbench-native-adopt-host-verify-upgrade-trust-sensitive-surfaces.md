@@ -1,6 +1,6 @@
 # TK-973 land workbench-native adopt-host-verify-upgrade trust-sensitive surfaces
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-18
 - Owner: AI-Agent
 - Priority: P1
@@ -54,8 +54,9 @@ Plan the trust-sensitive workbench surfaces for adopt, host, verify, and upgrade
 ## 9. 执行记录
 
 1. 2026-04-18：任务创建，状态初始化为 `planned`。
+2. 2026-04-18：workbench overview 与 workflow studio 已改为直接投影 service-native repository operations；新增 upgrade preview 原生入口，repository operation action 不再把用户主路径编码为 temporary bridge request，同时 selection store 与 presenter 测试同步覆盖 direct operation request。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. `apps/vscode-extension/src/runtime/vscode-extension-presentation-builder.ts`
+2. `apps/vscode-extension/src/runtime/vscode-extension-selection-store.ts`

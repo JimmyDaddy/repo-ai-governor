@@ -924,8 +924,18 @@ describe('VsCodeExtensionPresentationBuilder', () => {
     expect(html).toContain('command:repoAiGovernor.terminateExecution');
     expect(html).toContain('command:repoAiGovernor.openHandoffTarget');
     expect(html).toContain('command:repoAiGovernor.stageTemporaryBridge');
-    expect(html).toContain('Run repository operation: Host verify bridge');
+    expect(html).toContain('Run repository operation: Preview upgrade');
+    expect(html).toContain('Run repository operation: Verify host assets');
     expect(html).not.toContain('Stage bridge command');
+
+    expect(
+      readCommandRequestFromWorkflowStudioHtml(
+        html,
+        VSCODE_EXTENSION_COMMAND_IDS.STAGE_TEMPORARY_BRIDGE,
+      ),
+    ).toMatchObject({
+      workspaceOperationKind: OrchestrationWorkspaceOperationKind.UPGRADE_PREVIEW,
+    });
   });
 
   it('surfaces the ready support-truth branch when the selected execution stage is present and no bridge remains', () => {
@@ -1140,4 +1150,20 @@ function createExecutionSummary(
     sprintId: 'sprint-002-vscode-editor-companion-mvp',
     ...overrides,
   };
+}
+
+function readCommandRequestFromWorkflowStudioHtml(
+  html: string,
+  commandId: string,
+): Record<string, unknown> {
+  const escapedCommandId = commandId.replaceAll('.', '\\.');
+  const commandMatch = html.match(new RegExp(`command:${escapedCommandId}\\?([^"]+)`));
+  expect(commandMatch).toBeTruthy();
+  const encodedRequest = commandMatch?.[1];
+  expect(encodedRequest).toBeTruthy();
+
+  const [request] = JSON.parse(decodeURIComponent(String(encodedRequest))) as Array<
+    Record<string, unknown>
+  >;
+  return request;
 }

@@ -73,6 +73,10 @@ export class VsCodeExtensionReviewDetailProvider implements vscode.WebviewViewPr
           reviewSourcePath: currentSelection.reviewSourcePath,
           queueEntry: preservedQueueEntry,
           temporaryBridge: currentSelection.temporaryBridge,
+          workspaceOperationKind: currentSelection.workspaceOperationKind,
+          workspaceOperationArguments: currentSelection.workspaceOperationArguments
+            ? { ...currentSelection.workspaceOperationArguments }
+            : undefined,
         });
       }
       this.selectionStore.rememberReviewSourcePath(

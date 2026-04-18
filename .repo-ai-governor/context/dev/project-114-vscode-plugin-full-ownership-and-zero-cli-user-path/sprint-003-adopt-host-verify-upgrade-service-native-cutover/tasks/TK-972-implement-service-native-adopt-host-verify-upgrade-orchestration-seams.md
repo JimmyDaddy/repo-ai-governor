@@ -1,6 +1,6 @@
 # TK-972 implement service-native adopt-host-verify-upgrade orchestration seams
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-18
 - Owner: AI-Agent
 - Priority: P1
@@ -54,8 +54,9 @@ Plan the service-native orchestration seams and receipts that replace temporary 
 ## 9. 执行记录
 
 1. 2026-04-18：任务创建，状态初始化为 `planned`。
+2. 2026-04-18：将 extension repository-operation 主路径切到 service-native orchestration seam：`stageTemporaryBridge` 现在优先消费 direct workspace-operation request，并在无预选 bridge 时通过 queue-overview catalog 提供原生 operation picker，覆盖 adopt / host / verify / upgrade preview / upgrade apply 的受治理执行入口。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. `apps/vscode-extension/src/runtime/vscode-extension-command-controller.ts`
+2. `apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts`
