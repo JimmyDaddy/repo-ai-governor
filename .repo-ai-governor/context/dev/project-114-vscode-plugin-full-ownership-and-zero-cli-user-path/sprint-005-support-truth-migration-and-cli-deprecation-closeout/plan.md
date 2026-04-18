@@ -22,11 +22,11 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-979 | freeze support-truth migration and cli deprecation contract | prepare sprint-004 exit acceptance and sprint-005 handoff | active |
-| TK-980 | execute plugin-first evidence and migration rehearsal bundle | freeze support-truth migration and cli deprecation contract | planned |
-| TK-981 | refresh support docs deprecation posture and adoption guidance | execute plugin-first evidence and migration rehearsal bundle | planned |
-| TK-982 | prepare project-final closeout and zero-cli delivery recommendation | refresh support docs deprecation posture and adoption guidance | planned |
-| TK-987 | close sprint-005 boundary and activate project-final reviewer loop | prepare project-final closeout and zero-cli delivery recommendation | planned |
+| TK-979 | freeze support-truth migration and cli deprecation contract | prepare sprint-004 exit acceptance and sprint-005 handoff | completed |
+| TK-980 | execute plugin-first evidence and migration rehearsal bundle | freeze support-truth migration and cli deprecation contract | completed |
+| TK-981 | refresh support docs deprecation posture and adoption guidance | execute plugin-first evidence and migration rehearsal bundle | completed |
+| TK-982 | prepare project-final closeout and zero-cli delivery recommendation | refresh support docs deprecation posture and adoption guidance | completed |
+| TK-987 | close sprint-005 boundary and activate project-final reviewer loop | prepare project-final closeout and zero-cli delivery recommendation | completed |
 | TK-988 | finalize project-114 closeout and restore idle context | close sprint-005 boundary and activate project-final reviewer loop | planned |
 
 ## 3. Exit Criteria
@@ -40,3 +40,5 @@
 2. Keep this sprint `planned` until sprint-004 hands off; reserve local `CR-001` only after activation.
 3. `2026-04-18`：sprint-004 已完成 closeout，本 sprint 已切换为当前 active execution surface；本地 `CR-001` 已在 activation 时预留，后续 fresh reviewer round 继续复用该编号。
 4. `2026-04-18`：`TK-979` 已切换为当前首个 implementation lane，用于冻结 support truth / migration / CLI optional posture 的 evidence-gated contract。
+5. `2026-04-18`：`TK-979 ~ TK-982` 已在同一窗口完成 contract freeze、zero-cli rehearsal evidence、public support docs refresh 与 project-final handoff 准备；当前 sprint-005 进入 implementation complete / CR pending 状态，下一步固定执行 fresh reviewer round。
+6. `2026-04-18`：sprint-005 的 `CR-001` 已 resolved，installed-VSIX public wording 与 activation-coverage runbook drift 已修复并验证；当前 sprint 保持 `active`，仅作为 project-final closeout surface 继续复用其 `tasks/` 与 `review/` 路径。

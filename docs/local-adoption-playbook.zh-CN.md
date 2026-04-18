@@ -273,9 +273,9 @@ pnpm exec repo-ai-governor workspace set-ui-theme --output pretty
 pnpm exec repo-ai-governor set-ui-theme calm --theme-scope workspace --output pretty
 ```
 
-## 9. 可选的 editor-native surface 和更低层路径
+## 9. VS Code 主工作台与更低层路径
 
-这些 surface 是真实存在的，但它们不是默认 adopter story。
+对于已构建源码仓 checkout 和一份由维护者产出的本地 VSIX，VS Code 现在就是 primary human-facing workbench。更低层的 CLI surface 仍然存在，但在支持范围内走 VS Code 路径时，它们已经不再是必经前置步骤。
 
 ### VS Code 主工作台
 
@@ -285,8 +285,17 @@ pnpm run build
 code --extensionDevelopmentPath <governor-repo>/apps/vscode-extension <target-repo>
 ```
 
-只有当你想在正常 CLI 路径之上，再验证 editor-native 主工作台时才使用。当前正式支持限定在 built source checkout 和本地 VSIX / packaged extension root 演练。
-当前 support-truth 已把这两条路径提升为 VS Code 的公开主工作台口径，但它仍不替代 CLI 的 automation / CI / session-shell 入口职责，也不会把 Marketplace 或已发布 npm/tgz 安装面变成正式支持的扩展分发方式。
+当前正式支持限定在 built source checkout 和本地 VSIX / packaged extension root。VS Code 现在已经是这两条路径上的公开主工作台，但它仍不会把 Marketplace 或已发布 npm/tgz 安装面变成正式支持的扩展分发方式。
+
+扩展运行起来之后，支持范围内的人类路径可以直接留在 VS Code 内完成：
+
+1. 通过 Workbench Overview 执行 workspace bootstrap、`doctor` 和 `check`。
+2. 通过 Workflow Studio 完成 workflow preview/create/edit 与 service-backed run-control。
+3. 通过 Execution Board、HITL Inbox、Review Queue、Review Detail、Automation Queue 完成日常治理执行与评审交互。
+4. 通过 workbench 内的 service-backed 动作执行 `adopt / host / verify / upgrade`，而不是再把 CLI 当成必需交接面。
+5. CLI 只保留给 automation、CI、session-shell 或 debugging 这类 terminal-native 场景。
+
+如果你拿到的是一份本地 VSIX，而不是直接启动 extension-development host，请在 VS Code 里使用 `Extensions: Install from VSIX...` 安装，把它当成维护者引导下的人工演练。目标用户体验仍然是同一套 zero-cli workbench flow，但当前 release-blocking 的证据基线仍先收敛在 packaged-root 与 extracted-VSIX 验证。
 
 ### Desktop foundation
 

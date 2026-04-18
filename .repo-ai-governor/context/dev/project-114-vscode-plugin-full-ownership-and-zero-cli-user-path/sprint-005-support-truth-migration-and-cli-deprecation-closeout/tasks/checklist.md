@@ -1,18 +1,31 @@
 # checklist
 
-- [ ] TK-979 freeze support-truth migration and cli deprecation contract
+- [x] TK-979 freeze support-truth migration and cli deprecation contract
   - 2026-04-18：任务创建，状态初始化为 `planned`。
   - 2026-04-18：随着 sprint-005 activation 完成，TK-979 状态切换为 `active`，并作为当前首个 implementation lane 开始冻结 support truth / migration / CLI optional posture 的 evidence-gated contract。
-  - 2026-04-18: switched TK-979 to active as the first sprint-005 implementation lane after sprint-004 closeout.
-- [ ] TK-980 execute plugin-first evidence and migration rehearsal bundle
+  - 2026-04-18：已创建 `project-114-sprint-005-zero-cli-support-truth-contract.md`，将 built-source checkout + local VSIX 的 plugin-first / zero-cli human-path 边界固定为：VS Code 承接 bootstrap/readiness、`doctor`、`check`、workflow、run/review、automation 与 `adopt / host / verify / upgrade`，CLI 退到 optional automation / scriptable / session-shell / debugging 用途。
+  - 2026-04-18：当前任务切换为 `completed`，后续 evidence 与 public wording refresh 均按该 contract 执行。
+- [x] TK-980 execute plugin-first evidence and migration rehearsal bundle
   - 2026-04-18：任务创建，状态初始化为 `planned`。
-- [ ] TK-981 refresh support docs deprecation posture and adoption guidance
+  - 2026-04-18：zero-cli evidence bundle 已在同窗口完成：`pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test/vscode-extension-contract.test.ts apps/vscode-extension/test/vscode-extension-host.activation.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-service-runtime.test.ts apps/vscode-extension/test/vscode-extension-selection-store.test.ts apps/vscode-extension/test/vscode-extension-packaging-boundary.test.ts`（`74/74` 通过）、`pnpm run build`、`pnpm run release:verify-vscode-extension-distribution -- --output .tmp/project-114-sprint-005-vscode-distribution-report.json`、`pnpm pack --json --dry-run`、`pnpm run check:ide-entry-smoke`、`pnpm run check:ide-docs-parity` 全部通过。
+  - 2026-04-18：distribution report 已固化为 immutable snapshot `project-114-sprint-005-vscode-distribution-report-20260418T075344Z.json`，并写入 `project-114-sprint-005-zero-cli-rehearsal-summary.md`；报告确认 packaged root / extracted VSIX 两侧 sidecar lifecycle 均为 `ready`，symlink payload 为空列表。
+  - 2026-04-18：当前任务切换为 `completed`。
+- [x] TK-981 refresh support docs deprecation posture and adoption guidance
   - 2026-04-18：任务创建，状态初始化为 `planned`。
-- [ ] TK-982 prepare project-final closeout and zero-cli delivery recommendation
+  - 2026-04-18：public support docs 已在同窗口刷新：`apps/vscode-extension/README.md`、`docs/support-matrix.md`、`docs/support-matrix.zh-CN.md`、`docs/local-adoption-playbook.md`、`docs/local-adoption-playbook.zh-CN.md`、`docs/maintainer-validation-playbook.md`、`docs/maintainer-validation-playbook.zh-CN.md` 现统一声明 VS Code 是 built-source checkout + local VSIX 路径上的 primary human-facing workbench，而 CLI 收口为 optional automation / scriptable / session-shell surface。
+  - 2026-04-18：新的 support matrix 与 maintainer playbook 证据回链已切到 `project-114` sprint-local immutable snapshot + zero-cli rehearsal summary，不再继续把 public truth 锁死在 `project-113` 的旧 evidence path。
+  - 2026-04-18：当前任务切换为 `completed`。
+- [x] TK-982 prepare project-final closeout and zero-cli delivery recommendation
   - 2026-04-18：任务创建，状态初始化为 `planned`。
-- [ ] TK-987 close sprint-005 boundary and activate project-final reviewer loop
+  - 2026-04-18：已生成 `project-114-sprint-005-project-final-handoff.md`，把 contract freeze、zero-cli evidence、docs truth sync 与 project-final 剩余步骤固定为本 sprint closeout 输入。
+  - 2026-04-18：project 与 sprint plan 已同步记录“implementation complete / CR pending”现状；当前任务切换为 `completed`，下一步固定进入 sprint-005 fresh reviewer round。
+- [x] TK-987 close sprint-005 boundary and activate project-final reviewer loop
   - 2026-04-18：任务创建，状态初始化为 `planned`。
+  - 2026-04-18：sprint-005 的 `CR-001` 已完成 `review_pending -> verified -> resolved` 全流程，fresh reviewer 提出的 installed-VSIX wording / activation-coverage drift 均已修复并通过 targeted vitest、`pnpm run build`、`pnpm run check:ide-docs-parity`、governance gates 与 `pnpm run check`。
+  - 2026-04-18：project plan、sprint plan 与 `current-context.md` 已写回 sprint-005 clean / project-final-next 的当前真值；当前任务切换为 `completed`，下一步固定执行 sprint-005 boundary local commit 并启动 project-final fresh reviewer loop。
 - [ ] TK-988 finalize project-114 closeout and restore idle context
   - 2026-04-18：任务创建，状态初始化为 `planned`。
-- [ ] CR-001 sprint-005-support-truth-migration-and-cli-deprecation-closeout delegated review loop round 1
+- [x] CR-001 sprint-005-support-truth-migration-and-cli-deprecation-closeout delegated review loop round 1
   - 2026-04-18：随着 sprint-005 activation 完成，预留 `CR-001` 作为本 sprint 的首轮 fresh reviewer 编号，状态初始化为 `review_pending`。
+  - 2026-04-18：fresh reviewer round `working-tree-20260418-1606` 已完成，主 agent 复核后认可两条 findings：一条要求收紧 installed-VSIX public wording 到当前 proof boundary，另一条要求把 activation coverage 补回 maintainer rerun command；当前任务推进到 `verified`。
+  - 2026-04-18：accepted findings 已全部修复并验证：public support wording 已收敛到 packaged-root / extracted-VSIX 的当前 proof boundary，maintainer runbook 与 README verification slice 已补回 activation coverage；当前任务推进到 `resolved`。

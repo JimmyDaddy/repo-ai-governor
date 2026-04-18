@@ -273,9 +273,9 @@ pnpm exec repo-ai-governor workspace set-ui-theme --output pretty
 pnpm exec repo-ai-governor set-ui-theme calm --theme-scope workspace --output pretty
 ```
 
-## 9. Optional Editor-native Surfaces And Lower-level Paths
+## 9. VS Code Primary Workbench And Lower-level Paths
 
-These surfaces are real, but they are not the default adopter story.
+For built-source checkout and one maintainer-produced local VSIX, VS Code is now the primary human-facing workbench. The lower-level CLI surfaces still exist, but they are optional when you are following the supported VS Code path.
 
 ### VS Code primary workbench
 
@@ -285,7 +285,17 @@ pnpm run build
 code --extensionDevelopmentPath <governor-repo>/apps/vscode-extension <target-repo>
 ```
 
-Use this when you want the built-source editor-native primary workbench on top of the normal CLI path. Public support currently covers the built source checkout plus one locally generated VSIX or packaged extension root. It does not replace CLI ownership of automation, CI, or session-shell entry points, and it does not widen support to Marketplace or published npm/tgz install surfaces.
+Use this when you want the built-source editor-native primary workbench. Public support covers the built source checkout plus one locally generated VSIX or packaged extension root. It does not widen support to Marketplace or published npm/tgz install surfaces.
+
+After the extension is running, stay in VS Code for the supported human path:
+
+1. Use Workbench Overview to run workspace bootstrap, `doctor`, and `check`.
+2. Use Workflow Studio for workflow preview/create/edit plus service-backed run-control.
+3. Use Execution Board, HITL Inbox, Review Queue, Review Detail, and Automation Queue for day-to-day governed execution and review work.
+4. Use the service-backed workbench actions for `adopt / host / verify / upgrade` instead of treating the CLI as a required handoff.
+5. Keep CLI only for automation, CI, session-shell, or debugging scenarios where a terminal-native surface is still preferable.
+
+If you receive one local VSIX instead of running the development host, install it from VS Code with `Extensions: Install from VSIX...` as a maintainer-guided manual rehearsal. The intended user experience is the same zero-CLI workbench flow, but the release-blocking evidence baseline today still stops at packaged-root and extracted-VSIX verification.
 
 ### Desktop foundation
 

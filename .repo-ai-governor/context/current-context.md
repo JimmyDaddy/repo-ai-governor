@@ -12,7 +12,7 @@
 - Checklist: `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/tasks/checklist.md`
 - CSV: `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/tasks/tasks.csv`
 - Review: `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/review/`
-- Note: `2026-04-18` 已完成 `project-114 / sprint-004-workflow-authoring-run-review-and-automation-primaryization` closeout，并激活 `sprint-005-support-truth-migration-and-cli-deprecation-closeout` 作为新的 primary execution surface；sprint-005 的 `CR-001` 已在 activation 时预留，默认 review 输出路径锁定到当前 active sprint 的 `review/`。
+- Note: `2026-04-18` 已完成 `project-114 / sprint-004-workflow-authoring-run-review-and-automation-primaryization` closeout，并激活 `sprint-005-support-truth-migration-and-cli-deprecation-closeout` 作为新的 primary execution surface；同日 sprint-005 的 sprint-level `CR-001` 已 resolved，当前 stream 继续作为 project-final closeout surface 保持 `active`，默认 review 输出路径仍锁定到当前 sprint 的 `review/`。
 
 ## Active Streams
 

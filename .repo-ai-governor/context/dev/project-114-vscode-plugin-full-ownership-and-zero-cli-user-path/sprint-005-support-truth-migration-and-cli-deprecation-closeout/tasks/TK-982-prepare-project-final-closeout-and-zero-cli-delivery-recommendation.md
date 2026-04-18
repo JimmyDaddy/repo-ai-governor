@@ -1,6 +1,6 @@
 # TK-982 prepare project-final closeout and zero-cli delivery recommendation
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-18
 - Owner: AI-Agent
 - Priority: P1
@@ -54,8 +54,10 @@ Prepare project-final closeout, completion-audit inputs, and the zero-CLI delive
 ## 9. 执行记录
 
 1. 2026-04-18：任务创建，状态初始化为 `planned`。
+2. 2026-04-18：已生成 `project-114-sprint-005-project-final-handoff.md`，把 contract freeze、zero-cli evidence、docs truth sync 与 project-final 剩余步骤固定为本 sprint closeout 输入。
+3. 2026-04-18：project 与 sprint plan 已同步记录“implementation complete / CR pending”现状；当前任务切换为 `completed`，下一步固定进入 sprint-005 fresh reviewer round。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/project-114-sprint-005-project-final-handoff.md`
+2. 当前任务卡已记录 sprint-005 project-final handoff ready 结论

@@ -1,6 +1,6 @@
 # TK-981 refresh support docs deprecation posture and adoption guidance
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-18
 - Owner: AI-Agent
 - Priority: P1
@@ -54,8 +54,11 @@ Plan the support-doc, deprecation, and adoption-guidance refresh for the zero-CL
 ## 9. 执行记录
 
 1. 2026-04-18：任务创建，状态初始化为 `planned`。
+2. 2026-04-18：public support docs 已在同窗口刷新：`apps/vscode-extension/README.md`、`docs/support-matrix.md`、`docs/support-matrix.zh-CN.md`、`docs/local-adoption-playbook.md`、`docs/local-adoption-playbook.zh-CN.md`、`docs/maintainer-validation-playbook.md`、`docs/maintainer-validation-playbook.zh-CN.md` 现统一声明 VS Code 是 built-source checkout + local VSIX 路径上的 primary human-facing workbench，而 CLI 收口为 optional automation / scriptable / session-shell surface。
+3. 2026-04-18：新的 support matrix 与 maintainer playbook 证据回链已切到 `project-114` sprint-local immutable snapshot + zero-cli rehearsal summary，不再继续把 public truth 锁死在 `project-113` 的旧 evidence path。
+4. 2026-04-18：当前任务切换为 `completed`。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. `apps/vscode-extension/README.md` 与 `docs/support-matrix*.md` / `docs/local-adoption-playbook*.md` / `docs/maintainer-validation-playbook*.md` 已完成 truth sync
+2. 当前任务卡已记录新的 zero-cli public wording 与 evidence-backlink posture

@@ -75,11 +75,11 @@
 | TK-977 | sprint-004-workflow-authoring-run-review-and-automation-primaryization | land workflow studio review and automation primary surfaces | workbench surface | implement workflow authoring run-control review and automation seams | completed |
 | TK-978 | sprint-004-workflow-authoring-run-review-and-automation-primaryization | prepare sprint-004 exit acceptance and sprint-005 handoff | governance handoff | land workflow studio review and automation primary surfaces | completed |
 | TK-986 | sprint-004-workflow-authoring-run-review-and-automation-primaryization | close sprint-004 boundary and activate sprint-005 execution surface | sprint closeout | prepare sprint-004 exit acceptance and sprint-005 handoff | completed |
-| TK-979 | sprint-005-support-truth-migration-and-cli-deprecation-closeout | freeze support-truth migration and cli deprecation contract | support contract | prepare sprint-004 exit acceptance and sprint-005 handoff | active |
-| TK-980 | sprint-005-support-truth-migration-and-cli-deprecation-closeout | execute plugin-first evidence and migration rehearsal bundle | evidence bundle | freeze support-truth migration and cli deprecation contract | planned |
-| TK-981 | sprint-005-support-truth-migration-and-cli-deprecation-closeout | refresh support docs deprecation posture and adoption guidance | support truth package | execute plugin-first evidence and migration rehearsal bundle | planned |
-| TK-982 | sprint-005-support-truth-migration-and-cli-deprecation-closeout | prepare project-final closeout and zero-cli delivery recommendation | project closeout handoff | refresh support docs deprecation posture and adoption guidance | planned |
-| TK-987 | sprint-005-support-truth-migration-and-cli-deprecation-closeout | close sprint-005 boundary and activate project-final reviewer loop | sprint closeout | prepare project-final closeout and zero-cli delivery recommendation | planned |
+| TK-979 | sprint-005-support-truth-migration-and-cli-deprecation-closeout | freeze support-truth migration and cli deprecation contract | support contract | prepare sprint-004 exit acceptance and sprint-005 handoff | completed |
+| TK-980 | sprint-005-support-truth-migration-and-cli-deprecation-closeout | execute plugin-first evidence and migration rehearsal bundle | evidence bundle | freeze support-truth migration and cli deprecation contract | completed |
+| TK-981 | sprint-005-support-truth-migration-and-cli-deprecation-closeout | refresh support docs deprecation posture and adoption guidance | support truth package | execute plugin-first evidence and migration rehearsal bundle | completed |
+| TK-982 | sprint-005-support-truth-migration-and-cli-deprecation-closeout | prepare project-final closeout and zero-cli delivery recommendation | project closeout handoff | refresh support docs deprecation posture and adoption guidance | completed |
+| TK-987 | sprint-005-support-truth-migration-and-cli-deprecation-closeout | close sprint-005 boundary and activate project-final reviewer loop | sprint closeout | prepare project-final closeout and zero-cli delivery recommendation | completed |
 | TK-988 | sprint-005-support-truth-migration-and-cli-deprecation-closeout | finalize project-114 closeout and restore idle context | project final closeout | close sprint-005 boundary and activate project-final reviewer loop | planned |
 
 ## 4. 依赖产物策略
@@ -103,6 +103,8 @@
 5. 2026-04-18：sprint-003 已完成 closeout 并写回 completed truth；current-context 已切换到 sprint-004-workflow-authoring-run-review-and-automation-primaryization 作为新的 active execution surface，并预留 sprint-004 `CR-001` 作为首轮 fresh reviewer 编号。
 6. 2026-04-18：sprint-004 implementation boundary 已完成，当前窗口将 workflow authoring / review / automation 主路径收口到插件内 Workflow Studio 与 Review Detail；temporary bridge 与 terminal handoff 降为 compatibility-only evidence，接下来进入 sprint-004 fresh reviewer loop。
 7. 2026-04-18：sprint-004 已完成 fresh reviewer loop 与 closeout；automation queue inline action 的 context-loss 回归已修复并验证，current-context 已切换到 sprint-005-support-truth-migration-and-cli-deprecation-closeout 作为新的 active execution surface，同时预留 sprint-005 `CR-001`。
+8. 2026-04-18：sprint-005 implementation boundary 已完成：zero-cli support-truth contract、distribution snapshot、zero-cli rehearsal summary、README/support matrix/playbook 刷新与 project-final handoff 已全部落盘，当前窗口进入 sprint-005 delegated CR loop。
+9. 2026-04-18：sprint-005 fresh reviewer round `CR-001` 已 resolved，installed-VSIX public wording 与 activation-coverage runbook drift 已修复并验证；当前窗口完成 sprint-005 boundary closeout 写回并准备本地 sprint commit，随后进入 project-final fresh reviewer loop。
 
 ## 7. 里程碑记录入口
 

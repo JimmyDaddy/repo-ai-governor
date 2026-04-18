@@ -1,6 +1,6 @@
 # TK-979 freeze support-truth migration and cli deprecation contract
 
-- Status: active
+- Status: completed
 - Date: 2026-04-18
 - Owner: AI-Agent
 - Priority: P1
@@ -56,8 +56,10 @@ Freeze the evidence-gated support-truth and CLI deprecation contract for the zer
 
 1. 2026-04-18：任务创建，状态初始化为 `planned`。
 2. 2026-04-18：随着 sprint-005 activation 完成，TK-979 状态切换为 `active`，并作为当前首个 implementation lane 开始冻结 support truth / migration / CLI optional posture 的 evidence-gated contract。
+3. 2026-04-18：已创建 `project-114-sprint-005-zero-cli-support-truth-contract.md`，将 built-source checkout + local VSIX 的 plugin-first / zero-cli human-path 边界固定为：VS Code 承接 bootstrap/readiness、`doctor`、`check`、workflow、run/review、automation 与 `adopt / host / verify / upgrade`，CLI 退到 optional automation / scriptable / session-shell / debugging 用途。
+4. 2026-04-18：当前任务切换为 `completed`，后续 evidence 与 public wording refresh 均按该 contract 执行。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/project-114-sprint-005-zero-cli-support-truth-contract.md`
+2. 本任务卡已同步记录 zero-cli support-truth freeze 结论

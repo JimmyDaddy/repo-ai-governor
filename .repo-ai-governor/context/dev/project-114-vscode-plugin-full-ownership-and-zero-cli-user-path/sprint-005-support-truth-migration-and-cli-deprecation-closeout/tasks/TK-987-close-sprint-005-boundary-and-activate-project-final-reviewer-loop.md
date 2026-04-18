@@ -1,6 +1,6 @@
 # TK-987 close sprint-005 boundary and activate project-final reviewer loop
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-18
 - Owner: AI-Agent
 - Priority: P1
@@ -56,9 +56,11 @@ After sprint-005 reaches clean `TK/CR` terminal state, close the sprint boundary
 ## 9. 执行记录
 
 1. 2026-04-18：任务创建，状态初始化为 `planned`。
+2. 2026-04-18：sprint-005 的 `CR-001` 已完成 `review_pending -> verified -> resolved` 全流程，fresh reviewer 提出的 installed-VSIX wording / activation-coverage drift 均已修复并通过 targeted vitest、`pnpm run build`、`pnpm run check:ide-docs-parity`、governance gates 与 `pnpm run check`。
+3. 2026-04-18：project plan、sprint plan 与 `current-context.md` 已写回 sprint-005 clean / project-final-next 的当前真值；当前任务切换为 `completed`，下一步固定执行 sprint-005 boundary local commit 并启动 project-final fresh reviewer loop。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
-3. 待执行后补齐
+1. `.repo-ai-governor/context/current-context.md`
+2. `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/plan.md`
+3. `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/plan.md`
