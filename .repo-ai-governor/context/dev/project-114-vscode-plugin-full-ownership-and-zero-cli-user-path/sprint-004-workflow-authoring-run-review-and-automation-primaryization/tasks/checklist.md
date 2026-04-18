@@ -1,16 +1,25 @@
 # checklist
 
-- [ ] TK-975 freeze plugin-primary workflow and automation contract
+- [x] TK-975 freeze plugin-primary workflow and automation contract
   - 2026-04-18：任务创建，状态初始化为 `planned`。
   - 2026-04-18：随着 sprint-004 activation 完成，TK-975 状态切换为 `active`，并作为当前首个 implementation lane 开始冻结 workflow / run-control / review / automation 的 plugin-primary contract。
-- [ ] TK-976 implement workflow authoring run-control review and automation seams
+  - 2026-04-18：冻结 sprint-004 plugin-primary contract：automation queue 默认进入 Workflow Studio、review-only workflow-studio action 改为插件内 review detail、terminal handoff 降为 compatibility-only、temporary bridge 仅保留为 exit-evidence 而不再作为主 run-control。
+- [x] TK-976 implement workflow authoring run-control review and automation seams
   - 2026-04-18：任务创建，状态初始化为 `planned`。
-- [ ] TK-977 land workflow studio review and automation primary surfaces
+  - 2026-04-18：补齐 workflow / automation seam：新增 `repoAiGovernor.openWorkflowStudio` command，controller 会先揭示 Governor workbench container 再刷新/显示 Workflow Studio；handoff target 选择不再自动回落到 terminal，explicit terminal target 也只保留 compatibility-only 提示。
+- [x] TK-977 land workflow studio review and automation primary surfaces
   - 2026-04-18：任务创建，状态初始化为 `planned`。
-- [ ] TK-978 prepare sprint-004 exit acceptance and sprint-005 handoff
+  - 2026-04-18：落地 workflow-studio / automation primary surfaces：automation queue 顶层命令与 `VIEW_EXECUTION` action 改为 Workflow Studio first；workbench overview 将 temporary bridge 重命名为 compatibility exit evidence；workflow-studio run-control 不再把 compatibility bridge 渲染成主动作，同时 review-only path 保持在插件内 review detail。
+- [x] TK-978 prepare sprint-004 exit acceptance and sprint-005 handoff
   - 2026-04-18：任务创建，状态初始化为 `planned`。
-- [ ] TK-986 close sprint-004 boundary and activate sprint-005 execution surface
+  - 2026-04-18：完成 sprint-004 acceptance package：`pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test/vscode-extension-contract.test.ts apps/vscode-extension/test/vscode-extension-host.activation.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-service-runtime.test.ts`、`pnpm run build`、`pnpm run check` 已通过。
+  - 2026-04-18：sprint-005 handoff 固定为 support-truth / migration 窗口：需要同步 `apps/vscode-extension/README.md` 与 adopter-facing support docs，把 CLI 收口为 optional automation/scriptable path，并补齐 packaged/local VSIX 的 zero-cli rehearsal evidence。
+- [x] TK-986 close sprint-004 boundary and activate sprint-005 execution surface
   - 2026-04-18：任务创建，状态初始化为 `planned`。
-- [ ] CR-001 sprint-004-workflow-authoring-run-review-and-automation-primaryization delegated review loop round 1
+  - 2026-04-18：`CR-001` 已 resolved，sprint-004 的 review/task truth、project plan、sprint plan 与 current-context 已统一切换到 closeout-ready state。
+  - 2026-04-18：已将 sprint-004 标记为 completed，并激活 sprint-005 作为新的 primary execution surface；sprint-005 `CR-001` 已在同窗口完成 activation write-back。
+  - 2026-04-18: closed sprint-004 after CR-001 resolved, synchronized project/current-context truth, and activated sprint-005 with a reserved CR-001 slot.
+- [x] CR-001 sprint-004-workflow-authoring-run-review-and-automation-primaryization delegated review loop round 1
   - 2026-04-18：随着 sprint-004 activation 完成，预留 `CR-001` 作为本 sprint 的首轮 fresh reviewer 编号，状态初始化为 `review_pending`。
-  - 2026-04-18: Reserved CR-001 at sprint-004 activation as the first fresh reviewer slot for the upcoming boundary review loop.
+  - 2026-04-18：fresh reviewer round 发现 1 条 accepted finding：automation queue 的 inline `openWorkflowStudio` 动作没有解包 tree-node `selectionRequest`，会丢失点击项上下文。
+  - 2026-04-18：主 agent 已在 controller 中归一化 tree-node context-menu 入参、补充回归测试，并重新跑通 targeted vitest 与 `pnpm run build`；随后继续执行 release/gov sync checks，将 `CR-001` 收口为 `resolved`。

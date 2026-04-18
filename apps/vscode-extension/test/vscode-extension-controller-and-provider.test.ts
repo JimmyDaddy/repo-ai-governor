@@ -512,7 +512,7 @@ describe('VsCode extension controller/provider integration', () => {
     });
   });
 
-  it('clears stale queue selection on the actual review-only handoff command-uri path', async () => {
+  it('clears stale queue selection on the actual review-only detail command-uri path', async () => {
     vscodeMock.state.trusted = true;
     vscodeMock.openTextDocument.mockResolvedValue({
       uri: {
@@ -577,7 +577,7 @@ describe('VsCode extension controller/provider integration', () => {
         },
         reviewSourcePath: '/repo/review-only.md',
       }),
-      VSCODE_EXTENSION_COMMAND_IDS.OPEN_HANDOFF_TARGET,
+      VSCODE_EXTENSION_COMMAND_IDS.OPEN_REVIEW_DETAIL,
     );
     const resolveExecutionBoardEntry = vi.fn();
     const controller = new VsCodeExtensionCommandController(
@@ -598,12 +598,9 @@ describe('VsCode extension controller/provider integration', () => {
       },
     );
 
-    await controller.openHandoffTarget(request as never);
+    await controller.openReviewDetail(request as never);
 
     expect(resolveExecutionBoardEntry).not.toHaveBeenCalled();
-    expect(vscodeMock.openTextDocument).toHaveBeenCalledWith({
-      fsPath: '/repo/review-only.md',
-    });
     expect(selectionStore.getSnapshot()).toEqual({
       executionId: undefined,
       executionSessionId: undefined,
@@ -1261,6 +1258,228 @@ describe('VsCode extension controller/provider integration', () => {
     });
     expect(show).toHaveBeenCalledWith(false);
     expect(buildReviewDetailHtml).toHaveBeenCalledTimes(2);
+  });
+
+  it('opens workflow studio from an automation queue request without restoring stale review routing', async () => {
+    const selectionStore = new VsCodeExtensionSelectionStore();
+    const resolveWorkflowStudioSnapshot = vi
+      .fn()
+      .mockResolvedValueOnce({
+        workspaceContext: {
+          workspaceLabel: 'ai-governor',
+          workspaceRoot: '/repo',
+          workspaceTrusted: true,
+        },
+        queueOverview: {
+          generatedAt: '2026-04-18T15:00:00.000Z',
+          automationInbox: [],
+          reviewQueue: [],
+          parallelLanes: [],
+          workspaceSummary: [],
+          temporaryBridges: [],
+          notificationOwnership: {
+            ownerSurface: OrchestrationClientSurface.DESKTOP,
+            pendingItemCount: 0,
+            dueSoonItemCount: 0,
+            overdueItemCount: 0,
+            activeWorkspaceCount: 1,
+            defaultFollowUpSlaMinutes: 60,
+            notificationStatus: OrchestrationGovernanceNotificationStatus.IDLE,
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        workspaceContext: {
+          workspaceLabel: 'ai-governor',
+          workspaceRoot: '/repo',
+          workspaceTrusted: true,
+        },
+        queueOverview: {
+          generatedAt: '2026-04-18T15:00:00.000Z',
+          automationInbox: [],
+          reviewQueue: [],
+          parallelLanes: [],
+          workspaceSummary: [],
+          temporaryBridges: [],
+          notificationOwnership: {
+            ownerSurface: OrchestrationClientSurface.DESKTOP,
+            pendingItemCount: 0,
+            dueSoonItemCount: 0,
+            overdueItemCount: 0,
+            activeWorkspaceCount: 1,
+            defaultFollowUpSlaMinutes: 60,
+            notificationStatus: OrchestrationGovernanceNotificationStatus.IDLE,
+          },
+        },
+        selectedExecution: {
+          execution: {
+            executionId: 'execution-automation',
+            executionSessionId: 'session-automation',
+          },
+          actions: [],
+          handoffTargets: [],
+        },
+      });
+    const buildWorkflowStudioHtml = vi.fn().mockReturnValue('<html></html>');
+    const show = vi.fn();
+    const workflowStudioProvider = new VsCodeExtensionWorkflowStudioProvider(
+      {
+        resolveWorkflowStudioSnapshot,
+      } as never,
+      selectionStore,
+      {
+        buildWorkflowStudioHtml,
+      } as never,
+    );
+
+    await workflowStudioProvider.resolveWebviewView({
+      webview: {
+        options: {},
+        html: '',
+      },
+      show,
+    } as never);
+
+    selectionStore.rememberExecution('execution-stale', 'session-stale');
+    selectionStore.rememberReviewSourcePath('/repo/review-stale.md');
+
+    const controller = new VsCodeExtensionCommandController(
+      {} as never,
+      selectionStore,
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+        workflowStudioProvider,
+      },
+    );
+
+    await controller.openWorkflowStudio({
+      executionId: 'execution-automation',
+      executionSessionId: undefined,
+      reviewSourcePath: undefined,
+    });
+
+    expect(resolveWorkflowStudioSnapshot).toHaveBeenLastCalledWith({
+      executionId: 'execution-automation',
+      executionSessionId: undefined,
+      reviewSourcePath: undefined,
+    });
+    expect(selectionStore.getSnapshot()).toEqual({
+      executionId: 'execution-automation',
+      executionSessionId: undefined,
+      reviewSourcePath: undefined,
+      queueEntry: undefined,
+      temporaryBridge: undefined,
+    });
+    expect(vscodeMock.executeCommand).toHaveBeenCalledWith(
+      'workbench.view.extension.repoAiGovernor',
+    );
+    expect(show).toHaveBeenCalledWith(false);
+    expect(buildWorkflowStudioHtml).toHaveBeenCalledTimes(2);
+  });
+
+  it('unwraps automation queue tree-node selection when inline workflow-studio actions run', async () => {
+    const selectionStore = new VsCodeExtensionSelectionStore();
+    selectionStore.rememberExecution('execution-stale', 'session-stale');
+    selectionStore.rememberReviewSourcePath('/repo/review-stale.md');
+
+    const workflowStudioProvider = {
+      refresh: vi.fn(),
+      show: vi.fn(),
+    };
+
+    const controller = new VsCodeExtensionCommandController(
+      {} as never,
+      selectionStore,
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+        workflowStudioProvider: workflowStudioProvider as never,
+      },
+    );
+
+    await controller.openWorkflowStudio({
+      nodeId: 'automation:execution-automation',
+      label: 'TK-563',
+      selectionRequest: {
+        executionId: 'execution-automation',
+        executionSessionId: undefined,
+        reviewSourcePath: undefined,
+        queueEntry: {
+          queueEntryId: 'automation:execution-automation',
+        } as never,
+      },
+    });
+
+    expect(workflowStudioProvider.refresh).toHaveBeenCalledWith({
+      executionId: 'execution-automation',
+      executionSessionId: undefined,
+      reviewSourcePath: undefined,
+      queueEntry: {
+        queueEntryId: 'automation:execution-automation',
+      },
+    });
+    expect(selectionStore.getSnapshot()).toMatchObject({
+      executionId: 'execution-automation',
+      executionSessionId: undefined,
+      reviewSourcePath: undefined,
+      queueEntry: {
+        queueEntryId: 'automation:execution-automation',
+      },
+    });
+    expect(vscodeMock.executeCommand).toHaveBeenCalledWith(
+      'workbench.view.extension.repoAiGovernor',
+    );
+    expect(workflowStudioProvider.show).toHaveBeenCalledWith(false);
+  });
+
+  it('keeps terminal handoff inside compatibility-only messaging instead of opening a VS Code terminal', async () => {
+    vscodeMock.state.trusted = true;
+
+    const controller = new VsCodeExtensionCommandController(
+      {} as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    await controller.openHandoffTarget({
+      handoffTarget: {
+        targetId: 'execution-1:terminal',
+        executionId: 'execution-1',
+        targetKind: OrchestrationHandoffTargetKind.TERMINAL,
+        targetPath: '/repo',
+        exists: true,
+      },
+    });
+
+    expect(vscodeMock.createTerminal).not.toHaveBeenCalled();
+    expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith(
+      'Terminal handoff stays compatibility-only. Use Workflow Studio or Review Detail for the plugin-primary path.',
+    );
   });
 
   it('renders workflow-studio html from the current service-backed selection snapshot', async () => {

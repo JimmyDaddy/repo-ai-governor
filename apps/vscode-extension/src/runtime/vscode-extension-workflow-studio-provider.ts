@@ -43,6 +43,14 @@ export class VsCodeExtensionWorkflowStudioProvider implements vscode.WebviewView
     await this.render();
   }
 
+  /**
+   * Reveals the workflow-studio webview when it has already been resolved.
+   * @param preserveFocus Whether to preserve current focus.
+   */
+  public show(preserveFocus = false): void {
+    this.webviewView?.show(preserveFocus);
+  }
+
   private async render(): Promise<void> {
     if (!this.webviewView) {
       return;

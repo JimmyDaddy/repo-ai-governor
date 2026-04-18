@@ -1,6 +1,6 @@
 # TK-976 implement workflow authoring run-control review and automation seams
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-18
 - Owner: AI-Agent
 - Priority: P1
@@ -54,8 +54,10 @@ Plan the service-backed seams that let workflow authoring, run-control, review, 
 ## 9. 执行记录
 
 1. 2026-04-18：任务创建，状态初始化为 `planned`。
+2. 2026-04-18：补齐 workflow / automation seam：新增 `repoAiGovernor.openWorkflowStudio` command，controller 会先揭示 Governor workbench container 再刷新/显示 Workflow Studio；handoff target 选择不再自动回落到 terminal，explicit terminal target 也只保留 compatibility-only 提示。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. `apps/vscode-extension/src/runtime/vscode-extension-command-controller.ts`
+2. `apps/vscode-extension/src/runtime/vscode-extension-host.ts`
+3. `apps/vscode-extension/src/runtime/vscode-extension-workflow-studio-provider.ts`

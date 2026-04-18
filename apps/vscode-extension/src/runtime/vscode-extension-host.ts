@@ -153,6 +153,10 @@ export class VsCodeExtensionHost {
         commandController.runWorkflowEdit(),
       ),
       vscode.commands.registerCommand(
+        VSCODE_EXTENSION_COMMAND_IDS.OPEN_WORKFLOW_STUDIO,
+        async (request) => commandController.openWorkflowStudio(request),
+      ),
+      vscode.commands.registerCommand(
         VSCODE_EXTENSION_COMMAND_IDS.OPEN_REVIEW_DETAIL,
         async (request) => commandController.openReviewDetail(request),
       ),

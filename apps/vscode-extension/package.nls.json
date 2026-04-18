@@ -18,6 +18,7 @@
   "commands.runWorkflowPreview.title": "Preview Governor Workflow",
   "commands.runWorkflowCreate.title": "Create Governor Workflow",
   "commands.runWorkflowEdit.title": "Edit Governor Workflow",
+  "commands.openWorkflowStudio.title": "Open Governor Workflow Studio",
   "commands.openReviewDetail.title": "Open Governor Review Detail",
   "commands.openHandoffTarget.title": "Open Governor Handoff Target",
   "commands.stageTemporaryBridge.title": "Run Governor Repository Operation",

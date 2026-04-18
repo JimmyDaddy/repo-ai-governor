@@ -130,6 +130,10 @@ export class VsCodeExtensionContract {
         'commands.runWorkflowEdit.title',
       ),
       this.createCommand(
+        VSCODE_EXTENSION_COMMAND_IDS.OPEN_WORKFLOW_STUDIO,
+        'commands.openWorkflowStudio.title',
+      ),
+      this.createCommand(
         VSCODE_EXTENSION_COMMAND_IDS.OPEN_REVIEW_DETAIL,
         'commands.openReviewDetail.title',
       ),

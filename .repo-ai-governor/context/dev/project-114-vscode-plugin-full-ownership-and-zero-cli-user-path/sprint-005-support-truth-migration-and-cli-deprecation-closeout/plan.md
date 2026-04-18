@@ -1,6 +1,6 @@
 # sprint-005-support-truth-migration-and-cli-deprecation-closeout 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-18
 - Sprint Goal: Use plugin-first evidence to close support truth, migration guidance, and CLI deprecation posture for the zero-CLI user path.
 - Project: `project-114-vscode-plugin-full-ownership-and-zero-cli-user-path`
@@ -22,7 +22,7 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-979 | freeze support-truth migration and cli deprecation contract | prepare sprint-004 exit acceptance and sprint-005 handoff | planned |
+| TK-979 | freeze support-truth migration and cli deprecation contract | prepare sprint-004 exit acceptance and sprint-005 handoff | active |
 | TK-980 | execute plugin-first evidence and migration rehearsal bundle | freeze support-truth migration and cli deprecation contract | planned |
 | TK-981 | refresh support docs deprecation posture and adoption guidance | execute plugin-first evidence and migration rehearsal bundle | planned |
 | TK-982 | prepare project-final closeout and zero-cli delivery recommendation | refresh support docs deprecation posture and adoption guidance | planned |
@@ -38,3 +38,5 @@
 
 1. Public claims may change only after plugin-first evidence, migration guidance, and validation playbooks close in the same window.
 2. Keep this sprint `planned` until sprint-004 hands off; reserve local `CR-001` only after activation.
+3. `2026-04-18`：sprint-004 已完成 closeout，本 sprint 已切换为当前 active execution surface；本地 `CR-001` 已在 activation 时预留，后续 fresh reviewer round 继续复用该编号。
+4. `2026-04-18`：`TK-979` 已切换为当前首个 implementation lane，用于冻结 support truth / migration / CLI optional posture 的 evidence-gated contract。

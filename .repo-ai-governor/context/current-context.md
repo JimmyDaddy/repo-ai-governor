@@ -3,24 +3,24 @@
 ## Primary Stream
 
 - Status: active
-- Stream: `stream-project-114-sprint-004`
+- Stream: `stream-project-114-sprint-005`
 - Project: `project-114-vscode-plugin-full-ownership-and-zero-cli-user-path`
-- Sprint: `sprint-004-workflow-authoring-run-review-and-automation-primaryization`
+- Sprint: `sprint-005-support-truth-migration-and-cli-deprecation-closeout`
 - Docs: `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path`
-- Plan: `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-004-workflow-authoring-run-review-and-automation-primaryization/plan.md`
-- Tasks: `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-004-workflow-authoring-run-review-and-automation-primaryization/tasks/`
-- Checklist: `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-004-workflow-authoring-run-review-and-automation-primaryization/tasks/checklist.md`
-- CSV: `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-004-workflow-authoring-run-review-and-automation-primaryization/tasks/tasks.csv`
-- Review: `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-004-workflow-authoring-run-review-and-automation-primaryization/review/`
-- Note: `2026-04-18` 已完成 `project-114 / sprint-003-adopt-host-verify-upgrade-service-native-cutover` closeout，并激活 `sprint-004-workflow-authoring-run-review-and-automation-primaryization` 作为新的 primary execution surface；sprint-005 保持 planned follow-up stream，默认 review 输出路径锁定到当前 active sprint 的 `review/`。
+- Plan: `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/plan.md`
+- Tasks: `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/tasks/`
+- Checklist: `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/tasks/checklist.md`
+- CSV: `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/tasks/tasks.csv`
+- Review: `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/review/`
+- Note: `2026-04-18` 已完成 `project-114 / sprint-004-workflow-authoring-run-review-and-automation-primaryization` closeout，并激活 `sprint-005-support-truth-migration-and-cli-deprecation-closeout` 作为新的 primary execution surface；sprint-005 的 `CR-001` 已在 activation 时预留，默认 review 输出路径锁定到当前 active sprint 的 `review/`。
 
 ## Active Streams
 
-- `stream-project-114-sprint-004`: project=`project-114-vscode-plugin-full-ownership-and-zero-cli-user-path`, sprint=`sprint-004-workflow-authoring-run-review-and-automation-primaryization`, docs=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path`, plan=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-004-workflow-authoring-run-review-and-automation-primaryization/plan.md`, tasks=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-004-workflow-authoring-run-review-and-automation-primaryization/tasks/`, checklist=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-004-workflow-authoring-run-review-and-automation-primaryization/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-004-workflow-authoring-run-review-and-automation-primaryization/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-004-workflow-authoring-run-review-and-automation-primaryization/review/`, status=`active`
+- `stream-project-114-sprint-005`: project=`project-114-vscode-plugin-full-ownership-and-zero-cli-user-path`, sprint=`sprint-005-support-truth-migration-and-cli-deprecation-closeout`, docs=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path`, plan=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/review/`, status=`active`
 
 ## Planned Follow-Up Streams
 
-- `stream-project-114-sprint-005`: project=`project-114-vscode-plugin-full-ownership-and-zero-cli-user-path`, sprint=`sprint-005-support-truth-migration-and-cli-deprecation-closeout`, docs=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path`, plan=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/review/`, status=`planned`
+- None currently.
 
 ## Completed Stream History
 

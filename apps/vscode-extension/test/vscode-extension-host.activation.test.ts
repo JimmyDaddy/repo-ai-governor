@@ -168,6 +168,10 @@ describe('VsCodeExtensionHost activation', () => {
       expect.any(Function),
     );
     expect(vscodeActivationMock.registerCommand).toHaveBeenCalledWith(
+      'repoAiGovernor.openWorkflowStudio',
+      expect.any(Function),
+    );
+    expect(vscodeActivationMock.registerCommand).toHaveBeenCalledWith(
       'repoAiGovernor.openReviewDetail',
       expect.any(Function),
     );

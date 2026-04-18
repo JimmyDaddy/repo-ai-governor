@@ -1,6 +1,6 @@
 # TK-975 freeze plugin-primary workflow and automation contract
 
-- Status: active
+- Status: completed
 - Date: 2026-04-18
 - Owner: AI-Agent
 - Priority: P1
@@ -56,8 +56,10 @@ Freeze the plugin-primary contract for workflow authoring, run-control, review, 
 
 1. 2026-04-18：任务创建，状态初始化为 `planned`。
 2. 2026-04-18：随着 sprint-004 activation 完成，TK-975 状态切换为 `active`，并作为当前首个 implementation lane 开始冻结 workflow / run-control / review / automation 的 plugin-primary contract。
+3. 2026-04-18：冻结 sprint-004 plugin-primary contract：automation queue 默认进入 Workflow Studio、review-only workflow-studio action 改为插件内 review detail、terminal handoff 降为 compatibility-only、temporary bridge 仅保留为 exit-evidence 而不再作为主 run-control。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. `apps/vscode-extension/src/constants/vscode-extension.constant.ts`
+2. `apps/vscode-extension/src/runtime/vscode-extension-contract.ts`
+3. `apps/vscode-extension/package.json`

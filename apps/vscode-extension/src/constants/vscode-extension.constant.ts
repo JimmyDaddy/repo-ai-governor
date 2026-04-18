@@ -55,6 +55,7 @@ export const VSCODE_EXTENSION_COMMAND_IDS = {
   RUN_WORKFLOW_PREVIEW: 'repoAiGovernor.runWorkflowPreview',
   RUN_WORKFLOW_CREATE: 'repoAiGovernor.runWorkflowCreate',
   RUN_WORKFLOW_EDIT: 'repoAiGovernor.runWorkflowEdit',
+  OPEN_WORKFLOW_STUDIO: 'repoAiGovernor.openWorkflowStudio',
   OPEN_REVIEW_DETAIL: 'repoAiGovernor.openReviewDetail',
   OPEN_HANDOFF_TARGET: 'repoAiGovernor.openHandoffTarget',
   STAGE_TEMPORARY_BRIDGE: 'repoAiGovernor.stageTemporaryBridge',

@@ -16,6 +16,7 @@ import {
   standardizeError,
 } from '@repo-ai-governor/shared';
 import {
+  VSCODE_EXTENSION_CONTAINER_ID,
   VSCODE_EXTENSION_SECRET_SELECTOR_PREFIX,
   VSCODE_EXTENSION_TOOL_USER_DEFAULT_KEY_SUFFIXES,
   VSCODE_EXTENSION_TRUST_MANAGE_COMMAND_ID,
@@ -87,10 +88,28 @@ export class VsCodeExtensionCommandController {
    * Opens the detail-only review webview for the selected execution or one review-only backlink.
    * @param commandRequest Optional selection override.
    */
-  public async openReviewDetail(commandRequest?: VsCodeExtensionCommandRequest): Promise<void> {
-    this.selectionStore.applyCommandRequest(commandRequest);
-    await this.dependencies.reviewDetailProvider.refresh(commandRequest);
-    this.dependencies.reviewDetailProvider.show(false);
+  public async openReviewDetail(
+    commandRequest?: VsCodeExtensionCommandRequest | VsCodeExtensionTreeNodeDescriptor,
+  ): Promise<void> {
+    const normalizedRequest = this.normalizeCommandRequest(commandRequest);
+    this.selectionStore.applyCommandRequest(normalizedRequest);
+    await this.revealWorkbenchContainer();
+    await this.dependencies.reviewDetailProvider.refresh(normalizedRequest);
+    this.dependencies.reviewDetailProvider.show?.(false);
+  }
+
+  /**
+   * Opens the workflow-studio workbench view for the selected execution or queue item.
+   * @param commandRequest Optional selection override.
+   */
+  public async openWorkflowStudio(
+    commandRequest?: VsCodeExtensionCommandRequest | VsCodeExtensionTreeNodeDescriptor,
+  ): Promise<void> {
+    const normalizedRequest = this.normalizeCommandRequest(commandRequest);
+    this.selectionStore.applyCommandRequest(normalizedRequest);
+    await this.revealWorkbenchContainer();
+    await this.dependencies.workflowStudioProvider?.refresh(normalizedRequest);
+    this.dependencies.workflowStudioProvider?.show(false);
   }
 
   /**
@@ -131,11 +150,12 @@ export class VsCodeExtensionCommandController {
           break;
         }
         case OrchestrationHandoffTargetKind.TERMINAL: {
-          const terminal = vscode.window.createTerminal({
-            name: this.localizer.localizeText('Governor Handoff', 'Governor 交接'),
-            cwd: handoffTarget.targetPath,
-          });
-          terminal.show();
+          void vscode.window.showInformationMessage(
+            this.localizer.localizeText(
+              'Terminal handoff stays compatibility-only. Use Workflow Studio or Review Detail for the plugin-primary path.',
+              '终端交接仅保留为兼容入口。插件主路径请使用 Workflow Studio 或评审详情。',
+            ),
+          );
           break;
         }
         default: {
@@ -1236,11 +1256,31 @@ export class VsCodeExtensionCommandController {
       OrchestrationHandoffTargetKind.REVIEW_DOCUMENT,
       OrchestrationHandoffTargetKind.EDITOR,
       OrchestrationHandoffTargetKind.WORKTREE,
-      OrchestrationHandoffTargetKind.TERMINAL,
     ];
     return targetPriority
       .flatMap((targetKind) => handoffTargets.filter((target) => target.targetKind === targetKind))
       .find((target) => target.exists && target.targetPath);
+  }
+
+  private async revealWorkbenchContainer(): Promise<void> {
+    await vscode.commands.executeCommand(
+      `workbench.view.extension.${VSCODE_EXTENSION_CONTAINER_ID}`,
+    );
+  }
+
+  /**
+   * Normalizes raw VS Code tree-item context arguments into the command request contract.
+   * @param commandRequest Optional direct request or tree-node descriptor from one inline action.
+   * @returns One command request that can safely drive service-backed refresh and selection updates.
+   */
+  private normalizeCommandRequest(
+    commandRequest?: VsCodeExtensionCommandRequest | VsCodeExtensionTreeNodeDescriptor,
+  ): VsCodeExtensionCommandRequest | undefined {
+    if (!commandRequest) {
+      return undefined;
+    }
+
+    return 'nodeId' in commandRequest ? commandRequest.selectionRequest : commandRequest;
   }
 
   private async promptForHitlDecisionOption(hitlEntry: {

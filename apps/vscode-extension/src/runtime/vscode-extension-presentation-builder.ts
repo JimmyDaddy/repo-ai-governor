@@ -223,9 +223,9 @@ export class VsCodeExtensionPresentationBuilder {
       const request = this.createAutomationQueueRequest(entry);
       const topLevelCommand = request.executionId
         ? this.createCommandDescriptor(
-            VSCODE_EXTENSION_COMMAND_IDS.OPEN_REVIEW_DETAIL,
-            'Open review detail',
-            '打开评审详情',
+            VSCODE_EXTENSION_COMMAND_IDS.OPEN_WORKFLOW_STUDIO,
+            'Open workflow studio',
+            '打开 Workflow Studio',
             request,
           )
         : undefined;
@@ -245,7 +245,13 @@ export class VsCodeExtensionPresentationBuilder {
           : {}),
         children: [
           ...this.buildAutomationQueueSummaryNodes(entry, request),
-          ...this.buildQueueEntryActionNodes(entry, request),
+          ...this.buildQueueEntryActionNodes(entry, request, {
+            commandId: VSCODE_EXTENSION_COMMAND_IDS.OPEN_WORKFLOW_STUDIO,
+            label: this.localizer.localizeText('Open workflow studio', '打开 Workflow Studio'),
+            englishTitle: 'Open workflow studio',
+            chineseTitle: '打开 Workflow Studio',
+            iconId: 'graph',
+          }),
           ...this.buildQueueEntryHandoffNodes(entry, request),
         ],
       };
@@ -483,22 +489,25 @@ export class VsCodeExtensionPresentationBuilder {
       },
       {
         nodeId: 'temporary-bridges',
-        label: this.localizer.localizeText('Governed repository operations', '受治理仓库操作'),
+        label: this.localizer.localizeText(
+          'Compatibility bridge exit evidence',
+          '兼容性 bridge 退出证据',
+        ),
         description:
           temporaryBridgeNodes.length > 0
             ? this.localizer.localizeText(
-                `${temporaryBridgeNodes.length} service-backed operation(s)`,
-                `${temporaryBridgeNodes.length} 个 service-backed 操作`,
+                `${temporaryBridgeNodes.length} compatibility bridge record(s)`,
+                `${temporaryBridgeNodes.length} 条兼容性 bridge 记录`,
               )
             : this.localizer.localizeText(
-                'No repository operation is currently projected',
-                '当前没有投影出仓库操作',
+                'No compatibility bridge is currently projected',
+                '当前没有投影出兼容性 bridge',
               ),
         tooltip: this.localizer.localizeText(
-          'Adopt, host, and upgrade flows now execute through the local orchestration service without requiring a manual CLI handoff.',
-          'adopt、host 与 upgrade 现在会通过本地编排服务直接执行，不再要求手动 CLI 交接。',
+          'Temporary bridges stay visible here only as exit evidence; plugin-primary run control should use the native workbench commands instead of a CLI-style handoff.',
+          '临时 bridge 只在这里作为退出证据可见；插件主路径的 run control 应使用原生 workbench 命令，而不是类 CLI 交接。',
         ),
-        themeIconId: temporaryBridgeNodes.length > 0 ? 'terminal' : 'circle-slash',
+        themeIconId: temporaryBridgeNodes.length > 0 ? 'history' : 'circle-slash',
         contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
         children:
           temporaryBridgeNodes.length > 0
@@ -506,8 +515,8 @@ export class VsCodeExtensionPresentationBuilder {
             : [
                 this.createInfoNode(
                   'temporary-bridges-empty',
-                  'No adopt, host, or upgrade operation is currently projected into this workbench.',
-                  '当前没有 adopt、host 或 upgrade 操作被投影到这个 workbench 中。',
+                  'No compatibility bridge remains projected into this workbench.',
+                  '当前没有兼容性 bridge 被投影到这个 workbench 中。',
                 ),
               ],
       },
@@ -1964,28 +1973,25 @@ export class VsCodeExtensionPresentationBuilder {
 
       nodes.push({
         nodeId: entry.bridgeId,
-        label: this.localizeWorkspaceOperationKind(operationKind),
+        label: this.localizer.localizeText(
+          `Compatibility bridge: ${this.localizeWorkspaceOperationKind(operationKind)}`,
+          `兼容性 bridge：${this.localizeWorkspaceOperationKind(operationKind)}`,
+        ),
         description: this.localizer.localizeText(
-          `${this.localizeTemporaryBridgeReceiptKind(entry.receiptKind)} -> ${this.localizeTemporaryBridgeBacklinkSurface(entry.backlinkSurface)}`,
-          `${this.localizeTemporaryBridgeReceiptKind(entry.receiptKind)} -> ${this.localizeTemporaryBridgeBacklinkSurface(entry.backlinkSurface)}`,
+          `${this.localizeTemporaryBridgeReceiptKind(entry.receiptKind)} · ${this.localizeTemporaryBridgeBacklinkSurface(entry.backlinkSurface)}`,
+          `${this.localizeTemporaryBridgeReceiptKind(entry.receiptKind)} · ${this.localizeTemporaryBridgeBacklinkSurface(entry.backlinkSurface)}`,
         ),
         tooltip: entry.previewCommandLine,
-        themeIconId: 'tools',
-        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.HANDOFF_ACTION,
+        themeIconId: 'history',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.INFO,
         selectionRequest: request,
-        command: this.createCommandDescriptor(
-          VSCODE_EXTENSION_COMMAND_IDS.STAGE_TEMPORARY_BRIDGE,
-          'Run Governor repository operation',
-          '运行 Governor 仓库操作',
-          request,
-        ),
         children: [
           {
             nodeId: `${entry.bridgeId}:preview`,
-            label: this.localizer.localizeText('Command preview', '命令预览'),
+            label: this.localizer.localizeText('Compatibility preview', '兼容性预览'),
             description: entry.previewCommandLine,
             tooltip: entry.previewCommandLine,
-            themeIconId: 'terminal',
+            themeIconId: 'note',
             contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.INFO,
             selectionRequest: request,
           },
@@ -2283,6 +2289,13 @@ export class VsCodeExtensionPresentationBuilder {
   private buildQueueEntryActionNodes(
     entry: OrchestrationGovernanceQueueEntry,
     request: VsCodeExtensionCommandRequest,
+    defaultActionLabels?: {
+      commandId: string;
+      label: string;
+      englishTitle: string;
+      chineseTitle: string;
+      iconId: string;
+    },
   ): readonly VsCodeExtensionTreeNodeDescriptor[] {
     const nodes: VsCodeExtensionTreeNodeDescriptor[] = [];
 
@@ -2295,7 +2308,11 @@ export class VsCodeExtensionPresentationBuilder {
         continue;
       }
 
-      const actionLabels = this.getActionCommandLabels(action.actionKind);
+      const actionLabels =
+        action.actionKind === OrchestrationGovernanceActionKind.VIEW_EXECUTION &&
+        defaultActionLabels
+          ? defaultActionLabels
+          : this.getActionCommandLabels(action.actionKind);
       nodes.push({
         nodeId: `${entry.queueEntryId}:${action.actionId}`,
         label: actionLabels.label,
@@ -2328,38 +2345,48 @@ export class VsCodeExtensionPresentationBuilder {
     entry: OrchestrationGovernanceQueueEntry,
     request: VsCodeExtensionCommandRequest,
   ): readonly VsCodeExtensionTreeNodeDescriptor[] {
-    return entry.handoffTargets.map((target) => ({
-      nodeId: `${entry.queueEntryId}:${target.targetId}`,
-      label: this.getHandoffLabel(target.targetKind),
-      description: target.targetPath,
-      tooltip: target.targetPath ?? this.localizer.localizeText('Target unavailable', '目标不可用'),
-      themeIconId: this.getHandoffIconId(target),
-      contextValue: target.exists
-        ? VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.HANDOFF_ACTION
-        : VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.INFO,
-      selectionRequest: {
-        ...request,
-        handoffTarget: target,
-      },
-      ...(target.targetPath
-        ? {
-            resourceUriPath: target.targetPath,
-          }
-        : {}),
-      ...(target.exists && target.targetPath
-        ? {
-            command: this.createCommandDescriptor(
-              VSCODE_EXTENSION_COMMAND_IDS.OPEN_HANDOFF_TARGET,
-              'Open handoff target',
-              '打开交接目标',
-              {
-                ...request,
-                handoffTarget: target,
-              },
-            ),
-          }
-        : {}),
-    }));
+    return entry.handoffTargets.map((target) => {
+      const terminalCompatibilityOnly =
+        target.targetKind === OrchestrationHandoffTargetKind.TERMINAL;
+      return {
+        nodeId: `${entry.queueEntryId}:${target.targetId}`,
+        label: this.getHandoffLabel(target.targetKind),
+        description: target.targetPath,
+        tooltip: terminalCompatibilityOnly
+          ? this.localizer.localizeText(
+              'Terminal handoff remains compatibility-only and is not part of the plugin-primary flow.',
+              '终端交接仅保留为兼容入口，不属于插件主路径。',
+            )
+          : (target.targetPath ?? this.localizer.localizeText('Target unavailable', '目标不可用')),
+        themeIconId: this.getHandoffIconId(target),
+        contextValue:
+          target.exists && !terminalCompatibilityOnly
+            ? VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.HANDOFF_ACTION
+            : VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.INFO,
+        selectionRequest: {
+          ...request,
+          handoffTarget: target,
+        },
+        ...(target.targetPath
+          ? {
+              resourceUriPath: target.targetPath,
+            }
+          : {}),
+        ...(target.exists && target.targetPath && !terminalCompatibilityOnly
+          ? {
+              command: this.createCommandDescriptor(
+                VSCODE_EXTENSION_COMMAND_IDS.OPEN_HANDOFF_TARGET,
+                'Open handoff target',
+                '打开交接目标',
+                {
+                  ...request,
+                  handoffTarget: target,
+                },
+              ),
+            }
+          : {}),
+      };
+    });
   }
 
   private buildUserConfigAuthoringNode(
@@ -3463,7 +3490,10 @@ export class VsCodeExtensionPresentationBuilder {
       case OrchestrationHandoffTargetKind.REVIEW_DOCUMENT:
         return this.localizer.localizeText('Open review document', '打开评审文档');
       case OrchestrationHandoffTargetKind.TERMINAL:
-        return this.localizer.localizeText('Open terminal handoff', '打开终端交接');
+        return this.localizer.localizeText(
+          'Terminal handoff (compatibility only)',
+          '终端交接（仅兼容入口）',
+        );
       default:
         return this.localizer.localizeText('Reveal worktree root', '显示工作树根目录');
     }
@@ -3480,7 +3510,7 @@ export class VsCodeExtensionPresentationBuilder {
       case OrchestrationHandoffTargetKind.REVIEW_DOCUMENT:
         return 'note';
       case OrchestrationHandoffTargetKind.TERMINAL:
-        return 'terminal';
+        return 'history';
       default:
         return 'folder-opened';
     }
@@ -3616,6 +3646,17 @@ export class VsCodeExtensionPresentationBuilder {
       }
 
       for (const target of selectedExecution.handoffTargets) {
+        if (target.targetKind === OrchestrationHandoffTargetKind.TERMINAL) {
+          actions.push({
+            label: this.getHandoffLabel(target.targetKind),
+            description: this.localizer.localizeText(
+              'Terminal handoff remains compatibility-only and should not replace the plugin-primary run-control path.',
+              '终端交接仅保留为兼容入口，不应替代插件主路径的 run-control。',
+            ),
+            disabledReason: this.localizer.localizeText('Compatibility-only handoff', '仅兼容入口'),
+          });
+          continue;
+        }
         actions.push({
           label: this.getHandoffLabel(target.targetKind),
           description: target.targetPath
@@ -3652,17 +3693,6 @@ export class VsCodeExtensionPresentationBuilder {
           reviewOnlyRequest,
         ),
       });
-      actions.push({
-        label: this.localizer.localizeText('Open review document', '打开评审文档'),
-        description: this.localizer.localizeText(
-          'Open the canonical review document directly from the workflow studio.',
-          '直接从 Workflow Studio 打开规范评审文档。',
-        ),
-        href: this.createCommandUri(VSCODE_EXTENSION_COMMAND_IDS.OPEN_HANDOFF_TARGET, {
-          ...reviewOnlyRequest,
-          handoffTarget: this.createReviewSourceHandoffTarget(reviewSourcePath),
-        }),
-      });
     }
 
     actions.push({
@@ -3682,33 +3712,20 @@ export class VsCodeExtensionPresentationBuilder {
       }),
     });
 
-    for (const entry of temporaryBridges) {
-      const operationKind =
-        entry.operationKind ?? this.resolveWorkspaceOperationKindFromTemporaryBridge(entry);
-      if (!operationKind) {
-        continue;
-      }
-
+    if (temporaryBridges.length > 0) {
       actions.push({
         label: this.localizer.localizeText(
-          `Run repository operation: ${this.localizeWorkspaceOperationKind(operationKind)}`,
-          `运行仓库操作：${this.localizeWorkspaceOperationKind(operationKind)}`,
+          'Compatibility bridges stay evidence-only',
+          '兼容性 bridge 保持为证据层',
         ),
         description: this.localizer.localizeText(
-          `Receipt ${this.localizeTemporaryBridgeReceiptKind(entry.receiptKind)} · Exit ${entry.exitCriteria.map((criterion) => this.localizeTemporaryBridgeExitCriterion(criterion)).join('; ')}`,
-          `回执 ${this.localizeTemporaryBridgeReceiptKind(entry.receiptKind)} · 退出条件 ${entry.exitCriteria.map((criterion) => this.localizeTemporaryBridgeExitCriterion(criterion)).join('；')}`,
+          'Adopt/host/upgrade compatibility metadata stays visible below, but the primary run-control surface remains service-native inside VS Code.',
+          'adopt/host/upgrade 的兼容性元数据会继续显示在下方，但主 run-control 表面保持为 VS Code 内的 service-native 流程。',
         ),
-        href: this.createCommandUri(VSCODE_EXTENSION_COMMAND_IDS.STAGE_TEMPORARY_BRIDGE, {
-          executionId: selectedExecution?.execution.executionId,
-          executionSessionId: selectedExecution?.execution.executionSessionId,
-          reviewSourcePath,
-          workspaceOperationKind: operationKind,
-          ...(entry.operationArguments
-            ? {
-                workspaceOperationArguments: entry.operationArguments,
-              }
-            : {}),
-        }),
+        disabledReason: this.localizer.localizeText(
+          'See compatibility exit evidence below.',
+          '请查看下方的兼容性退出证据。',
+        ),
       });
     }
 

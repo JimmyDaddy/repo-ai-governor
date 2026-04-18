@@ -18,6 +18,7 @@
   "commands.runWorkflowPreview.title": "预览 Governor 工作流",
   "commands.runWorkflowCreate.title": "创建 Governor 工作流",
   "commands.runWorkflowEdit.title": "编辑 Governor 工作流",
+  "commands.openWorkflowStudio.title": "打开 Governor Workflow Studio",
   "commands.openReviewDetail.title": "打开 Governor 评审详情",
   "commands.openHandoffTarget.title": "打开 Governor 交接目标",
   "commands.stageTemporaryBridge.title": "运行 Governor 仓库操作",

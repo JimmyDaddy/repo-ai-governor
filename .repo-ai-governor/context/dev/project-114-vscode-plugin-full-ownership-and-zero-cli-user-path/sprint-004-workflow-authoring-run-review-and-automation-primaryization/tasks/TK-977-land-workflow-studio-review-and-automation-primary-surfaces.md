@@ -1,6 +1,6 @@
 # TK-977 land workflow studio review and automation primary surfaces
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-18
 - Owner: AI-Agent
 - Priority: P1
@@ -54,8 +54,12 @@ Plan the plugin-primary workflow studio, review, and automation surfaces with co
 ## 9. 执行记录
 
 1. 2026-04-18：任务创建，状态初始化为 `planned`。
+2. 2026-04-18：落地 workflow-studio / automation primary surfaces：automation queue 顶层命令与 `VIEW_EXECUTION` action 改为 Workflow Studio first；workbench overview 将 temporary bridge 重命名为 compatibility exit evidence；workflow-studio run-control 不再把 compatibility bridge 渲染成主动作，同时 review-only path 保持在插件内 review detail。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. `apps/vscode-extension/src/runtime/vscode-extension-presentation-builder.ts`
+2. `apps/vscode-extension/package.nls.json`
+3. `apps/vscode-extension/package.nls.zh-cn.json`
+4. `apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts`
+5. `apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts`

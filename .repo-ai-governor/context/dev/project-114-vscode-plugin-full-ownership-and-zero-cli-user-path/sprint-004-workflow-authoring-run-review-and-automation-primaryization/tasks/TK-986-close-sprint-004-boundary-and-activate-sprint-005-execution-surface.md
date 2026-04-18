@@ -1,6 +1,6 @@
 # TK-986 close sprint-004 boundary and activate sprint-005 execution surface
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-18
 - Owner: AI-Agent
 - Priority: P1
@@ -56,9 +56,11 @@ After sprint-004 reaches clean `TK/CR` terminal state, close the sprint boundary
 ## 9. 执行记录
 
 1. 2026-04-18：任务创建，状态初始化为 `planned`。
+2. 2026-04-18：`CR-001` 已 resolved，sprint-004 的 review/task truth、project plan、sprint plan 与 current-context 已统一切换到 closeout-ready state。
+3. 2026-04-18：已将 sprint-004 标记为 completed，并激活 sprint-005 作为新的 primary execution surface；sprint-005 `CR-001` 已在同窗口完成 activation write-back。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
-3. 待执行后补齐
+1. `.repo-ai-governor/context/current-context.md`
+2. `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/plan.md`
+3. `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/plan.md`

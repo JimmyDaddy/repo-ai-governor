@@ -1,6 +1,6 @@
 # sprint-004-workflow-authoring-run-review-and-automation-primaryization 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-18
 - Sprint Goal: Make workflow authoring, run-control, review, and automation a plugin-primary user path with continuity-safe UX.
 - Project: `project-114-vscode-plugin-full-ownership-and-zero-cli-user-path`
@@ -22,11 +22,11 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-975 | freeze plugin-primary workflow and automation contract | prepare sprint-003 exit acceptance and sprint-004 handoff | active |
-| TK-976 | implement workflow authoring run-control review and automation seams | freeze plugin-primary workflow and automation contract | planned |
-| TK-977 | land workflow studio review and automation primary surfaces | implement workflow authoring run-control review and automation seams | planned |
-| TK-978 | prepare sprint-004 exit acceptance and sprint-005 handoff | land workflow studio review and automation primary surfaces | planned |
-| TK-986 | close sprint-004 boundary and activate sprint-005 execution surface | prepare sprint-004 exit acceptance and sprint-005 handoff | planned |
+| TK-975 | freeze plugin-primary workflow and automation contract | prepare sprint-003 exit acceptance and sprint-004 handoff | completed |
+| TK-976 | implement workflow authoring run-control review and automation seams | freeze plugin-primary workflow and automation contract | completed |
+| TK-977 | land workflow studio review and automation primary surfaces | implement workflow authoring run-control review and automation seams | completed |
+| TK-978 | prepare sprint-004 exit acceptance and sprint-005 handoff | land workflow studio review and automation primary surfaces | completed |
+| TK-986 | close sprint-004 boundary and activate sprint-005 execution surface | prepare sprint-004 exit acceptance and sprint-005 handoff | completed |
 
 ## 3. Exit Criteria
 
@@ -39,3 +39,5 @@
 2. Keep this sprint `planned` until sprint-003 hands off; reserve local `CR-001` only after activation.
 3. `2026-04-18`：sprint-003 已完成 handoff，本 sprint 已激活为当前 execution surface；本地 `CR-001` 已在 activation 时预留，后续 fresh reviewer round 继续复用该编号。
 4. `2026-04-18`：`TK-975` 已切换为当前首个 implementation lane，用于冻结 workflow authoring / run-control / review / automation 的 plugin-primary contract。
+5. `2026-04-18`：已完成 sprint-004 implementation boundary：automation queue 现在以 Workflow Studio 为主入口，terminal handoff 与 temporary bridge 均降为 compatibility-only evidence，review-only workflow path 留在插件内 review detail，并已跑通 targeted vitest、`pnpm run build` 与 `pnpm run check`。
+6. `2026-04-18`：fresh reviewer round 已发现并修复 automation queue inline action 的 context-loss 回归；`CR-001` 已收口为 `resolved`，`TK-986` 已完成 closeout write-back，并激活 sprint-005 作为新的 execution surface。

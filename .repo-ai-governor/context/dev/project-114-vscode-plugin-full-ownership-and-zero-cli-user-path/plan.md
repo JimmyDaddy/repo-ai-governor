@@ -41,13 +41,13 @@
 
 ## 2.4 sprint-004-workflow-authoring-run-review-and-automation-primaryization
 
-- Status: active
+- Status: completed
 - Sprint Goal: Make workflow authoring, run-control, review, and automation a plugin-primary user path with continuity-safe UX.
 - Task Package: `TK-975、TK-976、TK-977、TK-978、TK-986`
 
 ## 2.5 sprint-005-support-truth-migration-and-cli-deprecation-closeout
 
-- Status: planned
+- Status: active
 - Sprint Goal: Use plugin-first evidence to close support truth, migration guidance, and CLI deprecation posture for the zero-CLI user path.
 - Task Package: `TK-979、TK-980、TK-981、TK-982、TK-987、TK-988`
 
@@ -70,12 +70,12 @@
 | TK-973 | sprint-003-adopt-host-verify-upgrade-service-native-cutover | land workbench-native adopt-host-verify-upgrade trust-sensitive surfaces | workbench surface | implement service-native adopt-host-verify-upgrade orchestration seams | completed |
 | TK-974 | sprint-003-adopt-host-verify-upgrade-service-native-cutover | prepare sprint-003 exit acceptance and sprint-004 handoff | governance handoff | land workbench-native adopt-host-verify-upgrade trust-sensitive surfaces | completed |
 | TK-985 | sprint-003-adopt-host-verify-upgrade-service-native-cutover | close sprint-003 boundary and activate sprint-004 execution surface | sprint closeout | prepare sprint-003 exit acceptance and sprint-004 handoff | completed |
-| TK-975 | sprint-004-workflow-authoring-run-review-and-automation-primaryization | freeze plugin-primary workflow and automation contract | workflow contract | prepare sprint-003 exit acceptance and sprint-004 handoff | active |
-| TK-976 | sprint-004-workflow-authoring-run-review-and-automation-primaryization | implement workflow authoring run-control review and automation seams | service seam | freeze plugin-primary workflow and automation contract | planned |
-| TK-977 | sprint-004-workflow-authoring-run-review-and-automation-primaryization | land workflow studio review and automation primary surfaces | workbench surface | implement workflow authoring run-control review and automation seams | planned |
-| TK-978 | sprint-004-workflow-authoring-run-review-and-automation-primaryization | prepare sprint-004 exit acceptance and sprint-005 handoff | governance handoff | land workflow studio review and automation primary surfaces | planned |
-| TK-986 | sprint-004-workflow-authoring-run-review-and-automation-primaryization | close sprint-004 boundary and activate sprint-005 execution surface | sprint closeout | prepare sprint-004 exit acceptance and sprint-005 handoff | planned |
-| TK-979 | sprint-005-support-truth-migration-and-cli-deprecation-closeout | freeze support-truth migration and cli deprecation contract | support contract | prepare sprint-004 exit acceptance and sprint-005 handoff | planned |
+| TK-975 | sprint-004-workflow-authoring-run-review-and-automation-primaryization | freeze plugin-primary workflow and automation contract | workflow contract | prepare sprint-003 exit acceptance and sprint-004 handoff | completed |
+| TK-976 | sprint-004-workflow-authoring-run-review-and-automation-primaryization | implement workflow authoring run-control review and automation seams | service seam | freeze plugin-primary workflow and automation contract | completed |
+| TK-977 | sprint-004-workflow-authoring-run-review-and-automation-primaryization | land workflow studio review and automation primary surfaces | workbench surface | implement workflow authoring run-control review and automation seams | completed |
+| TK-978 | sprint-004-workflow-authoring-run-review-and-automation-primaryization | prepare sprint-004 exit acceptance and sprint-005 handoff | governance handoff | land workflow studio review and automation primary surfaces | completed |
+| TK-986 | sprint-004-workflow-authoring-run-review-and-automation-primaryization | close sprint-004 boundary and activate sprint-005 execution surface | sprint closeout | prepare sprint-004 exit acceptance and sprint-005 handoff | completed |
+| TK-979 | sprint-005-support-truth-migration-and-cli-deprecation-closeout | freeze support-truth migration and cli deprecation contract | support contract | prepare sprint-004 exit acceptance and sprint-005 handoff | active |
 | TK-980 | sprint-005-support-truth-migration-and-cli-deprecation-closeout | execute plugin-first evidence and migration rehearsal bundle | evidence bundle | freeze support-truth migration and cli deprecation contract | planned |
 | TK-981 | sprint-005-support-truth-migration-and-cli-deprecation-closeout | refresh support docs deprecation posture and adoption guidance | support truth package | execute plugin-first evidence and migration rehearsal bundle | planned |
 | TK-982 | sprint-005-support-truth-migration-and-cli-deprecation-closeout | prepare project-final closeout and zero-cli delivery recommendation | project closeout handoff | refresh support docs deprecation posture and adoption guidance | planned |
@@ -101,6 +101,8 @@
 3. 2026-04-18：sprint-001 已完成 closeout 并写回 completed truth；current-context 已切换到 sprint-002-doctor-check-and-workspace-bootstrap-cutover 作为新的 active execution surface。
 4. 2026-04-18：sprint-002 已完成 closeout 并写回 completed truth；current-context 已切换到 sprint-003-adopt-host-verify-upgrade-service-native-cutover 作为新的 active execution surface。
 5. 2026-04-18：sprint-003 已完成 closeout 并写回 completed truth；current-context 已切换到 sprint-004-workflow-authoring-run-review-and-automation-primaryization 作为新的 active execution surface，并预留 sprint-004 `CR-001` 作为首轮 fresh reviewer 编号。
+6. 2026-04-18：sprint-004 implementation boundary 已完成，当前窗口将 workflow authoring / review / automation 主路径收口到插件内 Workflow Studio 与 Review Detail；temporary bridge 与 terminal handoff 降为 compatibility-only evidence，接下来进入 sprint-004 fresh reviewer loop。
+7. 2026-04-18：sprint-004 已完成 fresh reviewer loop 与 closeout；automation queue inline action 的 context-loss 回归已修复并验证，current-context 已切换到 sprint-005-support-truth-migration-and-cli-deprecation-closeout 作为新的 active execution surface，同时预留 sprint-005 `CR-001`。
 
 ## 7. 里程碑记录入口
 

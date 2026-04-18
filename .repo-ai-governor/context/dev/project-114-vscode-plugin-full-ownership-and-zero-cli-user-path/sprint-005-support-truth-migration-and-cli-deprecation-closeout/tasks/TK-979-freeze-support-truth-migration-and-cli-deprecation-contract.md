@@ -1,6 +1,6 @@
 # TK-979 freeze support-truth migration and cli deprecation contract
 
-- Status: planned
+- Status: active
 - Date: 2026-04-18
 - Owner: AI-Agent
 - Priority: P1
@@ -55,6 +55,7 @@ Freeze the evidence-gated support-truth and CLI deprecation contract for the zer
 ## 9. 执行记录
 
 1. 2026-04-18：任务创建，状态初始化为 `planned`。
+2. 2026-04-18：随着 sprint-005 activation 完成，TK-979 状态切换为 `active`，并作为当前首个 implementation lane 开始冻结 support truth / migration / CLI optional posture 的 evidence-gated contract。
 
 ## 10. 产出
 

@@ -43,6 +43,7 @@
     "onCommand:repoAiGovernor.runWorkflowPreview",
     "onCommand:repoAiGovernor.runWorkflowCreate",
     "onCommand:repoAiGovernor.runWorkflowEdit",
+    "onCommand:repoAiGovernor.openWorkflowStudio",
     "onCommand:repoAiGovernor.openReviewDetail",
     "onCommand:repoAiGovernor.openHandoffTarget",
     "onCommand:repoAiGovernor.stageTemporaryBridge",
@@ -142,6 +143,11 @@
         "category": "%commands.category%"
       },
       {
+        "command": "repoAiGovernor.openWorkflowStudio",
+        "title": "%commands.openWorkflowStudio.title%",
+        "category": "%commands.category%"
+      },
+      {
         "command": "repoAiGovernor.openReviewDetail",
         "title": "%commands.openReviewDetail.title%",
         "category": "%commands.category%"
@@ -198,7 +204,12 @@
       "view/item/context": [
         {
           "command": "repoAiGovernor.openReviewDetail",
-          "when": "view == repoAiGovernor.executionBoard || view == repoAiGovernor.hitlInbox || view == repoAiGovernor.reviewQueue || view == repoAiGovernor.automationQueue || view == repoAiGovernor.workspaceContext",
+          "when": "view == repoAiGovernor.executionBoard || view == repoAiGovernor.hitlInbox || view == repoAiGovernor.reviewQueue || view == repoAiGovernor.workspaceContext",
+          "group": "inline"
+        },
+        {
+          "command": "repoAiGovernor.openWorkflowStudio",
+          "when": "view == repoAiGovernor.automationQueue",
           "group": "inline"
         }
       ],
@@ -226,6 +237,9 @@
         {
           "command": "repoAiGovernor.runWorkflowEdit",
           "when": "isWorkspaceTrusted"
+        },
+        {
+          "command": "repoAiGovernor.openWorkflowStudio"
         },
         {
           "command": "repoAiGovernor.openHandoffTarget",

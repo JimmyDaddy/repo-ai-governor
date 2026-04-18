@@ -447,7 +447,7 @@ describe('VsCodeExtensionPresentationBuilder', () => {
         'Multi-workspace overview',
         'Parallel execution lanes',
         'Workspace operations',
-        'Governed repository operations',
+        'Compatibility bridge exit evidence',
         'Service lifecycle',
         'Service topology',
         'Checkpoint support',
@@ -920,12 +920,13 @@ describe('VsCodeExtensionPresentationBuilder', () => {
     expect(html).toContain('Theme default: calm');
     expect(html).toContain('Resume selector: session://execution-1');
     expect(html).toContain('command:repoAiGovernor.openReviewDetail');
+    expect(html).toContain('Compatibility bridges stay evidence-only');
     expect(html).toContain('command:repoAiGovernor.recoverExecution');
     expect(html).toContain('command:repoAiGovernor.terminateExecution');
     expect(html).toContain('command:repoAiGovernor.openHandoffTarget');
     expect(html).toContain('command:repoAiGovernor.stageTemporaryBridge');
     expect(html).toContain('Run repository operation: Preview upgrade');
-    expect(html).toContain('Run repository operation: Verify host assets');
+    expect(html).not.toContain('Run repository operation: Verify host assets');
     expect(html).not.toContain('Stage bridge command');
 
     expect(
@@ -1002,7 +1003,7 @@ describe('VsCodeExtensionPresentationBuilder', () => {
     );
   });
 
-  it('encodes an explicit review-document handoff target for review-only workflow-studio actions', () => {
+  it('keeps review-only workflow-studio actions inside the plugin review surface', () => {
     const html = builder.buildWorkflowStudioHtml({
       workspaceContext: {
         workspaceLabel: 'ai-governor',
@@ -1029,28 +1030,43 @@ describe('VsCodeExtensionPresentationBuilder', () => {
       reviewSourcePath: '/repo/review-only.md',
     });
 
-    const commandMatch = html.match(/command:repoAiGovernor\.openHandoffTarget\?([^"]+)/);
-    expect(commandMatch).toBeTruthy();
-    const encodedRequest = commandMatch?.[1];
-    expect(encodedRequest).toBeTruthy();
+    expect(html).toContain('command:repoAiGovernor.openReviewDetail');
+    expect(html).not.toContain('command:repoAiGovernor.openHandoffTarget');
+  });
 
-    const [request] = JSON.parse(decodeURIComponent(String(encodedRequest))) as Array<{
-      reviewSourcePath?: string;
-      handoffTarget?: {
-        targetKind?: string;
-        targetPath?: string;
-        exists?: boolean;
-      };
-    }>;
-    expect(request).toMatchObject({
-      reviewSourcePath: '/repo/review-only.md',
-      clearExecutionSelection: true,
-      handoffTarget: {
-        targetKind: OrchestrationHandoffTargetKind.REVIEW_DOCUMENT,
-        targetPath: '/repo/review-only.md',
-        exists: true,
+  it('renders automation queue nodes with workflow-studio-first actions', () => {
+    const nodes = builder.buildAutomationQueueNodes([
+      {
+        queueEntryId: 'automation:execution-1',
+        queueKind: OrchestrationGovernanceQueueKind.AUTOMATION_INBOX,
+        workspaceId: 'workspace-1',
+        workspaceRoot: '/repo',
+        executionId: 'execution-1',
+        executionKind: OrchestrationExecutionKind.RUN,
+        executionStatus: OrchestrationExecutionStatus.RUNNING,
+        taskId: 'TK-563',
+        projectId: 'project-048-governance-surface-clients-rollout',
+        sprintId: 'sprint-002-vscode-editor-companion-mvp',
+        attentionLevel: OrchestrationGovernanceAttentionLevel.WARNING,
+        notificationStatus: OrchestrationGovernanceNotificationStatus.FOLLOW_UP_REQUIRED,
+        followUpSlaState: OrchestrationGovernanceFollowUpSlaState.DUE_SOON,
+        actions: [
+          {
+            actionId: 'execution-1:view',
+            actionKind: OrchestrationGovernanceActionKind.VIEW_EXECUTION,
+            executionId: 'execution-1',
+            enabled: true,
+            requiresConfirmation: false,
+          },
+        ],
+        handoffTargets: [],
       },
-    });
+    ]);
+
+    expect(nodes[0]?.command?.command).toBe(VSCODE_EXTENSION_COMMAND_IDS.OPEN_WORKFLOW_STUDIO);
+    expect(nodes[0]?.children?.map((child) => child.label)).toEqual(
+      expect.arrayContaining(['Open workflow studio']),
+    );
   });
 });
 

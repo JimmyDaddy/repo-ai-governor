@@ -1,6 +1,6 @@
 # TK-978 prepare sprint-004 exit acceptance and sprint-005 handoff
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-18
 - Owner: AI-Agent
 - Priority: P1
@@ -54,8 +54,10 @@ Prepare the sprint-004 acceptance package and support-truth migration handoff.
 ## 9. 执行记录
 
 1. 2026-04-18：任务创建，状态初始化为 `planned`。
+2. 2026-04-18：完成 sprint-004 acceptance package：`pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test/vscode-extension-contract.test.ts apps/vscode-extension/test/vscode-extension-host.activation.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-service-runtime.test.ts`、`pnpm run build`、`pnpm run check` 已通过。
+3. 2026-04-18：sprint-005 handoff 固定为 support-truth / migration 窗口：需要同步 `apps/vscode-extension/README.md` 与 adopter-facing support docs，把 CLI 收口为 optional automation/scriptable path，并补齐 packaged/local VSIX 的 zero-cli rehearsal evidence。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. sprint-004 acceptance evidence recorded in task execution log
+2. sprint-005 support-truth handoff note recorded in task execution log
