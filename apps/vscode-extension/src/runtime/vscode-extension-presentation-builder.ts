@@ -1,4 +1,5 @@
 import {
+  OrchestrationBootstrapReadinessActionId,
   OrchestrationClientSurface,
   OrchestrationExecutionStatus,
   OrchestrationGovernanceActionDisabledReason,
@@ -269,6 +270,7 @@ export class VsCodeExtensionPresentationBuilder {
     }
 
     const queueOverview = snapshot.queueOverview;
+    const bootstrapReadiness = snapshot.bootstrapReadiness;
     const secureAuthoring = snapshot.secureAuthoring;
     const selectedExecution = snapshot.selectedExecution;
     const reviewSourcePath = snapshot.reviewSourcePath;
@@ -277,6 +279,7 @@ export class VsCodeExtensionPresentationBuilder {
       queueOverview.workspaceSummary,
     );
     const parallelLaneNodes = this.buildParallelLaneNodes(queueOverview.parallelLanes);
+    const nativeWorkspaceOperationNodes = this.buildNativeWorkspaceOperationNodes();
     const temporaryBridgeNodes = this.buildTemporaryBridgeNodes(queueOverview.temporaryBridges);
 
     return [
@@ -318,6 +321,7 @@ export class VsCodeExtensionPresentationBuilder {
       },
       this.buildUserConfigAuthoringNode(secureAuthoring),
       this.buildSecretReadinessNode(secureAuthoring),
+      this.buildBootstrapReadinessNode(bootstrapReadiness),
       {
         nodeId: 'public-support-level',
         label: this.localizer.localizeText('Public support level', '公开支持级别'),
@@ -460,18 +464,36 @@ export class VsCodeExtensionPresentationBuilder {
               ],
       },
       {
+        nodeId: 'workspace-operations',
+        label: this.localizer.localizeText('Workspace operations', '工作区操作'),
+        description: this.localizer.localizeText(
+          `${nativeWorkspaceOperationNodes.length} native command(s)`,
+          `${nativeWorkspaceOperationNodes.length} 个原生命令`,
+        ),
+        tooltip: this.localizer.localizeText(
+          'These commands keep bootstrap, diagnostics, and workflow authoring inside the VS Code workbench.',
+          '这些命令会把 bootstrap、诊断和工作流编排保留在 VS Code workbench 内完成。',
+        ),
+        themeIconId: 'tools',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+        children: nativeWorkspaceOperationNodes,
+      },
+      {
         nodeId: 'temporary-bridges',
-        label: this.localizer.localizeText('Temporary CLI bridges', '临时 CLI bridge'),
+        label: this.localizer.localizeText('Governed repository operations', '受治理仓库操作'),
         description:
           temporaryBridgeNodes.length > 0
             ? this.localizer.localizeText(
-                `${temporaryBridgeNodes.length} governed bridge(s)`,
-                `${temporaryBridgeNodes.length} 个受治理 bridge`,
+                `${temporaryBridgeNodes.length} service-backed operation(s)`,
+                `${temporaryBridgeNodes.length} 个 service-backed 操作`,
               )
-            : this.localizer.localizeText('No bridge metadata projected', '暂时没有 bridge 元数据'),
+            : this.localizer.localizeText(
+                'No repository operation is currently projected',
+                '当前没有投影出仓库操作',
+              ),
         tooltip: this.localizer.localizeText(
-          'Temporary bridge metadata keeps adopt/host/upgrade flows explicit until service-native seams replace them.',
-          '临时 bridge 元数据会在 adopt/host/upgrade 流程切到 service-native seam 前继续保持显式。',
+          'Adopt, host, and upgrade flows now execute through the local orchestration service without requiring a manual CLI handoff.',
+          'adopt、host 与 upgrade 现在会通过本地编排服务直接执行，不再要求手动 CLI 交接。',
         ),
         themeIconId: temporaryBridgeNodes.length > 0 ? 'terminal' : 'circle-slash',
         contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
@@ -481,8 +503,8 @@ export class VsCodeExtensionPresentationBuilder {
             : [
                 this.createInfoNode(
                   'temporary-bridges-empty',
-                  'No temporary bridge is currently projected into this workbench.',
-                  '当前没有临时 bridge 被投影到这个 workbench 中。',
+                  'No adopt, host, or upgrade operation is currently projected into this workbench.',
+                  '当前没有 adopt、host 或 upgrade 操作被投影到这个 workbench 中。',
                 ),
               ],
       },
@@ -1053,6 +1075,165 @@ export class VsCodeExtensionPresentationBuilder {
     ];
   }
 
+  private buildBootstrapReadinessNode(
+    readiness: VsCodeExtensionWorkbenchOverviewSnapshot['bootstrapReadiness'] | undefined,
+  ): VsCodeExtensionTreeNodeDescriptor {
+    if (!readiness) {
+      return {
+        nodeId: 'bootstrap-readiness',
+        label: this.localizer.localizeText('Bootstrap readiness', '初始化就绪度'),
+        description: this.localizer.localizeText('Unavailable', '暂不可用'),
+        tooltip: this.localizer.localizeText(
+          'Bootstrap readiness is unavailable until the local orchestration service responds.',
+          '在本地编排服务可用前，暂时无法读取 bootstrap readiness。',
+        ),
+        themeIconId: 'circle-slash',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+      };
+    }
+
+    return {
+      nodeId: 'bootstrap-readiness',
+      label: this.localizer.localizeText('Bootstrap readiness', '初始化就绪度'),
+      description: readiness.configExists
+        ? this.localizer.localizeText('Ready', '已就绪')
+        : this.localizer.localizeText('Bootstrap required', '需要初始化'),
+      tooltip: [
+        `${this.localizer.localizeText('Workspace root', '工作区根目录')}: ${readiness.workspaceRoot}`,
+        `${this.localizer.localizeText('Config path', '配置路径')}: ${readiness.configPath}`,
+        `${this.localizer.localizeText('Workspace mode', '工作区模式')}: ${readiness.workspaceMode}`,
+        `${this.localizer.localizeText('Recommended actions', '建议动作')}: ${this.formatBootstrapReadinessActions(readiness.recommendedActions)}`,
+      ].join('\n'),
+      themeIconId: readiness.configExists ? 'pass-filled' : 'warning',
+      contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+      command: readiness.configExists
+        ? undefined
+        : this.createCommandDescriptor(
+            VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKSPACE_BOOTSTRAP,
+            'Run workspace bootstrap',
+            '执行工作区初始化',
+          ),
+    };
+  }
+
+  private formatBootstrapReadinessActions(
+    actionIds: readonly OrchestrationBootstrapReadinessActionId[],
+  ): string {
+    if (actionIds.length === 0) {
+      return this.localizer.localizeText('None', '无');
+    }
+
+    return actionIds.map((actionId) => this.getBootstrapReadinessActionLabel(actionId)).join(', ');
+  }
+
+  private getBootstrapReadinessActionLabel(
+    actionId: OrchestrationBootstrapReadinessActionId,
+  ): string {
+    switch (actionId) {
+      case OrchestrationBootstrapReadinessActionId.RUN_WORKSPACE_BOOTSTRAP:
+        return this.localizer.localizeText('Run workspace bootstrap', '执行工作区初始化');
+      case OrchestrationBootstrapReadinessActionId.REFRESH_WORKSPACE_STATE:
+        return this.localizer.localizeText('Refresh governance views', '刷新治理视图');
+      default:
+        return this.localizer.localizeText('Review workbench guidance', '查看工作台指引');
+    }
+  }
+
+  private buildNativeWorkspaceOperationNodes(): readonly VsCodeExtensionTreeNodeDescriptor[] {
+    return [
+      {
+        nodeId: 'workspace-operation-bootstrap',
+        label: this.localizer.localizeText('Run workspace bootstrap', '执行工作区初始化'),
+        description: this.localizer.localizeText(
+          'Create baseline directories and config in-place.',
+          '在当前工作区内创建基线目录和配置。',
+        ),
+        themeIconId: 'tools',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+        command: this.createCommandDescriptor(
+          VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKSPACE_BOOTSTRAP,
+          'Run workspace bootstrap',
+          '执行工作区初始化',
+        ),
+      },
+      {
+        nodeId: 'workspace-operation-doctor',
+        label: this.localizer.localizeText('Run doctor', '执行 doctor'),
+        description: this.localizer.localizeText(
+          'Collect repository diagnostics and readiness evidence.',
+          '收集仓库诊断与 readiness 证据。',
+        ),
+        themeIconId: 'search',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+        command: this.createCommandDescriptor(
+          VSCODE_EXTENSION_COMMAND_IDS.RUN_DOCTOR,
+          'Run doctor',
+          '执行 doctor',
+        ),
+      },
+      {
+        nodeId: 'workspace-operation-check',
+        label: this.localizer.localizeText('Run check', '执行 check'),
+        description: this.localizer.localizeText(
+          'Run repository governance checks without leaving VS Code.',
+          '在 VS Code 内直接执行仓库治理检查。',
+        ),
+        themeIconId: 'pass-filled',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+        command: this.createCommandDescriptor(
+          VSCODE_EXTENSION_COMMAND_IDS.RUN_CHECK,
+          'Run check',
+          '执行 check',
+        ),
+      },
+      {
+        nodeId: 'workspace-operation-workflow-preview',
+        label: this.localizer.localizeText('Preview workflow', '预览工作流'),
+        description: this.localizer.localizeText(
+          'Inspect one workflow template from the workbench.',
+          '直接从 workbench 预览一个工作流模板。',
+        ),
+        themeIconId: 'preview',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+        command: this.createCommandDescriptor(
+          VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKFLOW_PREVIEW,
+          'Preview workflow',
+          '预览工作流',
+        ),
+      },
+      {
+        nodeId: 'workspace-operation-workflow-create',
+        label: this.localizer.localizeText('Create workflow', '创建工作流'),
+        description: this.localizer.localizeText(
+          'Create one workflow authoring entry without a session shell handoff.',
+          '无需 session shell 交接，直接创建工作流入口。',
+        ),
+        themeIconId: 'add',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+        command: this.createCommandDescriptor(
+          VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKFLOW_CREATE,
+          'Create workflow',
+          '创建工作流',
+        ),
+      },
+      {
+        nodeId: 'workspace-operation-workflow-edit',
+        label: this.localizer.localizeText('Edit workflow', '编辑工作流'),
+        description: this.localizer.localizeText(
+          'Edit one workflow entry from the VS Code workbench.',
+          '直接从 VS Code workbench 编辑一个工作流入口。',
+        ),
+        themeIconId: 'edit',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+        command: this.createCommandDescriptor(
+          VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKFLOW_EDIT,
+          'Edit workflow',
+          '编辑工作流',
+        ),
+      },
+    ];
+  }
+
   private buildWorkspaceFactLines(
     context: VsCodeExtensionWorkspaceContextSnapshot,
   ): ReadonlyArray<{ label: string; value: string }> {
@@ -1349,8 +1530,8 @@ export class VsCodeExtensionPresentationBuilder {
         selectionRequest: request,
         command: this.createCommandDescriptor(
           VSCODE_EXTENSION_COMMAND_IDS.STAGE_TEMPORARY_BRIDGE,
-          'Stage bridge command',
-          '预填 bridge 命令',
+          'Run Governor repository operation',
+          '运行 Governor 仓库操作',
           request,
         ),
         children: [
@@ -3019,8 +3200,8 @@ export class VsCodeExtensionPresentationBuilder {
     for (const entry of temporaryBridges) {
       actions.push({
         label: this.localizer.localizeText(
-          `Stage bridge command: ${this.localizeTemporaryBridgeCapability(entry.capabilityClass)}`,
-          `预填 bridge 命令：${this.localizeTemporaryBridgeCapability(entry.capabilityClass)}`,
+          `Run repository operation: ${this.localizeTemporaryBridgeCapability(entry.capabilityClass)}`,
+          `运行仓库操作：${this.localizeTemporaryBridgeCapability(entry.capabilityClass)}`,
         ),
         description: this.localizer.localizeText(
           `Receipt ${this.localizeTemporaryBridgeReceiptKind(entry.receiptKind)} · Exit ${entry.exitCriteria.map((criterion) => this.localizeTemporaryBridgeExitCriterion(criterion)).join('; ')}`,

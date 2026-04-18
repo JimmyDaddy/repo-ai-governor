@@ -49,6 +49,12 @@ export const VSCODE_EXTENSION_VIEW_IDS = {
 } as const;
 export const VSCODE_EXTENSION_COMMAND_IDS = {
   REFRESH: 'repoAiGovernor.refresh',
+  RUN_WORKSPACE_BOOTSTRAP: 'repoAiGovernor.runWorkspaceBootstrap',
+  RUN_DOCTOR: 'repoAiGovernor.runDoctor',
+  RUN_CHECK: 'repoAiGovernor.runCheck',
+  RUN_WORKFLOW_PREVIEW: 'repoAiGovernor.runWorkflowPreview',
+  RUN_WORKFLOW_CREATE: 'repoAiGovernor.runWorkflowCreate',
+  RUN_WORKFLOW_EDIT: 'repoAiGovernor.runWorkflowEdit',
   OPEN_REVIEW_DETAIL: 'repoAiGovernor.openReviewDetail',
   OPEN_HANDOFF_TARGET: 'repoAiGovernor.openHandoffTarget',
   STAGE_TEMPORARY_BRIDGE: 'repoAiGovernor.stageTemporaryBridge',
@@ -73,7 +79,14 @@ export const VSCODE_EXTENSION_TOOL_USER_DEFAULT_KEY_SUFFIXES = [
   'remoteApi.endpoint',
 ] as const;
 export const VSCODE_EXTENSION_SECRET_SELECTOR_PREFIX = 'secret://';
+export const VSCODE_EXTENSION_UPGRADE_CONFIRMATION_APPROVE = 'approve';
 export const VSCODE_EXTENSION_TRUST_GATED_COMMAND_IDS = [
+  VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKSPACE_BOOTSTRAP,
+  VSCODE_EXTENSION_COMMAND_IDS.RUN_DOCTOR,
+  VSCODE_EXTENSION_COMMAND_IDS.RUN_CHECK,
+  VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKFLOW_PREVIEW,
+  VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKFLOW_CREATE,
+  VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKFLOW_EDIT,
   VSCODE_EXTENSION_COMMAND_IDS.OPEN_HANDOFF_TARGET,
   VSCODE_EXTENSION_COMMAND_IDS.STAGE_TEMPORARY_BRIDGE,
   VSCODE_EXTENSION_COMMAND_IDS.SUBMIT_HITL_DECISION,
@@ -102,14 +115,20 @@ export const VSCODE_EXTENSION_WORKBENCH_PANELS = [
 export const VSCODE_EXTENSION_QUERY_CAPABILITY_CLASSES = [
   'task_board',
   'review_queue',
+  'bootstrap_readiness',
   'workflow_preview',
   'workflow_stage_progress',
   'automation_queue',
   'adoption_status',
   'host_distribution_status',
+  'upgrade_status',
   'workbench_overview',
 ] as const;
 export const VSCODE_EXTENSION_COMMAND_CAPABILITY_CLASSES = [
+  'workspace_bootstrap',
+  'workspace_doctor',
+  'workspace_check',
+  'workflow_authoring',
   'execution_recover',
   'execution_terminate',
   'user_default_authoring',

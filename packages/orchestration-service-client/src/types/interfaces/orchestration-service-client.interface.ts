@@ -1,5 +1,6 @@
 import type { MemoryProviderCompositionSummary } from '@repo-ai-governor/memory-provider-registry';
 import type {
+  OrchestrationBootstrapReadinessActionId,
   OrchestrationClientSurface,
   OrchestrationExecutionKind,
   OrchestrationExecutionStatus,
@@ -22,6 +23,7 @@ import type {
   OrchestrationSessionRouteId,
   OrchestrationSessionStatus,
   OrchestrationSessionTranscriptRole,
+  OrchestrationWorkspaceOperationKind,
 } from '../../constants/index.js';
 
 export interface OrchestrationExecutionLivenessSnapshot {
@@ -455,6 +457,8 @@ export interface OrchestrationGovernanceWorkspaceSummary {
 export interface OrchestrationGovernanceTemporaryBridgeEntry {
   bridgeId: string;
   capabilityClass: OrchestrationGovernanceTemporaryBridgeCapabilityClass;
+  operationKind?: OrchestrationWorkspaceOperationKind;
+  operationArguments?: Record<string, boolean | number | string | readonly string[] | null>;
   workspaceRoot: string;
   commandWorkingDirectory: string;
   previewCommandLine: string;
@@ -481,6 +485,133 @@ export interface OrchestrationQueueOverviewQueryResponse {
   workspaceSummary: OrchestrationGovernanceWorkspaceSummary[];
   temporaryBridges: OrchestrationGovernanceTemporaryBridgeEntry[];
   notificationOwnership: OrchestrationGovernanceNotificationOwnership;
+}
+
+export interface OrchestrationBootstrapReadinessSnapshot {
+  workspaceId: string;
+  repositoryRoot: string;
+  workspaceRoot: string;
+  configPath: string;
+  configExists: boolean;
+  workspaceMode: string;
+  workspaceModeSource: string;
+  recommendedActions: OrchestrationBootstrapReadinessActionId[];
+}
+
+export interface OrchestrationUserConfigEntry {
+  keyPath: string;
+  value: string;
+}
+
+export interface OrchestrationUserConfigStatus {
+  configPath: string;
+  configExists: boolean;
+  legacyPreferencePath: string;
+  legacyPreferenceExists: boolean;
+  themePreference?: string;
+  workspaceModePreference?: string;
+  entries: OrchestrationUserConfigEntry[];
+}
+
+export interface OrchestrationSecretBackendStatus {
+  backendId: string;
+  available: boolean;
+  detail: string;
+  warning?: string;
+}
+
+export interface OrchestrationSecretRecord {
+  keyName: string;
+  backendId: string;
+  exists: boolean;
+}
+
+export interface OrchestrationSecretReadinessSnapshot {
+  selectedBackendId?: string;
+  defaultBackendId?: string;
+  indexPath: string;
+  backends: OrchestrationSecretBackendStatus[];
+  records: OrchestrationSecretRecord[];
+  configuredCredentialRefs: string[];
+  unresolvedCredentialRefs: string[];
+}
+
+export interface OrchestrationSecureAuthoringSnapshot {
+  userConfig?: OrchestrationUserConfigStatus;
+  secretReadiness?: OrchestrationSecretReadinessSnapshot;
+  degradedReason?: string;
+}
+
+export interface OrchestrationSecureAuthoringQueryRequest {
+  locale?: string;
+}
+
+export interface OrchestrationSetUserConfigValueRequest {
+  keyPath: string;
+  value: string;
+  locale?: string;
+}
+
+export interface OrchestrationSetUserConfigValueResponse {
+  message: string;
+  configPath?: string;
+  persistedValue?: string;
+}
+
+export interface OrchestrationSetManagedSecretRequest {
+  keyName: string;
+  value: string;
+  backendId?: string;
+  locale?: string;
+}
+
+export interface OrchestrationSetManagedSecretResponse {
+  message: string;
+  selector?: string;
+  backendId?: string;
+  warning?: string;
+}
+
+export interface OrchestrationWorkspaceOperationCheck {
+  id: string;
+  status: string;
+  detail: string;
+}
+
+export interface OrchestrationWorkspaceOperationArtifact {
+  id: string;
+  path: string;
+}
+
+export interface OrchestrationWorkspaceOperationInteractionPrompt {
+  title: string;
+  action: string;
+  blocking: boolean;
+}
+
+export interface OrchestrationWorkspaceOperationResult {
+  operation: string;
+  summary: string;
+  checkTotals?: {
+    pass: number;
+    warn: number;
+    fail: number;
+  };
+  checks?: OrchestrationWorkspaceOperationCheck[];
+  artifacts?: OrchestrationWorkspaceOperationArtifact[];
+  interactionPrompts?: OrchestrationWorkspaceOperationInteractionPrompt[];
+  details?: Record<string, boolean | number | string | null>;
+}
+
+export interface OrchestrationWorkspaceOperationRequest {
+  operationKind: OrchestrationWorkspaceOperationKind;
+  locale?: string;
+  arguments?: Record<string, boolean | number | string | readonly string[] | null>;
+}
+
+export interface OrchestrationWorkspaceOperationResponse {
+  message: string;
+  result: OrchestrationWorkspaceOperationResult;
 }
 
 export interface OrchestrationSessionEvent {
@@ -640,6 +771,19 @@ export interface OrchestrationUnarchiveSessionResponse {
 
 export interface OrchestrationServiceClient {
   getHealth(): Promise<OrchestrationServiceHealthResponse>;
+  queryBootstrapReadiness(): Promise<OrchestrationBootstrapReadinessSnapshot>;
+  querySecureAuthoring(
+    request?: OrchestrationSecureAuthoringQueryRequest,
+  ): Promise<OrchestrationSecureAuthoringSnapshot>;
+  setUserConfigValue(
+    request: OrchestrationSetUserConfigValueRequest,
+  ): Promise<OrchestrationSetUserConfigValueResponse>;
+  setManagedSecret(
+    request: OrchestrationSetManagedSecretRequest,
+  ): Promise<OrchestrationSetManagedSecretResponse>;
+  runWorkspaceOperation(
+    request: OrchestrationWorkspaceOperationRequest,
+  ): Promise<OrchestrationWorkspaceOperationResponse>;
   startExecution(
     request: OrchestrationStartExecutionRequest,
   ): Promise<OrchestrationStartExecutionResponse>;

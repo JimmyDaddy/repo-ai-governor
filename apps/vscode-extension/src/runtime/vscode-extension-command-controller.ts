@@ -4,6 +4,7 @@ import {
   OrchestrationGovernanceActionKind,
   type OrchestrationHandoffTarget,
   OrchestrationHandoffTargetKind,
+  OrchestrationWorkspaceOperationKind,
 } from '@repo-ai-governor/orchestration-service-client';
 import {
   AdapterProviderKind,
@@ -18,6 +19,7 @@ import {
   VSCODE_EXTENSION_SECRET_SELECTOR_PREFIX,
   VSCODE_EXTENSION_TOOL_USER_DEFAULT_KEY_SUFFIXES,
   VSCODE_EXTENSION_TRUST_MANAGE_COMMAND_ID,
+  VSCODE_EXTENSION_UPGRADE_CONFIRMATION_APPROVE,
   VSCODE_EXTENSION_USER_DEFAULT_KEY_PATHS,
 } from '../constants/index.js';
 import type {
@@ -149,7 +151,8 @@ export class VsCodeExtensionCommandController {
   }
 
   /**
-   * Stages one temporary bridge command inside a trusted terminal without auto-executing it.
+   * Executes one service-backed workspace operation routed from the legacy temporary-bridge
+   * affordance.
    * @param commandRequest Optional command request carrying the typed bridge metadata.
    */
   public async stageTemporaryBridge(commandRequest?: VsCodeExtensionCommandRequest): Promise<void> {
@@ -162,25 +165,131 @@ export class VsCodeExtensionCommandController {
     if (!temporaryBridge) {
       void vscode.window.showInformationMessage(
         this.localizer.localizeText(
-          'No temporary bridge command is available right now.',
-          '当前没有可用的临时 bridge 命令。',
+          'No governed workspace operation is available right now.',
+          '当前没有可用的受治理工作区操作。',
         ),
       );
       return;
     }
 
-    this.selectionStore.applyCommandRequest(mergedRequest);
-    const terminal = vscode.window.createTerminal({
-      name: this.localizer.localizeText('Governor Bridge', 'Governor Bridge'),
-      cwd: temporaryBridge.commandWorkingDirectory,
-    });
-    terminal.show();
-    terminal.sendText(temporaryBridge.previewCommandLine, false);
-    void vscode.window.showInformationMessage(
-      this.localizer.localizeText(
-        'Staged the bridge command in a terminal. Review receipt/backlink guidance before running it.',
-        '已在终端中预填 bridge 命令。执行前请先确认 receipt 与回链约束。',
-      ),
+    const operationKind =
+      temporaryBridge.operationKind ??
+      this.resolveWorkspaceOperationKindFromTemporaryBridge(temporaryBridge);
+    if (!operationKind) {
+      void vscode.window.showInformationMessage(
+        this.localizer.localizeText(
+          'This workspace operation is not service-backed yet.',
+          '这个工作区操作目前还没有 service-backed 实现。',
+        ),
+      );
+      return;
+    }
+
+    try {
+      const argumentsRecord = await this.resolveWorkspaceOperationArgumentsFromTemporaryBridge(
+        temporaryBridge,
+        operationKind,
+      );
+      if (argumentsRecord === null) {
+        return;
+      }
+      this.selectionStore.applyCommandRequest(mergedRequest);
+      await this.runWorkspaceOperationWithFeedback(operationKind, argumentsRecord, mergedRequest);
+    } catch (error) {
+      await this.showCommandError(
+        error,
+        'Failed to execute the requested workspace operation.',
+        '执行请求的工作区操作失败。',
+      );
+    }
+  }
+
+  public async runWorkspaceBootstrap(): Promise<void> {
+    if (!(await this.ensureTrusted())) {
+      return;
+    }
+
+    await this.runWorkspaceOperationWithHandledError(
+      OrchestrationWorkspaceOperationKind.WORKSPACE_BOOTSTRAP,
+    );
+  }
+
+  public async runDoctor(): Promise<void> {
+    if (!(await this.ensureTrusted())) {
+      return;
+    }
+
+    await this.runWorkspaceOperationWithHandledError(OrchestrationWorkspaceOperationKind.DOCTOR);
+  }
+
+  public async runCheck(): Promise<void> {
+    if (!(await this.ensureTrusted())) {
+      return;
+    }
+
+    await this.runWorkspaceOperationWithHandledError(OrchestrationWorkspaceOperationKind.CHECK);
+  }
+
+  public async runWorkflowPreview(): Promise<void> {
+    if (!(await this.ensureTrusted())) {
+      return;
+    }
+
+    const templateId = await this.promptForWorkflowTemplateId(
+      this.localizer.localizeText('Preview workflow template', '预览工作流模板'),
+    );
+    if (templateId === null) {
+      return;
+    }
+    await this.runWorkspaceOperationWithHandledError(
+      OrchestrationWorkspaceOperationKind.WORKFLOW_PREVIEW,
+      templateId
+        ? {
+            templateId,
+          }
+        : undefined,
+    );
+  }
+
+  public async runWorkflowCreate(): Promise<void> {
+    if (!(await this.ensureTrusted())) {
+      return;
+    }
+
+    const templateId = await this.promptForWorkflowTemplateId(
+      this.localizer.localizeText('Create workflow entry', '创建工作流入口'),
+    );
+    if (templateId === null) {
+      return;
+    }
+    await this.runWorkspaceOperationWithHandledError(
+      OrchestrationWorkspaceOperationKind.WORKFLOW_CREATE,
+      templateId
+        ? {
+            templateId,
+          }
+        : undefined,
+    );
+  }
+
+  public async runWorkflowEdit(): Promise<void> {
+    if (!(await this.ensureTrusted())) {
+      return;
+    }
+
+    const templateId = await this.promptForWorkflowTemplateId(
+      this.localizer.localizeText('Edit workflow entry', '编辑工作流入口'),
+    );
+    if (templateId === null) {
+      return;
+    }
+    await this.runWorkspaceOperationWithHandledError(
+      OrchestrationWorkspaceOperationKind.WORKFLOW_EDIT,
+      templateId
+        ? {
+            templateId,
+          }
+        : undefined,
     );
   }
 
@@ -1162,6 +1271,117 @@ export class VsCodeExtensionCommandController {
       },
     );
     return picked?.option;
+  }
+
+  private resolveWorkspaceOperationKindFromTemporaryBridge(
+    temporaryBridge: NonNullable<VsCodeExtensionCommandRequest['temporaryBridge']>,
+  ): OrchestrationWorkspaceOperationKind | undefined {
+    switch (temporaryBridge.capabilityClass) {
+      case 'adopt_bootstrap':
+        return OrchestrationWorkspaceOperationKind.ADOPT_BOOTSTRAP;
+      case 'adoption_apply':
+        return OrchestrationWorkspaceOperationKind.ADOPTION_APPLY;
+      case 'host_export':
+        return OrchestrationWorkspaceOperationKind.HOST_EXPORT;
+      case 'host_verify':
+        return OrchestrationWorkspaceOperationKind.HOST_VERIFY;
+      case 'host_pack':
+        return OrchestrationWorkspaceOperationKind.HOST_PACK;
+      case 'upgrade':
+        return OrchestrationWorkspaceOperationKind.UPGRADE_APPLY;
+      default:
+        return undefined;
+    }
+  }
+
+  private async resolveWorkspaceOperationArgumentsFromTemporaryBridge(
+    temporaryBridge: NonNullable<VsCodeExtensionCommandRequest['temporaryBridge']>,
+    operationKind: OrchestrationWorkspaceOperationKind,
+  ): Promise<
+    Record<string, boolean | number | string | readonly string[] | null> | null | undefined
+  > {
+    const bridgeArguments = temporaryBridge.operationArguments
+      ? { ...temporaryBridge.operationArguments }
+      : undefined;
+
+    if (operationKind !== OrchestrationWorkspaceOperationKind.UPGRADE_APPLY) {
+      return bridgeArguments;
+    }
+
+    const confirmed = await this.confirmCommand(
+      this.localizer.localizeText(
+        'Applying this prepared upgrade may overwrite host-native assets. Continue?',
+        '应用这个已准备好的升级可能会覆盖宿主原生资产。是否继续？',
+      ),
+      this.localizer.localizeText('Apply Upgrade', '应用升级'),
+    );
+    if (!confirmed) {
+      return null;
+    }
+
+    return {
+      ...bridgeArguments,
+      confirmUpgrade: VSCODE_EXTENSION_UPGRADE_CONFIRMATION_APPROVE,
+    };
+  }
+
+  private async runWorkspaceOperationWithFeedback(
+    operationKind: OrchestrationWorkspaceOperationKind,
+    argumentsRecord?: Record<string, boolean | number | string | readonly string[] | null>,
+    commandRequest?: VsCodeExtensionCommandRequest,
+  ): Promise<void> {
+    const response = await this.serviceRuntime.runWorkspaceOperation(
+      operationKind,
+      argumentsRecord,
+    );
+    this.selectionStore.applyCommandRequest(commandRequest);
+    await this.refresh(commandRequest);
+
+    const primaryArtifactPath = response.result.artifacts?.[0]?.path;
+    const openArtifactLabel = this.localizer.localizeText('Open Artifact', '打开产物');
+    const picked = await vscode.window.showInformationMessage(
+      response.message,
+      ...(primaryArtifactPath ? [openArtifactLabel] : []),
+    );
+    if (picked !== openArtifactLabel || !primaryArtifactPath) {
+      return;
+    }
+
+    const document = await vscode.workspace.openTextDocument(vscode.Uri.file(primaryArtifactPath));
+    await vscode.window.showTextDocument(document, { preview: false });
+  }
+
+  private async runWorkspaceOperationWithHandledError(
+    operationKind: OrchestrationWorkspaceOperationKind,
+    argumentsRecord?: Record<string, boolean | number | string | readonly string[] | null>,
+    commandRequest?: VsCodeExtensionCommandRequest,
+  ): Promise<void> {
+    try {
+      await this.runWorkspaceOperationWithFeedback(operationKind, argumentsRecord, commandRequest);
+    } catch (error) {
+      await this.showCommandError(
+        error,
+        'Failed to execute the requested workspace operation.',
+        '执行请求的工作区操作失败。',
+      );
+    }
+  }
+
+  private async promptForWorkflowTemplateId(title: string): Promise<string | null | undefined> {
+    const value = await vscode.window.showInputBox({
+      title,
+      prompt: this.localizer.localizeText(
+        'Optional: enter a workflow template id. Leave empty to use the runtime default.',
+        '可选：输入工作流模板 ID；留空则使用运行时默认模板。',
+      ),
+      ignoreFocusOut: true,
+    });
+
+    if (value === undefined) {
+      return null;
+    }
+
+    return value?.trim().length ? value.trim() : undefined;
   }
 
   private async ensureTrusted(): Promise<boolean> {

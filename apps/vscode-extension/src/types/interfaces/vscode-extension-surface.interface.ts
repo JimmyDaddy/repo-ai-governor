@@ -1,5 +1,6 @@
 import type {
   OrchestrationArtifactPaneQueryResponse,
+  OrchestrationBootstrapReadinessSnapshot,
   OrchestrationExecutionBoardEntry,
   OrchestrationGovernanceQueueEntry,
   OrchestrationGovernanceTemporaryBridgeEntry,
@@ -122,6 +123,7 @@ export interface VsCodeExtensionReviewDetailSnapshot {
 
 export interface VsCodeExtensionWorkbenchOverviewSnapshot {
   workspaceContext: VsCodeExtensionWorkspaceContextSnapshot;
+  bootstrapReadiness?: OrchestrationBootstrapReadinessSnapshot;
   queueOverview: OrchestrationQueueOverviewQueryResponse;
   secureAuthoring?: VsCodeExtensionSecureAuthoringSnapshot;
   selectedExecution?: OrchestrationExecutionBoardEntry;
@@ -130,6 +132,7 @@ export interface VsCodeExtensionWorkbenchOverviewSnapshot {
 
 export interface VsCodeExtensionWorkflowStudioSnapshot {
   workspaceContext: VsCodeExtensionWorkspaceContextSnapshot;
+  bootstrapReadiness?: OrchestrationBootstrapReadinessSnapshot;
   queueOverview: OrchestrationQueueOverviewQueryResponse;
   secureAuthoring?: VsCodeExtensionSecureAuthoringSnapshot;
   selectedExecution?: OrchestrationExecutionBoardEntry;

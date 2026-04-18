@@ -11,6 +11,7 @@ import { OrchestrationGovernanceTemporaryBridgeBacklinkSurface } from '@repo-ai-
 import { OrchestrationGovernanceTemporaryBridgeExitCriterion } from '@repo-ai-governor/orchestration-service-client';
 import { OrchestrationGovernanceTemporaryBridgeReceiptKind } from '@repo-ai-governor/orchestration-service-client';
 import { OrchestrationHandoffTargetKind } from '@repo-ai-governor/orchestration-service-client';
+import { OrchestrationWorkspaceOperationKind } from '@repo-ai-governor/orchestration-service-client';
 import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 
 const vscodeMock = vi.hoisted(() => {
@@ -1288,8 +1289,14 @@ describe('VsCode extension controller/provider integration', () => {
     vscodeMock.state.trusted = true;
 
     const selectionStore = new VsCodeExtensionSelectionStore();
+    const serviceRuntime = {
+      runWorkspaceOperation: vi.fn().mockResolvedValue({
+        message: 'Host verify started.',
+        result: {},
+      }),
+    };
     const controller = new VsCodeExtensionCommandController(
-      {} as never,
+      serviceRuntime as never,
       selectionStore,
       {
         localizeText: (english: string) => english,
@@ -1308,6 +1315,10 @@ describe('VsCode extension controller/provider integration', () => {
       temporaryBridge: {
         bridgeId: 'temporary-bridge-host-verify',
         capabilityClass: OrchestrationGovernanceTemporaryBridgeCapabilityClass.HOST_VERIFY,
+        operationKind: OrchestrationWorkspaceOperationKind.HOST_VERIFY,
+        operationArguments: {
+          outputDir: '/repo/.repo-ai-governor/generated/hosts/github-copilot',
+        },
         workspaceRoot: '/repo/.repo-ai-governor',
         commandWorkingDirectory: '/repo',
         previewCommandLine:
@@ -1320,15 +1331,12 @@ describe('VsCode extension controller/provider integration', () => {
       },
     });
 
-    expect(vscodeMock.createTerminal).toHaveBeenCalledWith({
-      name: 'Governor Bridge',
-      cwd: '/repo',
+    expect(serviceRuntime.runWorkspaceOperation).toHaveBeenCalledWith('host_verify', {
+      outputDir: '/repo/.repo-ai-governor/generated/hosts/github-copilot',
     });
-    expect(vscodeMock.sendText).toHaveBeenCalledWith(
-      'repo-ai-governor host verify --output-dir /repo/.repo-ai-governor/generated/hosts/github-copilot',
-      false,
-    );
-    expect(vscodeMock.showInformationMessage).toHaveBeenCalled();
+    expect(vscodeMock.createTerminal).not.toHaveBeenCalled();
+    expect(vscodeMock.sendText).not.toHaveBeenCalled();
+    expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith('Host verify started.');
     expect(selectionStore.getSnapshot().temporaryBridge?.bridgeId).toBe(
       'temporary-bridge-host-verify',
     );
@@ -1338,8 +1346,14 @@ describe('VsCode extension controller/provider integration', () => {
     vscodeMock.state.trusted = true;
 
     const selectionStore = new VsCodeExtensionSelectionStore();
+    const serviceRuntime = {
+      runWorkspaceOperation: vi.fn().mockResolvedValue({
+        message: 'Host pack started.',
+        result: {},
+      }),
+    };
     const controller = new VsCodeExtensionCommandController(
-      {} as never,
+      serviceRuntime as never,
       selectionStore,
       {
         localizeText: (english: string) => english,
@@ -1360,6 +1374,12 @@ describe('VsCode extension controller/provider integration', () => {
           temporaryBridge: {
             bridgeId: 'temporary-bridge-host-pack',
             capabilityClass: OrchestrationGovernanceTemporaryBridgeCapabilityClass.HOST_PACK,
+            operationKind: OrchestrationWorkspaceOperationKind.HOST_PACK,
+            operationArguments: {
+              host: 'claude-code',
+              mode: 'plugin-bundle',
+              bundleDir: '/repo/.repo-ai-governor/generated/bundles/claude',
+            },
             workspaceRoot: '/repo/.repo-ai-governor',
             commandWorkingDirectory: '/repo',
             previewCommandLine:
@@ -1377,13 +1397,204 @@ describe('VsCode extension controller/provider integration', () => {
 
     await controller.stageTemporaryBridge();
 
-    expect(vscodeMock.createTerminal).toHaveBeenCalledWith({
-      name: 'Governor Bridge',
-      cwd: '/repo',
+    expect(serviceRuntime.runWorkspaceOperation).toHaveBeenCalledWith('host_pack', {
+      host: 'claude-code',
+      mode: 'plugin-bundle',
+      bundleDir: '/repo/.repo-ai-governor/generated/bundles/claude',
     });
-    expect(vscodeMock.sendText).toHaveBeenCalledWith(
-      'repo-ai-governor host pack --host claude-code --mode plugin-bundle --bundle-dir /repo/.repo-ai-governor/generated/bundles/claude',
-      false,
+    expect(vscodeMock.createTerminal).not.toHaveBeenCalled();
+    expect(vscodeMock.sendText).not.toHaveBeenCalled();
+    expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith('Host pack started.');
+  });
+
+  it('requires explicit confirmation before applying an upgrade temporary bridge', async () => {
+    vscodeMock.state.trusted = true;
+    vscodeMock.showWarningMessage.mockResolvedValueOnce('Apply Upgrade');
+
+    const selectionStore = new VsCodeExtensionSelectionStore();
+    const serviceRuntime = {
+      runWorkspaceOperation: vi.fn().mockResolvedValue({
+        message: 'Upgrade applied.',
+        result: {},
+      }),
+    };
+    const controller = new VsCodeExtensionCommandController(
+      serviceRuntime as never,
+      selectionStore,
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    await controller.stageTemporaryBridge({
+      temporaryBridge: {
+        bridgeId: 'temporary-bridge-upgrade',
+        capabilityClass: OrchestrationGovernanceTemporaryBridgeCapabilityClass.UPGRADE,
+        operationKind: OrchestrationWorkspaceOperationKind.UPGRADE_APPLY,
+        operationArguments: {
+          reportPath: '/repo/.repo-ai-governor/context/upgrade/upgrade-20260418.report.json',
+        },
+        workspaceRoot: '/repo/.repo-ai-governor',
+        commandWorkingDirectory: '/repo',
+        previewCommandLine:
+          'repo-ai-governor upgrade apply /repo/.repo-ai-governor/context/upgrade/upgrade-20260418.report.json --confirm-upgrade approve --output pretty',
+        receiptKind: OrchestrationGovernanceTemporaryBridgeReceiptKind.UPGRADE_APPLY_RECEIPT,
+        backlinkSurface: OrchestrationGovernanceTemporaryBridgeBacklinkSurface.ARTIFACT_WORKBENCH,
+        exitCriteria: [
+          OrchestrationGovernanceTemporaryBridgeExitCriterion.SERVICE_NATIVE_UPGRADE_QUERY,
+        ],
+      },
+    });
+
+    expect(serviceRuntime.runWorkspaceOperation).toHaveBeenCalledWith('upgrade_apply', {
+      reportPath: '/repo/.repo-ai-governor/context/upgrade/upgrade-20260418.report.json',
+      confirmUpgrade: 'approve',
+    });
+  });
+
+  it('does not apply an upgrade temporary bridge when confirmation is dismissed', async () => {
+    vscodeMock.state.trusted = true;
+    vscodeMock.showWarningMessage.mockResolvedValueOnce(undefined);
+
+    const serviceRuntime = {
+      runWorkspaceOperation: vi.fn(),
+    };
+    const controller = new VsCodeExtensionCommandController(
+      serviceRuntime as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    await controller.stageTemporaryBridge({
+      temporaryBridge: {
+        bridgeId: 'temporary-bridge-upgrade',
+        capabilityClass: OrchestrationGovernanceTemporaryBridgeCapabilityClass.UPGRADE,
+        operationKind: OrchestrationWorkspaceOperationKind.UPGRADE_APPLY,
+        operationArguments: {
+          reportPath: '/repo/.repo-ai-governor/context/upgrade/upgrade-20260418.report.json',
+        },
+        workspaceRoot: '/repo/.repo-ai-governor',
+        commandWorkingDirectory: '/repo',
+        previewCommandLine:
+          'repo-ai-governor upgrade apply /repo/.repo-ai-governor/context/upgrade/upgrade-20260418.report.json --confirm-upgrade approve --output pretty',
+        receiptKind: OrchestrationGovernanceTemporaryBridgeReceiptKind.UPGRADE_APPLY_RECEIPT,
+        backlinkSurface: OrchestrationGovernanceTemporaryBridgeBacklinkSurface.ARTIFACT_WORKBENCH,
+        exitCriteria: [
+          OrchestrationGovernanceTemporaryBridgeExitCriterion.SERVICE_NATIVE_UPGRADE_QUERY,
+        ],
+      },
+    });
+
+    expect(serviceRuntime.runWorkspaceOperation).not.toHaveBeenCalled();
+  });
+
+  it('does not execute workflow create when the template prompt is dismissed', async () => {
+    vscodeMock.state.trusted = true;
+    vscodeMock.showInputBox.mockResolvedValueOnce(undefined);
+
+    const serviceRuntime = {
+      runWorkspaceOperation: vi.fn(),
+    };
+    const controller = new VsCodeExtensionCommandController(
+      serviceRuntime as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    await controller.runWorkflowCreate();
+
+    expect(serviceRuntime.runWorkspaceOperation).not.toHaveBeenCalled();
+  });
+
+  it('still executes workflow create with the runtime default template when the user submits an empty value', async () => {
+    vscodeMock.state.trusted = true;
+    vscodeMock.showInputBox.mockResolvedValueOnce('');
+
+    const serviceRuntime = {
+      runWorkspaceOperation: vi.fn().mockResolvedValue({
+        message: 'Workflow created.',
+        result: {},
+      }),
+    };
+    const controller = new VsCodeExtensionCommandController(
+      serviceRuntime as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    await controller.runWorkflowCreate();
+
+    expect(serviceRuntime.runWorkspaceOperation).toHaveBeenCalledWith('workflow_create', undefined);
+  });
+
+  it('surfaces governed errors for direct workspace-operation commands', async () => {
+    vscodeMock.state.trusted = true;
+
+    const serviceRuntime = {
+      runWorkspaceOperation: vi.fn().mockRejectedValue(
+        new RuntimeError(GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE, 'sidecar offline', {
+          surface: 'vscode_extension_test',
+        }),
+      ),
+    };
+    const controller = new VsCodeExtensionCommandController(
+      serviceRuntime as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    await expect(controller.runWorkspaceBootstrap()).resolves.toBeUndefined();
+
+    expect(vscodeMock.showErrorMessage).toHaveBeenCalledWith(
+      'Failed to execute the requested workspace operation. [PROCESS_RUNTIME_BACKEND_UNAVAILABLE] sidecar offline',
     );
   });
 });

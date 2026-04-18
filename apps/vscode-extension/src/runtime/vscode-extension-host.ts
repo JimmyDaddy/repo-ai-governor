@@ -134,6 +134,25 @@ export class VsCodeExtensionHost {
         commandController.refresh(request),
       ),
       vscode.commands.registerCommand(
+        VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKSPACE_BOOTSTRAP,
+        async () => commandController.runWorkspaceBootstrap(),
+      ),
+      vscode.commands.registerCommand(VSCODE_EXTENSION_COMMAND_IDS.RUN_DOCTOR, async () =>
+        commandController.runDoctor(),
+      ),
+      vscode.commands.registerCommand(VSCODE_EXTENSION_COMMAND_IDS.RUN_CHECK, async () =>
+        commandController.runCheck(),
+      ),
+      vscode.commands.registerCommand(VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKFLOW_PREVIEW, async () =>
+        commandController.runWorkflowPreview(),
+      ),
+      vscode.commands.registerCommand(VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKFLOW_CREATE, async () =>
+        commandController.runWorkflowCreate(),
+      ),
+      vscode.commands.registerCommand(VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKFLOW_EDIT, async () =>
+        commandController.runWorkflowEdit(),
+      ),
+      vscode.commands.registerCommand(
         VSCODE_EXTENSION_COMMAND_IDS.OPEN_REVIEW_DETAIL,
         async (request) => commandController.openReviewDetail(request),
       ),

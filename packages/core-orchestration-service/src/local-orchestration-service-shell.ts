@@ -69,6 +69,7 @@ import { LocalOrchestrationServiceArtifactPaneQueryRuntime } from './local-orche
 import { LocalOrchestrationServiceGovernanceQueryRuntime } from './local-orchestration-service-governance-query-runtime.js';
 import { LocalOrchestrationServiceQueueOverviewQueryRuntime } from './local-orchestration-service-queue-overview-query-runtime.js';
 import { LocalOrchestrationServiceSessionRuntime } from './local-orchestration-service-session-runtime.js';
+import { LocalOrchestrationServiceWorkspaceOpsRuntime } from './local-orchestration-service-workspace-ops-runtime.js';
 import type {
   LocalOrchestrationServiceMemoryProviderState,
   LocalOrchestrationServicePublishEventRequest,
@@ -110,6 +111,7 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
   private readonly artifactPaneQueryRuntime: LocalOrchestrationServiceArtifactPaneQueryRuntime;
   private readonly governanceQueryRuntime: LocalOrchestrationServiceGovernanceQueryRuntime;
   private readonly queueOverviewQueryRuntime: LocalOrchestrationServiceQueueOverviewQueryRuntime;
+  private readonly workspaceOpsRuntime: LocalOrchestrationServiceWorkspaceOpsRuntime;
   private executionRecordsLoadedPromise: Promise<void> | null = null;
   private memoryProviderStatePromise: Promise<LocalOrchestrationServiceMemoryProviderState | null> | null =
     null;
@@ -195,6 +197,14 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
       listExecutions: async (request) => this.listExecutions(request),
       nowProvider: this.nowProvider,
     });
+    this.workspaceOpsRuntime = new LocalOrchestrationServiceWorkspaceOpsRuntime({
+      workspaceRoot: dependencies.workspaceRoot,
+      ...(dependencies.repositoryRoot
+        ? {
+            repositoryRoot: dependencies.repositoryRoot,
+          }
+        : {}),
+    });
   }
 
   public async getHealth(): Promise<OrchestrationServiceHealthResponse> {
@@ -217,6 +227,34 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
       protocolVersion: this.protocolVersion,
       ...(this.pidProvider() ? { pid: this.pidProvider() } : {}),
     };
+  }
+
+  public async queryBootstrapReadiness() {
+    return this.workspaceOpsRuntime.queryBootstrapReadiness();
+  }
+
+  public async querySecureAuthoring(
+    request?: Parameters<LocalOrchestrationServiceWorkspaceOpsRuntime['querySecureAuthoring']>[0],
+  ) {
+    return this.workspaceOpsRuntime.querySecureAuthoring(request);
+  }
+
+  public async setUserConfigValue(
+    request: Parameters<LocalOrchestrationServiceWorkspaceOpsRuntime['setUserConfigValue']>[0],
+  ) {
+    return this.workspaceOpsRuntime.setUserConfigValue(request);
+  }
+
+  public async setManagedSecret(
+    request: Parameters<LocalOrchestrationServiceWorkspaceOpsRuntime['setManagedSecret']>[0],
+  ) {
+    return this.workspaceOpsRuntime.setManagedSecret(request);
+  }
+
+  public async runWorkspaceOperation(
+    request: Parameters<LocalOrchestrationServiceWorkspaceOpsRuntime['runWorkspaceOperation']>[0],
+  ) {
+    return this.workspaceOpsRuntime.runWorkspaceOperation(request);
   }
 
   public async startExecution(

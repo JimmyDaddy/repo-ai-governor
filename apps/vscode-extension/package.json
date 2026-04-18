@@ -37,6 +37,12 @@
     "onView:repoAiGovernor.workflowStudio",
     "onView:repoAiGovernor.reviewDetail",
     "onCommand:repoAiGovernor.refresh",
+    "onCommand:repoAiGovernor.runWorkspaceBootstrap",
+    "onCommand:repoAiGovernor.runDoctor",
+    "onCommand:repoAiGovernor.runCheck",
+    "onCommand:repoAiGovernor.runWorkflowPreview",
+    "onCommand:repoAiGovernor.runWorkflowCreate",
+    "onCommand:repoAiGovernor.runWorkflowEdit",
     "onCommand:repoAiGovernor.openReviewDetail",
     "onCommand:repoAiGovernor.openHandoffTarget",
     "onCommand:repoAiGovernor.stageTemporaryBridge",
@@ -106,6 +112,36 @@
         "category": "%commands.category%"
       },
       {
+        "command": "repoAiGovernor.runWorkspaceBootstrap",
+        "title": "%commands.runWorkspaceBootstrap.title%",
+        "category": "%commands.category%"
+      },
+      {
+        "command": "repoAiGovernor.runDoctor",
+        "title": "%commands.runDoctor.title%",
+        "category": "%commands.category%"
+      },
+      {
+        "command": "repoAiGovernor.runCheck",
+        "title": "%commands.runCheck.title%",
+        "category": "%commands.category%"
+      },
+      {
+        "command": "repoAiGovernor.runWorkflowPreview",
+        "title": "%commands.runWorkflowPreview.title%",
+        "category": "%commands.category%"
+      },
+      {
+        "command": "repoAiGovernor.runWorkflowCreate",
+        "title": "%commands.runWorkflowCreate.title%",
+        "category": "%commands.category%"
+      },
+      {
+        "command": "repoAiGovernor.runWorkflowEdit",
+        "title": "%commands.runWorkflowEdit.title%",
+        "category": "%commands.category%"
+      },
+      {
         "command": "repoAiGovernor.openReviewDetail",
         "title": "%commands.openReviewDetail.title%",
         "category": "%commands.category%"
@@ -167,6 +203,30 @@
         }
       ],
       "commandPalette": [
+        {
+          "command": "repoAiGovernor.runWorkspaceBootstrap",
+          "when": "isWorkspaceTrusted"
+        },
+        {
+          "command": "repoAiGovernor.runDoctor",
+          "when": "isWorkspaceTrusted"
+        },
+        {
+          "command": "repoAiGovernor.runCheck",
+          "when": "isWorkspaceTrusted"
+        },
+        {
+          "command": "repoAiGovernor.runWorkflowPreview",
+          "when": "isWorkspaceTrusted"
+        },
+        {
+          "command": "repoAiGovernor.runWorkflowCreate",
+          "when": "isWorkspaceTrusted"
+        },
+        {
+          "command": "repoAiGovernor.runWorkflowEdit",
+          "when": "isWorkspaceTrusted"
+        },
         {
           "command": "repoAiGovernor.openHandoffTarget",
           "when": "isWorkspaceTrusted"

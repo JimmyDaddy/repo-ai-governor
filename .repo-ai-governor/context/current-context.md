@@ -2,25 +2,27 @@
 
 ## Primary Stream
 
-- Status: idle
-- Stream: `none`
-- Project: `none`
-- Sprint: `none`
-- Docs: `none`
-- Plan: `none`
-- Tasks: `none`
-- Checklist: `none`
-- CSV: `none`
-- Review: `none`
-- Note: `2026-04-18` `project-113-vscode-primary-workbench-full-cutover` 已完成 project-final closeout；`stream-project-113-sprint-005` 已移入 `completed-streams-history.md`，当前 worktree 已恢复为 idle primary stream。
+- Status: active
+- Stream: `stream-project-114-sprint-002`
+- Project: `project-114-vscode-plugin-full-ownership-and-zero-cli-user-path`
+- Sprint: `sprint-002-doctor-check-and-workspace-bootstrap-cutover`
+- Docs: `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path`
+- Plan: `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-002-doctor-check-and-workspace-bootstrap-cutover/plan.md`
+- Tasks: `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-002-doctor-check-and-workspace-bootstrap-cutover/tasks/`
+- Checklist: `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-002-doctor-check-and-workspace-bootstrap-cutover/tasks/checklist.md`
+- CSV: `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-002-doctor-check-and-workspace-bootstrap-cutover/tasks/tasks.csv`
+- Review: `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-002-doctor-check-and-workspace-bootstrap-cutover/review/`
+- Note: `2026-04-18` 已完成 `project-114 / sprint-001-contract-bootstrap-and-readiness-cutover` closeout，并激活 `sprint-002-doctor-check-and-workspace-bootstrap-cutover` 作为当前 primary execution surface；后续 sprint-003 ~ sprint-005 保持 planned follow-up streams，默认 review 输出路径锁定到当前 active sprint 的 `review/`。
 
 ## Active Streams
 
-- none.
+- `stream-project-114-sprint-002`: project=`project-114-vscode-plugin-full-ownership-and-zero-cli-user-path`, sprint=`sprint-002-doctor-check-and-workspace-bootstrap-cutover`, docs=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path`, plan=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-002-doctor-check-and-workspace-bootstrap-cutover/plan.md`, tasks=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-002-doctor-check-and-workspace-bootstrap-cutover/tasks/`, checklist=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-002-doctor-check-and-workspace-bootstrap-cutover/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-002-doctor-check-and-workspace-bootstrap-cutover/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-002-doctor-check-and-workspace-bootstrap-cutover/review/`, status=`active`
 
 ## Planned Follow-Up Streams
 
-- none.
+- `stream-project-114-sprint-003`: project=`project-114-vscode-plugin-full-ownership-and-zero-cli-user-path`, sprint=`sprint-003-adopt-host-verify-upgrade-service-native-cutover`, docs=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path`, plan=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-003-adopt-host-verify-upgrade-service-native-cutover/plan.md`, tasks=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-003-adopt-host-verify-upgrade-service-native-cutover/tasks/`, checklist=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-003-adopt-host-verify-upgrade-service-native-cutover/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-003-adopt-host-verify-upgrade-service-native-cutover/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-003-adopt-host-verify-upgrade-service-native-cutover/review/`, status=`planned`
+- `stream-project-114-sprint-004`: project=`project-114-vscode-plugin-full-ownership-and-zero-cli-user-path`, sprint=`sprint-004-workflow-authoring-run-review-and-automation-primaryization`, docs=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path`, plan=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-004-workflow-authoring-run-review-and-automation-primaryization/plan.md`, tasks=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-004-workflow-authoring-run-review-and-automation-primaryization/tasks/`, checklist=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-004-workflow-authoring-run-review-and-automation-primaryization/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-004-workflow-authoring-run-review-and-automation-primaryization/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-004-workflow-authoring-run-review-and-automation-primaryization/review/`, status=`planned`
+- `stream-project-114-sprint-005`: project=`project-114-vscode-plugin-full-ownership-and-zero-cli-user-path`, sprint=`sprint-005-support-truth-migration-and-cli-deprecation-closeout`, docs=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path`, plan=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/review/`, status=`planned`
 
 ## Completed Stream History
 

@@ -1,0 +1,59 @@
+# checklist
+
+- [x] TK-963 freeze plugin full-ownership and zero-cli bootstrap contract
+  - 2026-04-18：任务创建，状态初始化为 `planned`。
+  - 2026-04-18：冻结了 zero-cli bootstrap/readiness 的扩展契约面，新增 workspace-bootstrap / doctor / check / workflow-authoring command ids、capability classes、manifest activation events 与本地化标题；当前任务切换为 `completed`。
+- [x] TK-964 implement plugin-native bootstrap and readiness service seams
+  - 2026-04-18：任务创建，状态初始化为 `planned`。
+  - 2026-04-18：补齐了 orchestration-service client、sidecar host/client、core service shell/runtime 与 extension service runtime 的 typed workspace-ops seam，让 bootstrap/readiness 与 secure-authoring 默认走 service-backed 路径；当前任务切换为 `completed`。
+- [x] TK-965 land editor-native bootstrap readiness and migration surfaces
+  - 2026-04-18：任务创建，状态初始化为 `planned`。
+  - 2026-04-18：将 workbench overview、workflow studio、host activation、temporary bridge action 与 bootstrap/readiness 节点切换为 editor-native service-backed surface，并同步更新 extension tests；当前任务切换为 `completed`。
+- [x] TK-966 prepare sprint-001 exit acceptance and sprint-002 handoff
+  - 2026-04-18：任务创建，状态初始化为 `planned`。
+  - 2026-04-18：已形成 sprint-001 的 acceptance package，包含 service-owned zero-cli bootstrap/readiness contract、manifest parity、extension tests 与 build evidence；sprint-002 继续保持 planned handoff，等待本 sprint 的 fresh reviewer round 与 closeout task 收口后再激活。
+- [x] TK-983 close sprint-001 boundary and activate sprint-002 execution surface
+  - 2026-04-18：任务创建，状态初始化为 `planned`。
+  - 2026-04-18：sprint-001 的 `TK-963 ~ TK-966` 与 `CR-001 ~ CR-008` 已全部进入终态，closeout 前置条件满足。
+  - 2026-04-18：已将 sprint-001 plan/current-context/completed-stream history 写回 completed truth，并激活 sprint-002 为新的 primary execution surface。
+  - 2026-04-18：closeout 窗口再次核验 `pnpm run check` 与治理同步门禁，sprint-001 boundary 已具备本地 commit 条件。
+- [x] CR-001 sprint-001-contract-bootstrap-and-readiness-cutover delegated review loop round 1
+  - 2026-04-18：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-18：fresh reviewer round 1 返回 3 条 actionable findings；主 agent 复核后全部判定为 `accepted`，问题分别为 temporary bridge preview/execution 参数漂移、upgrade apply 缺少显式人工确认，以及 bootstrap-readiness 失败会打断 workbench/workflow restore。
+  - 2026-04-18：accepted findings 已完成修复：temporary bridge DTO 现在显式携带 `operationKind + operationArguments` 并由 extension 原样转发到 service seam；upgrade apply 需要插件侧显式确认后才会提交 `confirmUpgrade`；bootstrap-readiness probe 失败会降级为 additive omission，不再打断 overview/workflow snapshot。
+  - 2026-04-18：同窗验证 `pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-service-runtime.test.ts`、`pnpm exec vitest run --config vitest.packages.config.ts packages/core-orchestration-service/test/local-orchestration-service-governance-temporary-bridge-catalog.test.ts packages/core-orchestration-service/test/local-orchestration-service-workspace-ops-runtime.test.ts`、`pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test packages/core-orchestration-service/test/local-orchestration-service-governance-temporary-bridge-catalog.test.ts packages/core-orchestration-service/test/local-orchestration-service-workspace-ops-runtime.test.ts` 与 `pnpm run build` 均已通过，当前 round 收口为 `resolved`。
+- [x] CR-002 sprint-001-contract-bootstrap-and-readiness-cutover delegated recheck loop round 2
+  - 2026-04-18：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-18：fresh reviewer round 2 返回 3 条 actionable findings；主 agent 复核后全部判定为 `accepted`，问题分别为 workflow template prompt 取消态仍会执行默认操作、direct workspace commands 缺少 governed error handling，以及未知 `operationKind` 会被 service seam 静默降级为 `workflow preview`。
+  - 2026-04-18：accepted findings 已完成修复：workflow template prompt 现在把 dismiss/cancel 显式区分为 `null` 并直接终止命令；direct workspace commands 统一走 `runWorkspaceOperationWithHandledError(...)`；workspace-ops runtime 对未知 `operationKind` 改为显式 fail closed。
+  - 2026-04-18：同窗验证 `pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts packages/core-orchestration-service/test/local-orchestration-service-workspace-ops-runtime.test.ts`、`pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test packages/core-orchestration-service/test/local-orchestration-service-governance-temporary-bridge-catalog.test.ts packages/core-orchestration-service/test/local-orchestration-service-workspace-ops-runtime.test.ts` 与 `pnpm run build` 均已通过，当前 round 收口为 `resolved`。
+- [x] CR-003 sprint-001-contract-bootstrap-and-readiness-cutover delegated recheck loop round 3
+  - 2026-04-18：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-18：fresh reviewer round 3 返回 2 条 actionable findings；主 agent 复核后全部判定为 `accepted`，问题分别为 workspace operations 仍继承通用 10 秒 sidecar RPC timeout，以及 `HOST_PACK` fallback `bundleDir` 未按所选 host 推导。
+  - 2026-04-18：accepted findings 已完成修复：workspace-operation RPC 现在使用单独的长超时预算 `workspaceOperationRequestTimeoutMs`，并补了 sidecar timeout regression test；`HOST_PACK` fallback bundle 目录改为按 `host` 推导，并补了 host-derived bundleDir test。
+  - 2026-04-18：同窗验证 `pnpm exec vitest run --config vitest.packages.config.ts packages/core-orchestration-service/test/local-orchestration-service-workspace-ops-runtime.test.ts packages/core-orchestration-service/test/local-orchestration-service-sidecar-client.timeout.test.ts`、`pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test packages/core-orchestration-service/test/local-orchestration-service-governance-temporary-bridge-catalog.test.ts packages/core-orchestration-service/test/local-orchestration-service-workspace-ops-runtime.test.ts packages/core-orchestration-service/test/local-orchestration-service-sidecar-client.timeout.test.ts` 与 `pnpm run build` 均已通过，当前 round 收口为 `resolved`。
+- [x] CR-004 sprint-001-contract-bootstrap-and-readiness-cutover delegated recheck loop round 4
+  - 2026-04-18：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-18：fresh reviewer round 4 返回 1 条 actionable finding；主 agent 复核后判定为 `accepted`，问题为 sidecar-backed secure-authoring / config mutation / managed-secret mutation 路径未把 locale 传给 embedded CLI，导致 zh-CN 用户会看到英文降级信息或 warning。
+  - 2026-04-18：accepted finding 已完成修复：locale 已纳入 secure-authoring request DTO，并贯穿 extension runtime、service client、sidecar host/shell 与 workspace-ops runtime；同时补了 sidecar-backed `zh-CN` 回归测试。
+  - 2026-04-18：同窗验证 `pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test/vscode-extension-service-runtime.test.ts packages/core-orchestration-service/test/local-orchestration-service-workspace-ops-runtime.test.ts`、`pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test packages/core-orchestration-service/test/local-orchestration-service-governance-temporary-bridge-catalog.test.ts packages/core-orchestration-service/test/local-orchestration-service-workspace-ops-runtime.test.ts packages/core-orchestration-service/test/local-orchestration-service-sidecar-client.timeout.test.ts`、`pnpm run build` 与 `pnpm run check` 均已通过，当前 round 收口为 `resolved`。
+- [x] CR-005 sprint-001-contract-bootstrap-and-readiness-cutover delegated recheck loop round 5
+  - 2026-04-18：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-18：fresh reviewer round 5 返回 2 条 actionable findings；主 agent 复核后全部判定为 `accepted`，问题分别为 workspace-op runtime 仍有英文直出用户文案，以及 upgrade report lookup 引入了未标注的动态 `require('node:fs')`。
+  - 2026-04-18：accepted findings 已完成修复：workspace-op runtime 的用户可见错误/回退文案统一改为 locale-aware `localizeText` bridge；`resolveLatestUpgradeReportPath()` 改回静态 `readdirSync` import。
+  - 2026-04-18：同窗验证 `pnpm exec vitest run --config vitest.packages.config.ts packages/core-orchestration-service/test/local-orchestration-service-workspace-ops-runtime.test.ts`、`pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test packages/core-orchestration-service/test/local-orchestration-service-governance-temporary-bridge-catalog.test.ts packages/core-orchestration-service/test/local-orchestration-service-workspace-ops-runtime.test.ts packages/core-orchestration-service/test/local-orchestration-service-sidecar-client.timeout.test.ts`、`pnpm run build` 与 `pnpm run check` 均已通过，当前 round 收口为 `resolved`。
+- [x] CR-006 sprint-001-contract-bootstrap-and-readiness-cutover delegated recheck loop round 6
+  - 2026-04-18：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-18：fresh reviewer round 6 返回 2 条 actionable findings；主 agent 复核后全部判定为 `accepted`，问题分别为 doctor workspace op 丢失 adapter-readiness argv，以及 bootstrap readiness 节点把内部 action id/英文标签直接暴露给终端用户。
+  - 2026-04-18：accepted findings 已完成修复：doctor workspace op 改为固定复用 `doctor --adapters --output pretty` argv；bootstrap readiness 节点改为本地化 label 与用户导向 guidance，并补齐回归测试。
+  - 2026-04-18：同窗验证 `pnpm exec vitest run --config vitest.packages.config.ts packages/core-orchestration-service/test/local-orchestration-service-workspace-ops-runtime.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts`、`pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test packages/core-orchestration-service/test/local-orchestration-service-governance-temporary-bridge-catalog.test.ts packages/core-orchestration-service/test/local-orchestration-service-workspace-ops-runtime.test.ts packages/core-orchestration-service/test/local-orchestration-service-sidecar-client.timeout.test.ts`、`pnpm run build` 与 `pnpm run check` 均已通过，当前 round 收口为 `resolved`。
+- [x] CR-007 sprint-001-contract-bootstrap-and-readiness-cutover delegated recheck loop round 7
+  - 2026-04-18：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-18：fresh reviewer round 7 返回 1 条 actionable finding；主 agent 复核后判定为 `accepted`，问题为 bootstrap readiness action 仍以跨包裸字符串形式流转，缺少 shared typed finite-set contract。
+  - 2026-04-18：accepted finding 已完成修复：bootstrap readiness action 提升为 shared exported enum，DTO、service producer、VS Code presenter 与相关测试统一复用同一 finite-set contract。
+  - 2026-04-18：同窗验证 `pnpm exec vitest run --config vitest.packages.config.ts packages/core-orchestration-service/test/local-orchestration-service-workspace-ops-runtime.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts`、`pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test packages/core-orchestration-service/test/local-orchestration-service-governance-temporary-bridge-catalog.test.ts packages/core-orchestration-service/test/local-orchestration-service-workspace-ops-runtime.test.ts packages/core-orchestration-service/test/local-orchestration-service-sidecar-client.timeout.test.ts`、`pnpm run build` 与 `pnpm run check` 均已通过，当前 round 收口为 `resolved`。
+- [x] CR-008 sprint-001-contract-bootstrap-and-readiness-cutover delegated recheck loop round 8
+  - 2026-04-18：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-18：fresh reviewer round 8 返回 1 条 actionable finding；主 agent 复核后判定为 `accepted`，问题为 workflow studio / tree command 仍以 staging wording 描述会立即执行的 temporary bridge operation。
+  - 2026-04-18：accepted finding 已完成修复：temporary bridge tree/workflow CTA 统一改为 run semantics，preview wording 仅保留在 command preview 节点，同时补齐 presentation builder 回归断言。
+  - 2026-04-18：同窗验证 `pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test packages/core-orchestration-service/test/local-orchestration-service-governance-temporary-bridge-catalog.test.ts packages/core-orchestration-service/test/local-orchestration-service-workspace-ops-runtime.test.ts packages/core-orchestration-service/test/local-orchestration-service-sidecar-client.timeout.test.ts`、`pnpm run build` 与 `pnpm run check` 均已通过，当前 round 收口为 `resolved`。

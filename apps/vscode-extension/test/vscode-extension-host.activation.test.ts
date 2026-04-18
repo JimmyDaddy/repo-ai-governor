@@ -144,6 +144,30 @@ describe('VsCodeExtensionHost activation', () => {
       expect.any(Function),
     );
     expect(vscodeActivationMock.registerCommand).toHaveBeenCalledWith(
+      'repoAiGovernor.runWorkspaceBootstrap',
+      expect.any(Function),
+    );
+    expect(vscodeActivationMock.registerCommand).toHaveBeenCalledWith(
+      'repoAiGovernor.runDoctor',
+      expect.any(Function),
+    );
+    expect(vscodeActivationMock.registerCommand).toHaveBeenCalledWith(
+      'repoAiGovernor.runCheck',
+      expect.any(Function),
+    );
+    expect(vscodeActivationMock.registerCommand).toHaveBeenCalledWith(
+      'repoAiGovernor.runWorkflowPreview',
+      expect.any(Function),
+    );
+    expect(vscodeActivationMock.registerCommand).toHaveBeenCalledWith(
+      'repoAiGovernor.runWorkflowCreate',
+      expect.any(Function),
+    );
+    expect(vscodeActivationMock.registerCommand).toHaveBeenCalledWith(
+      'repoAiGovernor.runWorkflowEdit',
+      expect.any(Function),
+    );
+    expect(vscodeActivationMock.registerCommand).toHaveBeenCalledWith(
       'repoAiGovernor.openReviewDetail',
       expect.any(Function),
     );

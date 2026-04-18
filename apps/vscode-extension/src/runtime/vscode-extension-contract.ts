@@ -112,6 +112,24 @@ export class VsCodeExtensionContract {
     return [
       this.createCommand(VSCODE_EXTENSION_COMMAND_IDS.REFRESH, 'commands.refresh.title'),
       this.createCommand(
+        VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKSPACE_BOOTSTRAP,
+        'commands.runWorkspaceBootstrap.title',
+      ),
+      this.createCommand(VSCODE_EXTENSION_COMMAND_IDS.RUN_DOCTOR, 'commands.runDoctor.title'),
+      this.createCommand(VSCODE_EXTENSION_COMMAND_IDS.RUN_CHECK, 'commands.runCheck.title'),
+      this.createCommand(
+        VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKFLOW_PREVIEW,
+        'commands.runWorkflowPreview.title',
+      ),
+      this.createCommand(
+        VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKFLOW_CREATE,
+        'commands.runWorkflowCreate.title',
+      ),
+      this.createCommand(
+        VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKFLOW_EDIT,
+        'commands.runWorkflowEdit.title',
+      ),
+      this.createCommand(
         VSCODE_EXTENSION_COMMAND_IDS.OPEN_REVIEW_DETAIL,
         'commands.openReviewDetail.title',
       ),

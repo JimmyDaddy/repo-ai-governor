@@ -12,6 +12,7 @@ import {
 import { LocalOrchestrationServiceSidecarClient } from '@repo-ai-governor/core-orchestration-service/sidecar-client';
 import type {
   OrchestrationArtifactPaneQueryResponse,
+  OrchestrationBootstrapReadinessSnapshot,
   OrchestrationExecutionBoardEntry,
   OrchestrationExecutionBoardQueryResponse,
   OrchestrationExecutionSummary,
@@ -26,6 +27,8 @@ import type {
   OrchestrationSubmitHitlDecisionResponse,
   OrchestrationTerminateExecutionRequest,
   OrchestrationTerminateExecutionResponse,
+  OrchestrationWorkspaceOperationKind,
+  OrchestrationWorkspaceOperationResponse,
 } from '@repo-ai-governor/orchestration-service-client';
 import {
   OrchestrationClientSurface as OrchestrationClientSurfaceValue,
@@ -148,6 +151,7 @@ export class VsCodeExtensionServiceRuntime {
   private readonly embeddedCliExecutor: (
     request: VsCodeExtensionEmbeddedCliRequest,
   ) => Promise<unknown>;
+  private readonly preferEmbeddedCliExecutor: boolean;
   private readonly workspaceConfigDiscovery: Pick<
     WorkspaceConfigDiscoveryService,
     'loadRepositoryWorkspaceConfig'
@@ -162,6 +166,7 @@ export class VsCodeExtensionServiceRuntime {
     this.pathExists = dependencies.pathExists ?? existsSync;
     this.embeddedCliExecutor =
       dependencies.embeddedCliExecutor ?? this.executeEmbeddedCliCommand.bind(this);
+    this.preferEmbeddedCliExecutor = Boolean(dependencies.embeddedCliExecutor);
     this.workspaceConfigDiscovery = new WorkspaceConfigDiscoveryService(
       this.configLoader,
       this.workspaceResolver,
@@ -419,17 +424,27 @@ export class VsCodeExtensionServiceRuntime {
   public async resolveWorkbenchOverviewSnapshot(
     selection: VsCodeExtensionSelectionSnapshot,
   ): Promise<VsCodeExtensionWorkbenchOverviewSnapshot> {
-    const [workspaceContext, queueOverview, secureAuthoring, selectedExecution] = await Promise.all(
-      [
-        this.resolveWorkspaceContextSnapshot(),
-        this.queryQueueOverview(),
-        this.resolveSecureAuthoringSnapshot(),
-        this.resolveSelectedExecution(selection),
-      ],
-    );
+    const [
+      workspaceContext,
+      bootstrapReadiness,
+      queueOverview,
+      secureAuthoring,
+      selectedExecution,
+    ] = await Promise.all([
+      this.resolveWorkspaceContextSnapshot(),
+      this.queryBootstrapReadiness(),
+      this.queryQueueOverview(),
+      this.resolveSecureAuthoringSnapshot(),
+      this.resolveSelectedExecution(selection),
+    ]);
 
     return {
       workspaceContext,
+      ...(bootstrapReadiness
+        ? {
+            bootstrapReadiness,
+          }
+        : {}),
       queueOverview,
       ...(secureAuthoring
         ? {
@@ -457,14 +472,19 @@ export class VsCodeExtensionServiceRuntime {
   public async resolveWorkflowStudioSnapshot(
     selection: VsCodeExtensionSelectionSnapshot,
   ): Promise<VsCodeExtensionWorkflowStudioSnapshot> {
-    const [workspaceContext, queueOverview, secureAuthoring, selectedExecution] = await Promise.all(
-      [
-        this.resolveWorkspaceContextSnapshot(),
-        this.queryQueueOverview(),
-        this.resolveSecureAuthoringSnapshot(),
-        this.resolveSelectedExecution(selection),
-      ],
-    );
+    const [
+      workspaceContext,
+      bootstrapReadiness,
+      queueOverview,
+      secureAuthoring,
+      selectedExecution,
+    ] = await Promise.all([
+      this.resolveWorkspaceContextSnapshot(),
+      this.queryBootstrapReadiness(),
+      this.queryQueueOverview(),
+      this.resolveSecureAuthoringSnapshot(),
+      this.resolveSelectedExecution(selection),
+    ]);
     const [artifactPane, sessionContinuity] = await Promise.all([
       selectedExecution
         ? this.queryArtifactPaneForExecution(
@@ -477,6 +497,11 @@ export class VsCodeExtensionServiceRuntime {
 
     return {
       workspaceContext,
+      ...(bootstrapReadiness
+        ? {
+            bootstrapReadiness,
+          }
+        : {}),
       queueOverview,
       ...(secureAuthoring
         ? {
@@ -556,9 +581,28 @@ export class VsCodeExtensionServiceRuntime {
   }
 
   /**
-   * Resolves user-config + secret-backend readiness through the embedded CLI JSON contract.
-   * @returns One additive readiness snapshot, or a degraded snapshot when the embedded contract
-   * cannot be reached safely.
+   * Resolves bootstrap/readiness facts through the local orchestration service seam.
+   * @returns Service-owned bootstrap readiness snapshot when a workspace is open.
+   */
+  public async queryBootstrapReadiness(): Promise<
+    OrchestrationBootstrapReadinessSnapshot | undefined
+  > {
+    const client = await this.resolveClient();
+    if (!client) {
+      return undefined;
+    }
+
+    try {
+      return await client.queryBootstrapReadiness();
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
+   * Resolves user-config + secret-backend readiness through the service-owned workspace ops seam.
+   * @returns One additive readiness snapshot, or a degraded snapshot when the service cannot
+   * project the secure-authoring surface safely.
    */
   public async resolveSecureAuthoringSnapshot(): Promise<
     VsCodeExtensionSecureAuthoringSnapshot | undefined
@@ -577,10 +621,23 @@ export class VsCodeExtensionServiceRuntime {
     }
 
     this.secureAuthoringRepositoryRoot = serviceWorkspaceContext.repositoryRoot;
-    this.secureAuthoringSnapshotPromise = this.loadSecureAuthoringSnapshot(
-      serviceWorkspaceContext.repositoryRoot,
-    ).then((snapshot) => {
-      if (snapshot.degradedReason) {
+    this.secureAuthoringSnapshotPromise = (async () => {
+      try {
+        if (this.preferEmbeddedCliExecutor) {
+          return await this.loadSecureAuthoringSnapshot(serviceWorkspaceContext.repositoryRoot);
+        }
+
+        const client = await this.requireClient();
+        return await client.querySecureAuthoring({
+          locale: this.resolveEmbeddedCliLocale(),
+        });
+      } catch (error) {
+        return {
+          degradedReason: standardizeError(error).message,
+        };
+      }
+    })().then((snapshot) => {
+      if (snapshot?.degradedReason) {
         this.clearSecureAuthoringSnapshotCache();
       }
       return snapshot;
@@ -589,7 +646,7 @@ export class VsCodeExtensionServiceRuntime {
   }
 
   /**
-   * Persists one user-local default value through the embedded CLI contract.
+   * Persists one user-local default value through the service-owned workspace ops seam.
    * @param keyPath Canonical user-config key path.
    * @param value Validated user-local default value.
    * @returns Redacted mutation summary plus canonical config path.
@@ -602,26 +659,40 @@ export class VsCodeExtensionServiceRuntime {
     configPath?: string;
     persistedValue?: string;
   }> {
-    const repositoryRoot = this.requireRepositoryRootForEmbeddedCli();
-    const payload = await this.executeEmbeddedCliJsonCommand(
-      {
-        args: ['config', 'set', keyPath, value],
-        currentWorkingDirectory: repositoryRoot,
-      },
-      'Failed to persist the requested user-local default.',
-      '写入请求的用户本地默认值失败。',
-    );
+    const payload = this.preferEmbeddedCliExecutor
+      ? await this.executeEmbeddedCliJsonCommand(
+          {
+            args: ['config', 'set', keyPath, value],
+            currentWorkingDirectory: this.requireRepositoryRootForEmbeddedCli(),
+          },
+          'Failed to persist the requested user-local default.',
+          '写入请求的用户本地默认值失败。',
+        )
+      : await (await this.requireClient()).setUserConfigValue({
+          keyPath,
+          value,
+          locale: this.resolveEmbeddedCliLocale(),
+        });
     this.clearSecureAuthoringSnapshotCache();
     return {
-      message: this.readPayloadMessage(payload),
-      configPath: this.readDetailString(payload, 'config_path'),
-      persistedValue: this.readDetailString(payload, 'value'),
+      message:
+        typeof payload.message === 'string' && payload.message.trim().length > 0
+          ? payload.message
+          : this.readPayloadMessage(payload as VsCodeExtensionCliCommandSuccessPayload),
+      configPath:
+        'configPath' in payload
+          ? payload.configPath
+          : this.readDetailString(payload, 'config_path'),
+      persistedValue:
+        'persistedValue' in payload
+          ? payload.persistedValue
+          : this.readDetailString(payload, 'value'),
     };
   }
 
   /**
-   * Persists one managed secret value through the embedded CLI contract without exposing the raw
-   * value to argv, transcript, or local command previews.
+   * Persists one managed secret value through the service-owned workspace ops seam without
+   * exposing the raw value to argv, transcript, or local command previews.
    * @param keyName Canonical managed secret key.
    * @param value Raw secret value that will be written through stdin only.
    * @param backendId Optional explicit backend override.
@@ -637,23 +708,66 @@ export class VsCodeExtensionServiceRuntime {
     backendId?: string;
     warning?: string;
   }> {
-    const repositoryRoot = this.requireRepositoryRootForEmbeddedCli();
-    const payload = await this.executeEmbeddedCliJsonCommand(
-      {
-        args: ['secret', 'set', keyName, ...(backendId ? ['--backend', backendId] : []), '--stdin'],
-        currentWorkingDirectory: repositoryRoot,
-        stdin: value,
-      },
-      'Failed to write the requested managed secret.',
-      '写入请求的受管 secret 失败。',
-    );
+    const payload = this.preferEmbeddedCliExecutor
+      ? await this.executeEmbeddedCliJsonCommand(
+          {
+            args: [
+              'secret',
+              'set',
+              keyName,
+              ...(backendId ? ['--backend', backendId] : []),
+              '--stdin',
+            ],
+            currentWorkingDirectory: this.requireRepositoryRootForEmbeddedCli(),
+            stdin: value,
+          },
+          'Failed to write the requested managed secret.',
+          '写入请求的受管 secret 失败。',
+        )
+      : await (await this.requireClient()).setManagedSecret({
+          keyName,
+          value,
+          locale: this.resolveEmbeddedCliLocale(),
+          ...(backendId
+            ? {
+                backendId,
+              }
+            : {}),
+        });
     this.clearSecureAuthoringSnapshotCache();
     return {
-      message: this.readPayloadMessage(payload),
-      selector: this.readDetailString(payload, 'selector'),
-      backendId: this.readDetailString(payload, 'backend'),
-      warning: this.readDetailString(payload, 'warning'),
+      message:
+        typeof payload.message === 'string' && payload.message.trim().length > 0
+          ? payload.message
+          : this.readPayloadMessage(payload as VsCodeExtensionCliCommandSuccessPayload),
+      selector:
+        'selector' in payload ? payload.selector : this.readDetailString(payload, 'selector'),
+      backendId:
+        'backendId' in payload ? payload.backendId : this.readDetailString(payload, 'backend'),
+      warning: 'warning' in payload ? payload.warning : this.readDetailString(payload, 'warning'),
     };
+  }
+
+  /**
+   * Runs one service-owned workspace operation and returns the structured result.
+   * @param operationKind Stable workspace operation kind.
+   * @param arguments Optional operation-specific arguments.
+   * @returns Structured execution summary from the local orchestration service.
+   */
+  public async runWorkspaceOperation(
+    operationKind: OrchestrationWorkspaceOperationKind,
+    argumentsRecord?: Record<string, boolean | number | string | readonly string[] | null>,
+  ): Promise<OrchestrationWorkspaceOperationResponse> {
+    const client = await this.requireClient();
+    return client.runWorkspaceOperation({
+      operationKind,
+      locale: this.resolveEmbeddedCliLocale(),
+      ...(argumentsRecord
+        ? {
+            arguments: argumentsRecord,
+          }
+        : {}),
+    });
   }
 
   /**

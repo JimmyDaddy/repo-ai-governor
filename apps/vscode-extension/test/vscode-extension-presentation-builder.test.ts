@@ -1,4 +1,5 @@
 import {
+  OrchestrationBootstrapReadinessActionId,
   OrchestrationClientSurface,
   OrchestrationExecutionKind,
   OrchestrationExecutionStatus,
@@ -371,6 +372,19 @@ describe('VsCodeExtensionPresentationBuilder', () => {
           unresolvedCredentialRefs: [],
         },
       },
+      bootstrapReadiness: {
+        workspaceId: 'workspace-1',
+        repositoryRoot: '/repo',
+        workspaceRoot: '/repo/.repo-ai-governor',
+        configPath: '/repo/.repo-ai-governor/governor.yaml',
+        configExists: false,
+        workspaceMode: 'repo_local',
+        workspaceModeSource: 'config',
+        recommendedActions: [
+          OrchestrationBootstrapReadinessActionId.RUN_WORKSPACE_BOOTSTRAP,
+          OrchestrationBootstrapReadinessActionId.REFRESH_WORKSPACE_STATE,
+        ],
+      },
       selectedExecution: createExecutionBoardEntry(),
       reviewSourcePath: '/repo/.repo-ai-governor/review/resolved.md',
     });
@@ -380,6 +394,9 @@ describe('VsCodeExtensionPresentationBuilder', () => {
         'Workspace root',
         'Workspace trust',
         'Trust-sensitive actions',
+        'User-local defaults',
+        'Secret readiness',
+        'Bootstrap readiness',
         'Public support level',
         'Desktop relationship',
         'Workflow studio gate',
@@ -387,13 +404,16 @@ describe('VsCodeExtensionPresentationBuilder', () => {
         'Review queue',
         'Automation queue',
         'Multi-workspace overview',
-        'Temporary CLI bridges',
-        'User-local defaults',
-        'Secret readiness',
+        'Parallel execution lanes',
+        'Workspace operations',
+        'Governed repository operations',
         'Service lifecycle',
         'Service topology',
         'Checkpoint support',
         'Memory provider',
+        'Active editor',
+        'Selected execution',
+        'Review source',
       ]),
     );
     expect(
@@ -417,6 +437,9 @@ describe('VsCodeExtensionPresentationBuilder', () => {
     expect(nodes.find((node) => node.nodeId === 'memory-provider')?.description).toBe(
       '@repo-ai-governor/memory-provider-sqlite-fs',
     );
+    expect(nodes.find((node) => node.nodeId === 'bootstrap-readiness')?.tooltip).toContain(
+      'Recommended actions: Run workspace bootstrap, Refresh governance views',
+    );
     expect(
       nodes
         .find((node) => node.nodeId === 'user-default-authoring')
@@ -431,6 +454,55 @@ describe('VsCodeExtensionPresentationBuilder', () => {
           (child) => child.command?.command === VSCODE_EXTENSION_COMMAND_IDS.SET_MANAGED_SECRET,
         ),
     ).toBe(true);
+  });
+
+  it('localizes bootstrap readiness labels and action guidance for zh-CN users', () => {
+    const zhBuilder = new VsCodeExtensionPresentationBuilder({
+      localizeText: (_english: string, chinese: string) => chinese,
+    });
+    const nodes = zhBuilder.buildWorkbenchOverviewNodes({
+      workspaceContext: {
+        workspaceLabel: 'ai-governor',
+        workspaceRoot: '/repo',
+        workspaceTrusted: true,
+      },
+      queueOverview: {
+        generatedAt: '2026-04-17T10:00:00.000Z',
+        automationInbox: [],
+        reviewQueue: [],
+        parallelLanes: [],
+        workspaceSummary: [],
+        temporaryBridges: [],
+        notificationOwnership: {
+          ownerSurface: OrchestrationClientSurface.DESKTOP,
+          pendingItemCount: 0,
+          dueSoonItemCount: 0,
+          overdueItemCount: 0,
+          activeWorkspaceCount: 1,
+          defaultFollowUpSlaMinutes: 60,
+          notificationStatus: OrchestrationGovernanceNotificationStatus.IDLE,
+        },
+      },
+      bootstrapReadiness: {
+        workspaceId: 'workspace-1',
+        repositoryRoot: '/repo',
+        workspaceRoot: '/repo/.repo-ai-governor',
+        configPath: '/repo/.repo-ai-governor/governor.yaml',
+        configExists: false,
+        workspaceMode: 'repo_local',
+        workspaceModeSource: 'config',
+        recommendedActions: [
+          OrchestrationBootstrapReadinessActionId.RUN_WORKSPACE_BOOTSTRAP,
+          OrchestrationBootstrapReadinessActionId.REFRESH_WORKSPACE_STATE,
+        ],
+      },
+    });
+
+    const bootstrapNode = nodes.find((node) => node.nodeId === 'bootstrap-readiness');
+
+    expect(bootstrapNode?.label).toBe('初始化就绪度');
+    expect(bootstrapNode?.tooltip).toContain('建议动作: 执行工作区初始化, 刷新治理视图');
+    expect(bootstrapNode?.tooltip).not.toContain('run_workspace_bootstrap');
   });
 
   it('renders automation-queue nodes with bridge-safe service-owned follow-up metadata', () => {
@@ -668,6 +740,8 @@ describe('VsCodeExtensionPresentationBuilder', () => {
     expect(html).toContain('command:repoAiGovernor.terminateExecution');
     expect(html).toContain('command:repoAiGovernor.openHandoffTarget');
     expect(html).toContain('command:repoAiGovernor.stageTemporaryBridge');
+    expect(html).toContain('Run repository operation: Host verify bridge');
+    expect(html).not.toContain('Stage bridge command');
   });
 
   it('surfaces the ready support-truth branch when the selected execution stage is present and no bridge remains', () => {

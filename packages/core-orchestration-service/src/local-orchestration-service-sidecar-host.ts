@@ -70,6 +70,34 @@ export class LocalOrchestrationServiceSidecarHost
     return this.shell.getHealth();
   }
 
+  public queryBootstrapReadiness() {
+    return this.shell.queryBootstrapReadiness();
+  }
+
+  public querySecureAuthoring(
+    request?: Parameters<LocalOrchestrationServiceSidecarDispatchTable['querySecureAuthoring']>[0],
+  ) {
+    return this.shell.querySecureAuthoring(request);
+  }
+
+  public setUserConfigValue(
+    request: Parameters<LocalOrchestrationServiceSidecarDispatchTable['setUserConfigValue']>[0],
+  ) {
+    return this.shell.setUserConfigValue(request);
+  }
+
+  public setManagedSecret(
+    request: Parameters<LocalOrchestrationServiceSidecarDispatchTable['setManagedSecret']>[0],
+  ) {
+    return this.shell.setManagedSecret(request);
+  }
+
+  public runWorkspaceOperation(
+    request: Parameters<LocalOrchestrationServiceSidecarDispatchTable['runWorkspaceOperation']>[0],
+  ) {
+    return this.shell.runWorkspaceOperation(request);
+  }
+
   public startExecution(payload: LocalOrchestrationServiceSidecarStartExecutionPayload) {
     return this.shell.startExecution(payload.request, payload.runtimeContext);
   }
@@ -238,6 +266,32 @@ export class LocalOrchestrationServiceSidecarHost
     switch (operation) {
       case LocalOrchestrationServiceSidecarOperation.GET_HEALTH:
         return this.getHealth();
+      case LocalOrchestrationServiceSidecarOperation.QUERY_BOOTSTRAP_READINESS:
+        return this.queryBootstrapReadiness();
+      case LocalOrchestrationServiceSidecarOperation.QUERY_SECURE_AUTHORING:
+        return this.querySecureAuthoring(
+          payload as Parameters<
+            LocalOrchestrationServiceSidecarDispatchTable['querySecureAuthoring']
+          >[0],
+        );
+      case LocalOrchestrationServiceSidecarOperation.SET_USER_CONFIG_VALUE:
+        return this.setUserConfigValue(
+          this.assertPayload<
+            Parameters<LocalOrchestrationServiceSidecarDispatchTable['setUserConfigValue']>[0]
+          >(payload, operation),
+        );
+      case LocalOrchestrationServiceSidecarOperation.SET_MANAGED_SECRET:
+        return this.setManagedSecret(
+          this.assertPayload<
+            Parameters<LocalOrchestrationServiceSidecarDispatchTable['setManagedSecret']>[0]
+          >(payload, operation),
+        );
+      case LocalOrchestrationServiceSidecarOperation.RUN_WORKSPACE_OPERATION:
+        return this.runWorkspaceOperation(
+          this.assertPayload<
+            Parameters<LocalOrchestrationServiceSidecarDispatchTable['runWorkspaceOperation']>[0]
+          >(payload, operation),
+        );
       case LocalOrchestrationServiceSidecarOperation.START_EXECUTION:
         return this.startExecution(
           this.assertPayload<LocalOrchestrationServiceSidecarStartExecutionPayload>(

@@ -173,6 +173,33 @@ export enum OrchestrationGovernanceTemporaryBridgeExitCriterion {
 }
 
 /**
+ * Defines service-owned workspace operations exposed to IDE workbench consumers.
+ */
+export enum OrchestrationBootstrapReadinessActionId {
+  RUN_WORKSPACE_BOOTSTRAP = 'run_workspace_bootstrap',
+  REFRESH_WORKSPACE_STATE = 'refresh_workspace_state',
+}
+
+/**
+ * Defines service-owned workspace operations exposed to IDE workbench consumers.
+ */
+export enum OrchestrationWorkspaceOperationKind {
+  WORKSPACE_BOOTSTRAP = 'workspace_bootstrap',
+  DOCTOR = 'doctor',
+  CHECK = 'check',
+  ADOPT_BOOTSTRAP = 'adopt_bootstrap',
+  ADOPTION_APPLY = 'adoption_apply',
+  HOST_EXPORT = 'host_export',
+  HOST_VERIFY = 'host_verify',
+  HOST_PACK = 'host_pack',
+  UPGRADE_PREVIEW = 'upgrade_preview',
+  UPGRADE_APPLY = 'upgrade_apply',
+  WORKFLOW_PREVIEW = 'workflow_preview',
+  WORKFLOW_CREATE = 'workflow_create',
+  WORKFLOW_EDIT = 'workflow_edit',
+}
+
+/**
  * Defines stable handoff target kinds exposed through service-owned governance read models.
  */
 export enum OrchestrationHandoffTargetKind {

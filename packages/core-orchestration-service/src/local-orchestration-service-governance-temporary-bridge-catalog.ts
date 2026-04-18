@@ -7,6 +7,7 @@ import {
   type OrchestrationGovernanceTemporaryBridgeEntry,
   OrchestrationGovernanceTemporaryBridgeExitCriterion,
   OrchestrationGovernanceTemporaryBridgeReceiptKind,
+  OrchestrationWorkspaceOperationKind,
 } from '@repo-ai-governor/orchestration-service-client';
 
 interface LocalOrchestrationServiceGovernanceTemporaryBridgeCatalogDependencies {
@@ -47,6 +48,11 @@ export class LocalOrchestrationServiceGovernanceTemporaryBridgeCatalog {
       this.createBridgeEntry({
         bridgeId: 'temporary-bridge-adopt-bootstrap',
         capabilityClass: OrchestrationGovernanceTemporaryBridgeCapabilityClass.ADOPT_BOOTSTRAP,
+        operationKind: OrchestrationWorkspaceOperationKind.ADOPT_BOOTSTRAP,
+        operationArguments: {
+          packSelector: 'adopter-complete',
+          hosts: ['codex', 'claude-code'],
+        },
         previewCommandLine: this.buildPreviewCommandLine([
           'repo-ai-governor',
           'adopt',
@@ -69,6 +75,11 @@ export class LocalOrchestrationServiceGovernanceTemporaryBridgeCatalog {
       this.createBridgeEntry({
         bridgeId: 'temporary-bridge-adoption-apply',
         capabilityClass: OrchestrationGovernanceTemporaryBridgeCapabilityClass.ADOPTION_APPLY,
+        operationKind: OrchestrationWorkspaceOperationKind.ADOPTION_APPLY,
+        operationArguments: {
+          packSelector: 'adopter-complete',
+          hosts: ['codex', 'claude-code', 'github-copilot'],
+        },
         previewCommandLine: this.buildPreviewCommandLine([
           'repo-ai-governor',
           'adopt',
@@ -91,6 +102,12 @@ export class LocalOrchestrationServiceGovernanceTemporaryBridgeCatalog {
       this.createBridgeEntry({
         bridgeId: 'temporary-bridge-host-export',
         capabilityClass: OrchestrationGovernanceTemporaryBridgeCapabilityClass.HOST_EXPORT,
+        operationKind: OrchestrationWorkspaceOperationKind.HOST_EXPORT,
+        operationArguments: {
+          host: 'codex',
+          mode: 'project-local',
+          outputDir: resolve(governanceWorkspaceRoot, 'generated', 'hosts', 'codex'),
+        },
         previewCommandLine: this.buildPreviewCommandLine([
           'repo-ai-governor',
           'host',
@@ -114,6 +131,10 @@ export class LocalOrchestrationServiceGovernanceTemporaryBridgeCatalog {
       this.createBridgeEntry({
         bridgeId: 'temporary-bridge-host-verify',
         capabilityClass: OrchestrationGovernanceTemporaryBridgeCapabilityClass.HOST_VERIFY,
+        operationKind: OrchestrationWorkspaceOperationKind.HOST_VERIFY,
+        operationArguments: {
+          outputDir: resolve(governanceWorkspaceRoot, 'generated', 'hosts', 'github-copilot'),
+        },
         previewCommandLine: this.buildPreviewCommandLine([
           'repo-ai-governor',
           'host',
@@ -133,6 +154,12 @@ export class LocalOrchestrationServiceGovernanceTemporaryBridgeCatalog {
       this.createBridgeEntry({
         bridgeId: 'temporary-bridge-host-pack',
         capabilityClass: OrchestrationGovernanceTemporaryBridgeCapabilityClass.HOST_PACK,
+        operationKind: OrchestrationWorkspaceOperationKind.HOST_PACK,
+        operationArguments: {
+          host: 'claude-code',
+          mode: 'plugin-bundle',
+          bundleDir: resolve(governanceWorkspaceRoot, 'generated', 'bundles', 'claude'),
+        },
         previewCommandLine: this.buildPreviewCommandLine([
           'repo-ai-governor',
           'host',
@@ -160,6 +187,10 @@ export class LocalOrchestrationServiceGovernanceTemporaryBridgeCatalog {
         this.createBridgeEntry({
           bridgeId: 'temporary-bridge-upgrade',
           capabilityClass: OrchestrationGovernanceTemporaryBridgeCapabilityClass.UPGRADE,
+          operationKind: OrchestrationWorkspaceOperationKind.UPGRADE_APPLY,
+          operationArguments: {
+            reportPath: upgradeReportPath,
+          },
           previewCommandLine: this.buildPreviewCommandLine([
             'repo-ai-governor',
             'upgrade',
@@ -188,6 +219,8 @@ export class LocalOrchestrationServiceGovernanceTemporaryBridgeCatalog {
   private createBridgeEntry(options: {
     bridgeId: string;
     capabilityClass: OrchestrationGovernanceTemporaryBridgeCapabilityClass;
+    operationKind: OrchestrationWorkspaceOperationKind;
+    operationArguments?: Record<string, boolean | number | string | readonly string[] | null>;
     commandWorkingDirectory: string;
     governanceWorkspaceRoot: string;
     previewCommandLine: string;
@@ -197,6 +230,12 @@ export class LocalOrchestrationServiceGovernanceTemporaryBridgeCatalog {
     return {
       bridgeId: options.bridgeId,
       capabilityClass: options.capabilityClass,
+      operationKind: options.operationKind,
+      ...(options.operationArguments
+        ? {
+            operationArguments: options.operationArguments,
+          }
+        : {}),
       workspaceRoot: options.governanceWorkspaceRoot,
       commandWorkingDirectory: options.commandWorkingDirectory,
       previewCommandLine: options.previewCommandLine,

@@ -36,14 +36,20 @@ const serviceClientMock = vi.hoisted(() => ({
   queryHitlInbox: vi.fn(),
   queryQueueOverview: vi.fn(),
   queryArtifactPane: vi.fn(),
+  queryBootstrapReadiness: vi.fn(),
+  querySecureAuthoring: vi.fn(),
   getSession: vi.fn(),
   resumeSession: vi.fn(),
+  setUserConfigValue: vi.fn(),
+  setManagedSecret: vi.fn(),
+  runWorkspaceOperation: vi.fn(),
   dispose: vi.fn(),
 }));
 
 const vscodeMock = vi.hoisted(() => ({
   state: {
     trusted: true,
+    language: 'en-US',
     workspaceFolders: [
       {
         name: 'ai-governor',
@@ -73,7 +79,9 @@ vi.mock(
       },
     },
     env: {
-      language: 'en-US',
+      get language() {
+        return vscodeMock.state.language;
+      },
     },
   }),
   { virtual: true },
@@ -91,9 +99,13 @@ vi.mock('@repo-ai-governor/core-orchestration-service/sidecar-client', () => ({
     public readonly queryHitlInbox = serviceClientMock.queryHitlInbox;
     public readonly queryQueueOverview = serviceClientMock.queryQueueOverview;
     public readonly queryArtifactPane = serviceClientMock.queryArtifactPane;
+    public readonly queryBootstrapReadiness = serviceClientMock.queryBootstrapReadiness;
+    public readonly querySecureAuthoring = serviceClientMock.querySecureAuthoring;
     public readonly getSession = serviceClientMock.getSession;
     public readonly resumeSession = serviceClientMock.resumeSession;
-
+    public readonly setUserConfigValue = serviceClientMock.setUserConfigValue;
+    public readonly setManagedSecret = serviceClientMock.setManagedSecret;
+    public readonly runWorkspaceOperation = serviceClientMock.runWorkspaceOperation;
     public readonly dispose = serviceClientMock.dispose;
   },
 }));
@@ -153,10 +165,16 @@ describe('VsCodeExtensionServiceRuntime', () => {
     serviceClientMock.queryHitlInbox.mockReset();
     serviceClientMock.queryQueueOverview.mockReset();
     serviceClientMock.queryArtifactPane.mockReset();
+    serviceClientMock.queryBootstrapReadiness.mockReset();
+    serviceClientMock.querySecureAuthoring.mockReset();
     serviceClientMock.getSession.mockReset();
     serviceClientMock.resumeSession.mockReset();
+    serviceClientMock.setUserConfigValue.mockReset();
+    serviceClientMock.setManagedSecret.mockReset();
+    serviceClientMock.runWorkspaceOperation.mockReset();
     serviceClientMock.dispose.mockReset();
     vscodeMock.state.trusted = true;
+    vscodeMock.state.language = 'en-US';
     vscodeMock.state.workspaceFolders = [
       {
         name: 'ai-governor',
@@ -305,6 +323,94 @@ describe('VsCodeExtensionServiceRuntime', () => {
         },
       },
       reviewSourcePath: '/repo/review.md',
+    });
+  });
+
+  it('keeps workbench overview restorable when bootstrap readiness fails', async () => {
+    serviceClientMock.queryBootstrapReadiness.mockRejectedValueOnce(
+      new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_CANCELLED,
+        'bootstrap readiness restore failed',
+      ),
+    );
+    serviceClientMock.queryExecutionBoard.mockResolvedValueOnce({
+      executions: [],
+      returnedCount: 0,
+      totalMatchedCount: 0,
+    });
+    serviceClientMock.queryQueueOverview.mockResolvedValueOnce({
+      generatedAt: '2026-04-07T03:05:00.000Z',
+      automationInbox: [],
+      reviewQueue: [],
+      parallelLanes: [],
+      workspaceSummary: [],
+      temporaryBridges: [],
+      notificationOwnership: {
+        ownerSurface: OrchestrationClientSurface.DESKTOP,
+        pendingItemCount: 0,
+        dueSoonItemCount: 0,
+        overdueItemCount: 0,
+        activeWorkspaceCount: 1,
+        defaultFollowUpSlaMinutes: 60,
+        notificationStatus: OrchestrationGovernanceNotificationStatus.IDLE,
+      },
+    });
+
+    const runtime = new VsCodeExtensionServiceRuntime();
+
+    await expect(runtime.resolveWorkbenchOverviewSnapshot({})).resolves.toMatchObject({
+      workspaceContext: {
+        workspaceLabel: 'ai-governor',
+        workspaceRoot: '/repo',
+        workspaceTrusted: true,
+      },
+      queueOverview: {
+        generatedAt: '2026-04-07T03:05:00.000Z',
+      },
+    });
+  });
+
+  it('keeps workflow studio restorable when bootstrap readiness fails', async () => {
+    serviceClientMock.queryBootstrapReadiness.mockRejectedValueOnce(
+      new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_CANCELLED,
+        'bootstrap readiness restore failed',
+      ),
+    );
+    serviceClientMock.queryExecutionBoard.mockResolvedValueOnce({
+      executions: [],
+      returnedCount: 0,
+      totalMatchedCount: 0,
+    });
+    serviceClientMock.queryQueueOverview.mockResolvedValueOnce({
+      generatedAt: '2026-04-07T03:05:00.000Z',
+      automationInbox: [],
+      reviewQueue: [],
+      parallelLanes: [],
+      workspaceSummary: [],
+      temporaryBridges: [],
+      notificationOwnership: {
+        ownerSurface: OrchestrationClientSurface.DESKTOP,
+        pendingItemCount: 0,
+        dueSoonItemCount: 0,
+        overdueItemCount: 0,
+        activeWorkspaceCount: 1,
+        defaultFollowUpSlaMinutes: 60,
+        notificationStatus: OrchestrationGovernanceNotificationStatus.IDLE,
+      },
+    });
+
+    const runtime = new VsCodeExtensionServiceRuntime();
+
+    await expect(runtime.resolveWorkflowStudioSnapshot({})).resolves.toMatchObject({
+      workspaceContext: {
+        workspaceLabel: 'ai-governor',
+        workspaceRoot: '/repo',
+        workspaceTrusted: true,
+      },
+      queueOverview: {
+        generatedAt: '2026-04-07T03:05:00.000Z',
+      },
     });
   });
 
@@ -801,6 +907,60 @@ describe('VsCodeExtensionServiceRuntime', () => {
     expect(embeddedCliExecutor).toHaveBeenNthCalledWith(4, {
       args: ['secret', 'list'],
       currentWorkingDirectory: '/repo',
+    });
+  });
+
+  it('threads the active VS Code locale through the sidecar-backed secure-authoring path', async () => {
+    vscodeMock.state.language = 'zh-CN';
+    serviceClientMock.querySecureAuthoring.mockResolvedValueOnce({
+      degradedReason: '中文降级原因',
+    });
+    serviceClientMock.setUserConfigValue.mockResolvedValueOnce({
+      message: '配置已更新',
+      configPath: '/Users/test/.repo-ai-governor/user-config.yaml',
+      persistedValue: 'tool_managed',
+    });
+    serviceClientMock.setManagedSecret.mockResolvedValueOnce({
+      message: 'Secret 已更新',
+      selector: 'secret://openai/api-key',
+      backendId: 'os-keychain',
+      warning: '仅限本地使用',
+    });
+
+    const runtime = new VsCodeExtensionServiceRuntime();
+
+    await expect(runtime.resolveSecureAuthoringSnapshot()).resolves.toEqual({
+      degradedReason: '中文降级原因',
+    });
+    await expect(
+      runtime.setUserConfigValue('workspace.mode_preference', 'tool_managed'),
+    ).resolves.toEqual({
+      message: '配置已更新',
+      configPath: '/Users/test/.repo-ai-governor/user-config.yaml',
+      persistedValue: 'tool_managed',
+    });
+    await expect(
+      runtime.setManagedSecret('openai/api-key', 'sk-managed-secret', 'os-keychain'),
+    ).resolves.toEqual({
+      message: 'Secret 已更新',
+      selector: 'secret://openai/api-key',
+      backendId: 'os-keychain',
+      warning: '仅限本地使用',
+    });
+
+    expect(serviceClientMock.querySecureAuthoring).toHaveBeenCalledWith({
+      locale: 'zh-CN',
+    });
+    expect(serviceClientMock.setUserConfigValue).toHaveBeenCalledWith({
+      keyPath: 'workspace.mode_preference',
+      value: 'tool_managed',
+      locale: 'zh-CN',
+    });
+    expect(serviceClientMock.setManagedSecret).toHaveBeenCalledWith({
+      keyName: 'openai/api-key',
+      value: 'sk-managed-secret',
+      backendId: 'os-keychain',
+      locale: 'zh-CN',
     });
   });
 
