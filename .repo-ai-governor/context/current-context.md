@@ -3,24 +3,24 @@
 ## Primary Stream
 
 - Status: active
-- Stream: `stream-project-115-sprint-005`
-- Project: `project-115-acp-execution-bridge-rollout`
-- Sprint: `sprint-005-external-interoperability-and-rollout-closeout`
-- Docs: `.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout`
-- Plan: `.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-005-external-interoperability-and-rollout-closeout/plan.md`
-- Tasks: `.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-005-external-interoperability-and-rollout-closeout/tasks/`
-- Checklist: `.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-005-external-interoperability-and-rollout-closeout/tasks/checklist.md`
-- CSV: `.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-005-external-interoperability-and-rollout-closeout/tasks/tasks.csv`
-- Review: `.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-005-external-interoperability-and-rollout-closeout/review/`
-- Note: `2026-04-20`：`project-115 / sprint-004-clean-room-execution-and-packaged-evidence` 已在 `CR-001` resolved、`TK-1021` closeout gate 通过后完成 closeout 并移入 completed history；当前继续在同一共享分支上激活 `sprint-005-external-interoperability-and-rollout-closeout`。`project-116-vscode-direct-provider-onboarding-rollout` 仍保持 planned follow-up，待 project-115 完成 closeout 后再切换。
+- Stream: `stream-project-116-sprint-001`
+- Project: `project-116-vscode-direct-provider-onboarding-rollout`
+- Sprint: `sprint-001-contract-and-provider-onboarding-facade`
+- Docs: `.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout`
+- Plan: `.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-001-contract-and-provider-onboarding-facade/plan.md`
+- Tasks: `.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-001-contract-and-provider-onboarding-facade/tasks/`
+- Checklist: `.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-001-contract-and-provider-onboarding-facade/tasks/checklist.md`
+- CSV: `.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-001-contract-and-provider-onboarding-facade/tasks/tasks.csv`
+- Review: `.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-001-contract-and-provider-onboarding-facade/review/`
+- Note: `2026-04-20`：`project-115 / sprint-005-external-interoperability-and-rollout-closeout` 已在 `CR-001` resolved、`TK-1003` final closeout write-back 完成后进入 completed history。当前继续在同一共享分支上激活 `project-116 / sprint-001-contract-and-provider-onboarding-facade`，`TK-1004` 成为新的 active execution boundary。
 
 ## Active Streams
 
-- `stream-project-115-sprint-005`: project=`project-115-acp-execution-bridge-rollout`, sprint=`sprint-005-external-interoperability-and-rollout-closeout`, docs=`.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout`, plan=`.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-005-external-interoperability-and-rollout-closeout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-005-external-interoperability-and-rollout-closeout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-005-external-interoperability-and-rollout-closeout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-005-external-interoperability-and-rollout-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-005-external-interoperability-and-rollout-closeout/review/`, status=`active`, role=`primary`
+- `stream-project-116-sprint-001`: project=`project-116-vscode-direct-provider-onboarding-rollout`, sprint=`sprint-001-contract-and-provider-onboarding-facade`, docs=`.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout`, plan=`.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-001-contract-and-provider-onboarding-facade/plan.md`, tasks=`.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-001-contract-and-provider-onboarding-facade/tasks/`, checklist=`.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-001-contract-and-provider-onboarding-facade/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-001-contract-and-provider-onboarding-facade/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-001-contract-and-provider-onboarding-facade/review/`, status=`active`, role=`primary`
 
 ## Planned Follow-Up Streams
 
-- `stream-project-116-sprint-001`: project=`project-116-vscode-direct-provider-onboarding-rollout`, sprint=`sprint-001-contract-and-provider-onboarding-facade`, docs=`.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout`, plan=`.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-001-contract-and-provider-onboarding-facade/plan.md`, tasks=`.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-001-contract-and-provider-onboarding-facade/tasks/`, checklist=`.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-001-contract-and-provider-onboarding-facade/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-001-contract-and-provider-onboarding-facade/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-001-contract-and-provider-onboarding-facade/review/`, status=`planned`
+- None currently.
 
 ## Completed Stream History
 

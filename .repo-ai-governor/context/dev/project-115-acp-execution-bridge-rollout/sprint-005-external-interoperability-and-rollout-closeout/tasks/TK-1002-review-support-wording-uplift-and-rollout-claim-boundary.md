@@ -1,6 +1,6 @@
 # TK-1002 review support wording uplift and rollout claim boundary
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-20
 - Owner: AI-Agent
 - Priority: P1
@@ -52,8 +52,10 @@
 ## 9. 执行记录
 
 1. 2026-04-20：任务创建，状态初始化为 `planned`。
+2. 2026-04-20：已复核 `DA-1000`、`DA-1001`、`docs/local-adoption-playbook*`、`docs/support-matrix*` 与 ACP execution ADR；结论是当前 public/support wording 已经保持保守边界，不需要在 external consumer unavailable 的前提下继续 uplift。
+3. 2026-04-20：已形成 `DA-1002`，明确保留现有 evidence-backed readiness / bootstrap truth，不宣称 external ACP consumer interoperability 已完成；因为本轮不修改可执行代码，也不变更 public docs 文本，build not required。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. `/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-005-external-interoperability-and-rollout-closeout/tasks/DA-1002-support-wording-boundary-review-and-conservative-rollout-disposition.md`
+2. `docs/local-adoption-playbook.md`、`docs/local-adoption-playbook.zh-CN.md`、`docs/support-matrix.md` 与 `docs/support-matrix.zh-CN.md` 已作为 canonical truth 被复核，并保持不变。

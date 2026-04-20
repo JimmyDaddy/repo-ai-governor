@@ -1,6 +1,6 @@
 # project-115-acp-execution-bridge-rollout 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-20
 - Stage Mapping: runtime agent-projection rollout
 - Phase Mapping: ACP execution bridge productization
@@ -42,7 +42,7 @@
 
 ## 2.5 sprint-005-external-interoperability-and-rollout-closeout
 
-- Status: active
+- Status: completed
 - Sprint Goal: 完成外部 ACP interoperability rehearsal、support 边界复核与 rollout closeout
 - Task Package: `TK-1001、TK-1002、TK-1003`
 
@@ -64,9 +64,9 @@
 | TK-999 | sprint-004-clean-room-execution-and-packaged-evidence | land packaged distribution and runtime-service execution evidence | distribution evidence | TK-998 | completed |
 | TK-1000 | sprint-004-clean-room-execution-and-packaged-evidence | prepare sprint-004 closeout and support-truth readiness recommendation | closeout handoff | TK-999 | completed |
 | TK-1021 | sprint-004-clean-room-execution-and-packaged-evidence | close sprint-004 boundary and activate sprint-005 execution surface | sprint closeout | CR-001 reviewer-clean handoff | completed |
-| TK-1001 | sprint-005-external-interoperability-and-rollout-closeout | run optional external acp interoperability rehearsal | interoperability rehearsal | sprint-004-clean-room-execution-and-packaged-evidence planned handoff | in_progress |
-| TK-1002 | sprint-005-external-interoperability-and-rollout-closeout | review support wording uplift and rollout claim boundary | support truth review | TK-1001 | planned |
-| TK-1003 | sprint-005-external-interoperability-and-rollout-closeout | close rollout project and publish completion audit | project closeout | TK-1002 | planned |
+| TK-1001 | sprint-005-external-interoperability-and-rollout-closeout | run optional external acp interoperability rehearsal | interoperability rehearsal | sprint-004-clean-room-execution-and-packaged-evidence planned handoff | completed |
+| TK-1002 | sprint-005-external-interoperability-and-rollout-closeout | review support wording uplift and rollout claim boundary | support truth review | TK-1001 | completed |
+| TK-1003 | sprint-005-external-interoperability-and-rollout-closeout | close rollout project and publish completion audit | project closeout | TK-1002 | completed |
 
 ## 4. 依赖产物策略
 
@@ -91,7 +91,9 @@
 7. 2026-04-20：sprint-004 implementation boundary 已完成，`TK-998 / TK-999 / TK-1000` 形成 ACP execution clean-room report、refresh 后的 packaged/runtime-service receipts 与 `DA-1000` activation handoff；下一步进入 sprint-004 fresh delegated review。
 8. 2026-04-20：sprint-004 的 `CR-001` 已 resolved；为满足 sprint closeout 规则，`TK-1021` 已创建并成为当前 active closeout surface，下一步执行 `pnpm run check`、boundary commit 与 sprint-005 activation write-back。
 9. 2026-04-20：`TK-1021` 已完成 sprint-004 closeout gate 与 sprint-005 activation write-back；primary execution surface 切换到 `sprint-005-external-interoperability-and-rollout-closeout`，`TK-1001` 成为当前 in-progress boundary。
+10. 2026-04-20：`TK-1001 / TK-1002` 已完成 sprint-005 implementation boundary。`DA-1001` 确认本地 external ACP consumer unavailable，因此 optional interoperability rehearsal 按 non-blocking evidence 记录；`DA-1002` 则确认现有 ACP support wording 已保持正确的保守边界，当前下一步固定进入 sprint-005 fresh delegated review。
+11. 2026-04-20：`CR-001` 已 clean 收口，唯一 accepted finding 仅为 review lifecycle ledger sync drift，现已在同窗口修复；`TK-1003 / DA-1003` 随后完成 project-115 final closeout、completion audit、completed history 回写与 `project-116 / sprint-001` activation handoff。
 
 ## 7. 里程碑记录入口
 
-1. 待 closeout 后补齐 completion audit summary。
+1. [project-115-acp-execution-bridge-rollout-completion-audit-summary.md](./project-115-acp-execution-bridge-rollout-completion-audit-summary.md)

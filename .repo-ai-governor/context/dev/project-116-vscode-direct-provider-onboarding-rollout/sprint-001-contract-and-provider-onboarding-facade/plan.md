@@ -1,6 +1,6 @@
 # sprint-001-contract-and-provider-onboarding-facade 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-20
 - Sprint Goal: Freeze the provider-onboarding contract, explicit mutation seam, and owner split baseline.
 - Project: `project-116-vscode-direct-provider-onboarding-rollout`
@@ -19,7 +19,7 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-1004 | freeze direct-api-key onboarding contract and owner split | scaffold baseline | planned |
+| TK-1004 | freeze direct-api-key onboarding contract and owner split | scaffold baseline | in_progress |
 | TK-1005 | decompose service-native provider-onboarding snapshot apply and receipt facade | freeze direct-api-key onboarding contract and owner split | planned |
 | TK-1006 | prepare sprint-001 handoff and activation recommendation | decompose service-native provider-onboarding snapshot apply and receipt facade | planned |
 
@@ -31,3 +31,4 @@
 ## 4. Sprint Notes
 
 1. Do not activate this stream in current-context during promotion; keep it as a planned follow-up only.
+2. `2026-04-20`：`project-115` final closeout 已完成，当前 sprint 已切换为 active primary surface；`TK-1004` 进入 `in_progress`，下一步先冻结 direct API key onboarding contract 与 owner split baseline。

@@ -1,6 +1,6 @@
 # project-116-vscode-direct-provider-onboarding-rollout 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-20
 - Stage Mapping: runtime governance-clients rollout
 - Phase Mapping: VS Code provider onboarding / direct API key entry / secret-backed credentialRef / readiness and support truth
@@ -19,7 +19,7 @@
 
 ## 2.1 sprint-001-contract-and-provider-onboarding-facade
 
-- Status: planned
+- Status: active
 - Sprint Goal: Freeze the provider-onboarding contract, explicit mutation seam, and owner split baseline.
 - Task Package: `TK-1004、TK-1005、TK-1006`
 
@@ -51,7 +51,7 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 | --- | --- | --- | --- | --- | --- |
-| TK-1004 | sprint-001-contract-and-provider-onboarding-facade | freeze direct-api-key onboarding contract and owner split | contract baseline | scaffold baseline | planned |
+| TK-1004 | sprint-001-contract-and-provider-onboarding-facade | freeze direct-api-key onboarding contract and owner split | contract baseline | scaffold baseline | in_progress |
 | TK-1005 | sprint-001-contract-and-provider-onboarding-facade | decompose service-native provider-onboarding snapshot apply and receipt facade | service seam | freeze direct-api-key onboarding contract and owner split | planned |
 | TK-1006 | sprint-001-contract-and-provider-onboarding-facade | prepare sprint-001 handoff and activation recommendation | governance handoff | decompose service-native provider-onboarding snapshot apply and receipt facade | planned |
 | TK-1007 | sprint-002-plugin-native-direct-api-key-entry | implement plugin-native direct api key entry and secure capture | workbench surface | prepare sprint-001 handoff and activation recommendation | planned |
@@ -82,6 +82,7 @@
 ## 6. 里程碑记录
 
 1. 2026-04-20：创建 project-116-vscode-direct-provider-onboarding-rollout 全量执行流骨架，覆盖 sprint-001-contract-and-provider-onboarding-facade、sprint-002-plugin-native-direct-api-key-entry、sprint-003-readiness-cta-and-provider-lifecycle、sprint-004-docs-distribution-and-workbench-evidence、sprint-005-clean-room-validation-and-rollout-closeout。
+2. 2026-04-20：`project-115` 完成 final closeout 后，当前 project 已切换为 active，并将 `sprint-001-contract-and-provider-onboarding-facade` 激活为新的 primary execution surface；`TK-1004` 进入 `in_progress`。
 
 ## 7. 里程碑记录入口
 

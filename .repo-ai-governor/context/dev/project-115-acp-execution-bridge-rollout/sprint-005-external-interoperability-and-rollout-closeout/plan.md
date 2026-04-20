@@ -1,6 +1,6 @@
 # sprint-005-external-interoperability-and-rollout-closeout 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-20
 - Sprint Goal: 完成外部 ACP interoperability rehearsal、support 边界复核与 rollout closeout
 - Project: `project-115-acp-execution-bridge-rollout`
@@ -17,9 +17,9 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-1001 | run optional external acp interoperability rehearsal | sprint-004-clean-room-execution-and-packaged-evidence planned handoff | in_progress |
-| TK-1002 | review support wording uplift and rollout claim boundary | TK-1001 | planned |
-| TK-1003 | close rollout project and publish completion audit | TK-1002 | planned |
+| TK-1001 | run optional external acp interoperability rehearsal | sprint-004-clean-room-execution-and-packaged-evidence planned handoff | completed |
+| TK-1002 | review support wording uplift and rollout claim boundary | TK-1001 | completed |
+| TK-1003 | close rollout project and publish completion audit | TK-1002 | completed |
 
 ## 3. Exit Criteria
 
@@ -33,3 +33,5 @@
 2. 若用户只要求拆解，不自动修改 current-context.md。
 3. 该 sprint 默认保持 planned，等待 sprint-004-clean-room-execution-and-packaged-evidence handoff 或用户显式激活。
 4. `2026-04-20`：`TK-1021` 完成 sprint-004 closeout gate 与 activation write-back 后，本 sprint 被切换为新的 primary execution surface，`TK-1001` 成为当前 in-progress boundary。
+5. `2026-04-20`：`TK-1001` 已以 `DA-1001` 记录本地 external ACP consumer unavailable / optional evidence disposition；`TK-1002` 已以 `DA-1002` 复核 support wording 边界并确认现有 public truth 无需扩大。当前 sprint 进入 implementation complete / delegated CR pending 状态，`TK-1003` 保留给 clean CR 之后的最终 closeout write-back。
+6. `2026-04-20`：`CR-001` 已 resolved，唯一 accepted finding 仅为 review lifecycle ledger sync drift，现已修复；`TK-1003 / DA-1003` 随后完成 project-115 closeout write-back、completion audit 与 `project-116 / sprint-001` activation handoff，当前 sprint 恢复为最终 `completed` 真值。
