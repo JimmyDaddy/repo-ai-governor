@@ -16,7 +16,7 @@
 
 ## Active Streams
 
-- None currently.
+- `none`
 
 ## Planned Follow-Up Streams
 

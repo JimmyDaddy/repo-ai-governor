@@ -26,11 +26,11 @@
 1. .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/plan.md
 2. .repo-ai-governor/context/dev/project-109-requirement-to-cr-delivery-solution-review-and-promotion-prep/sprint-001-solution-review-and-promotion-handoff/tasks/DA-915-requirement-to-cr-delivery-promotion-and-rollout-decomposition-handoff.md
 3. .repo-ai-governor/context/current-context.md
-4. /Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/plan.md
+4. .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/plan.md
 
 ## 5. Traceback References
 
-1. /Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/plan.md
+1. .repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/plan.md
 2. .repo-ai-governor/normative_knowledge_sources/governance/task-card-template.md
 
 ## 6. 实施计划
@@ -42,13 +42,13 @@
 ## 7. Development Verification
 
 1. `pnpm run check`
-2. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/tasks" --task-id TK-932
+2. node ./scripts/governance/sync-task-ledger.js --tasks-dir ".repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/tasks" --task-id TK-932
 
 ## 8. Delivery Verification
 
 1. `pnpm run check`
-2. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/tasks" --task-id TK-932
-3. node ./scripts/governance/check-task-required-inputs.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/tasks" --task-id TK-932
+2. node ./scripts/governance/sync-task-ledger.js --tasks-dir ".repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/tasks" --task-id TK-932
+3. node ./scripts/governance/check-task-required-inputs.js --tasks-dir ".repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/tasks" --task-id TK-932
 4. node ./scripts/governance/check-task-ledger-sync.js
 5. node ./scripts/governance/check-sprint-plan-status-sync.js
 6. node ./scripts/governance/check-code-review-status-sync.js
@@ -62,6 +62,6 @@
 
 ## 10. 产出
 
-1. `/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/tasks/DA-932-sprint-004-exit-acceptance-and-project-final-review-handoff.md`
-2. `/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/project-110-requirement-to-cr-delivery-orchestration-rollout-completion-audit-summary.md`
-3. `/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/tasks/DA-933-project-110-final-closeout-and-project-112-primary-stream-activation.md`
+1. `.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/tasks/DA-932-sprint-004-exit-acceptance-and-project-final-review-handoff.md`
+2. `.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/project-110-requirement-to-cr-delivery-orchestration-rollout-completion-audit-summary.md`
+3. `.repo-ai-governor/context/dev/project-110-requirement-to-cr-delivery-orchestration-rollout/sprint-004-discoverability-rollout-and-project-closeout/tasks/DA-933-project-110-final-closeout-and-project-112-primary-stream-activation.md`

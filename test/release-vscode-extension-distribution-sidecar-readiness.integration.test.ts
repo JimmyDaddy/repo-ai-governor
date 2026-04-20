@@ -191,12 +191,13 @@ describe('release vscode extension distribution cli-backed readiness gate', () =
   it('keeps real release verification doctor artifacts inside the scratch smoke workspace', () => {
     const tempRoot = mkdtempSync(join(tmpdir(), 'repo-ai-governor-release-verify-'));
     const fakeHome = resolve(tempRoot, 'home');
-    const workingRoot = mkdtempSync(
-      join(
-        resolve(process.cwd(), '.tmp', 'release-vscode-extension-package'),
-        'integration-working-root-',
-      ),
+    const packageWorkingRootBase = resolve(
+      process.cwd(),
+      '.tmp',
+      'release-vscode-extension-package',
     );
+    mkdirSync(packageWorkingRootBase, { recursive: true });
+    const workingRoot = mkdtempSync(join(packageWorkingRootBase, 'integration-working-root-'));
     const reportPath = resolve(tempRoot, 'distribution-report.json');
     const liveToolManagedRoot = resolve(fakeHome, '.repo-ai-governor', 'workspaces');
     const packagedScratchRoot = resolveCliBackedSmokeWorkspaceRoot(workingRoot, 'packaged-root');
