@@ -88,8 +88,27 @@ The current public-support wording is now `primary_workbench_claim` for the buil
    - artifact list
    - transcript preview
 8. `@governor`
-   - `/status`
-   - `/review`
+   - summary commands: `/status`, `/review`
+   - executable slash commands:
+     ` /refresh`
+     ` /workspace-bootstrap`
+     ` /doctor`
+     ` /check`
+     ` /workflow-preview`
+     ` /workflow-create`
+     ` /workflow-edit`
+     ` /workflow-studio`
+     ` /review-detail`
+     ` /handoff-target`
+     ` /repository-operation`
+     ` /submit-hitl-decision`
+     ` /recover-execution`
+     ` /terminate-execution`
+     ` /open-user-config`
+     ` /configure-user-default`
+     ` /set-managed-secret`
+   - imperative prompt routing can resolve short natural-language requests onto the same command surface, for example `@governor please run doctor`, `@governor 打开评审详情`, or `@governor preview workflow template-id`
+   - workflow and repository-operation commands can accept a short prompt suffix in chat, for example `@governor /workflow-preview template-id` or `@governor /repository-operation upgrade preview`
 
 ## Public Support Boundary And Residual Risk
 

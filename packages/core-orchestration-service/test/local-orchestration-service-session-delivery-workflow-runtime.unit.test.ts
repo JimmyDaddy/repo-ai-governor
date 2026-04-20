@@ -6,6 +6,7 @@ import {
   SESSION_DELIVERY_WORKFLOW_PHASE,
   SESSION_DELIVERY_WORKFLOW_VERSION,
   SESSION_MAIN_CAPABILITY_ID,
+  type SessionDeliveryWorkflowSessionState,
 } from '../src/index.js';
 
 describe('LocalOrchestrationServiceSessionDeliveryWorkflowRuntime', () => {
@@ -127,7 +128,7 @@ describe('LocalOrchestrationServiceSessionDeliveryWorkflowRuntime', () => {
   it('only emits a context patch when the delivery workflow state changes', () => {
     const runtime = new LocalOrchestrationServiceSessionDeliveryWorkflowRuntime();
 
-    const state = {
+    const state: SessionDeliveryWorkflowSessionState = {
       version: SESSION_DELIVERY_WORKFLOW_VERSION,
       workflowId: 'delivery-workflow-003',
       capabilityId: SESSION_DELIVERY_WORKFLOW_CAPABILITY_ID.DELIVER,
@@ -143,7 +144,7 @@ describe('LocalOrchestrationServiceSessionDeliveryWorkflowRuntime', () => {
       childWorkflowBacklinks: [],
       blockedReason: null,
       resultSummary: null,
-    } as const;
+    };
 
     expect(runtime.createContextPatch({}, state)).toEqual({
       [SESSION_DELIVERY_WORKFLOW_CONTEXT_KEY]: state,

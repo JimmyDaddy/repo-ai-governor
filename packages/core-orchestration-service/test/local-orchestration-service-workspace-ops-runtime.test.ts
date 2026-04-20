@@ -4,11 +4,75 @@ import { join } from 'node:path';
 
 import { describe, expect, it, vi } from 'vitest';
 
+import { type GovernorConfig, WorkspaceMode, WorkspaceModeSource } from '@repo-ai-governor/config';
 import {
   OrchestrationBootstrapReadinessActionId,
   OrchestrationWorkspaceOperationKind,
 } from '@repo-ai-governor/orchestration-service-client';
 import { LocalOrchestrationServiceWorkspaceOpsRuntime } from '../src/local-orchestration-service-workspace-ops-runtime.js';
+
+type WorkspaceOpsDependencies = ConstructorParameters<
+  typeof LocalOrchestrationServiceWorkspaceOpsRuntime
+>[0];
+type WorkspaceOpsCliExecutor = NonNullable<WorkspaceOpsDependencies['cliExecutor']>;
+type WorkspaceOpsResolvedWorkspace = ReturnType<
+  NonNullable<WorkspaceOpsDependencies['workspaceResolver']>['resolve']
+>;
+
+function createCliDetailsRecord(
+  details: Record<string, boolean | number | string | null>,
+): Record<string, boolean | number | string | null> {
+  return details;
+}
+
+function createResolvedWorkspace(
+  overrides: Partial<WorkspaceOpsResolvedWorkspace> = {},
+): WorkspaceOpsResolvedWorkspace {
+  return {
+    repositoryRoot: '/repo',
+    workspaceId: 'workspace-1',
+    workspaceRoot: '/repo/.repo-ai-governor',
+    configPath: '/repo/.repo-ai-governor/governor.yaml',
+    mode: WorkspaceMode.REPO_LOCAL,
+    modeSource: WorkspaceModeSource.CONFIG,
+    ...overrides,
+  };
+}
+
+function createWorkspaceResolver(
+  overrides: Partial<WorkspaceOpsResolvedWorkspace> = {},
+): NonNullable<WorkspaceOpsDependencies['workspaceResolver']> {
+  return {
+    resolve: vi.fn(() => createResolvedWorkspace(overrides)),
+  };
+}
+
+function createGovernorConfig(overrides: Partial<GovernorConfig> = {}): GovernorConfig {
+  const { workspace, i18n, ...rest } = overrides;
+  return {
+    schemaVersion: '1',
+    workspace: {
+      mode: WorkspaceMode.REPO_LOCAL,
+      ...workspace,
+    },
+    i18n: {
+      runtimeEngine: 'i18next',
+      defaultLocale: 'en-US',
+      fallbackLocale: 'en-US',
+      supportedLocales: ['en-US', 'zh-CN'],
+      ...i18n,
+    },
+    ...rest,
+  };
+}
+
+function createConfigLoader(
+  overrides: Partial<GovernorConfig> = {},
+): NonNullable<WorkspaceOpsDependencies['configLoader']> {
+  return {
+    loadFromFile: vi.fn(() => createGovernorConfig(overrides)),
+  };
+}
 
 function createWorkspaceOpsRuntime() {
   const cliExecutor = vi.fn().mockResolvedValue({
@@ -18,16 +82,7 @@ function createWorkspaceOpsRuntime() {
       summary: 'ok',
     },
   });
-  const workspaceResolver = {
-    resolve: vi.fn(() => ({
-      repositoryRoot: '/repo',
-      workspaceId: 'workspace-1',
-      workspaceRoot: '/repo/.repo-ai-governor',
-      configPath: '/repo/.repo-ai-governor/governor.yaml',
-      mode: 'repo_local',
-      modeSource: 'config',
-    })),
-  };
+  const workspaceResolver = createWorkspaceResolver();
 
   return {
     cliExecutor,
@@ -43,16 +98,16 @@ function createWorkspaceOpsRuntime() {
 
 describe('LocalOrchestrationServiceWorkspaceOpsRuntime', () => {
   it('threads locale through secure-authoring diagnostics and secure mutations', async () => {
-    const cliExecutor = vi.fn(async (request: { args: readonly string[]; locale?: string }) => {
+    const cliExecutor = vi.fn<WorkspaceOpsCliExecutor>(async (request) => {
       if (request.args[0] === 'config' && request.args[1] === 'status') {
         return {
           command_result: {
-            details: {
+            details: createCliDetailsRecord({
               config_path: '/repo/.repo-ai-governor/user-config.yaml',
               config_exists: true,
               legacy_preference_path: '/repo/.repo-ai-governor/cli-preferences.yaml',
               legacy_preference_exists: false,
-            },
+            }),
           },
         };
       }
@@ -60,9 +115,9 @@ describe('LocalOrchestrationServiceWorkspaceOpsRuntime', () => {
       if (request.args[0] === 'config' && request.args[1] === 'list') {
         return {
           command_result: {
-            details: {
+            details: createCliDetailsRecord({
               entries: 'ui.react.theme=calm',
-            },
+            }),
           },
         };
       }
@@ -70,11 +125,11 @@ describe('LocalOrchestrationServiceWorkspaceOpsRuntime', () => {
       if (request.args[0] === 'secret' && request.args[1] === 'status') {
         return {
           command_result: {
-            details: {
+            details: createCliDetailsRecord({
               selected_backend: 'os-keychain',
               default_backend: 'os-keychain',
               index_path: '/repo/.repo-ai-governor/secret-index.json',
-            },
+            }),
             checks: [
               {
                 id: 'secret_backend_os-keychain',
@@ -89,9 +144,9 @@ describe('LocalOrchestrationServiceWorkspaceOpsRuntime', () => {
       if (request.args[0] === 'secret' && request.args[1] === 'list') {
         return {
           command_result: {
-            details: {
+            details: createCliDetailsRecord({
               records: 'openai/api-key@os-keychain:present',
-            },
+            }),
           },
         };
       }
@@ -100,10 +155,10 @@ describe('LocalOrchestrationServiceWorkspaceOpsRuntime', () => {
         return {
           message: 'config updated',
           command_result: {
-            details: {
+            details: createCliDetailsRecord({
               config_path: '/repo/.repo-ai-governor/user-config.yaml',
               value: request.args[3],
-            },
+            }),
           },
         };
       }
@@ -111,23 +166,14 @@ describe('LocalOrchestrationServiceWorkspaceOpsRuntime', () => {
       return {
         message: 'secret updated',
         command_result: {
-          details: {
+          details: createCliDetailsRecord({
             selector: 'secret://openai/api-key',
             backend: 'os-keychain',
-          },
+          }),
         },
       };
     });
-    const workspaceResolver = {
-      resolve: vi.fn(() => ({
-        repositoryRoot: '/repo',
-        workspaceId: 'workspace-1',
-        workspaceRoot: '/repo/.repo-ai-governor',
-        configPath: '/repo/.repo-ai-governor/governor.yaml',
-        mode: 'repo_local',
-        modeSource: 'config',
-      })),
-    };
+    const workspaceResolver = createWorkspaceResolver();
     const runtime = new LocalOrchestrationServiceWorkspaceOpsRuntime({
       workspaceRoot: '/repo/.repo-ai-governor',
       repositoryRoot: '/repo',
@@ -184,23 +230,8 @@ describe('LocalOrchestrationServiceWorkspaceOpsRuntime', () => {
   });
 
   it('returns centrally typed bootstrap-readiness actions for both readiness branches', async () => {
-    const workspaceResolver = {
-      resolve: vi.fn(() => ({
-        repositoryRoot: '/repo',
-        workspaceId: 'workspace-1',
-        workspaceRoot: '/repo/.repo-ai-governor',
-        configPath: '/repo/.repo-ai-governor/governor.yaml',
-        mode: 'repo_local',
-        modeSource: 'config',
-      })),
-    };
-    const configLoader = {
-      loadFromFile: vi.fn(() => ({
-        workspace: {
-          mode: 'repo_local',
-        },
-      })),
-    };
+    const workspaceResolver = createWorkspaceResolver();
+    const configLoader = createConfigLoader();
     const missingConfigRuntime = new LocalOrchestrationServiceWorkspaceOpsRuntime({
       workspaceRoot: '/repo/.repo-ai-governor',
       repositoryRoot: '/repo',
@@ -279,6 +310,93 @@ describe('LocalOrchestrationServiceWorkspaceOpsRuntime', () => {
     });
   });
 
+  it('runs connect as generate plus apply so plugin users do not stop at candidate artifacts', async () => {
+    const cliExecutor = vi
+      .fn()
+      .mockResolvedValueOnce({
+        message: 'connect plan prepared',
+        command_result: {
+          operation: 'connect',
+          summary: 'connect plan prepared',
+          artifacts: [
+            {
+              id: 'connect_plan',
+              path: '/repo/.repo-ai-governor/context/connect/latest.plan.json',
+            },
+          ],
+        },
+      })
+      .mockResolvedValueOnce({
+        message: 'connect applied',
+        command_result: {
+          operation: 'connect_apply',
+          summary: 'connect applied',
+          artifacts: [
+            {
+              id: 'connect_receipt',
+              path: '/repo/.repo-ai-governor/context/connect/latest.receipt.json',
+            },
+          ],
+        },
+      });
+    const workspaceResolver = createWorkspaceResolver();
+    const runtime = new LocalOrchestrationServiceWorkspaceOpsRuntime({
+      workspaceRoot: '/repo/.repo-ai-governor',
+      repositoryRoot: '/repo',
+      workspaceResolver,
+      pathExists: () => false,
+      cliExecutor,
+    });
+
+    const response = await runtime.runWorkspaceOperation({
+      operationKind: OrchestrationWorkspaceOperationKind.CONNECT,
+      arguments: {
+        presetId: 'multi-tool-default',
+        tools: ['codex'],
+        toolTransportBindings: ['codex=remote_api'],
+        remoteApiModelBindings: ['codex=gpt-5.4'],
+      },
+    });
+
+    expect(cliExecutor).toHaveBeenNthCalledWith(1, {
+      args: [
+        'connect',
+        '--preset',
+        'multi-tool-default',
+        '--tools',
+        'codex',
+        '--tool-transport',
+        'codex=remote_api',
+        '--remote-api-model',
+        'codex=gpt-5.4',
+      ],
+      currentWorkingDirectory: '/repo',
+      locale: undefined,
+    });
+    expect(cliExecutor).toHaveBeenNthCalledWith(2, {
+      args: ['connect', 'apply', '--latest'],
+      currentWorkingDirectory: '/repo',
+      locale: undefined,
+    });
+    expect(response).toMatchObject({
+      message: 'connect applied',
+      result: {
+        operation: 'connect_apply',
+        summary: 'connect applied',
+        artifacts: [
+          {
+            id: 'connect_plan',
+            path: '/repo/.repo-ai-governor/context/connect/latest.plan.json',
+          },
+          {
+            id: 'connect_receipt',
+            path: '/repo/.repo-ai-governor/context/connect/latest.receipt.json',
+          },
+        ],
+      },
+    });
+  });
+
   it('localizes embedded CLI bootstrap failure copy before injecting it into the child process', () => {
     const { runtime } = createWorkspaceOpsRuntime();
 
@@ -340,16 +458,7 @@ describe('LocalOrchestrationServiceWorkspaceOpsRuntime', () => {
         },
       },
     });
-    const workspaceResolver = {
-      resolve: vi.fn(() => ({
-        repositoryRoot: '/repo',
-        workspaceId: 'workspace-1',
-        workspaceRoot: '/repo/.repo-ai-governor',
-        configPath: '/repo/.repo-ai-governor/governor.yaml',
-        mode: 'repo_local',
-        modeSource: 'config',
-      })),
-    };
+    const workspaceResolver = createWorkspaceResolver();
     const runtime = new LocalOrchestrationServiceWorkspaceOpsRuntime({
       workspaceRoot: '/repo/.repo-ai-governor',
       repositoryRoot: '/repo',
@@ -445,16 +554,11 @@ describe('LocalOrchestrationServiceWorkspaceOpsRuntime', () => {
     const repositoryRoot = mkdtempSync(join(tmpdir(), 'workspace-ops-repo-'));
     const workspaceRoot = join(repositoryRoot, '.repo-ai-governor');
     mkdirSync(workspaceRoot, { recursive: true });
-    const workspaceResolver = {
-      resolve: vi.fn(() => ({
-        repositoryRoot,
-        workspaceId: 'workspace-1',
-        workspaceRoot,
-        configPath: join(workspaceRoot, 'governor.yaml'),
-        mode: 'repo_local',
-        modeSource: 'config',
-      })),
-    };
+    const workspaceResolver = createWorkspaceResolver({
+      repositoryRoot,
+      workspaceRoot,
+      configPath: join(workspaceRoot, 'governor.yaml'),
+    });
     const cliExecutor = vi.fn().mockResolvedValue({
       message: '医生检查完成。',
       command_result: {
@@ -595,16 +699,7 @@ describe('LocalOrchestrationServiceWorkspaceOpsRuntime', () => {
         summary: '',
       },
     });
-    const workspaceResolver = {
-      resolve: vi.fn(() => ({
-        repositoryRoot: '/repo',
-        workspaceId: 'workspace-1',
-        workspaceRoot: '/repo/.repo-ai-governor',
-        configPath: '/repo/.repo-ai-governor/governor.yaml',
-        mode: 'repo_local',
-        modeSource: 'config',
-      })),
-    };
+    const workspaceResolver = createWorkspaceResolver();
     const runtime = new LocalOrchestrationServiceWorkspaceOpsRuntime({
       workspaceRoot: '/repo/.repo-ai-governor',
       repositoryRoot: '/repo',

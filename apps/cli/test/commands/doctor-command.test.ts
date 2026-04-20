@@ -19,6 +19,10 @@ import type {
   CliCommandExecutorContext,
   CliCommandProgressEvent,
 } from '../../src/types/index.js';
+import {
+  createCliAdapterVerificationResolution,
+  createCliNormalizedRuntimeDebugOptions,
+} from '../test-support/cli-command-fixtures.js';
 
 async function createDoctorCommandFixture(): Promise<{
   tempRoot: string;
@@ -140,13 +144,13 @@ function createDoctorCommandContext(options: {
           surface: 'verification',
         }),
         resolveSelectedTools: () => [],
-      } as CliCommandExecutorContext['onboardingRuntime']),
+      } as unknown as CliCommandExecutorContext['onboardingRuntime']),
     agentProjectionRuntime: {
       createCliAgentView: () => ({
         descriptors: [],
       }),
       createDescriptorsFromRoleEvaluations: () => [],
-    } as CliCommandExecutorContext['agentProjectionRuntime'],
+    } as unknown as CliCommandExecutorContext['agentProjectionRuntime'],
     adapterDiagnosticsRuntime: {
       createSafeLocalBoundaryArtifactPayload: () => ({
         safeLocal: false,
@@ -157,7 +161,7 @@ function createDoctorCommandContext(options: {
         verification,
       createAdapterRoleProgressRows: () => [],
       createAdapterInteractionPrompts: () => [],
-    } as CliCommandExecutorContext['adapterDiagnosticsRuntime'],
+    } as unknown as CliCommandExecutorContext['adapterDiagnosticsRuntime'],
     reviewQueueRuntime: {} as CliCommandExecutorContext['reviewQueueRuntime'],
     orchestrationServiceRuntime: {} as CliCommandExecutorContext['orchestrationServiceRuntime'],
     commandExperienceBuilder: {
@@ -177,7 +181,16 @@ function createDoctorCommandContext(options: {
     buildDefaultConfigContent: () => 'schemaVersion: "1.1"\n',
     toRfc3339SecondsTimestamp: (value: Date) => value.toISOString().replace(/\.\d{3}Z$/u, 'Z'),
     formatExecFailureDetail: (error: unknown) => String(error),
-    resolveRuntimeDebugOptions: () => runtimeDebugOptions as never,
+    resolveRuntimeDebugOptions: () =>
+      createCliNormalizedRuntimeDebugOptions({
+        adapters: runtimeDebugOptions.adapters,
+        fix: runtimeDebugOptions.fix,
+        dryRun: runtimeDebugOptions.dryRun,
+        overwrite: runtimeDebugOptions.overwrite,
+        singleToolAllRoles: runtimeDebugOptions.singleToolAllRoles,
+        requestedTools: runtimeDebugOptions.requestedTools as never,
+        presetId: runtimeDebugOptions.presetId as never,
+      }),
     resolveExecutionStreamMetadata: async () => ({}),
     resolveAdapterVerification: async () => {
       if (!options.adapterVerification) {
@@ -219,18 +232,15 @@ describe('CliDoctorCommand', () => {
       },
     ],
   } satisfies CliCommandExecutorContext['options']['adaptersConfig'];
-  const doctorReadinessVerification: CliAdapterVerificationResolution = {
-    overallStatus: CliGovernanceCheckStatus.WARN,
-    tools: [],
-    roleEvaluations: [],
-    requiredRoleCount: 1,
-    requiredRoleFailedCount: 0,
-    degradedRoleCount: 1,
-    fallbackRoleCount: 0,
-    nextActions: ['Review adapter diagnostics before retrying doctor.'],
-    secretBackends: null,
-    credentialReferences: [],
-  };
+  const doctorReadinessVerification: CliAdapterVerificationResolution =
+    createCliAdapterVerificationResolution({
+      overallStatus: CliGovernanceCheckStatus.WARN,
+      requiredRoleCount: 1,
+      requiredRoleFailedCount: 0,
+      degradedRoleCount: 1,
+      fallbackRoleCount: 0,
+      nextActions: ['Review adapter diagnostics before retrying doctor.'],
+    });
 
   it('emits workspace and diagnostics progress events before completing', async () => {
     const fixture = await createDoctorCommandFixture();
@@ -275,10 +285,8 @@ describe('CliDoctorCommand', () => {
     const fixture = await createDoctorCommandFixture();
     const progressEvents: CliCommandProgressEvent[] = [];
     const command = new CliDoctorCommand();
-    const verification: CliAdapterVerificationResolution = {
+    const verification: CliAdapterVerificationResolution = createCliAdapterVerificationResolution({
       overallStatus: CliGovernanceCheckStatus.WARN,
-      tools: [],
-      roleEvaluations: [],
       requiredRoleCount: 0,
       requiredRoleFailedCount: 0,
       degradedRoleCount: 0,
@@ -300,7 +308,7 @@ describe('CliDoctorCommand', () => {
         ],
       },
       credentialReferences: [],
-    };
+    });
 
     try {
       const context = createDoctorCommandContext({

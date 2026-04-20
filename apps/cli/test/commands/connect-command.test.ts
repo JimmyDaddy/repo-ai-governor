@@ -5,6 +5,7 @@ import { dirname, resolve } from 'node:path';
 
 import { SchemaValidator, WorkspaceMode } from '@repo-ai-governor/config';
 import {
+  AdapterSurface,
   CliReactThemePreset,
   DEFAULT_I18N_RUNTIME_CONFIG,
   ErrorOutputEnvironment,
@@ -20,13 +21,21 @@ import { CliAgentOnboardingPreset } from '../../src/constants/cli-agent-onboardi
 import { CliConnectAction } from '../../src/constants/cli-connect.constant.js';
 import {
   CLI_REVIEW_LEDGER_BACKFILL_STATUS,
+  CliAdapterRoleSelectionSource,
   CliGovernanceCheckStatus,
 } from '../../src/constants/cli-governance-runtime.constant.js';
 import { CliInteractiveUiMode } from '../../src/constants/cli-interactive-shell.constant.js';
 import { CliAgentOnboardingRuntime } from '../../src/runtime/agent-onboarding-runtime.js';
 import { CliAgentProjectionRuntime } from '../../src/runtime/agent-projection-runtime.js';
-import type { CliCommandExecutorContext } from '../../src/types/index.js';
-import type { CliCommandProgressEvent } from '../../src/types/index.js';
+import type {
+  CliCommandExecutorContext,
+  CliCommandProgressEvent,
+  CliGovernanceCommandResult,
+} from '../../src/types/index.js';
+import {
+  createCliAdapterVerificationResolution,
+  createCliNormalizedRuntimeDebugOptions,
+} from '../test-support/cli-command-fixtures.js';
 
 describe('CliConnectCommand', () => {
   it('attaches a shared React shell view model when ui_mode=react', async () => {
@@ -210,72 +219,21 @@ describe('CliConnectCommand', () => {
         buildDefaultConfigContent: () => '',
         toRfc3339SecondsTimestamp: (value: Date) => value.toISOString().replace(/\.\d{3}Z$/u, 'Z'),
         formatExecFailureDetail: (error: unknown) => String(error),
-        resolveRuntimeDebugOptions: () => ({
-          interactive: true,
-          requestedUiMode: CliInteractiveUiMode.REACT,
-          requestedUiTheme: null,
-          uiMode: CliInteractiveUiMode.REACT,
-          uiTheme: CliReactThemePreset.GOVERNOR,
-          uiFallbackBehavior: null,
-          inputTty: true,
-          stderrTty: true,
-          dryRun: false,
-          trace: false,
-          replayPath: null,
-          adapters: true,
-          fix: false,
-          presetId: CliAgentOnboardingPreset.MULTI_TOOL_DEFAULT,
-          requestedTools: [],
-          overwrite: false,
-          singleToolAllRoles: false,
-          roleBindingOverrides: [],
-          recordLedger: true,
-          taskId: 'TK-309',
-          restrictedNetwork: false,
-          restrictedReason: null,
-          allowLocalFallback: true,
-          hitlDecision: null,
-          hitlDecisionReason: null,
-          hitlResumeAction: null,
-          hitlDecidedBy: null,
-          hitlConstraints: [],
-        }),
+        resolveRuntimeDebugOptions: () =>
+          createCliNormalizedRuntimeDebugOptions({
+            interactive: true,
+            requestedUiMode: CliInteractiveUiMode.REACT,
+            uiMode: CliInteractiveUiMode.REACT,
+            inputTty: true,
+            stderrTty: true,
+            adapters: true,
+            recordLedger: true,
+            taskId: 'TK-309',
+            presetId: CliAgentOnboardingPreset.MULTI_TOOL_DEFAULT,
+          }),
         resolveExecutionStreamMetadata: async () => ({}),
-        resolveAdapterVerification: async () => ({
-          overallStatus: CliGovernanceCheckStatus.WARN,
-          requiredRoleCount: 3,
-          requiredRoleFailedCount: 0,
-          degradedRoleCount: 1,
-          fallbackRoleCount: 1,
-          nextActions: ['Install missing local command.'],
-          tools: [],
-          roleEvaluations: [
-            {
-              roleId: 'planner',
-              roleProfileId: 'planner-default',
-              primarySurface: 'codex',
-              selectedSurface: 'codex',
-              selectedBy: 'primary',
-              status: CliGovernanceCheckStatus.PASS,
-              unavailableReasons: [],
-              degradedCapabilities: [],
-              unsupportedCapabilities: [],
-            },
-            {
-              roleId: 'coder',
-              roleProfileId: 'coder-default',
-              primarySurface: 'codex',
-              selectedSurface: 'github-copilot',
-              selectedBy: 'fallback',
-              status: CliGovernanceCheckStatus.WARN,
-              unavailableReasons: [],
-              degradedCapabilities: [],
-              unsupportedCapabilities: [],
-            },
-          ],
-        }),
-        resolveAdapterVerificationForConfig: async () =>
-          ({
+        resolveAdapterVerification: async () =>
+          createCliAdapterVerificationResolution({
             overallStatus: CliGovernanceCheckStatus.WARN,
             requiredRoleCount: 3,
             requiredRoleFailedCount: 0,
@@ -287,27 +245,69 @@ describe('CliConnectCommand', () => {
               {
                 roleId: 'planner',
                 roleProfileId: 'planner-default',
-                primarySurface: 'codex',
-                selectedSurface: 'codex',
-                selectedBy: 'primary',
+                primarySurface: AdapterSurface.CODEX,
+                selectedSurface: AdapterSurface.CODEX,
+                selectedBy: CliAdapterRoleSelectionSource.PRIMARY,
                 status: CliGovernanceCheckStatus.PASS,
                 unavailableReasons: [],
                 degradedCapabilities: [],
                 unsupportedCapabilities: [],
+                required: true,
+                failureAttributions: [],
               },
               {
                 roleId: 'coder',
                 roleProfileId: 'coder-default',
-                primarySurface: 'codex',
-                selectedSurface: 'github-copilot',
-                selectedBy: 'fallback',
+                primarySurface: AdapterSurface.CODEX,
+                selectedSurface: AdapterSurface.GITHUB_COPILOT,
+                selectedBy: CliAdapterRoleSelectionSource.FALLBACK,
                 status: CliGovernanceCheckStatus.WARN,
                 unavailableReasons: [],
                 degradedCapabilities: [],
                 unsupportedCapabilities: [],
+                required: true,
+                failureAttributions: [],
               },
             ],
-          }) as Awaited<ReturnType<CliCommandExecutorContext['resolveAdapterVerification']>>,
+          }),
+        resolveAdapterVerificationForConfig: async () =>
+          createCliAdapterVerificationResolution({
+            overallStatus: CliGovernanceCheckStatus.WARN,
+            requiredRoleCount: 3,
+            requiredRoleFailedCount: 0,
+            degradedRoleCount: 1,
+            fallbackRoleCount: 1,
+            nextActions: ['Install missing local command.'],
+            tools: [],
+            roleEvaluations: [
+              {
+                roleId: 'planner',
+                roleProfileId: 'planner-default',
+                primarySurface: AdapterSurface.CODEX,
+                selectedSurface: AdapterSurface.CODEX,
+                selectedBy: CliAdapterRoleSelectionSource.PRIMARY,
+                status: CliGovernanceCheckStatus.PASS,
+                unavailableReasons: [],
+                degradedCapabilities: [],
+                unsupportedCapabilities: [],
+                required: true,
+                failureAttributions: [],
+              },
+              {
+                roleId: 'coder',
+                roleProfileId: 'coder-default',
+                primarySurface: AdapterSurface.CODEX,
+                selectedSurface: AdapterSurface.GITHUB_COPILOT,
+                selectedBy: CliAdapterRoleSelectionSource.FALLBACK,
+                status: CliGovernanceCheckStatus.WARN,
+                unavailableReasons: [],
+                degradedCapabilities: [],
+                unsupportedCapabilities: [],
+                required: true,
+                failureAttributions: [],
+              },
+            ],
+          }),
         validateGovernorConfig: (candidate: unknown) =>
           new SchemaValidator().validateOrThrow(candidate),
         canWritePath: async () => true,
@@ -321,7 +321,8 @@ describe('CliConnectCommand', () => {
       } as unknown as CliCommandExecutorContext;
 
       const command = new CliConnectCommand();
-      const result = await command.execute(context);
+      const result = (await command.execute(context)) as CliGovernanceCommandResult;
+      const reactCliViewModel = result.reactCliViewModel;
       const ledgerArtifactPath = String(
         result.commandResult.artifacts?.find(
           (artifact) => artifact.id === 'connect_ledger_backfill',
@@ -346,21 +347,19 @@ describe('CliConnectCommand', () => {
         };
       };
 
-      expect(result.reactCliViewModel?.title).toContain('[react-shell:connect]');
-      expect(result.reactCliViewModel?.sections[0]?.lines).toContain(
-        `Workspace root: ${workspaceRoot}`,
-      );
+      expect(reactCliViewModel?.title).toContain('[react-shell:connect]');
+      expect(reactCliViewModel?.sections[0]?.lines).toContain(`Workspace root: ${workspaceRoot}`);
       expect(
-        result.reactCliViewModel?.attentionSection?.lines.some((line) =>
+        reactCliViewModel?.attentionSection?.lines.some((line: string) =>
           line.includes('Adapter Verification'),
         ),
       ).toBe(true);
       expect(
-        result.reactCliViewModel?.helpSection?.lines.some((line) =>
+        reactCliViewModel?.helpSection?.lines.some((line: string) =>
           line.includes('Adapter route attention'),
         ),
       ).toBe(true);
-      expect(result.reactCliViewModel?.agentProjectionPanel?.title).toBe('Agent projection');
+      expect(reactCliViewModel?.agentProjectionPanel?.title).toBe('Agent projection');
       expect(diagnosticsPayload.verificationMatrix?.execution_id).toBeDefined();
       expect(diagnosticsPayload.verificationMatrix?.verification_status).toBe(
         CliGovernanceCheckStatus.WARN,
@@ -377,16 +376,16 @@ describe('CliConnectCommand', () => {
       expect(Array.isArray(diagnosticsPayload.verificationMatrix?.tool_transport_matrix)).toBe(
         true,
       );
-      expect(result.reactCliViewModel?.agentProjectionPanel?.summaryBadges).toEqual([
+      expect(reactCliViewModel?.agentProjectionPanel?.summaryBadges).toEqual([
         'fallback=1',
         'degraded=1',
         'blocked=0',
         'session=none',
       ]);
-      expect(result.reactCliViewModel?.agentProjectionPanel?.rows[0]?.title).toBe(
+      expect(reactCliViewModel?.agentProjectionPanel?.rows[0]?.title).toBe(
         'coder -> github-copilot',
       );
-      expect(result.reactCliViewModel?.agentProjectionPanel?.rows[0]?.detailLines).toContain(
+      expect(reactCliViewModel?.agentProjectionPanel?.rows[0]?.detailLines).toContain(
         'profile=coder-default selected_by=fallback status=warn',
       );
       expect(progressEvents[0]?.runState).toBe('running');

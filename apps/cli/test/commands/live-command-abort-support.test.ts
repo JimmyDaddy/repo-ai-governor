@@ -5,6 +5,8 @@ import { dirname, resolve } from 'node:path';
 import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 
 import { CliDoctorCommand } from '../../src/commands/doctor-command.js';
+import { CliAgentOnboardingPreset } from '../../src/constants/cli-agent-onboarding.constant.js';
+import { CliConnectAction } from '../../src/constants/cli-connect.constant.js';
 import { CliGovernanceCheckStatus } from '../../src/constants/cli-governance-runtime.constant.js';
 import { CliInteractiveUiMode } from '../../src/constants/cli-interactive-shell.constant.js';
 import { CliReactThemePreset } from '../../src/constants/cli-react-theme.constant.js';
@@ -12,6 +14,10 @@ import type {
   CliAdapterVerificationResolution,
   CliCommandExecutorContext,
 } from '../../src/types/index.js';
+import {
+  createCliAdapterVerificationResolution,
+  createCliNormalizedRuntimeDebugOptions,
+} from '../test-support/cli-command-fixtures.js';
 
 interface CommandFixture {
   tempRoot: string;
@@ -20,16 +26,9 @@ interface CommandFixture {
 }
 
 function createAdapterVerificationResolution(): CliAdapterVerificationResolution {
-  return {
+  return createCliAdapterVerificationResolution({
     overallStatus: CliGovernanceCheckStatus.PASS,
-    tools: [],
-    roleEvaluations: [],
-    requiredRoleCount: 0,
-    requiredRoleFailedCount: 0,
-    degradedRoleCount: 0,
-    fallbackRoleCount: 0,
-    nextActions: [],
-  };
+  });
 }
 
 async function createCommandFixture(
@@ -132,42 +131,19 @@ async function createCommandFixture(
     buildDefaultConfigContent: () => 'schemaVersion: "1.1"\n',
     toRfc3339SecondsTimestamp: (value: Date) => value.toISOString().replace(/\.\d{3}Z$/u, 'Z'),
     formatExecFailureDetail: (error: unknown) => String(error),
-    resolveRuntimeDebugOptions: () => ({
-      interactive: false,
-      requestedUiMode: CliInteractiveUiMode.REACT,
-      requestedUiTheme: CliReactThemePreset.GOVERNOR,
-      uiMode: CliInteractiveUiMode.REACT,
-      uiTheme: CliReactThemePreset.GOVERNOR,
-      uiFallbackBehavior: null,
-      inputTty: true,
-      stderrTty: true,
-      dryRun: false,
-      trace: false,
-      replayPath: null,
-      adapters,
-      fix: false,
-      connectAction: 'generate',
-      connectCandidatePath: null,
-      connectLatest: false,
-      connectForce: false,
-      connectRollbackEnabled: true,
-      connectWriteMode: null,
-      presetId: 'balanced',
-      requestedTools: [],
-      overwrite: false,
-      singleToolAllRoles: false,
-      roleBindingOverrides: [],
-      recordLedger: false,
-      taskId: null,
-      restrictedNetwork: false,
-      restrictedReason: null,
-      allowLocalFallback: true,
-      hitlDecision: null,
-      hitlDecisionReason: null,
-      hitlResumeAction: null,
-      hitlDecidedBy: null,
-      hitlConstraints: [],
-    }),
+    resolveRuntimeDebugOptions: () =>
+      createCliNormalizedRuntimeDebugOptions({
+        interactive: false,
+        requestedUiMode: CliInteractiveUiMode.REACT,
+        requestedUiTheme: CliReactThemePreset.GOVERNOR,
+        uiMode: CliInteractiveUiMode.REACT,
+        uiTheme: CliReactThemePreset.GOVERNOR,
+        inputTty: true,
+        stderrTty: true,
+        adapters,
+        connectAction: CliConnectAction.GENERATE,
+        presetId: CliAgentOnboardingPreset.MULTI_TOOL_DEFAULT,
+      }),
     resolveExecutionStreamMetadata: async () => ({}),
     resolveAdapterVerification,
     canWritePath: async () => true,

@@ -1554,6 +1554,21 @@ export class VsCodeExtensionPresentationBuilder {
         ),
       },
       {
+        nodeId: 'workspace-operation-connect',
+        label: this.localizer.localizeText('Run connect', '执行 connect'),
+        description: this.localizer.localizeText(
+          'Configure one provider/tool path without leaving VS Code.',
+          '无需离开 VS Code，直接配置一个 provider 或工具路径。',
+        ),
+        themeIconId: 'plug',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+        command: this.createCommandDescriptor(
+          VSCODE_EXTENSION_COMMAND_IDS.RUN_CONNECT,
+          'Run connect',
+          '执行 connect',
+        ),
+      },
+      {
         nodeId: 'workspace-operation-doctor',
         label: this.localizer.localizeText('Run doctor', '执行 doctor'),
         description: this.localizer.localizeText(

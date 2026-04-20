@@ -185,6 +185,7 @@ export enum OrchestrationBootstrapReadinessActionId {
  */
 export enum OrchestrationWorkspaceOperationKind {
   WORKSPACE_BOOTSTRAP = 'workspace_bootstrap',
+  CONNECT = 'connect',
   DOCTOR = 'doctor',
   CHECK = 'check',
   ADOPT_BOOTSTRAP = 'adopt_bootstrap',

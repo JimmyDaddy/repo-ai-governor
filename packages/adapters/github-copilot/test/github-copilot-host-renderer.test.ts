@@ -1,6 +1,9 @@
 import { PUBLIC_SERVICE_HOST_PACKAGE_EXPORT } from '@repo-ai-governor/shared';
 import {
   HostDistributionHandoffBridge,
+  HostDistributionHost,
+  HostDistributionMode,
+  HostDistributionTarget,
   StructuredWorkflowAssetRegistry,
 } from '@repo-ai-governor/standards';
 import { GithubCopilotHostRenderer } from '../src/github-copilot-host-renderer.js';
@@ -17,33 +20,33 @@ describe('GithubCopilotHostRenderer', () => {
 
   function createRegistry(
     target:
-      | 'github_copilot.repo_local'
-      | 'github_copilot.cli_plugin'
-      | 'github_copilot.github_com_agent',
+      | HostDistributionTarget.GITHUB_COPILOT_REPO_LOCAL
+      | HostDistributionTarget.GITHUB_COPILOT_CLI_PLUGIN
+      | HostDistributionTarget.GITHUB_COPILOT_GITHUB_COM_AGENT,
   ) {
     return new StructuredWorkflowAssetRegistry({
       records: [
         {
           workflowId:
-            target === 'github_copilot.repo_local'
+            target === HostDistributionTarget.GITHUB_COPILOT_REPO_LOCAL
               ? 'workspace-code-review-workflow'
-              : target === 'github_copilot.cli_plugin'
+              : target === HostDistributionTarget.GITHUB_COPILOT_CLI_PLUGIN
                 ? 'technical-solution-promotion'
                 : 'delivery-finisher',
           workflowVersion: '1.0.0',
           workflowStatus: 'active',
           semanticOwnerModule: 'runtime.governance-clients',
           displayName:
-            target === 'github_copilot.repo_local'
+            target === HostDistributionTarget.GITHUB_COPILOT_REPO_LOCAL
               ? 'Workspace Code Review Workflow'
-              : target === 'github_copilot.cli_plugin'
+              : target === HostDistributionTarget.GITHUB_COPILOT_CLI_PLUGIN
                 ? 'Technical Solution Promotion'
                 : 'Delivery Finisher',
           description: 'GitHub Copilot host renderer fixture.',
           canonicalSourceRefs: [
-            target === 'github_copilot.repo_local'
+            target === HostDistributionTarget.GITHUB_COPILOT_REPO_LOCAL
               ? '.codex/skills/workspace-code-review-workflow/SKILL.md'
-              : target === 'github_copilot.cli_plugin'
+              : target === HostDistributionTarget.GITHUB_COPILOT_CLI_PLUGIN
                 ? '.codex/skills/technical-solution-promotion/SKILL.md'
                 : '.codex/skills/workspace-delivery-finisher/SKILL.md',
           ],
@@ -64,13 +67,13 @@ describe('GithubCopilotHostRenderer', () => {
 
   it('renders repo-local host assets with instructions, skills, agents, and AGENTS.md', () => {
     const renderer = new GithubCopilotHostRenderer({
-      registry: createRegistry('github_copilot.repo_local'),
+      registry: createRegistry(HostDistributionTarget.GITHUB_COPILOT_REPO_LOCAL),
       currentWorkingDirectory: process.cwd(),
     });
     const result = renderer.render({
-      host: 'github-copilot',
-      target: 'github_copilot.repo_local',
-      mode: 'project-local',
+      host: HostDistributionHost.GITHUB_COPILOT,
+      target: HostDistributionTarget.GITHUB_COPILOT_REPO_LOCAL,
+      mode: HostDistributionMode.PROJECT_LOCAL,
       stagedExportRoot: '.repo-ai-governor/generated/hosts/github-copilot',
       exportManifestPath:
         '.repo-ai-governor/generated/hosts/github-copilot/host-export.manifest.json',
@@ -78,8 +81,8 @@ describe('GithubCopilotHostRenderer', () => {
         '.repo-ai-governor/generated/hosts/github-copilot/host-verification.summary.json',
     });
 
-    expect(result.exportManifest.host).toBe('github-copilot');
-    expect(result.exportManifest.target).toBe('github_copilot.repo_local');
+    expect(result.exportManifest.host).toBe(HostDistributionHost.GITHUB_COPILOT);
+    expect(result.exportManifest.target).toBe(HostDistributionTarget.GITHUB_COPILOT_REPO_LOCAL);
     expect(result.projectedFiles.some((file) => file.relativePath === 'AGENTS.md')).toBe(true);
     expect(
       result.projectedFiles.some((file) => file.relativePath === '.github/copilot-instructions.md'),
@@ -117,13 +120,13 @@ describe('GithubCopilotHostRenderer', () => {
 
   it('renders Copilot CLI plugin assets with plugin manifest, hooks, and mcp', () => {
     const renderer = new GithubCopilotHostRenderer({
-      registry: createRegistry('github_copilot.cli_plugin'),
+      registry: createRegistry(HostDistributionTarget.GITHUB_COPILOT_CLI_PLUGIN),
       currentWorkingDirectory: process.cwd(),
     });
     const result = renderer.render({
-      host: 'github-copilot',
-      target: 'github_copilot.cli_plugin',
-      mode: 'plugin-bundle',
+      host: HostDistributionHost.GITHUB_COPILOT,
+      target: HostDistributionTarget.GITHUB_COPILOT_CLI_PLUGIN,
+      mode: HostDistributionMode.PLUGIN_BUNDLE,
       stagedExportRoot: '.repo-ai-governor/generated/hosts/github-copilot',
       exportManifestPath:
         '.repo-ai-governor/generated/hosts/github-copilot/host-export.manifest.json',
@@ -164,13 +167,13 @@ describe('GithubCopilotHostRenderer', () => {
 
   it('renders GitHub.com agent assets without plugin packaging assumptions', () => {
     const renderer = new GithubCopilotHostRenderer({
-      registry: createRegistry('github_copilot.github_com_agent'),
+      registry: createRegistry(HostDistributionTarget.GITHUB_COPILOT_GITHUB_COM_AGENT),
       currentWorkingDirectory: process.cwd(),
     });
     const result = renderer.render({
-      host: 'github-copilot',
-      target: 'github_copilot.github_com_agent',
-      mode: 'project-local',
+      host: HostDistributionHost.GITHUB_COPILOT,
+      target: HostDistributionTarget.GITHUB_COPILOT_GITHUB_COM_AGENT,
+      mode: HostDistributionMode.PROJECT_LOCAL,
       stagedExportRoot: '.repo-ai-governor/generated/hosts/github-copilot',
       exportManifestPath:
         '.repo-ai-governor/generated/hosts/github-copilot/host-export.manifest.json',
@@ -178,7 +181,9 @@ describe('GithubCopilotHostRenderer', () => {
         '.repo-ai-governor/generated/hosts/github-copilot/host-verification.summary.json',
     });
 
-    expect(result.exportManifest.target).toBe('github_copilot.github_com_agent');
+    expect(result.exportManifest.target).toBe(
+      HostDistributionTarget.GITHUB_COPILOT_GITHUB_COM_AGENT,
+    );
     expect(
       result.projectedFiles.some((file) => file.relativePath === '.github/copilot-instructions.md'),
     ).toBe(true);

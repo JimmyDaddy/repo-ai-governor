@@ -37,6 +37,7 @@ import {
   SESSION_DELIVERY_WORKFLOW_PHASE,
   SESSION_DELIVERY_WORKFLOW_VERSION,
   SESSION_MAIN_CAPABILITY_ID,
+  type SessionMainSupervisorTurnOutcome,
 } from '../src/index.js';
 
 function createGraphPlan() {
@@ -1565,7 +1566,11 @@ describe('core-orchestration-service local shell', () => {
         turn_delivery_selected_stream: 'stream-project-110-sprint-002',
         turn_delivery_result_summary: 'Task plan preview is ready for confirmation.',
       });
-      expect(appendResult.event.payload.metadata?.turn_delivery_related_artifact_paths).toEqual([
+      const appendedMetadata = appendResult.event.payload.metadata as
+        | { turn_delivery_related_artifact_paths?: string[] }
+        | undefined;
+
+      expect(appendedMetadata?.turn_delivery_related_artifact_paths).toEqual([
         '.repo-ai-governor/context/plan/plan-001.preview.json',
         '.repo-ai-governor/context/dev/project-110/sprint-002/plan.md',
         '.repo-ai-governor/context/dev/project-110/sprint-002/tasks/checklist.md',
@@ -2749,19 +2754,22 @@ describe('core-orchestration-service local shell', () => {
 
   it('keeps command handoff governance ahead of explicit role mentions for connect-like turns', async () => {
     const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
-    const resolveTurn = vi.fn(async () => ({
-      responseMode: 'role_collaboration',
-      interactionMode: 'single_role_delegate',
-      assistantDelta: '## Planner perspective',
-      assistantMessage: '## Planner perspective\n\n- this should not be emitted',
-      executionIntent: 'session.role_delegate.planner',
-      requiresConfirmation: false,
-      selectedSurface: 'ollama',
-      selectedBy: 'session.main.role_delegate.safe_fallback',
-      sessionRoutingPreferenceApplied: false,
-      invokedRoleIds: ['planner'],
-      subagentCount: 1,
-    }));
+    const resolveTurn = vi.fn(
+      async () =>
+        ({
+          responseMode: 'role_collaboration',
+          interactionMode: 'single_role_delegate',
+          assistantDelta: '## Planner perspective',
+          assistantMessage: '## Planner perspective\n\n- this should not be emitted',
+          executionIntent: 'session.role_delegate.planner',
+          requiresConfirmation: false,
+          selectedSurface: 'ollama',
+          selectedBy: 'session.main.role_delegate.safe_fallback',
+          sessionRoutingPreferenceApplied: false,
+          invokedRoleIds: ['planner'],
+          subagentCount: 1,
+        }) satisfies SessionMainSupervisorTurnOutcome,
+    );
     const orchestrationService = new LocalOrchestrationServiceShell({
       workspaceRoot: temporaryRoot,
       sessionMainSupervisorRuntime: {
@@ -2796,19 +2804,22 @@ describe('core-orchestration-service local shell', () => {
 
   it('preserves direct-execute review handoff when one unknown @mention is not a configured role', async () => {
     const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
-    const resolveTurn = vi.fn(async () => ({
-      responseMode: 'role_collaboration',
-      interactionMode: 'single_role_delegate',
-      assistantDelta: '## Planner perspective',
-      assistantMessage: '## Planner perspective\n\n- this should not be emitted',
-      executionIntent: 'session.role_delegate.planner',
-      requiresConfirmation: false,
-      selectedSurface: 'ollama',
-      selectedBy: 'session.main.role_delegate.safe_fallback',
-      sessionRoutingPreferenceApplied: false,
-      invokedRoleIds: ['planner'],
-      subagentCount: 1,
-    }));
+    const resolveTurn = vi.fn(
+      async () =>
+        ({
+          responseMode: 'role_collaboration',
+          interactionMode: 'single_role_delegate',
+          assistantDelta: '## Planner perspective',
+          assistantMessage: '## Planner perspective\n\n- this should not be emitted',
+          executionIntent: 'session.role_delegate.planner',
+          requiresConfirmation: false,
+          selectedSurface: 'ollama',
+          selectedBy: 'session.main.role_delegate.safe_fallback',
+          sessionRoutingPreferenceApplied: false,
+          invokedRoleIds: ['planner'],
+          subagentCount: 1,
+        }) satisfies SessionMainSupervisorTurnOutcome,
+    );
     const orchestrationService = new LocalOrchestrationServiceShell({
       workspaceRoot: temporaryRoot,
       sessionMainSupervisorRuntime: {
@@ -3086,49 +3097,52 @@ describe('core-orchestration-service local shell', () => {
       roleId: null,
       policyEnvelope: 'chat_only',
     };
-    const firstResolveTurn = vi.fn(async () => ({
-      responseMode: 'answer',
-      interactionMode: 'direct_answer',
-      assistantDelta: 'continued answer',
-      assistantMessage: 'continued answer',
-      executionIntent: 'session.answer',
-      requiresConfirmation: false,
-      selectedSurface: 'codex',
-      selectedBy: 'session.main.answer.primary',
-      sessionRoutingPreferenceApplied: false,
-      invokedRoleIds: [],
-      subagentCount: 0,
-      providerContinuationSummaries: [createdSummary],
-      providerContinuationMutations: [
-        {
-          laneKey,
-          summary: createdSummary,
-          slot: {
-            laneKey,
-            routeId: 'session.main',
-            stageId: 'stage-session-main-answer',
-            roleId: null,
-            selectedSurface: 'codex',
-            providerId: 'openai',
-            transportKind: 'remote_api',
-            model: 'gpt-5',
-            policyEnvelope: 'chat_only',
-            workspaceRoot: temporaryRoot,
-            currentWorkingDirectory: temporaryRoot,
-            handle: {
-              providerId: 'openai',
-              surface: 'codex',
-              transportKind: 'remote_api',
-              handleKind: 'response_id',
-              value: 'resp-1',
-              model: 'gpt-5',
-              acquiredAt: '2026-04-04T12:00:00.000Z',
+    const firstResolveTurn = vi.fn(
+      async () =>
+        ({
+          responseMode: 'answer',
+          interactionMode: 'direct_answer',
+          assistantDelta: 'continued answer',
+          assistantMessage: 'continued answer',
+          executionIntent: 'session.answer',
+          requiresConfirmation: false,
+          selectedSurface: 'codex',
+          selectedBy: 'session.main.answer.primary',
+          sessionRoutingPreferenceApplied: false,
+          invokedRoleIds: [],
+          subagentCount: 0,
+          providerContinuationSummaries: [createdSummary],
+          providerContinuationMutations: [
+            {
+              laneKey,
+              summary: createdSummary,
+              slot: {
+                laneKey,
+                routeId: 'session.main',
+                stageId: 'stage-session-main-answer',
+                roleId: null,
+                selectedSurface: 'codex',
+                providerId: 'openai',
+                transportKind: 'remote_api',
+                model: 'gpt-5',
+                policyEnvelope: 'chat_only',
+                workspaceRoot: temporaryRoot,
+                currentWorkingDirectory: temporaryRoot,
+                handle: {
+                  providerId: 'openai',
+                  surface: 'codex',
+                  transportKind: 'remote_api',
+                  handleKind: 'response_id',
+                  value: 'resp-1',
+                  model: 'gpt-5',
+                  acquiredAt: '2026-04-04T12:00:00.000Z',
+                },
+                updatedAt: '2026-04-04T12:00:00.000Z',
+              },
             },
-            updatedAt: '2026-04-04T12:00:00.000Z',
-          },
-        },
-      ],
-    }));
+          ],
+        }) satisfies SessionMainSupervisorTurnOutcome,
+    );
     const orchestrationService = new LocalOrchestrationServiceShell({
       workspaceRoot: temporaryRoot,
       sessionMainSupervisorRuntime: {
@@ -3188,7 +3202,7 @@ describe('core-orchestration-service local shell', () => {
           sessionRoutingPreferenceApplied: false,
           invokedRoleIds: [],
           subagentCount: 0,
-        };
+        } satisfies SessionMainSupervisorTurnOutcome;
       });
       const resumedService = new LocalOrchestrationServiceShell({
         workspaceRoot: temporaryRoot,
@@ -3301,7 +3315,7 @@ describe('core-orchestration-service local shell', () => {
           },
           invokedRoleIds: [],
           subagentCount: 0,
-        };
+        } satisfies SessionMainSupervisorTurnOutcome;
       });
       const resumedService = new LocalOrchestrationServiceShell({
         workspaceRoot: temporaryRoot,
@@ -3359,23 +3373,26 @@ describe('core-orchestration-service local shell', () => {
 
   it('persists supervisor execution details lines on completed turns', async () => {
     const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
-    const resolveTurn = vi.fn(async () => ({
-      responseMode: 'answer',
-      interactionMode: 'direct_answer',
-      assistantDelta: '## Session Main Answer',
-      assistantMessage: '## Session Main Answer\n\nNo eligible direct-answer surface.',
-      executionDetailsLines: [
-        'Surface probe diagnostics for this turn:',
-        'codex · not eligible · Codex probe exited with code 1.',
-      ],
-      executionIntent: 'session.answer',
-      requiresConfirmation: false,
-      selectedSurface: 'guarded-direct-answer',
-      selectedBy: 'session.main.answer.guard',
-      sessionRoutingPreferenceApplied: false,
-      invokedRoleIds: [],
-      subagentCount: 0,
-    }));
+    const resolveTurn = vi.fn(
+      async () =>
+        ({
+          responseMode: 'answer',
+          interactionMode: 'direct_answer',
+          assistantDelta: '## Session Main Answer',
+          assistantMessage: '## Session Main Answer\n\nNo eligible direct-answer surface.',
+          executionDetailsLines: [
+            'Surface probe diagnostics for this turn:',
+            'codex · not eligible · Codex probe exited with code 1.',
+          ],
+          executionIntent: 'session.answer',
+          requiresConfirmation: false,
+          selectedSurface: 'guarded-direct-answer',
+          selectedBy: 'session.main.answer.guard',
+          sessionRoutingPreferenceApplied: false,
+          invokedRoleIds: [],
+          subagentCount: 0,
+        }) satisfies SessionMainSupervisorTurnOutcome,
+    );
     const orchestrationService = new LocalOrchestrationServiceShell({
       workspaceRoot: temporaryRoot,
       sessionMainSupervisorRuntime: {
@@ -3431,49 +3448,52 @@ describe('core-orchestration-service local shell', () => {
       roleId: null,
       policyEnvelope: 'chat_only',
     };
-    const firstResolveTurn = vi.fn(async () => ({
-      responseMode: 'answer',
-      interactionMode: 'direct_answer',
-      assistantDelta: 'continued answer',
-      assistantMessage: 'continued answer',
-      executionIntent: 'session.answer',
-      requiresConfirmation: false,
-      selectedSurface: 'codex',
-      selectedBy: 'session.main.answer.primary',
-      sessionRoutingPreferenceApplied: false,
-      invokedRoleIds: [],
-      subagentCount: 0,
-      providerContinuationSummaries: [createdSummary],
-      providerContinuationMutations: [
-        {
-          laneKey,
-          summary: createdSummary,
-          slot: {
-            laneKey,
-            routeId: 'session.main',
-            stageId: 'stage-session-main-answer',
-            roleId: null,
-            selectedSurface: 'codex',
-            providerId: 'openai',
-            transportKind: 'remote_api',
-            model: 'gpt-5',
-            policyEnvelope: 'chat_only',
-            workspaceRoot: temporaryRoot,
-            currentWorkingDirectory: temporaryRoot,
-            handle: {
-              providerId: 'openai',
-              surface: 'codex',
-              transportKind: 'remote_api',
-              handleKind: 'response_id',
-              value: 'resp-1',
-              model: 'gpt-5',
-              acquiredAt: '2026-04-04T12:00:00.000Z',
+    const firstResolveTurn = vi.fn(
+      async () =>
+        ({
+          responseMode: 'answer',
+          interactionMode: 'direct_answer',
+          assistantDelta: 'continued answer',
+          assistantMessage: 'continued answer',
+          executionIntent: 'session.answer',
+          requiresConfirmation: false,
+          selectedSurface: 'codex',
+          selectedBy: 'session.main.answer.primary',
+          sessionRoutingPreferenceApplied: false,
+          invokedRoleIds: [],
+          subagentCount: 0,
+          providerContinuationSummaries: [createdSummary],
+          providerContinuationMutations: [
+            {
+              laneKey,
+              summary: createdSummary,
+              slot: {
+                laneKey,
+                routeId: 'session.main',
+                stageId: 'stage-session-main-answer',
+                roleId: null,
+                selectedSurface: 'codex',
+                providerId: 'openai',
+                transportKind: 'remote_api',
+                model: 'gpt-5',
+                policyEnvelope: 'chat_only',
+                workspaceRoot: temporaryRoot,
+                currentWorkingDirectory: temporaryRoot,
+                handle: {
+                  providerId: 'openai',
+                  surface: 'codex',
+                  transportKind: 'remote_api',
+                  handleKind: 'response_id',
+                  value: 'resp-1',
+                  model: 'gpt-5',
+                  acquiredAt: '2026-04-04T12:00:00.000Z',
+                },
+                updatedAt: '2026-04-04T12:00:00.000Z',
+              },
             },
-            updatedAt: '2026-04-04T12:00:00.000Z',
-          },
-        },
-      ],
-    }));
+          ],
+        }) satisfies SessionMainSupervisorTurnOutcome,
+    );
     const orchestrationService = new LocalOrchestrationServiceShell({
       workspaceRoot: temporaryRoot,
       sessionMainSupervisorRuntime: {
@@ -3538,7 +3558,7 @@ describe('core-orchestration-service local shell', () => {
               },
             },
           ],
-        };
+        } satisfies SessionMainSupervisorTurnOutcome;
       });
       const resumedService = new LocalOrchestrationServiceShell({
         workspaceRoot: temporaryRoot,

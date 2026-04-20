@@ -1,4 +1,5 @@
 import { AuditRecordStatus, type PersistedAuditRecord } from '@repo-ai-governor/core-session';
+import { WorkspaceMode } from '@repo-ai-governor/shared';
 import { GovernorErrorCode } from '@repo-ai-governor/shared';
 import { type AuditRecordReader, ReportBuilder } from '../src/index.js';
 
@@ -50,7 +51,7 @@ function createPersistedRecord(
         writes: 1,
       },
       workspaceId: 'workspace-report-001',
-      workspaceMode: 'tool_managed',
+      workspaceMode: WorkspaceMode.TOOL_MANAGED,
       workspaceRoot: '/tmp/repo-report',
       ...overrides,
     },
@@ -259,13 +260,15 @@ describe('report-builder unit', () => {
             timeoutPolicyRef: null,
             budgetPolicyRef: null,
             workspaceId: 'workspace-report-001',
-            workspaceMode: 'tool_managed',
+            workspaceMode: WorkspaceMode.TOOL_MANAGED,
             executionId: 'exec-report-001',
             sessionId: 'shared-exec-001',
             selectedBy: 'primary',
             selectedSurface: 'claude-code',
             projectionStatus: 'completed',
             failureReasons: [],
+            unsupportedCapabilities: [],
+            degradedCapabilities: [],
           },
         ],
         sessionProjection: {

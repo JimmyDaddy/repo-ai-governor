@@ -24,6 +24,7 @@ import type {
   OrchestrationRecoverExecutionRequest,
   OrchestrationRecoverExecutionResponse,
   OrchestrationServiceHealthResponse,
+  OrchestrationSessionEvent,
   OrchestrationSubmitHitlDecisionRequest,
   OrchestrationSubmitHitlDecisionResponse,
   OrchestrationTerminateExecutionRequest,
@@ -34,6 +35,9 @@ import type {
 import {
   OrchestrationClientSurface as OrchestrationClientSurfaceValue,
   OrchestrationGovernanceNotificationStatus as OrchestrationGovernanceNotificationStatusValue,
+  OrchestrationSessionEventType,
+  OrchestrationSessionRouteId,
+  OrchestrationSessionStatus,
 } from '@repo-ai-governor/orchestration-service-client';
 import { GovernorErrorCode, RuntimeError, standardizeError } from '@repo-ai-governor/shared';
 import {
@@ -118,6 +122,35 @@ interface VsCodeExtensionEmbeddedCliRequest {
   stdin?: string;
 }
 
+interface VsCodeExtensionSessionCommandBatch {
+  slashQuery?: string;
+  bridgeArgv?: string[];
+  previewCommandLine?: string;
+}
+
+interface VsCodeExtensionSessionHandoffBacklink {
+  kind?: string;
+  label?: string;
+  target?: string;
+}
+
+export interface VsCodeExtensionSessionTurnResult {
+  sessionId: string;
+  turnId: string;
+  assistantMessage: string;
+  responseMode?: string;
+  interactionMode?: string;
+  executionIntent?: string;
+  suggestedSlashCommand?: string;
+  handoffCommandPreview?: string;
+  selectedSurface?: string;
+  selectedBy?: string;
+  handoffExecutionMode?: string;
+  sessionRoutingPreferenceApplied?: boolean;
+  commandBatches: readonly VsCodeExtensionSessionCommandBatch[];
+  handoffBacklinks: readonly VsCodeExtensionSessionHandoffBacklink[];
+}
+
 interface VsCodeExtensionCliCommandSuccessPayload {
   message?: string;
   command_result?: {
@@ -161,6 +194,9 @@ export class VsCodeExtensionServiceRuntime {
   private secureAuthoringSnapshotPromise: Promise<VsCodeExtensionSecureAuthoringSnapshot> | null =
     null;
   private secureAuthoringRepositoryRoot: string | undefined;
+  private mainSessionId: string | undefined;
+  private mainSessionWorkspaceRoot: string | undefined;
+  private mainSessionRepositoryRoot: string | undefined;
 
   public constructor(dependencies: VsCodeExtensionServiceRuntimeDependencies = {}) {
     this.configLoader = dependencies.configLoader ?? new ConfigLoader();
@@ -329,6 +365,87 @@ export class VsCodeExtensionServiceRuntime {
   public async getHealth(): Promise<OrchestrationServiceHealthResponse | undefined> {
     const client = await this.resolveClient();
     return client?.getHealth();
+  }
+
+  /**
+   * Sends one free-form chat turn through the shared `session.main` service route.
+   * @param userMessage Operator-authored prompt to route through the governed conversation seam.
+   * @returns Structured session-turn output projected from the terminal turn event payload.
+   */
+  public async executeMainSessionTurn(
+    userMessage: string,
+  ): Promise<VsCodeExtensionSessionTurnResult> {
+    const trimmedUserMessage = userMessage.trim();
+    if (trimmedUserMessage.length === 0) {
+      throw new RuntimeError(
+        GovernorErrorCode.ENTRYPOINT_COMMAND_WRAPPER_INVALID,
+        'VS Code Governor chat requires one non-empty message.',
+        {
+          surface: 'vscode_extension_chat',
+        },
+      );
+    }
+
+    const client = await this.requireClient();
+    const session = await this.resolveOrCreateMainSession();
+    const previousLatestEventSequence = session.latestEventSequence;
+    const turnResult = await client.sendSessionTurn({
+      sessionId: session.sessionId,
+      routeId: OrchestrationSessionRouteId.MAIN,
+      userMessage: trimmedUserMessage,
+      metadata: {
+        locale: this.resolveEmbeddedCliLocale(),
+      },
+    });
+    const subscription = await client.subscribeSession({
+      sessionId: turnResult.session.sessionId,
+      afterSequence: previousLatestEventSequence,
+    });
+    const completedEvent = this.findLatestSessionEvent(
+      subscription.events,
+      OrchestrationSessionEventType.TURN_COMPLETED,
+    );
+    const fallbackDeltaEvent = this.findLatestSessionEvent(
+      subscription.events,
+      OrchestrationSessionEventType.TURN_STREAM_DELTA,
+    );
+    const completionPayload = completedEvent?.payload ?? {};
+    const fallbackAssistantMessage =
+      this.readOptionalRecordString(fallbackDeltaEvent?.payload, 'accumulatedText') ??
+      this.readOptionalRecordString(fallbackDeltaEvent?.payload, 'delta') ??
+      this.localizeText(
+        'The local orchestration service did not return one assistant message.',
+        '本地编排服务没有返回 assistant 消息。',
+      );
+    this.rememberMainSession(turnResult.session.sessionId);
+
+    return {
+      sessionId: turnResult.session.sessionId,
+      turnId: turnResult.turnId,
+      assistantMessage:
+        this.readOptionalRecordString(completionPayload, 'assistantMessage') ??
+        fallbackAssistantMessage,
+      responseMode: this.readOptionalRecordString(completionPayload, 'responseMode'),
+      interactionMode: this.readOptionalRecordString(completionPayload, 'interactionMode'),
+      executionIntent: this.readOptionalRecordString(completionPayload, 'executionIntent'),
+      suggestedSlashCommand: this.readOptionalRecordString(
+        completionPayload,
+        'suggestedSlashCommand',
+      ),
+      handoffCommandPreview: this.readOptionalRecordString(
+        completionPayload,
+        'handoffCommandPreview',
+      ),
+      selectedSurface: this.readOptionalRecordString(completionPayload, 'selectedSurface'),
+      selectedBy: this.readOptionalRecordString(completionPayload, 'selectedBy'),
+      handoffExecutionMode: this.readOptionalRecordString(
+        completionPayload,
+        'handoffExecutionMode',
+      ),
+      sessionRoutingPreferenceApplied: completionPayload.sessionRoutingPreferenceApplied === true,
+      commandBatches: this.readSessionCommandBatches(completionPayload.commandBatches),
+      handoffBacklinks: this.readSessionHandoffBacklinks(completionPayload.handoffBacklinks),
+    };
   }
 
   /**
@@ -780,6 +897,9 @@ export class VsCodeExtensionServiceRuntime {
     if (!this.clientPromise) {
       this.clientWorkspaceRoot = undefined;
       this.clientRepositoryRoot = undefined;
+      this.mainSessionId = undefined;
+      this.mainSessionWorkspaceRoot = undefined;
+      this.mainSessionRepositoryRoot = undefined;
       return;
     }
 
@@ -787,6 +907,9 @@ export class VsCodeExtensionServiceRuntime {
     this.clientPromise = null;
     this.clientWorkspaceRoot = undefined;
     this.clientRepositoryRoot = undefined;
+    this.mainSessionId = undefined;
+    this.mainSessionWorkspaceRoot = undefined;
+    this.mainSessionRepositoryRoot = undefined;
     this.clearSecureAuthoringSnapshotCache();
     await client?.dispose();
   }
@@ -915,6 +1038,98 @@ export class VsCodeExtensionServiceRuntime {
         degradedReason: standardizeError(error).message,
       };
     }
+  }
+
+  private async resolveOrCreateMainSession() {
+    const client = await this.requireClient();
+    const openedWorkspaceRoot = this.getWorkspaceRoot();
+    const serviceWorkspaceContext = openedWorkspaceRoot
+      ? this.resolveServiceWorkspaceContext(openedWorkspaceRoot)
+      : undefined;
+
+    if (
+      this.mainSessionId &&
+      this.mainSessionWorkspaceRoot === serviceWorkspaceContext?.governanceWorkspaceRoot &&
+      this.mainSessionRepositoryRoot === serviceWorkspaceContext?.repositoryRoot
+    ) {
+      const existingSession = await client.getSession(this.mainSessionId);
+      if (existingSession?.status === OrchestrationSessionStatus.ACTIVE) {
+        return existingSession;
+      }
+    }
+
+    const startedSession = await client.startSession({
+      routeId: OrchestrationSessionRouteId.MAIN,
+      initialContext: {
+        surface: 'vscode_extension_chat',
+      },
+    });
+    this.rememberMainSession(startedSession.session.sessionId);
+    return startedSession.session;
+  }
+
+  private rememberMainSession(sessionId: string): void {
+    const openedWorkspaceRoot = this.getWorkspaceRoot();
+    const serviceWorkspaceContext = openedWorkspaceRoot
+      ? this.resolveServiceWorkspaceContext(openedWorkspaceRoot)
+      : undefined;
+    this.mainSessionId = sessionId;
+    this.mainSessionWorkspaceRoot = serviceWorkspaceContext?.governanceWorkspaceRoot;
+    this.mainSessionRepositoryRoot = serviceWorkspaceContext?.repositoryRoot;
+  }
+
+  private findLatestSessionEvent(
+    events: readonly OrchestrationSessionEvent[],
+    eventType: OrchestrationSessionEventType,
+  ): OrchestrationSessionEvent | undefined {
+    return [...events].reverse().find((event) => event.type === eventType);
+  }
+
+  private readOptionalRecordString(
+    record: Record<string, unknown> | undefined,
+    key: string,
+  ): string | undefined {
+    const value = record?.[key];
+    return typeof value === 'string' && value.trim().length > 0 ? value : undefined;
+  }
+
+  private readSessionCommandBatches(value: unknown): readonly VsCodeExtensionSessionCommandBatch[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value
+      .filter(
+        (entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === 'object',
+      )
+      .map((entry) => ({
+        slashQuery: this.readOptionalRecordString(entry, 'slashQuery'),
+        bridgeArgv: Array.isArray(entry.bridgeArgv)
+          ? entry.bridgeArgv.filter(
+              (argvEntry): argvEntry is string =>
+                typeof argvEntry === 'string' && argvEntry.trim().length > 0,
+            )
+          : undefined,
+        previewCommandLine: this.readOptionalRecordString(entry, 'previewCommandLine'),
+      }));
+  }
+
+  private readSessionHandoffBacklinks(
+    value: unknown,
+  ): readonly VsCodeExtensionSessionHandoffBacklink[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value
+      .filter(
+        (entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === 'object',
+      )
+      .map((entry) => ({
+        kind: this.readOptionalRecordString(entry, 'kind'),
+        label: this.readOptionalRecordString(entry, 'label'),
+        target: this.readOptionalRecordString(entry, 'target'),
+      }));
   }
 
   private async requireClient(): Promise<LocalOrchestrationServiceSidecarClient> {

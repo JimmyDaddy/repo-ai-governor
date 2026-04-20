@@ -137,6 +137,9 @@ export class VsCodeExtensionHost {
         VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKSPACE_BOOTSTRAP,
         async () => commandController.runWorkspaceBootstrap(),
       ),
+      vscode.commands.registerCommand(VSCODE_EXTENSION_COMMAND_IDS.RUN_CONNECT, async () =>
+        commandController.runConnect(),
+      ),
       vscode.commands.registerCommand(VSCODE_EXTENSION_COMMAND_IDS.RUN_DOCTOR, async () =>
         commandController.runDoctor(),
       ),
@@ -223,7 +226,7 @@ export class VsCodeExtensionHost {
       },
     );
 
-    const chatParticipant = this.createOptionalChatParticipant(context);
+    const chatParticipant = this.createOptionalChatParticipant(context, commandController);
     if (chatParticipant) {
       context.subscriptions.push(chatParticipant);
     }
@@ -249,6 +252,7 @@ export class VsCodeExtensionHost {
 
   private createOptionalChatParticipant(
     context: vscode.ExtensionContext,
+    commandController: VsCodeExtensionCommandController,
   ): vscode.Disposable | undefined {
     if (!this.hasChatParticipantSupport()) {
       return undefined;
@@ -257,6 +261,7 @@ export class VsCodeExtensionHost {
     const chatParticipant = new VsCodeExtensionChatParticipantRuntime(
       this.serviceRuntime,
       this.selectionStore,
+      commandController,
       this.presentationBuilder,
       this.localizer,
     ).createParticipant(VSCODE_EXTENSION_CHAT_PARTICIPANT_ID);

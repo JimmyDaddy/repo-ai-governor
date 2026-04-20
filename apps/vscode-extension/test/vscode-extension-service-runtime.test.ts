@@ -24,6 +24,8 @@ import {
   OrchestrationServiceHostKind,
   OrchestrationServiceLifecycleStatus,
   OrchestrationServiceTransportKind,
+  OrchestrationSessionEventType,
+  OrchestrationSessionRouteId,
   OrchestrationSessionStatus,
   OrchestrationWorkspaceOperationKind,
 } from '@repo-ai-governor/orchestration-service-client';
@@ -39,6 +41,9 @@ const serviceClientMock = vi.hoisted(() => ({
   queryArtifactPane: vi.fn(),
   queryBootstrapReadiness: vi.fn(),
   querySecureAuthoring: vi.fn(),
+  startSession: vi.fn(),
+  sendSessionTurn: vi.fn(),
+  subscribeSession: vi.fn(),
   getSession: vi.fn(),
   resumeSession: vi.fn(),
   setUserConfigValue: vi.fn(),
@@ -63,30 +68,26 @@ const vscodeMock = vi.hoisted(() => ({
   },
 }));
 
-vi.mock(
-  'vscode',
-  () => ({
-    workspace: {
-      get isTrusted() {
-        return vscodeMock.state.trusted;
-      },
-      get workspaceFolders() {
-        return vscodeMock.state.workspaceFolders;
-      },
+vi.mock('vscode', () => ({
+  workspace: {
+    get isTrusted() {
+      return vscodeMock.state.trusted;
     },
-    window: {
-      get activeTextEditor() {
-        return vscodeMock.state.activeTextEditor;
-      },
+    get workspaceFolders() {
+      return vscodeMock.state.workspaceFolders;
     },
-    env: {
-      get language() {
-        return vscodeMock.state.language;
-      },
+  },
+  window: {
+    get activeTextEditor() {
+      return vscodeMock.state.activeTextEditor;
     },
-  }),
-  { virtual: true },
-);
+  },
+  env: {
+    get language() {
+      return vscodeMock.state.language;
+    },
+  },
+}));
 
 vi.mock('@repo-ai-governor/core-orchestration-service/sidecar-client', () => ({
   LocalOrchestrationServiceSidecarClient: class LocalOrchestrationServiceSidecarClient {
@@ -102,6 +103,9 @@ vi.mock('@repo-ai-governor/core-orchestration-service/sidecar-client', () => ({
     public readonly queryArtifactPane = serviceClientMock.queryArtifactPane;
     public readonly queryBootstrapReadiness = serviceClientMock.queryBootstrapReadiness;
     public readonly querySecureAuthoring = serviceClientMock.querySecureAuthoring;
+    public readonly startSession = serviceClientMock.startSession;
+    public readonly sendSessionTurn = serviceClientMock.sendSessionTurn;
+    public readonly subscribeSession = serviceClientMock.subscribeSession;
     public readonly getSession = serviceClientMock.getSession;
     public readonly resumeSession = serviceClientMock.resumeSession;
     public readonly setUserConfigValue = serviceClientMock.setUserConfigValue;
@@ -168,6 +172,9 @@ describe('VsCodeExtensionServiceRuntime', () => {
     serviceClientMock.queryArtifactPane.mockReset();
     serviceClientMock.queryBootstrapReadiness.mockReset();
     serviceClientMock.querySecureAuthoring.mockReset();
+    serviceClientMock.startSession.mockReset();
+    serviceClientMock.sendSessionTurn.mockReset();
+    serviceClientMock.subscribeSession.mockReset();
     serviceClientMock.getSession.mockReset();
     serviceClientMock.resumeSession.mockReset();
     serviceClientMock.setUserConfigValue.mockReset();
@@ -262,6 +269,75 @@ describe('VsCodeExtensionServiceRuntime', () => {
 
     expect(zhBootstrapSource).toContain('当前内嵌 CLI 模块未导出 runCli()。');
     expect(zhBootstrapSource).not.toContain('Embedded CLI module did not expose runCli().');
+  });
+
+  it('routes free-form chat turns through one extension-owned main session', async () => {
+    serviceClientMock.startSession.mockResolvedValueOnce({
+      session: {
+        sessionId: 'session-main',
+        status: OrchestrationSessionStatus.ACTIVE,
+        currentRouteId: OrchestrationSessionRouteId.MAIN,
+        latestTurnId: undefined,
+        latestEventSequence: 0,
+        nextCursor: 'cursor-0',
+      },
+    });
+    serviceClientMock.sendSessionTurn.mockResolvedValueOnce({
+      session: {
+        sessionId: 'session-main',
+      },
+      turnId: 'turn-1',
+      routeId: OrchestrationSessionRouteId.MAIN,
+    });
+    serviceClientMock.subscribeSession.mockResolvedValueOnce({
+      events: [
+        {
+          sequence: 1,
+          sessionId: 'session-main',
+          turnId: 'turn-1',
+          routeId: OrchestrationSessionRouteId.MAIN,
+          type: OrchestrationSessionEventType.TURN_COMPLETED,
+          streamCursor: 'cursor-1',
+          payload: {
+            assistantMessage: '## Workspace status\n\n- ready',
+            responseMode: 'answer',
+            interactionMode: 'direct_answer',
+            executionIntent: 'session.answer',
+            selectedSurface: 'codex',
+            selectedBy: 'session.main.answer.primary',
+          },
+        },
+      ],
+      latestEventSequence: 1,
+      nextCursor: 'cursor-1',
+    });
+
+    const runtime = new VsCodeExtensionServiceRuntime();
+
+    await expect(runtime.executeMainSessionTurn('what can you do?')).resolves.toMatchObject({
+      sessionId: 'session-main',
+      turnId: 'turn-1',
+      assistantMessage: '## Workspace status\n\n- ready',
+      responseMode: 'answer',
+      interactionMode: 'direct_answer',
+      executionIntent: 'session.answer',
+      selectedSurface: 'codex',
+      selectedBy: 'session.main.answer.primary',
+    });
+    expect(serviceClientMock.startSession).toHaveBeenCalledWith({
+      routeId: OrchestrationSessionRouteId.MAIN,
+      initialContext: {
+        surface: 'vscode_extension_chat',
+      },
+    });
+    expect(serviceClientMock.sendSessionTurn).toHaveBeenCalledWith({
+      sessionId: 'session-main',
+      routeId: OrchestrationSessionRouteId.MAIN,
+      userMessage: 'what can you do?',
+      metadata: {
+        locale: 'en-US',
+      },
+    });
   });
 
   it('resolves workbench overview from the service-owned queue seam', async () => {
@@ -679,7 +755,7 @@ describe('VsCodeExtensionServiceRuntime', () => {
     });
     serviceClientMock.getSession.mockResolvedValueOnce({
       sessionId: 'session-1',
-      status: OrchestrationSessionStatus.OPEN,
+      status: OrchestrationSessionStatus.ACTIVE,
       openedAt: '2026-04-07T03:00:00.000Z',
       latestTurnId: 'turn-1',
       latestEventSequence: 5,
@@ -718,7 +794,7 @@ describe('VsCodeExtensionServiceRuntime', () => {
       },
       sessionContinuity: {
         sessionId: 'session-1',
-        sessionStatus: OrchestrationSessionStatus.OPEN,
+        sessionStatus: OrchestrationSessionStatus.ACTIVE,
         currentRouteId: 'workflow_authoring',
         latestTurnId: 'turn-1',
         latestEventSequence: 5,
@@ -819,7 +895,7 @@ describe('VsCodeExtensionServiceRuntime', () => {
     });
     serviceClientMock.getSession.mockResolvedValueOnce({
       sessionId: 'session-1',
-      status: OrchestrationSessionStatus.OPEN,
+      status: OrchestrationSessionStatus.ACTIVE,
       openedAt: '2026-04-07T03:00:00.000Z',
       latestTurnId: 'turn-1',
       latestEventSequence: 7,
@@ -839,7 +915,7 @@ describe('VsCodeExtensionServiceRuntime', () => {
     ).resolves.toMatchObject({
       sessionContinuity: {
         sessionId: 'session-1',
-        sessionStatus: OrchestrationSessionStatus.OPEN,
+        sessionStatus: OrchestrationSessionStatus.ACTIVE,
         latestTurnId: 'turn-1',
         latestEventSequence: 7,
         nextCursor: 'cursor-1',

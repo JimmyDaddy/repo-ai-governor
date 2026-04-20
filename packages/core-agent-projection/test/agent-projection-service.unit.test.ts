@@ -1,5 +1,6 @@
 import { type AdaptersConfig, WorkspaceMode } from '@repo-ai-governor/config';
 import {
+  AdapterAvailability,
   AdapterCapabilitySnapshotSource,
   AdapterProviderKind,
   AdapterSurface,
@@ -41,7 +42,7 @@ function createAdaptersConfigFixture(): AdaptersConfig {
       {
         toolId: AdapterSurface.CODEX,
         enabled: true,
-        availability: 'available',
+        availability: AdapterAvailability.AVAILABLE,
       },
     ],
   };

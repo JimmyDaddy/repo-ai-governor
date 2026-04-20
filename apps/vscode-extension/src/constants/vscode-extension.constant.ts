@@ -1,3 +1,5 @@
+import { AdapterSurface, AdapterTransportKind } from '@repo-ai-governor/shared';
+
 /**
  * Freezes VS Code extension contribution identifiers and trust-gated command boundaries.
  *
@@ -13,8 +15,30 @@ export const VSCODE_EXTENSION_DEFAULT_WORKSPACE_SUMMARY_LIMIT = 3;
 export const VSCODE_EXTENSION_CONTAINER_ID = 'repoAiGovernor';
 export const VSCODE_EXTENSION_CHAT_PARTICIPANT_ID = 'repo-ai-governor.governor';
 export const VSCODE_EXTENSION_CHAT_PARTICIPANT_NAME = 'governor';
-export const VSCODE_EXTENSION_CHAT_COMMAND_STATUS = 'status';
-export const VSCODE_EXTENSION_CHAT_COMMAND_REVIEW = 'review';
+export const VSCODE_EXTENSION_CHAT_COMMAND_IDS = {
+  STATUS: 'status',
+  REVIEW: 'review',
+  REFRESH: 'refresh',
+  WORKSPACE_BOOTSTRAP: 'workspace-bootstrap',
+  CONNECT: 'connect',
+  DOCTOR: 'doctor',
+  CHECK: 'check',
+  WORKFLOW_PREVIEW: 'workflow-preview',
+  WORKFLOW_CREATE: 'workflow-create',
+  WORKFLOW_EDIT: 'workflow-edit',
+  OPEN_WORKFLOW_STUDIO: 'workflow-studio',
+  OPEN_REVIEW_DETAIL: 'review-detail',
+  OPEN_HANDOFF_TARGET: 'handoff-target',
+  STAGE_TEMPORARY_BRIDGE: 'repository-operation',
+  SUBMIT_HITL_DECISION: 'submit-hitl-decision',
+  RECOVER_EXECUTION: 'recover-execution',
+  TERMINATE_EXECUTION: 'terminate-execution',
+  OPEN_USER_CONFIG: 'open-user-config',
+  CONFIGURE_USER_DEFAULT: 'configure-user-default',
+  SET_MANAGED_SECRET: 'set-managed-secret',
+} as const;
+export const VSCODE_EXTENSION_CHAT_COMMAND_STATUS = VSCODE_EXTENSION_CHAT_COMMAND_IDS.STATUS;
+export const VSCODE_EXTENSION_CHAT_COMMAND_REVIEW = VSCODE_EXTENSION_CHAT_COMMAND_IDS.REVIEW;
 export const VSCODE_EXTENSION_SURFACE_ID = 'vscode_governance_workbench';
 export const VSCODE_EXTENSION_SURFACE_ROLE = 'primary_governance_workbench';
 export const VSCODE_EXTENSION_TRUTH_OWNER = 'local_orchestration_service';
@@ -50,6 +74,7 @@ export const VSCODE_EXTENSION_VIEW_IDS = {
 export const VSCODE_EXTENSION_COMMAND_IDS = {
   REFRESH: 'repoAiGovernor.refresh',
   RUN_WORKSPACE_BOOTSTRAP: 'repoAiGovernor.runWorkspaceBootstrap',
+  RUN_CONNECT: 'repoAiGovernor.runConnect',
   RUN_DOCTOR: 'repoAiGovernor.runDoctor',
   RUN_CHECK: 'repoAiGovernor.runCheck',
   RUN_WORKFLOW_PREVIEW: 'repoAiGovernor.runWorkflowPreview',
@@ -70,6 +95,24 @@ export const VSCODE_EXTENSION_USER_DEFAULT_KEY_PATHS = {
   WORKSPACE_MODE: 'workspace.mode_preference',
   REACT_THEME: 'ui.react.theme',
 } as const;
+export const VSCODE_EXTENSION_CONNECT_PRESET_IDS = {
+  SINGLE_TOOL_MINIMAL: 'single-tool-minimal',
+  MULTI_TOOL_DEFAULT: 'multi-tool-default',
+  SINGLE_TOOL_ALL_ROLES: 'single-tool-all-roles',
+  RESTRICTED_NETWORK_SAFE: 'restricted-network-safe',
+} as const;
+export const VSCODE_EXTENSION_CONNECT_PRESET_ORDER = [
+  VSCODE_EXTENSION_CONNECT_PRESET_IDS.MULTI_TOOL_DEFAULT,
+  VSCODE_EXTENSION_CONNECT_PRESET_IDS.SINGLE_TOOL_MINIMAL,
+  VSCODE_EXTENSION_CONNECT_PRESET_IDS.SINGLE_TOOL_ALL_ROLES,
+  VSCODE_EXTENSION_CONNECT_PRESET_IDS.RESTRICTED_NETWORK_SAFE,
+] as const;
+export const VSCODE_EXTENSION_CONNECT_TRANSPORT_OPTIONS = {
+  [AdapterSurface.CODEX]: [AdapterTransportKind.CLI_EXEC, AdapterTransportKind.REMOTE_API],
+  [AdapterSurface.CLAUDE_CODE]: [AdapterTransportKind.CLI_EXEC, AdapterTransportKind.REMOTE_API],
+  [AdapterSurface.GITHUB_COPILOT]: [AdapterTransportKind.CLI_EXEC],
+  [AdapterSurface.OLLAMA]: [AdapterTransportKind.BASELINE],
+} as const;
 export const VSCODE_EXTENSION_TOOL_USER_DEFAULT_KEY_SUFFIXES = [
   'transport',
   'remoteApi.provider',
@@ -83,6 +126,7 @@ export const VSCODE_EXTENSION_SECRET_SELECTOR_PREFIX = 'secret://';
 export const VSCODE_EXTENSION_UPGRADE_CONFIRMATION_APPROVE = 'approve';
 export const VSCODE_EXTENSION_TRUST_GATED_COMMAND_IDS = [
   VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKSPACE_BOOTSTRAP,
+  VSCODE_EXTENSION_COMMAND_IDS.RUN_CONNECT,
   VSCODE_EXTENSION_COMMAND_IDS.RUN_DOCTOR,
   VSCODE_EXTENSION_COMMAND_IDS.RUN_CHECK,
   VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKFLOW_PREVIEW,
@@ -127,6 +171,7 @@ export const VSCODE_EXTENSION_QUERY_CAPABILITY_CLASSES = [
 ] as const;
 export const VSCODE_EXTENSION_COMMAND_CAPABILITY_CLASSES = [
   'workspace_bootstrap',
+  'adapter_connect',
   'workspace_doctor',
   'workspace_check',
   'workflow_authoring',

@@ -65,7 +65,7 @@ function createInvokeRequest() {
 
 function createSseResponse(
   chunks: string[],
-  signal?: AbortSignal,
+  signal?: AbortSignal | null,
   options: {
     stallAfterChunks?: boolean;
   } = {},
@@ -708,7 +708,7 @@ describe('codex-agent-adapter smoke', () => {
             'data: {"type":"response.output_text.delta","delta":"hello"}\n\n',
             'data: {"type":"response.completed","response":{"id":"resp-stream-1"}}\n\n',
           ],
-          init?.signal,
+          init?.signal ?? undefined,
         ),
       );
     const adapter = new CodexAgentAdapter({
@@ -781,7 +781,7 @@ describe('codex-agent-adapter smoke', () => {
           'data: {"type":"response.created","response":{"id":"resp-stream-timeout-1"}}\n\n',
           'data: {"type":"response.output_text.delta","delta":"partial"}\n\n',
         ],
-        init?.signal,
+        init?.signal ?? undefined,
         {
           stallAfterChunks: true,
         },
@@ -844,7 +844,7 @@ describe('codex-agent-adapter smoke', () => {
       if (init?.signal?.aborted) {
         throw new DOMException('The operation was aborted.', 'AbortError');
       }
-      await new Promise<never>((_, reject) => {
+      return await new Promise<Response>((_, reject) => {
         init?.signal?.addEventListener(
           'abort',
           () => reject(new DOMException('The operation was aborted.', 'AbortError')),
@@ -927,7 +927,7 @@ describe('codex-agent-adapter smoke', () => {
             },
           }),
       } as Response);
-    const resolveCredentialRef = vi.fn(async () => 'secret-key');
+    const resolveCredentialRef = vi.fn(async (_selector: string) => 'secret-key');
     const adapter = new CodexAgentAdapter({
       executionMode: CodexAgentAdapterExecutionMode.REMOTE_API,
       fetchImplementation,
@@ -1042,7 +1042,7 @@ describe('codex-agent-adapter smoke', () => {
             'read-only',
           ]),
         );
-        return createExecRunner('chat-only response')();
+        return createExecRunnerResult('chat-only response');
       });
     const adapter = new CodexAgentAdapter({
       executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
@@ -1091,7 +1091,7 @@ describe('codex-agent-adapter smoke', () => {
           'Return immediately with a compact JSON object containing stageId, routeKey, phase, dryRun, status, summary, sideEffects, and nextStepRequirements.',
         );
         expect(request.prompt).toContain('Set status to "simulated" and sideEffects to "none".');
-        return createExecRunner('simulated dry-run response')();
+        return createExecRunnerResult('simulated dry-run response');
       });
     const adapter = new CodexAgentAdapter({
       executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
@@ -1159,7 +1159,7 @@ describe('codex-agent-adapter smoke', () => {
         expect(request.timeoutMs).toBe(600000);
         expect(request.prompt).toContain('repository review stage');
         expect(request.prompt).toContain('帮我 review 一下代码');
-        return createExecRunner('review findings')();
+        return createExecRunnerResult('review findings');
       });
     const adapter = new CodexAgentAdapter({
       executionMode: CodexAgentAdapterExecutionMode.CLI_EXEC,
@@ -1623,7 +1623,10 @@ describe('codex-agent-adapter smoke', () => {
     })();
 
     await vi.advanceTimersByTimeAsync(31000);
-    resolveExecution?.({
+    const completeIdleReviewExecution = resolveExecution as
+      | ((result: Awaited<ReturnType<CodexExecRunner>>) => void)
+      | null;
+    completeIdleReviewExecution?.({
       stdout: [
         '{"type":"thread.started","thread_id":"thread-1"}',
         '{"type":"turn.started"}',
@@ -1696,7 +1699,10 @@ describe('codex-agent-adapter smoke', () => {
     if (heartbeatTimer) {
       clearInterval(heartbeatTimer);
     }
-    resolveExecution?.({
+    const completeSemanticStallExecution = resolveExecution as
+      | ((result: Awaited<ReturnType<CodexExecRunner>>) => void)
+      | null;
+    completeSemanticStallExecution?.({
       stdout: [
         '{"type":"item.completed","item":{"id":"item-1","type":"agent_message","text":"final answer"}}',
         '{"type":"turn.completed","usage":{"input_tokens":4,"output_tokens":2}}',
@@ -1878,7 +1884,8 @@ describe('codex-agent-adapter smoke', () => {
             payload: event.payload,
           });
           if (event.eventType === AgentStreamEventType.TOKEN) {
-            resolveTokenObserved?.();
+            const markTokenObserved = resolveTokenObserved as (() => void) | null;
+            markTokenObserved?.();
           }
         }
         return events;

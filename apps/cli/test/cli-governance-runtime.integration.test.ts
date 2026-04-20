@@ -3001,6 +3001,7 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
         runtimeDebugOptions: {
           dryRun: true,
           trace: true,
+          replayPath: null,
         },
       },
     );

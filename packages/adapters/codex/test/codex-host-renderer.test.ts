@@ -1,6 +1,9 @@
 import { PUBLIC_SERVICE_HOST_PACKAGE_EXPORT } from '@repo-ai-governor/shared';
 import {
   HostDistributionHandoffBridge,
+  HostDistributionHost,
+  HostDistributionMode,
+  HostDistributionTarget,
   StructuredWorkflowAssetRegistry,
 } from '@repo-ai-governor/standards';
 import { CodexHostRenderer } from '../src/codex-host-renderer.js';
@@ -15,24 +18,26 @@ describe('CodexHostRenderer', () => {
     return JSON.parse(file?.content ?? '{}') as Record<string, unknown>;
   }
 
-  function createRegistry(target: 'codex.project_local' | 'codex.plugin') {
+  function createRegistry(
+    target: HostDistributionTarget.CODEX_PROJECT_LOCAL | HostDistributionTarget.CODEX_PLUGIN,
+  ) {
     return new StructuredWorkflowAssetRegistry({
       records: [
         {
           workflowId:
-            target === 'codex.project_local'
+            target === HostDistributionTarget.CODEX_PROJECT_LOCAL
               ? 'workspace-code-review-workflow'
               : 'technical-solution-promotion',
           workflowVersion: '1.0.0',
           workflowStatus: 'active',
           semanticOwnerModule: 'runtime.governance-clients',
           displayName:
-            target === 'codex.project_local'
+            target === HostDistributionTarget.CODEX_PROJECT_LOCAL
               ? 'Workspace Code Review Workflow'
               : 'Technical Solution Promotion',
           description: 'Codex host renderer fixture.',
           canonicalSourceRefs: [
-            target === 'codex.project_local'
+            target === HostDistributionTarget.CODEX_PROJECT_LOCAL
               ? '.codex/skills/workspace-code-review-workflow/SKILL.md'
               : '.codex/skills/technical-solution-promotion/SKILL.md',
           ],
@@ -53,13 +58,13 @@ describe('CodexHostRenderer', () => {
 
   it('renders a project-local staged export tree with AGENTS and skills', () => {
     const renderer = new CodexHostRenderer({
-      registry: createRegistry('codex.project_local'),
+      registry: createRegistry(HostDistributionTarget.CODEX_PROJECT_LOCAL),
       currentWorkingDirectory: process.cwd(),
     });
     const result = renderer.render({
-      host: 'codex',
-      target: 'codex.project_local',
-      mode: 'project-local',
+      host: HostDistributionHost.CODEX,
+      target: HostDistributionTarget.CODEX_PROJECT_LOCAL,
+      mode: HostDistributionMode.PROJECT_LOCAL,
       stagedExportRoot: '.repo-ai-governor/generated/hosts/codex',
       exportManifestPath: '.repo-ai-governor/generated/hosts/codex/host-export.manifest.json',
       verificationSummaryPath:
@@ -68,8 +73,8 @@ describe('CodexHostRenderer', () => {
       applyReportPath: '.repo-ai-governor/generated/hosts/codex/host-apply.report.json',
     });
 
-    expect(result.exportManifest.host).toBe('codex');
-    expect(result.exportManifest.target).toBe('codex.project_local');
+    expect(result.exportManifest.host).toBe(HostDistributionHost.CODEX);
+    expect(result.exportManifest.target).toBe(HostDistributionTarget.CODEX_PROJECT_LOCAL);
     expect(result.exportManifest.discoveryState).toBe('staged_export');
     expect(result.projectedFiles.some((file) => file.relativePath === 'AGENTS.md')).toBe(true);
     expect(
@@ -107,13 +112,13 @@ describe('CodexHostRenderer', () => {
 
   it('renders a plugin bundle with plugin manifest, skills, and agents', () => {
     const renderer = new CodexHostRenderer({
-      registry: createRegistry('codex.plugin'),
+      registry: createRegistry(HostDistributionTarget.CODEX_PLUGIN),
       currentWorkingDirectory: process.cwd(),
     });
     const result = renderer.render({
-      host: 'codex',
-      target: 'codex.plugin',
-      mode: 'plugin-bundle',
+      host: HostDistributionHost.CODEX,
+      target: HostDistributionTarget.CODEX_PLUGIN,
+      mode: HostDistributionMode.PLUGIN_BUNDLE,
       stagedExportRoot: '.repo-ai-governor/generated/hosts/codex',
       exportManifestPath: '.repo-ai-governor/generated/hosts/codex/host-export.manifest.json',
       verificationSummaryPath:

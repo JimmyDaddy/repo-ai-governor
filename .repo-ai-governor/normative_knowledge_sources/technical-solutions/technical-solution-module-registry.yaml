@@ -438,6 +438,8 @@ modules:
         kind: adr
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/acp-host-facing-transport-formalization-and-distribution-boundary.md
         kind: adr
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/acp-execution-bridge-and-invoke-stream-confirm-cutover.md
+        kind: adr
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/provider-session-reuse-and-continuation-handle-seam.md
         kind: adr
     north_star_refs:
@@ -566,6 +568,8 @@ modules:
         kind: contract
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/local-user-config-and-secret-command-contract.md
         kind: contract
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/provider-onboarding-and-direct-api-key-entry-contract.md
+        kind: contract
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/governance-host-distribution-contract.md
         kind: contract
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/governance-adoption-pack-install-contract.md
@@ -573,6 +577,8 @@ modules:
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/desktop-command-center-and-vscode-editor-companion-split.md
         kind: adr
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/vscode-primary-full-governance-workbench.md
+        kind: adr
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/vscode-plugin-direct-api-key-and-secret-backed-provider-onboarding.md
         kind: adr
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/host-native-distribution-and-target-specific-consumption.md
         kind: adr
@@ -595,6 +601,7 @@ modules:
       - contract.runtime.governance-surface-client.v1
       - contract.runtime.vscode-governance-workbench-surface.v1
       - contract.runtime.governance-local-config-and-secret-command.v1
+      - contract.runtime.governance-provider-onboarding.v1
       - contract.runtime.governance-host-distribution.v1
       - contract.runtime.adoption-pack-install.v1
     imports_contracts:

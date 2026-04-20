@@ -16,6 +16,10 @@ import {
   standardizeError,
 } from '@repo-ai-governor/shared';
 import {
+  VSCODE_EXTENSION_CHAT_COMMAND_IDS,
+  VSCODE_EXTENSION_CONNECT_PRESET_IDS,
+  VSCODE_EXTENSION_CONNECT_PRESET_ORDER,
+  VSCODE_EXTENSION_CONNECT_TRANSPORT_OPTIONS,
   VSCODE_EXTENSION_CONTAINER_ID,
   VSCODE_EXTENSION_SECRET_SELECTOR_PREFIX,
   VSCODE_EXTENSION_TOOL_USER_DEFAULT_KEY_SUFFIXES,
@@ -47,10 +51,261 @@ interface VsCodeExtensionCommandControllerDependencies {
   reviewDetailProvider: VsCodeExtensionReviewDetailProvider;
 }
 
+type VsCodeExtensionChatCommandExecutionStatus =
+  | 'blocked'
+  | 'cancelled'
+  | 'completed'
+  | 'dispatched'
+  | 'failed';
+
+export interface VsCodeExtensionChatCommandExecutionResult {
+  commandName: string;
+  status: VsCodeExtensionChatCommandExecutionStatus;
+  summary: string;
+  detail?: string;
+}
+
 type VsCodeExtensionWorkspaceOperationArguments = Record<
   string,
   boolean | number | string | readonly string[] | null
 >;
+
+type VsCodeExtensionChatPromptRoutingMode = 'full_prompt' | 'none' | 'suffix';
+
+interface VsCodeExtensionResolvedChatRequest {
+  commandName: string;
+  promptText?: string;
+}
+
+interface VsCodeExtensionChatPromptIntentRule {
+  commandName: string;
+  promptRoutingMode: VsCodeExtensionChatPromptRoutingMode;
+  exactPhrases?: readonly string[];
+  leadingPhrases?: readonly string[];
+}
+
+interface VsCodeExtensionConnectUserConfigMutation {
+  keyPath: string;
+  value: string;
+}
+
+interface VsCodeExtensionConnectOperationPlan {
+  workspaceOperationArguments: VsCodeExtensionWorkspaceOperationArguments;
+  userConfigMutations: readonly VsCodeExtensionConnectUserConfigMutation[];
+}
+
+// literal-allowed: chat intent routing vocabulary is intentionally kept local to the controller
+// because it tunes participant-only prompt matching without changing the frozen contribution
+// contract exported from src/constants.
+const VSCODE_EXTENSION_CHAT_POLITE_PREFIXES = [
+  'please help',
+  'could you',
+  'would you',
+  'can you',
+  'help me',
+  '请帮我',
+  '麻烦你',
+  'please',
+  '帮我',
+  '麻烦',
+  '请',
+] as const;
+
+const VSCODE_EXTENSION_CHAT_PROMPT_INTENT_RULES: readonly VsCodeExtensionChatPromptIntentRule[] = [
+  {
+    commandName: VSCODE_EXTENSION_CHAT_COMMAND_IDS.REFRESH,
+    promptRoutingMode: 'none',
+    exactPhrases: ['refresh', '刷新'],
+    leadingPhrases: ['refresh governor', 'refresh views', 'reload governor', '刷新视图'],
+  },
+  {
+    commandName: VSCODE_EXTENSION_CHAT_COMMAND_IDS.WORKSPACE_BOOTSTRAP,
+    promptRoutingMode: 'none',
+    exactPhrases: ['bootstrap', 'workspace bootstrap', '初始化工作区'],
+    leadingPhrases: [
+      'run bootstrap',
+      'run workspace bootstrap',
+      'bootstrap workspace',
+      'initialize workspace',
+      '初始化工作区',
+      '运行工作区 bootstrap',
+    ],
+  },
+  {
+    commandName: VSCODE_EXTENSION_CHAT_COMMAND_IDS.CONNECT,
+    promptRoutingMode: 'suffix',
+    exactPhrases: ['connect', 'setup provider', '配置 provider', '连接 provider'],
+    leadingPhrases: [
+      'run connect',
+      'connect provider',
+      'connect tool',
+      'setup provider',
+      'setup ai provider',
+      'configure provider',
+      '连接 provider',
+      '连接 ai provider',
+      '配置 provider',
+      '配置 ai provider',
+      '连接工具',
+    ],
+  },
+  {
+    commandName: VSCODE_EXTENSION_CHAT_COMMAND_IDS.DOCTOR,
+    promptRoutingMode: 'none',
+    exactPhrases: ['doctor', '诊断'],
+    leadingPhrases: [
+      'run doctor',
+      'execute doctor',
+      'diagnose workspace',
+      '运行 doctor',
+      '执行 doctor',
+      '环境诊断',
+    ],
+  },
+  {
+    commandName: VSCODE_EXTENSION_CHAT_COMMAND_IDS.CHECK,
+    promptRoutingMode: 'none',
+    exactPhrases: ['check', '检查'],
+    leadingPhrases: [
+      'run check',
+      'execute check',
+      'check workspace',
+      '运行 check',
+      '执行 check',
+      '检查工作区',
+      '检查仓库',
+    ],
+  },
+  {
+    commandName: VSCODE_EXTENSION_CHAT_COMMAND_IDS.WORKFLOW_PREVIEW,
+    promptRoutingMode: 'suffix',
+    exactPhrases: ['workflow preview', 'preview workflow', '工作流预览', '预览工作流'],
+    leadingPhrases: ['workflow preview', 'preview workflow', '工作流预览', '预览工作流'],
+  },
+  {
+    commandName: VSCODE_EXTENSION_CHAT_COMMAND_IDS.WORKFLOW_CREATE,
+    promptRoutingMode: 'suffix',
+    exactPhrases: ['workflow create', 'create workflow', '工作流创建', '创建工作流'],
+    leadingPhrases: ['workflow create', 'create workflow', '工作流创建', '创建工作流'],
+  },
+  {
+    commandName: VSCODE_EXTENSION_CHAT_COMMAND_IDS.WORKFLOW_EDIT,
+    promptRoutingMode: 'suffix',
+    exactPhrases: ['workflow edit', 'edit workflow', '工作流编辑', '编辑工作流'],
+    leadingPhrases: ['workflow edit', 'edit workflow', '工作流编辑', '编辑工作流'],
+  },
+  {
+    commandName: VSCODE_EXTENSION_CHAT_COMMAND_IDS.OPEN_WORKFLOW_STUDIO,
+    promptRoutingMode: 'none',
+    exactPhrases: ['workflow studio', 'workflow-studio', '工作流工作台'],
+    leadingPhrases: [
+      'open workflow studio',
+      'show workflow studio',
+      '打开 workflow studio',
+      '打开工作流工作台',
+    ],
+  },
+  {
+    commandName: VSCODE_EXTENSION_CHAT_COMMAND_IDS.OPEN_REVIEW_DETAIL,
+    promptRoutingMode: 'none',
+    exactPhrases: ['review detail', 'review-detail', '评审详情'],
+    leadingPhrases: ['open review detail', 'show review detail', '打开评审详情'],
+  },
+  {
+    commandName: VSCODE_EXTENSION_CHAT_COMMAND_IDS.OPEN_HANDOFF_TARGET,
+    promptRoutingMode: 'none',
+    exactPhrases: ['handoff target', 'handoff-target', '交接目标'],
+    leadingPhrases: ['open handoff target', 'show handoff target', '打开交接目标'],
+  },
+  {
+    commandName: VSCODE_EXTENSION_CHAT_COMMAND_IDS.STAGE_TEMPORARY_BRIDGE,
+    promptRoutingMode: 'full_prompt',
+    exactPhrases: [
+      'repository operation',
+      'upgrade',
+      'upgrade preview',
+      'preview upgrade',
+      'upgrade apply',
+      'apply upgrade',
+      'host verify',
+      'verify host',
+      'host export',
+      'export host',
+      'host pack',
+      'pack host',
+      'adopt bootstrap',
+      'bootstrap adopt',
+      'adoption apply',
+      'apply adoption',
+      '仓库操作',
+      '升级',
+      '升级预览',
+      '预览升级',
+      '应用升级',
+      '导出宿主资产',
+      '校验宿主资产',
+      '打包宿主 bundle',
+    ],
+    leadingPhrases: [
+      'run repository operation',
+      'run upgrade preview',
+      'run apply upgrade',
+      'run host verify',
+      'run host export',
+      'run host pack',
+      'run adopt bootstrap',
+      'run adoption apply',
+      '执行仓库操作',
+      '执行升级预览',
+      '执行应用升级',
+      '执行宿主导出',
+      '执行宿主校验',
+      '执行宿主打包',
+    ],
+  },
+  {
+    commandName: VSCODE_EXTENSION_CHAT_COMMAND_IDS.SUBMIT_HITL_DECISION,
+    promptRoutingMode: 'none',
+    exactPhrases: ['submit hitl decision', 'submit decision', 'hitl decision', '提交 hitl 决策'],
+    leadingPhrases: ['submit hitl decision', 'submit decision', '提交审批决策'],
+  },
+  {
+    commandName: VSCODE_EXTENSION_CHAT_COMMAND_IDS.RECOVER_EXECUTION,
+    promptRoutingMode: 'none',
+    exactPhrases: ['recover execution', 'resume execution', '恢复执行'],
+    leadingPhrases: ['recover execution', 'resume execution', '恢复执行'],
+  },
+  {
+    commandName: VSCODE_EXTENSION_CHAT_COMMAND_IDS.TERMINATE_EXECUTION,
+    promptRoutingMode: 'none',
+    exactPhrases: ['terminate execution', 'stop execution', 'cancel execution', '终止执行'],
+    leadingPhrases: ['terminate execution', 'stop execution', 'cancel execution', '停止执行'],
+  },
+  {
+    commandName: VSCODE_EXTENSION_CHAT_COMMAND_IDS.OPEN_USER_CONFIG,
+    promptRoutingMode: 'none',
+    exactPhrases: ['open user config', 'open config', '打开用户配置'],
+    leadingPhrases: ['open user config', 'open config', '打开用户配置'],
+  },
+  {
+    commandName: VSCODE_EXTENSION_CHAT_COMMAND_IDS.CONFIGURE_USER_DEFAULT,
+    promptRoutingMode: 'none',
+    exactPhrases: ['configure user default', 'set user default', '配置用户默认值'],
+    leadingPhrases: ['configure user default', 'set user default', '设置用户默认值'],
+  },
+  {
+    commandName: VSCODE_EXTENSION_CHAT_COMMAND_IDS.SET_MANAGED_SECRET,
+    promptRoutingMode: 'none',
+    exactPhrases: ['set managed secret', 'set secret', 'configure secret', '设置密钥'],
+    leadingPhrases: [
+      'set managed secret',
+      'set secret',
+      'configure secret',
+      '设置 secret',
+      '配置密钥',
+    ],
+  },
+] as const;
 
 /**
  * Executes the frozen VS Code command contract against service-owned orchestration actions.
@@ -66,6 +321,450 @@ export class VsCodeExtensionCommandController {
     private readonly localizer: VsCodeExtensionLocalizer,
     private readonly dependencies: VsCodeExtensionCommandControllerDependencies,
   ) {}
+
+  /**
+   * Executes one chat request, resolving imperative natural-language prompts to the same
+   * executable command surface used by explicit slash commands.
+   *
+   * Why this exists:
+   * the chat participant should stay zero-duplication on command semantics while still letting
+   * users trigger the governed command surface through short imperative prompts.
+   * @param commandName Slash-command name when the user invoked one explicitly.
+   * @param promptText Optional chat prompt text that may carry either suffix arguments or one
+   * imperative natural-language request.
+   * @returns One structured execution summary when the prompt resolves to an executable action.
+   */
+  public async executeChatRequest(
+    commandName: string | undefined,
+    promptText?: string,
+  ): Promise<VsCodeExtensionChatCommandExecutionResult | undefined> {
+    const resolvedChatRequest =
+      commandName === undefined
+        ? this.resolveChatPromptIntentRequest(promptText)
+        : {
+            commandName,
+            promptText,
+          };
+    if (!resolvedChatRequest) {
+      return undefined;
+    }
+
+    return this.executeChatCommand(resolvedChatRequest.commandName, resolvedChatRequest.promptText);
+  }
+
+  /**
+   * Executes one chat-exposed slash command against the existing workbench controller surface.
+   *
+   * Why this exists:
+   * the chat participant should reuse the same service-backed controller contract as the activity-
+   * bar workbench instead of inventing a second command path with different semantics.
+   * @param commandName Slash-command name contributed by the chat participant.
+   * @param promptText Optional free-form trailing text entered after the slash command.
+   * @returns One structured execution summary when the slash command maps to an executable action.
+   */
+  public async executeChatCommand(
+    commandName: string,
+    promptText?: string,
+  ): Promise<VsCodeExtensionChatCommandExecutionResult | undefined> {
+    const trimmedPrompt = promptText?.trim();
+
+    switch (commandName) {
+      case VSCODE_EXTENSION_CHAT_COMMAND_IDS.STATUS:
+      case VSCODE_EXTENSION_CHAT_COMMAND_IDS.REVIEW:
+        return undefined;
+      case VSCODE_EXTENSION_CHAT_COMMAND_IDS.REFRESH: {
+        await this.refresh();
+        return this.createChatCommandExecutionResult(
+          commandName,
+          'completed',
+          'Governor views refreshed.',
+          'Governor 视图已刷新。',
+        );
+      }
+      case VSCODE_EXTENSION_CHAT_COMMAND_IDS.WORKSPACE_BOOTSTRAP: {
+        if (this.isChatCommandTrustBlocked(commandName)) {
+          return this.createBlockedChatCommandExecutionResult(commandName);
+        }
+        const succeeded = await this.runWorkspaceOperationWithHandledError(
+          OrchestrationWorkspaceOperationKind.WORKSPACE_BOOTSTRAP,
+        );
+        return succeeded
+          ? this.createChatCommandExecutionResult(
+              commandName,
+              'completed',
+              'Workspace bootstrap finished and the workbench snapshot was refreshed.',
+              '工作区 bootstrap 已完成，Workbench 快照也已刷新。',
+            )
+          : this.createChatCommandExecutionResult(
+              commandName,
+              'failed',
+              'Workspace bootstrap failed. Check the VS Code notification for details.',
+              '工作区 bootstrap 失败。请查看 VS Code 通知里的详细信息。',
+            );
+      }
+      case VSCODE_EXTENSION_CHAT_COMMAND_IDS.CONNECT: {
+        if (this.isChatCommandTrustBlocked(commandName)) {
+          return this.createBlockedChatCommandExecutionResult(commandName);
+        }
+
+        const connectSeedArguments =
+          this.resolveConnectWorkspaceOperationArgumentsFromPrompt(trimmedPrompt);
+        const succeeded = await this.runConnect({
+          ...(connectSeedArguments
+            ? {
+                workspaceOperationArguments: connectSeedArguments,
+              }
+            : {}),
+        });
+        return succeeded
+          ? this.createChatCommandExecutionResult(
+              commandName,
+              'completed',
+              'Connect finished and the refreshed provider readiness is now available in the workbench.',
+              'Connect 已完成，刷新后的 Provider Readiness 现在已经可在 Workbench 中查看。',
+            )
+          : this.createChatCommandExecutionResult(
+              commandName,
+              'failed',
+              'Connect failed. Check the VS Code notification for details.',
+              'Connect 失败。请查看 VS Code 通知里的详细信息。',
+            );
+      }
+      case VSCODE_EXTENSION_CHAT_COMMAND_IDS.DOCTOR: {
+        if (this.isChatCommandTrustBlocked(commandName)) {
+          return this.createBlockedChatCommandExecutionResult(commandName);
+        }
+        const succeeded = await this.runWorkspaceOperationWithHandledError(
+          OrchestrationWorkspaceOperationKind.DOCTOR,
+        );
+        return succeeded
+          ? this.createChatCommandExecutionResult(
+              commandName,
+              'completed',
+              'Doctor finished and the latest diagnostics were projected back into the workbench.',
+              'Doctor 已完成，最新诊断结果也已回投到 Workbench。',
+            )
+          : this.createChatCommandExecutionResult(
+              commandName,
+              'failed',
+              'Doctor failed. Check the VS Code notification for details.',
+              'Doctor 失败。请查看 VS Code 通知里的详细信息。',
+            );
+      }
+      case VSCODE_EXTENSION_CHAT_COMMAND_IDS.CHECK: {
+        if (this.isChatCommandTrustBlocked(commandName)) {
+          return this.createBlockedChatCommandExecutionResult(commandName);
+        }
+        const succeeded = await this.runWorkspaceOperationWithHandledError(
+          OrchestrationWorkspaceOperationKind.CHECK,
+        );
+        return succeeded
+          ? this.createChatCommandExecutionResult(
+              commandName,
+              'completed',
+              'Check finished and the refreshed workbench snapshot is shown below.',
+              'Check 已完成，下面展示的是刷新后的 Workbench 快照。',
+            )
+          : this.createChatCommandExecutionResult(
+              commandName,
+              'failed',
+              'Check failed. Check the VS Code notification for details.',
+              'Check 失败。请查看 VS Code 通知里的详细信息。',
+            );
+      }
+      case VSCODE_EXTENSION_CHAT_COMMAND_IDS.WORKFLOW_PREVIEW: {
+        if (this.isChatCommandTrustBlocked(commandName)) {
+          return this.createBlockedChatCommandExecutionResult(commandName);
+        }
+        if (trimmedPrompt) {
+          const succeeded = await this.runWorkspaceOperationWithHandledError(
+            OrchestrationWorkspaceOperationKind.WORKFLOW_PREVIEW,
+            { templateId: trimmedPrompt },
+          );
+          return succeeded
+            ? this.createChatCommandExecutionResult(
+                commandName,
+                'completed',
+                `Workflow preview finished for template ${trimmedPrompt}.`,
+                `工作流预览已完成，模板为 ${trimmedPrompt}。`,
+              )
+            : this.createChatCommandExecutionResult(
+                commandName,
+                'failed',
+                'Workflow preview failed. Check the VS Code notification for details.',
+                '工作流预览失败。请查看 VS Code 通知里的详细信息。',
+              );
+        }
+        await this.runWorkflowPreview();
+        return this.createChatCommandExecutionResult(
+          commandName,
+          'dispatched',
+          'Workflow preview flow started from chat.',
+          '工作流预览流程已从 chat 发起。',
+          this.localizer.localizeText(
+            'If no template id was supplied in chat, VS Code may ask for one before the preview runs.',
+            '如果没有在 chat 里直接提供模板 ID，VS Code 可能会先要求你输入一个模板 ID。',
+          ),
+        );
+      }
+      case VSCODE_EXTENSION_CHAT_COMMAND_IDS.WORKFLOW_CREATE: {
+        if (this.isChatCommandTrustBlocked(commandName)) {
+          return this.createBlockedChatCommandExecutionResult(commandName);
+        }
+        if (trimmedPrompt) {
+          const succeeded = await this.runWorkspaceOperationWithHandledError(
+            OrchestrationWorkspaceOperationKind.WORKFLOW_CREATE,
+            { templateId: trimmedPrompt },
+          );
+          return succeeded
+            ? this.createChatCommandExecutionResult(
+                commandName,
+                'completed',
+                `Workflow creation finished for template ${trimmedPrompt}.`,
+                `工作流创建已完成，模板为 ${trimmedPrompt}。`,
+              )
+            : this.createChatCommandExecutionResult(
+                commandName,
+                'failed',
+                'Workflow creation failed. Check the VS Code notification for details.',
+                '工作流创建失败。请查看 VS Code 通知里的详细信息。',
+              );
+        }
+        await this.runWorkflowCreate();
+        return this.createChatCommandExecutionResult(
+          commandName,
+          'dispatched',
+          'Workflow creation flow started from chat.',
+          '工作流创建流程已从 chat 发起。',
+          this.localizer.localizeText(
+            'If no template id was supplied in chat, VS Code may ask for one before the workflow entry is created.',
+            '如果没有在 chat 里直接提供模板 ID，VS Code 可能会先要求你输入一个模板 ID，然后再创建工作流入口。',
+          ),
+        );
+      }
+      case VSCODE_EXTENSION_CHAT_COMMAND_IDS.WORKFLOW_EDIT: {
+        if (this.isChatCommandTrustBlocked(commandName)) {
+          return this.createBlockedChatCommandExecutionResult(commandName);
+        }
+        if (trimmedPrompt) {
+          const succeeded = await this.runWorkspaceOperationWithHandledError(
+            OrchestrationWorkspaceOperationKind.WORKFLOW_EDIT,
+            { templateId: trimmedPrompt },
+          );
+          return succeeded
+            ? this.createChatCommandExecutionResult(
+                commandName,
+                'completed',
+                `Workflow edit finished for template ${trimmedPrompt}.`,
+                `工作流编辑已完成，模板为 ${trimmedPrompt}。`,
+              )
+            : this.createChatCommandExecutionResult(
+                commandName,
+                'failed',
+                'Workflow edit failed. Check the VS Code notification for details.',
+                '工作流编辑失败。请查看 VS Code 通知里的详细信息。',
+              );
+        }
+        await this.runWorkflowEdit();
+        return this.createChatCommandExecutionResult(
+          commandName,
+          'dispatched',
+          'Workflow edit flow started from chat.',
+          '工作流编辑流程已从 chat 发起。',
+          this.localizer.localizeText(
+            'If no template id was supplied in chat, VS Code may ask for one before editing begins.',
+            '如果没有在 chat 里直接提供模板 ID，VS Code 可能会先要求你输入一个模板 ID，然后再开始编辑。',
+          ),
+        );
+      }
+      case VSCODE_EXTENSION_CHAT_COMMAND_IDS.OPEN_WORKFLOW_STUDIO: {
+        await this.openWorkflowStudio();
+        return this.createChatCommandExecutionResult(
+          commandName,
+          'completed',
+          'Workflow Studio opened and refreshed.',
+          'Workflow Studio 已打开并刷新。',
+        );
+      }
+      case VSCODE_EXTENSION_CHAT_COMMAND_IDS.OPEN_REVIEW_DETAIL: {
+        await this.openReviewDetail();
+        return this.createChatCommandExecutionResult(
+          commandName,
+          'completed',
+          'Review Detail opened or refreshed.',
+          '评审详情已打开或刷新。',
+        );
+      }
+      case VSCODE_EXTENSION_CHAT_COMMAND_IDS.OPEN_HANDOFF_TARGET: {
+        if (this.isChatCommandTrustBlocked(commandName)) {
+          return this.createBlockedChatCommandExecutionResult(commandName);
+        }
+        await this.openHandoffTarget();
+        return this.createChatCommandExecutionResult(
+          commandName,
+          'dispatched',
+          'Handoff-target flow ran from chat.',
+          '交接目标流程已从 chat 发起。',
+          this.localizer.localizeText(
+            'If a preferred handoff target was available, VS Code opened the corresponding editor, explorer, or compatibility surface.',
+            '如果有可用的首选交接目标，VS Code 会打开对应的编辑器、资源管理器或兼容表面。',
+          ),
+        );
+      }
+      case VSCODE_EXTENSION_CHAT_COMMAND_IDS.STAGE_TEMPORARY_BRIDGE: {
+        if (this.isChatCommandTrustBlocked(commandName)) {
+          return this.createBlockedChatCommandExecutionResult(commandName);
+        }
+        const promptOperation = trimmedPrompt
+          ? this.resolveWorkspaceOperationRequestFromChatPrompt(trimmedPrompt)
+          : undefined;
+        if (promptOperation) {
+          const resolvedArguments = await this.resolveWorkspaceOperationArguments(
+            promptOperation.workspaceOperationKind,
+            promptOperation.workspaceOperationArguments,
+          );
+          if (resolvedArguments === null) {
+            return this.createChatCommandExecutionResult(
+              commandName,
+              'cancelled',
+              'Repository operation was cancelled before execution.',
+              '仓库操作在执行前已取消。',
+            );
+          }
+          const succeeded = await this.runWorkspaceOperationWithHandledError(
+            promptOperation.workspaceOperationKind,
+            resolvedArguments ?? undefined,
+            {
+              workspaceOperationKind: promptOperation.workspaceOperationKind,
+              ...(resolvedArguments
+                ? {
+                    workspaceOperationArguments: resolvedArguments,
+                  }
+                : {}),
+            },
+          );
+          return succeeded
+            ? this.createChatCommandExecutionResult(
+                commandName,
+                'completed',
+                `${this.localizeWorkspaceOperationKind(promptOperation.workspaceOperationKind)} finished from chat.`,
+                `${this.localizeWorkspaceOperationKind(promptOperation.workspaceOperationKind)} 已从 chat 完成。`,
+                this.localizer.localizeText(
+                  `Prompt resolved to "${trimmedPrompt}".`,
+                  `已从提示解析出 "${trimmedPrompt}"。`,
+                ),
+              )
+            : this.createChatCommandExecutionResult(
+                commandName,
+                'failed',
+                'Repository operation failed. Check the VS Code notification for details.',
+                '仓库操作失败。请查看 VS Code 通知里的详细信息。',
+              );
+        }
+        await this.stageTemporaryBridge();
+        return this.createChatCommandExecutionResult(
+          commandName,
+          'dispatched',
+          'Repository-operation flow started from chat.',
+          '仓库操作流程已从 chat 发起。',
+          this.localizer.localizeText(
+            'If the prompt did not name one supported operation, VS Code may ask you to choose a governed repository operation.',
+            '如果 chat 文本没有明确命中一个受支持的操作，VS Code 可能会要求你再选择一个受治理仓库操作。',
+          ),
+        );
+      }
+      case VSCODE_EXTENSION_CHAT_COMMAND_IDS.SUBMIT_HITL_DECISION: {
+        if (this.isChatCommandTrustBlocked(commandName)) {
+          return this.createBlockedChatCommandExecutionResult(commandName);
+        }
+        await this.submitHitlDecision();
+        return this.createChatCommandExecutionResult(
+          commandName,
+          'dispatched',
+          'HITL decision flow started from chat.',
+          'HITL 决策流程已从 chat 发起。',
+          this.localizer.localizeText(
+            'If more than one decision was available, VS Code may ask you to choose and confirm one.',
+            '如果当前有多个可选决策，VS Code 可能会要求你先选择并确认一个。',
+          ),
+        );
+      }
+      case VSCODE_EXTENSION_CHAT_COMMAND_IDS.RECOVER_EXECUTION: {
+        if (this.isChatCommandTrustBlocked(commandName)) {
+          return this.createBlockedChatCommandExecutionResult(commandName);
+        }
+        await this.recoverExecution();
+        return this.createChatCommandExecutionResult(
+          commandName,
+          'completed',
+          'Execution recovery flow ran from chat.',
+          '执行恢复流程已从 chat 发起。',
+        );
+      }
+      case VSCODE_EXTENSION_CHAT_COMMAND_IDS.TERMINATE_EXECUTION: {
+        if (this.isChatCommandTrustBlocked(commandName)) {
+          return this.createBlockedChatCommandExecutionResult(commandName);
+        }
+        await this.terminateExecution();
+        return this.createChatCommandExecutionResult(
+          commandName,
+          'dispatched',
+          'Execution-termination flow started from chat.',
+          '执行终止流程已从 chat 发起。',
+          this.localizer.localizeText(
+            'VS Code may ask for confirmation before the termination request is sent.',
+            '在真正提交终止请求之前，VS Code 可能会要求你先确认一次。',
+          ),
+        );
+      }
+      case VSCODE_EXTENSION_CHAT_COMMAND_IDS.OPEN_USER_CONFIG: {
+        if (this.isChatCommandTrustBlocked(commandName)) {
+          return this.createBlockedChatCommandExecutionResult(commandName);
+        }
+        await this.openUserConfig();
+        return this.createChatCommandExecutionResult(
+          commandName,
+          'completed',
+          'User-config flow finished from chat.',
+          '用户配置流程已从 chat 完成。',
+        );
+      }
+      case VSCODE_EXTENSION_CHAT_COMMAND_IDS.CONFIGURE_USER_DEFAULT: {
+        if (this.isChatCommandTrustBlocked(commandName)) {
+          return this.createBlockedChatCommandExecutionResult(commandName);
+        }
+        await this.configureUserDefault();
+        return this.createChatCommandExecutionResult(
+          commandName,
+          'dispatched',
+          'User-default authoring flow started from chat.',
+          '用户默认值编写流程已从 chat 发起。',
+          this.localizer.localizeText(
+            'VS Code may ask you to choose one setting key and provide a value before the update is written.',
+            '在真正写入前，VS Code 可能会要求你先选择一个设置键并输入对应的值。',
+          ),
+        );
+      }
+      case VSCODE_EXTENSION_CHAT_COMMAND_IDS.SET_MANAGED_SECRET: {
+        if (this.isChatCommandTrustBlocked(commandName)) {
+          return this.createBlockedChatCommandExecutionResult(commandName);
+        }
+        await this.setManagedSecret();
+        return this.createChatCommandExecutionResult(
+          commandName,
+          'dispatched',
+          'Managed-secret authoring flow started from chat.',
+          '受管 secret 编写流程已从 chat 发起。',
+          this.localizer.localizeText(
+            'VS Code may ask you to choose a selector/backend and then capture the secret through a secure input box.',
+            'VS Code 可能会要求你先选择 selector/backend，然后通过安全输入框采集 secret。',
+          ),
+        );
+      }
+      default:
+        return undefined;
+    }
+  }
 
   /**
    * Refreshes all Governor views.
@@ -213,6 +912,46 @@ export class VsCodeExtensionCommandController {
     await this.runWorkspaceOperationWithHandledError(
       OrchestrationWorkspaceOperationKind.WORKSPACE_BOOTSTRAP,
     );
+  }
+
+  /**
+   * Runs the plugin-native connect flow so provider onboarding no longer depends on manual CLI.
+   * @param commandRequest Optional request carrying prefilled connect arguments from chat/buttons.
+   * @returns True when the connect flow reached a successful completion.
+   */
+  public async runConnect(commandRequest?: VsCodeExtensionCommandRequest): Promise<boolean> {
+    if (!(await this.ensureTrusted())) {
+      return false;
+    }
+
+    try {
+      const connectPlan = await this.resolveConnectOperationPlan(
+        commandRequest?.workspaceOperationArguments,
+      );
+      if (!connectPlan) {
+        return false;
+      }
+
+      const response = await this.serviceRuntime.runWorkspaceOperation(
+        OrchestrationWorkspaceOperationKind.CONNECT,
+        connectPlan.workspaceOperationArguments,
+      );
+      for (const mutation of connectPlan.userConfigMutations) {
+        await this.serviceRuntime.setUserConfigValue(mutation.keyPath, mutation.value);
+      }
+
+      this.selectionStore.applyCommandRequest(commandRequest);
+      await this.refresh(commandRequest);
+      await this.showWorkspaceOperationCompletionMessage(response);
+      return true;
+    } catch (error) {
+      await this.showCommandError(
+        error,
+        'Failed to connect the requested AI provider configuration.',
+        '连接请求的 AI provider 配置失败。',
+      );
+      return false;
+    }
   }
 
   public async runDoctor(): Promise<void> {
@@ -631,6 +1370,495 @@ export class VsCodeExtensionCommandController {
         'Failed to write the requested managed secret.',
         '写入请求的受管 secret 失败。',
       );
+    }
+  }
+
+  private async resolveConnectOperationPlan(
+    prefilledArguments?: VsCodeExtensionWorkspaceOperationArguments,
+  ): Promise<VsCodeExtensionConnectOperationPlan | null> {
+    const seedArguments = prefilledArguments ? { ...prefilledArguments } : {};
+    if (this.hasExecutableConnectArguments(seedArguments)) {
+      return {
+        workspaceOperationArguments: seedArguments,
+        userConfigMutations: [],
+      };
+    }
+
+    const presetId =
+      this.readConnectArgumentString(seedArguments, 'presetId') ??
+      (await this.promptForConnectPreset());
+    if (!presetId) {
+      return null;
+    }
+
+    const connectScope = this.resolveConnectScopeFromArguments(seedArguments);
+    const resolvedScope = connectScope ?? (await this.promptForConnectScope());
+    if (!resolvedScope) {
+      return null;
+    }
+
+    const workspaceOperationArguments: VsCodeExtensionWorkspaceOperationArguments = {
+      presetId,
+    };
+    const userConfigMutations: VsCodeExtensionConnectUserConfigMutation[] = [];
+    if (resolvedScope === 'preset_defaults') {
+      return {
+        workspaceOperationArguments,
+        userConfigMutations,
+      };
+    }
+
+    const selectedTool =
+      this.readConnectSelectedTool(seedArguments) ?? (await this.promptForConnectTool());
+    if (!selectedTool) {
+      return null;
+    }
+
+    if (resolvedScope === 'single_tool_all_roles') {
+      workspaceOperationArguments.singleToolAllRoles = selectedTool;
+    } else {
+      workspaceOperationArguments.tools = [selectedTool];
+    }
+
+    const resolvedTransport =
+      this.readConnectTransportBinding(seedArguments, selectedTool) ??
+      (await this.promptForConnectTransport(selectedTool));
+    if (resolvedTransport === null) {
+      return null;
+    }
+    if (resolvedTransport) {
+      workspaceOperationArguments.toolTransportBindings = [`${selectedTool}=${resolvedTransport}`];
+    }
+
+    if (resolvedTransport !== AdapterTransportKind.REMOTE_API) {
+      return {
+        workspaceOperationArguments,
+        userConfigMutations,
+      };
+    }
+
+    const remoteApiModel =
+      this.readConnectStringBinding(seedArguments, 'remoteApiModelBindings', selectedTool) ??
+      (await this.promptForConnectModel(selectedTool));
+    if (!remoteApiModel) {
+      return null;
+    }
+    workspaceOperationArguments.remoteApiModelBindings = [`${selectedTool}=${remoteApiModel}`];
+
+    const remoteApiProvider = await this.promptForConnectRemoteApiProvider(selectedTool);
+    if (remoteApiProvider === false) {
+      return null;
+    }
+    if (remoteApiProvider) {
+      userConfigMutations.push(
+        {
+          keyPath: `tools.${selectedTool}.remoteApi.provider`,
+          value: remoteApiProvider,
+        },
+        {
+          keyPath: `tools.${selectedTool}.remoteApi.vendorBinding`,
+          value: this.resolveVendorBindingForProvider(selectedTool, remoteApiProvider),
+        },
+      );
+    }
+
+    const credentialEnvVar = await this.promptForConnectCredentialEnvVar(
+      selectedTool,
+      remoteApiProvider ?? this.resolveDefaultRemoteApiProvider(selectedTool),
+    );
+    if (credentialEnvVar === undefined) {
+      return null;
+    }
+    if (credentialEnvVar.trim().length > 0) {
+      workspaceOperationArguments.remoteApiCredentialEnvVarBindings = [
+        `${selectedTool}=${credentialEnvVar.trim()}`,
+      ];
+    }
+
+    const endpointValue = await this.promptForConnectEndpoint(selectedTool);
+    if (endpointValue === undefined) {
+      return null;
+    }
+    if (endpointValue.trim().length > 0) {
+      workspaceOperationArguments.remoteApiEndpointBindings = [
+        `${selectedTool}=${endpointValue.trim()}`,
+      ];
+    }
+
+    return {
+      workspaceOperationArguments,
+      userConfigMutations,
+    };
+  }
+
+  private hasExecutableConnectArguments(
+    argumentsRecord: VsCodeExtensionWorkspaceOperationArguments,
+  ): boolean {
+    return this.readConnectArgumentString(argumentsRecord, 'presetId') !== undefined;
+  }
+
+  private async promptForConnectPreset(): Promise<string | undefined> {
+    const picked = await vscode.window.showQuickPick(
+      VSCODE_EXTENSION_CONNECT_PRESET_ORDER.map((presetId) => ({
+        label: presetId,
+        description:
+          presetId === VSCODE_EXTENSION_CONNECT_PRESET_IDS.MULTI_TOOL_DEFAULT
+            ? this.localizer.localizeText('Recommended preset', '推荐预设')
+            : undefined,
+        detail: this.describeConnectPreset(presetId),
+        presetId,
+      })),
+      {
+        title: this.localizer.localizeText(
+          'Choose one Governor connect preset',
+          '选择一个 Governor connect 预设',
+        ),
+        ignoreFocusOut: true,
+      },
+    );
+    return picked?.presetId;
+  }
+
+  private async promptForConnectScope(): Promise<
+    'preset_defaults' | 'single_tool' | 'single_tool_all_roles' | undefined
+  > {
+    const picked = await vscode.window.showQuickPick(
+      [
+        {
+          label: this.localizer.localizeText('Use preset defaults', '使用预设默认工具集合'),
+          description: this.localizer.localizeText('Recommended', '推荐'),
+          detail: this.localizer.localizeText(
+            'Run connect with the preset-owned tool selection and routing defaults.',
+            '按预设自带的工具集合和路由默认值执行 connect。',
+          ),
+          scopeId: 'preset_defaults' as const,
+        },
+        {
+          label: this.localizer.localizeText('Configure one tool', '配置单个工具'),
+          detail: this.localizer.localizeText(
+            'Target one specific tool and optionally author remote API details.',
+            '只针对一个工具执行，并可继续填写 Remote API 细节。',
+          ),
+          scopeId: 'single_tool' as const,
+        },
+        {
+          label: this.localizer.localizeText(
+            'Use one tool for all roles',
+            '让一个工具承接全部角色',
+          ),
+          detail: this.localizer.localizeText(
+            'Configure one tool and project it across every governed role.',
+            '配置一个工具并把它投影到所有受治理角色。',
+          ),
+          scopeId: 'single_tool_all_roles' as const,
+        },
+      ],
+      {
+        title: this.localizer.localizeText(
+          'Choose how Governor should connect this workspace',
+          '选择 Governor 连接这个工作区的方式',
+        ),
+        ignoreFocusOut: true,
+      },
+    );
+
+    return picked?.scopeId;
+  }
+
+  private async promptForConnectTool(): Promise<AdapterSurface | undefined> {
+    const picked = await vscode.window.showQuickPick(
+      Object.values(AdapterSurface).map((toolId) => ({
+        label: toolId,
+        description:
+          toolId === AdapterSurface.CODEX
+            ? this.localizer.localizeText('Recommended default', '推荐默认值')
+            : undefined,
+        toolId,
+      })),
+      {
+        title: this.localizer.localizeText('Choose one tool to connect', '选择一个要连接的工具'),
+        ignoreFocusOut: true,
+      },
+    );
+
+    return picked?.toolId;
+  }
+
+  private async promptForConnectTransport(
+    toolId: AdapterSurface,
+  ): Promise<AdapterTransportKind | undefined | null> {
+    const supportedTransports = VSCODE_EXTENSION_CONNECT_TRANSPORT_OPTIONS[toolId];
+    const picked = await vscode.window.showQuickPick(
+      [
+        {
+          label: this.localizer.localizeText('Use preset transport', '使用预设默认 transport'),
+          description: this.localizer.localizeText(
+            'Leaves transport resolution to the preset/default contract.',
+            '交给预设/默认契约来决定 transport。',
+          ),
+          transport: undefined,
+        },
+        ...supportedTransports.map((transport) => ({
+          label: transport,
+          description:
+            transport === AdapterTransportKind.REMOTE_API
+              ? this.localizer.localizeText(
+                  'Required when you want provider/model credentials in the plugin.',
+                  '当你希望在插件里配置 provider/model/credential 时需要选择它。',
+                )
+              : undefined,
+          transport,
+        })),
+      ],
+      {
+        title: this.localizer.localizeText(
+          `Choose the transport for ${toolId}`,
+          `为 ${toolId} 选择 transport`,
+        ),
+        ignoreFocusOut: true,
+      },
+    );
+
+    if (!picked) {
+      return null;
+    }
+
+    return picked.transport;
+  }
+
+  private async promptForConnectModel(toolId: AdapterSurface): Promise<string | undefined> {
+    return vscode.window.showInputBox({
+      title: this.localizer.localizeText('Configure remote API model', '配置 Remote API Model'),
+      prompt: this.localizer.localizeText(
+        `Enter the remote API model for ${toolId}.`,
+        `请输入 ${toolId} 使用的 Remote API Model。`,
+      ),
+      ignoreFocusOut: true,
+      validateInput: (candidate) =>
+        candidate.trim().length > 0
+          ? undefined
+          : this.localizer.localizeText('Model is required.', '请输入模型名称。'),
+    });
+  }
+
+  private async promptForConnectRemoteApiProvider(
+    toolId: AdapterSurface,
+  ): Promise<AdapterProviderKind | undefined | false> {
+    const defaultProvider = this.resolveDefaultRemoteApiProvider(toolId);
+    const picked = await vscode.window.showQuickPick(
+      [
+        {
+          label: this.localizer.localizeText('Use tool default provider', '使用工具默认 provider'),
+          description: defaultProvider,
+          provider: undefined,
+        },
+        ...Object.values(AdapterProviderKind).map((provider) => ({
+          label: provider,
+          description:
+            provider === defaultProvider
+              ? this.localizer.localizeText('Tool default', '工具默认值')
+              : undefined,
+          provider,
+        })),
+      ],
+      {
+        title: this.localizer.localizeText(
+          `Choose the remote API provider for ${toolId}`,
+          `为 ${toolId} 选择 Remote API Provider`,
+        ),
+        ignoreFocusOut: true,
+      },
+    );
+
+    if (!picked) {
+      return false;
+    }
+
+    return picked.provider;
+  }
+
+  private async promptForConnectCredentialEnvVar(
+    toolId: AdapterSurface,
+    provider: AdapterProviderKind,
+  ): Promise<string | undefined> {
+    return vscode.window.showInputBox({
+      title: this.localizer.localizeText(
+        'Configure remote API credential env var',
+        '配置 Remote API 凭据环境变量',
+      ),
+      prompt: this.localizer.localizeText(
+        `Optional: enter the environment variable name that holds the credential for ${toolId}. Leave empty to keep the current/default setting.`,
+        `可选：输入 ${toolId} 的凭据环境变量名；留空则保留当前/默认设置。`,
+      ),
+      value: this.resolveDefaultCredentialEnvVar(provider),
+      ignoreFocusOut: true,
+    });
+  }
+
+  private async promptForConnectEndpoint(toolId: AdapterSurface): Promise<string | undefined> {
+    return vscode.window.showInputBox({
+      title: this.localizer.localizeText(
+        'Configure remote API endpoint',
+        '配置 Remote API Endpoint',
+      ),
+      prompt: this.localizer.localizeText(
+        `Optional: enter a custom endpoint for ${toolId}. Leave empty to keep the provider default endpoint.`,
+        `可选：为 ${toolId} 输入自定义 Endpoint；留空则保留 Provider 默认 Endpoint。`,
+      ),
+      ignoreFocusOut: true,
+    });
+  }
+
+  private describeConnectPreset(presetId: string): string {
+    switch (presetId) {
+      case VSCODE_EXTENSION_CONNECT_PRESET_IDS.MULTI_TOOL_DEFAULT:
+        return this.localizer.localizeText(
+          'Primary human-facing preset that keeps multiple tools available.',
+          '面向日常使用的主预设，会保留多个工具可用。',
+        );
+      case VSCODE_EXTENSION_CONNECT_PRESET_IDS.SINGLE_TOOL_MINIMAL:
+        return this.localizer.localizeText(
+          'Smallest connect footprint for one preferred tool.',
+          '针对一个首选工具的最小连接方案。',
+        );
+      case VSCODE_EXTENSION_CONNECT_PRESET_IDS.SINGLE_TOOL_ALL_ROLES:
+        return this.localizer.localizeText(
+          'Projects one selected tool across every governed role.',
+          '把一个选中的工具投影到所有受治理角色。',
+        );
+      case VSCODE_EXTENSION_CONNECT_PRESET_IDS.RESTRICTED_NETWORK_SAFE:
+        return this.localizer.localizeText(
+          'Safer preset for restricted-network environments.',
+          '更适合受限网络环境的保守预设。',
+        );
+      default:
+        return presetId;
+    }
+  }
+
+  private resolveConnectScopeFromArguments(
+    argumentsRecord: VsCodeExtensionWorkspaceOperationArguments,
+  ): 'single_tool' | 'single_tool_all_roles' | undefined {
+    if (this.readConnectArgumentString(argumentsRecord, 'singleToolAllRoles')) {
+      return 'single_tool_all_roles';
+    }
+
+    return this.readConnectSelectedTool(argumentsRecord) ? 'single_tool' : undefined;
+  }
+
+  private readConnectSelectedTool(
+    argumentsRecord: VsCodeExtensionWorkspaceOperationArguments,
+  ): AdapterSurface | undefined {
+    const singleToolAllRoles = this.readConnectArgumentString(
+      argumentsRecord,
+      'singleToolAllRoles',
+    );
+    if (
+      singleToolAllRoles &&
+      Object.values(AdapterSurface).includes(singleToolAllRoles as AdapterSurface)
+    ) {
+      return singleToolAllRoles as AdapterSurface;
+    }
+
+    const [requestedTool] = this.readConnectArgumentArray(argumentsRecord, 'tools');
+    return requestedTool && Object.values(AdapterSurface).includes(requestedTool as AdapterSurface)
+      ? (requestedTool as AdapterSurface)
+      : undefined;
+  }
+
+  private readConnectTransportBinding(
+    argumentsRecord: VsCodeExtensionWorkspaceOperationArguments,
+    toolId: AdapterSurface,
+  ): AdapterTransportKind | undefined {
+    const bindingValue =
+      this.readConnectStringBinding(argumentsRecord, 'toolTransportBindings', toolId) ??
+      this.readConnectStringBinding(argumentsRecord, 'toolTransport', toolId);
+    return bindingValue &&
+      Object.values(AdapterTransportKind).includes(bindingValue as AdapterTransportKind)
+      ? (bindingValue as AdapterTransportKind)
+      : undefined;
+  }
+
+  private readConnectStringBinding(
+    argumentsRecord: VsCodeExtensionWorkspaceOperationArguments,
+    key: string,
+    toolId: AdapterSurface,
+  ): string | undefined {
+    for (const binding of this.readConnectArgumentArray(argumentsRecord, key)) {
+      const separatorIndex = binding.indexOf('=');
+      if (separatorIndex <= 0) {
+        continue;
+      }
+
+      const bindingToolId = binding.slice(0, separatorIndex).trim();
+      const bindingValue = binding.slice(separatorIndex + 1).trim();
+      if (bindingToolId === toolId && bindingValue.length > 0) {
+        return bindingValue;
+      }
+    }
+
+    return undefined;
+  }
+
+  private readConnectArgumentString(
+    argumentsRecord: VsCodeExtensionWorkspaceOperationArguments,
+    key: string,
+  ): string | undefined {
+    const value = argumentsRecord[key];
+    return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
+  }
+
+  private readConnectArgumentArray(
+    argumentsRecord: VsCodeExtensionWorkspaceOperationArguments,
+    key: string,
+  ): string[] {
+    const value = argumentsRecord[key];
+    if (Array.isArray(value)) {
+      return value.filter(
+        (entry): entry is string => typeof entry === 'string' && entry.trim().length > 0,
+      );
+    }
+
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value
+        .split(',')
+        .map((entry) => entry.trim())
+        .filter((entry) => entry.length > 0);
+    }
+
+    return [];
+  }
+
+  private resolveDefaultRemoteApiProvider(toolId: AdapterSurface): AdapterProviderKind {
+    return toolId === AdapterSurface.CLAUDE_CODE
+      ? AdapterProviderKind.ANTHROPIC
+      : AdapterProviderKind.OPENAI;
+  }
+
+  private resolveVendorBindingForProvider(
+    toolId: AdapterSurface,
+    provider: AdapterProviderKind,
+  ): AdapterVendorBindingKind {
+    switch (provider) {
+      case AdapterProviderKind.ANTHROPIC:
+        return AdapterVendorBindingKind.ANTHROPIC_MESSAGES;
+      case AdapterProviderKind.GITHUB_MODELS:
+        return AdapterVendorBindingKind.GITHUB_MODELS_INFERENCE;
+      default:
+        return toolId === AdapterSurface.CLAUDE_CODE
+          ? AdapterVendorBindingKind.ANTHROPIC_MESSAGES
+          : AdapterVendorBindingKind.OPENAI_RESPONSES;
+    }
+  }
+
+  private resolveDefaultCredentialEnvVar(provider: AdapterProviderKind): string {
+    switch (provider) {
+      case AdapterProviderKind.ANTHROPIC:
+        return 'ANTHROPIC_API_KEY';
+      case AdapterProviderKind.GITHUB_MODELS:
+        return 'GITHUB_TOKEN';
+      default:
+        return 'OPENAI_API_KEY';
     }
   }
 
@@ -1609,7 +2837,17 @@ export class VsCodeExtensionCommandController {
     );
     this.selectionStore.applyCommandRequest(commandRequest);
     await this.refresh(commandRequest);
+    await this.showWorkspaceOperationCompletionMessage(response);
+  }
 
+  private async showWorkspaceOperationCompletionMessage(response: {
+    message: string;
+    result: {
+      artifacts?: Array<{
+        path: string;
+      }>;
+    };
+  }): Promise<void> {
     const primaryArtifactPath = response.result.artifacts?.[0]?.path;
     const openArtifactLabel = this.localizer.localizeText('Open Artifact', '打开产物');
     const picked = await vscode.window.showInformationMessage(
@@ -1628,15 +2866,17 @@ export class VsCodeExtensionCommandController {
     operationKind: OrchestrationWorkspaceOperationKind,
     argumentsRecord?: Record<string, boolean | number | string | readonly string[] | null>,
     commandRequest?: VsCodeExtensionCommandRequest,
-  ): Promise<void> {
+  ): Promise<boolean> {
     try {
       await this.runWorkspaceOperationWithFeedback(operationKind, argumentsRecord, commandRequest);
+      return true;
     } catch (error) {
       await this.showCommandError(
         error,
         'Failed to execute the requested workspace operation.',
         '执行请求的工作区操作失败。',
       );
+      return false;
     }
   }
 
@@ -1661,6 +2901,8 @@ export class VsCodeExtensionCommandController {
     operationKind: OrchestrationWorkspaceOperationKind,
   ): string {
     switch (operationKind) {
+      case OrchestrationWorkspaceOperationKind.CONNECT:
+        return this.localizer.localizeText('Run connect', '执行 connect');
       case OrchestrationWorkspaceOperationKind.ADOPT_BOOTSTRAP:
         return this.localizer.localizeText('Run adopt bootstrap', '执行 adopt bootstrap');
       case OrchestrationWorkspaceOperationKind.ADOPTION_APPLY:
@@ -1678,6 +2920,252 @@ export class VsCodeExtensionCommandController {
       default:
         return operationKind;
     }
+  }
+
+  private createBlockedChatCommandExecutionResult(
+    commandName: string,
+  ): VsCodeExtensionChatCommandExecutionResult {
+    return this.createChatCommandExecutionResult(
+      commandName,
+      'blocked',
+      'This command is blocked until the workspace is trusted.',
+      '该命令会在工作区受信任前保持阻断。',
+      this.localizer.localizeText(
+        'Grant Workspace Trust and then run the slash command again.',
+        '请先授予工作区信任，然后再重新执行这个 slash command。',
+      ),
+    );
+  }
+
+  private createChatCommandExecutionResult(
+    commandName: string,
+    status: VsCodeExtensionChatCommandExecutionStatus,
+    englishSummary: string,
+    chineseSummary: string,
+    detail?: string,
+  ): VsCodeExtensionChatCommandExecutionResult {
+    return {
+      commandName,
+      status,
+      summary: this.localizer.localizeText(englishSummary, chineseSummary),
+      ...(detail
+        ? {
+            detail,
+          }
+        : {}),
+    };
+  }
+
+  private isChatCommandTrustBlocked(commandName: string): boolean {
+    if (vscode.workspace.isTrusted) {
+      return false;
+    }
+
+    const trustBlockedCommands: readonly string[] = [
+      VSCODE_EXTENSION_CHAT_COMMAND_IDS.WORKSPACE_BOOTSTRAP,
+      VSCODE_EXTENSION_CHAT_COMMAND_IDS.CONNECT,
+      VSCODE_EXTENSION_CHAT_COMMAND_IDS.DOCTOR,
+      VSCODE_EXTENSION_CHAT_COMMAND_IDS.CHECK,
+      VSCODE_EXTENSION_CHAT_COMMAND_IDS.WORKFLOW_PREVIEW,
+      VSCODE_EXTENSION_CHAT_COMMAND_IDS.WORKFLOW_CREATE,
+      VSCODE_EXTENSION_CHAT_COMMAND_IDS.WORKFLOW_EDIT,
+      VSCODE_EXTENSION_CHAT_COMMAND_IDS.OPEN_HANDOFF_TARGET,
+      VSCODE_EXTENSION_CHAT_COMMAND_IDS.STAGE_TEMPORARY_BRIDGE,
+      VSCODE_EXTENSION_CHAT_COMMAND_IDS.SUBMIT_HITL_DECISION,
+      VSCODE_EXTENSION_CHAT_COMMAND_IDS.RECOVER_EXECUTION,
+      VSCODE_EXTENSION_CHAT_COMMAND_IDS.TERMINATE_EXECUTION,
+      VSCODE_EXTENSION_CHAT_COMMAND_IDS.OPEN_USER_CONFIG,
+      VSCODE_EXTENSION_CHAT_COMMAND_IDS.CONFIGURE_USER_DEFAULT,
+      VSCODE_EXTENSION_CHAT_COMMAND_IDS.SET_MANAGED_SECRET,
+    ];
+
+    return trustBlockedCommands.includes(commandName);
+  }
+
+  private resolveChatPromptIntentRequest(
+    promptText?: string,
+  ): VsCodeExtensionResolvedChatRequest | undefined {
+    const collapsedPrompt = this.collapseChatPromptWhitespace(promptText);
+    if (!collapsedPrompt) {
+      return undefined;
+    }
+
+    const strippedPrompt = this.stripChatPromptPolitePrefixes(collapsedPrompt);
+    if (!strippedPrompt) {
+      return undefined;
+    }
+
+    const normalizedPrompt = strippedPrompt.toLowerCase();
+    for (const rule of VSCODE_EXTENSION_CHAT_PROMPT_INTENT_RULES) {
+      const matchedPhrase =
+        rule.exactPhrases?.find((phrase) => normalizedPrompt === phrase) ??
+        rule.leadingPhrases?.find((phrase) => this.matchesLeadingPhrase(normalizedPrompt, phrase));
+      if (!matchedPhrase) {
+        continue;
+      }
+
+      const promptSuffix = strippedPrompt.slice(matchedPhrase.length).trim();
+      switch (rule.promptRoutingMode) {
+        case 'full_prompt':
+          return {
+            commandName: rule.commandName,
+            promptText: strippedPrompt,
+          };
+        case 'suffix':
+          return {
+            commandName: rule.commandName,
+            ...(promptSuffix
+              ? {
+                  promptText: promptSuffix,
+                }
+              : {}),
+          };
+        default:
+          return {
+            commandName: rule.commandName,
+          };
+      }
+    }
+
+    return undefined;
+  }
+
+  private collapseChatPromptWhitespace(promptText?: string): string | undefined {
+    const collapsedPrompt = promptText?.replace(/\s+/gu, ' ').trim();
+    return collapsedPrompt ? collapsedPrompt : undefined;
+  }
+
+  private stripChatPromptPolitePrefixes(promptText: string): string {
+    let strippedPrompt = promptText;
+    while (strippedPrompt.length > 0) {
+      const normalizedPrompt = strippedPrompt.toLowerCase();
+      const matchedPrefix = VSCODE_EXTENSION_CHAT_POLITE_PREFIXES.find((prefix) =>
+        normalizedPrompt.startsWith(prefix),
+      );
+      if (!matchedPrefix) {
+        return strippedPrompt;
+      }
+
+      strippedPrompt = strippedPrompt
+        .slice(matchedPrefix.length)
+        .replace(/^[\s,，:：-]+/u, '')
+        .trim();
+    }
+
+    return strippedPrompt;
+  }
+
+  private matchesLeadingPhrase(normalizedPrompt: string, phrase: string): boolean {
+    return (
+      normalizedPrompt === phrase ||
+      normalizedPrompt.startsWith(`${phrase} `) ||
+      normalizedPrompt.startsWith(`${phrase},`) ||
+      normalizedPrompt.startsWith(`${phrase}，`) ||
+      normalizedPrompt.startsWith(`${phrase}:`) ||
+      normalizedPrompt.startsWith(`${phrase}：`) ||
+      normalizedPrompt.startsWith(`${phrase}-`)
+    );
+  }
+
+  private resolveConnectWorkspaceOperationArgumentsFromPrompt(
+    promptText?: string,
+  ): VsCodeExtensionWorkspaceOperationArguments | undefined {
+    if (!promptText) {
+      return undefined;
+    }
+
+    const normalizedPrompt = promptText.trim().toLowerCase();
+    const mentionedTool = this.resolveMentionedAdapterSurfaceInPrompt(normalizedPrompt);
+    if (!mentionedTool) {
+      return undefined;
+    }
+
+    return {
+      ...(normalizedPrompt.includes('all roles') || normalizedPrompt.includes('所有角色')
+        ? {
+            singleToolAllRoles: mentionedTool,
+          }
+        : {
+            tools: [mentionedTool],
+          }),
+      ...(normalizedPrompt.includes('remote api') || normalizedPrompt.includes('远程 api')
+        ? {
+            toolTransportBindings: [`${mentionedTool}=${AdapterTransportKind.REMOTE_API}`],
+          }
+        : {}),
+    };
+  }
+
+  private resolveMentionedAdapterSurfaceInPrompt(
+    normalizedPrompt: string,
+  ): AdapterSurface | undefined {
+    if (normalizedPrompt.includes('claude')) {
+      return AdapterSurface.CLAUDE_CODE;
+    }
+    if (normalizedPrompt.includes('copilot')) {
+      return AdapterSurface.GITHUB_COPILOT;
+    }
+    if (normalizedPrompt.includes('ollama') || normalizedPrompt.includes('local model')) {
+      return AdapterSurface.OLLAMA;
+    }
+    if (normalizedPrompt.includes('codex')) {
+      return AdapterSurface.CODEX;
+    }
+
+    return undefined;
+  }
+
+  private resolveWorkspaceOperationRequestFromChatPrompt(promptText: string):
+    | {
+        workspaceOperationKind: OrchestrationWorkspaceOperationKind;
+        workspaceOperationArguments?: VsCodeExtensionWorkspaceOperationArguments;
+      }
+    | undefined {
+    const normalizedPrompt = promptText.trim().toLowerCase();
+    const containsAny = (...candidates: string[]): boolean =>
+      candidates.some((candidate) => normalizedPrompt.includes(candidate));
+
+    if (containsAny('preview upgrade', 'upgrade preview', '预览升级', '升级预览')) {
+      return {
+        workspaceOperationKind: OrchestrationWorkspaceOperationKind.UPGRADE_PREVIEW,
+      };
+    }
+    if (
+      containsAny('apply upgrade', 'upgrade apply', '应用升级') ||
+      normalizedPrompt === 'upgrade' ||
+      normalizedPrompt === '升级'
+    ) {
+      return {
+        workspaceOperationKind: OrchestrationWorkspaceOperationKind.UPGRADE_APPLY,
+      };
+    }
+    if (containsAny('adopt bootstrap', 'bootstrap adopt', 'adopt 初始化')) {
+      return {
+        workspaceOperationKind: OrchestrationWorkspaceOperationKind.ADOPT_BOOTSTRAP,
+      };
+    }
+    if (containsAny('apply adoption', 'adoption apply', 'adopt apply', '应用 adopt')) {
+      return {
+        workspaceOperationKind: OrchestrationWorkspaceOperationKind.ADOPTION_APPLY,
+      };
+    }
+    if (containsAny('host export', 'export host', '导出宿主资产', '宿主导出')) {
+      return {
+        workspaceOperationKind: OrchestrationWorkspaceOperationKind.HOST_EXPORT,
+      };
+    }
+    if (containsAny('host verify', 'verify host', '校验宿主资产', '宿主校验')) {
+      return {
+        workspaceOperationKind: OrchestrationWorkspaceOperationKind.HOST_VERIFY,
+      };
+    }
+    if (containsAny('host pack', 'pack host', '打包宿主 bundle', '宿主打包')) {
+      return {
+        workspaceOperationKind: OrchestrationWorkspaceOperationKind.HOST_PACK,
+      };
+    }
+
+    return undefined;
   }
 
   private async ensureTrusted(): Promise<boolean> {

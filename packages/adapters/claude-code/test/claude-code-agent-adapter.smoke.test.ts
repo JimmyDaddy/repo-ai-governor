@@ -56,7 +56,7 @@ function createStreamRequest(): AgentStreamEventsRequest {
 
 function createSseResponse(
   chunks: string[],
-  signal?: AbortSignal,
+  signal?: AbortSignal | null,
   options: {
     stallAfterChunks?: boolean;
   } = {},
@@ -482,7 +482,7 @@ describe('claude-code-agent-adapter smoke', () => {
             'event: content_block_delta\ndata: {"type":"content_block_delta","delta":{"type":"text_delta","text":"hello"}}\n\n',
             'event: message_stop\ndata: {"type":"message_stop","message":{"id":"msg-stream-1"}}\n\n',
           ],
-          init?.signal,
+          init?.signal ?? undefined,
         ),
       );
     const adapter = new ClaudeCodeAgentAdapter({
@@ -555,7 +555,7 @@ describe('claude-code-agent-adapter smoke', () => {
           'event: message_start\ndata: {"type":"message_start","message":{"id":"msg-stream-timeout-1"}}\n\n',
           'event: content_block_delta\ndata: {"type":"content_block_delta","delta":{"type":"text_delta","text":"partial"}}\n\n',
         ],
-        init?.signal,
+        init?.signal ?? undefined,
         {
           stallAfterChunks: true,
         },
@@ -618,7 +618,7 @@ describe('claude-code-agent-adapter smoke', () => {
       if (init?.signal?.aborted) {
         throw new DOMException('The operation was aborted.', 'AbortError');
       }
-      await new Promise<never>((_, reject) => {
+      return await new Promise<Response>((_, reject) => {
         init?.signal?.addEventListener(
           'abort',
           () => reject(new DOMException('The operation was aborted.', 'AbortError')),
@@ -719,7 +719,7 @@ describe('claude-code-agent-adapter smoke', () => {
             },
           }),
       } as Response);
-    const resolveCredentialRef = vi.fn(async () => 'secret-key');
+    const resolveCredentialRef = vi.fn(async (_selector: string) => 'secret-key');
     const adapter = new ClaudeCodeAgentAdapter({
       executionMode: ClaudeCodeAgentAdapterExecutionMode.REMOTE_API,
       fetchImplementation,

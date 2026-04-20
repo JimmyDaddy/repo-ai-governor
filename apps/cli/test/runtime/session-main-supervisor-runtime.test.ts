@@ -3,6 +3,12 @@ import {
   AgentAvailabilityStatus,
   AgentCapability,
   AgentCapabilitySupportLevel,
+  AgentConfirmationDecision,
+  type AgentConfirmationResult,
+  type AgentInvokeStageRequest,
+  type AgentInvokeStageResult,
+  type AgentProbeRequest,
+  type AgentProbeResult,
   type AgentProtocolContract,
   AgentStageContinuationHandleKind,
   AgentStageContinuationMode,
@@ -10,7 +16,9 @@ import {
   AgentStageContinuationTransportKind,
   AgentStageExecutionMode,
   AgentStageToolUsePolicy,
+  type AgentStreamEvent,
   AgentStreamEventType,
+  type AgentStreamEventsRequest,
 } from '@repo-ai-governor/adapter-sdk';
 import { type AdaptersConfig, WorkspaceMode } from '@repo-ai-governor/config';
 import {
@@ -41,21 +49,27 @@ function createAvailableProtocol(
     capabilitySupportOverrides?: Partial<Record<AgentCapability, AgentCapabilitySupportLevel>>;
     omittedCapabilities?: AgentCapability[];
     toolCallingSupportLevel?: AgentCapabilitySupportLevel;
-    probeSpy?: ReturnType<typeof vi.fn>;
-    invokeStageSpy?: ReturnType<typeof vi.fn>;
+    probeSpy?: (request: AgentProbeRequest) => Promise<AgentProbeResult>;
+    invokeStageSpy?: (request: AgentInvokeStageRequest) => Promise<AgentInvokeStageResult>;
     streamEvents?: Array<{
       eventType: AgentStreamEventType;
       payload: Record<string, unknown>;
     }>;
   } = {},
 ): AgentProtocolContract {
+  const confirmationResult: AgentConfirmationResult = {
+    decision: AgentConfirmationDecision.APPROVE,
+    reason: 'unused',
+    constraints: [],
+    decidedAt: new Date('2026-03-31T12:00:00Z').toISOString(),
+  };
   const toolCallingSupportLevel =
     options.toolCallingSupportLevel ?? AgentCapabilitySupportLevel.SUPPORTED;
   const omittedCapabilities = new Set(options.omittedCapabilities ?? []);
   return {
     probe:
       options.probeSpy ??
-      (async () => ({
+      (async (_request: AgentProbeRequest) => ({
         identity: {
           agentId: `${surface}-agent`,
           role: 'session-main',
@@ -95,7 +109,7 @@ function createAvailableProtocol(
       })),
     invokeStage:
       options.invokeStageSpy ??
-      (async (request) => ({
+      (async (request: AgentInvokeStageRequest) => ({
         output: {
           adapterSurface: surface,
           routeKey: request.routeKey,
@@ -104,17 +118,21 @@ function createAvailableProtocol(
         },
         elapsedMs: 1,
       })),
-    streamEvents: async function* () {
+    streamEvents: async function* (
+      request: AgentStreamEventsRequest,
+    ): AsyncGenerator<AgentStreamEvent> {
       for (const event of options.streamEvents ?? []) {
-        yield event;
+        yield {
+          ...event,
+          timestamp: new Date('2026-03-31T12:00:00Z').toISOString(),
+          processId: request.processId,
+          executionId: request.executionId,
+          stageId: request.stageId,
+          routeKey: request.routeKey,
+        };
       }
     },
-    requestConfirmation: async () => ({
-      decision: 'approve',
-      reason: 'unused',
-      constraints: [],
-      decidedAt: new Date('2026-03-31T12:00:00Z').toISOString(),
-    }),
+    requestConfirmation: async () => confirmationResult,
     cancel: async (request) => ({
       acknowledged: true,
       scope: request.scope,
@@ -125,8 +143,14 @@ function createAvailableProtocol(
 }
 
 function createUnavailableProtocol(surface: AdapterSurface): AgentProtocolContract {
+  const confirmationResult: AgentConfirmationResult = {
+    decision: AgentConfirmationDecision.APPROVE,
+    reason: 'unused',
+    constraints: [],
+    decidedAt: new Date('2026-03-31T12:00:00Z').toISOString(),
+  };
   return {
-    probe: async () => ({
+    probe: async (_request: AgentProbeRequest) => ({
       identity: {
         agentId: `${surface}-agent`,
         role: 'session-main',
@@ -156,17 +180,14 @@ function createUnavailableProtocol(surface: AdapterSurface): AgentProtocolContra
       },
       unavailableReasons: ['unavailable-for-test'],
     }),
-    invokeStage: async () => ({
+    invokeStage: async (_request: AgentInvokeStageRequest) => ({
       output: {},
       elapsedMs: 1,
     }),
-    streamEvents: async function* () {},
-    requestConfirmation: async () => ({
-      decision: 'approve',
-      reason: 'unused',
-      constraints: [],
-      decidedAt: new Date('2026-03-31T12:00:00Z').toISOString(),
-    }),
+    streamEvents: async function* (
+      _request: AgentStreamEventsRequest,
+    ): AsyncGenerator<AgentStreamEvent> {},
+    requestConfirmation: async () => confirmationResult,
     cancel: async (request) => ({
       acknowledged: true,
       scope: request.scope,
@@ -180,23 +201,26 @@ function createProbeThrowingProtocol(
   surface: AdapterSurface,
   errorMessage = 'probe exploded for test',
 ): AgentProtocolContract {
+  const confirmationResult: AgentConfirmationResult = {
+    decision: AgentConfirmationDecision.APPROVE,
+    reason: 'unused',
+    constraints: [],
+    decidedAt: new Date('2026-03-31T12:00:00Z').toISOString(),
+  };
   return {
-    probe: async () => {
-      throw new RuntimeError(GovernorErrorCode.PROCESS_RUNTIME_FAILED, errorMessage, {
+    probe: async (_request: AgentProbeRequest) => {
+      throw new RuntimeError(GovernorErrorCode.UNKNOWN, errorMessage, {
         surface,
       });
     },
-    invokeStage: async () => ({
+    invokeStage: async (_request: AgentInvokeStageRequest) => ({
       output: {},
       elapsedMs: 1,
     }),
-    streamEvents: async function* () {},
-    requestConfirmation: async () => ({
-      decision: 'approve',
-      reason: 'unused',
-      constraints: [],
-      decidedAt: new Date('2026-03-31T12:00:00Z').toISOString(),
-    }),
+    streamEvents: async function* (
+      _request: AgentStreamEventsRequest,
+    ): AsyncGenerator<AgentStreamEvent> {},
+    requestConfirmation: async () => confirmationResult,
     cancel: async (request) => ({
       acknowledged: true,
       scope: request.scope,
@@ -340,7 +364,7 @@ describe('Cli session-main supervisor runtime', () => {
   });
 
   it('allows free-form direct answers on tool-capable surfaces when chat-only policy forbids tool use', async () => {
-    const codexInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+    const codexInvokeStage = vi.fn(async (request: AgentInvokeStageRequest) => {
       expect(request.input).toEqual(
         expect.objectContaining({
           [AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY]: {
@@ -487,7 +511,7 @@ describe('Cli session-main supervisor runtime', () => {
       [AdapterSurface.OLLAMA]: createAvailableProtocol(AdapterSurface.OLLAMA, 'unused', {
         probeSpy: vi.fn(async () => {
           throw new RuntimeError(
-            GovernorErrorCode.PROCESS_RUNTIME_FAILED,
+            GovernorErrorCode.UNKNOWN,
             'ollama probe should not run after preferred surface succeeds',
           );
         }),
@@ -633,7 +657,7 @@ describe('Cli session-main supervisor runtime', () => {
       selectedBy: 'session.main.default',
       sessionRoutingPreferenceApplied: false,
       publishStreamEvent: async (event) => {
-        publishedStreamEvents.push(event as Record<string, unknown>);
+        publishedStreamEvents.push(event as unknown as Record<string, unknown>);
       },
     });
 
@@ -786,7 +810,7 @@ describe('Cli session-main supervisor runtime', () => {
       selectedBy: 'session.main.default',
       sessionRoutingPreferenceApplied: false,
       publishStreamEvent: async (event) => {
-        publishedStreamEvents.push(event as Record<string, unknown>);
+        publishedStreamEvents.push(event as unknown as Record<string, unknown>);
       },
     });
 
@@ -810,7 +834,7 @@ describe('Cli session-main supervisor runtime', () => {
   });
 
   it('keeps free-form direct answers available when surface metadata omits tool-calling capability', async () => {
-    const codexInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+    const codexInvokeStage = vi.fn(async (request: AgentInvokeStageRequest) => {
       expect(request.input).toEqual(
         expect.objectContaining({
           [AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY]: {
@@ -898,7 +922,7 @@ describe('Cli session-main supervisor runtime', () => {
         },
       },
     };
-    const codexInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+    const codexInvokeStage = vi.fn(async (request: AgentInvokeStageRequest) => {
       expect(request.continuation).toEqual(
         expect.objectContaining({
           mode: AgentStageContinuationMode.PREFER_REUSE,
@@ -1009,7 +1033,7 @@ describe('Cli session-main supervisor runtime', () => {
 
   it('projects unsupported continuation attempts into direct-answer outcomes even without an existing slot', async () => {
     const laneKey = 'session.main::stage-session-main-answer::session.main::codex::chat_only';
-    const codexInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+    const codexInvokeStage = vi.fn(async (request: AgentInvokeStageRequest) => {
       expect(request.input).toEqual(
         expect.objectContaining({
           sessionContinuityNote: {
@@ -1145,7 +1169,7 @@ describe('Cli session-main supervisor runtime', () => {
         },
       },
     };
-    const codexInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+    const codexInvokeStage = vi.fn(async (request: AgentInvokeStageRequest) => {
       expect(request.continuation).toEqual(
         expect.objectContaining({
           mode: AgentStageContinuationMode.PREFER_REUSE,
@@ -1278,7 +1302,7 @@ describe('Cli session-main supervisor runtime', () => {
       },
     };
     const publishedStreamEvents: Array<Record<string, unknown>> = [];
-    const codexInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+    const codexInvokeStage = vi.fn(async (request: AgentInvokeStageRequest) => {
       expect(request.continuation).toEqual(
         expect.objectContaining({
           mode: AgentStageContinuationMode.PREFER_REUSE,
@@ -1366,7 +1390,7 @@ describe('Cli session-main supervisor runtime', () => {
       sessionRoutingPreferenceApplied: false,
       providerContinuationState,
       publishStreamEvent: async (event) => {
-        publishedStreamEvents.push(event as Record<string, unknown>);
+        publishedStreamEvents.push(event as unknown as Record<string, unknown>);
       },
     });
 
@@ -1602,7 +1626,7 @@ describe('Cli session-main supervisor runtime', () => {
       selectedBy: 'session.main.default',
       sessionRoutingPreferenceApplied: false,
       publishStreamEvent: async (event) => {
-        publishedStreamEvents.push(event as Record<string, unknown>);
+        publishedStreamEvents.push(event as unknown as Record<string, unknown>);
       },
     });
 
@@ -1814,7 +1838,7 @@ describe('Cli session-main supervisor runtime', () => {
   });
 
   it('falls back to the next available direct-answer surface while preserving chat-only governance', async () => {
-    const claudeInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+    const claudeInvokeStage = vi.fn(async (request: AgentInvokeStageRequest) => {
       expect(request.input).toEqual(
         expect.objectContaining({
           [AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY]: {
@@ -1914,7 +1938,7 @@ describe('Cli session-main supervisor runtime', () => {
       selectedBy: 'session.main.default',
       sessionRoutingPreferenceApplied: false,
       publishStreamEvent: async (event) => {
-        publishedStreamEvents.push(event as Record<string, unknown>);
+        publishedStreamEvents.push(event as unknown as Record<string, unknown>);
       },
     });
 
@@ -2008,7 +2032,7 @@ describe('Cli session-main supervisor runtime', () => {
       selectedBy: 'session.main.default',
       sessionRoutingPreferenceApplied: false,
       publishStreamEvent: async (event) => {
-        publishedStreamEvents.push(event as Record<string, unknown>);
+        publishedStreamEvents.push(event as unknown as Record<string, unknown>);
       },
     });
 
@@ -2377,7 +2401,7 @@ describe('Cli session-main supervisor runtime', () => {
         },
       },
     };
-    const serialInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+    const serialInvokeStage = vi.fn(async (request: AgentInvokeStageRequest) => {
       if (request.stageId === 'stage-session-main-role-planner') {
         return {
           output: {
@@ -2575,7 +2599,7 @@ describe('Cli session-main supervisor runtime', () => {
             : tool,
         ) ?? [],
     };
-    const serialInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+    const serialInvokeStage = vi.fn(async (request: AgentInvokeStageRequest) => {
       if (request.stageId === 'stage-session-main-role-planner') {
         return {
           output: {
@@ -2681,7 +2705,7 @@ describe('Cli session-main supervisor runtime', () => {
 
   it('routes implicit reviewer delegation through one single-role collaboration path for natural-language review requests', async () => {
     const publishedStreamEvents: Array<Record<string, unknown>> = [];
-    const reviewerInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+    const reviewerInvokeStage = vi.fn(async (request: AgentInvokeStageRequest) => {
       expect(request.stageId).toBe('stage-session-main-role-reviewer');
       expect(request.routeKey).toBe('session.main.role.reviewer');
       expect(request.input).toEqual(
@@ -2740,7 +2764,7 @@ describe('Cli session-main supervisor runtime', () => {
         [SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY]: 'reviewer',
       },
       publishStreamEvent: async (event) => {
-        publishedStreamEvents.push(event as Record<string, unknown>);
+        publishedStreamEvents.push(event as unknown as Record<string, unknown>);
       },
     });
 
@@ -2783,7 +2807,7 @@ describe('Cli session-main supervisor runtime', () => {
   });
 
   it('keeps repository-review reviewer delegation dispatchable when an available fallback surface omits tool capability metadata', async () => {
-    const reviewerInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+    const reviewerInvokeStage = vi.fn(async (request: AgentInvokeStageRequest) => {
       expect(request.stageId).toBe('stage-session-main-role-reviewer');
       expect(request.routeKey).toBe('session.main.role.reviewer');
       expect(request.input).toEqual(
@@ -2846,7 +2870,7 @@ describe('Cli session-main supervisor runtime', () => {
   });
 
   it('keeps repository-review reviewer delegation dispatchable when the primary probe throws before fallback recovery', async () => {
-    const reviewerInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+    const reviewerInvokeStage = vi.fn(async (request: AgentInvokeStageRequest) => {
       expect(request.stageId).toBe('stage-session-main-role-reviewer');
       expect(request.routeKey).toBe('session.main.role.reviewer');
       return {
@@ -3176,7 +3200,7 @@ describe('Cli session-main supervisor runtime', () => {
         },
       },
     };
-    const parallelInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+    const parallelInvokeStage = vi.fn(async (request: AgentInvokeStageRequest) => {
       if (request.stageId === 'stage-session-main-role-planner') {
         expect(request.input).toEqual(
           expect.objectContaining({
@@ -3374,7 +3398,7 @@ describe('Cli session-main supervisor runtime', () => {
             : tool,
         ) ?? [],
     };
-    const parallelInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+    const parallelInvokeStage = vi.fn(async (request: AgentInvokeStageRequest) => {
       if (request.stageId === 'stage-session-main-role-planner') {
         return {
           output: {
@@ -3479,7 +3503,7 @@ describe('Cli session-main supervisor runtime', () => {
   });
 
   it('routes explicit three-role parallel requests through one three-role fan-out pilot', async () => {
-    const parallelInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+    const parallelInvokeStage = vi.fn(async (request: AgentInvokeStageRequest) => {
       expect(request.input).toEqual(
         expect.objectContaining({
           interactionMode: 'parallel_role_fanout',
@@ -3714,7 +3738,7 @@ describe('Cli session-main supervisor runtime', () => {
   });
 
   it('falls back to a tool-capable governed surface when the only no-tool planner fallback misses one required capability', async () => {
-    const codexInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+    const codexInvokeStage = vi.fn(async (request: AgentInvokeStageRequest) => {
       expect(request.input).toEqual(
         expect.objectContaining({
           roleId: 'planner',
@@ -3799,7 +3823,7 @@ describe('Cli session-main supervisor runtime', () => {
   });
 
   it('dispatches explicit @planner turns on tool-capable surfaces with chat-only governance when no no-tool fallback is active', async () => {
-    const codexInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+    const codexInvokeStage = vi.fn(async (request: AgentInvokeStageRequest) => {
       expect(request.input).toEqual(
         expect.objectContaining({
           roleId: 'planner',
@@ -3870,7 +3894,7 @@ describe('Cli session-main supervisor runtime', () => {
   });
 
   it('dispatches serial role collaboration on tool-capable surfaces with chat-only governance when no no-tool fallback is active', async () => {
-    const codexInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+    const codexInvokeStage = vi.fn(async (request: AgentInvokeStageRequest) => {
       const roleId =
         typeof request.input === 'object' && request.input && 'roleId' in request.input
           ? String((request.input as Record<string, unknown>).roleId)
@@ -3947,7 +3971,7 @@ describe('Cli session-main supervisor runtime', () => {
   });
 
   it('dispatches parallel role fan-out on tool-capable surfaces with chat-only governance when no no-tool fallback is active', async () => {
-    const codexInvokeStage = vi.fn(async (request: Record<string, unknown>) => {
+    const codexInvokeStage = vi.fn(async (request: AgentInvokeStageRequest) => {
       expect(request.input).toEqual(
         expect.objectContaining({
           interactionMode: 'parallel_role_fanout',

@@ -24,6 +24,7 @@ import {
   CliGovernanceCheckStatus,
 } from '../../src/constants/cli-governance-runtime.constant.js';
 import { CliAgentProjectionRuntime } from '../../src/runtime/agent-projection-runtime.js';
+import { createCliAdapterVerificationResolution } from '../test-support/cli-command-fixtures.js';
 
 describe('CliAgentProjectionRuntime', () => {
   it('projects selected transport/provider truth into agent descriptors', () => {
@@ -62,7 +63,7 @@ describe('CliAgentProjectionRuntime', () => {
 
     const descriptors = runtime.createDescriptorsFromRoleEvaluations({
       adaptersConfig,
-      verification: {
+      verification: createCliAdapterVerificationResolution({
         overallStatus: CliGovernanceCheckStatus.WARN,
         tools: [],
         roleEvaluations: [
@@ -97,7 +98,7 @@ describe('CliAgentProjectionRuntime', () => {
         degradedRoleCount: 1,
         fallbackRoleCount: 0,
         nextActions: ['Set OPENAI_API_KEY before verify.'],
-      },
+      }),
       workspace: {
         workspaceId: 'workspace-1',
         mode: WorkspaceMode.REPO_LOCAL,
@@ -155,7 +156,7 @@ describe('CliAgentProjectionRuntime', () => {
 
     const descriptors = runtime.createDescriptorsFromRoleEvaluations({
       adaptersConfig,
-      verification: {
+      verification: createCliAdapterVerificationResolution({
         overallStatus: CliGovernanceCheckStatus.PASS,
         tools: [],
         roleEvaluations: [
@@ -169,7 +170,6 @@ describe('CliAgentProjectionRuntime', () => {
             unsupportedCapabilities: [],
             degradedCapabilities: [],
             unavailableReasons: [],
-            healthCheck: null,
             failureAttributions: [],
             status: CliGovernanceCheckStatus.PASS,
           },
@@ -179,7 +179,7 @@ describe('CliAgentProjectionRuntime', () => {
         degradedRoleCount: 0,
         fallbackRoleCount: 0,
         nextActions: [],
-      },
+      }),
       workspace: {
         workspaceId: 'workspace-1',
         mode: WorkspaceMode.REPO_LOCAL,
@@ -231,7 +231,7 @@ describe('CliAgentProjectionRuntime', () => {
 
     const descriptors = runtime.createDescriptorsFromRoleEvaluations({
       adaptersConfig,
-      verification: {
+      verification: createCliAdapterVerificationResolution({
         overallStatus: CliGovernanceCheckStatus.FAIL,
         tools: [],
         roleEvaluations: [
@@ -245,7 +245,6 @@ describe('CliAgentProjectionRuntime', () => {
             unsupportedCapabilities: [],
             degradedCapabilities: [],
             unavailableReasons: ['surface_unavailable:codex:acp_host_transport_not_ready'],
-            healthCheck: null,
             failureAttributions: ['environment_precondition'],
             status: CliGovernanceCheckStatus.FAIL,
           },
@@ -255,7 +254,7 @@ describe('CliAgentProjectionRuntime', () => {
         degradedRoleCount: 0,
         fallbackRoleCount: 0,
         nextActions: ['Investigate ACP host enablement before retrying verify.'],
-      },
+      }),
       workspace: {
         workspaceId: 'workspace-1',
         mode: WorkspaceMode.REPO_LOCAL,
@@ -314,7 +313,7 @@ describe('CliAgentProjectionRuntime', () => {
 
     const descriptors = runtime.createDescriptorsFromRoleEvaluations({
       adaptersConfig,
-      verification: {
+      verification: createCliAdapterVerificationResolution({
         overallStatus: CliGovernanceCheckStatus.PASS,
         tools: [],
         roleEvaluations: [
@@ -365,7 +364,7 @@ describe('CliAgentProjectionRuntime', () => {
         degradedRoleCount: 0,
         fallbackRoleCount: 0,
         nextActions: [],
-      },
+      }),
       workspace: {
         workspaceId: 'workspace-1',
         mode: WorkspaceMode.REPO_LOCAL,

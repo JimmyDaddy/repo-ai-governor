@@ -269,14 +269,68 @@ export class LocalOrchestrationServiceWorkspaceOpsRuntime {
     request: OrchestrationWorkspaceOperationRequest,
   ): Promise<OrchestrationWorkspaceOperationResponse> {
     const context = this.resolveWorkspaceContext();
-    const payload = await this.cliExecutor({
-      args: this.buildOperationArgs(request, context),
+    const response =
+      request.operationKind === OrchestrationWorkspaceOperationKind.CONNECT
+        ? await this.runConnectWorkspaceOperation(request, context)
+        : this.buildWorkspaceOperationResponse(
+            request,
+            await this.cliExecutor({
+              args: this.buildOperationArgs(request, context),
+              currentWorkingDirectory: context.repositoryRoot,
+              locale: request.locale,
+            }),
+          );
+
+    this.latestWorkspaceOperationSnapshot = {
+      operationKind: request.operationKind,
+      completedAt: this.nowProvider().toISOString(),
+      ...(request.locale?.trim().length
+        ? {
+            locale: this.normalizeLocale(request.locale),
+          }
+        : {}),
+      message: response.message,
+      result: this.cloneWorkspaceOperationResult(response.result),
+    };
+    this.latestWorkspaceOperationSnapshotLoaded = true;
+    this.persistLatestWorkspaceOperationSnapshot(context, this.latestWorkspaceOperationSnapshot);
+
+    return response;
+  }
+
+  private async runConnectWorkspaceOperation(
+    request: OrchestrationWorkspaceOperationRequest,
+    context: WorkspaceOpsContext,
+  ): Promise<OrchestrationWorkspaceOperationResponse> {
+    const generatePayload = await this.cliExecutor({
+      args: this.buildConnectGenerateArgs(request),
       currentWorkingDirectory: context.repositoryRoot,
       locale: request.locale,
     });
-    const layeredLogs = this.parseLayeredLogs(payload.command_result?.experience?.layeredLogs);
+    const applyPayload = await this.cliExecutor({
+      args: this.buildConnectApplyArgs(request),
+      currentWorkingDirectory: context.repositoryRoot,
+      locale: request.locale,
+    });
+    const response = this.buildWorkspaceOperationResponse(request, applyPayload);
+    const combinedArtifacts = this.mergeArtifacts(
+      this.readArtifactsFromPayload(generatePayload),
+      response.result.artifacts,
+    );
+    if (combinedArtifacts.length > 0) {
+      response.result.artifacts = combinedArtifacts;
+    }
+    return response;
+  }
 
-    const response = {
+  private buildWorkspaceOperationResponse(
+    request: OrchestrationWorkspaceOperationRequest,
+    payload: CliSuccessOutputPayload,
+  ): OrchestrationWorkspaceOperationResponse {
+    const layeredLogs = this.parseLayeredLogs(payload.command_result?.experience?.layeredLogs);
+    const artifacts = this.readArtifactsFromPayload(payload);
+
+    return {
       message: this.readPayloadMessage(payload, request.locale),
       result: {
         operation: payload.command_result?.operation ?? request.operationKind,
@@ -303,17 +357,9 @@ export class LocalOrchestrationServiceWorkspaceOpsRuntime {
                 })),
             }
           : {}),
-        ...(payload.command_result?.artifacts
+        ...(artifacts.length > 0
           ? {
-              artifacts: payload.command_result.artifacts
-                .filter(
-                  (artifact) =>
-                    typeof artifact.id === 'string' && typeof artifact.path === 'string',
-                )
-                .map((artifact) => ({
-                  id: artifact.id ?? 'artifact',
-                  path: artifact.path ?? '',
-                })),
+              artifacts,
             }
           : {}),
         ...(payload.command_result?.experience?.interactionPrompts
@@ -341,22 +387,36 @@ export class LocalOrchestrationServiceWorkspaceOpsRuntime {
           : {}),
       },
     };
+  }
 
-    this.latestWorkspaceOperationSnapshot = {
-      operationKind: request.operationKind,
-      completedAt: this.nowProvider().toISOString(),
-      ...(request.locale?.trim().length
-        ? {
-            locale: this.normalizeLocale(request.locale),
-          }
-        : {}),
-      message: response.message,
-      result: this.cloneWorkspaceOperationResult(response.result),
-    };
-    this.latestWorkspaceOperationSnapshotLoaded = true;
-    this.persistLatestWorkspaceOperationSnapshot(context, this.latestWorkspaceOperationSnapshot);
+  private readArtifactsFromPayload(
+    payload: CliSuccessOutputPayload,
+  ): NonNullable<OrchestrationWorkspaceOperationResponse['result']['artifacts']> {
+    return (
+      payload.command_result?.artifacts
+        ?.filter((artifact) => typeof artifact.id === 'string' && typeof artifact.path === 'string')
+        .map((artifact) => ({
+          id: artifact.id ?? 'artifact',
+          path: artifact.path ?? '',
+        })) ?? []
+    );
+  }
 
-    return response;
+  private mergeArtifacts(
+    firstArtifacts: OrchestrationWorkspaceOperationResponse['result']['artifacts'],
+    secondArtifacts: OrchestrationWorkspaceOperationResponse['result']['artifacts'],
+  ): NonNullable<OrchestrationWorkspaceOperationResponse['result']['artifacts']> {
+    const mergedArtifacts = [...(firstArtifacts ?? []), ...(secondArtifacts ?? [])];
+    const seenArtifactKeys = new Set<string>();
+    return mergedArtifacts.filter((artifact) => {
+      const artifactKey = `${artifact.id}:${artifact.path}`;
+      if (seenArtifactKeys.has(artifactKey)) {
+        return false;
+      }
+
+      seenArtifactKeys.add(artifactKey);
+      return true;
+    });
   }
 
   /**
@@ -468,6 +528,8 @@ export class LocalOrchestrationServiceWorkspaceOpsRuntime {
     switch (request.operationKind) {
       case OrchestrationWorkspaceOperationKind.WORKSPACE_BOOTSTRAP:
         return ['init'];
+      case OrchestrationWorkspaceOperationKind.CONNECT:
+        return this.buildConnectGenerateArgs(request);
       case OrchestrationWorkspaceOperationKind.DOCTOR:
         return [...WORKSPACE_DOCTOR_ARGS];
       case OrchestrationWorkspaceOperationKind.CHECK:
@@ -608,6 +670,77 @@ export class LocalOrchestrationServiceWorkspaceOpsRuntime {
           },
         );
     }
+  }
+
+  private buildConnectGenerateArgs(request: OrchestrationWorkspaceOperationRequest): string[] {
+    const args = request.arguments ?? {};
+    const readString = (key: string): string | undefined => {
+      const value = args[key];
+      return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
+    };
+    const readStringArray = (key: string): string[] | undefined => {
+      const value = args[key];
+      if (Array.isArray(value)) {
+        return value.filter(
+          (entry): entry is string => typeof entry === 'string' && entry.trim().length > 0,
+        );
+      }
+      if (typeof value === 'string' && value.trim().length > 0) {
+        return value
+          .split(',')
+          .map((entry) => entry.trim())
+          .filter((entry) => entry.length > 0);
+      }
+      return undefined;
+    };
+    const connectArgs = ['connect', '--preset', readString('presetId') ?? 'multi-tool-default'];
+    const requestedTools = readStringArray('tools');
+    if (requestedTools?.length) {
+      connectArgs.push('--tools', requestedTools.join(','));
+    }
+
+    const singleToolAllRoles = readString('singleToolAllRoles');
+    if (singleToolAllRoles) {
+      connectArgs.push('--single-tool-all-roles', singleToolAllRoles);
+    }
+
+    for (const binding of readStringArray('toolTransportBindings') ??
+      readStringArray('toolTransport') ??
+      []) {
+      connectArgs.push('--tool-transport', binding);
+    }
+    for (const binding of readStringArray('remoteApiModelBindings') ??
+      readStringArray('remoteApiModel') ??
+      []) {
+      connectArgs.push('--remote-api-model', binding);
+    }
+    for (const binding of readStringArray('remoteApiCredentialEnvVarBindings') ??
+      readStringArray('remoteApiCredentialEnvVar') ??
+      []) {
+      connectArgs.push('--remote-api-credential-env-var', binding);
+    }
+    for (const binding of readStringArray('remoteApiEndpointBindings') ??
+      readStringArray('remoteApiEndpoint') ??
+      []) {
+      connectArgs.push('--remote-api-endpoint', binding);
+    }
+
+    return connectArgs;
+  }
+
+  private buildConnectApplyArgs(request: OrchestrationWorkspaceOperationRequest): string[] {
+    const args = request.arguments ?? {};
+    const readBoolean = (key: string): boolean | undefined => {
+      const value = args[key];
+      return typeof value === 'boolean' ? value : undefined;
+    };
+    return [
+      'connect',
+      'apply',
+      '--latest',
+      ...(readBoolean('force') === true ? ['--force'] : []),
+      ...(readBoolean('rollbackEnabled') === false ? ['--no-rollback'] : []),
+    ];
   }
 
   private async executeCliJsonCommand(request: {

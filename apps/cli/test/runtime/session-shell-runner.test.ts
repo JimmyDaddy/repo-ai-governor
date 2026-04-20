@@ -2658,21 +2658,28 @@ describe('CliSessionShellRunner', () => {
         },
       },
     };
-    const commandExecutor = vi.fn<
-      (argv: string[]) => Promise<CliSessionShellCommandExecutionResult>
-    >(async (argv, nestedExecutionOptions) => {
-      nestedExecutionOptions?.progressSink?.publish({
-        commandName: 'doctor',
-        runState: 'running',
-      });
-      return {
-        artifactPaths: [],
-        commandLine: argv.join(' '),
-        message: 'doctor completed',
-        status: 'success',
-        summaryLines: ['Summary: doctor completed'],
-      };
-    });
+    const commandExecutor = vi.fn(
+      async (
+        argv: string[],
+        nestedExecutionOptions?: {
+          progressSink?: {
+            publish: (event: CliCommandProgressEvent) => void;
+          };
+        },
+      ): Promise<CliSessionShellCommandExecutionResult> => {
+        nestedExecutionOptions?.progressSink?.publish({
+          commandName: 'doctor',
+          runState: 'running',
+        });
+        return {
+          artifactPaths: [],
+          commandLine: argv.join(' '),
+          message: 'doctor completed',
+          status: 'success',
+          summaryLines: ['Summary: doctor completed'],
+        };
+      },
+    );
     const runner = new CliSessionShellRunner(
       undefined,
       new RecordingSessionShellRenderer() as never,
@@ -3627,37 +3634,44 @@ describe('CliSessionShellRunner', () => {
         type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
       },
     ]);
-    const commandExecutor = vi.fn<
-      (argv: string[]) => Promise<CliSessionShellCommandExecutionResult>
-    >(async (argv, executionOptions) => {
-      executionOptions?.progressSink?.publish({
-        commandName: 'doctor',
-        row: {
-          id: 'doctor-preflight',
-          title: 'Doctor preflight',
-          status: ExecutionProgressStatus.RUNNING,
-          detail: 'Collecting environment diagnostics.',
+    const commandExecutor = vi.fn(
+      async (
+        argv: string[],
+        executionOptions?: {
+          progressSink?: {
+            publish: (event: CliCommandProgressEvent) => void;
+          };
         },
-        logLine: 'doctor preflight running',
-      });
-      executionOptions?.progressSink?.publish({
-        commandName: 'doctor',
-        runState: 'success',
-        row: {
-          id: 'doctor-preflight',
-          title: 'Doctor preflight',
-          status: ExecutionProgressStatus.COMPLETED,
-          detail: 'Environment diagnostics are complete.',
-        },
-      });
-      return {
-        artifactPaths: [],
-        commandLine: argv.join(' '),
-        message: 'doctor completed',
-        status: 'success',
-        summaryLines: ['Summary: doctor completed'],
-      };
-    });
+      ): Promise<CliSessionShellCommandExecutionResult> => {
+        executionOptions?.progressSink?.publish({
+          commandName: 'doctor',
+          row: {
+            id: 'doctor-preflight',
+            title: 'Doctor preflight',
+            status: ExecutionProgressStatus.RUNNING,
+            detail: 'Collecting environment diagnostics.',
+          },
+          logLine: 'doctor preflight running',
+        });
+        executionOptions?.progressSink?.publish({
+          commandName: 'doctor',
+          runState: 'success',
+          row: {
+            id: 'doctor-preflight',
+            title: 'Doctor preflight',
+            status: ExecutionProgressStatus.COMPLETED,
+            detail: 'Environment diagnostics are complete.',
+          },
+        });
+        return {
+          artifactPaths: [],
+          commandLine: argv.join(' '),
+          message: 'doctor completed',
+          status: 'success',
+          summaryLines: ['Summary: doctor completed'],
+        };
+      },
+    );
     const runner = new CliSessionShellRunner(
       undefined,
       new RecordingSessionShellRenderer() as never,

@@ -1,5 +1,8 @@
+import { WorkspaceMode } from '@repo-ai-governor/config';
+import { AdapterSurface } from '@repo-ai-governor/shared';
 import { AgentProjectionPanelViewModelBuilder } from '../src/agent-projection-panel-view-model-builder.js';
 import { AgentProjectionPanelStatusVariant } from '../src/constants/index.js';
+import type { ExecutionReportAgentView } from '../src/index.js';
 
 describe('AgentProjectionPanelViewModelBuilder', () => {
   it('builds one transport-neutral panel view-model from shared agentView payloads', () => {
@@ -46,7 +49,7 @@ describe('AgentProjectionPanelViewModelBuilder', () => {
   });
 });
 
-function createAgentView() {
+function createAgentView(): ExecutionReportAgentView {
   return {
     descriptors: [
       {
@@ -54,8 +57,8 @@ function createAgentView() {
         agentRole: 'planner',
         roleProfileId: 'planner-default',
         roleSource: 'default',
-        primarySurface: 'codex',
-        fallbackSurfaces: ['claude-code'],
+        primarySurface: AdapterSurface.CODEX,
+        fallbackSurfaces: [AdapterSurface.CLAUDE_CODE],
         capabilities: ['structured_output'],
         permissionLevel: 'read',
         inputSchemaRef: null,
@@ -70,11 +73,11 @@ function createAgentView() {
         timeoutPolicyRef: null,
         budgetPolicyRef: null,
         workspaceId: 'workspace-1',
-        workspaceMode: 'repo_local',
+        workspaceMode: WorkspaceMode.REPO_LOCAL,
         executionId: 'execution-1',
         sessionId: null,
         selectedBy: 'primary',
-        selectedSurface: 'codex',
+        selectedSurface: AdapterSurface.CODEX,
         projectionStatus: 'pass',
         failureReasons: [],
         unsupportedCapabilities: [],
@@ -85,8 +88,8 @@ function createAgentView() {
         agentRole: 'coder',
         roleProfileId: 'coder-default',
         roleSource: 'default',
-        primarySurface: 'codex',
-        fallbackSurfaces: ['github-copilot'],
+        primarySurface: AdapterSurface.CODEX,
+        fallbackSurfaces: [AdapterSurface.GITHUB_COPILOT],
         capabilities: ['tool_calling'],
         permissionLevel: 'edit',
         inputSchemaRef: null,
@@ -101,11 +104,11 @@ function createAgentView() {
         timeoutPolicyRef: null,
         budgetPolicyRef: null,
         workspaceId: 'workspace-1',
-        workspaceMode: 'repo_local',
+        workspaceMode: WorkspaceMode.REPO_LOCAL,
         executionId: 'execution-1',
         sessionId: null,
         selectedBy: 'fallback',
-        selectedSurface: 'github-copilot',
+        selectedSurface: AdapterSurface.GITHUB_COPILOT,
         projectionStatus: 'warn',
         failureReasons: ['primary_surface_unavailable'],
         unsupportedCapabilities: [],

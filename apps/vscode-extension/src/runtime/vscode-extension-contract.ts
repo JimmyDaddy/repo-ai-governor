@@ -1,4 +1,5 @@
 import {
+  VSCODE_EXTENSION_CHAT_COMMAND_IDS,
   VSCODE_EXTENSION_CHAT_COMMAND_REVIEW,
   VSCODE_EXTENSION_CHAT_COMMAND_STATUS,
   VSCODE_EXTENSION_CHAT_PARTICIPANT_ID,
@@ -115,6 +116,7 @@ export class VsCodeExtensionContract {
         VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKSPACE_BOOTSTRAP,
         'commands.runWorkspaceBootstrap.title',
       ),
+      this.createCommand(VSCODE_EXTENSION_COMMAND_IDS.RUN_CONNECT, 'commands.runConnect.title'),
       this.createCommand(VSCODE_EXTENSION_COMMAND_IDS.RUN_DOCTOR, 'commands.runDoctor.title'),
       this.createCommand(VSCODE_EXTENSION_COMMAND_IDS.RUN_CHECK, 'commands.runCheck.title'),
       this.createCommand(
@@ -181,6 +183,78 @@ export class VsCodeExtensionContract {
       {
         name: VSCODE_EXTENSION_CHAT_COMMAND_REVIEW,
         descriptionKey: 'chat.commands.review.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.REFRESH,
+        descriptionKey: 'chat.commands.refresh.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.WORKSPACE_BOOTSTRAP,
+        descriptionKey: 'chat.commands.workspaceBootstrap.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.CONNECT,
+        descriptionKey: 'chat.commands.connect.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.DOCTOR,
+        descriptionKey: 'chat.commands.doctor.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.CHECK,
+        descriptionKey: 'chat.commands.check.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.WORKFLOW_PREVIEW,
+        descriptionKey: 'chat.commands.workflowPreview.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.WORKFLOW_CREATE,
+        descriptionKey: 'chat.commands.workflowCreate.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.WORKFLOW_EDIT,
+        descriptionKey: 'chat.commands.workflowEdit.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.OPEN_WORKFLOW_STUDIO,
+        descriptionKey: 'chat.commands.workflowStudio.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.OPEN_REVIEW_DETAIL,
+        descriptionKey: 'chat.commands.reviewDetail.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.OPEN_HANDOFF_TARGET,
+        descriptionKey: 'chat.commands.handoffTarget.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.STAGE_TEMPORARY_BRIDGE,
+        descriptionKey: 'chat.commands.repositoryOperation.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.SUBMIT_HITL_DECISION,
+        descriptionKey: 'chat.commands.submitHitlDecision.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.RECOVER_EXECUTION,
+        descriptionKey: 'chat.commands.recoverExecution.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.TERMINATE_EXECUTION,
+        descriptionKey: 'chat.commands.terminateExecution.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.OPEN_USER_CONFIG,
+        descriptionKey: 'chat.commands.openUserConfig.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.CONFIGURE_USER_DEFAULT,
+        descriptionKey: 'chat.commands.configureUserDefault.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.SET_MANAGED_SECRET,
+        descriptionKey: 'chat.commands.setManagedSecret.description',
       },
     ];
   }

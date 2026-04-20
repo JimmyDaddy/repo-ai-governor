@@ -1,17 +1,20 @@
+import { WorkspaceMode } from '@repo-ai-governor/config';
+import { AdapterSurface } from '@repo-ai-governor/shared';
 import { AgentProjectionPresenter } from '../src/agent-projection-presenter.js';
+import type { ExecutionReportAgentView } from '../src/index.js';
 
 describe('AgentProjectionPresenter', () => {
   it('summarizes fallback and capability-gap facts for shared surfaces', () => {
     const presenter = new AgentProjectionPresenter();
-    const agentView = {
+    const agentView: ExecutionReportAgentView = {
       descriptors: [
         {
           agentId: 'planner:planner:planner',
           agentRole: 'planner',
           roleProfileId: 'planner-default',
           roleSource: 'default',
-          primarySurface: 'codex',
-          fallbackSurfaces: ['claude-code'],
+          primarySurface: AdapterSurface.CODEX,
+          fallbackSurfaces: [AdapterSurface.CLAUDE_CODE],
           capabilities: ['structured_output'],
           permissionLevel: 'read',
           inputSchemaRef: null,
@@ -26,11 +29,11 @@ describe('AgentProjectionPresenter', () => {
           timeoutPolicyRef: null,
           budgetPolicyRef: null,
           workspaceId: 'workspace-1',
-          workspaceMode: 'repo_local',
+          workspaceMode: WorkspaceMode.REPO_LOCAL,
           executionId: 'execution-1',
           sessionId: null,
           selectedBy: 'primary',
-          selectedSurface: 'codex',
+          selectedSurface: AdapterSurface.CODEX,
           projectionStatus: 'pass',
           failureReasons: [],
           unsupportedCapabilities: [],
@@ -41,8 +44,8 @@ describe('AgentProjectionPresenter', () => {
           agentRole: 'coder',
           roleProfileId: 'coder-default',
           roleSource: 'default',
-          primarySurface: 'codex',
-          fallbackSurfaces: ['github-copilot'],
+          primarySurface: AdapterSurface.CODEX,
+          fallbackSurfaces: [AdapterSurface.GITHUB_COPILOT],
           capabilities: ['tool_calling'],
           permissionLevel: 'edit',
           inputSchemaRef: null,
@@ -57,11 +60,11 @@ describe('AgentProjectionPresenter', () => {
           timeoutPolicyRef: null,
           budgetPolicyRef: null,
           workspaceId: 'workspace-1',
-          workspaceMode: 'repo_local',
+          workspaceMode: WorkspaceMode.REPO_LOCAL,
           executionId: 'execution-1',
           sessionId: null,
           selectedBy: 'fallback',
-          selectedSurface: 'github-copilot',
+          selectedSurface: AdapterSurface.GITHUB_COPILOT,
           projectionStatus: 'warn',
           failureReasons: ['primary_surface_unavailable'],
           unsupportedCapabilities: [],

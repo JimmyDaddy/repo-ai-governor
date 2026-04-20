@@ -59,60 +59,56 @@ const vscodeActivationMock = vi.hoisted(() => {
   };
 });
 
-vi.mock(
-  'vscode',
-  () => ({
-    workspace: {
-      isTrusted: true,
-      workspaceFolders: [
-        {
-          name: 'ai-governor',
-          uri: {
-            fsPath: '/repo',
-          },
+vi.mock('vscode', () => ({
+  workspace: {
+    isTrusted: true,
+    workspaceFolders: [
+      {
+        name: 'ai-governor',
+        uri: {
+          fsPath: '/repo',
         },
-      ],
-      onDidGrantWorkspaceTrust: vi.fn(() => ({
-        dispose: vi.fn(),
-      })),
-      onDidChangeWorkspaceFolders: vi.fn(() => ({
-        dispose: vi.fn(),
-      })),
-    },
-    window: {
-      createTreeView: vscodeActivationMock.createTreeView,
-      registerWebviewViewProvider: vscodeActivationMock.registerWebviewViewProvider,
-      onDidChangeActiveTextEditor: vi.fn(() => ({
-        dispose: vi.fn(),
-      })),
-    },
-    languages: {
-      registerCodeActionsProvider: vscodeActivationMock.registerCodeActionsProvider,
-    },
-    commands: {
-      registerCommand: vscodeActivationMock.registerCommand,
-      executeCommand: vscodeActivationMock.executeCommand,
-    },
-    get chat() {
-      return vscodeActivationMock.getChatApi();
-    },
-    CodeActionKind: {
-      QuickFix: {},
-    },
-    EventEmitter: vscodeActivationMock.EventEmitter,
-    ThemeIcon: class ThemeIcon {},
-    Uri: {
-      joinPath: vscodeActivationMock.joinPath,
-      file: vi.fn((fsPath: string) => ({
-        fsPath,
-      })),
-    },
-    env: {
-      language: 'en',
-    },
-  }),
-  { virtual: true },
-);
+      },
+    ],
+    onDidGrantWorkspaceTrust: vi.fn(() => ({
+      dispose: vi.fn(),
+    })),
+    onDidChangeWorkspaceFolders: vi.fn(() => ({
+      dispose: vi.fn(),
+    })),
+  },
+  window: {
+    createTreeView: vscodeActivationMock.createTreeView,
+    registerWebviewViewProvider: vscodeActivationMock.registerWebviewViewProvider,
+    onDidChangeActiveTextEditor: vi.fn(() => ({
+      dispose: vi.fn(),
+    })),
+  },
+  languages: {
+    registerCodeActionsProvider: vscodeActivationMock.registerCodeActionsProvider,
+  },
+  commands: {
+    registerCommand: vscodeActivationMock.registerCommand,
+    executeCommand: vscodeActivationMock.executeCommand,
+  },
+  get chat() {
+    return vscodeActivationMock.getChatApi();
+  },
+  CodeActionKind: {
+    QuickFix: {},
+  },
+  EventEmitter: vscodeActivationMock.EventEmitter,
+  ThemeIcon: class ThemeIcon {},
+  Uri: {
+    joinPath: vscodeActivationMock.joinPath,
+    file: vi.fn((fsPath: string) => ({
+      fsPath,
+    })),
+  },
+  env: {
+    language: 'en',
+  },
+}));
 
 import { VsCodeExtensionHost } from '../src/runtime/vscode-extension-host.js';
 
@@ -145,6 +141,10 @@ describe('VsCodeExtensionHost activation', () => {
     );
     expect(vscodeActivationMock.registerCommand).toHaveBeenCalledWith(
       'repoAiGovernor.runWorkspaceBootstrap',
+      expect.any(Function),
+    );
+    expect(vscodeActivationMock.registerCommand).toHaveBeenCalledWith(
+      'repoAiGovernor.runConnect',
       expect.any(Function),
     );
     expect(vscodeActivationMock.registerCommand).toHaveBeenCalledWith(

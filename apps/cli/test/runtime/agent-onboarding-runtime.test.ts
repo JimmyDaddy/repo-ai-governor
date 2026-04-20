@@ -2,7 +2,7 @@ import {
   AgentAvailabilityStatus,
   buildLayeredHealthCheckResult,
 } from '@repo-ai-governor/adapter-sdk';
-import { WorkspaceMode } from '@repo-ai-governor/config';
+import { type GovernorConfig, WorkspaceMode } from '@repo-ai-governor/config';
 import {
   AdapterAvailability,
   AdapterCredentialSource,
@@ -15,6 +15,7 @@ import {
   AdapterVendorBindingKind,
   GovernorErrorCode,
   LocalModelProvider,
+  WorkspaceMigrationPolicy,
 } from '@repo-ai-governor/shared';
 import { expectNativeCliExecPreservedFacts } from '../../../../test/native-cli-exec-compatibility-harness.js';
 import {
@@ -28,13 +29,18 @@ import {
   CliGovernanceCheckStatus,
 } from '../../src/constants/cli-governance-runtime.constant.js';
 import { CliAgentOnboardingRuntime } from '../../src/runtime/agent-onboarding-runtime.js';
+import { createCliAdapterVerificationResolution } from '../test-support/cli-command-fixtures.js';
 
-function createGovernorConfigFixture() {
+type GovernorConfigWithAdapters = GovernorConfig & {
+  adapters: NonNullable<GovernorConfig['adapters']>;
+};
+
+function createGovernorConfigFixture(): GovernorConfigWithAdapters {
   return {
     schemaVersion: '1.1',
     workspace: {
       mode: WorkspaceMode.REPO_LOCAL,
-      migrationPolicy: 'copy_verify_switch_rollback',
+      migrationPolicy: WorkspaceMigrationPolicy.COPY_VERIFY_SWITCH_ROLLBACK,
     },
     i18n: {
       runtimeEngine: 'i18next',
@@ -148,7 +154,7 @@ describe('CliAgentOnboardingRuntime', () => {
           schemaVersion: '1.1',
           workspace: {
             mode: WorkspaceMode.REPO_LOCAL,
-            migrationPolicy: 'copy_verify_switch_rollback',
+            migrationPolicy: WorkspaceMigrationPolicy.COPY_VERIFY_SWITCH_ROLLBACK,
           },
           i18n: {
             runtimeEngine: 'i18next',
@@ -190,7 +196,7 @@ describe('CliAgentOnboardingRuntime', () => {
         },
       },
     ];
-    const verification = {
+    const verification = createCliAdapterVerificationResolution({
       overallStatus: CliGovernanceCheckStatus.WARN,
       tools: [
         {
@@ -224,7 +230,7 @@ describe('CliAgentOnboardingRuntime', () => {
       degradedRoleCount: 0,
       fallbackRoleCount: 0,
       nextActions: ['Set OPENAI_API_KEY before doctor.'],
-    };
+    });
 
     const onboardingPayload = runtime.createOnboardingContractPayload({
       commandName: 'doctor',
@@ -320,7 +326,7 @@ describe('CliAgentOnboardingRuntime', () => {
   it('adds safe_local fix counts to doctor readiness composition without mutating probe truth', () => {
     const runtime = new CliAgentOnboardingRuntime();
     const sourceConfig = createGovernorConfigFixture();
-    const verification = {
+    const verification = createCliAdapterVerificationResolution({
       overallStatus: CliGovernanceCheckStatus.WARN,
       tools: [],
       roleEvaluations: [],
@@ -329,7 +335,7 @@ describe('CliAgentOnboardingRuntime', () => {
       degradedRoleCount: 1,
       fallbackRoleCount: 0,
       nextActions: ['Review adapter diagnostics before retrying doctor.'],
-    };
+    });
 
     const onboardingPayload = runtime.createOnboardingContractPayload({
       commandName: 'doctor',
@@ -383,7 +389,7 @@ describe('CliAgentOnboardingRuntime', () => {
         },
       },
     ];
-    const verification = {
+    const verification = createCliAdapterVerificationResolution({
       overallStatus: CliGovernanceCheckStatus.WARN,
       tools: [
         {
@@ -412,7 +418,7 @@ describe('CliAgentOnboardingRuntime', () => {
       degradedRoleCount: 0,
       fallbackRoleCount: 0,
       nextActions: ['Investigate ACP host enablement before doctor.'],
-    };
+    });
 
     const onboardingPayload = runtime.createOnboardingContractPayload({
       commandName: 'doctor',
@@ -511,7 +517,7 @@ describe('CliAgentOnboardingRuntime', () => {
         },
       ],
     });
-    const verification = {
+    const verification = createCliAdapterVerificationResolution({
       overallStatus: CliGovernanceCheckStatus.WARN,
       tools: [
         {
@@ -546,7 +552,7 @@ describe('CliAgentOnboardingRuntime', () => {
       degradedRoleCount: 1,
       fallbackRoleCount: 0,
       nextActions: ['Run ACP clean-room verify before support uplift.'],
-    };
+    });
 
     const onboardingPayload = runtime.createOnboardingContractPayload({
       commandName: 'doctor',
@@ -636,7 +642,7 @@ describe('CliAgentOnboardingRuntime', () => {
         },
       ],
     });
-    const verification = {
+    const verification = createCliAdapterVerificationResolution({
       overallStatus: CliGovernanceCheckStatus.WARN,
       tools: [
         {
@@ -671,7 +677,7 @@ describe('CliAgentOnboardingRuntime', () => {
       degradedRoleCount: 1,
       fallbackRoleCount: 0,
       nextActions: [],
-    };
+    });
 
     const verifyPayload = runtime.createVerifyMatrixPayload({
       commandName: 'verify',
@@ -822,7 +828,7 @@ describe('CliAgentOnboardingRuntime', () => {
       },
     ];
 
-    const verification = {
+    const verification = createCliAdapterVerificationResolution({
       overallStatus: CliGovernanceCheckStatus.WARN,
       tools: [],
       roleEvaluations: [
@@ -860,7 +866,7 @@ describe('CliAgentOnboardingRuntime', () => {
       degradedRoleCount: 1,
       fallbackRoleCount: 0,
       nextActions: ['Set OPENAI_API_KEY before verify.'],
-    };
+    });
 
     const verifyPayload = runtime.createVerifyMatrixPayload({
       executionId: 'verify-456',
@@ -892,7 +898,7 @@ describe('CliAgentOnboardingRuntime', () => {
     const runtime = new CliAgentOnboardingRuntime();
     const sourceConfig = createGovernorConfigFixture();
 
-    const verification = {
+    const verification = createCliAdapterVerificationResolution({
       overallStatus: CliGovernanceCheckStatus.WARN,
       tools: [
         {
@@ -964,7 +970,7 @@ describe('CliAgentOnboardingRuntime', () => {
       degradedRoleCount: 1,
       fallbackRoleCount: 1,
       nextActions: ['Review routing priorities before unattended execution.'],
-    };
+    });
 
     const verifyPayload = runtime.createVerifyMatrixPayload({
       executionId: 'verify-fallback-status-split',
@@ -1383,7 +1389,7 @@ describe('CliAgentOnboardingRuntime', () => {
     const runtime = new CliAgentOnboardingRuntime();
     const sourceConfig = createGovernorConfigFixture();
 
-    const verification = {
+    const verification = createCliAdapterVerificationResolution({
       overallStatus: CliGovernanceCheckStatus.PASS,
       tools: [
         {
@@ -1412,7 +1418,7 @@ describe('CliAgentOnboardingRuntime', () => {
       degradedRoleCount: 0,
       fallbackRoleCount: 0,
       nextActions: [],
-    };
+    });
 
     const verifyPayload = runtime.createVerifyMatrixPayload({
       executionId: 'verify-cli-budget',
@@ -1443,7 +1449,7 @@ describe('CliAgentOnboardingRuntime', () => {
     const runtime = new CliAgentOnboardingRuntime();
     const sourceConfig = createGovernorConfigFixture();
 
-    const verification = {
+    const verification = createCliAdapterVerificationResolution({
       overallStatus: CliGovernanceCheckStatus.WARN,
       tools: [
         {
@@ -1492,7 +1498,7 @@ describe('CliAgentOnboardingRuntime', () => {
       degradedRoleCount: 0,
       fallbackRoleCount: 0,
       nextActions: ['Re-run doctor after fixing malformed cli_exec output.'],
-    };
+    });
 
     const onboardingPayload = runtime.createOnboardingContractPayload({
       commandName: 'doctor',
@@ -1559,7 +1565,7 @@ describe('CliAgentOnboardingRuntime', () => {
   it('projects cli_exec spawn_error_code into the additive launch_diagnostics companion', () => {
     const runtime = new CliAgentOnboardingRuntime();
     const sourceConfig = createGovernorConfigFixture();
-    const verification = {
+    const verification = createCliAdapterVerificationResolution({
       overallStatus: CliGovernanceCheckStatus.FAIL,
       tools: [
         {
@@ -1608,7 +1614,7 @@ describe('CliAgentOnboardingRuntime', () => {
       degradedRoleCount: 0,
       fallbackRoleCount: 0,
       nextActions: ['Install codex before retrying doctor.'],
-    };
+    });
 
     const onboardingPayload = runtime.createOnboardingContractPayload({
       commandName: 'doctor',
@@ -1648,7 +1654,7 @@ describe('CliAgentOnboardingRuntime', () => {
   it('projects cli_exec non-zero consumer launch diagnostics into verify tool and role matrices', () => {
     const runtime = new CliAgentOnboardingRuntime();
     const sourceConfig = createGovernorConfigFixture();
-    const verification = {
+    const verification = createCliAdapterVerificationResolution({
       overallStatus: CliGovernanceCheckStatus.WARN,
       tools: [
         {
@@ -1721,7 +1727,7 @@ describe('CliAgentOnboardingRuntime', () => {
       degradedRoleCount: 1,
       fallbackRoleCount: 0,
       nextActions: ['Inspect non-zero cli_exec output before retrying.'],
-    };
+    });
 
     const verifyPayload = runtime.createVerifyMatrixPayload({
       executionId: 'verify-cli-exec-non-zero',
@@ -1753,7 +1759,7 @@ describe('CliAgentOnboardingRuntime', () => {
   it('projects cli_exec signal-exit launch diagnostics into verify tool and role matrices', () => {
     const runtime = new CliAgentOnboardingRuntime();
     const sourceConfig = createGovernorConfigFixture();
-    const verification = {
+    const verification = createCliAdapterVerificationResolution({
       overallStatus: CliGovernanceCheckStatus.WARN,
       tools: [
         {
@@ -1826,7 +1832,7 @@ describe('CliAgentOnboardingRuntime', () => {
       degradedRoleCount: 1,
       fallbackRoleCount: 0,
       nextActions: ['Inspect signal-terminated cli_exec output before retrying.'],
-    };
+    });
 
     const verifyPayload = runtime.createVerifyMatrixPayload({
       executionId: 'verify-cli-exec-signal-exit',

@@ -38,6 +38,7 @@
     "onView:repoAiGovernor.reviewDetail",
     "onCommand:repoAiGovernor.refresh",
     "onCommand:repoAiGovernor.runWorkspaceBootstrap",
+    "onCommand:repoAiGovernor.runConnect",
     "onCommand:repoAiGovernor.runDoctor",
     "onCommand:repoAiGovernor.runCheck",
     "onCommand:repoAiGovernor.runWorkflowPreview",
@@ -115,6 +116,11 @@
       {
         "command": "repoAiGovernor.runWorkspaceBootstrap",
         "title": "%commands.runWorkspaceBootstrap.title%",
+        "category": "%commands.category%"
+      },
+      {
+        "command": "repoAiGovernor.runConnect",
+        "title": "%commands.runConnect.title%",
         "category": "%commands.category%"
       },
       {
@@ -219,6 +225,10 @@
           "when": "isWorkspaceTrusted"
         },
         {
+          "command": "repoAiGovernor.runConnect",
+          "when": "isWorkspaceTrusted"
+        },
+        {
           "command": "repoAiGovernor.runDoctor",
           "when": "isWorkspaceTrusted"
         },
@@ -290,6 +300,78 @@
           {
             "name": "review",
             "description": "%chat.commands.review.description%"
+          },
+          {
+            "name": "refresh",
+            "description": "%chat.commands.refresh.description%"
+          },
+          {
+            "name": "workspace-bootstrap",
+            "description": "%chat.commands.workspaceBootstrap.description%"
+          },
+          {
+            "name": "connect",
+            "description": "%chat.commands.connect.description%"
+          },
+          {
+            "name": "doctor",
+            "description": "%chat.commands.doctor.description%"
+          },
+          {
+            "name": "check",
+            "description": "%chat.commands.check.description%"
+          },
+          {
+            "name": "workflow-preview",
+            "description": "%chat.commands.workflowPreview.description%"
+          },
+          {
+            "name": "workflow-create",
+            "description": "%chat.commands.workflowCreate.description%"
+          },
+          {
+            "name": "workflow-edit",
+            "description": "%chat.commands.workflowEdit.description%"
+          },
+          {
+            "name": "workflow-studio",
+            "description": "%chat.commands.workflowStudio.description%"
+          },
+          {
+            "name": "review-detail",
+            "description": "%chat.commands.reviewDetail.description%"
+          },
+          {
+            "name": "handoff-target",
+            "description": "%chat.commands.handoffTarget.description%"
+          },
+          {
+            "name": "repository-operation",
+            "description": "%chat.commands.repositoryOperation.description%"
+          },
+          {
+            "name": "submit-hitl-decision",
+            "description": "%chat.commands.submitHitlDecision.description%"
+          },
+          {
+            "name": "recover-execution",
+            "description": "%chat.commands.recoverExecution.description%"
+          },
+          {
+            "name": "terminate-execution",
+            "description": "%chat.commands.terminateExecution.description%"
+          },
+          {
+            "name": "open-user-config",
+            "description": "%chat.commands.openUserConfig.description%"
+          },
+          {
+            "name": "configure-user-default",
+            "description": "%chat.commands.configureUserDefault.description%"
+          },
+          {
+            "name": "set-managed-secret",
+            "description": "%chat.commands.setManagedSecret.description%"
           }
         ]
       }

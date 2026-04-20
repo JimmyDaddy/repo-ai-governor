@@ -1062,6 +1062,21 @@ documents:
     owner: runtime
     last_reviewed_at: 2026-04-13
 
+  - doc_id: technical_solution_runtime_agent_projection_acp_execution_bridge_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/acp-execution-bridge-and-invoke-stream-confirm-cutover.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - runtime_contract_change
+      - adapter_change
+      - cli_ui_change
+      - command_surface_change
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+    owner: runtime
+    last_reviewed_at: 2026-04-20
+
   - doc_id: technical_solution_runtime_agent_projection_provider_continuation_adr
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/provider-session-reuse-and-continuation-handle-seam.md
     tier: L2
@@ -1266,6 +1281,20 @@ documents:
     owner: runtime
     last_reviewed_at: 2026-04-12
 
+  - doc_id: runtime_governance_provider_onboarding_contract
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/provider-onboarding-and-direct-api-key-entry-contract.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - runtime_contract_change
+      - command_surface_change
+      - ide_surface_change
+    owner: runtime
+    last_reviewed_at: 2026-04-20
+
   - doc_id: runtime_governance_host_distribution_contract
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/governance-host-distribution-contract.md
     tier: L2
@@ -1321,6 +1350,20 @@ documents:
       - desktop_surface_change
     owner: runtime
     last_reviewed_at: 2026-04-16
+
+  - doc_id: runtime_vscode_direct_provider_onboarding_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/vscode-plugin-direct-api-key-and-secret-backed-provider-onboarding.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - runtime_contract_change
+      - ide_surface_change
+      - command_surface_change
+    owner: runtime
+    last_reviewed_at: 2026-04-20
 
   - doc_id: runtime_governance_host_distribution_adr
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/host-native-distribution-and-target-specific-consumption.md

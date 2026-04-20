@@ -1,7 +1,7 @@
 # Runtime Governance Clients Module Overview
 
 - Status: active
-- Date: 2026-04-16
+- Date: 2026-04-20
 - Module ID: `runtime.governance-clients`
 - Owner: runtime
 - Layer: `runtime-core`
@@ -31,6 +31,7 @@
 17. 正式拥有 `config` / `secret` command family、session shell `/config` / `/secret` discoverability 与 `~/.repo-ai-governor/user-config.yaml` authoring UX 的 host-facing boundary；这些 surface 只能写入 user-private defaults、`credentialRef` selector 与 secret backend mutation request，不得把 raw secret value 或 user-config path 冒充为 runtime canonical truth。
 18. 对显式 `/secret set <keyName>` 的 session-shell authoring path，正式要求 host-facing surface 在 slash secure route 命中后切换到本地隐藏输入与 redacted mutation handoff；raw secret 不得经由 slash text、argv、preview recap、error copy 或 transcript surface 暴露，而 skill-triggered secure-input request 与 desktop / VS Code prompt parity 继续留待后续独立 solution。
 19. 正式拥有 adopter installer quickstart convenience boundary：`adopt bootstrap` 只可 orchestrate `init -> doctor --fix -> adopt apply -> adopt verify`；`check` 继续作为显式 broader governance audit follow-up；缺省 selector 只允许落官方 built-in pack，而 existing receipt drift / mismatch rerun 必须回到 `adopt diff/upgrade/remove` lifecycle。
+20. 正式拥有 host-native provider onboarding boundary：VS Code 与后续 host surface 可以通过显式 provider-onboarding mutation seam 采集 `provider / model / endpoint / API key`，但 raw key 只能进入 Governor managed secret backend，配置层只允许持久化 `credentialRef` 与非敏感 provider defaults；`connect / doctor / verify` 继续保持 analyze-first / read-only onboarding truth。
 
 ## 3. 非目标
 
@@ -41,6 +42,7 @@
 5. 不把 exported host assets 当作 workflow canonical source。
 6. 不再以 GitHub App Copilot Extensions 作为 GitHub Copilot 的正式分发路径。
 7. 不让 `config` / `secret` command surface 默认改写共享 `governor.yaml` 或在宿主 UI 内长期维护第二份配置状态；共享治理真值仍由 canonical workspace surfaces 承担。
+8. 不把 VS Code `SecretStorage`、`settings.json` 或 extension-local cache 升格为 canonical secret owner，也不允许 direct API key entry 借机绕开 managed secret backend。
 
 ## 4. North Star References
 
@@ -63,13 +65,14 @@
 3. `contract.runtime.adoption-pack-install.v1`
 4. `contract.runtime.governance-local-config-and-secret-command.v1`
 5. `contract.runtime.vscode-governance-workbench-surface.v1`
+6. `contract.runtime.governance-provider-onboarding.v1`
 
 ## 7. Loading Guidance
 
 1. 命中 `technical_solution_module_change`、`technical_solution_promotion_change`、`desktop_surface_change`、`ide_surface_change`、`command_surface_change` 或 `runtime_contract_change` 时加载。
 2. 默认只加载 overview 与 direct contract/ADR，不递归展开 desktop、IDE 或 host renderer 具体实现文件。
 3. 当问题涉及 desktop / VS Code / CLI 的职责拆分、surface handoff、multi-surface continuity、service-owned client boundary、host target matrix、staged/apply/pack/verify 语义时，优先补载本模块。
-4. 当问题涉及 `config` / `secret` command family、`user-config.yaml` authoring UX、session shell discoverability 或本机 secret 管理 guidance 时，也应优先补载本模块。
+4. 当问题涉及 `config` / `secret` command family、`user-config.yaml` authoring UX、session shell discoverability、本机 secret 管理 guidance，或 VS Code direct API key provider onboarding 时，也应优先补载本模块。
 
 ## 8. Cutover Notes
 
@@ -114,6 +117,11 @@
    - `TreeView / Commands / Chat / Code Actions` 仍是默认入口；task board、review workbench、workflow studio、automation queue 与 adoption / host operations 允许进入 workbench panel，但只能消费 service-owned DTO / query / command seam。
    - `support-matrix / README / adoption playbook / desktop README` 仍然必须 evidence-gated；在 `Phase A / Phase B` 期间，public support truth 只允许保持 `companion-upgraded / workbench baseline in progress`，不得提前宣称 full workbench cutover 已完成。
    - companion-era split ADR 保留为历史基线；新的 primary workbench 方向与 temporary bridge exit criteria 由新增 ADR/contract 承接，不顺手废弃 host distribution / installer active truth。
+14. 截至 `2026-04-20`，本模块进一步接受“VS Code plugin direct API key and secret-backed provider onboarding”补充方向：
+   - 插件 primary human path 改为 direct API key entry，而不是继续把 `credentialEnvVar` 作为默认 onboarding authoring surface。
+   - host-facing direct entry 必须落到显式 provider-onboarding mutation seam；`connect / doctor / verify` 继续保持 analyze-first / read-only truth。
+   - canonical owner split 固定为 `runtime.governance-clients` 负责 host-facing UX / CTA mapping，`runtime.agent-projection` 继续负责 `transport / provider / vendorBinding / next_action(s)` truth。
+   - 真实 runtime/docs/support truth rollout 由 `project-116-vscode-direct-provider-onboarding-rollout` 承接。
 
 ## 9. Detail Docs
 
@@ -121,11 +129,13 @@
    - `contracts/governance-surface-client-contract.md`
    - `contracts/vscode-governance-workbench-surface-contract.md`
    - `contracts/local-user-config-and-secret-command-contract.md`
+   - `contracts/provider-onboarding-and-direct-api-key-entry-contract.md`
    - `contracts/governance-host-distribution-contract.md`
    - `contracts/governance-adoption-pack-install-contract.md`
 2. ADR:
    - `adrs/desktop-command-center-and-vscode-editor-companion-split.md`
    - `adrs/vscode-primary-full-governance-workbench.md`
+   - `adrs/vscode-plugin-direct-api-key-and-secret-backed-provider-onboarding.md`
    - `adrs/host-native-distribution-and-target-specific-consumption.md`
    - `adrs/adopter-productization-priority-and-surface-sequencing.md`
    - `adrs/adoption-pack-installer-and-self-host-template-bootstrap.md`

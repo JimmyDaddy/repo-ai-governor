@@ -46,43 +46,39 @@ const vscodeMock = vi.hoisted(() => {
   };
 });
 
-vi.mock(
-  'vscode',
-  () => ({
-    workspace: {
-      get isTrusted() {
-        return vscodeMock.state.trusted;
-      },
-      workspaceFolders: [
-        {
-          name: 'ai-governor',
-          uri: {
-            fsPath: '/repo',
-          },
+vi.mock('vscode', () => ({
+  workspace: {
+    get isTrusted() {
+      return vscodeMock.state.trusted;
+    },
+    workspaceFolders: [
+      {
+        name: 'ai-governor',
+        uri: {
+          fsPath: '/repo',
         },
-      ],
-      openTextDocument: vscodeMock.openTextDocument,
-    },
-    window: {
-      showInformationMessage: vscodeMock.showInformationMessage,
-      showWarningMessage: vscodeMock.showWarningMessage,
-      showErrorMessage: vscodeMock.showErrorMessage,
-      showQuickPick: vscodeMock.showQuickPick,
-      showInputBox: vscodeMock.showInputBox,
-      showTextDocument: vscodeMock.showTextDocument,
-      createTerminal: vscodeMock.createTerminal,
-    },
-    commands: {
-      executeCommand: vscodeMock.executeCommand,
-    },
-    Uri: {
-      file: (fsPath: string) => ({
-        fsPath,
-      }),
-    },
-  }),
-  { virtual: true },
-);
+      },
+    ],
+    openTextDocument: vscodeMock.openTextDocument,
+  },
+  window: {
+    showInformationMessage: vscodeMock.showInformationMessage,
+    showWarningMessage: vscodeMock.showWarningMessage,
+    showErrorMessage: vscodeMock.showErrorMessage,
+    showQuickPick: vscodeMock.showQuickPick,
+    showInputBox: vscodeMock.showInputBox,
+    showTextDocument: vscodeMock.showTextDocument,
+    createTerminal: vscodeMock.createTerminal,
+  },
+  commands: {
+    executeCommand: vscodeMock.executeCommand,
+  },
+  Uri: {
+    file: (fsPath: string) => ({
+      fsPath,
+    }),
+  },
+}));
 
 import { VSCODE_EXTENSION_COMMAND_IDS } from '../src/constants/index.js';
 import { VsCodeExtensionCommandController } from '../src/runtime/vscode-extension-command-controller.js';
@@ -240,7 +236,7 @@ describe('VsCode extension controller/provider integration', () => {
       handoffTarget: {
         targetId: 'execution-1:review-document',
         executionId: 'execution-1',
-        targetKind: 'review_document',
+        targetKind: OrchestrationHandoffTargetKind.REVIEW_DOCUMENT,
         targetPath: '/repo/review.md',
         exists: true,
       },
@@ -248,6 +244,91 @@ describe('VsCode extension controller/provider integration', () => {
 
     expect(vscodeMock.showWarningMessage).toHaveBeenCalled();
     expect(vscodeMock.openTextDocument).not.toHaveBeenCalled();
+  });
+
+  it('runs connect through the service seam and persists remote-api provider defaults', async () => {
+    vscodeMock.state.trusted = true;
+    vscodeMock.showQuickPick
+      .mockResolvedValueOnce({
+        presetId: 'multi-tool-default',
+      })
+      .mockResolvedValueOnce({
+        scopeId: 'single_tool',
+      })
+      .mockResolvedValueOnce({
+        toolId: 'codex',
+      })
+      .mockResolvedValueOnce({
+        transport: 'remote_api',
+      })
+      .mockResolvedValueOnce({
+        provider: 'openai',
+      });
+    vscodeMock.showInputBox
+      .mockResolvedValueOnce('gpt-5.4')
+      .mockResolvedValueOnce('OPENAI_API_KEY')
+      .mockResolvedValueOnce('');
+
+    const runWorkspaceOperation = vi.fn(async () => ({
+      message: 'Connect applied.',
+      result: {
+        artifacts: [],
+      },
+    }));
+    const setUserConfigValue = vi.fn(async () => ({
+      message: 'updated',
+    }));
+    const workbenchOverviewProvider = {
+      refresh: vi.fn(),
+    };
+    const reviewDetailProvider = {
+      refresh: vi.fn(),
+    };
+    const controller = new VsCodeExtensionCommandController(
+      {
+        runWorkspaceOperation,
+        setUserConfigValue,
+      } as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        taskBoardProvider: {
+          refresh: vi.fn(),
+        } as never,
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        workbenchOverviewProvider: workbenchOverviewProvider as never,
+        reviewDetailProvider: reviewDetailProvider as never,
+      },
+    );
+
+    await expect(controller.runConnect()).resolves.toBe(true);
+
+    expect(runWorkspaceOperation).toHaveBeenCalledWith(
+      OrchestrationWorkspaceOperationKind.CONNECT,
+      {
+        presetId: 'multi-tool-default',
+        tools: ['codex'],
+        toolTransportBindings: ['codex=remote_api'],
+        remoteApiModelBindings: ['codex=gpt-5.4'],
+        remoteApiCredentialEnvVarBindings: ['codex=OPENAI_API_KEY'],
+      },
+    );
+    expect(setUserConfigValue).toHaveBeenNthCalledWith(
+      1,
+      'tools.codex.remoteApi.provider',
+      'openai',
+    );
+    expect(setUserConfigValue).toHaveBeenNthCalledWith(
+      2,
+      'tools.codex.remoteApi.vendorBinding',
+      'openai_responses',
+    );
+    expect(workbenchOverviewProvider.refresh).toHaveBeenCalled();
+    expect(reviewDetailProvider.refresh).toHaveBeenCalled();
   });
 
   it('falls back to reviewSourcePath handoff without reusing stale execution selection', async () => {
@@ -2016,6 +2097,80 @@ describe('VsCode extension controller/provider integration', () => {
     await controller.runWorkflowCreate();
 
     expect(serviceRuntime.runWorkspaceOperation).toHaveBeenCalledWith('workflow_create', undefined);
+  });
+
+  it('infers doctor from one imperative prompt and executes the governed doctor operation', async () => {
+    vscodeMock.state.trusted = true;
+
+    const serviceRuntime = {
+      runWorkspaceOperation: vi.fn().mockResolvedValue({
+        message: 'Doctor completed.',
+        result: {},
+      }),
+    };
+    const controller = new VsCodeExtensionCommandController(
+      serviceRuntime as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    const result = await controller.executeChatRequest(undefined, 'please run doctor');
+
+    expect(serviceRuntime.runWorkspaceOperation).toHaveBeenCalledWith('doctor', undefined);
+    expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith('Doctor completed.');
+    expect(result).toMatchObject({
+      commandName: 'doctor',
+      status: 'completed',
+    });
+  });
+
+  it('extracts one workflow template suffix from an imperative prompt before executing workflow preview', async () => {
+    vscodeMock.state.trusted = true;
+
+    const serviceRuntime = {
+      runWorkspaceOperation: vi.fn().mockResolvedValue({
+        message: 'Workflow preview created.',
+        result: {},
+      }),
+    };
+    const controller = new VsCodeExtensionCommandController(
+      serviceRuntime as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    const result = await controller.executeChatRequest(
+      undefined,
+      'please preview workflow starter-template',
+    );
+
+    expect(serviceRuntime.runWorkspaceOperation).toHaveBeenCalledWith('workflow_preview', {
+      templateId: 'starter-template',
+    });
+    expect(result).toMatchObject({
+      commandName: 'workflow-preview',
+      status: 'completed',
+    });
   });
 
   it('surfaces governed errors for direct workspace-operation commands', async () => {

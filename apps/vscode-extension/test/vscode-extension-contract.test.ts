@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import {
+  VSCODE_EXTENSION_CHAT_COMMAND_IDS,
   VSCODE_EXTENSION_CHAT_PARTICIPANT_ID,
   VSCODE_EXTENSION_COMMAND_CAPABILITY_CLASSES,
   VSCODE_EXTENSION_COMMAND_IDS,
@@ -81,6 +82,7 @@ describe('vscode extension contract freeze', () => {
     expect(contract.commands.map((command) => command.id)).toEqual([
       VSCODE_EXTENSION_COMMAND_IDS.REFRESH,
       VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKSPACE_BOOTSTRAP,
+      VSCODE_EXTENSION_COMMAND_IDS.RUN_CONNECT,
       VSCODE_EXTENSION_COMMAND_IDS.RUN_DOCTOR,
       VSCODE_EXTENSION_COMMAND_IDS.RUN_CHECK,
       VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKFLOW_PREVIEW,
@@ -114,6 +116,9 @@ describe('vscode extension contract freeze', () => {
     expect(
       manifest.contributes.chatParticipants[0]?.commands?.map((command) => command.name),
     ).toEqual(contract.chatCommands.map((command) => command.name));
+    expect(contract.chatCommands.map((command) => command.name)).toContain(
+      VSCODE_EXTENSION_CHAT_COMMAND_IDS.CONNECT,
+    );
     expect(manifest.activationEvents).toEqual(
       expect.arrayContaining([
         `onView:${VSCODE_EXTENSION_VIEW_IDS.TASK_BOARD}`,
@@ -125,6 +130,7 @@ describe('vscode extension contract freeze', () => {
         `onView:${VSCODE_EXTENSION_VIEW_IDS.REVIEW_DETAIL}`,
         `onCommand:${VSCODE_EXTENSION_COMMAND_IDS.REFRESH}`,
         `onCommand:${VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKSPACE_BOOTSTRAP}`,
+        `onCommand:${VSCODE_EXTENSION_COMMAND_IDS.RUN_CONNECT}`,
         `onCommand:${VSCODE_EXTENSION_COMMAND_IDS.RUN_DOCTOR}`,
         `onCommand:${VSCODE_EXTENSION_COMMAND_IDS.RUN_CHECK}`,
         `onCommand:${VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKFLOW_PREVIEW}`,
