@@ -617,6 +617,7 @@ export interface OrchestrationProviderOnboardingSnapshot {
   model?: string;
   endpoint?: string;
   selectedBackendId?: string;
+  defaultBackendId?: string;
   availableBackends: OrchestrationSecretBackendStatus[];
   warnings: string[];
 }
@@ -626,6 +627,7 @@ export interface OrchestrationApplyProviderOnboardingRequest {
   entrypointKind: string;
   model: string;
   apiKey: string;
+  reuseExistingCredential?: boolean;
   provider?: AdapterProviderKind;
   endpoint?: string;
   backendId?: string;

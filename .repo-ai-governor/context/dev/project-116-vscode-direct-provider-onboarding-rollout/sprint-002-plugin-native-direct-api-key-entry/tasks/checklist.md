@@ -1,9 +1,27 @@
 # checklist
 
-- [ ] TK-1007 implement plugin-native direct api key entry and secure capture
+- [x] TK-1007 implement plugin-native direct api key entry and secure capture
   - 2026-04-20：任务创建，状态初始化为 `planned`。
   - 2026-04-20：`sprint-001-contract-and-provider-onboarding-facade` 已完成 closeout write-back，当前任务切换为 `in_progress`，作为 `project-116 / sprint-002-plugin-native-direct-api-key-entry` 的首个 active execution boundary。
-- [ ] TK-1008 persist managed secret credentialRef and provider config through explicit mutation seam
+  - 2026-04-20：已完成 plugin-native direct-entry connect flow：VS Code `runConnect()` 在 `remote_api` 路径下改为先解析 provider-onboarding snapshot，再通过 secure input 采集 API key，并把 provider/model/endpoint/api-key 作为 service-owned onboarding request 提交，而不再提示 `credentialEnvVar`。
+  - 2026-04-20：same-window verification 已通过：`apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts`、`apps/vscode-extension/test/vscode-extension-service-runtime.test.ts`、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`。
+- [x] TK-1008 persist managed secret credentialRef and provider config through explicit mutation seam
   - 2026-04-20：任务创建，状态初始化为 `planned`。
-- [ ] TK-1009 verify plugin human path exits env-var-first onboarding
+  - 2026-04-20：已完成 service-owned mutation seam 收口：provider-onboarding apply 在 embedded/runtime-service 与 local orchestration service 两条路径上都通过 managed secret backend 写入 raw API key、持久化非敏感 provider config + `credentialRef`，并主动清理 `tools.<tool>.remoteApi.credentialEnvVar`，避免 direct-entry path 回落到 env-var-first。
+  - 2026-04-20：CLI projection / connect candidate 语义已同步更新：当 `credentialRef` 已存在时，不再默认合成 `credentialEnvVar`，从而保证 zero-env-var selector truth 可以稳定穿透到 connect candidate、service runtime 与 package tests。
+  - 2026-04-20：same-window verification 已通过：`apps/vscode-extension/test/vscode-extension-service-runtime.test.ts`、`packages/core-orchestration-service/test/local-orchestration-service-workspace-ops-runtime.test.ts`、`apps/cli/test/runtime/cli-user-config-projection-service.test.ts`、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`。
+- [x] TK-1009 verify plugin human path exits env-var-first onboarding
   - 2026-04-20：任务创建，状态初始化为 `planned`。
+  - 2026-04-20：已完成 plugin-human-path verification：controller integration、service/runtime tests、presentation builder coverage、CLI onboarding runtime tests 与 `connect-phase2.integration` 均确认 direct-entry path 不再要求作者填写 `credentialEnvVar`，并且 user-config 带 `credentialRef` 时 connect candidate 会维持 zero-env-var truth。
+  - 2026-04-20：为避免 integration suite 误读开发机真实 `user-config.yaml`，`connect-phase2.integration` 默认 HOME 已切换到隔离测试目录；只有显式传入 HOME 的用例才消费自定义 user-config。
+  - 2026-04-20：same-window verification 已通过：`apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts`、`apps/vscode-extension/test/vscode-extension-service-runtime.test.ts`、`apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts`、`apps/cli/test/runtime/agent-onboarding-runtime.test.ts`、`apps/cli/test/connect-phase2.integration.test.ts`、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`。
+- [x] CR-001 sprint-002-plugin-native-direct-api-key-entry delegated review loop round 1
+  - 2026-04-20：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-20：round-2 recheck（Laplace）追加发现 `defaultBackendId` 落盘、duplicate-key backend 选择与 `CS-022` standardized-error gate 问题；主 agent 已全部接受并完成修复。
+  - 2026-04-20：round-3 recheck（Parfit）指出 public `applyProviderOnboarding()` 尚未 honor `reuseExistingCredential`；主 agent 已接受并在 embedded/sidecar apply path 与 direct-apply tests 中补齐该 contract。
+  - 2026-04-20：round-4 recheck（Herschel）提出 cross-backend same-selector fresh-write 应放行的 risk inference；主 agent 依据当前 dedicated managed-secret update/reconnect boundary 将其判定为 rejected，不计入本 sprint actionable scope。
+  - 2026-04-20：同窗口已完成 targeted tests、`check-standardized-error-usage`、`pnpm run build` 与 `pnpm run test:packages` 复核，review artifact 已推进到 `resolved`。
+- [x] TK-1020 close sprint-002 boundary and activate sprint-003 execution surface
+  - 2026-04-20：任务创建，用于承接 sprint-002 reviewer-clean 之后的 closeout、boundary gate 与 sprint-003 activation truth 切换。
+  - 2026-04-20：`CR-001` 已 resolved；sprint-002 的 review/task truth、project plan、sprint plans、completed history 与 `current-context.md` 已统一切换到 closeout-ready / sprint-003 activation truth。
+  - 2026-04-20：`TK-1010` 已在同窗口切换为 `in_progress`，作为 sprint-003 的首个 active execution boundary；下一步只保留 sprint-002 boundary gate 与 local commit。

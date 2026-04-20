@@ -1,6 +1,6 @@
 # TK-1010 converge overview status and doctor cta mapping with provider-onboarding snapshot
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-04-20
 - Owner: AI-Agent
 - Priority: P1
@@ -52,6 +52,7 @@ Align plugin-native CTAs with the onboarding snapshot and canonical next actions
 ## 9. 执行记录
 
 1. 2026-04-20：任务创建，状态初始化为 `planned`。
+2. 2026-04-20：`sprint-002-plugin-native-direct-api-key-entry` 已完成 closeout write-back，当前任务切换为 `in_progress`，作为 `project-116 / sprint-003-readiness-cta-and-provider-lifecycle` 的首个 active execution boundary。
 
 ## 10. 产出
 

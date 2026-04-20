@@ -1,6 +1,6 @@
 # sprint-003-readiness-cta-and-provider-lifecycle 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-20
 - Sprint Goal: Converge readiness surfaces, CTA mapping, and provider lifecycle flows around the onboarding facade.
 - Project: `project-116-vscode-direct-provider-onboarding-rollout`
@@ -19,7 +19,7 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-1010 | converge overview status and doctor cta mapping with provider-onboarding snapshot | verify plugin human path exits env-var-first onboarding | planned |
+| TK-1010 | converge overview status and doctor cta mapping with provider-onboarding snapshot | verify plugin human path exits env-var-first onboarding | in_progress |
 | TK-1011 | land update-api-key reconnect-provider and degraded-state guidance | converge overview status and doctor cta mapping with provider-onboarding snapshot | planned |
 | TK-1012 | verify provider lifecycle readiness parity and sprint handoff | land update-api-key reconnect-provider and degraded-state guidance | planned |
 
@@ -31,3 +31,4 @@
 ## 4. Sprint Notes
 
 1. CTA labels may be host-native, but runtime next_action ownership remains in runtime.agent-projection.
+2. `2026-04-20`：`sprint-002-plugin-native-direct-api-key-entry` 已在 `CR-001` resolved 与 `TK-1020` closeout write-back 后进入 completed history；当前 sprint 已切换为 active primary surface，`TK-1010` 成为新的 `in_progress` execution boundary。

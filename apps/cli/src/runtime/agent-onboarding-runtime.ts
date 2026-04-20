@@ -1028,19 +1028,22 @@ export class CliAgentOnboardingRuntime {
       );
     }
 
+    const existingCredentialRef = existingRemoteApi?.credentialRef;
+    const credentialEnvVar =
+      override.credentialEnvVar ??
+      existingRemoteApi?.credentialEnvVar ??
+      (existingCredentialRef
+        ? undefined
+        : this.remoteApiAuthoringDefaultsService.resolveCredentialEnvVarForTool(options.toolId));
+
     return {
       provider: this.remoteApiAuthoringDefaultsService.resolveProviderForTool(options.toolId),
       vendorBinding: this.remoteApiAuthoringDefaultsService.resolveVendorBindingForTool(
         options.toolId,
       ),
       model: candidateModel,
-      credentialEnvVar:
-        override.credentialEnvVar ??
-        existingRemoteApi?.credentialEnvVar ??
-        this.remoteApiAuthoringDefaultsService.resolveCredentialEnvVarForTool(options.toolId),
-      ...(existingRemoteApi?.credentialRef
-        ? { credentialRef: existingRemoteApi.credentialRef }
-        : {}),
+      ...(credentialEnvVar ? { credentialEnvVar } : {}),
+      ...(existingCredentialRef ? { credentialRef: existingCredentialRef } : {}),
       ...(existingRemoteApi?.allowProviderLocalConfig !== undefined
         ? { allowProviderLocalConfig: existingRemoteApi.allowProviderLocalConfig }
         : {}),

@@ -1060,6 +1060,52 @@ describe('CliAgentOnboardingRuntime', () => {
     ]);
   });
 
+  it('does not synthesize a default credential env var when remote_api already uses credentialRef-only truth', () => {
+    const runtime = new CliAgentOnboardingRuntime();
+    const sourceConfig = createGovernorConfigFixture();
+    sourceConfig.adapters.tools = [
+      {
+        toolId: AdapterSurface.CODEX,
+        enabled: true,
+        availability: AdapterAvailability.AVAILABLE,
+        transport: AdapterTransportKind.REMOTE_API,
+        remoteApi: {
+          provider: AdapterProviderKind.OPENAI,
+          vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+          model: 'gpt-5',
+          credentialRef: 'secret://openai/api-key',
+        },
+      },
+    ];
+
+    const resolution = runtime.buildConnectCandidateConfig({
+      sourceConfig,
+      presetId: CliAgentOnboardingPreset.MULTI_TOOL_DEFAULT,
+      requestedTools: [AdapterSurface.CODEX],
+      toolTransportOverrides: [],
+      remoteApiOverrides: [],
+      overwrite: true,
+      singleToolAllRoles: false,
+      roleBindingOverrides: [],
+    });
+
+    expect(resolution.candidateAdaptersConfig.tools).toEqual([
+      expect.objectContaining({
+        toolId: AdapterSurface.CODEX,
+        transport: AdapterTransportKind.REMOTE_API,
+        remoteApi: expect.objectContaining({
+          provider: AdapterProviderKind.OPENAI,
+          vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+          model: 'gpt-5',
+          credentialRef: 'secret://openai/api-key',
+        }),
+      }),
+    ]);
+    expect(resolution.candidateAdaptersConfig.tools?.[0]?.remoteApi).not.toHaveProperty(
+      'credentialEnvVar',
+    );
+  });
+
   it('materializes inferred remote_api transport for transport-aware connect candidates', () => {
     const runtime = new CliAgentOnboardingRuntime();
     const sourceConfig = createGovernorConfigFixture();

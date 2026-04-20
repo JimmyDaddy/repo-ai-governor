@@ -156,17 +156,27 @@ export class CliUserConfigProjectionService {
       currentRemoteApi?.vendorBinding ??
       userRemoteApiDefaults?.vendorBinding ??
       this.resolveVendorBinding(options.toolId, userRemoteApiDefaults?.vendorBinding);
+    const credentialRef =
+      currentRemoteApi?.credentialRef ?? userRemoteApiDefaults?.credentialRef ?? undefined;
+    const credentialEnvVar =
+      currentRemoteApi?.credentialEnvVar ??
+      userRemoteApiDefaults?.credentialEnvVar ??
+      (credentialRef ? undefined : this.resolveCredentialEnvVar(options.toolId));
 
     return {
       provider,
       vendorBinding,
       model,
-      credentialEnvVar:
-        currentRemoteApi?.credentialEnvVar ??
-        userRemoteApiDefaults?.credentialEnvVar ??
-        this.resolveCredentialEnvVar(options.toolId),
-      credentialRef:
-        currentRemoteApi?.credentialRef ?? userRemoteApiDefaults?.credentialRef ?? undefined,
+      ...(credentialEnvVar
+        ? {
+            credentialEnvVar,
+          }
+        : {}),
+      ...(credentialRef
+        ? {
+            credentialRef,
+          }
+        : {}),
       ...(currentRemoteApi?.allowProviderLocalConfig !== undefined
         ? { allowProviderLocalConfig: currentRemoteApi.allowProviderLocalConfig }
         : {}),

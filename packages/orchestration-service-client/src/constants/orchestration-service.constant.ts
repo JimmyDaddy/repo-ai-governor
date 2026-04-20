@@ -201,6 +201,20 @@ export enum OrchestrationWorkspaceOperationKind {
 }
 
 /**
+ * Defines the connect-operation argument keys reserved for staged provider onboarding.
+ */
+export const ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS = {
+  TOOL: 'providerOnboardingTool',
+  ENTRYPOINT_KIND: 'providerOnboardingEntrypointKind',
+  PROVIDER: 'providerOnboardingProvider',
+  MODEL: 'providerOnboardingModel',
+  API_KEY: 'providerOnboardingApiKey',
+  REUSE_EXISTING_CREDENTIAL: 'providerOnboardingReuseExistingCredential',
+  ENDPOINT: 'providerOnboardingEndpoint',
+  BACKEND_ID: 'providerOnboardingBackendId',
+} as const;
+
+/**
  * Defines stable handoff target kinds exposed through service-owned governance read models.
  */
 export enum OrchestrationHandoffTargetKind {

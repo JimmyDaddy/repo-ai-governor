@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 
 import {
+  ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS,
   OrchestrationGovernanceActionKind,
   type OrchestrationHandoffTarget,
   OrchestrationHandoffTargetKind,
@@ -21,6 +22,7 @@ import {
   VSCODE_EXTENSION_CONNECT_PRESET_ORDER,
   VSCODE_EXTENSION_CONNECT_TRANSPORT_OPTIONS,
   VSCODE_EXTENSION_CONTAINER_ID,
+  VSCODE_EXTENSION_PROVIDER_ONBOARDING_ENTRYPOINT_KINDS,
   VSCODE_EXTENSION_SECRET_SELECTOR_PREFIX,
   VSCODE_EXTENSION_TOOL_USER_DEFAULT_KEY_SUFFIXES,
   VSCODE_EXTENSION_TRUST_MANAGE_COMMAND_ID,
@@ -29,6 +31,7 @@ import {
 } from '../constants/index.js';
 import type {
   VsCodeExtensionCommandRequest,
+  VsCodeExtensionProviderOnboardingApplyRequest,
   VsCodeExtensionSecureAuthoringSnapshot,
   VsCodeExtensionTreeNodeDescriptor,
 } from '../types/index.js';
@@ -84,14 +87,9 @@ interface VsCodeExtensionChatPromptIntentRule {
   leadingPhrases?: readonly string[];
 }
 
-interface VsCodeExtensionConnectUserConfigMutation {
-  keyPath: string;
-  value: string;
-}
-
 interface VsCodeExtensionConnectOperationPlan {
   workspaceOperationArguments: VsCodeExtensionWorkspaceOperationArguments;
-  userConfigMutations: readonly VsCodeExtensionConnectUserConfigMutation[];
+  providerOnboardingRequest?: VsCodeExtensionProviderOnboardingApplyRequest;
 }
 
 // literal-allowed: chat intent routing vocabulary is intentionally kept local to the controller
@@ -934,11 +932,8 @@ export class VsCodeExtensionCommandController {
 
       const response = await this.serviceRuntime.runWorkspaceOperation(
         OrchestrationWorkspaceOperationKind.CONNECT,
-        connectPlan.workspaceOperationArguments,
+        this.createConnectWorkspaceOperationArguments(connectPlan),
       );
-      for (const mutation of connectPlan.userConfigMutations) {
-        await this.serviceRuntime.setUserConfigValue(mutation.keyPath, mutation.value);
-      }
 
       this.selectionStore.applyCommandRequest(commandRequest);
       await this.refresh(commandRequest);
@@ -1380,7 +1375,6 @@ export class VsCodeExtensionCommandController {
     if (this.hasExecutableConnectArguments(seedArguments)) {
       return {
         workspaceOperationArguments: seedArguments,
-        userConfigMutations: [],
       };
     }
 
@@ -1400,11 +1394,9 @@ export class VsCodeExtensionCommandController {
     const workspaceOperationArguments: VsCodeExtensionWorkspaceOperationArguments = {
       presetId,
     };
-    const userConfigMutations: VsCodeExtensionConnectUserConfigMutation[] = [];
     if (resolvedScope === 'preset_defaults') {
       return {
         workspaceOperationArguments,
-        userConfigMutations,
       };
     }
 
@@ -1433,8 +1425,21 @@ export class VsCodeExtensionCommandController {
     if (resolvedTransport !== AdapterTransportKind.REMOTE_API) {
       return {
         workspaceOperationArguments,
-        userConfigMutations,
       };
+    }
+
+    const remoteApiProvider = await this.promptForConnectRemoteApiProvider(selectedTool);
+    if (remoteApiProvider === false) {
+      return null;
+    }
+
+    const snapshot = await this.serviceRuntime.resolveProviderOnboardingSnapshot(
+      selectedTool,
+      VSCODE_EXTENSION_PROVIDER_ONBOARDING_ENTRYPOINT_KINDS.QUICK_PICK_FORM,
+      remoteApiProvider,
+    );
+    if (!snapshot) {
+      return null;
     }
 
     const remoteApiModel =
@@ -1443,37 +1448,9 @@ export class VsCodeExtensionCommandController {
     if (!remoteApiModel) {
       return null;
     }
-    workspaceOperationArguments.remoteApiModelBindings = [`${selectedTool}=${remoteApiModel}`];
-
-    const remoteApiProvider = await this.promptForConnectRemoteApiProvider(selectedTool);
-    if (remoteApiProvider === false) {
-      return null;
-    }
-    if (remoteApiProvider) {
-      userConfigMutations.push(
-        {
-          keyPath: `tools.${selectedTool}.remoteApi.provider`,
-          value: remoteApiProvider,
-        },
-        {
-          keyPath: `tools.${selectedTool}.remoteApi.vendorBinding`,
-          value: this.resolveVendorBindingForProvider(selectedTool, remoteApiProvider),
-        },
-      );
-    }
-
-    const credentialEnvVar = await this.promptForConnectCredentialEnvVar(
-      selectedTool,
-      remoteApiProvider ?? this.resolveDefaultRemoteApiProvider(selectedTool),
-    );
-    if (credentialEnvVar === undefined) {
-      return null;
-    }
-    if (credentialEnvVar.trim().length > 0) {
-      workspaceOperationArguments.remoteApiCredentialEnvVarBindings = [
-        `${selectedTool}=${credentialEnvVar.trim()}`,
-      ];
-    }
+    workspaceOperationArguments.remoteApiModelBindings = [
+      `${selectedTool}=${remoteApiModel.trim()}`,
+    ];
 
     const endpointValue = await this.promptForConnectEndpoint(selectedTool);
     if (endpointValue === undefined) {
@@ -1485,9 +1462,67 @@ export class VsCodeExtensionCommandController {
       ];
     }
 
+    const backendSelection = await this.promptForProviderOnboardingBackend(snapshot);
+    if (backendSelection === false) {
+      return null;
+    }
+
+    const secureAuthoring = await this.serviceRuntime.resolveSecureAuthoringSnapshot();
+    const existingManagedSecretRecord = this.resolveManagedSecretRecord(
+      secureAuthoring,
+      snapshot.credentialRef,
+      typeof backendSelection === 'string' ? backendSelection : undefined,
+    );
+    if (existingManagedSecretRecord) {
+      if (backendSelection === existingManagedSecretRecord.backendId) {
+        return {
+          workspaceOperationArguments,
+          providerOnboardingRequest: {
+            tool: selectedTool,
+            entrypointKind: VSCODE_EXTENSION_PROVIDER_ONBOARDING_ENTRYPOINT_KINDS.QUICK_PICK_FORM,
+            provider: snapshot.provider,
+            model: remoteApiModel.trim(),
+            apiKey: '',
+            reuseExistingCredential: true,
+            endpoint: endpointValue.trim(),
+            ...(typeof backendSelection === 'string'
+              ? {
+                  backendId: backendSelection,
+                }
+              : {}),
+          },
+        };
+      }
+
+      void vscode.window.showInformationMessage(
+        this.localizer.localizeText(
+          'Connect can reuse an existing managed secret on the same backend, but rotating the key or moving it to another backend still requires the dedicated managed-secret update flow.',
+          'Connect 可以复用同一 backend 上已有的受管 secret，但若要轮换 key 或迁移到其他 backend，仍需使用专门的受管 secret 更新流程。',
+        ),
+      );
+      return null;
+    }
+
+    const apiKey = await this.promptForProviderOnboardingApiKey(selectedTool, snapshot.provider);
+    if (!apiKey) {
+      return null;
+    }
+
     return {
       workspaceOperationArguments,
-      userConfigMutations,
+      providerOnboardingRequest: {
+        tool: selectedTool,
+        entrypointKind: VSCODE_EXTENSION_PROVIDER_ONBOARDING_ENTRYPOINT_KINDS.QUICK_PICK_FORM,
+        provider: snapshot.provider,
+        model: remoteApiModel.trim(),
+        apiKey,
+        endpoint: endpointValue.trim(),
+        ...(typeof backendSelection === 'string'
+          ? {
+              backendId: backendSelection,
+            }
+          : {}),
+      },
     };
   }
 
@@ -1495,6 +1530,48 @@ export class VsCodeExtensionCommandController {
     argumentsRecord: VsCodeExtensionWorkspaceOperationArguments,
   ): boolean {
     return this.readConnectArgumentString(argumentsRecord, 'presetId') !== undefined;
+  }
+
+  private createConnectWorkspaceOperationArguments(
+    connectPlan: VsCodeExtensionConnectOperationPlan,
+  ): VsCodeExtensionWorkspaceOperationArguments {
+    if (!connectPlan.providerOnboardingRequest) {
+      return connectPlan.workspaceOperationArguments;
+    }
+
+    return {
+      ...connectPlan.workspaceOperationArguments,
+      [ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS.TOOL]:
+        connectPlan.providerOnboardingRequest.tool,
+      [ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS.ENTRYPOINT_KIND]:
+        connectPlan.providerOnboardingRequest.entrypointKind,
+      [ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS.MODEL]:
+        connectPlan.providerOnboardingRequest.model,
+      [ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS.ENDPOINT]:
+        connectPlan.providerOnboardingRequest.endpoint ?? '',
+      ...(connectPlan.providerOnboardingRequest.reuseExistingCredential
+        ? {
+            [ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS.REUSE_EXISTING_CREDENTIAL]: true,
+          }
+        : connectPlan.providerOnboardingRequest.apiKey.length > 0
+          ? {
+              [ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS.API_KEY]:
+                connectPlan.providerOnboardingRequest.apiKey,
+            }
+          : {}),
+      ...(connectPlan.providerOnboardingRequest.provider
+        ? {
+            [ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS.PROVIDER]:
+              connectPlan.providerOnboardingRequest.provider,
+          }
+        : {}),
+      ...(connectPlan.providerOnboardingRequest.backendId
+        ? {
+            [ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS.BACKEND_ID]:
+              connectPlan.providerOnboardingRequest.backendId,
+          }
+        : {}),
+    };
   }
 
   private async promptForConnectPreset(): Promise<string | undefined> {
@@ -1677,21 +1754,22 @@ export class VsCodeExtensionCommandController {
     return picked.provider;
   }
 
-  private async promptForConnectCredentialEnvVar(
+  private async promptForProviderOnboardingApiKey(
     toolId: AdapterSurface,
     provider: AdapterProviderKind,
   ): Promise<string | undefined> {
     return vscode.window.showInputBox({
-      title: this.localizer.localizeText(
-        'Configure remote API credential env var',
-        '配置 Remote API 凭据环境变量',
-      ),
+      title: this.localizer.localizeText('Enter provider API key', '输入 Provider API Key'),
       prompt: this.localizer.localizeText(
-        `Optional: enter the environment variable name that holds the credential for ${toolId}. Leave empty to keep the current/default setting.`,
-        `可选：输入 ${toolId} 的凭据环境变量名；留空则保留当前/默认设置。`,
+        `Enter the API key that ${toolId} should use with ${provider}. The key is written through the managed secret backend only.`,
+        `输入 ${toolId} 连接 ${provider} 时使用的 API key。该 key 只会通过受管 secret backend 写入。`,
       ),
-      value: this.resolveDefaultCredentialEnvVar(provider),
+      password: true,
       ignoreFocusOut: true,
+      validateInput: (candidate) =>
+        candidate.trim().length > 0
+          ? undefined
+          : this.localizer.localizeText('API key is required.', '请输入 API key。'),
     });
   }
 
@@ -1707,6 +1785,57 @@ export class VsCodeExtensionCommandController {
       ),
       ignoreFocusOut: true,
     });
+  }
+
+  private async promptForProviderOnboardingBackend(snapshot: {
+    selectedBackendId?: string;
+    defaultBackendId?: string;
+    availableBackends: ReadonlyArray<{
+      backendId: string;
+      available: boolean;
+      detail: string;
+      warning?: string;
+    }>;
+  }): Promise<string | undefined | false> {
+    return this.promptForManagedSecretBackendSelection({
+      availableBackends: snapshot.availableBackends,
+      selectedBackendId: snapshot.selectedBackendId,
+      defaultBackendId: snapshot.defaultBackendId,
+    });
+  }
+
+  private resolveManagedSecretRecord(
+    secureAuthoring: VsCodeExtensionSecureAuthoringSnapshot | undefined,
+    selector: string,
+    preferredBackendId?: string,
+  ):
+    | {
+        backendId: string;
+        keyName: string;
+      }
+    | undefined {
+    const keyName = this.extractManagedSecretKeyName(selector);
+    if (!keyName) {
+      return undefined;
+    }
+
+    const records = secureAuthoring?.secretReadiness?.records;
+    const record =
+      (preferredBackendId
+        ? records?.find(
+            (candidate) =>
+              candidate.keyName === keyName &&
+              candidate.backendId === preferredBackendId &&
+              candidate.exists,
+          )
+        : undefined) ??
+      records?.find((candidate) => candidate.keyName === keyName && candidate.exists);
+    return record
+      ? {
+          backendId: record.backendId,
+          keyName: record.keyName,
+        }
+      : undefined;
   }
 
   private describeConnectPreset(presetId: string): string {
@@ -1835,31 +1964,80 @@ export class VsCodeExtensionCommandController {
       : AdapterProviderKind.OPENAI;
   }
 
-  private resolveVendorBindingForProvider(
-    toolId: AdapterSurface,
-    provider: AdapterProviderKind,
-  ): AdapterVendorBindingKind {
-    switch (provider) {
-      case AdapterProviderKind.ANTHROPIC:
-        return AdapterVendorBindingKind.ANTHROPIC_MESSAGES;
-      case AdapterProviderKind.GITHUB_MODELS:
-        return AdapterVendorBindingKind.GITHUB_MODELS_INFERENCE;
-      default:
-        return toolId === AdapterSurface.CLAUDE_CODE
-          ? AdapterVendorBindingKind.ANTHROPIC_MESSAGES
-          : AdapterVendorBindingKind.OPENAI_RESPONSES;
+  private async promptForManagedSecretBackendSelection(options: {
+    availableBackends: ReadonlyArray<{
+      backendId: string;
+      available: boolean;
+      detail: string;
+      warning?: string;
+    }>;
+    selectedBackendId?: string;
+    defaultBackendId?: string;
+  }): Promise<string | undefined | false> {
+    const availableBackends = options.availableBackends.filter((backend) => backend.available);
+    if (availableBackends.length === 0) {
+      return false;
     }
-  }
+    const defaultBackend =
+      availableBackends.find((backend) => backend.backendId === options.selectedBackendId) ??
+      availableBackends.find((backend) => backend.backendId === options.defaultBackendId) ??
+      availableBackends[0];
+    if (availableBackends.length <= 1) {
+      if (!defaultBackend) {
+        return undefined;
+      }
+      if (!defaultBackend.warning) {
+        return defaultBackend.backendId;
+      }
 
-  private resolveDefaultCredentialEnvVar(provider: AdapterProviderKind): string {
-    switch (provider) {
-      case AdapterProviderKind.ANTHROPIC:
-        return 'ANTHROPIC_API_KEY';
-      case AdapterProviderKind.GITHUB_MODELS:
-        return 'GITHUB_TOKEN';
-      default:
-        return 'OPENAI_API_KEY';
+      return (await this.confirmWarningBearingManagedSecretBackend(defaultBackend))
+        ? defaultBackend.backendId
+        : false;
     }
+
+    const picked = await vscode.window.showQuickPick(
+      [
+        {
+          label: this.localizer.localizeText('Use CLI default backend', '使用 CLI 默认 backend'),
+          description:
+            options.defaultBackendId ??
+            options.selectedBackendId ??
+            this.localizer.localizeText('No explicit default reported', '当前没有显式默认值'),
+          backendId:
+            options.defaultBackendId ?? options.selectedBackendId ?? defaultBackend?.backendId,
+        },
+        ...availableBackends.map((backend) => ({
+          label: backend.backendId,
+          description: backend.warning
+            ? this.localizer.localizeText('Available with warning', '可用但有警告')
+            : backend.detail,
+          detail: backend.detail,
+          warning: backend.warning,
+          backendId: backend.backendId,
+        })),
+      ],
+      {
+        title: this.localizer.localizeText(
+          'Choose one backend for this secret mutation',
+          '为这次 secret 写入选择一个 backend',
+        ),
+      },
+    );
+    if (!picked) {
+      return false;
+    }
+
+    const selectedBackend =
+      (picked.backendId
+        ? availableBackends.find((backend) => backend.backendId === picked.backendId)
+        : defaultBackend) ?? defaultBackend;
+    if (selectedBackend?.warning) {
+      return (await this.confirmWarningBearingManagedSecretBackend(selectedBackend))
+        ? selectedBackend.backendId
+        : false;
+    }
+
+    return picked.backendId;
   }
 
   /**
@@ -2329,68 +2507,11 @@ export class VsCodeExtensionCommandController {
     secureAuthoring?: VsCodeExtensionSecureAuthoringSnapshot,
   ): Promise<string | undefined | false> {
     const secretReadiness = secureAuthoring?.secretReadiness;
-    const availableBackends =
-      secretReadiness?.backends.filter((backend) => backend.available) ?? [];
-    const defaultBackend =
-      availableBackends.find(
-        (backend) => backend.backendId === secretReadiness?.selectedBackendId,
-      ) ??
-      availableBackends.find(
-        (backend) => backend.backendId === secretReadiness?.defaultBackendId,
-      ) ??
-      availableBackends[0];
-    if (availableBackends.length <= 1) {
-      if (!defaultBackend?.warning) {
-        return undefined;
-      }
-
-      return (await this.confirmWarningBearingManagedSecretBackend(defaultBackend))
-        ? defaultBackend.backendId
-        : false;
-    }
-
-    const picked = await vscode.window.showQuickPick(
-      [
-        {
-          label: this.localizer.localizeText('Use CLI default backend', '使用 CLI 默认 backend'),
-          description:
-            secretReadiness?.selectedBackendId ??
-            secretReadiness?.defaultBackendId ??
-            this.localizer.localizeText('No explicit default reported', '当前没有显式默认值'),
-          backendId: undefined,
-        },
-        ...availableBackends.map((backend) => ({
-          label: backend.backendId,
-          description: backend.warning
-            ? this.localizer.localizeText('Available with warning', '可用但有警告')
-            : backend.detail,
-          detail: backend.detail,
-          warning: backend.warning,
-          backendId: backend.backendId,
-        })),
-      ],
-      {
-        title: this.localizer.localizeText(
-          'Choose one backend for this secret mutation',
-          '为这次 secret 写入选择一个 backend',
-        ),
-      },
-    );
-    if (!picked) {
-      return false;
-    }
-
-    const selectedBackend =
-      (picked.backendId
-        ? availableBackends.find((backend) => backend.backendId === picked.backendId)
-        : defaultBackend) ?? defaultBackend;
-    if (selectedBackend?.warning) {
-      return (await this.confirmWarningBearingManagedSecretBackend(selectedBackend))
-        ? selectedBackend.backendId
-        : false;
-    }
-
-    return picked.backendId;
+    return this.promptForManagedSecretBackendSelection({
+      availableBackends: secretReadiness?.backends ?? [],
+      selectedBackendId: secretReadiness?.selectedBackendId,
+      defaultBackendId: secretReadiness?.defaultBackendId,
+    });
   }
 
   private readCurrentUserConfigValue(

@@ -841,6 +841,23 @@ export class VsCodeExtensionServiceRuntime {
   }
 
   /**
+   * Clears one user-local default through the embedded CLI seam when a mutation must remove stale
+   * compatibility state instead of persisting another value.
+   * @param keyPath Canonical user-config key path to remove.
+   */
+  private async unsetUserConfigValueInEmbeddedCli(keyPath: string): Promise<void> {
+    await this.executeEmbeddedCliJsonCommand(
+      {
+        args: ['config', 'unset', keyPath],
+        currentWorkingDirectory: this.requireRepositoryRootForEmbeddedCli(),
+      },
+      'Failed to clear the requested user-local default.',
+      '清除请求的用户本地默认值失败。',
+    );
+    this.clearSecureAuthoringSnapshotCache();
+  }
+
+  /**
    * Persists one managed secret value through the service-owned workspace ops seam without
    * exposing the raw value to argv, transcript, or local command previews.
    * @param keyName Canonical managed secret key.
@@ -964,6 +981,11 @@ export class VsCodeExtensionServiceRuntime {
             selectedBackendId: secureAuthoring.secretReadiness.selectedBackendId,
           }
         : {}),
+      ...(secureAuthoring?.secretReadiness?.defaultBackendId
+        ? {
+            defaultBackendId: secureAuthoring.secretReadiness.defaultBackendId,
+          }
+        : {}),
       availableBackends: secureAuthoring?.secretReadiness?.backends ?? [],
       warnings,
     };
@@ -987,11 +1009,19 @@ export class VsCodeExtensionServiceRuntime {
       );
     }
 
+    const reuseExistingCredential = request.reuseExistingCredential === true;
     const normalizedApiKey = request.apiKey.trim();
-    if (normalizedApiKey.length === 0) {
+    if (!reuseExistingCredential && normalizedApiKey.length === 0) {
       throw new RuntimeError(
         GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
         'Provider onboarding requires one non-empty API key value.',
+      );
+    }
+    const normalizedModel = request.model.trim();
+    if (normalizedModel.length === 0) {
+      throw new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        'Provider onboarding requires one non-empty model value.',
       );
     }
 
@@ -1010,6 +1040,7 @@ export class VsCodeExtensionServiceRuntime {
     const backendId = this.resolveProviderOnboardingBackendId(
       snapshot.availableBackends,
       request.backendId,
+      snapshot.defaultBackendId,
       snapshot.selectedBackendId,
     );
     const secretKeyName = this.extractManagedSecretKeyName(snapshot.credentialRef);
@@ -1020,7 +1051,41 @@ export class VsCodeExtensionServiceRuntime {
       );
     }
 
-    const secretResult = await this.setManagedSecret(secretKeyName, normalizedApiKey, backendId);
+    const secureAuthoring = await this.resolveSecureAuthoringSnapshot();
+    if (secureAuthoring?.degradedReason || !secureAuthoring?.secretReadiness) {
+      throw new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        secureAuthoring?.degradedReason ??
+          'Provider onboarding secure-authoring snapshot is unavailable for the current workspace.',
+      );
+    }
+    const existingCredentialRecord = this.findManagedSecretRecord(
+      secureAuthoring.secretReadiness.records,
+      secretKeyName,
+      backendId,
+    );
+    if (reuseExistingCredential) {
+      if (!existingCredentialRecord || existingCredentialRecord.backendId !== backendId) {
+        throw new RuntimeError(
+          GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+          `Provider onboarding can reuse ${snapshot.credentialRef} only when the managed secret already exists on backend ${backendId}.`,
+        );
+      }
+    } else if (existingCredentialRecord) {
+      throw new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        `Provider onboarding will not overwrite existing managed secret ${snapshot.credentialRef}. Use the dedicated update/reconnect flow instead.`,
+      );
+    }
+
+    const secretResult = reuseExistingCredential
+      ? {
+          selector: snapshot.credentialRef,
+          backendId,
+          warning: undefined,
+        }
+      : await this.setManagedSecret(secretKeyName, normalizedApiKey, backendId);
+    const endpointKeyPath = `tools.${request.tool}.remoteApi.endpoint`;
     const configWrites = [
       {
         keyPath: `tools.${request.tool}.transport`,
@@ -1036,24 +1101,29 @@ export class VsCodeExtensionServiceRuntime {
       },
       {
         keyPath: `tools.${request.tool}.remoteApi.model`,
-        value: request.model.trim(),
+        value: normalizedModel,
       },
       {
         keyPath: `tools.${request.tool}.remoteApi.credentialRef`,
         value: snapshot.credentialRef,
       },
-      ...(request.endpoint && request.endpoint.trim().length > 0
-        ? [
-            {
-              keyPath: `tools.${request.tool}.remoteApi.endpoint`,
-              value: request.endpoint.trim(),
-            },
-          ]
-        : []),
     ];
     for (const write of configWrites) {
       await this.setUserConfigValue(write.keyPath, write.value);
     }
+    const configTargets = configWrites.map((write) => write.keyPath);
+    if (request.endpoint !== undefined) {
+      if (request.endpoint.trim().length > 0) {
+        await this.setUserConfigValue(endpointKeyPath, request.endpoint.trim());
+      } else {
+        await this.unsetUserConfigValueInEmbeddedCli(endpointKeyPath);
+      }
+      configTargets.push(endpointKeyPath);
+    }
+    configTargets.push(`tools.${request.tool}.remoteApi.credentialEnvVar`);
+    await this.unsetUserConfigValueInEmbeddedCli(
+      `tools.${request.tool}.remoteApi.credentialEnvVar`,
+    );
 
     return {
       surfaceId: VSCODE_EXTENSION_PROVIDER_ONBOARDING_SURFACE_ID,
@@ -1065,7 +1135,7 @@ export class VsCodeExtensionServiceRuntime {
       vendorBinding: snapshot.vendorBinding,
       credentialRef: secretResult.selector ?? snapshot.credentialRef,
       secretBackend: secretResult.backendId ?? backendId,
-      configTargets: configWrites.map((write) => write.keyPath),
+      configTargets,
       receiptFields: VSCODE_EXTENSION_PROVIDER_ONBOARDING_RECEIPT_FIELDS,
       warnings: [...snapshot.warnings, ...(secretResult.warning ? [secretResult.warning] : [])],
       nextAction: VSCODE_EXTENSION_COMMAND_IDS.RUN_CONNECT,
@@ -1976,6 +2046,7 @@ export class VsCodeExtensionServiceRuntime {
   private resolveProviderOnboardingBackendId(
     availableBackends: readonly VsCodeExtensionSecretBackendStatusSnapshot[],
     requestedBackendId?: string,
+    defaultBackendId?: string,
     selectedBackendId?: string,
   ): string {
     const writableBackends = availableBackends.filter((backend) => backend.available);
@@ -1990,6 +2061,19 @@ export class VsCodeExtensionServiceRuntime {
     }
     if (matchedRequestedBackend) {
       return matchedRequestedBackend.backendId;
+    }
+
+    const matchedDefaultBackend =
+      defaultBackendId &&
+      writableBackends.find((backend) => backend.backendId === defaultBackendId);
+    if (matchedDefaultBackend) {
+      return matchedDefaultBackend.backendId;
+    }
+    if (defaultBackendId) {
+      throw new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        `Default secret backend ${defaultBackendId} is not writable for provider onboarding.`,
+      );
     }
 
     const matchedSelectedBackend =
@@ -2014,6 +2098,23 @@ export class VsCodeExtensionServiceRuntime {
     }
 
     return fallbackBackend.backendId;
+  }
+
+  private findManagedSecretRecord(
+    records: readonly VsCodeExtensionSecretRecordSnapshot[],
+    keyName: string,
+    preferredBackendId?: string,
+  ): VsCodeExtensionSecretRecordSnapshot | undefined {
+    return (
+      (preferredBackendId
+        ? records.find(
+            (record) =>
+              record.keyName === keyName &&
+              record.backendId === preferredBackendId &&
+              record.exists,
+          )
+        : undefined) ?? records.find((record) => record.keyName === keyName && record.exists)
+    );
   }
 
   private readUserConfigEntryValue(

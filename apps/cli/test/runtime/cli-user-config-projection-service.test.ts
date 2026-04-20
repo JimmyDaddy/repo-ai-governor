@@ -58,4 +58,55 @@ describe('CliUserConfigProjectionService', () => {
     expect(codexTool?.remoteApi?.provider).toBe('openai');
     expect(codexTool?.remoteApi?.vendorBinding).toBe('openai_responses');
   });
+
+  it('keeps credentialRef-only remote_api defaults zero-env-var when a selector is already present', () => {
+    const projectionService = new CliUserConfigProjectionService({
+      userConfigService: {
+        loadConfig: () => ({
+          tools: {
+            codex: {
+              transport: AdapterTransportKind.REMOTE_API,
+              remoteApi: {
+                model: 'gpt-5-user-default',
+                credentialRef: 'secret://openai/api-key',
+              },
+            },
+          },
+        }),
+      } as unknown as CliUserConfigService,
+    });
+    const config: GovernorConfig = {
+      schemaVersion: '1.1',
+      workspace: {
+        mode: WorkspaceMode.REPO_LOCAL,
+        migrationPolicy: WorkspaceMigrationPolicy.COPY_VERIFY_SWITCH_ROLLBACK,
+      },
+      i18n: {
+        runtimeEngine: 'i18next',
+        defaultLocale: 'en-US',
+        fallbackLocale: 'en-US',
+        supportedLocales: ['en-US'],
+      },
+      adapters: {
+        roles: [],
+        routing: {
+          roleBindings: {},
+        },
+        tools: [],
+      },
+    };
+
+    const projectedConfig = projectionService.applyUserLocalDefaults({
+      config,
+      environment: {},
+    });
+    const codexTool = projectedConfig.adapters?.tools?.find(
+      (tool) => tool.toolId === AdapterSurface.CODEX,
+    );
+
+    expect(codexTool?.transport).toBe(AdapterTransportKind.REMOTE_API);
+    expect(codexTool?.remoteApi?.model).toBe('gpt-5-user-default');
+    expect(codexTool?.remoteApi?.credentialRef).toBe('secret://openai/api-key');
+    expect(codexTool?.remoteApi).not.toHaveProperty('credentialEnvVar');
+  });
 });

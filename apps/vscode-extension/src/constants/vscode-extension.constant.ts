@@ -145,6 +145,7 @@ export const VSCODE_EXTENSION_PROVIDER_ONBOARDING_CONFIG_TARGET_SUFFIXES = [
   'remoteApi.vendorBinding',
   'remoteApi.model',
   'remoteApi.endpoint',
+  'remoteApi.credentialEnvVar',
   'remoteApi.credentialRef',
 ] as const;
 export const VSCODE_EXTENSION_PROVIDER_ONBOARDING_RECEIPT_FIELDS = [

@@ -123,6 +123,7 @@ export interface VsCodeExtensionProviderOnboardingSnapshot {
   model?: string;
   endpoint?: string;
   selectedBackendId?: string;
+  defaultBackendId?: string;
   availableBackends: readonly VsCodeExtensionSecretBackendStatusSnapshot[];
   warnings: readonly string[];
 }
@@ -136,6 +137,7 @@ export interface VsCodeExtensionProviderOnboardingApplyRequest {
   entrypointKind: VsCodeExtensionProviderOnboardingEntrypointKind;
   model: string;
   apiKey: string;
+  reuseExistingCredential?: boolean;
   provider?: AdapterProviderKind;
   endpoint?: string;
   backendId?: string;
