@@ -290,12 +290,13 @@ Use this when you want the built-source editor-native primary workbench. Public 
 After the extension is running, stay in VS Code for the supported human path:
 
 1. Use Workbench Overview to run workspace bootstrap, `doctor`, and `check`.
-2. Use Workflow Studio for workflow preview/create/edit plus service-backed run-control.
-3. Use Execution Board, HITL Inbox, Review Queue, Review Detail, and Automation Queue for day-to-day governed execution and review work.
-4. Use the service-backed workbench actions for `adopt / host / verify / upgrade` instead of treating the CLI as a required handoff.
-5. Keep CLI only for automation, CI, session-shell, or debugging scenarios where a terminal-native surface is still preferable.
+2. Use `Connect Provider`, `Update API Key`, and `Reconnect Provider` for the provider-authoring path. The supported plugin human flow captures the raw API key only through the secure prompt, keeps the managed secret backend as the canonical secret owner, and persists only non-secret provider defaults plus `credentialRef`.
+3. Use Workflow Studio for workflow preview/create/edit plus service-backed run-control.
+4. Use Execution Board, HITL Inbox, Review Queue, Review Detail, and Automation Queue for day-to-day governed execution and review work.
+5. Use the service-backed workbench actions for `adopt / host / verify / upgrade` instead of treating the CLI as a required handoff.
+6. Keep CLI only for automation, CI, session-shell, debugging, or explicit headless `credentialEnvVar` compatibility scenarios where a terminal-native surface is still preferable.
 
-If you receive one local VSIX instead of running the development host, install it from VS Code with `Extensions: Install from VSIX...` as a maintainer-guided manual rehearsal. The intended user experience is the same zero-CLI workbench flow, but the release-blocking evidence baseline today still stops at packaged-root and extracted-VSIX verification.
+If you receive one local VSIX instead of running the development host, install it from VS Code with `Extensions: Install from VSIX...` as a maintainer-guided manual rehearsal. The intended user experience is the same zero-CLI workbench flow plus host-native direct provider onboarding, and the current closeout evidence now backs the zero-env-var claim on those supported built-source/local-VSIX paths. The release-blocking evidence baseline still stops at packaged-root and extracted-VSIX verification, so GUI install remains additive manual evidence rather than a required automated gate.
 
 ### Desktop foundation
 

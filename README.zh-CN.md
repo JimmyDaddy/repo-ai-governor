@@ -162,7 +162,7 @@ pnpm exec repo-ai-governor connect --tools codex --output pretty
 1. `dist-binary` 证明的是 CLI/runtime 行为，不代表 packaged install 已成立。
 2. `tgz` 仍然是联网的 packaged-install 演练，不是离线或自包含安装器。
 3. `adopt bootstrap` 才是默认的整仓安装路径；`host export` 和 `host pack` 是更低层的 follow-up 工具。
-4. VS Code 目前支持的是 built-source companion 和本地 VSIX 路径，不是 Marketplace 支持。
+4. VS Code 目前支持的是 built-source companion 和本地 VSIX 路径，不是 Marketplace 支持。在这些受支持的 VS Code 路径上，`Connect Provider` / `Update API Key` / `Reconnect Provider` 会把 API key 采集留在扩展内，只持久化受管 secret 支持的 `credentialRef` 与非敏感 provider 默认值。
 5. Desktop 目前是 built-source foundation-only 路径，不是独立桌面安装器，也不是单独桌面产品。
 6. `local-model` 是受能力约束的 fallback 路径，不是主远端 adapter 的完整替代。
 7. 正式支持真值始终以 `docs/support-matrix.zh-CN.md` 为准。

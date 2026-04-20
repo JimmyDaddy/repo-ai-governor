@@ -1,7 +1,7 @@
 # TK-1015 prepare support-truth boundary recommendation and sprint handoff
 
-- Status: planned
-- Date: 2026-04-20
+- Status: completed
+- Date: 2026-04-21
 - Owner: AI-Agent
 - Priority: P1
 - Project: `project-116-vscode-direct-provider-onboarding-rollout`
@@ -39,8 +39,14 @@ Summarize the docs/evidence boundary before final validation and closeout.
 
 ## 7. Development Verification
 
-1. 待执行：按任务范围补充 fast/targeted verification。
-2. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-004-docs-distribution-and-workbench-evidence/tasks" --task-id TK-1015
+1. `pnpm exec vitest run apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-service-runtime.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts`
+2. `pnpm run build`
+3. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
+4. `pnpm run release:verify-vscode-extension-distribution -- --output .repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-004-docs-distribution-and-workbench-evidence/project-116-sprint-004-vscode-distribution-report-20260420T185446Z.json`
+5. `pnpm pack --json --dry-run`
+6. `pnpm run check:ide-entry-smoke`
+7. `pnpm run check:ide-docs-parity`
+8. `node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-004-docs-distribution-and-workbench-evidence/tasks" --task-id TK-1015`
 
 ## 8. Delivery Verification
 
@@ -52,8 +58,9 @@ Summarize the docs/evidence boundary before final validation and closeout.
 ## 9. 执行记录
 
 1. 2026-04-20：任务创建，状态初始化为 `planned`。
+2. 2026-04-21：收敛 direct-provider-onboarding 支持边界建议，明确当前可以公开宣称“插件人类路径不再要求手工 `credentialEnvVar` authoring、raw API key 留在 managed secret backend、public docs 已对齐 built-source/local-VSIX 证据”，同时把 zero-env-var clean-room 证明与项目 closeout 保留给 sprint-005。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. `.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-004-docs-distribution-and-workbench-evidence/project-116-sprint-004-support-truth-boundary-handoff.md`
+2. sprint-005 handoff 输入：`project-116-sprint-004-vscode-distribution-report-20260420T185446Z.json` 与 `project-116-sprint-004-built-source-and-local-vsix-direct-onboarding-summary.md`

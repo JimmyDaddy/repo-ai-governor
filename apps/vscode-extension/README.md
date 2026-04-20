@@ -1,8 +1,8 @@
 # VS Code Extension App
 
 - Status: active
-- Date: 2026-04-18
-- Scope: `project-048 / sprint-002 / TK-562 ~ TK-564` + `project-054 / sprint-001 / TK-607 ~ TK-609` + `project-054 / sprint-002 / TK-610 ~ TK-611` + `project-064 / sprint-001 / TK-670 ~ TK-672` + `project-112 / sprint-001 ~ sprint-003 / TK-936 ~ TK-941` + `project-113 / sprint-004 ~ sprint-005 / TK-954 ~ TK-961` + `project-114 / sprint-001 ~ sprint-005 / TK-963 ~ TK-988`
+- Date: 2026-04-21
+- Scope: `project-048 / sprint-002 / TK-562 ~ TK-564` + `project-054 / sprint-001 / TK-607 ~ TK-609` + `project-054 / sprint-002 / TK-610 ~ TK-611` + `project-064 / sprint-001 / TK-670 ~ TK-672` + `project-112 / sprint-001 ~ sprint-003 / TK-936 ~ TK-941` + `project-113 / sprint-004 ~ sprint-005 / TK-954 ~ TK-961` + `project-114 / sprint-001 ~ sprint-005 / TK-963 ~ TK-988` + `project-116 / sprint-001 ~ sprint-005 / TK-1004 ~ TK-1018`
 
 ## Purpose
 
@@ -51,6 +51,13 @@ The current public-support wording is now `primary_workbench_claim` for the buil
 3. Trust-sensitive commands remain gated by `Workspace Trust`; the extension must not bypass those editor-native guardrails.
 4. The supported packaged boundary is limited to the locally generated packaged extension root / VSIX from that built checkout. The published npm/tgz surface still does not ship an installable extension bundle, and Marketplace distribution remains unsupported.
 5. Public support truth for this surface lives in `docs/support-matrix.md` and `docs/support-matrix.zh-CN.md`, and now keeps `primary_workbench_claim` active while desktop stays `foundation_only_secondary_surface`.
+
+## Provider Onboarding Boundary
+
+1. The supported plugin human path uses host-native `Connect Provider`, `Update API Key`, and `Reconnect Provider` actions instead of asking users to author `credentialEnvVar` values manually before the extension becomes useful.
+2. Raw API-key capture must stay behind the VS Code secure prompt and the Governor managed secret backend. The extension may only persist non-secret provider defaults plus `credentialRef`.
+3. `runtime.governance-clients` owns the host-facing onboarding facade and receipt flow, while `runtime.agent-projection` continues to own readiness normalization and canonical `next_action(s)` truth.
+4. Built-source checkout plus one locally generated packaged extension root / VSIX now carry evidence-backed direct-onboarding and zero-env-var rollout truth for the supported plugin human path.
 
 ## Current Workbench Baseline
 
@@ -113,18 +120,18 @@ The current public-support wording is now `primary_workbench_claim` for the buil
 ## Public Support Boundary And Residual Risk
 
 1. Packaged support is still limited to locally generated artifacts from a built source checkout; published npm/tgz install, direct registry delivery, and Marketplace rollout remain unsupported.
-2. For built-source checkout and the packaged-artifact boundary of one locally generated VSIX / packaged extension root, the extension is now the primary human-facing workbench for bootstrap/readiness, `doctor`, `check`, workflow authoring, run/review, automation interaction, and governed `adopt / host / verify / upgrade` follow-up.
+2. For built-source checkout and the packaged-artifact boundary of one locally generated VSIX / packaged extension root, the extension is now the primary human-facing workbench for bootstrap/readiness, `doctor`, `check`, workflow authoring, run/review, automation interaction, governed `adopt / host / verify / upgrade` follow-up, and host-native provider onboarding.
 3. CLI remains supported, but only as an optional automation / CI / scriptable / session-shell / debugging path. Users no longer need to open a manual CLI path before the extension becomes useful.
 4. Compatibility bridge metadata may still be rendered as exit evidence, but the supported user path now executes these operations through service-owned workspace commands inside VS Code instead of asking the user to hand off into a visible CLI flow.
-5. Automated evidence now proves contract/controller/presentation parity, activation coverage, packaged module smoke, package-root/extracted-VSIX sidecar smoke, packaged/extracted CLI-backed secure-authoring, scratch-isolated `doctor` diagnostics capture with surfaced check totals, and symlink-safe payload boundaries. A real extension-development-host launch or GUI `Install from VSIX...` rehearsal remains optional manual evidence rather than a release-blocking automated gate.
-6. Public docs now describe the extension as the editor-native primary workbench for built-source checkout and local VSIX / packaged-extension paths only. This does not extend support to published npm/tgz install bundles, direct registry delivery, or Marketplace rollout.
+5. Automated evidence now proves controller/runtime/presentation direct-onboarding parity, managed-secret-backed receipt boundaries, selector-first zero-env-var compatibility, activation coverage, packaged module smoke, package-root/extracted-VSIX sidecar smoke, packaged/extracted CLI-backed secure-authoring, scratch-isolated `doctor` diagnostics capture with surfaced check totals, and symlink-safe payload boundaries. A real extension-development-host launch or GUI `Install from VSIX...` rehearsal remains optional manual evidence rather than a release-blocking automated gate.
+6. Public docs now describe the extension as the editor-native primary workbench for built-source checkout and local VSIX / packaged-extension paths only, with host-native direct provider onboarding on those supported paths. Live remote-provider success remains outside the formal support claim, and this does not extend support to published npm/tgz install bundles, direct registry delivery, or Marketplace rollout.
 
 ## Verification
 
 1. `pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test/vscode-extension-contract.test.ts apps/vscode-extension/test/vscode-extension-host.activation.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-service-runtime.test.ts apps/vscode-extension/test/vscode-extension-selection-store.test.ts apps/vscode-extension/test/vscode-extension-packaging-boundary.test.ts`
 2. `pnpm run build`
 3. `pnpm run check`
-4. `pnpm run release:verify-vscode-extension-distribution -- --output .tmp/project-114-project-final-vscode-distribution-report.json`
+4. `pnpm run release:verify-vscode-extension-distribution -- --output .tmp/vscode-extension-distribution-report.json`
 5. `pnpm pack --json --dry-run`
 6. `pnpm run check:ide-entry-smoke`
 7. `pnpm run check:ide-docs-parity`

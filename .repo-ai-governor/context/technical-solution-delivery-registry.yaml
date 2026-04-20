@@ -397,19 +397,19 @@ deliveries:
       - packaged_distribution
       - docs_playbook
     user_impact_level: high
-    execution_status: in_progress
-    rollout_status: in_progress
+    execution_status: completed
+    rollout_status: completed
     owner: runtime
     project_ref: project-116-vscode-direct-provider-onboarding-rollout
-    sprint_ref: sprint-004-docs-distribution-and-workbench-evidence
+    sprint_ref: sprint-005-clean-room-validation-and-rollout-closeout
     task_ids:
-      - TK-1013
-      - TK-1014
-      - TK-1015
+      - TK-1016
+      - TK-1017
+      - TK-1018
     project_plan_path: .repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/plan.md
-    sprint_plan_path: .repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-004-docs-distribution-and-workbench-evidence/plan.md
-    task_csv_path: .repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-004-docs-distribution-and-workbench-evidence/tasks/tasks.csv
-    handoff_artifact_path: .repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-001-contract-and-provider-onboarding-facade/tasks/DA-1004-vscode-direct-provider-onboarding-promotion-and-rollout-decomposition-handoff.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-005-clean-room-validation-and-rollout-closeout/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-005-clean-room-validation-and-rollout-closeout/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-005-clean-room-validation-and-rollout-closeout/tasks/TK-1018-close-rollout-project-and-publish-completion-audit.md
     rollout_artifacts:
       - .repo-ai-governor/draft/approved_solution_review_vscode-plugin-direct-api-key-and-secret-backed-provider-onboarding.md
       - .repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/plan.md
@@ -419,6 +419,11 @@ deliveries:
       - .repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-003-readiness-cta-and-provider-lifecycle/plan.md
       - .repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-004-docs-distribution-and-workbench-evidence/plan.md
       - .repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-005-clean-room-validation-and-rollout-closeout/plan.md
+      - .repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-005-clean-room-validation-and-rollout-closeout/project-116-sprint-005-zero-env-var-clean-room-summary.md
+      - .repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-005-clean-room-validation-and-rollout-closeout/project-116-sprint-005-rollout-claim-parity-summary.md
+      - .repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-005-clean-room-validation-and-rollout-closeout/review/resolved_code_review_working-tree-20260421-0416.md
+      - .repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-005-clean-room-validation-and-rollout-closeout/tasks/TK-1018-close-rollout-project-and-publish-completion-audit.md
+      - .repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/project-116-vscode-direct-provider-onboarding-rollout-completion-audit-summary.md
     accepted_at: 2026-04-20
 
   - solution_id: technical-solution.langgraph-orchestration-direction

@@ -1,0 +1,33 @@
+{
+  "status": "pass",
+  "packageName": "repo-ai-governor-vscode",
+  "publisher": "cjhdev",
+  "version": "0.0.1",
+  "workingRoot": "/Users/jimmydaddy/study/ai-governor/.tmp/release-vscode-extension-package",
+  "deployedRoot": "/Users/jimmydaddy/study/ai-governor/.tmp/release-vscode-extension-package/deployed-extension",
+  "packageRoot": "/Users/jimmydaddy/study/ai-governor/.tmp/release-vscode-extension-package/packaged-extension",
+  "vsixPath": "/Users/jimmydaddy/study/ai-governor/.tmp/release-vscode-extension-package/cjhdev.repo-ai-governor-vscode-0.0.1.vsix",
+  "packagedPaths": [
+    "package.json",
+    "package.nls.json",
+    "package.nls.zh-cn.json",
+    "README.md",
+    "resources/governor.svg",
+    "dist/src/extension.js",
+    "dist/src/index.js",
+    "src/index.ts",
+    "node_modules/.modules.yaml",
+    "node_modules/@repo-ai-governor/cli/package.json",
+    "node_modules/@repo-ai-governor/config/package.json",
+    "node_modules/@repo-ai-governor/core-orchestration-service/package.json",
+    "node_modules/@repo-ai-governor/orchestration-service-client/package.json",
+    "node_modules/@repo-ai-governor/shared/package.json",
+    "node_modules/@repo-ai-governor/core-runtime-langgraph/package.json",
+    "node_modules/@repo-ai-governor/core-memory/package.json",
+    "node_modules/@repo-ai-governor/core-session/package.json",
+    "node_modules/@repo-ai-governor/memory-provider-registry/package.json",
+    "node_modules/@repo-ai-governor/memory-store-adapter/package.json",
+    "node_modules/@repo-ai-governor/artifact-registry/package.json",
+    "node_modules/i18next/package.json"
+  ]
+}

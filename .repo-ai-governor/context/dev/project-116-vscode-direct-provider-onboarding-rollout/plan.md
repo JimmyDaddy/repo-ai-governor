@@ -1,7 +1,7 @@
 # project-116-vscode-direct-provider-onboarding-rollout 计划
 
-- Status: active
-- Date: 2026-04-20
+- Status: completed
+- Date: 2026-04-21
 - Stage Mapping: runtime governance-clients rollout
 - Phase Mapping: VS Code provider onboarding / direct API key entry / secret-backed credentialRef / readiness and support truth
 - Upstream:
@@ -37,13 +37,13 @@
 
 ## 2.4 sprint-004-docs-distribution-and-workbench-evidence
 
-- Status: active
+- Status: completed
 - Sprint Goal: Collect built-source and local-VSIX evidence and prepare docs/support truth refresh for direct onboarding.
-- Task Package: `TK-1013、TK-1014、TK-1015`
+- Task Package: `TK-1013、TK-1014、TK-1015、TK-1022`
 
 ## 2.5 sprint-005-clean-room-validation-and-rollout-closeout
 
-- Status: planned
+- Status: completed
 - Sprint Goal: Complete zero-env-var clean-room validation, claim-parity review, and rollout closeout.
 - Task Package: `TK-1016、TK-1017、TK-1018`
 
@@ -63,12 +63,13 @@
 | TK-1011 | sprint-003-readiness-cta-and-provider-lifecycle | land update-api-key reconnect-provider and degraded-state guidance | lifecycle UX | converge overview status and doctor cta mapping with provider-onboarding snapshot | completed |
 | TK-1012 | sprint-003-readiness-cta-and-provider-lifecycle | verify provider lifecycle readiness parity and sprint handoff | verification handoff | land update-api-key reconnect-provider and degraded-state guidance | completed |
 | TK-1021 | sprint-003-readiness-cta-and-provider-lifecycle | close sprint-003 boundary and activate sprint-004 execution surface | sprint closeout | CR-001 reviewer-clean handoff | completed |
-| TK-1013 | sprint-004-docs-distribution-and-workbench-evidence | refresh vscode direct-onboarding docs and copy against runtime evidence | docs package | verify provider lifecycle readiness parity and sprint handoff | in_progress |
-| TK-1014 | sprint-004-docs-distribution-and-workbench-evidence | capture built-source and local-vsix direct-onboarding evidence | evidence bundle | refresh vscode direct-onboarding docs and copy against runtime evidence | planned |
-| TK-1015 | sprint-004-docs-distribution-and-workbench-evidence | prepare support-truth boundary recommendation and sprint handoff | support truth handoff | capture built-source and local-vsix direct-onboarding evidence | planned |
-| TK-1016 | sprint-005-clean-room-validation-and-rollout-closeout | run zero-env-var clean-room rehearsal and failure-path validation | clean-room evidence | prepare support-truth boundary recommendation and sprint handoff | planned |
-| TK-1017 | sprint-005-clean-room-validation-and-rollout-closeout | review rollout claim parity and remaining cli compatibility wording | support truth review | run zero-env-var clean-room rehearsal and failure-path validation | planned |
-| TK-1018 | sprint-005-clean-room-validation-and-rollout-closeout | close rollout project and publish completion audit | project closeout | review rollout claim parity and remaining cli compatibility wording | planned |
+| TK-1013 | sprint-004-docs-distribution-and-workbench-evidence | refresh vscode direct-onboarding docs and copy against runtime evidence | docs package | verify provider lifecycle readiness parity and sprint handoff | completed |
+| TK-1014 | sprint-004-docs-distribution-and-workbench-evidence | capture built-source and local-vsix direct-onboarding evidence | evidence bundle | refresh vscode direct-onboarding docs and copy against runtime evidence | completed |
+| TK-1015 | sprint-004-docs-distribution-and-workbench-evidence | prepare support-truth boundary recommendation and sprint handoff | support truth handoff | capture built-source and local-vsix direct-onboarding evidence | completed |
+| TK-1022 | sprint-004-docs-distribution-and-workbench-evidence | close sprint-004 boundary and activate sprint-005 execution surface | sprint closeout | CR-001 reviewer-clean handoff | completed |
+| TK-1016 | sprint-005-clean-room-validation-and-rollout-closeout | run zero-env-var clean-room rehearsal and failure-path validation | clean-room evidence | prepare support-truth boundary recommendation and sprint handoff | completed |
+| TK-1017 | sprint-005-clean-room-validation-and-rollout-closeout | review rollout claim parity and remaining cli compatibility wording | support truth review | run zero-env-var clean-room rehearsal and failure-path validation | completed |
+| TK-1018 | sprint-005-clean-room-validation-and-rollout-closeout | close rollout project and publish completion audit | project closeout | review rollout claim parity and remaining cli compatibility wording | completed |
 
 ## 4. 依赖产物策略
 
@@ -91,7 +92,13 @@
 5. 2026-04-20：`CR-001` 已在 sprint-002 收口为 `resolved`，`TK-1020` 完成 sprint-002 closeout write-back；当前 primary execution surface 已切换到 `sprint-003-readiness-cta-and-provider-lifecycle`，`TK-1010` 成为新的 `in_progress` boundary。
 6. 2026-04-20：sprint-003 implementation tranche 已完成：provider lifecycle projection、`Connect Provider / Update API Key / Reconnect Provider / Run Doctor` CTA 映射与 readiness parity evidence 已落盘，下一步进入 delegated CR loop。
 7. 2026-04-21：`CR-001` 已在 sprint-003 收口到 `resolved`，`TK-1021` 完成 sprint-003 closeout write-back；当前 primary execution surface 已切换到 `sprint-004-docs-distribution-and-workbench-evidence`，`TK-1013` 成为新的 `in_progress` boundary。
+8. 2026-04-21：sprint-004 implementation tranche 已完成：built-source / local-VSIX pack + distribution snapshot、README/playbook/support wording 的保守 direct-provider-onboarding 改口，以及 sprint-005 support-truth handoff 均已落盘，下一步进入 delegated CR loop。
+9. 2026-04-21：`CR-001` 已在 sprint-004 收口到 `resolved`，accepted ledger finding 已在同窗口修复；`TK-1022` 完成 sprint-004 closeout write-back，当前 primary execution surface 已切换到 `sprint-005-clean-room-validation-and-rollout-closeout`，`TK-1016` 成为新的 `in_progress` boundary。
+10. 2026-04-21：`TK-1016` 已完成 sprint-005 zero-env-var clean-room evidence window：fresh pack/distribution snapshot、direct-onboarding targeted tests、CLI selector-first regression 与 scratch-isolated packaged verification 已全部落盘，当前进入 `TK-1017` 的 claim-parity / support-truth review。
+11. 2026-04-21：`TK-1017` 已完成最终 claim-parity 文案收口，README/playbook/support-matrix 与 sprint-local `project-116-sprint-005-rollout-claim-parity-summary.md` 已同步回链；当前 `TK-1018` 成为新的 `in_progress` boundary，准备进入 project-final delegated CR 与 completion audit closeout。
+12. 2026-04-21：project-final reviewer round `CR-001` 首轮指出缺少 completion-audit artifact 与 milestone backlink；当前窗口已补齐 `project-116-vscode-direct-provider-onboarding-rollout-completion-audit-summary.md` 与项目计划回链，随后继续进入 fresh reviewer recheck。
+13. 2026-04-21：project-final delegated review loop 在 `CR-002` clean 收口；`TK-1018` 随后完成 completed audit、idle context restoration、completed history 回写与 project final closeout，`project-116` 正式切换为 `completed`。
 
 ## 7. 里程碑记录入口
 
-1. 待 closeout 后补齐 completion audit summary。
+1. `.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/project-116-vscode-direct-provider-onboarding-rollout-completion-audit-summary.md`
