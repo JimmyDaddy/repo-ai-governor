@@ -1,6 +1,6 @@
 # DA-915 requirement-to-cr delivery promotion and rollout decomposition handoff
 
-- Status: active
+- Status: completed
 - Date: 2026-04-16
 - Owner: AI-Agent
 - Task: `TK-915`

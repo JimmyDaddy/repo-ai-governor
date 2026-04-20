@@ -1,6 +1,6 @@
 # DA-931 deliver discoverability rollout runtime evidence
 
-- Status: active
+- Status: completed
 - Date: 2026-04-17
 - Project: `project-110-requirement-to-cr-delivery-orchestration-rollout`
 - Sprint: `sprint-004-discoverability-rollout-and-project-closeout`
