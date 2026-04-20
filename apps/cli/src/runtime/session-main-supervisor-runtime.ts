@@ -36,6 +36,7 @@ import type {
 } from '@repo-ai-governor/core-orchestration-service/types';
 import {
   AdapterSurface,
+  AdapterTransportKind,
   GovernorErrorCode,
   RuntimeError,
   standardizeError,
@@ -414,14 +415,19 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
         },
       };
       const attemptRelayState = this.createProtocolStreamRelayState();
-      const relayPromise = directAnswerContinuation?.suppressStreamRelay
-        ? Promise.resolve()
-        : this.relayProtocolStreamEvents(
-            context,
-            protocolBySurface[primaryAnswerSurface],
-            dispatchRequest,
-            attemptRelayState,
-          );
+      const deferRelayUntilSelection = this.shouldDeferProtocolStreamRelay(
+        primaryAnswerSurface,
+        toolConfigBySurface,
+      );
+      const relayPromise =
+        directAnswerContinuation?.suppressStreamRelay || deferRelayUntilSelection
+          ? Promise.resolve()
+          : this.relayProtocolStreamEvents(
+              context,
+              protocolBySurface[primaryAnswerSurface],
+              dispatchRequest,
+              attemptRelayState,
+            );
       const directAnswerInvokeStartedAtMs = Date.now();
       const routeRunner = this.createRouteRunner({
         routeKey: SESSION_MAIN_ANSWER_ROUTE_KEY,
@@ -431,7 +437,16 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       });
       try {
         dispatchResult = await routeRunner.dispatchStage(dispatchRequest);
-        await relayPromise;
+        await (directAnswerContinuation?.suppressStreamRelay
+          ? Promise.resolve()
+          : deferRelayUntilSelection
+            ? this.relayProtocolStreamEvents(
+                context,
+                protocolBySurface[dispatchResult.selectedSurface],
+                dispatchRequest,
+                attemptRelayState,
+              )
+            : relayPromise);
         successfulRelayState = attemptRelayState;
         successfulDirectAnswerContinuation = directAnswerContinuation;
         const directAnswerInvokeElapsedMs =
@@ -1687,6 +1702,10 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     });
     const relayState = this.createProtocolStreamRelayState();
     const primaryRoleSurface = preparedDispatch.safeCandidateSurfaces[0] ?? AdapterSurface.CODEX;
+    const deferRelayUntilSelection = this.shouldDeferProtocolStreamRelay(
+      primaryRoleSurface,
+      toolConfigBySurface,
+    );
     const roleDelegateContinuation = this.providerContinuationRuntime.prepareRequest({
       sessionId: context.sessionId,
       routeId: context.routeId,
@@ -1731,17 +1750,18 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
         networkMode: AgentNetworkMode.STANDARD,
       },
     };
-    const relayPromise = roleDelegateContinuation?.suppressStreamRelay
-      ? Promise.resolve()
-      : this.relayProtocolStreamEvents(
-          context,
-          protocolBySurface[primaryRoleSurface],
-          dispatchRequest,
-          relayState,
-          {
-            roleId: preparedDispatch.descriptor.roleId,
-          },
-        );
+    const relayPromise =
+      roleDelegateContinuation?.suppressStreamRelay || deferRelayUntilSelection
+        ? Promise.resolve()
+        : this.relayProtocolStreamEvents(
+            context,
+            protocolBySurface[primaryRoleSurface],
+            dispatchRequest,
+            relayState,
+            {
+              roleId: preparedDispatch.descriptor.roleId,
+            },
+          );
     let dispatchResult: Awaited<ReturnType<typeof routeRunner.dispatchStage>>;
     try {
       dispatchResult = await routeRunner.dispatchStage(dispatchRequest);
@@ -1764,7 +1784,19 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       });
       throw error;
     }
-    await relayPromise;
+    await (roleDelegateContinuation?.suppressStreamRelay
+      ? Promise.resolve()
+      : deferRelayUntilSelection
+        ? this.relayProtocolStreamEvents(
+            context,
+            protocolBySurface[dispatchResult.selectedSurface],
+            dispatchRequest,
+            relayState,
+            {
+              roleId: preparedDispatch.descriptor.roleId,
+            },
+          )
+        : relayPromise);
     const assistantMessage = this.resolveRoleAssistantMessage(
       dispatchResult.invokeResult.output,
       context,
@@ -1833,6 +1865,13 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       sawToken: false,
       sawToolCall: false,
     };
+  }
+
+  private shouldDeferProtocolStreamRelay(
+    surface: AdapterSurface,
+    toolConfigBySurface: Map<AdapterSurface, NonNullable<AdaptersConfig['tools']>[number]>,
+  ): boolean {
+    return toolConfigBySurface.get(surface)?.transport === AdapterTransportKind.ACP_EXEC;
   }
 
   private async relayProtocolStreamEvents(

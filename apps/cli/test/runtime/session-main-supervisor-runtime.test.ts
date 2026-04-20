@@ -686,6 +686,94 @@ describe('Cli session-main supervisor runtime', () => {
     );
   });
 
+  it('does not relay ACP primary stream events before direct-answer fallback selects a different surface', async () => {
+    const acpDirectAnswerAdaptersConfig: AdaptersConfig = {
+      ...adaptersConfig,
+      tools:
+        adaptersConfig.tools?.map((tool) =>
+          tool.toolId === AdapterSurface.CODEX
+            ? {
+                ...tool,
+                transport: AdapterTransportKind.ACP_EXEC,
+              }
+            : tool,
+        ) ?? [],
+    };
+    const codexInvokeStage = vi.fn(async () => {
+      throw new RuntimeError(
+        GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+        'primary acp codex invoke failed',
+      );
+    });
+    const publishedStreamEvents: Array<Record<string, unknown>> = [];
+    const adapterRoutingRuntime = new CliAdapterRoutingRuntime(
+      acpDirectAnswerAdaptersConfig,
+    ) as CliAdapterRoutingRuntime & {
+      createProtocolBySurface: () => Record<string, AgentProtocolContract>;
+    };
+    adapterRoutingRuntime.createProtocolBySurface = () => ({
+      [AdapterSurface.CODEX]: createAvailableProtocol(AdapterSurface.CODEX, 'unused', {
+        invokeStageSpy: codexInvokeStage,
+        streamEvents: [
+          {
+            eventType: AgentStreamEventType.TOKEN,
+            payload: {
+              title: 'Codex ACP Draft',
+              chunkText: 'ACP primary token should not be relayed before fallback selection.',
+              accumulatedText: 'ACP primary token should not be relayed before fallback selection.',
+              surface: AdapterSurface.CODEX,
+            },
+          },
+        ],
+      }),
+      [AdapterSurface.CLAUDE_CODE]: createAvailableProtocol(
+        AdapterSurface.CLAUDE_CODE,
+        'Recovered answer from Claude Code',
+      ),
+      [AdapterSurface.OLLAMA]: createUnavailableProtocol(AdapterSurface.OLLAMA),
+    });
+
+    const runtime = new CliSessionMainSupervisorRuntime({
+      workspaceRoot: '/workspace/repo/.repo-ai-governor',
+      currentWorkingDirectory: '/workspace/repo',
+      workspace,
+      locale: 'en-US',
+      adaptersConfig: acpDirectAnswerAdaptersConfig,
+      adapterRoutingRuntime,
+    });
+    const outcome = await runtime.resolveTurn({
+      sessionId: 'session-001-acp-fallback-relay-guard',
+      routeId: 'session.main',
+      turnId: 'turn-001-acp-fallback-relay-guard',
+      turnIndex: 5,
+      userMessage: 'hello',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+      publishStreamEvent: async (event) => {
+        publishedStreamEvents.push(event as unknown as Record<string, unknown>);
+      },
+    });
+
+    expect(outcome.assistantMessage).toBe('Recovered answer from Claude Code');
+    expect(outcome.selectedSurface).toBe(AdapterSurface.CLAUDE_CODE);
+    expect(
+      publishedStreamEvents.some(
+        (event) => event.kind === 'token' && event.selectedSurface === AdapterSurface.CODEX,
+      ),
+    ).toBe(false);
+    expect(publishedStreamEvents).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'token',
+          chunkText: 'Recovered answer from Claude Code',
+          selectedSurface: AdapterSurface.CLAUDE_CODE,
+          selectedBy: 'session.main.answer.fallback',
+        }),
+      ]),
+    );
+  });
+
   it('publishes the recovered fallback answer when the failed surface already streamed partial tokens', async () => {
     const codexProbeSpy = vi.fn(async () => ({
       identity: {

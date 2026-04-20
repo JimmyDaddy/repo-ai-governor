@@ -24,13 +24,13 @@
 
 ## 2.2 sprint-002-executable-acp-exec-baseline
 
-- Status: active
+- Status: completed
 - Sprint Goal: 完成 session/new prompt cancel 主链路与 invoke/stream shared turn execution 基线
 - Task Package: `TK-992、TK-993、TK-994`
 
 ## 2.3 sprint-003-permission-terminal-filesystem-bridge-hardening
 
-- Status: planned
+- Status: active
 - Sprint Goal: 完成 permission terminal filesystem bridge hardening 与 capability-gated fail-closed 语义
 - Task Package: `TK-995、TK-996、TK-997`
 
@@ -53,9 +53,9 @@
 | TK-989 | sprint-001-contract-and-runtime-decomposition | freeze acp execution bridge runtime contract boundary | contract baseline | scaffold baseline | completed |
 | TK-990 | sprint-001-contract-and-runtime-decomposition | decompose transport client session turn and host-operation runtimes | runtime decomposition | TK-989 | completed |
 | TK-991 | sprint-001-contract-and-runtime-decomposition | prepare sprint-001 handoff and activation recommendation | governance handoff | TK-990 | completed |
-| TK-992 | sprint-002-executable-acp-exec-baseline | implement executable acp_exec invoke prompt and cancel baseline | execution baseline | sprint-001-contract-and-runtime-decomposition planned handoff | in_progress |
-| TK-993 | sprint-002-executable-acp-exec-baseline | land shared invocation store and stream attachment semantics | shared execution | TK-992 | planned |
-| TK-994 | sprint-002-executable-acp-exec-baseline | verify fixture-backed acp contract baseline and sprint-002 handoff | verification handoff | TK-993 | planned |
+| TK-992 | sprint-002-executable-acp-exec-baseline | implement executable acp_exec invoke prompt and cancel baseline | execution baseline | sprint-001-contract-and-runtime-decomposition planned handoff | completed |
+| TK-993 | sprint-002-executable-acp-exec-baseline | land shared invocation store and stream attachment semantics | shared execution | TK-992 | completed |
+| TK-994 | sprint-002-executable-acp-exec-baseline | verify fixture-backed acp contract baseline and sprint-002 handoff | verification handoff | TK-993 | completed |
 | TK-995 | sprint-003-permission-terminal-filesystem-bridge-hardening | implement permission bridge and active tool-call confirmation mapping | permission bridge | sprint-002-executable-acp-exec-baseline planned handoff | planned |
 | TK-996 | sprint-003-permission-terminal-filesystem-bridge-hardening | implement terminal and filesystem bridge runtime hardening | host operation bridge | TK-995 | planned |
 | TK-997 | sprint-003-permission-terminal-filesystem-bridge-hardening | verify failure-path matrix and sprint-003 handoff | verification handoff | TK-996 | planned |
@@ -83,6 +83,8 @@
 1. 2026-04-20：创建 project-115-acp-execution-bridge-rollout 全量执行流骨架，覆盖 sprint-001-contract-and-runtime-decomposition、sprint-002-executable-acp-exec-baseline、sprint-003-permission-terminal-filesystem-bridge-hardening、sprint-004-clean-room-execution-and-packaged-evidence、sprint-005-external-interoperability-and-rollout-closeout。
 2. 2026-04-20：完成 sprint-001 implementation baseline，固定 ACP runtime owner split、shared invocation state 基线与 sprint-002 activation recommendation，代码验证已通过 targeted runtime vitest、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`。
 3. 2026-04-20：`CR-001` 已 resolved，sprint-001 正式完成并切换到 `sprint-002-executable-acp-exec-baseline`；`TK-992` 已激活为当前 in-progress execution surface。
+4. 2026-04-20：完成 sprint-002 implementation baseline 与 verification handoff，落地 fixture-backed ACP invoke/stream/cancel、shared invocation replay 与 targeted/build/package verification；下一步进入 sprint-002 delegated CR round。
+5. 2026-04-20：`CR-008` fresh delegated review 返回 `No actionable findings.`，sprint-002 在 round-8 reviewer-clean 后完成 closeout，并把 primary execution surface 正式切换到 `sprint-003-permission-terminal-filesystem-bridge-hardening`。
 
 ## 7. 里程碑记录入口
 

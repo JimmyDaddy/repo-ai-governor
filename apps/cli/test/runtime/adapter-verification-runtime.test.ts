@@ -291,6 +291,12 @@ describe('Cli adapter verification runtime', () => {
 
     expect(commandProbeExecutor).not.toHaveBeenCalled();
     expect(codexTool?.healthCheck?.transportKind).toBe(AdapterTransportKind.ACP_EXEC);
+    expect(codexTool?.healthCheck?.requestCancellationMode).toBe(
+      AdapterRequestCancellationMode.LOCAL_ABORT_ONLY,
+    );
+    expect(codexTool?.capabilitySupportByCapability.get(AgentCapability.CANCELLATION)).toBe(
+      AgentCapabilitySupportLevel.DEGRADED,
+    );
     expect(codexTool?.unavailableReasons).toContain(
       'health_check_failed:codex:acp_host_transport_not_ready',
     );
@@ -396,7 +402,7 @@ describe('Cli adapter verification runtime', () => {
       routeKey: 'cli.adapter.probe.codex',
       unavailableReasons: ['health_check_failed:codex:acp_host_transport_not_ready'],
       transportKind: AdapterTransportKind.ACP_EXEC,
-      requestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+      requestCancellationMode: AdapterRequestCancellationMode.LOCAL_ABORT_ONLY,
       diagnostics: [
         {
           layer: 'protocol',
@@ -460,7 +466,9 @@ describe('Cli adapter verification runtime', () => {
               supportLevel:
                 capability === AgentCapability.TOOL_CALLING
                   ? AgentCapabilitySupportLevel.SUPPORTED
-                  : AgentCapabilitySupportLevel.UNSUPPORTED,
+                  : capability === AgentCapability.CANCELLATION
+                    ? AgentCapabilitySupportLevel.DEGRADED
+                    : AgentCapabilitySupportLevel.UNSUPPORTED,
             })),
             timeout: {
               supportsAgentInvocationTimeout: true,
@@ -468,8 +476,8 @@ describe('Cli adapter verification runtime', () => {
               supportsFlowTimeoutSignal: false,
             },
             cancellation: {
-              supportsCancel: false,
-              supportsReasonPropagation: false,
+              supportsCancel: true,
+              supportsReasonPropagation: true,
               supportsAbortSignal: false,
             },
             contextWindow: {

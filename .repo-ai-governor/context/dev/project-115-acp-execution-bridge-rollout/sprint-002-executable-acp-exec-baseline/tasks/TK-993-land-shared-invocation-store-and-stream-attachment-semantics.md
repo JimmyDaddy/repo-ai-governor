@@ -1,6 +1,6 @@
 # TK-993 land shared invocation store and stream attachment semantics
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-20
 - Owner: AI-Agent
 - Priority: P1
@@ -39,21 +39,26 @@
 
 ## 7. Development Verification
 
-1. 待执行：按任务范围补充 fast/targeted verification。
-2. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-002-executable-acp-exec-baseline/tasks" --task-id TK-993
+1. pnpm vitest run apps/cli/test/runtime/cli-acp-session-runtime.test.ts apps/cli/test/runtime/cli-acp-prompt-turn-runtime.test.ts
+2. pnpm exec tsc -p tsconfig.json --noEmit
+3. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-002-executable-acp-exec-baseline/tasks" --task-id TK-993
 
 ## 8. Delivery Verification
 
-1. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-002-executable-acp-exec-baseline/tasks" --task-id TK-993
-2. node ./scripts/governance/check-task-required-inputs.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-002-executable-acp-exec-baseline/tasks" --task-id TK-993
-3. node ./scripts/governance/check-task-ledger-sync.js
-4. node ./scripts/governance/check-sprint-plan-status-sync.js
+1. pnpm run build
+2. pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1
+3. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-002-executable-acp-exec-baseline/tasks" --task-id TK-993
+4. node ./scripts/governance/check-task-required-inputs.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-002-executable-acp-exec-baseline/tasks" --task-id TK-993
+5. node ./scripts/governance/check-task-ledger-sync.js
+6. node ./scripts/governance/check-sprint-plan-status-sync.js
 
 ## 9. 执行记录
 
 1. 2026-04-20：任务创建，状态初始化为 `planned`。
+2. 2026-04-20：将 `invokeStage` / `streamEvents` 的共享 turn ownership 固化到 transport-scoped execution map，确保 invoke-first 与 stream-first 两种顺序都只启动一次 ACP prompt-turn execution。
+3. 2026-04-20：修正 `apps/cli/test/runtime/cli-acp-session-runtime.test.ts` 的 event shape 漂移，并新增 `cli-acp-prompt-turn-runtime.test.ts` 覆盖 shared execution、buffer replay 与无双执行约束。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. `apps/cli/src/runtime/cli-acp-transport-client-runtime.ts`：以 invocation key 维持共享 prompt-turn execution、waiter replay 与 buffered stream event attachment。
+2. `apps/cli/test/runtime/cli-acp-session-runtime.test.ts`、`apps/cli/test/runtime/cli-acp-prompt-turn-runtime.test.ts`：证明 stream attach 不依赖调用顺序，且不会重复启动同一 ACP turn。

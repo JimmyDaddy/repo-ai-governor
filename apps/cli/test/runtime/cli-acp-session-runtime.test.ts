@@ -1,3 +1,8 @@
+import {
+  AgentCancellationReason,
+  AgentCancellationScope,
+  AgentStreamEventType,
+} from '@repo-ai-governor/adapter-sdk';
 import { AdapterSurface } from '@repo-ai-governor/shared';
 import { CliAcpSessionRuntime } from '../../src/runtime/cli-acp-session-runtime.js';
 
@@ -53,20 +58,48 @@ describe('CliAcpSessionRuntime', () => {
 
     invokeState.terminalIds.push('terminal-001');
     invokeState.bufferedStreamEvents.push({
-      eventId: 'event-001',
+      eventType: AgentStreamEventType.TOKEN,
+      timestamp: '2026-04-20T00:00:00.000Z',
       processId: 'process-002',
       executionId: 'execution-002',
       stageId: 'stage-002',
-      turnId: 'turn-001',
-      type: 'agent.message.delta',
-      emittedAt: '2026-04-20T00:00:00.000Z',
-      sequence: 1,
-      delta: 'hello',
+      routeKey: 'route-002',
+      payload: {
+        delta: 'hello',
+      },
     });
 
     expect(invokeState).toBe(streamState);
     expect(streamState.terminalIds).toEqual(['terminal-001']);
     expect(streamState.bufferedStreamEvents).toHaveLength(1);
-    expect(streamState.bufferedStreamEvents[0]?.eventId).toBe('event-001');
+    expect(streamState.bufferedStreamEvents[0]?.eventType).toBe(AgentStreamEventType.TOKEN);
+    expect(streamState.bufferedStreamEvents[0]?.payload.delta).toBe('hello');
+  });
+
+  it('returns undefined for process/execution-local cancel lookup when multiple live invocations match', () => {
+    const runtime = new CliAcpSessionRuntime();
+    runtime.ensureInvocationState(AdapterSurface.CODEX, {
+      processId: 'process-003',
+      executionId: 'execution-003',
+      stageId: 'stage-003-a',
+      routeKey: 'route-003-a',
+      input: {},
+    });
+    runtime.ensureInvocationState(AdapterSurface.CODEX, {
+      processId: 'process-003',
+      executionId: 'execution-003',
+      stageId: 'stage-003-b',
+      routeKey: 'route-003-b',
+      input: {},
+    });
+
+    expect(
+      runtime.findInvocationState(AdapterSurface.CODEX, {
+        processId: 'process-003',
+        executionId: 'execution-003',
+        scope: AgentCancellationScope.AGENT,
+        reason: AgentCancellationReason.USER_REQUESTED,
+      }),
+    ).toBeUndefined();
   });
 });

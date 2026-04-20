@@ -37,7 +37,7 @@ const CLI_ACP_HOST_CAPABILITY_SUPPORT: Record<AgentCapability, AgentCapabilitySu
   [AgentCapability.PARALLEL_TASK]: AgentCapabilitySupportLevel.DEGRADED,
   [AgentCapability.STREAMING]: AgentCapabilitySupportLevel.SUPPORTED,
   [AgentCapability.CONFIRMATION_GATE]: AgentCapabilitySupportLevel.DEGRADED,
-  [AgentCapability.CANCELLATION]: AgentCapabilitySupportLevel.UNSUPPORTED,
+  [AgentCapability.CANCELLATION]: AgentCapabilitySupportLevel.DEGRADED,
   [AgentCapability.AGENT_TIMEOUT]: AgentCapabilitySupportLevel.SUPPORTED,
   [AgentCapability.STAGE_TIMEOUT_SIGNAL]: AgentCapabilitySupportLevel.SUPPORTED,
   [AgentCapability.FLOW_TIMEOUT_SIGNAL]: AgentCapabilitySupportLevel.DEGRADED,
@@ -53,8 +53,8 @@ interface CliAcpHostProtocolOptions {
 }
 
 /**
- * Provides a CLI-local ACP transport baseline that keeps ACP truth explicit and fail-closed until
- * host distribution and runtime-service rollout windows are completed.
+ * Provides a CLI-local ACP transport baseline that keeps ACP truth explicit while probe posture
+ * remains conservatively gated by host rollout evidence.
  */
 export class CliAcpHostProtocol extends AgentProtocol {
   private readonly localizeText: (english: string, chinese: string) => string;
@@ -69,8 +69,11 @@ export class CliAcpHostProtocol extends AgentProtocol {
     this.evidenceRuntime = options.acpHostEvidenceSearchRoot
       ? new CliAcpHostEvidenceRuntime(options.acpHostEvidenceSearchRoot)
       : null;
-    const transportClientRuntime = new CliAcpTransportClientRuntime();
     const sessionRuntime = new CliAcpSessionRuntime();
+    const transportClientRuntime = new CliAcpTransportClientRuntime({
+      forgetInvocationState: (invocationState) =>
+        sessionRuntime.forgetInvocationState(invocationState),
+    });
     this.capabilityDiscoveryRuntime = new CliAcpCapabilityDiscoveryRuntime(this.evidenceRuntime);
     this.promptTurnRuntime = new CliAcpPromptTurnRuntime({
       surfaceId: this.options.surfaceId,
@@ -81,6 +84,7 @@ export class CliAcpHostProtocol extends AgentProtocol {
     this.hostOperationRuntime = new CliAcpHostOperationRuntime({
       surfaceId: this.options.surfaceId,
       localizeText: this.localizeText,
+      sessionRuntime,
       transportClientRuntime,
     });
   }
@@ -112,8 +116,8 @@ export class CliAcpHostProtocol extends AgentProtocol {
           supportsFlowTimeoutSignal: false,
         },
         cancellation: {
-          supportsCancel: false,
-          supportsReasonPropagation: false,
+          supportsCancel: true,
+          supportsReasonPropagation: true,
           supportsAbortSignal: false,
         },
         contextWindow: {
@@ -132,7 +136,7 @@ export class CliAcpHostProtocol extends AgentProtocol {
         unavailableReasons: availabilityResolution.unavailableReasons,
         diagnostics: availabilityResolution.diagnostics,
         transportKind: AdapterTransportKind.ACP_EXEC,
-        requestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+        requestCancellationMode: AdapterRequestCancellationMode.LOCAL_ABORT_ONLY,
       }),
     };
   }

@@ -1,9 +1,65 @@
 # checklist
 
-- [ ] TK-992 implement executable acp_exec invoke prompt and cancel baseline
+- [x] TK-992 implement executable acp_exec invoke prompt and cancel baseline
   - 2026-04-20：任务创建，状态初始化为 `planned`。
   - 2026-04-20：由于 `sprint-001-contract-and-runtime-decomposition` 已完成 delegated CR loop 并完成 activation handoff，当前任务切换为 `in_progress`；本窗口开始推进真实 `acp_exec` invoke prompt / cancel baseline，并明确禁止 `cli_exec` aliasing 与双执行。
-- [ ] TK-993 land shared invocation store and stream attachment semantics
+  - 2026-04-20：实现 `CliAcpTransportClientRuntime` 的 fixture-backed `session/new -> session/prompt -> session/cancel` 主链路，`CliAcpPromptTurnRuntime` 改为向 transport owner 传递真实 request，`CliAcpHostOperationRuntime` 则通过 `CliAcpSessionRuntime.findInvocationState()` 回查共享 invocation 并执行 transport-scoped cancel。
+  - 2026-04-20：补齐 `apps/cli/test/runtime/cli-acp-prompt-turn-runtime.test.ts` 与 routing/runtime 定向回归，验证 invoke self-sufficient、stream attach、cancel rejection 与无 `cli_exec` aliasing 的 ACP baseline。
+- [x] TK-993 land shared invocation store and stream attachment semantics
   - 2026-04-20：任务创建，状态初始化为 `planned`。
-- [ ] TK-994 verify fixture-backed acp contract baseline and sprint-002 handoff
+  - 2026-04-20：将 `invokeStage` / `streamEvents` 的共享 turn ownership 固化到 transport-scoped execution map，确保 invoke-first 与 stream-first 两种顺序都只启动一次 ACP prompt-turn execution。
+  - 2026-04-20：修正 `apps/cli/test/runtime/cli-acp-session-runtime.test.ts` 的 event shape 漂移，并新增 `cli-acp-prompt-turn-runtime.test.ts` 覆盖 shared execution、buffer replay 与无双执行约束。
+- [x] TK-994 verify fixture-backed acp contract baseline and sprint-002 handoff
   - 2026-04-20：任务创建，状态初始化为 `planned`。
+  - 2026-04-20：完成 sprint-002 定向验证集、根级 TS 编译、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`，确认 ACP fixture-backed invoke/stream/cancel baseline 没有击穿 session-main、onboarding 或 adapter-sdk smoke 边界。
+  - 2026-04-20：为 sprint-003 记录 handoff truth：`requestConfirmation` 仍保持 fail-closed，probe 侧仍由 host readiness evidence 保守门控，下一 sprint 需要补齐 permission bridge、terminal/filesystem capability gating 与 cleanup-safe cancel hardening。
+- [x] CR-001 sprint-002-executable-acp-exec-baseline delegated review loop round 1
+  - 2026-04-20：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-20：fresh reviewer round `working-tree-20260420-1333` 返回 3 条 actionable findings：failed ACP execution retry 被 stale cache 污染、ACP probe cancellation truth 仍声明 `not_supported`、新增 ACP lifecycle strings 未统一走 `localizeText(...)` i18n bridge。
+  - 2026-04-20：主 agent 复核后接受上述 3 条 findings，并将当前轮次推进到 `verified`；修复范围固定为 transport retry reset、probe cancellation truth 对齐，以及 ACP lifecycle 文案 i18n 化。
+  - 2026-04-20：已修复 transport retry reset、probe cancellation truth 与 ACP lifecycle i18n，并重跑 targeted vitest、root `tsc --noEmit`、sprint-002 baseline vitest、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 全部通过，当前轮次推进为 `resolved`。
+  - 2026-04-20：下一步需要再发起一轮 fresh post-fix delegated review，确认 sprint-002 working tree 已无新的 actionable findings，随后才能进入 boundary gate 与 sprint-003 activation。
+- [x] CR-002 sprint-002-executable-acp-exec-baseline delegated recheck loop round 2
+  - 2026-04-20：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-20：fresh reviewer round `working-tree-20260420-1418` 返回 1 条 actionable finding：successful ACP execution 在 shared protocol cache 中缺少 success-path cleanup，长会话下会持续累积 completed execution state。
+  - 2026-04-20：主 agent 复核后接受该 finding，并将当前轮次推进到 `verified`；修复方向固定为 success-path active cache eviction、completed replay fallback 与 bounded retention compaction。
+  - 2026-04-20：已完成 success-path cleanup 修复，并重跑 sprint-002 baseline vitest（96 tests）、root `tsc --noEmit`、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`（1193 tests）全部通过，当前轮次推进为 `resolved`。
+  - 2026-04-20：下一步继续 bootstrap 一轮 fresh delegated review，直到 reviewer 明确返回“no actionable findings”，随后再执行 sprint-002 boundary gate 与提交。
+- [x] CR-003 sprint-002-executable-acp-exec-baseline delegated recheck loop round 3
+  - 2026-04-20：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-20：fresh reviewer round `working-tree-20260420-1434` 返回 1 条 P1 finding：stream-first completed ACP turn 在 success-path cache eviction 后不会保留 `resultPromise`，后续 `invokeStage()` 会再次启动同 key execution。
+  - 2026-04-20：主 agent 复核后接受该 P1 finding，并将当前轮次推进到 `verified`；修复方向固定为 stream-owned completed result promise persistence 与 stream-first regression coverage。
+  - 2026-04-20：accepted 1 reviewer finding 并完成 stream-first ACP completed replay 修复；已重跑 sprint-002 baseline vitest（97 tests）、root `tsc --noEmit`、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`（1194 tests）全部通过，当前轮次推进为 `resolved`。
+  - 2026-04-20：下一步继续 bootstrap 一轮 fresh delegated review，直到 reviewer 明确返回“no actionable findings”，随后再执行 sprint-002 boundary gate 与提交。
+- [x] CR-004 sprint-002-executable-acp-exec-baseline delegated recheck loop round 4
+  - 2026-04-20：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-20：fresh reviewer round `working-tree-20260420-1452` 返回 2 条 actionable findings：`[P1]` stream-first retry 会回放 stale failed terminal 并短路重试；`[P2]` completed retention compaction 只压缩 payload，不会驱逐 session-owned invocation key。
+  - 2026-04-20：主 agent 复核后接受上述 2 条 findings，并将当前轮次推进到 `verified`；修复方向固定为 stream-path failed retry fresh-attach 语义、session-owned retention eviction 与 `>32` turn regression coverage。
+  - 2026-04-20：accepted 2 reviewer findings 并完成 stream-first retry / retention eviction 修复；已重跑 sprint-002 baseline vitest（99 tests）、root `tsc --noEmit`、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`（1196 tests）全部通过，当前轮次推进为 `resolved`。
+  - 2026-04-20：下一步继续 bootstrap 一轮 fresh delegated review，直到 reviewer 明确返回“no actionable findings”，随后再执行 sprint-002 boundary gate 与提交。
+- [x] CR-005 sprint-002-executable-acp-exec-baseline delegated recheck loop round 5
+  - 2026-04-20：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-20：fresh reviewer round `working-tree-20260420-1513` 返回 2 条 actionable findings：`[P2]` cancel ACK 早于同 key execution/state teardown，立即重试存在绑定旧 execution 的 race；`[P3]` `LOCAL_ABORT_ONLY` truth 比当前 stage-only cancel lookup 更宽。
+  - 2026-04-20：主 agent 复核后接受上述 2 条 findings，并将当前轮次推进到 `verified`；修复方向固定为 cancel ACK 生命周期解绑、对象身份保护的 teardown safety，以及 process/execution-local cancel lookup + ambiguity boundary coverage。
+  - 2026-04-20：accepted 2 reviewer findings 并完成 cancel ACK lifecycle / process-local cancel lookup 修复；已重跑 sprint-002 baseline vitest（102 tests）、root `tsc --noEmit`、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`（1199 tests）全部通过，当前轮次推进为 `resolved`。
+  - 2026-04-20：下一步继续 bootstrap 一轮 fresh delegated review，直到 reviewer 明确返回“no actionable findings”，随后再执行 sprint-002 boundary gate 与提交。
+- [x] CR-006 sprint-002-executable-acp-exec-baseline delegated recheck loop round 6
+  - 2026-04-20：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-20：fresh reviewer round `working-tree-20260420-1531` 返回 1 条 actionable finding：process/execution-local cancel lookup 会被 retained completed turn 污染，导致“唯一 live stage + completed history”场景下取消失败。
+  - 2026-04-20：主 agent 复核后接受该 finding；修复方向固定为 unscoped cancel lookup 仅在 live/cancellable candidate 上做唯一性判定，并补 retained completed + unique live invocation regression coverage。
+  - 2026-04-20：accepted 1 reviewer finding 并完成 retained completed / unscoped cancel lookup 修复；已重跑 sprint-002 baseline vitest（103 tests）、root `tsc --noEmit`、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`（1200 tests）全部通过，当前轮次推进为 `resolved`。
+  - 2026-04-20：下一步继续 bootstrap 一轮 fresh delegated review，直到 reviewer 明确返回“no actionable findings”，随后再执行 sprint-002 boundary gate 与提交。
+- [x] CR-007 sprint-002-executable-acp-exec-baseline delegated recheck loop round 7
+  - 2026-04-20：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-20：fresh reviewer round `working-tree-20260420-1544` 返回 2 条 actionable findings：`acp_exec` relay 在 dispatch 前提前绑定 primary surface；cancel ACK 会过早忘掉 invocation state，导致晚到的同键 `streamEvents()` 变成隐式 retry。
+  - 2026-04-20：主 agent 复核后接受两条 finding；修复方向固定为“ACP relay 等待真实 `selectedSurface` 后再 attach/replay”以及“cancel 后保留 failed terminal 供 replay-only，显式 invoke 才启动 fresh retry，并让 unscoped cancel lookup 忽略 retained failed terminal”。
+  - 2026-04-20：accepted 2 reviewer findings 并完成对应修复；已重跑 sprint-002 baseline vitest（105 tests）、root `tsc --noEmit`、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`（1202 tests）全部通过，当前轮次推进为 `resolved`。
+  - 2026-04-20：下一步继续 bootstrap 一轮 fresh delegated review，直到 reviewer 明确返回“no actionable findings”，随后再执行 sprint-002 boundary gate 与提交。
+- [x] CR-008 sprint-002-executable-acp-exec-baseline delegated recheck loop round 8
+  - 2026-04-20：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-20：fresh delegated reviewer `Goodall` 返回 `No actionable findings.`，仅记录一个非阻塞 residual testing gap：当前 scoped tests 已覆盖 direct-answer ACP fallback 与 cancel/retry semantics，但 role-delegate fallback relay 与非 cancellation `FAILED` terminal replay 尚无等价强度覆盖。
+  - 2026-04-20：主 agent 复核后确认当前轮次没有 blocker；复用当前窗口绿色验证证据，将本轮直接推进为 `resolved`，随后进入 sprint-002 closeout / boundary gate。
+- [x] TK-1019 close sprint-002 and activate sprint-003
+  - 2026-04-20：任务创建并切换为 `in_progress`，用于承接 sprint-002 reviewer-clean 之后的 closeout、boundary gate 与 sprint-003 activation truth 切换。
+  - 2026-04-20：`CR-008` fresh delegated review 返回 `No actionable findings.` 后，project plan、sprint-002 / sprint-003 plans、`current-context.md` 与 completed stream history 已同步到 closeout / activation truth：sprint-002 completed、sprint-003 active。
+  - 2026-04-20：当前任务切换为 `completed`；下一步仅保留 boundary gate（`pnpm run check`）、ledger sync 与 sprint-002 boundary local commit 作为同窗口交付动作。

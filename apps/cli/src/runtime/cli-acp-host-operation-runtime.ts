@@ -6,6 +6,7 @@ import type {
 } from '@repo-ai-governor/adapter-sdk';
 import { AgentCancellationReason, AgentCancellationScope } from '@repo-ai-governor/adapter-sdk';
 import type { AdapterSurface } from '@repo-ai-governor/shared';
+import type { CliAcpSessionRuntime } from './cli-acp-session-runtime.js';
 import type { CliAcpTransportClientRuntime } from './cli-acp-transport-client-runtime.js';
 
 /**
@@ -16,6 +17,7 @@ export class CliAcpHostOperationRuntime {
     private readonly options: {
       surfaceId: AdapterSurface;
       localizeText: (english: string, chinese: string) => string;
+      sessionRuntime: CliAcpSessionRuntime;
       transportClientRuntime: CliAcpTransportClientRuntime;
     },
   ) {}
@@ -35,16 +37,23 @@ export class CliAcpHostOperationRuntime {
   }
 
   /**
-   * Returns the current fail-closed cancellation acknowledgement for ACP host operations.
+   * Cancels one active shared ACP prompt turn when the request resolves to a live invocation.
    * @param request Cancellation payload.
    * @returns Cancellation acknowledgement payload.
    */
   public async cancel(request: AgentCancelRequest): Promise<AgentCancelResult> {
-    return {
-      acknowledged: false,
-      scope: request.scope ?? AgentCancellationScope.AGENT,
-      reason: request.reason ?? AgentCancellationReason.SYSTEM_GUARD,
-      cancelledAt: new Date().toISOString(),
-    };
+    return await this.options.transportClientRuntime.cancelPromptTurn({
+      surfaceId: this.options.surfaceId,
+      request: {
+        ...request,
+        scope: request.scope ?? AgentCancellationScope.AGENT,
+        reason: request.reason ?? AgentCancellationReason.SYSTEM_GUARD,
+      },
+      invocationState: this.options.sessionRuntime.findInvocationState(
+        this.options.surfaceId,
+        request,
+      ),
+      localizeText: this.options.localizeText,
+    });
   }
 }

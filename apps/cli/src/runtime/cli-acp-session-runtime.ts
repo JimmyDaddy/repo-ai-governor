@@ -1,4 +1,5 @@
 import type {
+  AgentCancelRequest,
   AgentInvokeStageRequest,
   AgentStreamEventsRequest,
 } from '@repo-ai-governor/adapter-sdk';
@@ -46,5 +47,34 @@ export class CliAcpSessionRuntime {
     return this.executionStateStore.ensureInvocationState(
       this.createInvocationContext(surfaceId, request),
     );
+  }
+
+  /**
+   * Returns the existing ACP execution state for one cancellation request when the request can be
+   * resolved back to a concrete invocation key or one unambiguous process/execution-local match.
+   * @param surfaceId Selected ACP surface id.
+   * @param request Cancellation payload.
+   * @returns Existing transport-scoped execution state when the current request maps to a turn.
+   */
+  public findInvocationState(
+    surfaceId: AdapterSurface,
+    request: AgentCancelRequest,
+  ): CliAcpInvocationExecutionState | undefined {
+    return this.executionStateStore.findInvocationState({
+      surfaceId,
+      processId: request.processId,
+      executionId: request.executionId,
+      stageId: request.stageId,
+      routeKey: request.routeKey,
+    });
+  }
+
+  /**
+   * Forgets one transport-scoped ACP execution state after retention or lifecycle cleanup.
+   * @param invocationState Shared ACP execution state to forget when it is still current.
+   * @returns Nothing.
+   */
+  public forgetInvocationState(invocationState: CliAcpInvocationExecutionState): void {
+    this.executionStateStore.forgetInvocationState(invocationState);
   }
 }

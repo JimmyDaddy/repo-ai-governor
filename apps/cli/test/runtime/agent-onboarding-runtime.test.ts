@@ -406,7 +406,7 @@ describe('CliAgentOnboardingRuntime', () => {
             routeKey: 'cli.adapter.probe.codex',
             unavailableReasons: ['health_check_failed:codex:acp_host_transport_not_ready'],
             transportKind: AdapterTransportKind.ACP_EXEC,
-            requestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+            requestCancellationMode: AdapterRequestCancellationMode.LOCAL_ABORT_ONLY,
           }),
           capabilitySupportByCapability: new Map(),
           failureAttributions: ['environment_precondition'],
@@ -460,6 +460,10 @@ describe('CliAgentOnboardingRuntime', () => {
           distributionBoundary: CliAcpHostDistributionBoundary.PACKAGED_DISTRIBUTION_PENDING,
           companionStateSummary: 'runtime_service_enablement_pending',
         },
+        invoke_liveness_diagnostics: expect.objectContaining({
+          transport_kind: AdapterTransportKind.ACP_EXEC,
+          request_cancellation_mode: AdapterRequestCancellationMode.LOCAL_ABORT_ONLY,
+        }),
       }),
     ]);
     expect(onboardingPayload.enabled_tools).toEqual([
@@ -495,7 +499,7 @@ describe('CliAgentOnboardingRuntime', () => {
       routeKey: 'cli.adapter.probe.codex',
       unavailableReasons: ['health_check_failed:codex:acp_host_transport_not_ready'],
       transportKind: AdapterTransportKind.ACP_EXEC,
-      requestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+      requestCancellationMode: AdapterRequestCancellationMode.LOCAL_ABORT_ONLY,
       diagnostics: [
         {
           layer: 'protocol',
@@ -589,6 +593,14 @@ describe('CliAgentOnboardingRuntime', () => {
         },
       }),
     ]);
+    expect(verifyPayload.tool_transport_matrix).toEqual([
+      expect.objectContaining({
+        tool_id: AdapterSurface.CODEX,
+        invoke_liveness_diagnostics: expect.objectContaining({
+          request_cancellation_mode: AdapterRequestCancellationMode.LOCAL_ABORT_ONLY,
+        }),
+      }),
+    ]);
     expect(verifyPayload.role_binding_matrix).toEqual([
       expect.objectContaining({
         primary_tool: AdapterSurface.CODEX,
@@ -620,7 +632,7 @@ describe('CliAgentOnboardingRuntime', () => {
       routeKey: 'cli.adapter.probe.codex',
       unavailableReasons: ['health_check_failed:codex:acp_host_transport_not_ready'],
       transportKind: AdapterTransportKind.ACP_EXEC,
-      requestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+      requestCancellationMode: AdapterRequestCancellationMode.LOCAL_ABORT_ONLY,
       diagnostics: [
         {
           layer: 'protocol',

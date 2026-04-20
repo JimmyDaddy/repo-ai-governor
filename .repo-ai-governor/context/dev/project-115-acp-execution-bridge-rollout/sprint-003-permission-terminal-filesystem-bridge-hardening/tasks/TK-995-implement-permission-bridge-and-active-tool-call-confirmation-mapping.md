@@ -1,6 +1,6 @@
 # TK-995 implement permission bridge and active tool-call confirmation mapping
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-04-20
 - Owner: AI-Agent
 - Priority: P1
@@ -52,6 +52,7 @@
 ## 9. 执行记录
 
 1. 2026-04-20：任务创建，状态初始化为 `planned`。
+2. 2026-04-20：`CR-008` 确认 sprint-002 reviewer-clean 后，本任务切换为 `in_progress`，作为 sprint-003-permission-terminal-filesystem-bridge-hardening 的首个 active execution surface。
 
 ## 10. 产出
 

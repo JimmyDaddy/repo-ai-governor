@@ -24,7 +24,7 @@ export class CliAcpPromptTurnRuntime {
   /**
    * Executes one self-sufficient ACP invokeStage path for the selected surface.
    * @param request Stage invocation payload.
-   * @returns Invoke result payload once the ACP bridge is implemented.
+   * @returns Invoke result payload from the shared ACP transport execution.
    */
   public async invokeStage(request: AgentInvokeStageRequest): Promise<AgentInvokeStageResult> {
     const invocationState = this.options.sessionRuntime.ensureInvocationState(
@@ -33,6 +33,7 @@ export class CliAcpPromptTurnRuntime {
     );
     return await this.options.transportClientRuntime.invokePromptTurn({
       surfaceId: this.options.surfaceId,
+      request,
       invocationState,
       localizeText: this.options.localizeText,
     });
@@ -50,6 +51,7 @@ export class CliAcpPromptTurnRuntime {
     );
     yield* this.options.transportClientRuntime.streamPromptTurn({
       surfaceId: this.options.surfaceId,
+      request,
       invocationState,
       localizeText: this.options.localizeText,
     });
