@@ -9,6 +9,7 @@ import {
   OrchestrationBootstrapReadinessActionId,
   OrchestrationWorkspaceOperationKind,
 } from '@repo-ai-governor/orchestration-service-client';
+import { GovernorErrorCode } from '@repo-ai-governor/shared';
 import { LocalOrchestrationServiceWorkspaceOpsRuntime } from '../src/local-orchestration-service-workspace-ops-runtime.js';
 
 type WorkspaceOpsDependencies = ConstructorParameters<
@@ -226,6 +227,300 @@ describe('LocalOrchestrationServiceWorkspaceOpsRuntime', () => {
       currentWorkingDirectory: '/repo',
       stdin: 'sk-managed-secret',
       locale: 'zh-CN',
+    });
+  });
+
+  it('projects provider-onboarding snapshot and apply through the managed secret and config seams', async () => {
+    const cliExecutor = vi.fn<WorkspaceOpsCliExecutor>(async (request) => {
+      if (request.args[0] === 'config' && request.args[1] === 'status') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              config_path: '/repo/.repo-ai-governor/user-config.yaml',
+              config_exists: true,
+              legacy_preference_path: '/repo/.repo-ai-governor/cli-preferences.yaml',
+              legacy_preference_exists: false,
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'config' && request.args[1] === 'list') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              entries:
+                'tools.codex.remoteApi.provider=openai | tools.codex.remoteApi.model=gpt-5.4 | tools.codex.remoteApi.credentialRef=secret://openai/api-key',
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'secret' && request.args[1] === 'status') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              selected_backend: 'os-keychain',
+              default_backend: 'os-keychain',
+              index_path: '/repo/.repo-ai-governor/secret-index.json',
+            }),
+            checks: [
+              {
+                id: 'secret_backend_os-keychain',
+                status: 'pass',
+                detail: 'Ready',
+              },
+            ],
+          },
+        };
+      }
+
+      if (request.args[0] === 'secret' && request.args[1] === 'list') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              records: 'openai/api-key@os-keychain:present',
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'secret' && request.args[1] === 'set') {
+        return {
+          message: 'secret updated',
+          command_result: {
+            details: createCliDetailsRecord({
+              selector: 'secret://openai/api-key',
+              backend: 'os-keychain',
+            }),
+          },
+        };
+      }
+
+      return {
+        message: 'config updated',
+        command_result: {
+          details: createCliDetailsRecord({
+            value: request.args[3],
+          }),
+        },
+      };
+    });
+    const runtime = new LocalOrchestrationServiceWorkspaceOpsRuntime({
+      workspaceRoot: '/repo/.repo-ai-governor',
+      repositoryRoot: '/repo',
+      workspaceResolver: createWorkspaceResolver(),
+      pathExists: () => false,
+      cliExecutor,
+    });
+
+    await expect(
+      runtime.queryProviderOnboarding({
+        tool: 'codex' as never,
+        entrypointKind: 'quick_pick_form',
+      }),
+    ).resolves.toMatchObject({
+      tool: 'codex',
+      provider: 'openai',
+      transport: 'remote_api',
+      credentialRef: 'secret://openai/api-key',
+      selectedBackendId: 'os-keychain',
+    });
+    await expect(
+      runtime.applyProviderOnboarding({
+        tool: 'codex' as never,
+        entrypointKind: 'quick_pick_form',
+        model: 'gpt-5.5',
+        apiKey: 'sk-live',
+      }),
+    ).resolves.toMatchObject({
+      tool: 'codex',
+      provider: 'openai',
+      secretBackend: 'os-keychain',
+      nextAction: 'repoAiGovernor.runConnect',
+    });
+    expect(cliExecutor).toHaveBeenCalledWith({
+      args: ['secret', 'set', 'openai/api-key', '--backend', 'os-keychain', '--stdin'],
+      currentWorkingDirectory: '/repo',
+      stdin: 'sk-live',
+      locale: undefined,
+    });
+    expect(cliExecutor).toHaveBeenCalledWith({
+      args: ['config', 'set', 'tools.codex.transport', 'remote_api'],
+      currentWorkingDirectory: '/repo',
+      locale: undefined,
+    });
+  });
+
+  it('fails closed when the selected backend is no longer writable even if another backend is available', async () => {
+    const cliExecutor = vi.fn<WorkspaceOpsCliExecutor>(async (request) => {
+      if (request.args[0] === 'config' && request.args[1] === 'status') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              config_path: '/repo/.repo-ai-governor/user-config.yaml',
+              config_exists: true,
+              legacy_preference_path: '/repo/.repo-ai-governor/cli-preferences.yaml',
+              legacy_preference_exists: false,
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'config' && request.args[1] === 'list') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              entries:
+                'tools.codex.remoteApi.provider=openai | tools.codex.remoteApi.model=gpt-5.4 | tools.codex.remoteApi.credentialRef=secret://openai/api-key',
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'secret' && request.args[1] === 'status') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              selected_backend: 'unsafe-local-file',
+              default_backend: 'os-keychain',
+              index_path: '/repo/.repo-ai-governor/secret-index.json',
+            }),
+            checks: [
+              {
+                id: 'secret_backend_unsafe-local-file',
+                status: 'fail',
+                detail: 'disabled',
+              },
+              {
+                id: 'secret_backend_os-keychain',
+                status: 'pass',
+                detail: 'Ready',
+              },
+            ],
+          },
+        };
+      }
+
+      if (request.args[0] === 'secret' && request.args[1] === 'list') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              records: 'openai/api-key@os-keychain:present',
+            }),
+          },
+        };
+      }
+
+      return {
+        message: 'unexpected mutation',
+        command_result: {
+          details: createCliDetailsRecord({}),
+        },
+      };
+    });
+    const runtime = new LocalOrchestrationServiceWorkspaceOpsRuntime({
+      workspaceRoot: '/repo/.repo-ai-governor',
+      repositoryRoot: '/repo',
+      workspaceResolver: createWorkspaceResolver(),
+      pathExists: () => false,
+      cliExecutor,
+    });
+
+    await expect(
+      runtime.applyProviderOnboarding({
+        tool: 'codex' as never,
+        entrypointKind: 'quick_pick_form',
+        model: 'gpt-5.5',
+        apiKey: 'sk-live',
+      }),
+    ).rejects.toMatchObject({
+      code: GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+      message: 'Selected secret backend unsafe-local-file is not writable for provider onboarding.',
+    });
+
+    expect(cliExecutor).toHaveBeenCalledTimes(4);
+  });
+
+  it('fails closed when provider onboarding receives an unsupported tool/provider pairing', async () => {
+    const cliExecutor = vi.fn<WorkspaceOpsCliExecutor>(async (request) => {
+      if (request.args[0] === 'config' && request.args[1] === 'status') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              config_path: '/repo/.repo-ai-governor/user-config.yaml',
+              config_exists: true,
+              legacy_preference_path: '/repo/.repo-ai-governor/cli-preferences.yaml',
+              legacy_preference_exists: false,
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'config' && request.args[1] === 'list') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              entries: '',
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'secret' && request.args[1] === 'status') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              selected_backend: 'os-keychain',
+              default_backend: 'os-keychain',
+              index_path: '/repo/.repo-ai-governor/secret-index.json',
+            }),
+            checks: [
+              {
+                id: 'secret_backend_os-keychain',
+                status: 'pass',
+                detail: 'Ready',
+              },
+            ],
+          },
+        };
+      }
+
+      return {
+        command_result: {
+          details: createCliDetailsRecord({
+            records: '',
+          }),
+        },
+      };
+    });
+    const runtime = new LocalOrchestrationServiceWorkspaceOpsRuntime({
+      workspaceRoot: '/repo/.repo-ai-governor',
+      repositoryRoot: '/repo',
+      workspaceResolver: createWorkspaceResolver(),
+      pathExists: () => false,
+      cliExecutor,
+    });
+
+    await expect(
+      runtime.queryProviderOnboarding({
+        tool: 'codex' as never,
+        entrypointKind: 'quick_pick_form',
+        provider: 'anthropic' as never,
+      }),
+    ).rejects.toMatchObject({
+      code: GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+      message: 'Provider onboarding only supports provider openai for tool codex.',
+    });
+    await expect(
+      runtime.queryProviderOnboarding({
+        tool: 'claude-code' as never,
+        entrypointKind: 'quick_pick_form',
+        provider: 'openai' as never,
+      }),
+    ).rejects.toMatchObject({
+      code: GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+      message: 'Provider onboarding only supports provider anthropic for tool claude-code.',
     });
   });
 

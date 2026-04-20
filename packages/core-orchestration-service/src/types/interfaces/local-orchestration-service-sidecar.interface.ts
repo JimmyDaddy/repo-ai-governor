@@ -4,6 +4,8 @@ import type { LangGraphRecoveredExecution } from '@repo-ai-governor/core-runtime
 import type {
   OrchestrationAppendSessionMessageRequest,
   OrchestrationAppendSessionMessageResponse,
+  OrchestrationApplyProviderOnboardingRequest,
+  OrchestrationApplyProviderOnboardingResponse,
   OrchestrationArchiveSessionRequest,
   OrchestrationArchiveSessionResponse,
   OrchestrationArtifactPaneQueryRequest,
@@ -20,6 +22,8 @@ import type {
   OrchestrationListExecutionsResponse,
   OrchestrationListSessionsRequest,
   OrchestrationListSessionsResponse,
+  OrchestrationProviderOnboardingSnapshot,
+  OrchestrationProviderOnboardingSnapshotRequest,
   OrchestrationQueueOverviewQueryRequest,
   OrchestrationQueueOverviewQueryResponse,
   OrchestrationRecoverExecutionRequest,
@@ -96,12 +100,18 @@ export interface LocalOrchestrationServiceSidecarDispatchTable {
   querySecureAuthoring(
     request?: OrchestrationSecureAuthoringQueryRequest,
   ): Promise<OrchestrationSecureAuthoringSnapshot>;
+  queryProviderOnboarding(
+    request: OrchestrationProviderOnboardingSnapshotRequest,
+  ): Promise<OrchestrationProviderOnboardingSnapshot>;
   setUserConfigValue(
     request: OrchestrationSetUserConfigValueRequest,
   ): Promise<OrchestrationSetUserConfigValueResponse>;
   setManagedSecret(
     request: OrchestrationSetManagedSecretRequest,
   ): Promise<OrchestrationSetManagedSecretResponse>;
+  applyProviderOnboarding(
+    request: OrchestrationApplyProviderOnboardingRequest,
+  ): Promise<OrchestrationApplyProviderOnboardingResponse>;
   runWorkspaceOperation(
     request: OrchestrationWorkspaceOperationRequest,
   ): Promise<OrchestrationWorkspaceOperationResponse>;

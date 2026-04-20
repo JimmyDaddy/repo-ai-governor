@@ -122,6 +122,39 @@ export const VSCODE_EXTENSION_TOOL_USER_DEFAULT_KEY_SUFFIXES = [
   'remoteApi.credentialRef',
   'remoteApi.endpoint',
 ] as const;
+export const VSCODE_EXTENSION_PROVIDER_ONBOARDING_SURFACE_ID = 'vscode_provider_onboarding';
+export const VSCODE_EXTENSION_PROVIDER_ONBOARDING_ENTRYPOINT_KINDS = {
+  OVERVIEW_CTA: 'overview_cta',
+  COMMAND_PALETTE: 'command_palette',
+  CHAT_COMMAND: 'chat_command',
+  QUICK_PICK_FORM: 'quick_pick_form',
+} as const;
+export const VSCODE_EXTENSION_PROVIDER_ONBOARDING_MUTATION_MODE =
+  'explicit_provider_onboarding_command';
+export const VSCODE_EXTENSION_PROVIDER_ONBOARDING_SECRET_CAPTURE_MODE = 'host_secure_prompt';
+export const VSCODE_EXTENSION_PROVIDER_ONBOARDING_SECRET_OWNER = 'governor_managed_secret_backend';
+export const VSCODE_EXTENSION_PROVIDER_ONBOARDING_CREDENTIAL_REF_STRATEGY =
+  'provider_default_api_key';
+export const VSCODE_EXTENSION_PROVIDER_ONBOARDING_READINESS_PROJECTION_SOURCES = {
+  SNAPSHOT: 'provider_onboarding_snapshot',
+  AGENT_ONBOARDING_SUMMARY: 'agent_onboarding_summary',
+} as const;
+export const VSCODE_EXTENSION_PROVIDER_ONBOARDING_CONFIG_TARGET_SUFFIXES = [
+  'transport',
+  'remoteApi.provider',
+  'remoteApi.vendorBinding',
+  'remoteApi.model',
+  'remoteApi.endpoint',
+  'remoteApi.credentialRef',
+] as const;
+export const VSCODE_EXTENSION_PROVIDER_ONBOARDING_RECEIPT_FIELDS = [
+  'tool',
+  'provider',
+  'credentialRef',
+  'secretBackend',
+  'warnings',
+  'nextAction',
+] as const;
 export const VSCODE_EXTENSION_SECRET_SELECTOR_PREFIX = 'secret://';
 export const VSCODE_EXTENSION_UPGRADE_CONFIRMATION_APPROVE = 'approve';
 export const VSCODE_EXTENSION_TRUST_GATED_COMMAND_IDS = [

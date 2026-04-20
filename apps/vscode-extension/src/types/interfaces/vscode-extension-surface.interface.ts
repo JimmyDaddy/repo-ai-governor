@@ -12,6 +12,16 @@ import type {
   OrchestrationServiceTransportKind,
   OrchestrationWorkspaceOperationKind,
 } from '@repo-ai-governor/orchestration-service-client';
+import type {
+  AdapterProviderKind,
+  AdapterSurface,
+  AdapterTransportKind,
+  AdapterVendorBindingKind,
+} from '@repo-ai-governor/shared';
+import type {
+  VSCODE_EXTENSION_PROVIDER_ONBOARDING_ENTRYPOINT_KINDS,
+  VSCODE_EXTENSION_PROVIDER_ONBOARDING_READINESS_PROJECTION_SOURCES,
+} from '../../constants/index.js';
 
 export interface VsCodeExtensionTreeNodeCommandDescriptor {
   command: string;
@@ -83,6 +93,71 @@ export interface VsCodeExtensionSecureAuthoringSnapshot {
   userConfig?: VsCodeExtensionUserConfigStatusSnapshot;
   secretReadiness?: VsCodeExtensionSecretReadinessSnapshot;
   degradedReason?: string;
+}
+
+export type VsCodeExtensionProviderOnboardingEntrypointKind =
+  (typeof VSCODE_EXTENSION_PROVIDER_ONBOARDING_ENTRYPOINT_KINDS)[keyof typeof VSCODE_EXTENSION_PROVIDER_ONBOARDING_ENTRYPOINT_KINDS];
+
+export type VsCodeExtensionProviderOnboardingReadinessProjectionSource =
+  (typeof VSCODE_EXTENSION_PROVIDER_ONBOARDING_READINESS_PROJECTION_SOURCES)[keyof typeof VSCODE_EXTENSION_PROVIDER_ONBOARDING_READINESS_PROJECTION_SOURCES];
+
+/**
+ * Captures the minimum service-owned provider-onboarding facts that the VS Code host may consume
+ * without taking ownership of canonical onboarding truth away from runtime.agent-projection.
+ */
+export interface VsCodeExtensionProviderOnboardingSnapshot {
+  surfaceId: string;
+  entrypointKind: VsCodeExtensionProviderOnboardingEntrypointKind;
+  mutationMode: string;
+  tool: AdapterSurface;
+  transport: AdapterTransportKind;
+  provider: AdapterProviderKind;
+  vendorBinding: AdapterVendorBindingKind;
+  secretCaptureMode: string;
+  secretOwner: string;
+  credentialRefStrategy: string;
+  readinessProjectionSource: VsCodeExtensionProviderOnboardingReadinessProjectionSource;
+  configTargets: readonly string[];
+  receiptFields: readonly string[];
+  credentialRef: string;
+  model?: string;
+  endpoint?: string;
+  selectedBackendId?: string;
+  availableBackends: readonly VsCodeExtensionSecretBackendStatusSnapshot[];
+  warnings: readonly string[];
+}
+
+/**
+ * Defines one explicit provider-onboarding apply request. Raw API keys are accepted here so the
+ * host can capture them locally and immediately hand them to the managed secret seam.
+ */
+export interface VsCodeExtensionProviderOnboardingApplyRequest {
+  tool: AdapterSurface;
+  entrypointKind: VsCodeExtensionProviderOnboardingEntrypointKind;
+  model: string;
+  apiKey: string;
+  provider?: AdapterProviderKind;
+  endpoint?: string;
+  backendId?: string;
+}
+
+/**
+ * Captures the redacted receipt returned after a provider-onboarding mutation succeeds.
+ */
+export interface VsCodeExtensionProviderOnboardingApplyReceipt {
+  surfaceId: string;
+  entrypointKind: VsCodeExtensionProviderOnboardingEntrypointKind;
+  mutationMode: string;
+  tool: AdapterSurface;
+  transport: AdapterTransportKind;
+  provider: AdapterProviderKind;
+  vendorBinding: AdapterVendorBindingKind;
+  credentialRef: string;
+  secretBackend: string;
+  configTargets: readonly string[];
+  receiptFields: readonly string[];
+  warnings: readonly string[];
+  nextAction: string;
 }
 
 export interface VsCodeExtensionWorkspaceContextSnapshot {

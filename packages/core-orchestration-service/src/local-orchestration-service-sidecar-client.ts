@@ -7,6 +7,8 @@ import type { LangGraphRecoveredExecution } from '@repo-ai-governor/core-runtime
 import type {
   OrchestrationAppendSessionMessageRequest,
   OrchestrationAppendSessionMessageResponse,
+  OrchestrationApplyProviderOnboardingRequest,
+  OrchestrationApplyProviderOnboardingResponse,
   OrchestrationArchiveSessionRequest,
   OrchestrationArchiveSessionResponse,
   OrchestrationArtifactPaneQueryRequest,
@@ -23,6 +25,8 @@ import type {
   OrchestrationListExecutionsResponse,
   OrchestrationListSessionsRequest,
   OrchestrationListSessionsResponse,
+  OrchestrationProviderOnboardingSnapshot,
+  OrchestrationProviderOnboardingSnapshotRequest,
   OrchestrationQueueOverviewQueryRequest,
   OrchestrationQueueOverviewQueryResponse,
   OrchestrationRecoverExecutionRequest,
@@ -118,6 +122,15 @@ export class LocalOrchestrationServiceSidecarClient {
     );
   }
 
+  public async queryProviderOnboarding(
+    request: OrchestrationProviderOnboardingSnapshotRequest,
+  ): Promise<OrchestrationProviderOnboardingSnapshot> {
+    return this.sendRequest<OrchestrationProviderOnboardingSnapshot>(
+      LocalOrchestrationServiceSidecarOperation.QUERY_PROVIDER_ONBOARDING,
+      request,
+    );
+  }
+
   public async setUserConfigValue(
     request: OrchestrationSetUserConfigValueRequest,
   ): Promise<OrchestrationSetUserConfigValueResponse> {
@@ -132,6 +145,15 @@ export class LocalOrchestrationServiceSidecarClient {
   ): Promise<OrchestrationSetManagedSecretResponse> {
     return this.sendRequest<OrchestrationSetManagedSecretResponse>(
       LocalOrchestrationServiceSidecarOperation.SET_MANAGED_SECRET,
+      request,
+    );
+  }
+
+  public async applyProviderOnboarding(
+    request: OrchestrationApplyProviderOnboardingRequest,
+  ): Promise<OrchestrationApplyProviderOnboardingResponse> {
+    return this.sendRequest<OrchestrationApplyProviderOnboardingResponse>(
+      LocalOrchestrationServiceSidecarOperation.APPLY_PROVIDER_ONBOARDING,
       request,
     );
   }

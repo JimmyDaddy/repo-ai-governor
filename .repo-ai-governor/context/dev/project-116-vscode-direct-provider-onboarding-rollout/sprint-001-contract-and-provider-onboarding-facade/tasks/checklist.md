@@ -1,9 +1,23 @@
 # checklist
 
-- [ ] TK-1004 freeze direct-api-key onboarding contract and owner split
+- [x] TK-1004 freeze direct-api-key onboarding contract and owner split
   - 2026-04-20：任务创建，状态初始化为 `planned`。
   - 2026-04-20：`project-115` final closeout 已完成，当前任务切换为 `in_progress`，作为 `project-116 / sprint-001-contract-and-provider-onboarding-facade` 的首个 active execution boundary。
-- [ ] TK-1005 decompose service-native provider-onboarding snapshot apply and receipt facade
+  - 2026-04-20：已冻结 owner split baseline：`query/apply provider onboarding` 进入 orchestration-service / sidecar / VS Code service seam，`runConnect` 继续保持 analyze-first + `credentialEnvVar` compatibility path，并通过 controller regression test 明确“不在 connect 流程里写 managed secret 或 `credentialRef`”。
+  - 2026-04-20：same-window verification 已通过：`apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts`、`apps/vscode-extension/test/vscode-extension-service-runtime.test.ts`、`apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts`、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 全部通过。
+- [x] TK-1005 decompose service-native provider-onboarding snapshot apply and receipt facade
   - 2026-04-20：任务创建，状态初始化为 `planned`。
-- [ ] TK-1006 prepare sprint-001 handoff and activation recommendation
+  - 2026-04-20：已完成 service seam 分解：`queryProviderOnboarding` / `applyProviderOnboarding` 新增到 orchestration-service client、sidecar dispatch、workspace-ops runtime 与 VS Code service runtime；默认 selector strategy 固定为 `secret://<provider>/api-key`，secret backend 不可写时明确 fail-closed。
+  - 2026-04-20：same-window verification 已通过：`apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts`、`apps/vscode-extension/test/vscode-extension-service-runtime.test.ts`、`apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts`、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 全部通过。
+- [x] TK-1006 prepare sprint-001 handoff and activation recommendation
   - 2026-04-20：任务创建，状态初始化为 `planned`。
+  - 2026-04-20：已完成 sprint-001 handoff：下一轮 implementation 固定消费 `query/apply provider onboarding` seam，把 controller 的 `credentialEnvVar` prompt 迁移为 secure API key capture；public CTA 命名与 support/docs truth 继续保持保守，不在 sprint-001 里抢跑。
+  - 2026-04-20：same-window verification 已通过：`apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts`、`apps/vscode-extension/test/vscode-extension-service-runtime.test.ts`、`apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts`、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 全部通过。
+- [x] CR-001 sprint-001-contract-and-provider-onboarding-facade delegated review loop round 1
+  - 2026-04-20：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-20：delegated reviewer 返回 2 条 accepted findings：selected backend 必须 fail-closed，provider/tool pairing 不得继续由 host heuristics 猜测；主 agent 已确认两条均属于 sprint-001 frozen seam 边界内必须修复项。
+  - 2026-04-20：已完成修复与 re-verify：service/embedded provider-onboarding seam 改为 selected-backend fail-closed、unsupported tool/provider pairing fail-closed，并补齐 sidecar/embedded negative regression tests 与 `transport` contract drift 修正。
+- [x] TK-1019 close sprint-001 boundary and activate sprint-002 execution surface
+  - 2026-04-20：任务创建，用于承接 sprint-001 reviewer-clean 之后的 closeout、boundary gate 与 sprint-002 activation truth 切换。
+  - 2026-04-20：`CR-001` 已 resolved；sprint-001 的 review/task truth、project plan、sprint plans、completed history 与 `current-context.md` 已统一切换到 closeout-ready / sprint-002 activation truth。
+  - 2026-04-20：`TK-1007` 已在同窗口切换为 `in_progress`，作为 sprint-002 的首个 active execution boundary；下一步只保留 sprint-001 boundary gate 与 local commit。

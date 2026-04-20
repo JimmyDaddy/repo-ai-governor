@@ -41,6 +41,7 @@ const serviceClientMock = vi.hoisted(() => ({
   queryArtifactPane: vi.fn(),
   queryBootstrapReadiness: vi.fn(),
   querySecureAuthoring: vi.fn(),
+  queryProviderOnboarding: vi.fn(),
   startSession: vi.fn(),
   sendSessionTurn: vi.fn(),
   subscribeSession: vi.fn(),
@@ -48,6 +49,7 @@ const serviceClientMock = vi.hoisted(() => ({
   resumeSession: vi.fn(),
   setUserConfigValue: vi.fn(),
   setManagedSecret: vi.fn(),
+  applyProviderOnboarding: vi.fn(),
   runWorkspaceOperation: vi.fn(),
   dispose: vi.fn(),
 }));
@@ -103,6 +105,7 @@ vi.mock('@repo-ai-governor/core-orchestration-service/sidecar-client', () => ({
     public readonly queryArtifactPane = serviceClientMock.queryArtifactPane;
     public readonly queryBootstrapReadiness = serviceClientMock.queryBootstrapReadiness;
     public readonly querySecureAuthoring = serviceClientMock.querySecureAuthoring;
+    public readonly queryProviderOnboarding = serviceClientMock.queryProviderOnboarding;
     public readonly startSession = serviceClientMock.startSession;
     public readonly sendSessionTurn = serviceClientMock.sendSessionTurn;
     public readonly subscribeSession = serviceClientMock.subscribeSession;
@@ -110,6 +113,7 @@ vi.mock('@repo-ai-governor/core-orchestration-service/sidecar-client', () => ({
     public readonly resumeSession = serviceClientMock.resumeSession;
     public readonly setUserConfigValue = serviceClientMock.setUserConfigValue;
     public readonly setManagedSecret = serviceClientMock.setManagedSecret;
+    public readonly applyProviderOnboarding = serviceClientMock.applyProviderOnboarding;
     public readonly runWorkspaceOperation = serviceClientMock.runWorkspaceOperation;
     public readonly dispose = serviceClientMock.dispose;
   },
@@ -172,6 +176,7 @@ describe('VsCodeExtensionServiceRuntime', () => {
     serviceClientMock.queryArtifactPane.mockReset();
     serviceClientMock.queryBootstrapReadiness.mockReset();
     serviceClientMock.querySecureAuthoring.mockReset();
+    serviceClientMock.queryProviderOnboarding.mockReset();
     serviceClientMock.startSession.mockReset();
     serviceClientMock.sendSessionTurn.mockReset();
     serviceClientMock.subscribeSession.mockReset();
@@ -179,6 +184,7 @@ describe('VsCodeExtensionServiceRuntime', () => {
     serviceClientMock.resumeSession.mockReset();
     serviceClientMock.setUserConfigValue.mockReset();
     serviceClientMock.setManagedSecret.mockReset();
+    serviceClientMock.applyProviderOnboarding.mockReset();
     serviceClientMock.runWorkspaceOperation.mockReset();
     serviceClientMock.dispose.mockReset();
     vscodeMock.state.trusted = true;
@@ -1066,6 +1072,44 @@ describe('VsCodeExtensionServiceRuntime', () => {
     serviceClientMock.querySecureAuthoring.mockResolvedValueOnce({
       degradedReason: '中文降级原因',
     });
+    serviceClientMock.queryProviderOnboarding.mockResolvedValueOnce({
+      surfaceId: 'vscode_provider_onboarding',
+      entrypointKind: 'quick_pick_form',
+      mutationMode: 'explicit_provider_onboarding_command',
+      tool: 'codex',
+      transport: 'remote_api',
+      provider: 'openai',
+      vendorBinding: 'openai_responses',
+      secretCaptureMode: 'host_secure_prompt',
+      secretOwner: 'governor_managed_secret_backend',
+      credentialRefStrategy: 'provider_default_api_key',
+      readinessProjectionSource: 'provider_onboarding_snapshot',
+      configTargets: [
+        'tools.codex.transport',
+        'tools.codex.remoteApi.provider',
+        'tools.codex.remoteApi.vendorBinding',
+        'tools.codex.remoteApi.model',
+        'tools.codex.remoteApi.endpoint',
+        'tools.codex.remoteApi.credentialRef',
+      ],
+      receiptFields: [
+        'tool',
+        'provider',
+        'credentialRef',
+        'secretBackend',
+        'warnings',
+        'nextAction',
+      ],
+      credentialRef: 'secret://openai/api-key',
+      availableBackends: [
+        {
+          backendId: 'os-keychain',
+          available: true,
+          detail: 'ready',
+        },
+      ],
+      warnings: [],
+    });
     serviceClientMock.setUserConfigValue.mockResolvedValueOnce({
       message: '配置已更新',
       configPath: '/Users/test/.repo-ai-governor/user-config.yaml',
@@ -1076,6 +1120,34 @@ describe('VsCodeExtensionServiceRuntime', () => {
       selector: 'secret://openai/api-key',
       backendId: 'os-keychain',
       warning: '仅限本地使用',
+    });
+    serviceClientMock.applyProviderOnboarding.mockResolvedValueOnce({
+      surfaceId: 'vscode_provider_onboarding',
+      entrypointKind: 'quick_pick_form',
+      mutationMode: 'explicit_provider_onboarding_command',
+      tool: 'codex',
+      transport: 'remote_api',
+      provider: 'openai',
+      vendorBinding: 'openai_responses',
+      credentialRef: 'secret://openai/api-key',
+      secretBackend: 'os-keychain',
+      configTargets: [
+        'tools.codex.transport',
+        'tools.codex.remoteApi.provider',
+        'tools.codex.remoteApi.vendorBinding',
+        'tools.codex.remoteApi.model',
+        'tools.codex.remoteApi.credentialRef',
+      ],
+      receiptFields: [
+        'tool',
+        'provider',
+        'credentialRef',
+        'secretBackend',
+        'warnings',
+        'nextAction',
+      ],
+      warnings: ['仅限本地使用'],
+      nextAction: 'repoAiGovernor.runConnect',
     });
 
     const runtime = new VsCodeExtensionServiceRuntime();
@@ -1098,8 +1170,89 @@ describe('VsCodeExtensionServiceRuntime', () => {
       backendId: 'os-keychain',
       warning: '仅限本地使用',
     });
+    await expect(
+      runtime.resolveProviderOnboardingSnapshot('codex' as never, 'quick_pick_form'),
+    ).resolves.toEqual({
+      surfaceId: 'vscode_provider_onboarding',
+      entrypointKind: 'quick_pick_form',
+      mutationMode: 'explicit_provider_onboarding_command',
+      tool: 'codex',
+      transport: 'remote_api',
+      provider: 'openai',
+      vendorBinding: 'openai_responses',
+      secretCaptureMode: 'host_secure_prompt',
+      secretOwner: 'governor_managed_secret_backend',
+      credentialRefStrategy: 'provider_default_api_key',
+      readinessProjectionSource: 'provider_onboarding_snapshot',
+      configTargets: [
+        'tools.codex.transport',
+        'tools.codex.remoteApi.provider',
+        'tools.codex.remoteApi.vendorBinding',
+        'tools.codex.remoteApi.model',
+        'tools.codex.remoteApi.endpoint',
+        'tools.codex.remoteApi.credentialRef',
+      ],
+      receiptFields: [
+        'tool',
+        'provider',
+        'credentialRef',
+        'secretBackend',
+        'warnings',
+        'nextAction',
+      ],
+      credentialRef: 'secret://openai/api-key',
+      availableBackends: [
+        {
+          backendId: 'os-keychain',
+          available: true,
+          detail: 'ready',
+        },
+      ],
+      warnings: [],
+    });
+    await expect(
+      runtime.applyProviderOnboarding({
+        tool: 'codex' as never,
+        entrypointKind: 'quick_pick_form',
+        provider: 'openai' as never,
+        model: 'gpt-5.4',
+        apiKey: 'sk-managed-secret',
+      }),
+    ).resolves.toEqual({
+      surfaceId: 'vscode_provider_onboarding',
+      entrypointKind: 'quick_pick_form',
+      mutationMode: 'explicit_provider_onboarding_command',
+      tool: 'codex',
+      transport: 'remote_api',
+      provider: 'openai',
+      vendorBinding: 'openai_responses',
+      credentialRef: 'secret://openai/api-key',
+      secretBackend: 'os-keychain',
+      configTargets: [
+        'tools.codex.transport',
+        'tools.codex.remoteApi.provider',
+        'tools.codex.remoteApi.vendorBinding',
+        'tools.codex.remoteApi.model',
+        'tools.codex.remoteApi.credentialRef',
+      ],
+      receiptFields: [
+        'tool',
+        'provider',
+        'credentialRef',
+        'secretBackend',
+        'warnings',
+        'nextAction',
+      ],
+      warnings: ['仅限本地使用'],
+      nextAction: 'repoAiGovernor.runConnect',
+    });
 
     expect(serviceClientMock.querySecureAuthoring).toHaveBeenCalledWith({
+      locale: 'zh-CN',
+    });
+    expect(serviceClientMock.queryProviderOnboarding).toHaveBeenCalledWith({
+      tool: 'codex',
+      entrypointKind: 'quick_pick_form',
       locale: 'zh-CN',
     });
     expect(serviceClientMock.setUserConfigValue).toHaveBeenCalledWith({
@@ -1112,6 +1265,301 @@ describe('VsCodeExtensionServiceRuntime', () => {
       value: 'sk-managed-secret',
       backendId: 'os-keychain',
       locale: 'zh-CN',
+    });
+    expect(serviceClientMock.applyProviderOnboarding).toHaveBeenCalledWith({
+      tool: 'codex',
+      entrypointKind: 'quick_pick_form',
+      provider: 'openai',
+      model: 'gpt-5.4',
+      apiKey: 'sk-managed-secret',
+      locale: 'zh-CN',
+    });
+  });
+
+  it('builds provider-onboarding snapshot and receipt through the embedded secure-authoring seam', async () => {
+    const embeddedCliExecutor = vi
+      .fn()
+      .mockResolvedValueOnce({
+        command_result: {
+          details: {
+            config_path: '/Users/test/.repo-ai-governor/user-config.yaml',
+            config_exists: true,
+            legacy_preference_path: '/Users/test/.repo-ai-governor/cli-preferences.yaml',
+            legacy_preference_exists: false,
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        command_result: {
+          details: {
+            entries:
+              'tools.codex.remoteApi.provider=openai | tools.codex.remoteApi.model=gpt-5.4 | tools.codex.remoteApi.credentialRef=secret://openai/api-key',
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        command_result: {
+          details: {
+            selected_backend: 'os-keychain',
+            default_backend: 'os-keychain',
+            index_path: '/Users/test/.repo-ai-governor/secret-index.json',
+          },
+          checks: [
+            {
+              id: 'secret_backend_os-keychain',
+              status: 'pass',
+              detail: 'Ready',
+            },
+          ],
+        },
+      })
+      .mockResolvedValueOnce({
+        command_result: {
+          details: {
+            records: 'openai/api-key@os-keychain:present',
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        message: 'secret updated',
+        command_result: {
+          details: {
+            selector: 'secret://openai/api-key',
+            backend: 'os-keychain',
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        message: 'config updated',
+        command_result: {
+          details: {
+            value: 'remote_api',
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        message: 'config updated',
+        command_result: {
+          details: {
+            value: 'openai',
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        message: 'config updated',
+        command_result: {
+          details: {
+            value: 'openai_responses',
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        message: 'config updated',
+        command_result: {
+          details: {
+            value: 'gpt-5.5',
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        message: 'config updated',
+        command_result: {
+          details: {
+            value: 'secret://openai/api-key',
+          },
+        },
+      });
+
+    const runtime = new VsCodeExtensionServiceRuntime({
+      embeddedCliExecutor,
+    });
+
+    await expect(
+      runtime.resolveProviderOnboardingSnapshot('codex' as never, 'quick_pick_form'),
+    ).resolves.toMatchObject({
+      tool: 'codex',
+      provider: 'openai',
+      transport: 'remote_api',
+      credentialRef: 'secret://openai/api-key',
+      model: 'gpt-5.4',
+      selectedBackendId: 'os-keychain',
+    });
+    await expect(
+      runtime.applyProviderOnboarding({
+        tool: 'codex' as never,
+        entrypointKind: 'quick_pick_form',
+        model: 'gpt-5.5',
+        apiKey: 'sk-live',
+      }),
+    ).resolves.toMatchObject({
+      tool: 'codex',
+      provider: 'openai',
+      secretBackend: 'os-keychain',
+      nextAction: 'repoAiGovernor.runConnect',
+    });
+    expect(embeddedCliExecutor).toHaveBeenCalledWith({
+      args: ['secret', 'set', 'openai/api-key', '--backend', 'os-keychain', '--stdin'],
+      currentWorkingDirectory: '/repo',
+      stdin: 'sk-live',
+    });
+    expect(embeddedCliExecutor).toHaveBeenCalledWith({
+      args: ['config', 'set', 'tools.codex.transport', 'remote_api'],
+      currentWorkingDirectory: '/repo',
+    });
+  });
+
+  it('fails closed in the embedded onboarding path when the selected backend is unavailable', async () => {
+    const embeddedCliExecutor = vi.fn(async (request: { args: readonly string[] }) => {
+      if (request.args[0] === 'config' && request.args[1] === 'status') {
+        return {
+          command_result: {
+            details: {
+              config_path: '/Users/test/.repo-ai-governor/user-config.yaml',
+              config_exists: true,
+              legacy_preference_path: '/Users/test/.repo-ai-governor/cli-preferences.yaml',
+              legacy_preference_exists: false,
+            },
+          },
+        };
+      }
+
+      if (request.args[0] === 'config' && request.args[1] === 'list') {
+        return {
+          command_result: {
+            details: {
+              entries:
+                'tools.codex.remoteApi.provider=openai | tools.codex.remoteApi.model=gpt-5.4 | tools.codex.remoteApi.credentialRef=secret://openai/api-key',
+            },
+          },
+        };
+      }
+
+      if (request.args[0] === 'secret' && request.args[1] === 'status') {
+        return {
+          command_result: {
+            details: {
+              selected_backend: 'unsafe-local-file',
+              default_backend: 'os-keychain',
+              index_path: '/Users/test/.repo-ai-governor/secret-index.json',
+            },
+            checks: [
+              {
+                id: 'secret_backend_unsafe-local-file',
+                status: 'fail',
+                detail: 'disabled',
+              },
+              {
+                id: 'secret_backend_os-keychain',
+                status: 'pass',
+                detail: 'Ready',
+              },
+            ],
+          },
+        };
+      }
+
+      return {
+        command_result: {
+          details: {
+            records: 'openai/api-key@os-keychain:present',
+          },
+        },
+      };
+    });
+    const runtime = new VsCodeExtensionServiceRuntime({
+      embeddedCliExecutor,
+    });
+
+    await expect(
+      runtime.applyProviderOnboarding({
+        tool: 'codex' as never,
+        entrypointKind: 'quick_pick_form',
+        model: 'gpt-5.5',
+        apiKey: 'sk-live',
+      }),
+    ).rejects.toMatchObject({
+      code: GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+      message: 'Selected secret backend unsafe-local-file is not writable for provider onboarding.',
+    });
+
+    expect(embeddedCliExecutor).toHaveBeenCalledTimes(4);
+  });
+
+  it('fails closed in the embedded onboarding path for unsupported tool/provider pairings', async () => {
+    const embeddedCliExecutor = vi.fn(async (request: { args: readonly string[] }) => {
+      if (request.args[0] === 'config' && request.args[1] === 'status') {
+        return {
+          command_result: {
+            details: {
+              config_path: '/Users/test/.repo-ai-governor/user-config.yaml',
+              config_exists: true,
+              legacy_preference_path: '/Users/test/.repo-ai-governor/cli-preferences.yaml',
+              legacy_preference_exists: false,
+            },
+          },
+        };
+      }
+
+      if (request.args[0] === 'config' && request.args[1] === 'list') {
+        return {
+          command_result: {
+            details: {
+              entries: '',
+            },
+          },
+        };
+      }
+
+      if (request.args[0] === 'secret' && request.args[1] === 'status') {
+        return {
+          command_result: {
+            details: {
+              selected_backend: 'os-keychain',
+              default_backend: 'os-keychain',
+              index_path: '/Users/test/.repo-ai-governor/secret-index.json',
+            },
+            checks: [
+              {
+                id: 'secret_backend_os-keychain',
+                status: 'pass',
+                detail: 'Ready',
+              },
+            ],
+          },
+        };
+      }
+
+      return {
+        command_result: {
+          details: {
+            records: '',
+          },
+        },
+      };
+    });
+    const runtime = new VsCodeExtensionServiceRuntime({
+      embeddedCliExecutor,
+    });
+
+    await expect(
+      runtime.resolveProviderOnboardingSnapshot(
+        'codex' as never,
+        'quick_pick_form',
+        'anthropic' as never,
+      ),
+    ).rejects.toMatchObject({
+      code: GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+      message: 'Provider onboarding only supports provider openai for tool codex.',
+    });
+    await expect(
+      runtime.resolveProviderOnboardingSnapshot(
+        'claude-code' as never,
+        'quick_pick_form',
+        'openai' as never,
+      ),
+    ).rejects.toMatchObject({
+      code: GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+      message: 'Provider onboarding only supports provider anthropic for tool claude-code.',
     });
   });
 

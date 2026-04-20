@@ -278,6 +278,7 @@ describe('VsCode extension controller/provider integration', () => {
     const setUserConfigValue = vi.fn(async () => ({
       message: 'updated',
     }));
+    const setManagedSecret = vi.fn();
     const workbenchOverviewProvider = {
       refresh: vi.fn(),
     };
@@ -288,6 +289,7 @@ describe('VsCode extension controller/provider integration', () => {
       {
         runWorkspaceOperation,
         setUserConfigValue,
+        setManagedSecret,
       } as never,
       new VsCodeExtensionSelectionStore(),
       {
@@ -327,6 +329,8 @@ describe('VsCode extension controller/provider integration', () => {
       'tools.codex.remoteApi.vendorBinding',
       'openai_responses',
     );
+    expect(setUserConfigValue).toHaveBeenCalledTimes(2);
+    expect(setManagedSecret).not.toHaveBeenCalled();
     expect(workbenchOverviewProvider.refresh).toHaveBeenCalled();
     expect(reviewDetailProvider.refresh).toHaveBeenCalled();
   });
@@ -812,6 +816,57 @@ describe('VsCode extension controller/provider integration', () => {
     expect(reviewDetailProvider.refresh).toHaveBeenCalledTimes(1);
     expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith(
       'Configured ui.react.theme=calm.',
+    );
+  });
+
+  it('validates secret-backed credentialRef defaults before persisting them through user-config authoring', async () => {
+    vscodeMock.state.trusted = true;
+    vscodeMock.showInputBox.mockImplementationOnce(async (options) => {
+      expect(options.validateInput?.('openai/api-key')).toBe(
+        'credentialRef must use secret://... selector syntax.',
+      );
+      expect(options.validateInput?.('secret://openai/api-key')).toBeUndefined();
+      return 'secret://openai/api-key';
+    });
+
+    const setUserConfigValue = vi.fn().mockResolvedValue({
+      message: 'configured',
+      persistedValue: 'secret://openai/api-key',
+    });
+    const controller = new VsCodeExtensionCommandController(
+      {
+        resolveSecureAuthoringSnapshot: vi.fn().mockResolvedValue({
+          userConfig: {
+            configPath: '/Users/test/.repo-ai-governor/user-config.yaml',
+            configExists: true,
+            legacyPreferencePath: '/Users/test/.repo-ai-governor/cli-preferences.yaml',
+            legacyPreferenceExists: false,
+            entries: [],
+          },
+        }),
+        setUserConfigValue,
+      } as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    await controller.configureUserDefault({
+      userConfigKeyPath: 'tools.codex.remoteApi.credentialRef',
+    });
+
+    expect(setUserConfigValue).toHaveBeenCalledWith(
+      'tools.codex.remoteApi.credentialRef',
+      'secret://openai/api-key',
     );
   });
 

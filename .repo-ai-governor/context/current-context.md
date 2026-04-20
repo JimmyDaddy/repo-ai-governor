@@ -3,20 +3,20 @@
 ## Primary Stream
 
 - Status: active
-- Stream: `stream-project-116-sprint-001`
+- Stream: `stream-project-116-sprint-002`
 - Project: `project-116-vscode-direct-provider-onboarding-rollout`
-- Sprint: `sprint-001-contract-and-provider-onboarding-facade`
+- Sprint: `sprint-002-plugin-native-direct-api-key-entry`
 - Docs: `.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout`
-- Plan: `.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-001-contract-and-provider-onboarding-facade/plan.md`
-- Tasks: `.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-001-contract-and-provider-onboarding-facade/tasks/`
-- Checklist: `.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-001-contract-and-provider-onboarding-facade/tasks/checklist.md`
-- CSV: `.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-001-contract-and-provider-onboarding-facade/tasks/tasks.csv`
-- Review: `.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-001-contract-and-provider-onboarding-facade/review/`
-- Note: `2026-04-20`：`project-115 / sprint-005-external-interoperability-and-rollout-closeout` 已在 `CR-001` resolved、`TK-1003` final closeout write-back 完成后进入 completed history。当前继续在同一共享分支上激活 `project-116 / sprint-001-contract-and-provider-onboarding-facade`，`TK-1004` 成为新的 active execution boundary。
+- Plan: `.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-002-plugin-native-direct-api-key-entry/plan.md`
+- Tasks: `.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-002-plugin-native-direct-api-key-entry/tasks/`
+- Checklist: `.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-002-plugin-native-direct-api-key-entry/tasks/checklist.md`
+- CSV: `.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-002-plugin-native-direct-api-key-entry/tasks/tasks.csv`
+- Review: `.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-002-plugin-native-direct-api-key-entry/review/`
+- Note: `2026-04-20`：`project-116 / sprint-001-contract-and-provider-onboarding-facade` 已在 `CR-001` resolved、`TK-1019` closeout write-back 完成后进入 completed history。当前继续在同一共享分支上激活 `project-116 / sprint-002-plugin-native-direct-api-key-entry`，`TK-1007` 成为新的 active execution boundary。
 
 ## Active Streams
 
-- `stream-project-116-sprint-001`: project=`project-116-vscode-direct-provider-onboarding-rollout`, sprint=`sprint-001-contract-and-provider-onboarding-facade`, docs=`.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout`, plan=`.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-001-contract-and-provider-onboarding-facade/plan.md`, tasks=`.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-001-contract-and-provider-onboarding-facade/tasks/`, checklist=`.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-001-contract-and-provider-onboarding-facade/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-001-contract-and-provider-onboarding-facade/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-001-contract-and-provider-onboarding-facade/review/`, status=`active`, role=`primary`
+- `stream-project-116-sprint-002`: project=`project-116-vscode-direct-provider-onboarding-rollout`, sprint=`sprint-002-plugin-native-direct-api-key-entry`, docs=`.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout`, plan=`.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-002-plugin-native-direct-api-key-entry/plan.md`, tasks=`.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-002-plugin-native-direct-api-key-entry/tasks/`, checklist=`.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-002-plugin-native-direct-api-key-entry/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-002-plugin-native-direct-api-key-entry/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-002-plugin-native-direct-api-key-entry/review/`, status=`active`, role=`primary`
 
 ## Planned Follow-Up Streams
 

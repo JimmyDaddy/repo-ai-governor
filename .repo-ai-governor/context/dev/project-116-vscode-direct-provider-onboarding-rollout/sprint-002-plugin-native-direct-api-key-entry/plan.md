@@ -1,6 +1,6 @@
 # sprint-002-plugin-native-direct-api-key-entry 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-20
 - Sprint Goal: Land plugin-native direct API key entry, managed secret write, and non-secret provider config persistence.
 - Project: `project-116-vscode-direct-provider-onboarding-rollout`
@@ -31,3 +31,4 @@
 ## 4. Sprint Notes
 
 1. Human-path improvement must not remove CLI/CI/headless credentialEnvVar compatibility.
+2. `2026-04-20`：`sprint-001-contract-and-provider-onboarding-facade` 已在 `CR-001` resolved 与 `TK-1019` closeout write-back 后进入 completed history；当前 sprint 已切换为 active primary surface，`TK-1007` 成为新的 `in_progress` execution boundary。
