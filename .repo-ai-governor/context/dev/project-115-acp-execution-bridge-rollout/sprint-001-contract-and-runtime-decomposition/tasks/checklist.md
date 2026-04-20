@@ -1,8 +1,21 @@
 # checklist
 
-- [ ] TK-989 freeze acp execution bridge runtime contract boundary
+- [x] TK-989 freeze acp execution bridge runtime contract boundary
   - 2026-04-20：任务创建，状态初始化为 `planned`。
-- [ ] TK-990 decompose transport client session turn and host-operation runtimes
+  - 2026-04-20：任务切换为 `in_progress`，同步激活 `current-context.md`、project-115 plan 与 sprint-001 plan，并固定当前窗口只在 `project-115 / sprint-001` 内推进 ACP execution bridge runtime boundary。
+  - 2026-04-20：通过 `CliAcpHostAvailabilityResolution`、`CliAcpInvocationContext`、`CliAcpInvocationExecutionState` 与 `CliAcpHostProtocol` owner composition 明确 probe / invoke / stream / confirm / cancel 的 runtime ownership，保持 `acp_exec` fail-closed 且不回退成 `cli_exec` alias；同窗口 `pnpm exec vitest run --config vitest.packages.config.ts apps/cli/test/runtime/cli-acp-session-runtime.test.ts apps/cli/test/runtime/adapter-routing-runtime.test.ts --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run build` 已通过，当前任务切换为 `completed`。
+- [x] TK-990 decompose transport client session turn and host-operation runtimes
   - 2026-04-20：任务创建，状态初始化为 `planned`。
-- [ ] TK-991 prepare sprint-001 handoff and activation recommendation
+  - 2026-04-20：任务切换为 `in_progress`，将 `CliAcpHostProtocol` 拆解为 capability/session/prompt-turn/host-operation/transport-client 五个 owner，并把 shared invocation state 保持为 transport-scoped additive truth。
+  - 2026-04-20：新增 `cli-acp-capability-discovery-runtime.ts`、`cli-acp-execution-state-store.ts`、`cli-acp-host-operation-runtime.ts`、`cli-acp-prompt-turn-runtime.ts`、`cli-acp-session-runtime.ts`、`cli-acp-transport-client-runtime.ts` 与 `cli-acp-session-runtime.test.ts`，验证 shared invocation reuse 与 host protocol decomposition 不破坏现有 probe-only baseline；同窗口 targeted runtime vitest、project-115 baseline vitest 与 `pnpm run build` 已通过，当前任务切换为 `completed`。
+- [x] TK-991 prepare sprint-001 handoff and activation recommendation
   - 2026-04-20：任务创建，状态初始化为 `planned`。
+  - 2026-04-20：任务切换为 `in_progress`，把 sprint-001 当前真值回写到 project/sprint plans，并更新 decomposition handoff 文档，避免继续保留“下一步先激活 sprint-001”的过期表述。
+  - 2026-04-20：`DA-989` 已更新为当前运行中的 sprint-001 handoff boundary，明确 sprint-002 只能在本 sprint 完成 fresh CR round、accepted finding 修复与 boundary commit 之后再激活；同窗口 `pnpm exec vitest run --config vitest.packages.config.ts apps/cli/test/runtime/adapter-routing-runtime.test.ts apps/cli/test/runtime/session-main-supervisor-runtime.test.ts apps/cli/test/runtime/agent-onboarding-runtime.test.ts packages/adapter-sdk/test/agent-route-runner.smoke.test.ts --maxWorkers=1 --maxConcurrency=1`、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 已通过，当前任务切换为 `completed`。
+  - 2026-04-20：`CR-001` 已在同窗口完成 accepted finding 修复与复验，当前 handoff recommendation 已被消费：`current-context.md`、completed stream history、project plan 与 sprint-002 plan 已同步切到 `sprint-002-executable-acp-exec-baseline` activation truth。
+- [x] CR-001 sprint-001-contract-and-runtime-decomposition delegated review loop round 1
+  - 2026-04-20：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-20：fresh reviewer round `working-tree-20260420-1238` 返回 2 条 actionable findings：`CliAcpExecutionStateStore` 在第二次 `ensureInvocationState()` 时破坏 shared mutable row，且 `cli-acp-session-runtime.test.ts` 没有锁住该共享状态契约。
+  - 2026-04-20：主 agent 复核后接受上述 2 条 findings，并将当前轮次推进到 `verified`；修复方向固定为“保持 invocation state 单对象别名稳定”和“补充 invoke-first / stream-first 两个顺序下的 mutation-visibility regression coverage”。
+  - 2026-04-20：已在 `cli-acp-execution-state-store.ts` 修复 shared-state aliasing，并在 `cli-acp-session-runtime.test.ts` 补齐 direct aliasing / mutation visibility coverage；随后重跑 targeted runtime vitest、project-115 baseline vitest、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 全部通过，当前任务推进为 `resolved`。
+  - 2026-04-20：边界 gate `pnpm run check` 已通过；当前 sprint-001 delegated CR loop 已 clean 收口，可进入 boundary commit 并继续由 `TK-992` 承接下一条 active execution surface。

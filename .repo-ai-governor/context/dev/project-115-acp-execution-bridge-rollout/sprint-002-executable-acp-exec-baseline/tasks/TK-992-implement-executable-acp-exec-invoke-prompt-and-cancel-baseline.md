@@ -1,6 +1,6 @@
 # TK-992 implement executable acp_exec invoke prompt and cancel baseline
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-04-20
 - Owner: AI-Agent
 - Priority: P1
@@ -52,6 +52,7 @@
 ## 9. 执行记录
 
 1. 2026-04-20：任务创建，状态初始化为 `planned`。
+2. 2026-04-20：由于 `sprint-001-contract-and-runtime-decomposition` 已完成 delegated CR loop 并完成 activation handoff，当前任务切换为 `in_progress`；本窗口开始推进真实 `acp_exec` invoke prompt / cancel baseline，并明确禁止 `cli_exec` aliasing 与双执行。
 
 ## 10. 产出
 

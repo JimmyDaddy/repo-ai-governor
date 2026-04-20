@@ -2,25 +2,24 @@
 
 ## Primary Stream
 
-- Status: idle
-- Stream: `none`
-- Project: `none`
-- Sprint: `none`
-- Docs: `none`
-- Plan: `none`
-- Tasks: `none`
-- Checklist: `none`
-- CSV: `none`
-- Review: `none`
-- Note: `2026-04-20` 已为 `project-115-acp-execution-bridge-rollout` 与 `project-116-vscode-direct-provider-onboarding-rollout` 创建 planned follow-up scaffold；工作区当前继续保持 idle，等待显式激活下一条执行流。
+- Status: active
+- Stream: `stream-project-115-sprint-002`
+- Project: `project-115-acp-execution-bridge-rollout`
+- Sprint: `sprint-002-executable-acp-exec-baseline`
+- Docs: `.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout`
+- Plan: `.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-002-executable-acp-exec-baseline/plan.md`
+- Tasks: `.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-002-executable-acp-exec-baseline/tasks/`
+- Checklist: `.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-002-executable-acp-exec-baseline/tasks/checklist.md`
+- CSV: `.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-002-executable-acp-exec-baseline/tasks/tasks.csv`
+- Review: `.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-002-executable-acp-exec-baseline/review/`
+- Note: `2026-04-20`：`project-115 / sprint-001-contract-and-runtime-decomposition` 已完成 implementation + delegated CR loop 并移入 completed history；当前继续在同一共享分支上激活 `sprint-002-executable-acp-exec-baseline`。`project-116-vscode-direct-provider-onboarding-rollout` 仍保持 planned follow-up，待 project-115 完成 closeout 后再切换。
 
 ## Active Streams
 
-- `none`
+- `stream-project-115-sprint-002`: project=`project-115-acp-execution-bridge-rollout`, sprint=`sprint-002-executable-acp-exec-baseline`, docs=`.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout`, plan=`.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-002-executable-acp-exec-baseline/plan.md`, tasks=`.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-002-executable-acp-exec-baseline/tasks/`, checklist=`.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-002-executable-acp-exec-baseline/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-002-executable-acp-exec-baseline/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-002-executable-acp-exec-baseline/review/`, status=`active`, role=`primary`
 
 ## Planned Follow-Up Streams
 
-- `stream-project-115-sprint-001`: project=`project-115-acp-execution-bridge-rollout`, sprint=`sprint-001-contract-and-runtime-decomposition`, docs=`.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout`, plan=`.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-001-contract-and-runtime-decomposition/plan.md`, tasks=`.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-001-contract-and-runtime-decomposition/tasks/`, checklist=`.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-001-contract-and-runtime-decomposition/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-001-contract-and-runtime-decomposition/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-001-contract-and-runtime-decomposition/review/`, status=`planned`
 - `stream-project-116-sprint-001`: project=`project-116-vscode-direct-provider-onboarding-rollout`, sprint=`sprint-001-contract-and-provider-onboarding-facade`, docs=`.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout`, plan=`.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-001-contract-and-provider-onboarding-facade/plan.md`, tasks=`.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-001-contract-and-provider-onboarding-facade/tasks/`, checklist=`.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-001-contract-and-provider-onboarding-facade/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-001-contract-and-provider-onboarding-facade/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-001-contract-and-provider-onboarding-facade/review/`, status=`planned`
 
 ## Completed Stream History

@@ -1,5 +1,8 @@
 export type { IdeWrapperCommandName } from './aliases/index.js';
 export type {
+  CliAcpHostAvailabilityResolution,
+  CliAcpInvocationContext,
+  CliAcpInvocationExecutionState,
   CliAdapterCredentialReferenceDiagnostic,
   CliAdapterRoleEvaluation,
   CliAdapterSecretBackendDiagnostics,

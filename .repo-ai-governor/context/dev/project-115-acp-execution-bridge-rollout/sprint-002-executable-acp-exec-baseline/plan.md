@@ -1,6 +1,6 @@
 # sprint-002-executable-acp-exec-baseline 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-20
 - Sprint Goal: 完成 session/new prompt cancel 主链路与 invoke/stream shared turn execution 基线
 - Project: `project-115-acp-execution-bridge-rollout`
@@ -17,7 +17,7 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-992 | implement executable acp_exec invoke prompt and cancel baseline | sprint-001-contract-and-runtime-decomposition planned handoff | planned |
+| TK-992 | implement executable acp_exec invoke prompt and cancel baseline | sprint-001-contract-and-runtime-decomposition planned handoff | in_progress |
 | TK-993 | land shared invocation store and stream attachment semantics | TK-992 | planned |
 | TK-994 | verify fixture-backed acp contract baseline and sprint-002 handoff | TK-993 | planned |
 
@@ -31,4 +31,5 @@
 
 1. bootstrap 阶段不预生成 code_review 生命周期文件。
 2. 若用户只要求拆解，不自动修改 current-context.md。
-3. 该 sprint 默认保持 planned，等待 sprint-001-contract-and-runtime-decomposition handoff 或用户显式激活。
+3. `2026-04-20`：`CR-001` resolved 后，当前 sprint 已正式激活为 primary execution surface。
+4. 当前窗口从 `TK-992` 开始推进真实 `acp_exec` invoke/prompt/cancel bridge，不允许通过 `cli_exec` aliasing 或双执行投机实现。
