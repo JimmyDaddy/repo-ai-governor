@@ -110,6 +110,7 @@ vi.mock('vscode', () => ({
   },
 }));
 
+import { VsCodeExtensionCommandController } from '../src/runtime/vscode-extension-command-controller.js';
 import { VsCodeExtensionHost } from '../src/runtime/vscode-extension-host.js';
 
 describe('VsCodeExtensionHost activation', () => {
@@ -218,5 +219,41 @@ describe('VsCodeExtensionHost activation', () => {
     expect(chatParticipant).toBeDefined();
     expect(chatParticipant.iconPath).toEqual(vscodeActivationMock.joinPath.mock.results[0]?.value);
     expect(context.subscriptions).toContain(chatParticipant);
+  });
+
+  it('forwards provider-lifecycle connect requests through the VS Code command handler', async () => {
+    const runConnectSpy = vi
+      .spyOn(VsCodeExtensionCommandController.prototype, 'runConnect')
+      .mockResolvedValue(true);
+    const host = new VsCodeExtensionHost();
+    const context = {
+      extensionUri: {
+        fsPath: '/extension',
+      },
+      subscriptions: [],
+    };
+
+    try {
+      await expect(host.activate(context as never)).resolves.toBeUndefined();
+
+      const runConnectRegistration = vscodeActivationMock.registerCommand.mock.calls.find(
+        ([commandId]) => commandId === 'repoAiGovernor.runConnect',
+      );
+      const runConnectHandler = runConnectRegistration?.[1] as
+        | ((request?: unknown) => Promise<unknown>)
+        | undefined;
+      const request = {
+        workspaceOperationArguments: {
+          presetId: 'single-tool-minimal',
+          tools: ['codex'],
+        },
+      };
+
+      expect(runConnectHandler).toBeDefined();
+      await expect(runConnectHandler?.(request)).resolves.toBe(true);
+      expect(runConnectSpy).toHaveBeenCalledWith(request);
+    } finally {
+      runConnectSpy.mockRestore();
+    }
   });
 });

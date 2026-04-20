@@ -107,11 +107,13 @@ export class VsCodeExtensionChatParticipantRuntime {
                 ),
         );
         const workspaceContext = await this.serviceRuntime.resolveWorkspaceContextSnapshot();
-        const [executionBoard, hitlInbox, queueOverview] = await Promise.all([
-          this.serviceRuntime.queryExecutionBoard(),
-          this.serviceRuntime.queryHitlInbox(),
-          this.serviceRuntime.queryQueueOverview(),
-        ]);
+        const [executionBoard, hitlInbox, queueOverview, providerLifecycleSnapshots] =
+          await Promise.all([
+            this.serviceRuntime.queryExecutionBoard(),
+            this.serviceRuntime.queryHitlInbox(),
+            this.serviceRuntime.queryQueueOverview(),
+            this.serviceRuntime.resolveProviderLifecycleSnapshots(),
+          ]);
         const reviewDetailSnapshot =
           resolvedCommandName === VSCODE_EXTENSION_CHAT_COMMAND_REVIEW ||
           resolvedCommandName === VSCODE_EXTENSION_CHAT_COMMAND_IDS.OPEN_REVIEW_DETAIL
@@ -137,6 +139,7 @@ export class VsCodeExtensionChatParticipantRuntime {
           executionBoardEntries: executionBoard.executions,
           hitlInboxEntries: hitlInbox.pendingDecisions,
           queueOverview,
+          providerLifecycleSnapshots,
           ...(reviewDetailSnapshot
             ? {
                 reviewDetailSnapshot,
@@ -174,6 +177,11 @@ export class VsCodeExtensionChatParticipantRuntime {
               },
             ],
           });
+        }
+        for (const button of this.presentationBuilder.buildProviderLifecycleChatButtons(
+          providerLifecycleSnapshots,
+        )) {
+          response.button(button);
         }
 
         return {

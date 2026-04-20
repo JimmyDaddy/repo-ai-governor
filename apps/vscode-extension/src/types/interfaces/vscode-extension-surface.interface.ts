@@ -19,6 +19,8 @@ import type {
   AdapterVendorBindingKind,
 } from '@repo-ai-governor/shared';
 import type {
+  VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS,
+  VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES,
   VSCODE_EXTENSION_PROVIDER_ONBOARDING_ENTRYPOINT_KINDS,
   VSCODE_EXTENSION_PROVIDER_ONBOARDING_READINESS_PROJECTION_SOURCES,
 } from '../../constants/index.js';
@@ -101,6 +103,12 @@ export type VsCodeExtensionProviderOnboardingEntrypointKind =
 export type VsCodeExtensionProviderOnboardingReadinessProjectionSource =
   (typeof VSCODE_EXTENSION_PROVIDER_ONBOARDING_READINESS_PROJECTION_SOURCES)[keyof typeof VSCODE_EXTENSION_PROVIDER_ONBOARDING_READINESS_PROJECTION_SOURCES];
 
+export type VsCodeExtensionProviderLifecycleStatus =
+  (typeof VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES)[keyof typeof VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES];
+
+export type VsCodeExtensionProviderLifecycleActionId =
+  (typeof VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS)[keyof typeof VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS];
+
 /**
  * Captures the minimum service-owned provider-onboarding facts that the VS Code host may consume
  * without taking ownership of canonical onboarding truth away from runtime.agent-projection.
@@ -162,6 +170,29 @@ export interface VsCodeExtensionProviderOnboardingApplyReceipt {
   nextAction: string;
 }
 
+/**
+ * Projects one host-facing provider lifecycle summary without changing canonical readiness truth.
+ */
+export interface VsCodeExtensionProviderLifecycleSnapshot {
+  tool: AdapterSurface;
+  provider: AdapterProviderKind;
+  vendorBinding: AdapterVendorBindingKind;
+  readinessProjectionSource: VsCodeExtensionProviderOnboardingReadinessProjectionSource;
+  status: VsCodeExtensionProviderLifecycleStatus;
+  availableActions: readonly VsCodeExtensionProviderLifecycleActionId[];
+  credentialRef: string;
+  model?: string;
+  endpoint?: string;
+  preferredBackendId?: string;
+  defaultBackendId?: string;
+  selectedBackendId?: string;
+  configuredCredentialRef: boolean;
+  configuredModel: boolean;
+  credentialResolved: boolean;
+  degradedReason?: string;
+  warnings: readonly string[];
+}
+
 export interface VsCodeExtensionWorkspaceContextSnapshot {
   workspaceLabel: string;
   workspaceRoot?: string;
@@ -214,6 +245,7 @@ export interface VsCodeExtensionWorkbenchOverviewSnapshot {
   bootstrapReadiness?: OrchestrationBootstrapReadinessSnapshot;
   queueOverview: OrchestrationQueueOverviewQueryResponse;
   secureAuthoring?: VsCodeExtensionSecureAuthoringSnapshot;
+  providerLifecycleSnapshots?: readonly VsCodeExtensionProviderLifecycleSnapshot[];
   selectedExecution?: OrchestrationExecutionBoardEntry;
   reviewSourcePath?: string;
 }
@@ -223,6 +255,7 @@ export interface VsCodeExtensionWorkflowStudioSnapshot {
   bootstrapReadiness?: OrchestrationBootstrapReadinessSnapshot;
   queueOverview: OrchestrationQueueOverviewQueryResponse;
   secureAuthoring?: VsCodeExtensionSecureAuthoringSnapshot;
+  providerLifecycleSnapshots?: readonly VsCodeExtensionProviderLifecycleSnapshot[];
   selectedExecution?: OrchestrationExecutionBoardEntry;
   artifactPane?: OrchestrationArtifactPaneQueryResponse;
   sessionContinuity?: VsCodeExtensionSessionContinuitySnapshot;

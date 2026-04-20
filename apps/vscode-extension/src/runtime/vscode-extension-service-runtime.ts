@@ -56,8 +56,11 @@ import {
   VSCODE_EXTENSION_DEFAULT_LANE_LIMIT,
   VSCODE_EXTENSION_DEFAULT_QUEUE_LIMIT,
   VSCODE_EXTENSION_DEFAULT_WORKSPACE_SUMMARY_LIMIT,
+  VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS,
+  VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES,
   VSCODE_EXTENSION_PROVIDER_ONBOARDING_CONFIG_TARGET_SUFFIXES,
   VSCODE_EXTENSION_PROVIDER_ONBOARDING_CREDENTIAL_REF_STRATEGY,
+  VSCODE_EXTENSION_PROVIDER_ONBOARDING_ENTRYPOINT_KINDS,
   VSCODE_EXTENSION_PROVIDER_ONBOARDING_MUTATION_MODE,
   VSCODE_EXTENSION_PROVIDER_ONBOARDING_READINESS_PROJECTION_SOURCES,
   VSCODE_EXTENSION_PROVIDER_ONBOARDING_RECEIPT_FIELDS,
@@ -66,6 +69,7 @@ import {
   VSCODE_EXTENSION_PROVIDER_ONBOARDING_SURFACE_ID,
 } from '../constants/index.js';
 import type {
+  VsCodeExtensionProviderLifecycleSnapshot,
   VsCodeExtensionProviderOnboardingApplyReceipt,
   VsCodeExtensionProviderOnboardingApplyRequest,
   VsCodeExtensionProviderOnboardingEntrypointKind,
@@ -579,12 +583,14 @@ export class VsCodeExtensionServiceRuntime {
       bootstrapReadiness,
       queueOverview,
       secureAuthoring,
+      providerLifecycleSnapshots,
       selectedExecution,
     ] = await Promise.all([
       this.resolveWorkspaceContextSnapshot(),
       this.queryBootstrapReadiness(),
       this.queryQueueOverview(),
       this.resolveSecureAuthoringSnapshot(),
+      this.resolveProviderLifecycleSnapshots(),
       this.resolveSelectedExecution(selection),
     ]);
 
@@ -599,6 +605,11 @@ export class VsCodeExtensionServiceRuntime {
       ...(secureAuthoring
         ? {
             secureAuthoring,
+          }
+        : {}),
+      ...(providerLifecycleSnapshots.length > 0
+        ? {
+            providerLifecycleSnapshots,
           }
         : {}),
       ...(selectedExecution
@@ -627,12 +638,14 @@ export class VsCodeExtensionServiceRuntime {
       bootstrapReadiness,
       queueOverview,
       secureAuthoring,
+      providerLifecycleSnapshots,
       selectedExecution,
     ] = await Promise.all([
       this.resolveWorkspaceContextSnapshot(),
       this.queryBootstrapReadiness(),
       this.queryQueueOverview(),
       this.resolveSecureAuthoringSnapshot(),
+      this.resolveProviderLifecycleSnapshots(),
       this.resolveSelectedExecution(selection),
     ]);
     const [artifactPane, sessionContinuity] = await Promise.all([
@@ -656,6 +669,11 @@ export class VsCodeExtensionServiceRuntime {
       ...(secureAuthoring
         ? {
             secureAuthoring,
+          }
+        : {}),
+      ...(providerLifecycleSnapshots.length > 0
+        ? {
+            providerLifecycleSnapshots,
           }
         : {}),
       ...(selectedExecution
@@ -989,6 +1007,37 @@ export class VsCodeExtensionServiceRuntime {
       availableBackends: secureAuthoring?.secretReadiness?.backends ?? [],
       warnings,
     };
+  }
+
+  /**
+   * Resolves host-facing provider lifecycle summaries for the current workspace without inventing
+   * a second readiness taxonomy outside the provider-onboarding and secure-authoring seams.
+   * @returns Provider lifecycle snapshots ordered by visible workbench priority.
+   */
+  public async resolveProviderLifecycleSnapshots(): Promise<
+    readonly VsCodeExtensionProviderLifecycleSnapshot[]
+  > {
+    const secureAuthoring = await this.resolveSecureAuthoringSnapshot();
+    const tools = this.resolveProviderLifecycleTools(secureAuthoring);
+    const snapshots = await Promise.all(
+      tools.map(async (tool) => {
+        try {
+          const snapshot = await this.resolveProviderOnboardingSnapshot(
+            tool,
+            VSCODE_EXTENSION_PROVIDER_ONBOARDING_ENTRYPOINT_KINDS.OVERVIEW_CTA,
+          );
+          return snapshot
+            ? this.buildProviderLifecycleSnapshot(snapshot, secureAuthoring)
+            : undefined;
+        } catch {
+          return undefined;
+        }
+      }),
+    );
+
+    return snapshots.filter((snapshot): snapshot is VsCodeExtensionProviderLifecycleSnapshot =>
+      Boolean(snapshot),
+    );
   }
 
   /**
@@ -1996,6 +2045,138 @@ export class VsCodeExtensionServiceRuntime {
     };
   }
 
+  private resolveProviderLifecycleTools(
+    secureAuthoring: VsCodeExtensionSecureAuthoringSnapshot | undefined,
+  ): readonly AdapterSurface[] {
+    const configuredTools = new Set<AdapterSurface>();
+    for (const entry of secureAuthoring?.userConfig?.entries ?? []) {
+      const match = /^tools\.([^.]+)\./u.exec(entry.keyPath);
+      const toolId = match?.[1];
+      if (!toolId || !Object.values(AdapterSurface).includes(toolId as AdapterSurface)) {
+        continue;
+      }
+      configuredTools.add(toolId as AdapterSurface);
+    }
+
+    if (configuredTools.size === 0) {
+      configuredTools.add(AdapterSurface.CODEX);
+    }
+
+    return [...configuredTools];
+  }
+
+  private buildProviderLifecycleSnapshot(
+    snapshot: VsCodeExtensionProviderOnboardingSnapshot,
+    secureAuthoring: VsCodeExtensionSecureAuthoringSnapshot | undefined,
+  ): VsCodeExtensionProviderLifecycleSnapshot {
+    const configuredCredentialRef = this.readUserConfigEntryValue(
+      secureAuthoring,
+      snapshot.tool,
+      'remoteApi.credentialRef',
+    );
+    const configuredModel = this.readUserConfigEntryValue(
+      secureAuthoring,
+      snapshot.tool,
+      'remoteApi.model',
+    );
+    const preferredBackendId = this.resolveProviderLifecyclePreferredBackendId(snapshot);
+    const keyName = this.extractManagedSecretKeyName(snapshot.credentialRef);
+    const credentialResolved =
+      keyName && secureAuthoring?.secretReadiness
+        ? Boolean(
+            this.findManagedSecretRecord(
+              secureAuthoring.secretReadiness.records,
+              keyName,
+              preferredBackendId,
+            ),
+          )
+        : false;
+    const preferredBackendWarning =
+      preferredBackendId &&
+      snapshot.availableBackends.find((backend) => backend.backendId === preferredBackendId)
+        ?.warning;
+    const degradedReason =
+      secureAuthoring?.degradedReason ??
+      preferredBackendWarning ??
+      (snapshot.availableBackends.some((backend) => backend.available)
+        ? undefined
+        : 'Provider onboarding does not currently have a writable managed secret backend.');
+
+    const status = degradedReason
+      ? VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES.DEGRADED
+      : !configuredCredentialRef || !configuredModel
+        ? VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES.CONNECT_REQUIRED
+        : credentialResolved
+          ? VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES.READY
+          : VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES.RECONNECT_REQUIRED;
+
+    const availableActions =
+      status === VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES.DEGRADED
+        ? [
+            VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.RUN_DOCTOR,
+            ...(configuredCredentialRef
+              ? [VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.UPDATE_API_KEY]
+              : []),
+          ]
+        : status === VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES.CONNECT_REQUIRED
+          ? [VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.CONNECT_PROVIDER]
+          : status === VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES.RECONNECT_REQUIRED
+            ? [
+                VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.UPDATE_API_KEY,
+                VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.RUN_DOCTOR,
+              ]
+            : [
+                VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.UPDATE_API_KEY,
+                ...(configuredModel && credentialResolved
+                  ? [VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.RECONNECT_PROVIDER]
+                  : []),
+              ];
+
+    return {
+      tool: snapshot.tool,
+      provider: snapshot.provider,
+      vendorBinding: snapshot.vendorBinding,
+      readinessProjectionSource: snapshot.readinessProjectionSource,
+      status,
+      availableActions,
+      credentialRef: snapshot.credentialRef,
+      ...(snapshot.model
+        ? {
+            model: snapshot.model,
+          }
+        : {}),
+      ...(snapshot.endpoint
+        ? {
+            endpoint: snapshot.endpoint,
+          }
+        : {}),
+      ...(preferredBackendId
+        ? {
+            preferredBackendId,
+          }
+        : {}),
+      ...(snapshot.defaultBackendId
+        ? {
+            defaultBackendId: snapshot.defaultBackendId,
+          }
+        : {}),
+      ...(snapshot.selectedBackendId
+        ? {
+            selectedBackendId: snapshot.selectedBackendId,
+          }
+        : {}),
+      configuredCredentialRef: Boolean(configuredCredentialRef),
+      configuredModel: Boolean(configuredModel),
+      credentialResolved,
+      ...(degradedReason
+        ? {
+            degradedReason,
+          }
+        : {}),
+      warnings: [...snapshot.warnings],
+    };
+  }
+
   private buildProviderOnboardingWarnings(
     secretReadiness: VsCodeExtensionSecretReadinessSnapshot | undefined,
     credentialRef: string,
@@ -2040,6 +2221,21 @@ export class VsCodeExtensionServiceRuntime {
   private resolveProviderOnboardingConfigTargets(tool: AdapterSurface): string[] {
     return VSCODE_EXTENSION_PROVIDER_ONBOARDING_CONFIG_TARGET_SUFFIXES.map(
       (suffix) => `tools.${tool}.${suffix}`,
+    );
+  }
+
+  private resolveProviderLifecyclePreferredBackendId(
+    snapshot: VsCodeExtensionProviderOnboardingSnapshot,
+  ): string | undefined {
+    if (!snapshot.availableBackends.some((backend) => backend.available)) {
+      return undefined;
+    }
+
+    return this.resolveProviderOnboardingBackendId(
+      snapshot.availableBackends,
+      undefined,
+      snapshot.defaultBackendId,
+      snapshot.selectedBackendId,
     );
   }
 
@@ -2117,6 +2313,15 @@ export class VsCodeExtensionServiceRuntime {
     );
   }
 
+  private extractManagedSecretKeyName(selector: string): string | undefined {
+    if (!selector.startsWith(CREDENTIAL_SELECTOR_PREFIX)) {
+      return undefined;
+    }
+
+    const keyName = selector.slice(CREDENTIAL_SELECTOR_PREFIX.length).trim();
+    return keyName.length > 0 ? keyName : undefined;
+  }
+
   private readUserConfigEntryValue(
     secureAuthoring: VsCodeExtensionSecureAuthoringSnapshot | undefined,
     tool: AdapterSurface,
@@ -2173,14 +2378,5 @@ export class VsCodeExtensionServiceRuntime {
 
   private resolveDefaultCredentialRefSelector(provider: AdapterProviderKind): string {
     return `${CREDENTIAL_SELECTOR_PREFIX}${provider}/api-key`;
-  }
-
-  private extractManagedSecretKeyName(selector: string): string | undefined {
-    if (!selector.startsWith(CREDENTIAL_SELECTOR_PREFIX)) {
-      return undefined;
-    }
-
-    const keyName = selector.slice(CREDENTIAL_SELECTOR_PREFIX.length).trim();
-    return keyName.length > 0 ? keyName : undefined;
   }
 }

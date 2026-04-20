@@ -37,6 +37,12 @@ describe('VsCodeExtensionChatParticipantRuntime', () => {
         reviewQueue: [],
         automationInbox: [],
       })),
+      resolveProviderLifecycleSnapshots: vi.fn(async () => [
+        {
+          tool: 'codex',
+          availableActions: ['update_api_key'],
+        },
+      ]),
       resolveReviewDetailSnapshot: vi.fn(),
     };
     const selectionStore = {
@@ -54,6 +60,17 @@ describe('VsCodeExtensionChatParticipantRuntime', () => {
     };
     const presentationBuilder = {
       buildChatResponseMarkdown: vi.fn(() => 'status-body'),
+      buildProviderLifecycleChatButtons: vi.fn(() => [
+        {
+          command: 'repoAiGovernor.setManagedSecret',
+          title: 'Update API Key',
+          arguments: [
+            {
+              secretKeyName: 'openai/api-key',
+            },
+          ],
+        },
+      ]),
     };
     const localizer = {
       localizeText: vi.fn((englishText: string) => englishText),
@@ -101,6 +118,12 @@ describe('VsCodeExtensionChatParticipantRuntime', () => {
       expect.stringContaining('Doctor command finished.'),
     );
     expect(response.markdown).toHaveBeenCalledWith(expect.stringContaining('status-body'));
+    expect(response.button).toHaveBeenCalledWith(
+      expect.objectContaining({
+        command: 'repoAiGovernor.setManagedSecret',
+        title: 'Update API Key',
+      }),
+    );
     expect(result.metadata).toMatchObject({
       executedChatCommand: 'doctor',
       commandStatus: 'completed',
@@ -123,6 +146,7 @@ describe('VsCodeExtensionChatParticipantRuntime', () => {
         reviewQueue: [],
         automationInbox: [],
       })),
+      resolveProviderLifecycleSnapshots: vi.fn(async () => []),
       resolveReviewDetailSnapshot: vi.fn(),
     };
     const selectionStore = {
@@ -139,6 +163,7 @@ describe('VsCodeExtensionChatParticipantRuntime', () => {
     };
     const presentationBuilder = {
       buildChatResponseMarkdown: vi.fn(() => 'status-body'),
+      buildProviderLifecycleChatButtons: vi.fn(() => []),
     };
     const localizer = {
       localizeText: vi.fn((englishText: string) => englishText),

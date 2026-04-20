@@ -527,6 +527,234 @@ describe('VsCodeExtensionServiceRuntime', () => {
     });
   });
 
+  it('projects provider lifecycle snapshots into the workbench overview without inventing new readiness truth', async () => {
+    serviceClientMock.queryExecutionBoard.mockResolvedValueOnce({
+      executions: [],
+      returnedCount: 0,
+      totalMatchedCount: 0,
+    });
+    serviceClientMock.queryQueueOverview.mockResolvedValueOnce({
+      generatedAt: '2026-04-20T18:00:00.000Z',
+      automationInbox: [],
+      reviewQueue: [],
+      parallelLanes: [],
+      workspaceSummary: [],
+      temporaryBridges: [],
+      notificationOwnership: {
+        ownerSurface: OrchestrationClientSurface.DESKTOP,
+        pendingItemCount: 0,
+        dueSoonItemCount: 0,
+        overdueItemCount: 0,
+        activeWorkspaceCount: 1,
+        defaultFollowUpSlaMinutes: 60,
+        notificationStatus: OrchestrationGovernanceNotificationStatus.IDLE,
+      },
+    });
+    serviceClientMock.querySecureAuthoring.mockResolvedValueOnce({
+      userConfig: {
+        configPath: '/Users/test/.repo-ai-governor/user-config.yaml',
+        configExists: true,
+        legacyPreferencePath: '/Users/test/.repo-ai-governor/cli-preferences.yaml',
+        legacyPreferenceExists: false,
+        entries: [
+          {
+            keyPath: 'tools.codex.remoteApi.provider',
+            value: 'openai',
+          },
+          {
+            keyPath: 'tools.codex.remoteApi.model',
+            value: 'gpt-5.4',
+          },
+          {
+            keyPath: 'tools.codex.remoteApi.credentialRef',
+            value: 'secret://openai/api-key',
+          },
+        ],
+      },
+      secretReadiness: {
+        selectedBackendId: 'os-keychain',
+        defaultBackendId: 'os-keychain',
+        indexPath: '/Users/test/.repo-ai-governor/secret-index.json',
+        backends: [
+          {
+            backendId: 'os-keychain',
+            available: true,
+            detail: 'Ready',
+          },
+        ],
+        records: [
+          {
+            keyName: 'openai/api-key',
+            backendId: 'os-keychain',
+            exists: true,
+          },
+        ],
+        configuredCredentialRefs: ['secret://openai/api-key'],
+        unresolvedCredentialRefs: [],
+      },
+    });
+    serviceClientMock.queryProviderOnboarding.mockResolvedValueOnce({
+      surfaceId: 'vscode_provider_onboarding',
+      entrypointKind: 'overview_cta',
+      mutationMode: 'explicit_provider_onboarding_command',
+      tool: 'codex',
+      transport: 'remote_api',
+      provider: 'openai',
+      vendorBinding: 'openai_responses',
+      secretCaptureMode: 'host_secure_prompt',
+      secretOwner: 'governor_managed_secret_backend',
+      credentialRefStrategy: 'provider_default_api_key',
+      readinessProjectionSource: 'provider_onboarding_snapshot',
+      configTargets: [
+        'tools.codex.transport',
+        'tools.codex.remoteApi.provider',
+        'tools.codex.remoteApi.vendorBinding',
+        'tools.codex.remoteApi.model',
+        'tools.codex.remoteApi.endpoint',
+        'tools.codex.remoteApi.credentialRef',
+      ],
+      receiptFields: [
+        'tool',
+        'provider',
+        'credentialRef',
+        'secretBackend',
+        'warnings',
+        'nextAction',
+      ],
+      credentialRef: 'secret://openai/api-key',
+      model: 'gpt-5.4',
+      defaultBackendId: 'os-keychain',
+      availableBackends: [
+        {
+          backendId: 'os-keychain',
+          available: true,
+          detail: 'Ready',
+        },
+      ],
+      warnings: [],
+    });
+
+    const runtime = new VsCodeExtensionServiceRuntime();
+
+    await expect(runtime.resolveWorkbenchOverviewSnapshot({})).resolves.toMatchObject({
+      providerLifecycleSnapshots: [
+        {
+          tool: 'codex',
+          provider: 'openai',
+          status: 'ready',
+          preferredBackendId: 'os-keychain',
+          configuredCredentialRef: true,
+          configuredModel: true,
+          credentialResolved: true,
+          availableActions: ['update_api_key', 'reconnect_provider'],
+          readinessProjectionSource: 'provider_onboarding_snapshot',
+        },
+      ],
+    });
+    expect(serviceClientMock.queryProviderOnboarding).toHaveBeenCalledWith({
+      tool: 'codex',
+      entrypointKind: 'overview_cta',
+      locale: 'en-US',
+    });
+  });
+
+  it('marks provider lifecycle as degraded when the preferred backend only remains available with warnings', async () => {
+    serviceClientMock.querySecureAuthoring.mockResolvedValueOnce({
+      userConfig: {
+        configPath: '/Users/test/.repo-ai-governor/user-config.yaml',
+        configExists: true,
+        legacyPreferencePath: '/Users/test/.repo-ai-governor/cli-preferences.yaml',
+        legacyPreferenceExists: false,
+        entries: [
+          {
+            keyPath: 'tools.codex.remoteApi.model',
+            value: 'gpt-5.4',
+          },
+          {
+            keyPath: 'tools.codex.remoteApi.credentialRef',
+            value: 'secret://openai/api-key',
+          },
+        ],
+      },
+      secretReadiness: {
+        selectedBackendId: 'unsafe-local-file',
+        defaultBackendId: 'unsafe-local-file',
+        indexPath: '/Users/test/.repo-ai-governor/secret-index.json',
+        backends: [
+          {
+            backendId: 'unsafe-local-file',
+            available: true,
+            detail: 'Local plaintext',
+            warning: 'plaintext fallback',
+          },
+        ],
+        records: [
+          {
+            keyName: 'openai/api-key',
+            backendId: 'unsafe-local-file',
+            exists: true,
+          },
+        ],
+        configuredCredentialRefs: ['secret://openai/api-key'],
+        unresolvedCredentialRefs: [],
+      },
+    });
+    serviceClientMock.queryProviderOnboarding.mockResolvedValueOnce({
+      surfaceId: 'vscode_provider_onboarding',
+      entrypointKind: 'overview_cta',
+      mutationMode: 'explicit_provider_onboarding_command',
+      tool: 'codex',
+      transport: 'remote_api',
+      provider: 'openai',
+      vendorBinding: 'openai_responses',
+      secretCaptureMode: 'host_secure_prompt',
+      secretOwner: 'governor_managed_secret_backend',
+      credentialRefStrategy: 'provider_default_api_key',
+      readinessProjectionSource: 'provider_onboarding_snapshot',
+      configTargets: [
+        'tools.codex.transport',
+        'tools.codex.remoteApi.provider',
+        'tools.codex.remoteApi.vendorBinding',
+        'tools.codex.remoteApi.model',
+        'tools.codex.remoteApi.endpoint',
+        'tools.codex.remoteApi.credentialRef',
+      ],
+      receiptFields: [
+        'tool',
+        'provider',
+        'credentialRef',
+        'secretBackend',
+        'warnings',
+        'nextAction',
+      ],
+      credentialRef: 'secret://openai/api-key',
+      model: 'gpt-5.4',
+      defaultBackendId: 'unsafe-local-file',
+      selectedBackendId: 'unsafe-local-file',
+      availableBackends: [
+        {
+          backendId: 'unsafe-local-file',
+          available: true,
+          detail: 'Local plaintext',
+          warning: 'plaintext fallback',
+        },
+      ],
+      warnings: ['plaintext fallback'],
+    });
+
+    const runtime = new VsCodeExtensionServiceRuntime();
+
+    await expect(runtime.resolveProviderLifecycleSnapshots()).resolves.toEqual([
+      expect.objectContaining({
+        tool: 'codex',
+        status: 'degraded',
+        preferredBackendId: 'unsafe-local-file',
+        availableActions: ['run_doctor', 'update_api_key'],
+        degradedReason: 'plaintext fallback',
+      }),
+    ]);
+  });
+
   it('keeps workflow studio restorable when bootstrap readiness fails', async () => {
     serviceClientMock.queryBootstrapReadiness.mockRejectedValueOnce(
       new RuntimeError(

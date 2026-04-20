@@ -137,8 +137,8 @@ export class VsCodeExtensionHost {
         VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKSPACE_BOOTSTRAP,
         async () => commandController.runWorkspaceBootstrap(),
       ),
-      vscode.commands.registerCommand(VSCODE_EXTENSION_COMMAND_IDS.RUN_CONNECT, async () =>
-        commandController.runConnect(),
+      vscode.commands.registerCommand(VSCODE_EXTENSION_COMMAND_IDS.RUN_CONNECT, async (request) =>
+        commandController.runConnect(request),
       ),
       vscode.commands.registerCommand(VSCODE_EXTENSION_COMMAND_IDS.RUN_DOCTOR, async () =>
         commandController.runDoctor(),

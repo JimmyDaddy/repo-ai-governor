@@ -1,6 +1,6 @@
 # TK-1013 refresh vscode direct-onboarding docs and copy against runtime evidence
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-04-20
 - Owner: AI-Agent
 - Priority: P1
@@ -52,6 +52,7 @@ Update plugin-facing docs and copy only after runtime evidence exists.
 ## 9. 执行记录
 
 1. 2026-04-20：任务创建，状态初始化为 `planned`。
+2. 2026-04-21：`sprint-003-readiness-cta-and-provider-lifecycle` 已完成 closeout，当前任务切换为 `in_progress`，作为 `project-116 / sprint-004-docs-distribution-and-workbench-evidence` 的首个 active execution boundary。
 
 ## 10. 产出
 

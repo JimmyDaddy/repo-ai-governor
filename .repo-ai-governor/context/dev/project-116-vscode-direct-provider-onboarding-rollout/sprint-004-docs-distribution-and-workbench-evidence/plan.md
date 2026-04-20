@@ -1,6 +1,6 @@
 # sprint-004-docs-distribution-and-workbench-evidence 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-20
 - Sprint Goal: Collect built-source and local-VSIX evidence and prepare docs/support truth refresh for direct onboarding.
 - Project: `project-116-vscode-direct-provider-onboarding-rollout`
@@ -19,7 +19,7 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-1013 | refresh vscode direct-onboarding docs and copy against runtime evidence | verify provider lifecycle readiness parity and sprint handoff | planned |
+| TK-1013 | refresh vscode direct-onboarding docs and copy against runtime evidence | verify provider lifecycle readiness parity and sprint handoff | in_progress |
 | TK-1014 | capture built-source and local-vsix direct-onboarding evidence | refresh vscode direct-onboarding docs and copy against runtime evidence | planned |
 | TK-1015 | prepare support-truth boundary recommendation and sprint handoff | capture built-source and local-vsix direct-onboarding evidence | planned |
 
@@ -31,3 +31,4 @@
 ## 4. Sprint Notes
 
 1. README/support wording may only change together with the evidence window that proves plugin behavior.
+2. `2026-04-21`：`sprint-003-readiness-cta-and-provider-lifecycle` 已在 `CR-001` resolved 与 `TK-1021` closeout write-back 后进入 completed history；当前 sprint 已切换为 active primary surface，`TK-1013` 成为新的 `in_progress` execution boundary。

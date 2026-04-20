@@ -139,6 +139,18 @@ export const VSCODE_EXTENSION_PROVIDER_ONBOARDING_READINESS_PROJECTION_SOURCES =
   SNAPSHOT: 'provider_onboarding_snapshot',
   AGENT_ONBOARDING_SUMMARY: 'agent_onboarding_summary',
 } as const;
+export const VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES = {
+  CONNECT_REQUIRED: 'connect_required',
+  READY: 'ready',
+  RECONNECT_REQUIRED: 'reconnect_required',
+  DEGRADED: 'degraded',
+} as const;
+export const VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS = {
+  CONNECT_PROVIDER: 'connect_provider',
+  UPDATE_API_KEY: 'update_api_key',
+  RECONNECT_PROVIDER: 'reconnect_provider',
+  RUN_DOCTOR: 'run_doctor',
+} as const;
 export const VSCODE_EXTENSION_PROVIDER_ONBOARDING_CONFIG_TARGET_SUFFIXES = [
   'transport',
   'remoteApi.provider',

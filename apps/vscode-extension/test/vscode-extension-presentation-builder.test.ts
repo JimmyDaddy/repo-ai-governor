@@ -550,6 +550,173 @@ describe('VsCodeExtensionPresentationBuilder', () => {
     expect(bootstrapNode?.tooltip).not.toContain('run_workspace_bootstrap');
   });
 
+  it('projects provider lifecycle CTAs into workbench nodes and workflow studio html', () => {
+    const providerLifecycleSnapshots = [
+      {
+        tool: 'codex',
+        provider: 'openai',
+        vendorBinding: 'openai_responses',
+        readinessProjectionSource: 'provider_onboarding_snapshot',
+        status: 'ready',
+        availableActions: ['update_api_key', 'reconnect_provider'],
+        credentialRef: 'secret://openai/api-key',
+        model: 'gpt-5.4',
+        preferredBackendId: 'os-keychain',
+        configuredCredentialRef: true,
+        configuredModel: true,
+        credentialResolved: true,
+        warnings: [],
+      },
+    ] as const;
+    const nodes = builder.buildWorkbenchOverviewNodes({
+      workspaceContext: {
+        workspaceLabel: 'ai-governor',
+        workspaceRoot: '/repo',
+        workspaceTrusted: true,
+      },
+      queueOverview: {
+        generatedAt: '2026-04-17T10:00:00.000Z',
+        automationInbox: [],
+        reviewQueue: [],
+        parallelLanes: [],
+        workspaceSummary: [],
+        temporaryBridges: [],
+        notificationOwnership: {
+          ownerSurface: OrchestrationClientSurface.DESKTOP,
+          pendingItemCount: 0,
+          dueSoonItemCount: 0,
+          overdueItemCount: 0,
+          activeWorkspaceCount: 1,
+          defaultFollowUpSlaMinutes: 60,
+          notificationStatus: OrchestrationGovernanceNotificationStatus.IDLE,
+        },
+      },
+      providerLifecycleSnapshots,
+    });
+
+    const providerLifecycleNode = nodes.find((node) => node.nodeId === 'provider-lifecycle');
+    const codexLifecycleNode = providerLifecycleNode?.children?.find(
+      (child) => child.nodeId === 'provider-lifecycle:codex',
+    );
+    const reconnectAction = codexLifecycleNode?.children?.find(
+      (child) => child.nodeId === 'provider-lifecycle:codex:action:reconnect_provider',
+    );
+    const updateAction = codexLifecycleNode?.children?.find(
+      (child) => child.nodeId === 'provider-lifecycle:codex:action:update_api_key',
+    );
+
+    expect(providerLifecycleNode?.label).toBe('Provider lifecycle');
+    expect(codexLifecycleNode?.description).toBe('Ready');
+    expect(updateAction?.command?.command).toBe(VSCODE_EXTENSION_COMMAND_IDS.SET_MANAGED_SECRET);
+    expect(updateAction?.command?.arguments?.[0]).toMatchObject({
+      secretKeyName: 'openai/api-key',
+    });
+    expect(reconnectAction?.command?.command).toBe(VSCODE_EXTENSION_COMMAND_IDS.RUN_CONNECT);
+    expect(reconnectAction?.command?.arguments?.[0]).toMatchObject({
+      workspaceOperationArguments: expect.objectContaining({
+        presetId: 'single-tool-minimal',
+        providerOnboardingReuseExistingCredential: true,
+        providerOnboardingTool: 'codex',
+      }),
+    });
+
+    const html = builder.buildWorkflowStudioHtml({
+      workspaceContext: {
+        workspaceLabel: 'ai-governor',
+        workspaceRoot: '/repo',
+        workspaceTrusted: true,
+      },
+      queueOverview: {
+        generatedAt: '2026-04-17T10:15:00.000Z',
+        automationInbox: [],
+        reviewQueue: [],
+        parallelLanes: [],
+        workspaceSummary: [],
+        temporaryBridges: [],
+        notificationOwnership: {
+          ownerSurface: OrchestrationClientSurface.DESKTOP,
+          pendingItemCount: 0,
+          dueSoonItemCount: 0,
+          overdueItemCount: 0,
+          activeWorkspaceCount: 1,
+          defaultFollowUpSlaMinutes: 60,
+          notificationStatus: OrchestrationGovernanceNotificationStatus.IDLE,
+        },
+      },
+      providerLifecycleSnapshots,
+    });
+
+    expect(html).toContain('Provider lifecycle');
+    expect(html).toContain('Provider lifecycle actions');
+    expect(html).toContain('codex · Update API Key');
+    expect(html).toContain('codex · Reconnect Provider');
+  });
+
+  it('localizes provider lifecycle action labels and summary lines for zh-CN users', () => {
+    const zhBuilder = new VsCodeExtensionPresentationBuilder({
+      localizeText: (_english: string, chinese: string) => chinese,
+    });
+    const providerLifecycleSnapshots = [
+      {
+        tool: 'codex',
+        provider: 'openai',
+        vendorBinding: 'openai_responses',
+        readinessProjectionSource: 'provider_onboarding_snapshot',
+        status: 'ready',
+        availableActions: ['update_api_key', 'reconnect_provider'],
+        credentialRef: 'secret://openai/api-key',
+        model: 'gpt-5.4',
+        preferredBackendId: 'os-keychain',
+        configuredCredentialRef: true,
+        configuredModel: true,
+        credentialResolved: true,
+        warnings: [],
+      },
+    ] as const;
+
+    const markdown = zhBuilder.buildChatResponseMarkdown({
+      command: 'doctor',
+      workspaceContext: {
+        workspaceLabel: 'ai-governor',
+        workspaceRoot: '/repo',
+        workspaceTrusted: true,
+      },
+      executionBoardEntries: [],
+      hitlInboxEntries: [],
+      providerLifecycleSnapshots,
+    });
+    const html = zhBuilder.buildWorkflowStudioHtml({
+      workspaceContext: {
+        workspaceLabel: 'ai-governor',
+        workspaceRoot: '/repo',
+        workspaceTrusted: true,
+      },
+      queueOverview: {
+        generatedAt: '2026-04-17T10:15:00.000Z',
+        automationInbox: [],
+        reviewQueue: [],
+        parallelLanes: [],
+        workspaceSummary: [],
+        temporaryBridges: [],
+        notificationOwnership: {
+          ownerSurface: OrchestrationClientSurface.DESKTOP,
+          pendingItemCount: 0,
+          dueSoonItemCount: 0,
+          overdueItemCount: 0,
+          activeWorkspaceCount: 1,
+          defaultFollowUpSlaMinutes: 60,
+          notificationStatus: OrchestrationGovernanceNotificationStatus.IDLE,
+        },
+      },
+      providerLifecycleSnapshots,
+    });
+
+    expect(markdown).toContain('Provider 下一步动作 (codex): 更新 API Key, 重连 Provider');
+    expect(html).toContain('codex · 更新 API Key');
+    expect(html).toContain('codex · 重连 Provider');
+    expect(html).not.toContain('codex · Update API Key');
+  });
+
   it('guards locale-sensitive workspace-operation details when the snapshot was captured in another locale', () => {
     const zhBuilder = new VsCodeExtensionPresentationBuilder({
       localizeText: (_english: string, chinese: string) => chinese,

@@ -31,13 +31,13 @@
 
 ## 2.3 sprint-003-readiness-cta-and-provider-lifecycle
 
-- Status: active
+- Status: completed
 - Sprint Goal: Converge readiness surfaces, CTA mapping, and provider lifecycle flows around the onboarding facade.
-- Task Package: `TK-1010、TK-1011、TK-1012`
+- Task Package: `TK-1010、TK-1011、TK-1012、TK-1021`
 
 ## 2.4 sprint-004-docs-distribution-and-workbench-evidence
 
-- Status: planned
+- Status: active
 - Sprint Goal: Collect built-source and local-VSIX evidence and prepare docs/support truth refresh for direct onboarding.
 - Task Package: `TK-1013、TK-1014、TK-1015`
 
@@ -55,14 +55,15 @@
 | TK-1005 | sprint-001-contract-and-provider-onboarding-facade | decompose service-native provider-onboarding snapshot apply and receipt facade | service seam | freeze direct-api-key onboarding contract and owner split | completed |
 | TK-1006 | sprint-001-contract-and-provider-onboarding-facade | prepare sprint-001 handoff and activation recommendation | governance handoff | decompose service-native provider-onboarding snapshot apply and receipt facade | completed |
 | TK-1019 | sprint-001-contract-and-provider-onboarding-facade | close sprint-001 boundary and activate sprint-002 execution surface | sprint closeout | CR-001 reviewer-clean handoff | completed |
-| TK-1007 | sprint-002-plugin-native-direct-api-key-entry | implement plugin-native direct api key entry and secure capture | workbench surface | prepare sprint-001 handoff and activation recommendation | planned |
-| TK-1008 | sprint-002-plugin-native-direct-api-key-entry | persist managed secret credentialRef and provider config through explicit mutation seam | mutation seam | implement plugin-native direct api key entry and secure capture | planned |
-| TK-1009 | sprint-002-plugin-native-direct-api-key-entry | verify plugin human path exits env-var-first onboarding | verification handoff | persist managed secret credentialRef and provider config through explicit mutation seam | planned |
+| TK-1007 | sprint-002-plugin-native-direct-api-key-entry | implement plugin-native direct api key entry and secure capture | workbench surface | prepare sprint-001 handoff and activation recommendation | completed |
+| TK-1008 | sprint-002-plugin-native-direct-api-key-entry | persist managed secret credentialRef and provider config through explicit mutation seam | mutation seam | implement plugin-native direct api key entry and secure capture | completed |
+| TK-1009 | sprint-002-plugin-native-direct-api-key-entry | verify plugin human path exits env-var-first onboarding | verification handoff | persist managed secret credentialRef and provider config through explicit mutation seam | completed |
 | TK-1020 | sprint-002-plugin-native-direct-api-key-entry | close sprint-002 boundary and activate sprint-003 execution surface | sprint closeout | CR-001 reviewer-clean handoff | completed |
-| TK-1010 | sprint-003-readiness-cta-and-provider-lifecycle | converge overview status and doctor cta mapping with provider-onboarding snapshot | readiness surface | verify plugin human path exits env-var-first onboarding | in_progress |
-| TK-1011 | sprint-003-readiness-cta-and-provider-lifecycle | land update-api-key reconnect-provider and degraded-state guidance | lifecycle UX | converge overview status and doctor cta mapping with provider-onboarding snapshot | planned |
-| TK-1012 | sprint-003-readiness-cta-and-provider-lifecycle | verify provider lifecycle readiness parity and sprint handoff | verification handoff | land update-api-key reconnect-provider and degraded-state guidance | planned |
-| TK-1013 | sprint-004-docs-distribution-and-workbench-evidence | refresh vscode direct-onboarding docs and copy against runtime evidence | docs package | verify provider lifecycle readiness parity and sprint handoff | planned |
+| TK-1010 | sprint-003-readiness-cta-and-provider-lifecycle | converge overview status and doctor cta mapping with provider-onboarding snapshot | readiness surface | verify plugin human path exits env-var-first onboarding | completed |
+| TK-1011 | sprint-003-readiness-cta-and-provider-lifecycle | land update-api-key reconnect-provider and degraded-state guidance | lifecycle UX | converge overview status and doctor cta mapping with provider-onboarding snapshot | completed |
+| TK-1012 | sprint-003-readiness-cta-and-provider-lifecycle | verify provider lifecycle readiness parity and sprint handoff | verification handoff | land update-api-key reconnect-provider and degraded-state guidance | completed |
+| TK-1021 | sprint-003-readiness-cta-and-provider-lifecycle | close sprint-003 boundary and activate sprint-004 execution surface | sprint closeout | CR-001 reviewer-clean handoff | completed |
+| TK-1013 | sprint-004-docs-distribution-and-workbench-evidence | refresh vscode direct-onboarding docs and copy against runtime evidence | docs package | verify provider lifecycle readiness parity and sprint handoff | in_progress |
 | TK-1014 | sprint-004-docs-distribution-and-workbench-evidence | capture built-source and local-vsix direct-onboarding evidence | evidence bundle | refresh vscode direct-onboarding docs and copy against runtime evidence | planned |
 | TK-1015 | sprint-004-docs-distribution-and-workbench-evidence | prepare support-truth boundary recommendation and sprint handoff | support truth handoff | capture built-source and local-vsix direct-onboarding evidence | planned |
 | TK-1016 | sprint-005-clean-room-validation-and-rollout-closeout | run zero-env-var clean-room rehearsal and failure-path validation | clean-room evidence | prepare support-truth boundary recommendation and sprint handoff | planned |
@@ -88,6 +89,8 @@
 3. 2026-04-20：sprint-001 implementation tranche 已完成：`query/apply provider onboarding` service seam、embedded/sidecar parity、selector defaults 与 owner split guardrail tests 已落盘，下一步进入 delegated CR loop 与 sprint closeout。
 4. 2026-04-20：`CR-001` 已 resolved，accepted findings 已在同窗口完成修复与验证；sprint-001 随后通过 `TK-1019` 完成 closeout write-back，当前 primary execution surface 已切换到 `sprint-002-plugin-native-direct-api-key-entry`，`TK-1007` 成为新的 `in_progress` boundary。
 5. 2026-04-20：`CR-001` 已在 sprint-002 收口为 `resolved`，`TK-1020` 完成 sprint-002 closeout write-back；当前 primary execution surface 已切换到 `sprint-003-readiness-cta-and-provider-lifecycle`，`TK-1010` 成为新的 `in_progress` boundary。
+6. 2026-04-20：sprint-003 implementation tranche 已完成：provider lifecycle projection、`Connect Provider / Update API Key / Reconnect Provider / Run Doctor` CTA 映射与 readiness parity evidence 已落盘，下一步进入 delegated CR loop。
+7. 2026-04-21：`CR-001` 已在 sprint-003 收口到 `resolved`，`TK-1021` 完成 sprint-003 closeout write-back；当前 primary execution surface 已切换到 `sprint-004-docs-distribution-and-workbench-evidence`，`TK-1013` 成为新的 `in_progress` boundary。
 
 ## 7. 里程碑记录入口
 
