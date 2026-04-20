@@ -1,6 +1,6 @@
 # TK-997 verify failure-path matrix and sprint-003 handoff
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-20
 - Owner: AI-Agent
 - Priority: P1
@@ -39,8 +39,10 @@
 
 ## 7. Development Verification
 
-1. 待执行：按任务范围补充 fast/targeted verification。
-2. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-003-permission-terminal-filesystem-bridge-hardening/tasks" --task-id TK-997
+1. `pnpm exec vitest run apps/cli/test/runtime/adapter-routing-runtime.test.ts apps/cli/test/runtime/session-main-supervisor-runtime.test.ts apps/cli/test/runtime/agent-onboarding-runtime.test.ts packages/adapter-sdk/test/agent-route-runner.smoke.test.ts`
+2. `pnpm run build`
+3. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
+4. `node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-003-permission-terminal-filesystem-bridge-hardening/tasks" --task-id TK-997`
 
 ## 8. Delivery Verification
 
@@ -52,8 +54,11 @@
 ## 9. 执行记录
 
 1. 2026-04-20：任务创建，状态初始化为 `planned`。
+2. 2026-04-20：`TK-996` 完成后，本任务切换为 `in_progress`，开始执行 sprint-003 的 failure-path matrix、broader runtime verification 与 handoff 收口。
+3. 2026-04-20：完成 ACP sprint-003 broader verification，覆盖 adapter routing、session supervisor、agent onboarding、adapter-sdk smoke、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`。
+4. 2026-04-20：sprint-003 implementation/verification boundary 已完成，下一步进入 fresh delegated CR round 与 reviewer-clean 收口。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. sprint-003 failure-path matrix 已具备 replayable verification evidence，覆盖 permission bridge、terminal/filesystem capability gate、routing truth 与 package-level regression。
+2. sprint-003 已准备好进入 scoped CR loop，后续以 review artifact、triage 修复与 boundary gate 收口。

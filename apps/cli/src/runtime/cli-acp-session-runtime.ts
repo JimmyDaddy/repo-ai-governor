@@ -1,5 +1,6 @@
 import type {
   AgentCancelRequest,
+  AgentConfirmationRequest,
   AgentInvokeStageRequest,
   AgentStreamEventsRequest,
 } from '@repo-ai-governor/adapter-sdk';
@@ -59,6 +60,26 @@ export class CliAcpSessionRuntime {
   public findInvocationState(
     surfaceId: AdapterSurface,
     request: AgentCancelRequest,
+  ): CliAcpInvocationExecutionState | undefined {
+    return this.executionStateStore.findInvocationState({
+      surfaceId,
+      processId: request.processId,
+      executionId: request.executionId,
+      stageId: request.stageId,
+      routeKey: request.routeKey,
+    });
+  }
+
+  /**
+   * Returns the existing ACP execution state for one confirmation request when the request already
+   * carries concrete stage facts for transport-scoped correlation.
+   * @param surfaceId Selected ACP surface id.
+   * @param request Confirmation payload.
+   * @returns Existing transport-scoped execution state when the current request maps to a turn.
+   */
+  public findInvocationStateForConfirmation(
+    surfaceId: AdapterSurface,
+    request: AgentConfirmationRequest,
   ): CliAcpInvocationExecutionState | undefined {
     return this.executionStateStore.findInvocationState({
       surfaceId,

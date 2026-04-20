@@ -3,6 +3,7 @@ export type {
   CliAcpHostAvailabilityResolution,
   CliAcpInvocationContext,
   CliAcpInvocationExecutionState,
+  CliAcpPermissionRequestResolution,
   CliAdapterCredentialReferenceDiagnostic,
   CliAdapterRoleEvaluation,
   CliAdapterSecretBackendDiagnostics,

@@ -1,6 +1,6 @@
 # sprint-004-clean-room-execution-and-packaged-evidence 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-20
 - Sprint Goal: 完成 source-checkout packaged clean-room execution evidence 与 failure-path 验证
 - Project: `project-115-acp-execution-bridge-rollout`
@@ -17,7 +17,7 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-998 | build source-checkout acp execution clean-room slice | sprint-003-permission-terminal-filesystem-bridge-hardening planned handoff | planned |
+| TK-998 | build source-checkout acp execution clean-room slice | sprint-003-permission-terminal-filesystem-bridge-hardening planned handoff | in_progress |
 | TK-999 | land packaged distribution and runtime-service execution evidence | TK-998 | planned |
 | TK-1000 | prepare sprint-004 closeout and support-truth readiness recommendation | TK-999 | planned |
 
@@ -31,4 +31,4 @@
 
 1. bootstrap 阶段不预生成 code_review 生命周期文件。
 2. 若用户只要求拆解，不自动修改 current-context.md。
-3. 该 sprint 默认保持 planned，等待 sprint-003-permission-terminal-filesystem-bridge-hardening handoff 或用户显式激活。
+3. `2026-04-20`：`CR-001` 确认 sprint-003 reviewer-clean 后，本 sprint 被激活为新的 primary execution surface；`TK-998` 成为当前 in-progress execution boundary。

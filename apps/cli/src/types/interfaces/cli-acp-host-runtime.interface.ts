@@ -1,5 +1,6 @@
 import type {
   AgentAvailabilityStatus,
+  AgentConfirmationDecision,
   AgentHealthCheckDiagnostic,
   AgentInvokeStageResult,
   AgentStreamEvent,
@@ -27,11 +28,25 @@ export interface CliAcpInvocationContext {
 }
 
 /**
+ * Defines the transport-scoped confirmation facts that stay bound to one ACP permission request id.
+ */
+export interface CliAcpPermissionRequestResolution {
+  toolCallId: string;
+  allowedDecisions: AgentConfirmationDecision[];
+  decision: AgentConfirmationDecision;
+  constraints: string[];
+  reason: string;
+  decidedAt: string;
+}
+
+/**
  * Defines the additive ACP-local execution state that must stay outside canonical session truth.
  */
 export interface CliAcpInvocationExecutionState extends CliAcpInvocationContext {
   invocationKey: string;
   acpSessionId: string | null;
+  emittedToolCallIds: string[];
+  permissionRequestResolutionsById: Record<string, CliAcpPermissionRequestResolution>;
   permissionRequestIds: string[];
   terminalIds: string[];
   createdAt: string;

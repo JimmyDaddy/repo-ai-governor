@@ -24,14 +24,19 @@ export class CliAcpHostOperationRuntime {
 
   /**
    * Bridges one host-facing confirmation request into the ACP permission seam when supported.
-   * @param _request Confirmation payload.
+   * @param request Confirmation payload.
    * @returns Confirmation result once ACP permission bridging is enabled.
    */
   public async requestConfirmation(
-    _request: AgentConfirmationRequest,
+    request: AgentConfirmationRequest,
   ): Promise<AgentConfirmationResult> {
     return await this.options.transportClientRuntime.requestPermission({
       surfaceId: this.options.surfaceId,
+      request,
+      invocationState: this.options.sessionRuntime.findInvocationStateForConfirmation(
+        this.options.surfaceId,
+        request,
+      ),
       localizeText: this.options.localizeText,
     });
   }

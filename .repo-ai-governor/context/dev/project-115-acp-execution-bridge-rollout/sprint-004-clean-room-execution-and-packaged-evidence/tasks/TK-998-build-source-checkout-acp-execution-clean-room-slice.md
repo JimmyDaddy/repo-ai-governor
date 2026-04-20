@@ -1,6 +1,6 @@
 # TK-998 build source-checkout acp execution clean-room slice
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-04-20
 - Owner: AI-Agent
 - Priority: P1
@@ -52,6 +52,7 @@
 ## 9. 执行记录
 
 1. 2026-04-20：任务创建，状态初始化为 `planned`。
+2. 2026-04-20：`CR-001` 确认 sprint-003 reviewer-clean 后，本任务切换为 `in_progress`，作为 sprint-004-clean-room-execution-and-packaged-evidence 的首个 active execution surface。
 
 ## 10. 产出
 

@@ -30,13 +30,13 @@
 
 ## 2.3 sprint-003-permission-terminal-filesystem-bridge-hardening
 
-- Status: active
+- Status: completed
 - Sprint Goal: 完成 permission terminal filesystem bridge hardening 与 capability-gated fail-closed 语义
 - Task Package: `TK-995、TK-996、TK-997`
 
 ## 2.4 sprint-004-clean-room-execution-and-packaged-evidence
 
-- Status: planned
+- Status: active
 - Sprint Goal: 完成 source-checkout packaged clean-room execution evidence 与 failure-path 验证
 - Task Package: `TK-998、TK-999、TK-1000`
 
@@ -56,10 +56,11 @@
 | TK-992 | sprint-002-executable-acp-exec-baseline | implement executable acp_exec invoke prompt and cancel baseline | execution baseline | sprint-001-contract-and-runtime-decomposition planned handoff | completed |
 | TK-993 | sprint-002-executable-acp-exec-baseline | land shared invocation store and stream attachment semantics | shared execution | TK-992 | completed |
 | TK-994 | sprint-002-executable-acp-exec-baseline | verify fixture-backed acp contract baseline and sprint-002 handoff | verification handoff | TK-993 | completed |
-| TK-995 | sprint-003-permission-terminal-filesystem-bridge-hardening | implement permission bridge and active tool-call confirmation mapping | permission bridge | sprint-002-executable-acp-exec-baseline planned handoff | planned |
-| TK-996 | sprint-003-permission-terminal-filesystem-bridge-hardening | implement terminal and filesystem bridge runtime hardening | host operation bridge | TK-995 | planned |
-| TK-997 | sprint-003-permission-terminal-filesystem-bridge-hardening | verify failure-path matrix and sprint-003 handoff | verification handoff | TK-996 | planned |
-| TK-998 | sprint-004-clean-room-execution-and-packaged-evidence | build source-checkout acp execution clean-room slice | clean-room evidence | sprint-003-permission-terminal-filesystem-bridge-hardening planned handoff | planned |
+| TK-995 | sprint-003-permission-terminal-filesystem-bridge-hardening | implement permission bridge and active tool-call confirmation mapping | permission bridge | sprint-002-executable-acp-exec-baseline planned handoff | completed |
+| TK-996 | sprint-003-permission-terminal-filesystem-bridge-hardening | implement terminal and filesystem bridge runtime hardening | host operation bridge | TK-995 | completed |
+| TK-997 | sprint-003-permission-terminal-filesystem-bridge-hardening | verify failure-path matrix and sprint-003 handoff | verification handoff | TK-996 | completed |
+| TK-1020 | sprint-003-permission-terminal-filesystem-bridge-hardening | close sprint-003 boundary and activate sprint-004 execution surface | sprint closeout | CR-001 reviewer-clean handoff | completed |
+| TK-998 | sprint-004-clean-room-execution-and-packaged-evidence | build source-checkout acp execution clean-room slice | clean-room evidence | sprint-003-permission-terminal-filesystem-bridge-hardening planned handoff | in_progress |
 | TK-999 | sprint-004-clean-room-execution-and-packaged-evidence | land packaged distribution and runtime-service execution evidence | distribution evidence | TK-998 | planned |
 | TK-1000 | sprint-004-clean-room-execution-and-packaged-evidence | prepare sprint-004 closeout and support-truth readiness recommendation | closeout handoff | TK-999 | planned |
 | TK-1001 | sprint-005-external-interoperability-and-rollout-closeout | run optional external acp interoperability rehearsal | interoperability rehearsal | sprint-004-clean-room-execution-and-packaged-evidence planned handoff | planned |
@@ -85,6 +86,7 @@
 3. 2026-04-20：`CR-001` 已 resolved，sprint-001 正式完成并切换到 `sprint-002-executable-acp-exec-baseline`；`TK-992` 已激活为当前 in-progress execution surface。
 4. 2026-04-20：完成 sprint-002 implementation baseline 与 verification handoff，落地 fixture-backed ACP invoke/stream/cancel、shared invocation replay 与 targeted/build/package verification；下一步进入 sprint-002 delegated CR round。
 5. 2026-04-20：`CR-008` fresh delegated review 返回 `No actionable findings.`，sprint-002 在 round-8 reviewer-clean 后完成 closeout，并把 primary execution surface 正式切换到 `sprint-003-permission-terminal-filesystem-bridge-hardening`。
+6. 2026-04-20：`CR-001` 在 sprint-003 delegated review loop 中 reviewer-clean，sprint-003 已完成 closeout；`TK-1020` 完成同窗口 activation write-back，primary execution surface 切换到 `sprint-004-clean-room-execution-and-packaged-evidence`，`TK-998` 成为当前 in-progress boundary。
 
 ## 7. 里程碑记录入口
 

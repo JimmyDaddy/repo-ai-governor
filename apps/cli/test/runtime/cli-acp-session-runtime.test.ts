@@ -76,6 +76,27 @@ describe('CliAcpSessionRuntime', () => {
     expect(streamState.bufferedStreamEvents[0]?.payload.delta).toBe('hello');
   });
 
+  it('returns the same shared invocation state for one exact confirmation lookup on the ACP turn', () => {
+    const runtime = new CliAcpSessionRuntime();
+    const invocationState = runtime.ensureInvocationState(AdapterSurface.CODEX, {
+      processId: 'process-002-confirmation',
+      executionId: 'execution-002-confirmation',
+      stageId: 'stage-002-confirmation',
+      routeKey: 'route-002-confirmation',
+      input: {},
+    });
+
+    expect(
+      runtime.findInvocationStateForConfirmation(AdapterSurface.CODEX, {
+        processId: 'process-002-confirmation',
+        executionId: 'execution-002-confirmation',
+        stageId: 'stage-002-confirmation',
+        routeKey: 'route-002-confirmation',
+        prompt: 'Confirm the shared ACP tool call.',
+      }),
+    ).toBe(invocationState);
+  });
+
   it('returns undefined for process/execution-local cancel lookup when multiple live invocations match', () => {
     const runtime = new CliAcpSessionRuntime();
     runtime.ensureInvocationState(AdapterSurface.CODEX, {

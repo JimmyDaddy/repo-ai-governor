@@ -1,6 +1,6 @@
 # TK-996 implement terminal and filesystem bridge runtime hardening
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-20
 - Owner: AI-Agent
 - Priority: P1
@@ -39,8 +39,9 @@
 
 ## 7. Development Verification
 
-1. 待执行：按任务范围补充 fast/targeted verification。
-2. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-003-permission-terminal-filesystem-bridge-hardening/tasks" --task-id TK-996
+1. `pnpm exec vitest run apps/cli/test/runtime/cli-acp-prompt-turn-runtime.test.ts apps/cli/test/runtime/cli-acp-session-runtime.test.ts`
+2. `pnpm exec tsc -p tsconfig.json --noEmit`
+3. `node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-003-permission-terminal-filesystem-bridge-hardening/tasks" --task-id TK-996`
 
 ## 8. Delivery Verification
 
@@ -52,8 +53,11 @@
 ## 9. 执行记录
 
 1. 2026-04-20：任务创建，状态初始化为 `planned`。
+2. 2026-04-20：`TK-995` 完成后，本任务切换为 `in_progress`，开始梳理 terminal/* 与 fs/* bridge 的 capability-gated fail-closed 语义和 cleanup 边界。
+3. 2026-04-20：在 `CliAcpTransportClientRuntime` 中补齐 fixture-backed `tool_call` bridge、terminal carrier tracking、filesystem capability gate，以及 cancel 后的 terminal/permission carrier cleanup。
+4. 2026-04-20：新增 terminal/fs available path、missing capability fail-closed、cancel cleanup 三类回归测试，并通过 targeted vitest 与 `tsc --noEmit`。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. `CliAcpTransportClientRuntime` 已支持 capability-gated fixture tool-call events，能对 `terminal/*` 和 `fs/*` 的 bridge 请求保持 fail-closed，而不是静默回落。
+2. transport-scoped `terminalIds` 现已在 cancel cleanup 时自动清空，保持 retained failed turn 的 host-operation carrier truth 可回收。

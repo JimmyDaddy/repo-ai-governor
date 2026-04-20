@@ -44,6 +44,8 @@ export class CliAcpExecutionStateStore {
       ...context,
       invocationKey,
       acpSessionId: null,
+      emittedToolCallIds: [],
+      permissionRequestResolutionsById: {},
       permissionRequestIds: [],
       terminalIds: [],
       createdAt: now,
