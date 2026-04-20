@@ -1,12 +1,26 @@
 import {
+  VSCODE_EXTENSION_CHAT_COMMAND_IDS,
   VSCODE_EXTENSION_CHAT_COMMAND_REVIEW,
   VSCODE_EXTENSION_CHAT_COMMAND_STATUS,
   VSCODE_EXTENSION_CHAT_PARTICIPANT_ID,
   VSCODE_EXTENSION_CHAT_PARTICIPANT_NAME,
+  VSCODE_EXTENSION_COMMAND_CAPABILITY_CLASSES,
   VSCODE_EXTENSION_COMMAND_IDS,
   VSCODE_EXTENSION_CONTAINER_ID,
+  VSCODE_EXTENSION_CONTINUITY_TOKENS,
+  VSCODE_EXTENSION_DESKTOP_RELATIONSHIP,
+  VSCODE_EXTENSION_HANDOFF_TARGET_CLASSES,
+  VSCODE_EXTENSION_NATIVE_ENTRYPOINTS,
+  VSCODE_EXTENSION_PUBLIC_SUPPORT_LEVEL,
+  VSCODE_EXTENSION_QUERY_CAPABILITY_CLASSES,
+  VSCODE_EXTENSION_SURFACE_ID,
+  VSCODE_EXTENSION_SURFACE_ROLE,
+  VSCODE_EXTENSION_TEMPORARY_BRIDGE_CAPABILITY_CLASSES,
   VSCODE_EXTENSION_TRUST_GATED_COMMAND_IDS,
+  VSCODE_EXTENSION_TRUTH_OWNER,
   VSCODE_EXTENSION_VIEW_IDS,
+  VSCODE_EXTENSION_WEBVIEW_USAGE_MODE,
+  VSCODE_EXTENSION_WORKBENCH_PANELS,
 } from '../constants/index.js';
 import type {
   VsCodeExtensionChatCommandContribution,
@@ -19,12 +33,25 @@ import type {
  * Builds the frozen extension contribution snapshot that package.json must mirror.
  *
  * Why this exists:
- * sprint-002 contract freeze should keep one code-level truth for IDs and trust-sensitive
- * boundaries before implementation adds actual view/chat/command behavior.
+ * the Phase C contract freeze should keep one code-level truth for workflow-studio, trust-
+ * sensitive commands, and temporary bridge affordances before packaging or UI drift appears.
  */
 export class VsCodeExtensionContract {
   public createSnapshot(): VsCodeExtensionContractSnapshot {
     return {
+      surfaceId: VSCODE_EXTENSION_SURFACE_ID,
+      surfaceRole: VSCODE_EXTENSION_SURFACE_ROLE,
+      truthOwner: VSCODE_EXTENSION_TRUTH_OWNER,
+      nativeEntrypoints: VSCODE_EXTENSION_NATIVE_ENTRYPOINTS,
+      workbenchPanels: VSCODE_EXTENSION_WORKBENCH_PANELS,
+      queryCapabilityClasses: VSCODE_EXTENSION_QUERY_CAPABILITY_CLASSES,
+      commandCapabilityClasses: VSCODE_EXTENSION_COMMAND_CAPABILITY_CLASSES,
+      temporaryBridgeCapabilityClasses: VSCODE_EXTENSION_TEMPORARY_BRIDGE_CAPABILITY_CLASSES,
+      webviewUsageMode: VSCODE_EXTENSION_WEBVIEW_USAGE_MODE,
+      publicSupportLevel: VSCODE_EXTENSION_PUBLIC_SUPPORT_LEVEL,
+      desktopRelationship: VSCODE_EXTENSION_DESKTOP_RELATIONSHIP,
+      handoffTargets: VSCODE_EXTENSION_HANDOFF_TARGET_CLASSES,
+      continuityTokens: VSCODE_EXTENSION_CONTINUITY_TOKENS,
       containerId: VSCODE_EXTENSION_CONTAINER_ID,
       chatParticipantId: VSCODE_EXTENSION_CHAT_PARTICIPANT_ID,
       chatParticipantName: VSCODE_EXTENSION_CHAT_PARTICIPANT_NAME,
@@ -38,8 +65,8 @@ export class VsCodeExtensionContract {
   private createViews(): readonly VsCodeExtensionViewContribution[] {
     return [
       {
-        id: VSCODE_EXTENSION_VIEW_IDS.EXECUTION_BOARD,
-        titleKey: 'views.executionBoard.title',
+        id: VSCODE_EXTENSION_VIEW_IDS.TASK_BOARD,
+        titleKey: 'views.taskBoard.title',
         kind: 'tree',
         trustSensitive: false,
       },
@@ -50,9 +77,27 @@ export class VsCodeExtensionContract {
         trustSensitive: false,
       },
       {
-        id: VSCODE_EXTENSION_VIEW_IDS.WORKSPACE_CONTEXT,
-        titleKey: 'views.workspaceContext.title',
+        id: VSCODE_EXTENSION_VIEW_IDS.REVIEW_QUEUE,
+        titleKey: 'views.reviewQueue.title',
         kind: 'tree',
+        trustSensitive: false,
+      },
+      {
+        id: VSCODE_EXTENSION_VIEW_IDS.AUTOMATION_QUEUE,
+        titleKey: 'views.automationQueue.title',
+        kind: 'tree',
+        trustSensitive: false,
+      },
+      {
+        id: VSCODE_EXTENSION_VIEW_IDS.WORKBENCH_OVERVIEW,
+        titleKey: 'views.workbenchOverview.title',
+        kind: 'tree',
+        trustSensitive: false,
+      },
+      {
+        id: VSCODE_EXTENSION_VIEW_IDS.WORKFLOW_STUDIO,
+        titleKey: 'views.workflowStudio.title',
+        kind: 'webview',
         trustSensitive: false,
       },
       {
@@ -68,12 +113,39 @@ export class VsCodeExtensionContract {
     return [
       this.createCommand(VSCODE_EXTENSION_COMMAND_IDS.REFRESH, 'commands.refresh.title'),
       this.createCommand(
+        VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKSPACE_BOOTSTRAP,
+        'commands.runWorkspaceBootstrap.title',
+      ),
+      this.createCommand(VSCODE_EXTENSION_COMMAND_IDS.RUN_CONNECT, 'commands.runConnect.title'),
+      this.createCommand(VSCODE_EXTENSION_COMMAND_IDS.RUN_DOCTOR, 'commands.runDoctor.title'),
+      this.createCommand(VSCODE_EXTENSION_COMMAND_IDS.RUN_CHECK, 'commands.runCheck.title'),
+      this.createCommand(
+        VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKFLOW_PREVIEW,
+        'commands.runWorkflowPreview.title',
+      ),
+      this.createCommand(
+        VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKFLOW_CREATE,
+        'commands.runWorkflowCreate.title',
+      ),
+      this.createCommand(
+        VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKFLOW_EDIT,
+        'commands.runWorkflowEdit.title',
+      ),
+      this.createCommand(
+        VSCODE_EXTENSION_COMMAND_IDS.OPEN_WORKFLOW_STUDIO,
+        'commands.openWorkflowStudio.title',
+      ),
+      this.createCommand(
         VSCODE_EXTENSION_COMMAND_IDS.OPEN_REVIEW_DETAIL,
         'commands.openReviewDetail.title',
       ),
       this.createCommand(
         VSCODE_EXTENSION_COMMAND_IDS.OPEN_HANDOFF_TARGET,
         'commands.openHandoffTarget.title',
+      ),
+      this.createCommand(
+        VSCODE_EXTENSION_COMMAND_IDS.STAGE_TEMPORARY_BRIDGE,
+        'commands.stageTemporaryBridge.title',
       ),
       this.createCommand(
         VSCODE_EXTENSION_COMMAND_IDS.SUBMIT_HITL_DECISION,
@@ -87,6 +159,18 @@ export class VsCodeExtensionContract {
         VSCODE_EXTENSION_COMMAND_IDS.TERMINATE_EXECUTION,
         'commands.terminateExecution.title',
       ),
+      this.createCommand(
+        VSCODE_EXTENSION_COMMAND_IDS.OPEN_USER_CONFIG,
+        'commands.openUserConfig.title',
+      ),
+      this.createCommand(
+        VSCODE_EXTENSION_COMMAND_IDS.CONFIGURE_USER_DEFAULT,
+        'commands.configureUserDefault.title',
+      ),
+      this.createCommand(
+        VSCODE_EXTENSION_COMMAND_IDS.SET_MANAGED_SECRET,
+        'commands.setManagedSecret.title',
+      ),
     ];
   }
 
@@ -99,6 +183,78 @@ export class VsCodeExtensionContract {
       {
         name: VSCODE_EXTENSION_CHAT_COMMAND_REVIEW,
         descriptionKey: 'chat.commands.review.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.REFRESH,
+        descriptionKey: 'chat.commands.refresh.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.WORKSPACE_BOOTSTRAP,
+        descriptionKey: 'chat.commands.workspaceBootstrap.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.CONNECT,
+        descriptionKey: 'chat.commands.connect.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.DOCTOR,
+        descriptionKey: 'chat.commands.doctor.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.CHECK,
+        descriptionKey: 'chat.commands.check.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.WORKFLOW_PREVIEW,
+        descriptionKey: 'chat.commands.workflowPreview.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.WORKFLOW_CREATE,
+        descriptionKey: 'chat.commands.workflowCreate.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.WORKFLOW_EDIT,
+        descriptionKey: 'chat.commands.workflowEdit.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.OPEN_WORKFLOW_STUDIO,
+        descriptionKey: 'chat.commands.workflowStudio.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.OPEN_REVIEW_DETAIL,
+        descriptionKey: 'chat.commands.reviewDetail.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.OPEN_HANDOFF_TARGET,
+        descriptionKey: 'chat.commands.handoffTarget.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.STAGE_TEMPORARY_BRIDGE,
+        descriptionKey: 'chat.commands.repositoryOperation.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.SUBMIT_HITL_DECISION,
+        descriptionKey: 'chat.commands.submitHitlDecision.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.RECOVER_EXECUTION,
+        descriptionKey: 'chat.commands.recoverExecution.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.TERMINATE_EXECUTION,
+        descriptionKey: 'chat.commands.terminateExecution.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.OPEN_USER_CONFIG,
+        descriptionKey: 'chat.commands.openUserConfig.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.CONFIGURE_USER_DEFAULT,
+        descriptionKey: 'chat.commands.configureUserDefault.description',
+      },
+      {
+        name: VSCODE_EXTENSION_CHAT_COMMAND_IDS.SET_MANAGED_SECRET,
+        descriptionKey: 'chat.commands.setManagedSecret.description',
       },
     ];
   }

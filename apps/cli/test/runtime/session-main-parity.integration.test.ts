@@ -33,6 +33,7 @@ class RecordingSessionShellRenderer {
       transcriptItems: viewModel.transcriptItems.map((item) => ({
         ...item,
         lines: [...item.lines],
+        ...(item.backlinksTitle ? { backlinksTitle: item.backlinksTitle } : {}),
         ...(item.backlinks
           ? { backlinks: item.backlinks.map((backlink) => ({ ...backlink })) }
           : {}),
@@ -981,7 +982,7 @@ function createRuntime(
   shellDependencies: Omit<LocalOrchestrationServiceShellDependencies, 'memoryConfig'> = {},
 ): CliOrchestrationServiceRuntime {
   return new CliOrchestrationServiceRuntime(workspaceRoot, {
-    serviceOwnerProvider: async (root) =>
+    serviceOwnerProvider: async ({ workspaceRoot: root }) =>
       new LocalOrchestrationServiceShell({
         workspaceRoot: root,
         ...shellDependencies,

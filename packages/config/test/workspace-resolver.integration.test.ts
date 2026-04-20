@@ -111,4 +111,27 @@ describe('WorkspaceResolver smoke', () => {
       resolve(expectedRepositoryRoot, '.repo-ai-governor'),
     );
   });
+
+  it('honors an explicit runtime workspace root override before mode-specific root resolution', () => {
+    const resolver = new WorkspaceResolver();
+    const repositoryRoot = process.cwd();
+    const explicitWorkspaceRoot = resolve(repositoryRoot, '.tmp', 'release-verify-workspace');
+
+    const resolvedWorkspace = resolver.resolve({
+      currentWorkingDirectory: repositoryRoot,
+      config: createConfigFixture(WorkspaceMode.TOOL_MANAGED, {
+        toolManagedRoot: '.tmp/config-workspaces',
+      }),
+      runtimeOverrides: {
+        mode: WorkspaceMode.TOOL_MANAGED,
+        toolManagedRoot: '.tmp/runtime-workspaces',
+        workspaceRoot: explicitWorkspaceRoot,
+      },
+    });
+
+    expect(resolvedWorkspace.workspaceRoot).toBe(explicitWorkspaceRoot);
+    expect(resolvedWorkspace.configPath).toBe(join(explicitWorkspaceRoot, 'governor.yaml'));
+    expect(resolvedWorkspace.mode).toBe(WorkspaceMode.TOOL_MANAGED);
+    expect(resolvedWorkspace.modeSource).toBe(WorkspaceModeSource.RUNTIME);
+  });
 });

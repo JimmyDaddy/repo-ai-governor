@@ -1,4 +1,8 @@
 import {
+  SESSION_DELIVERY_WORKFLOW_PHASE,
+  SESSION_MAIN_CAPABILITY_ID,
+} from '@repo-ai-governor/core-orchestration-service';
+import {
   type OrchestrationAppendSessionMessageResponse,
   type OrchestrationArchiveSessionResponse,
   type OrchestrationForkSessionResponse,
@@ -916,6 +920,38 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
     'Show session-shell status and hidden runtime details.',
   'cli.sessionShell.commands.theme.summary': 'Inspect or update the theme.',
   'cli.sessionShell.commands.agent.summary': 'Inspect the current foreground route.',
+  'cli.sessionShell.aiWorkflowPrompts.deliver.currentRepoIntro':
+    'Start the governed requirement-to-CR deliver workflow for the current repo.',
+  'cli.sessionShell.aiWorkflowPrompts.deliver.requestIntro':
+    'Start the governed requirement-to-CR deliver workflow for the following request.',
+  'cli.sessionShell.aiWorkflowPrompts.deliver.aliasNotice':
+    'Treat `/deliver` only as an explicit acceleration alias for the chat-first deliver entry.',
+  'cli.sessionShell.aiWorkflowPrompts.deliver.requestLine': 'Delivery request: {{request}}',
+  'cli.sessionShell.aiWorkflowPrompts.plan.currentGoalIntro':
+    'Use the standard planning template to create an execution plan for the current goal.',
+  'cli.sessionShell.aiWorkflowPrompts.plan.goalIntro':
+    'Use the standard planning template to create an execution plan for the following goal.',
+  'cli.sessionShell.aiWorkflowPrompts.plan.noSyncNotice':
+    'Do not sync anything to the sprint ledger yet.',
+  'cli.sessionShell.aiWorkflowPrompts.plan.goalLine': 'Goal: {{goal}}',
+  'cli.sessionShell.aiWorkflowPrompts.review.currentScopeIntro':
+    'Run the standard governed code-review workflow for the current working scope.',
+  'cli.sessionShell.aiWorkflowPrompts.review.scopeIntro':
+    'Run the standard governed code-review workflow for the following scope.',
+  'cli.sessionShell.aiWorkflowPrompts.review.focusNotice':
+    'Focus on user-visible regressions, behavior risk, and missing tests.',
+  'cli.sessionShell.aiWorkflowPrompts.review.structuredNotice':
+    'Return a structured review-style result instead of a free-form expert brainstorm.',
+  'cli.sessionShell.aiWorkflowPrompts.review.scopeLine': 'Review scope: {{target}}',
+  'cli.sessionShell.aiWorkflowPrompts.reviewVerify.currentTargetIntro':
+    'Run the standard review-verification workflow for the latest governed review context.',
+  'cli.sessionShell.aiWorkflowPrompts.reviewVerify.targetIntro':
+    'Run the standard review-verification workflow for the following target.',
+  'cli.sessionShell.aiWorkflowPrompts.reviewVerify.recheckNotice':
+    'Recheck the existing review artifact or fix result and determine whether accepted findings are actually resolved.',
+  'cli.sessionShell.aiWorkflowPrompts.reviewVerify.structuredNotice':
+    'Return a structured verification result rather than an open-ended expert discussion.',
+  'cli.sessionShell.aiWorkflowPrompts.reviewVerify.targetLine': 'Verification target: {{target}}',
   'cli.commands.init.description': 'Initialize governor workspace baseline.',
   'cli.commands.workspace.description': 'Plan or execute workspace migration baseline.',
   'cli.commands.workspace.actionGuideDryRun':
@@ -928,6 +964,13 @@ const DEFAULT_TRANSLATIONS: Record<string, string> = {
     'Remove the current governor workspace config so init can rebuild a clean baseline.',
   'cli.commands.workspace.actionGuideSetUiTheme':
     'Open the session-shell theme selector or persist one explicit workspace/global theme.',
+  'cli.sessionShell.responses.deliveryPhaseField': 'Delivery phase: {{phase}}',
+  'cli.sessionShell.responses.deliveryPendingActionField': 'Pending action: {{pendingAction}}',
+  'cli.sessionShell.responses.deliverySelectedStreamField': 'Target stream: {{selectedStream}}',
+  'cli.sessionShell.responses.deliveryResultSummaryField': 'Delivery summary: {{resultSummary}}',
+  'cli.sessionShell.responses.deliverySummaryTitle': 'Delivery workflow',
+  'cli.sessionShell.responses.deliverySummarySummaryLine': 'Delivery workflow metadata',
+  'cli.sessionShell.responses.relatedLinksTitle': 'Related',
   'sessionMainCapabilities.catalog.connect.summary':
     'Prepare and apply adapter onboarding changes for this workspace.',
   'sessionMainCapabilities.catalog.doctor.summary':
@@ -1217,12 +1260,147 @@ describe('CliSessionShellRunner', () => {
     ).toBe(true);
     expect(
       result.transcriptItems.some((item) =>
-        item.lines.includes('artifact=.../repo/context/review/code-review.md'),
+        item.lines.includes('artifact=/workspace/repo/context/review/code-review.md'),
       ),
     ).toBe(true);
     expect(result.transcriptItems[result.transcriptItems.length - 1]?.lines).toContain(
       'Transcript deletion is not performed.',
     );
+  });
+
+  it('renders delivery workflow recap fields and backlinks for governed plan command results', async () => {
+    const commandExecutor = vi.fn<
+      (argv: string[]) => Promise<CliSessionShellCommandExecutionResult>
+    >(async (argv) => {
+      if (argv[1] === 'commit') {
+        return {
+          artifactPaths: ['/workspace/repo/context/plan/plan-001.receipt.json'],
+          commandLine: argv.join(' '),
+          message: 'plan commit completed',
+          status: 'success',
+          summaryLines: ['Summary: plan commit completed'],
+          deliveryWorkflowUpdate: {
+            currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.EXECUTION_ACTIVE,
+            pendingAction: 'start_task_driven_execution_flow',
+            selectedTargetStream: 'stream-project-110-sprint-002',
+            relatedArtifactPaths: [
+              '/workspace/repo/context/plan/plan-001.receipt.json',
+              '/workspace/repo/context/plan/plan-001.preview.json',
+            ],
+            resultSummary: 'Task-driven execution is ready to start.',
+            childWorkflowBacklinks: [
+              {
+                capabilityId: SESSION_MAIN_CAPABILITY_ID.PLAN,
+                artifactPath: '/workspace/repo/context/plan/plan-001.receipt.json',
+                summary: 'Task plan commit receipt.',
+              },
+            ],
+          },
+        };
+      }
+
+      return {
+        artifactPaths: ['/workspace/repo/context/plan/plan-001.preview.json'],
+        commandLine: argv.join(' '),
+        message: 'plan preview completed',
+        status: 'success',
+        summaryLines: ['Summary: plan preview completed'],
+        followUpCommand: {
+          argv: [
+            'plan',
+            'commit',
+            '/workspace/repo/context/plan/plan-001.preview.json',
+            '--confirm-plan',
+            'approve',
+          ],
+          previewCommandLine:
+            'plan commit /workspace/repo/context/plan/plan-001.preview.json --confirm-plan approve',
+          slashQuery: '/plan sync',
+        },
+        deliveryWorkflowUpdate: {
+          currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.TASK_PLAN_COMMIT_PENDING,
+          pendingAction: 'confirm_task_plan_commit',
+          selectedTargetStream: 'stream-project-110-sprint-002',
+          relatedArtifactPaths: [
+            '/workspace/repo/context/plan/plan-001.preview.json',
+            '/workspace/repo/.repo-ai-governor/context/dev/project-110/sprint-002/tasks/checklist.md',
+          ],
+          resultSummary: 'Task plan preview is ready for confirmation.',
+          childWorkflowBacklinks: [
+            {
+              capabilityId: SESSION_MAIN_CAPABILITY_ID.PLAN,
+              artifactPath: '/workspace/repo/context/plan/plan-001.preview.json',
+              summary: 'Task plan preview artifact.',
+            },
+          ],
+        },
+      };
+    });
+    const renderer = new RecordingSessionShellRenderer();
+    const runner = new CliSessionShellRunner(
+      undefined,
+      renderer as never,
+      () => new StubSessionShellPromptAdapter(['/plan sync', '/confirm', '/exit']),
+      undefined,
+      undefined,
+      () => false,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    const result = await runner.run(
+      DEFAULT_RUN_OPTIONS({
+        commandExecutor,
+      }),
+    );
+    const commandRecap = result.transcriptItems.find(
+      (item) =>
+        item.renderKind === 'command_recap' &&
+        item.lines.includes('Delivery phase: task_plan_commit_pending'),
+    );
+
+    expect(commandRecap?.lines).toContain('Pending action: confirm_task_plan_commit');
+    expect(commandRecap?.lines).toContain('Target stream: stream-project-110-sprint-002');
+    expect(commandRecap?.lines).toContain(
+      'Delivery summary: Task plan preview is ready for confirmation.',
+    );
+    expect(commandRecap?.backlinks).toEqual([
+      {
+        kind: 'artifact',
+        label: 'plan-001.preview.json',
+        target: '/workspace/repo/context/plan/plan-001.preview.json',
+      },
+      {
+        kind: 'artifact',
+        label: 'checklist.md',
+        target:
+          '/workspace/repo/.repo-ai-governor/context/dev/project-110/sprint-002/tasks/checklist.md',
+      },
+    ]);
+    expect(commandExecutor).toHaveBeenCalledTimes(2);
+    expect(renderer.frames.some((frame) => frame.commandPreview?.includes('plan commit'))).toBe(
+      true,
+    );
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes(
+          'Command handoff preview is ready for plan commit /workspace/repo/context/plan/plan-001.preview.json --confirm-plan approve.',
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some(
+        (item) =>
+          item.renderKind === 'command_recap' &&
+          item.lines.includes('Delivery phase: execution_active'),
+      ),
+    ).toBe(true);
+    expect(
+      result.transcriptItems.some((item) =>
+        item.lines.includes(
+          'There is no pending command preview to confirm. Direct slash commands such as /review may already have executed.',
+        ),
+      ),
+    ).toBe(false);
   });
 
   it('supports multiline capture, history/search inspection, and shell passthrough summaries', async () => {
@@ -2480,21 +2658,28 @@ describe('CliSessionShellRunner', () => {
         },
       },
     };
-    const commandExecutor = vi.fn<
-      (argv: string[]) => Promise<CliSessionShellCommandExecutionResult>
-    >(async (argv, nestedExecutionOptions) => {
-      nestedExecutionOptions?.progressSink?.publish({
-        commandName: 'doctor',
-        runState: 'running',
-      });
-      return {
-        artifactPaths: [],
-        commandLine: argv.join(' '),
-        message: 'doctor completed',
-        status: 'success',
-        summaryLines: ['Summary: doctor completed'],
-      };
-    });
+    const commandExecutor = vi.fn(
+      async (
+        argv: string[],
+        nestedExecutionOptions?: {
+          progressSink?: {
+            publish: (event: CliCommandProgressEvent) => void;
+          };
+        },
+      ): Promise<CliSessionShellCommandExecutionResult> => {
+        nestedExecutionOptions?.progressSink?.publish({
+          commandName: 'doctor',
+          runState: 'running',
+        });
+        return {
+          artifactPaths: [],
+          commandLine: argv.join(' '),
+          message: 'doctor completed',
+          status: 'success',
+          summaryLines: ['Summary: doctor completed'],
+        };
+      },
+    );
     const runner = new CliSessionShellRunner(
       undefined,
       new RecordingSessionShellRenderer() as never,
@@ -2720,6 +2905,125 @@ describe('CliSessionShellRunner', () => {
     expect(
       result.transcriptItems.some((item) =>
         item.lines.includes('Summary: doctor --adapters --output pretty completed'),
+      ),
+    ).toBe(true);
+  });
+
+  it('restores follow-up preview_confirm handoffs after reattaching and allows /confirm to execute them', async () => {
+    const initialRenderer = new RecordingSessionShellRenderer();
+    const resumedRenderer = new RecordingSessionShellRenderer();
+    const sessionClient = new FakeSessionShellServiceClient('session-shell-001');
+    const commandExecutor = vi.fn<
+      (argv: string[]) => Promise<CliSessionShellCommandExecutionResult>
+    >(async (argv) => {
+      if (argv[0] === 'plan' && argv[1] === 'commit') {
+        return {
+          artifactPaths: ['/workspace/repo/context/plan/plan-001.receipt.json'],
+          commandLine: argv.join(' '),
+          message: 'plan commit completed',
+          status: 'success',
+          summaryLines: ['Summary: plan commit completed'],
+        };
+      }
+
+      return {
+        artifactPaths: ['/workspace/repo/context/plan/plan-001.preview.json'],
+        commandLine: argv.join(' '),
+        message: 'plan preview completed',
+        status: 'success',
+        summaryLines: ['Summary: plan preview completed'],
+        followUpCommand: {
+          argv: [
+            'plan',
+            'commit',
+            '/workspace/repo/context/plan/plan-001.preview.json',
+            '--confirm-plan',
+            'approve',
+          ],
+          previewCommandLine:
+            'plan commit /workspace/repo/context/plan/plan-001.preview.json --confirm-plan approve',
+          slashQuery: '/plan sync',
+        },
+        deliveryWorkflowUpdate: {
+          currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.TASK_PLAN_COMMIT_PENDING,
+          pendingAction: 'confirm_task_plan_commit',
+          selectedTargetStream: 'stream-project-110-sprint-002',
+          relatedArtifactPaths: ['/workspace/repo/context/plan/plan-001.preview.json'],
+          resultSummary: 'Task plan preview is ready for confirmation.',
+          childWorkflowBacklinks: [
+            {
+              capabilityId: SESSION_MAIN_CAPABILITY_ID.PLAN,
+              artifactPath: '/workspace/repo/context/plan/plan-001.preview.json',
+              summary: 'Task plan preview artifact.',
+            },
+          ],
+        },
+      };
+    });
+    const initialRunner = new CliSessionShellRunner(
+      undefined,
+      initialRenderer as never,
+      () => new StubSessionShellPromptAdapter(['/plan sync', '/exit']),
+      undefined,
+      undefined,
+      () => false,
+      () => new Date('2026-03-30T12:00:00Z'),
+    );
+
+    await initialRunner.run(
+      DEFAULT_RUN_OPTIONS({
+        commandExecutor,
+        sessionClient,
+      }),
+    );
+
+    const resumedRunner = new CliSessionShellRunner(
+      undefined,
+      resumedRenderer as never,
+      () => new StubSessionShellPromptAdapter(['/confirm', '/exit']),
+      undefined,
+      undefined,
+      () => false,
+      () => new Date('2026-03-30T12:05:00Z'),
+    );
+
+    const resumedResult = await resumedRunner.run(
+      DEFAULT_RUN_OPTIONS({
+        commandExecutor,
+        sessionClient,
+        resumeOnStartup: true,
+        requestedSessionId: 'session-shell-001',
+      }),
+    );
+
+    expect(resumedResult.exitReason).toBe(CliSessionShellExitReason.SLASH_EXIT);
+    expect(commandExecutor).toHaveBeenNthCalledWith(
+      1,
+      ['plan'],
+      expect.objectContaining({
+        progressSink: expect.objectContaining({
+          publish: expect.any(Function),
+        }),
+      }),
+    );
+    expect(commandExecutor).toHaveBeenNthCalledWith(
+      2,
+      [
+        'plan',
+        'commit',
+        '/workspace/repo/context/plan/plan-001.preview.json',
+        '--confirm-plan',
+        'approve',
+      ],
+      expect.objectContaining({
+        progressSink: expect.objectContaining({
+          publish: expect.any(Function),
+        }),
+      }),
+    );
+    expect(
+      resumedResult.transcriptItems.some((item) =>
+        item.lines.includes('Summary: plan commit completed'),
       ),
     ).toBe(true);
   });
@@ -3330,37 +3634,44 @@ describe('CliSessionShellRunner', () => {
         type: CliSessionShellInputActionType.COMPOSER_SUBMITTED,
       },
     ]);
-    const commandExecutor = vi.fn<
-      (argv: string[]) => Promise<CliSessionShellCommandExecutionResult>
-    >(async (argv, executionOptions) => {
-      executionOptions?.progressSink?.publish({
-        commandName: 'doctor',
-        row: {
-          id: 'doctor-preflight',
-          title: 'Doctor preflight',
-          status: ExecutionProgressStatus.RUNNING,
-          detail: 'Collecting environment diagnostics.',
+    const commandExecutor = vi.fn(
+      async (
+        argv: string[],
+        executionOptions?: {
+          progressSink?: {
+            publish: (event: CliCommandProgressEvent) => void;
+          };
         },
-        logLine: 'doctor preflight running',
-      });
-      executionOptions?.progressSink?.publish({
-        commandName: 'doctor',
-        runState: 'success',
-        row: {
-          id: 'doctor-preflight',
-          title: 'Doctor preflight',
-          status: ExecutionProgressStatus.COMPLETED,
-          detail: 'Environment diagnostics are complete.',
-        },
-      });
-      return {
-        artifactPaths: [],
-        commandLine: argv.join(' '),
-        message: 'doctor completed',
-        status: 'success',
-        summaryLines: ['Summary: doctor completed'],
-      };
-    });
+      ): Promise<CliSessionShellCommandExecutionResult> => {
+        executionOptions?.progressSink?.publish({
+          commandName: 'doctor',
+          row: {
+            id: 'doctor-preflight',
+            title: 'Doctor preflight',
+            status: ExecutionProgressStatus.RUNNING,
+            detail: 'Collecting environment diagnostics.',
+          },
+          logLine: 'doctor preflight running',
+        });
+        executionOptions?.progressSink?.publish({
+          commandName: 'doctor',
+          runState: 'success',
+          row: {
+            id: 'doctor-preflight',
+            title: 'Doctor preflight',
+            status: ExecutionProgressStatus.COMPLETED,
+            detail: 'Environment diagnostics are complete.',
+          },
+        });
+        return {
+          artifactPaths: [],
+          commandLine: argv.join(' '),
+          message: 'doctor completed',
+          status: 'success',
+          summaryLines: ['Summary: doctor completed'],
+        };
+      },
+    );
     const runner = new CliSessionShellRunner(
       undefined,
       new RecordingSessionShellRenderer() as never,

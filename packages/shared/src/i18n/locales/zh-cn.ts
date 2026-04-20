@@ -460,6 +460,36 @@ export const ZH_CN_TRANSLATIONS = {
           summary: '查看或固定当前前台 session route 的正式命名。',
         },
       },
+      aiWorkflowPrompts: {
+        deliver: {
+          currentRepoIntro: '为当前仓库启动受治理的 requirement-to-CR deliver workflow。',
+          requestIntro: '为下列需求启动受治理的 requirement-to-CR deliver workflow。',
+          aliasNotice:
+            '将 `/deliver` 仅视为 chat-first deliver 入口的显式加速别名，而不是新的 canonical entry。',
+          requestLine: '交付需求：{{request}}',
+        },
+        plan: {
+          currentGoalIntro: '使用标准 planning template 为当前目标生成一份执行计划。',
+          goalIntro: '使用标准 planning template 为下列目标生成一份执行计划。',
+          noSyncNotice: '暂时不要把任何内容同步到 sprint ledger。',
+          goalLine: '目标：{{goal}}',
+        },
+        review: {
+          currentScopeIntro: '对当前工作范围运行标准化的受治理 code-review workflow。',
+          scopeIntro: '对下列范围运行标准化的受治理 code-review workflow。',
+          focusNotice: '重点关注用户可见回归、行为风险与缺失测试。',
+          structuredNotice: '请返回结构化 review 结果，而不是开放式专家脑暴。',
+          scopeLine: '评审范围：{{target}}',
+        },
+        reviewVerify: {
+          currentTargetIntro: '对最近的受治理评审上下文运行标准化的 review-verification workflow。',
+          targetIntro: '对下列目标运行标准化的 review-verification workflow。',
+          recheckNotice:
+            '重新检查既有评审产物或修复结果，并判断已接受的问题是否真的已经 resolved。',
+          structuredNotice: '请返回结构化 verification 结果，而不是开放式专家讨论。',
+          targetLine: '复核目标：{{target}}',
+        },
+      },
       responses: {
         welcome:
           'session shell 已启用。普通文本、slash command 与 service-backed transcript 现在共用同一前台交互面。',
@@ -512,6 +542,13 @@ export const ZH_CN_TRANSLATIONS = {
         commandBridgeUnavailable: '当前 session shell 附着面没有可用的 command execution bridge。',
         commandArtifact: 'artifact={{artifactPath}}',
         commandArtifactsMore: '其余 {{count}} 个相关产物已写出。',
+        deliveryPhaseField: 'Delivery phase: {{phase}}',
+        deliveryPendingActionField: 'Pending action: {{pendingAction}}',
+        deliverySelectedStreamField: 'Target stream: {{selectedStream}}',
+        deliveryResultSummaryField: 'Delivery summary: {{resultSummary}}',
+        deliverySummaryTitle: 'Delivery workflow',
+        deliverySummarySummaryLine: '已提供 presenter-safe 的 delivery workflow 摘要。',
+        relatedLinksTitle: '相关链接',
         commandSummary: '摘要：{{summary}}',
         commandStatusSummary: '关键状态：{{summary}}',
         commandFailureSummary: '失败原因：{{summary}}',
@@ -1292,11 +1329,25 @@ export const ZH_CN_TRANSLATIONS = {
     helpAppendix: {
       catalogTitle: '受治理能力目录：',
       capabilityTitle: 'session.main 受治理能力：{{title}}',
+      primaryEntry: '主入口：',
+      optionalAlias: '可选 discoverability alias：',
+      optionalAliasInline: '（可选 alias：{{command}}）',
+      reservedAlias: '预留 discoverability alias：',
       suggestedSlashCommand: '建议的 slash command：',
       executionMode: '执行路径：',
       examplePromptsTitle: '示例提示词：',
       relatedCapabilitiesTitle: '相关能力：',
+      entryBadges: {
+        chatFirst: '[对话优先]',
+      },
+      primaryEntries: {
+        conversationalAnswer: '直接对话请求',
+        roleMention: 'role mention',
+        cliCommand: 'CLI command',
+        slashCommand: 'slash command {{command}}',
+      },
       executionModes: {
+        aiWorkflow: '产品化 AI 工作流',
         directExecute: '直接执行（无需额外确认）',
         previewConfirm: '先预览，再确认执行',
       },
@@ -1362,6 +1413,16 @@ export const ZH_CN_TRANSLATIONS = {
           1: '打开这个仓库的 workflow 模板入口。',
         },
       },
+      deliver: {
+        title: '交付',
+        summary: '把需求 intake 到 clean CR closure 的受治理 requirement-to-CR 主路径串起来。',
+        detail:
+          '当你要走 requirement-to-CR governed delivery orchestration 时，应当使用 deliver。它负责把 requirement capture、approved durable brief gate、solution review、task decomposition、execution 与 governed CR closure 串到同一条 orchestration-owned path 上，而不是再造第二套 registry。',
+        examples: {
+          0: '帮我把这个需求按受治理主路径交付下去。',
+          1: '为这个仓库启动 requirement-to-CR delivery workflow。',
+        },
+      },
       plan: {
         title: '计划',
         summary: '对当前目标运行产品化 planning workflow。',
@@ -1402,6 +1463,18 @@ export const ZH_CN_TRANSLATIONS = {
           1: '执行 TK-123 的任务驱动交付流。',
         },
       },
+    },
+  },
+  sessionMainDispatcher: {
+    deliver: {
+      startedDelta: '已启动受治理的 deliver workflow。',
+      startedMessage:
+        '已启动受治理的 deliver workflow。请给我需求内容，或提供一个已批准 durable brief 的路径，这样我就能把下一阶段锚定到 orchestration-owned path 上。',
+      resumedDelta: '已恢复受治理的 deliver workflow。',
+      resumedMessage:
+        '已在阶段 `{{phase}}` 恢复受治理的 deliver workflow。请沿用当前 shared-session state 继续推进，而不是回到 requirement capture。',
+      resumedMessageWithAction:
+        '已在阶段 `{{phase}}` 恢复受治理的 deliver workflow。请继续执行当前 pending action `{{pendingAction}}`，不要回退到 requirement capture。',
     },
   },
   __internal: {

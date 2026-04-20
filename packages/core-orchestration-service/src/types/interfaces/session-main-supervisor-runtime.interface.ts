@@ -10,6 +10,7 @@ import type {
   SessionProviderContinuationSessionState,
   SessionProviderContinuationSummary,
 } from './provider-continuation.interface.js';
+import type { SessionDeliveryWorkflowSessionState } from './session-delivery-workflow.interface.js';
 import type { SessionMainCapabilityAvailability } from './session-main-capability-availability.interface.js';
 import type { SessionMainCapabilitySuggestedAction } from './session-main-capability-explainer.interface.js';
 
@@ -109,6 +110,7 @@ export interface SessionMainSupervisorTurnContext {
   latestNoteSummary?: string;
   metadata?: Record<string, unknown>;
   providerContinuationState?: SessionProviderContinuationSessionState;
+  deliveryWorkflowState?: SessionDeliveryWorkflowSessionState;
   publishStreamEvent?: (event: SessionMainSupervisorStreamEvent) => Promise<void>;
 }
 
@@ -144,6 +146,7 @@ export interface SessionMainSupervisorTurnOutcome {
   handoffBacklinks?: SessionMainSupervisorTurnBacklink[];
   providerContinuationSummaries?: readonly SessionProviderContinuationSummary[];
   providerContinuationMutations?: readonly SessionProviderContinuationMutation[];
+  deliveryWorkflowState?: SessionDeliveryWorkflowSessionState | null;
 }
 
 /**

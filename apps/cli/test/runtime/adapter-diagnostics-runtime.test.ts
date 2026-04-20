@@ -25,9 +25,10 @@ import {
 } from '../../src/constants/cli-governance-runtime.constant.js';
 import { CliAdapterDiagnosticsRuntime } from '../../src/runtime/adapter-diagnostics-runtime.js';
 import type { CliAdapterVerificationResolution } from '../../src/types/index.js';
+import { createCliAdapterVerificationResolution } from '../test-support/cli-command-fixtures.js';
 
 function createVerificationFixture(): CliAdapterVerificationResolution {
-  return {
+  return createCliAdapterVerificationResolution({
     overallStatus: CliGovernanceCheckStatus.WARN,
     requiredRoleCount: 1,
     requiredRoleFailedCount: 0,
@@ -96,7 +97,7 @@ function createVerificationFixture(): CliAdapterVerificationResolution {
         status: CliGovernanceCheckStatus.WARN,
       },
     ],
-  };
+  });
 }
 
 function createCliExecVerificationFixture(options: {
@@ -140,7 +141,7 @@ function createCliExecVerificationFixture(options: {
       : []),
   ];
 
-  return {
+  return createCliAdapterVerificationResolution({
     overallStatus: CliGovernanceCheckStatus.WARN,
     requiredRoleCount: 1,
     requiredRoleFailedCount: 0,
@@ -194,7 +195,7 @@ function createCliExecVerificationFixture(options: {
         status: CliGovernanceCheckStatus.WARN,
       },
     ],
-  };
+  });
 }
 
 function createAcpVerificationFixture(): CliAdapterVerificationResolution {
@@ -219,7 +220,7 @@ function createAcpVerificationFixture(): CliAdapterVerificationResolution {
     },
   ];
 
-  return {
+  return createCliAdapterVerificationResolution({
     overallStatus: CliGovernanceCheckStatus.WARN,
     requiredRoleCount: 1,
     requiredRoleFailedCount: 0,
@@ -274,7 +275,7 @@ function createAcpVerificationFixture(): CliAdapterVerificationResolution {
         status: CliGovernanceCheckStatus.WARN,
       },
     ],
-  };
+  });
 }
 
 describe('Cli adapter diagnostics runtime', () => {

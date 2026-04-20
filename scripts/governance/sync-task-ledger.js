@@ -6,7 +6,7 @@ import {
   readProjectedTaskRowsForSource,
   replaceTaskLedgerCanonicalRowsForSource,
 } from './task-ledger-projection.js';
-const TASK_CARD_FILE_PATTERN = /^(?:TK|CR)-\d{3}.*\.md$/u;
+const TASK_CARD_FILE_PATTERN = /^(?:TK|CR)-\d{3,}.*\.md$/u;
 const TASK_STATUS_TERMINAL = new Set([
   'completed',
   'done',
@@ -196,7 +196,7 @@ function parseTaskExecutionNotes(content) {
 }
 
 function parseTaskCard(content, filePath) {
-  const headingMatch = content.match(/^#\s*((?:TK|CR)-\d{3})\s+(.+?)\s*$/mu);
+  const headingMatch = content.match(/^#\s*((?:TK|CR)-\d{3,})\s+(.+?)\s*$/mu);
   if (!headingMatch) {
     return null;
   }
@@ -262,7 +262,7 @@ function parseChecklist(checklistPath) {
   let currentTaskId = null;
 
   for (const line of lines) {
-    const taskLineMatch = line.match(/^- \[(x| )\] ((?:TK|CR)-\d{3}) (.+)$/iu);
+    const taskLineMatch = line.match(/^- \[(x| )\] ((?:TK|CR)-\d{3,}) (.+)$/iu);
     if (taskLineMatch) {
       currentTaskId = taskLineMatch[2];
       if (!entries.has(currentTaskId)) {

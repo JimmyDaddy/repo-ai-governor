@@ -2,6 +2,7 @@ export { activate, deactivate } from './extension.js';
 export { VsCodeExtensionContract } from './runtime/vscode-extension-contract.js';
 export { VsCodeExtensionPresentationBuilder } from './runtime/vscode-extension-presentation-builder.js';
 export {
+  VSCODE_EXTENSION_CHAT_COMMAND_IDS,
   VSCODE_EXTENSION_CONTEXT_KEYS,
   VSCODE_EXTENSION_DEFAULT_EXECUTION_LIMIT,
   VSCODE_EXTENSION_CHAT_COMMAND_REVIEW,
@@ -26,4 +27,5 @@ export type {
   VsCodeExtensionTreeNodeDescriptor,
   VsCodeExtensionViewContribution,
   VsCodeExtensionWorkspaceContextSnapshot,
+  VsCodeExtensionWorkflowStudioSnapshot,
 } from './types/index.js';

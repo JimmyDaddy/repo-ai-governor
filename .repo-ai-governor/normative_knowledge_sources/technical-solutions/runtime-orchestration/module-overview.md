@@ -1,7 +1,7 @@
 # Runtime Orchestration Module Overview
 
 - Status: active
-- Date: 2026-04-06
+- Date: 2026-04-16
 - Module ID: `runtime.orchestration`
 - Owner: runtime
 - Layer: `runtime-core`
@@ -14,10 +14,11 @@
 
 1. 组合 graph-first execution 与 facade selector。
 2. 协调 provider loading、policy、artifact、notification 与 memory/session。
-3. 为 CLI 与未来 desktop / service host 提供统一 orchestration seam。
+3. 为 CLI、VS Code governance workbench 与未来 desktop / service host 提供统一 orchestration seam。
 4. 维持 `embedded / service-backed / sidecar_ipc` 三种 host surface 的一致执行约束。
 5. 承载 service-owned `session.main` supervisor runtime 的 turn lifecycle、conversation classification、capability explanation、skill-intent resolution、risk-tiered handoff policy 与 role-subagent orchestration boundary，但不把 presenter 或 projection 层升格为新的 runtime owner。
 6. 拥有 session-scoped provider continuation slot lifecycle、`laneKey` derivation、slot-aware mutation、invalidation rule 与 turn-level continuation summary projection，使 provider-native backend conversation continuity 始终受 shared session truth 约束。
+7. 拥有面向 governance workbench 的 service-owned aggregation facade：task board、review queue、workflow preview / stage progress、automation queue、adoption / host operations bridge 等 read model 与 mutation seam 必须由 orchestration/service 层统一暴露，但不得把 task/review/install receipt 真值迁入 runtime shadow state。
 
 ## 3. 非目标
 
@@ -41,6 +42,8 @@
 
 1. `contract.runtime.graph-execution.v1`
 2. `contract.runtime.session-main.capability-interaction-model.v1`
+3. `contract.runtime.session-main.delivery-orchestration.v1`
+4. `contract.runtime.governance-workbench-aggregation-facade.v1`
 
 ## 7. Loading Guidance
 
@@ -59,14 +62,19 @@
 8. 截至 `2026-04-04`，在既有 shared-session continuity 基础上，runtime 现进一步接受“lane-scoped provider-native continuation under shared-session truth”补充方向；`runtime.orchestration` 必须拥有 provider continuation slot lifecycle、turn-level continuation summaries 与 invalidation policy，但 raw provider handle 语义仍由 adapter/projection seam 持有。
 9. 截至 `2026-04-06`，本模块进一步接受“standards-native review engine + provenance-aware governed CR”补充方向：`runtime.orchestration` 必须拥有 review-rule projection 的执行顺序、`deterministic -> delegated` 混合评审流水线、finding dedupe、same-round verify 与 fresh recheck 分叉语义，但 canonical `CR-xxx` / review artifact 真值仍由既有治理链路承载。
 10. 截至 `2026-04-10`，本模块进一步接受“session.main prompt-first command model and deterministic workflow split”补充方向：`runtime.orchestration` 现正式拥有 capability interaction model truth，用于区分 `raw role entry / AI fixed workflow / deterministic utility / pending existence review / explain only`，并要求 public `/verify` 从 command model 中移除，同时把 `run` 收窄为 reusable governed execution flow。
+11. 截至 `2026-04-16`，本模块进一步接受“requirement-to-CR governed delivery orchestration”补充方向：`runtime.orchestration` 现正式拥有 `deliver` 这一 parent `ai_fixed_workflow` capability、`delivery brief` preview 到 approved durable brief 的阶段边界，以及 `requirement_review / solution_review / task_plan_commit / review_verify` 等 phase overlay 对既有 canonical governance truth 的 backlink mapping；`deliver` 可以消费既有 `plan / review / review_verify / run`，但不得替代这些 child workflow 自身的 artifact 与 lifecycle 真值。
+12. 截至 `2026-04-16`，本模块进一步接受“governance workbench aggregation facade”补充方向：`runtime.orchestration` 现正式拥有面向 VS Code primary workbench 的 service-owned query / command aggregation seam，用于统一暴露 `task_board / task_detail / review_queue / workbench_overview / workflow_preview / execution_stage_progress / automation_queue / adoption_status / host_distribution_status` 等 projection；其中 task/review/install receipt 的 canonical truth 仍留在既有治理 surfaces，typed CLI bridge 也只能作为 temporary path 并带明确 exit criteria。
 
 ## 9. Detail Docs
 
 1. Contract:
    - `contracts/runtime-graph-execution-contract.md`
    - `contracts/session-main-capability-interaction-model-contract.md`
+   - `contracts/session-main-delivery-orchestration-contract.md`
+   - `contracts/governance-workbench-aggregation-facade-contract.md`
 2. ADR:
    - `adrs/graph-first-runtime-and-service-backed-execution-cutover.md`
    - `adrs/session-main-supervisor-and-role-subagent-collaboration.md`
    - `adrs/session-main-prompt-first-command-model-and-deterministic-workflow-split.md`
    - `adrs/standards-native-review-engine-and-provenance-aware-cr.md`
+   - `adrs/requirement-to-cr-governed-delivery-orchestration.md`

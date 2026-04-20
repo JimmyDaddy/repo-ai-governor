@@ -222,8 +222,18 @@ export class DesktopOrchestrationServiceRuntime {
   private async resolveServiceOwner(): Promise<DesktopOrchestrationServiceOwner> {
     if (!this.serviceOwnerPromise) {
       this.serviceOwnerPromise = (async () => {
+        const repositoryRoot =
+          this.dependencies.repositoryRoot ??
+          this.dependencies.sidecarClientDependencies?.repositoryRoot;
         if (this.dependencies.serviceOwnerProvider) {
-          return this.dependencies.serviceOwnerProvider(this.workspaceRoot);
+          return this.dependencies.serviceOwnerProvider({
+            workspaceRoot: this.workspaceRoot,
+            ...(repositoryRoot
+              ? {
+                  repositoryRoot,
+                }
+              : {}),
+          });
         }
 
         return new LocalOrchestrationServiceSidecarClient(this.workspaceRoot, {
@@ -233,6 +243,11 @@ export class DesktopOrchestrationServiceRuntime {
               }
             : {}),
           ...this.dependencies.sidecarClientDependencies,
+          ...(repositoryRoot
+            ? {
+                repositoryRoot,
+              }
+            : {}),
         }) as DesktopOrchestrationServiceOwner;
       })().catch((error) => {
         this.serviceOwnerPromise = null;

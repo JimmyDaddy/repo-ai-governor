@@ -44,6 +44,7 @@ const DEFAULT_TASK_OWNER = 'AI-Agent';
 const DEFAULT_TASK_PRIORITY = 'P0';
 
 interface CliPlanPrimaryStream {
+  streamId: string | null;
   currentContextPath: string;
   projectId: string | null;
   sprintId: string | null;
@@ -103,6 +104,7 @@ interface CliPlanPreviewArtifactPayload {
     workspaceMode: string;
   };
   targetStream: {
+    streamId: string | null;
     currentContextPath: string | null;
     projectId: string | null;
     sprintId: string | null;
@@ -130,6 +132,7 @@ interface CliPlanCommitReceiptArtifactPayload {
   status: CliPlanCommitStatus;
   committedAt: string;
   targetStream: {
+    streamId: string | null;
     projectId: string | null;
     sprintId: string | null;
     sprintPlanPath: string | null;
@@ -308,11 +311,14 @@ export class CliPlanCommand implements CliCommandExecutor {
         details: {
           action: CliPlanAction.PREVIEW,
           plan_id: planId,
+          target_stream_id: stream?.streamId ?? null,
           target_project_id: stream?.projectId ?? null,
           target_sprint_id: stream?.sprintId ?? null,
           preview_path: previewPath,
           sprint_plan_path: stream?.sprintPlanPath ?? null,
           tasks_dir: stream?.tasksDirPath ?? null,
+          checklist_path: stream?.checklistPath ?? null,
+          tasks_csv_path: stream?.csvPath ?? null,
           commit_readiness: previewState.commitReadiness,
           task_package_total: previewState.taskPackage.length,
           task_package_create_count: previewState.createCount,
@@ -401,12 +407,15 @@ export class CliPlanCommand implements CliCommandExecutor {
           details: {
             action: CliPlanAction.COMMIT,
             commit_status: CliPlanCommitStatus.CANCELLED,
+            target_stream_id: targetStream.streamId ?? null,
             source_preview_path: previewPath,
             receipt_path: receiptPath,
             created_task_count: 0,
             retained_task_count: previewState.taskPackage.length,
             sprint_plan_path: targetStream.sprintPlanPath ?? null,
             tasks_dir: targetStream.tasksDirPath ?? null,
+            checklist_path: targetStream.checklistPath ?? null,
+            tasks_csv_path: targetStream.csvPath ?? null,
           },
         },
       };
@@ -574,12 +583,15 @@ export class CliPlanCommand implements CliCommandExecutor {
         details: {
           action: CliPlanAction.COMMIT,
           commit_status: CliPlanCommitStatus.COMMITTED,
+          target_stream_id: activeStream.streamId,
           source_preview_path: previewPath,
           receipt_path: receiptPath,
           created_task_count: createdTaskIds.length,
           retained_task_count: retainedTaskIds.length,
           sprint_plan_path: activeStream.sprintPlanPath,
           tasks_dir: activeStream.tasksDirPath,
+          checklist_path: activeStream.checklistPath,
+          tasks_csv_path: activeStream.csvPath,
         },
       },
     };
@@ -643,7 +655,7 @@ export class CliPlanCommand implements CliCommandExecutor {
 
     const currentContextContent = await readFile(currentContextPath, 'utf8');
     const activeStreamsSection = this.extractSection(currentContextContent, 'Active Streams');
-    const primaryDescriptor =
+    const primaryStreamLine =
       activeStreamsSection
         .split(/\r?\n/u)
         .map((line) => line.trim())
@@ -651,8 +663,9 @@ export class CliPlanCommand implements CliCommandExecutor {
           (line) =>
             /^- `[^`]+`: /u.test(line) &&
             (line.startsWith('- `primary`:') || line.includes('role=`primary`')),
-        )
-        ?.replace(/^- `[^`]+`: /u, '') ?? null;
+        ) ?? null;
+    const primaryDescriptor = primaryStreamLine?.replace(/^- `[^`]+`: /u, '') ?? null;
+    const primaryStreamId = primaryStreamLine?.match(/^- `([^`]+)`: /u)?.[1]?.trim() ?? null;
     const primaryProjectId =
       currentContextContent.match(/^- Project:\s*`([^`]+)`/mu)?.[1]?.trim() ?? null;
     const primarySprintId =
@@ -660,6 +673,7 @@ export class CliPlanCommand implements CliCommandExecutor {
 
     if (!primaryDescriptor) {
       return {
+        streamId: primaryStreamId,
         currentContextPath,
         projectId: primaryProjectId,
         sprintId: primarySprintId,
@@ -679,6 +693,7 @@ export class CliPlanCommand implements CliCommandExecutor {
     );
 
     return {
+      streamId: primaryStreamId,
       currentContextPath,
       projectId: this.extractBacktickField(primaryDescriptor, 'project') ?? primaryProjectId,
       sprintId: this.extractBacktickField(primaryDescriptor, 'sprint') ?? primarySprintId,
@@ -777,6 +792,7 @@ export class CliPlanCommand implements CliCommandExecutor {
         workspaceMode: context.options.workspace.mode,
       },
       targetStream: {
+        streamId: stream?.streamId ?? null,
         currentContextPath: stream?.currentContextPath ?? null,
         projectId: stream?.projectId ?? null,
         sprintId: stream?.sprintId ?? null,
@@ -866,6 +882,7 @@ export class CliPlanCommand implements CliCommandExecutor {
         workspaceMode: '',
       },
       targetStream: {
+        streamId: this.readOptionalStringField(targetStream, 'streamId'),
         currentContextPath: this.readOptionalStringField(targetStream, 'currentContextPath'),
         projectId: this.readOptionalStringField(targetStream, 'projectId'),
         sprintId: this.readOptionalStringField(targetStream, 'sprintId'),
@@ -946,6 +963,7 @@ export class CliPlanCommand implements CliCommandExecutor {
       status: options.status,
       committedAt: options.committedAt,
       targetStream: {
+        streamId: options.previewPayload.targetStream.streamId,
         projectId: options.previewPayload.targetStream.projectId,
         sprintId: options.previewPayload.targetStream.sprintId,
         sprintPlanPath: options.previewPayload.targetStream.sprintPlanPath,

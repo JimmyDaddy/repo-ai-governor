@@ -69,8 +69,62 @@ const SESSION_MAIN_VERIFY_READINESS_CONTEXT_PATTERNS = [
   /(?:adapter|adapters?|适配器).*(?:status|状态|health|健康)/iu,
   /(?:status|状态|health|健康).*(?:adapter|adapters?|适配器)/iu,
 ] as const;
-const SESSION_MAIN_WORKFLOW_KEYWORDS = ['workflow', '流程', 'workflow preview', '流程预览'];
-const SESSION_MAIN_RUN_EXCLUDED_PATTERNS = [
+const SESSION_MAIN_WORKFLOW_PATTERNS = [
+  /\bworkflow preview\b/iu,
+  /\bpreview\b.*\bworkflow\b/iu,
+  /\bworkflow\b.*\bpreview\b/iu,
+  /\bworkflow template\b/iu,
+  /\btemplate\b.*\bworkflow\b/iu,
+  /\bworkflow\b.*\btemplate\b/iu,
+  /流程预览/u,
+  /预览.*(?:流程|workflow)/iu,
+  /(?:流程|workflow).*(?:预览)/iu,
+  /流程模板/u,
+  /模板.*(?:流程|workflow)/iu,
+  /(?:流程|workflow).*(?:模板)/iu,
+] as const;
+const SESSION_MAIN_DELIVER_EXPLICIT_EXECUTION_PATTERNS = [
+  /\bhelp(?:\s+me)?\s+deliver\b.*\b(?:requirement-to-cr|governed path)\b/iu,
+  /\b(?:start|launch|begin|run)\b.*\b(?:governed path|governed delivery workflow|governed deliver workflow)\b/iu,
+  /\b(?:start|launch|begin|run)\b.*\brequirement-to-cr\b.*\b(?:deliver|delivery|governed)\b.*\b(?:workflow|path)\b/iu,
+  /(?:帮我|请)?(?:把|将)?.*(?:需求|requirement).*(?:按|走).*(?:交付|deliver|主路径|workflow|流程)/iu,
+  /(?:帮我|请)?(?:启动|开始|发起).*(?:(?:受治理|governed).*(?:交付|deliver)|(?:交付|deliver|requirement-to-cr).*(?:受治理|主路径|workflow|流程))/iu,
+] as const;
+const SESSION_MAIN_DELIVER_FALLBACK_PATTERNS = [
+  /\bdeliver\b.*\b(?:this|that|the|my|our)\b.*\b(?:requirement|brief|proposal|solution)\b.*\b(?:requirement-to-cr|governed path)\b/iu,
+] as const;
+const SESSION_MAIN_DELIVER_CHILD_RUN_PATTERNS = [
+  /\b(?:task-driven execution flow|execution flow|task package|tk-\d+)\b/iu,
+  /(?:任务驱动执行流|执行流|任务包|TK-\d+)/iu,
+] as const;
+const SESSION_MAIN_DELIVER_EXPLANATION_PATTERNS = [
+  /\btell me about\b/iu,
+  /\bwhat is\b/iu,
+  /\bwhat does\b/iu,
+  /\bwhat can\b.*\bdo\b/iu,
+  /\btell me what\b.*\bdoes\b/iu,
+  /\bwhen should (?:i|we) use\b/iu,
+  /\bwhy should (?:i|we) use\b/iu,
+  /\bhow should (?:i|we) use\b/iu,
+  /\bhow do (?:i|we)\b/iu,
+  /\bshow me how\b/iu,
+  /\bwhat steps\b/iu,
+  /\bwalk me through\b/iu,
+  /\bexplain\b/iu,
+  /\bhow does\b/iu,
+  /\bshow me examples?\b/iu,
+  /\bhow to use\b/iu,
+  /\bsample prompt\b/iu,
+  /介绍一下/u,
+  /说说/u,
+  /讲讲/u,
+  /解释一下/u,
+  /示例/u,
+  /例子/u,
+  /怎么用/u,
+  /如何使用/u,
+] as const;
+const SESSION_MAIN_EXECUTION_EXCLUDED_PATTERNS = [
   /\bworkflow preview\b/iu,
   /\bpreview\b/iu,
   /\bcreate\b/iu,
@@ -90,7 +144,7 @@ const SESSION_MAIN_PLAN_PATTERNS = [
 const SESSION_MAIN_REVIEW_PATTERNS = [
   /\bcode[- ]review\b/iu,
   /(?<![/\w-])review(?![-\w])/iu,
-  /\bcr\b/iu,
+  /(?<![/\w-])cr(?![-\w])/iu,
   /评审/u,
   /审查/u,
 ];
@@ -109,11 +163,12 @@ const SESSION_MAIN_REVIEW_VERIFY_PATTERNS = [
   /(?:复核|校验).*(?:当前)?(?:cr|review).*(?:报告|结果)/iu,
 ];
 const SESSION_MAIN_RUN_PATTERNS = [
-  /\brun\b(?:\s+the)?\s+(?:next\s+)?(?:governed\s+|reusable\s+)?(?:workflow|flow|pipeline|task-driven execution flow|execution flow)\b/iu,
-  /\b(?:start|launch|execute)\b(?:\s+the)?\s+(?:next\s+)?(?:governed\s+|reusable\s+)?(?:workflow|flow|pipeline|task-driven execution flow|execution flow)\b/iu,
+  /\brun\b(?:\s+the)?\s+(?:next\s+)?(?:governed\s+|reusable\s+)(?:workflow|flow|pipeline)\b/iu,
+  /\b(?:start|launch|execute)\b(?:\s+the)?\s+(?:next\s+)?(?:governed\s+|reusable\s+)(?:workflow|flow|pipeline)\b/iu,
+  /\b(?:run|execute|start|launch|begin)\b.*\b(?:task-driven execution flow|execution flow)\b/iu,
   /\b(?:run|execute|start)\b.*\b(?:tk-\d+|task package)\b/iu,
-  /(?:运行|执行|启动|跑一下).*(?:受治理|可复用)?(?:workflow|工作流|流程|执行流|任务驱动执行流|任务包)/iu,
-  /(?:workflow|工作流|流程|执行流|任务驱动执行流|任务包).*(?:运行|执行|启动|跑一下)/iu,
+  /(?:运行|执行|启动|跑一下).*(?:(?:受治理|可复用).*(?:workflow|工作流|流程)|(?:执行流|任务驱动执行流|任务包))/iu,
+  /(?:(?:受治理|可复用).*(?:workflow|工作流|流程)|(?:执行流|任务驱动执行流|任务包)).*(?:运行|执行|启动|跑一下)/iu,
   /(?:运行|执行|启动).*(?:TK-\d+)/iu,
 ];
 const SESSION_MAIN_ONBOARDING_PATTERNS = [
@@ -260,10 +315,7 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
       });
     }
 
-    if (
-      this.includesAnyKeyword(normalizedMessage, SESSION_MAIN_PLAN_KEYWORDS) ||
-      this.matchesAnyPattern(normalizedMessage, SESSION_MAIN_PLAN_PATTERNS)
-    ) {
+    if (this.matchesPlanIntent(normalizedMessage)) {
       return this.createPlanFromCapabilityId({
         capabilityId: SESSION_MAIN_CAPABILITY_ID.PLAN,
         routerDecisionReason: 'session.main.router.direct_execute.plan',
@@ -291,6 +343,14 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
       });
     }
 
+    if (this.matchesDeliverIntent(rawMessage, normalizedMessage)) {
+      return this.createPlanFromCapabilityId({
+        capabilityId: SESSION_MAIN_CAPABILITY_ID.DELIVER,
+        routerDecisionReason: 'session.main.router.delivery_workflow.start',
+        commandBatches: [],
+      });
+    }
+
     if (this.matchesRunIntent(rawMessage)) {
       return this.createPlanFromCapabilityId({
         capabilityId: SESSION_MAIN_CAPABILITY_ID.RUN,
@@ -305,7 +365,7 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
       });
     }
 
-    if (this.includesAnyKeyword(normalizedMessage, SESSION_MAIN_WORKFLOW_KEYWORDS)) {
+    if (this.matchesAnyPattern(normalizedMessage, SESSION_MAIN_WORKFLOW_PATTERNS)) {
       return this.createPlanFromCapabilityId({
         capabilityId: SESSION_MAIN_CAPABILITY_ID.WORKFLOW,
         routerDecisionReason: 'session.main.router.direct_execute.workflow',
@@ -423,6 +483,13 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
     return this.matchesAnyPattern(message, SESSION_MAIN_REVIEW_PATTERNS);
   }
 
+  private matchesPlanIntent(message: string): boolean {
+    return (
+      this.includesAnyKeyword(message, SESSION_MAIN_PLAN_KEYWORDS) ||
+      this.matchesAnyPattern(message, SESSION_MAIN_PLAN_PATTERNS)
+    );
+  }
+
   private matchesVerifyMigrationIntent(message: string): boolean {
     return (
       this.matchesAnyPattern(message, SESSION_MAIN_VERIFY_ACTION_PATTERNS) &&
@@ -430,10 +497,34 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
     );
   }
 
+  private matchesDeliverIntent(rawMessage: string, normalizedMessage: string): boolean {
+    const hasExplicitDeliverExecutionIntent = this.matchesAnyPattern(
+      rawMessage,
+      SESSION_MAIN_DELIVER_EXPLICIT_EXECUTION_PATTERNS,
+    );
+    const hasFallbackDeliverExecutionIntent = this.matchesAnyPattern(
+      rawMessage,
+      SESSION_MAIN_DELIVER_FALLBACK_PATTERNS,
+    );
+    const referencesDeliverExplanation = this.matchesAnyPattern(
+      rawMessage,
+      SESSION_MAIN_DELIVER_EXPLANATION_PATTERNS,
+    );
+    return (
+      !this.matchesReviewVerifyIntent(normalizedMessage) &&
+      !this.matchesReviewIntent(normalizedMessage) &&
+      !this.matchesPlanIntent(normalizedMessage) &&
+      !this.matchesAnyPattern(rawMessage, SESSION_MAIN_EXECUTION_EXCLUDED_PATTERNS) &&
+      !this.matchesAnyPattern(rawMessage, SESSION_MAIN_DELIVER_CHILD_RUN_PATTERNS) &&
+      (hasExplicitDeliverExecutionIntent ||
+        (hasFallbackDeliverExecutionIntent && !referencesDeliverExplanation))
+    );
+  }
+
   private matchesRunIntent(message: string): boolean {
     return (
       this.matchesAnyPattern(message, SESSION_MAIN_RUN_PATTERNS) &&
-      !this.matchesAnyPattern(message, SESSION_MAIN_RUN_EXCLUDED_PATTERNS)
+      !this.matchesAnyPattern(message, SESSION_MAIN_EXECUTION_EXCLUDED_PATTERNS)
     );
   }
 

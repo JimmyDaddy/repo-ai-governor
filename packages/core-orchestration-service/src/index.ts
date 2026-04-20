@@ -19,12 +19,19 @@ export {
   SESSION_MAIN_HANDOFF_EXECUTION_MODE,
   SESSION_MAIN_INTERACTION_MODE,
   SESSION_MAIN_RESPONSE_MODE,
+  SESSION_DELIVERY_REQUIREMENT_REVIEW_OUTCOME,
+  SESSION_DELIVERY_WORKFLOW_CAPABILITY_ID,
+  SESSION_DELIVERY_WORKFLOW_CONTEXT_KEY,
+  SESSION_DELIVERY_WORKFLOW_PENDING_ACTION,
+  SESSION_DELIVERY_WORKFLOW_PHASE,
+  SESSION_DELIVERY_WORKFLOW_VERSION,
   SESSION_PROVIDER_CONTINUATIONS_CONTEXT_KEY,
   SESSION_PROVIDER_CONTINUATIONS_VERSION,
 } from './constants/index.js';
 export { LocalOrchestrationServiceSessionMainCapabilityCatalog } from './local-orchestration-service-session-main-capability-catalog.js';
 export { LocalOrchestrationServiceSessionMainCapabilityAvailabilityResolver } from './local-orchestration-service-session-main-capability-availability-resolver.js';
 export { LocalOrchestrationServiceSessionMainCapabilityExplainer } from './local-orchestration-service-session-main-capability-explainer.js';
+export { LocalOrchestrationServiceSessionDeliveryWorkflowRuntime } from './local-orchestration-service-session-delivery-workflow-runtime.js';
 export { LocalOrchestrationServiceShell } from './local-orchestration-service-shell.js';
 export { LocalOrchestrationServiceSidecarClient } from './local-orchestration-service-sidecar-client.js';
 export { LocalOrchestrationServiceSidecarHost } from './local-orchestration-service-sidecar-host.js';
@@ -55,6 +62,13 @@ export type {
   SessionMainCapabilityInteractionModel,
   SessionMainCapabilityPrimaryEntry,
   SessionMainCapabilitySuggestedAction,
+  SessionDeliveryRequirementReviewGate,
+  SessionDeliveryRequirementReviewOutcome,
+  SessionDeliveryWorkflowBacklink,
+  SessionDeliveryWorkflowCapabilityId,
+  SessionDeliveryWorkflowPhase,
+  SessionDeliveryWorkflowSessionState,
+  SessionDeliveryWorkflowVersion,
   SessionMainHandoffExecutionMode,
   SessionMainInteractionMode,
   SessionProviderContinuationHandle,

@@ -1,5 +1,5 @@
 schema_version: 1
-generated_at: 2026-04-15
+generated_at: 2026-04-20
 status: active
 owner: architecture
 
@@ -669,6 +669,33 @@ solutions:
     activated_at: 2026-04-06
     supersedes: []
 
+  - solution_id: technical-solution.vscode-full-governance-workbench-and-task-driven-orchestration
+    title: VS Code full governance workbench and task-driven orchestration technical solution
+    status: active
+    owner: runtime
+    version: v1
+    scope: cross-cutting
+    draft_paths:
+      - .repo-ai-governor/draft/vscode-full-governance-workbench-and-task-driven-orchestration-technical-solution.md
+    review_paths:
+      - .repo-ai-governor/draft/approved_solution_review_vscode-full-governance-workbench-and-task-driven-orchestration.md
+    final_paths:
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/vscode-governance-workbench-surface-contract.md
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/vscode-primary-full-governance-workbench.md
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/contracts/governance-workbench-aggregation-facade-contract.md
+    target_module_ids:
+      - runtime.governance-clients
+      - runtime.orchestration
+    north_star_refs:
+      - prd.multi-agent-orchestration
+      - overall.graph-first-runtime
+      - architecture.runtime-boundary
+      - architecture.governance-boundary
+    approved_at: 2026-04-16
+    approved_by: AI-Agent
+    activated_at: 2026-04-16
+    supersedes: []
+
   - solution_id: technical-solution.host-skill-distribution-and-discovery-followup
     title: Host skill distribution and target-repo bootstrap follow-up technical solution
     status: active
@@ -834,6 +861,30 @@ solutions:
     activated_at: 2026-04-13
     supersedes: []
 
+  - solution_id: technical-solution.acp-execution-bridge-and-invoke-stream-confirm-cutover
+    title: ACP execution bridge and invoke stream confirm cutover technical solution
+    status: active
+    owner: runtime
+    version: v1
+    scope: cross-cutting
+    draft_paths:
+      - .repo-ai-governor/draft/acp-execution-bridge-and-invoke-stream-confirm-cutover-technical-solution.md
+    review_paths:
+      - .repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-003-phase-f-secure-authoring-and-user-settings/review/approved_solution_review_acp-execution-bridge-and-invoke-stream-confirm-cutover.md
+    final_paths:
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/acp-execution-bridge-and-invoke-stream-confirm-cutover.md
+    target_module_ids:
+      - runtime.agent-projection
+    north_star_refs:
+      - prd.multi-agent-orchestration
+      - prd.multi-tool-adapters
+      - overall.graph-first-runtime
+      - architecture.runtime-boundary
+    approved_at: 2026-04-19
+    approved_by: AI-Agent
+    activated_at: 2026-04-20
+    supersedes: []
+
   - solution_id: technical-solution.cli-exec-onboarding-and-adoption-readiness-productization
     title: CLI exec onboarding and adoption readiness productization technical solution
     status: active
@@ -938,4 +989,59 @@ solutions:
     approved_at: 2026-04-15
     approved_by: User
     activated_at: 2026-04-15
+    supersedes: []
+
+  - solution_id: technical-solution.requirement-to-cr-governed-delivery-orchestration
+    title: Requirement-to-CR governed delivery orchestration
+    status: active
+    owner: runtime
+    version: v1
+    scope: cross-cutting
+    draft_paths:
+      - .repo-ai-governor/draft/requirement-to-cr-governed-delivery-orchestration-technical-solution.md
+    review_paths:
+      - .repo-ai-governor/context/dev/project-109-requirement-to-cr-delivery-solution-review-and-promotion-prep/sprint-001-solution-review-and-promotion-handoff/review/approved_solution_review_requirement-to-cr-governed-delivery-orchestration.md
+    final_paths:
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/adrs/requirement-to-cr-governed-delivery-orchestration.md
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/contracts/session-main-delivery-orchestration-contract.md
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-durable-storage/contracts/delivery-workflow-summary-and-artifact-backlink-contract.md
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/contracts/session-shell-delivery-workflow-presenter-contract.md
+    target_module_ids:
+      - runtime.orchestration
+      - runtime.durable-storage
+      - runtime.cli-interactive-shell
+    north_star_refs:
+      - prd.multi-agent-orchestration
+      - overall.graph-first-runtime
+      - architecture.runtime-boundary
+      - architecture.governance-boundary
+    approved_at: 2026-04-16
+    approved_by: AI-Agent
+    activated_at: 2026-04-16
+    supersedes: []
+
+  - solution_id: technical-solution.vscode-plugin-direct-api-key-and-secret-backed-provider-onboarding
+    title: VS Code plugin direct API key and secret-backed provider onboarding technical solution
+    status: active
+    owner: runtime
+    version: v1
+    scope: cross-cutting
+    draft_paths:
+      - .repo-ai-governor/draft/vscode-plugin-direct-api-key-and-secret-backed-provider-onboarding-technical-solution.md
+    review_paths:
+      - .repo-ai-governor/draft/approved_solution_review_vscode-plugin-direct-api-key-and-secret-backed-provider-onboarding.md
+    final_paths:
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/provider-onboarding-and-direct-api-key-entry-contract.md
+      - .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/vscode-plugin-direct-api-key-and-secret-backed-provider-onboarding.md
+    target_module_ids:
+      - runtime.governance-clients
+      - runtime.agent-projection
+    north_star_refs:
+      - prd.multi-tool-adapters
+      - overall.graph-first-runtime
+      - architecture.runtime-boundary
+      - architecture.governance-boundary
+    approved_at: 2026-04-20
+    approved_by: AI-Agent
+    activated_at: 2026-04-20
     supersedes: []

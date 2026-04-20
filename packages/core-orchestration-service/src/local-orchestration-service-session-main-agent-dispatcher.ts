@@ -1,6 +1,19 @@
-import { AdapterSurface, GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
+  AdapterSurface,
+  DEFAULT_I18N_LOCALE,
+  DEFAULT_I18N_RUNTIME_CONFIG,
+  GovernorErrorCode,
+  I18nRuntime,
+  RuntimeError,
+} from '@repo-ai-governor/shared';
+import {
+  SESSION_DELIVERY_REQUIREMENT_REVIEW_OUTCOME,
+  SESSION_DELIVERY_WORKFLOW_CAPABILITY_ID,
+  SESSION_DELIVERY_WORKFLOW_PENDING_ACTION,
+  SESSION_DELIVERY_WORKFLOW_PHASE,
+  SESSION_DELIVERY_WORKFLOW_VERSION,
   SESSION_MAIN_CAPABILITY_AVAILABILITY_STATUS,
+  SESSION_MAIN_CAPABILITY_ID,
   SESSION_MAIN_IMPLICIT_ROLE_DELEGATE_METADATA_KEY,
   SESSION_MAIN_INTERACTION_MODE,
   SESSION_MAIN_RESPONSE_MODE,
@@ -55,6 +68,8 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
     new LocalOrchestrationServiceSessionMainCapabilityExplainer();
 
   private readonly skillRegistry = new LocalOrchestrationServiceSessionMainSkillRegistry();
+
+  private readonly translateRuntimeCache = new Map<string, Promise<I18nRuntime>>();
 
   public constructor(
     private readonly sessionMainSupervisorRuntime?: SessionMainSupervisorRuntimeContract,
@@ -163,11 +178,12 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
       }
       const bridgeCandidate =
         splitIntentSkillPlan && bridgeCapabilityId
-          ? this.resolveCapabilityBridgeOutcome(
+          ? await this.resolveCapabilityBridgeOutcome(
               capabilityAnswer,
               availabilityOverlay,
               bridgeCapabilityId,
               splitIntentSkillPlan,
+              turnContext,
               selectionMetadata,
             )
           : null;
@@ -199,6 +215,13 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
       preferredSurface,
       configuredRoleMentionPresent,
     });
+    if (skillPlan && this.isDeliverWorkflowIntent(skillPlan.executionIntent)) {
+      return this.createDeliverWorkflowOutcome({
+        turnContext,
+        selectionMetadata,
+        skillPlan,
+      });
+    }
     const implicitRoleDelegateId =
       skillPlan && !hasAnyRoleMention
         ? this.resolveImplicitRoleDelegateId(skillPlan.executionIntent)
@@ -369,7 +392,7 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
     });
   }
 
-  private resolveCapabilityBridgeOutcome(
+  private async resolveCapabilityBridgeOutcome(
     capabilityAnswer: {
       assistantMessage: string;
     },
@@ -394,12 +417,25 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
       skillId: string;
       skillVersion: string;
     },
+    turnContext: SessionMainSupervisorTurnContext,
     selectionMetadata: {
       selectedSurface: string;
       selectedBy: string;
       sessionRoutingPreferenceApplied: boolean;
     },
-  ): SessionMainSupervisorTurnOutcome | null {
+  ): Promise<SessionMainSupervisorTurnOutcome | null> {
+    if (
+      capabilityId === SESSION_MAIN_CAPABILITY_ID.DELIVER &&
+      this.isDeliverWorkflowIntent(skillPlan.executionIntent)
+    ) {
+      return this.createDeliverWorkflowOutcome({
+        turnContext,
+        selectionMetadata,
+        skillPlan,
+        assistantMessagePrefix: capabilityAnswer.assistantMessage,
+      });
+    }
+
     if (!this.isCapabilityBridgeAvailabilityReady(availabilityOverlay, capabilityId)) {
       return null;
     }
@@ -471,6 +507,62 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
     return descriptorSeed?.capabilityId ?? null;
   }
 
+  private async createDeliverWorkflowOutcome(options: {
+    turnContext: SessionMainSupervisorTurnContext;
+    selectionMetadata: {
+      selectedSurface: string;
+      selectedBy: string;
+      sessionRoutingPreferenceApplied: boolean;
+    };
+    skillPlan: {
+      executionIntent: string;
+      handoffExecutionMode: 'preview_confirm' | 'direct_execute';
+      skillId: string;
+      skillVersion: string;
+    };
+    assistantMessagePrefix?: string;
+  }): Promise<SessionMainSupervisorTurnOutcome> {
+    const translate = await this.resolveTranslate(options.turnContext.locale);
+    const deliveryWorkflowStateResolution = this.resolveDeliverWorkflowState(options.turnContext);
+    const deliveryWorkflowState = deliveryWorkflowStateResolution.state;
+    const assistantMessageSuffix = deliveryWorkflowStateResolution.reusedExistingState
+      ? deliveryWorkflowState.pendingAction
+        ? translate('sessionMainDispatcher.deliver.resumedMessageWithAction', {
+            phase: deliveryWorkflowState.currentPhase,
+            pendingAction: deliveryWorkflowState.pendingAction,
+          })
+        : translate('sessionMainDispatcher.deliver.resumedMessage', {
+            phase: deliveryWorkflowState.currentPhase,
+          })
+      : translate('sessionMainDispatcher.deliver.startedMessage');
+    const assistantMessage = [options.assistantMessagePrefix, assistantMessageSuffix]
+      .filter((candidate): candidate is string => Boolean(candidate))
+      .join('\n\n');
+
+    return {
+      responseMode: SESSION_MAIN_RESPONSE_MODE.ANSWER,
+      interactionMode: SESSION_MAIN_INTERACTION_MODE.DIRECT_ANSWER,
+      assistantDelta: translate(
+        deliveryWorkflowStateResolution.reusedExistingState
+          ? 'sessionMainDispatcher.deliver.resumedDelta'
+          : 'sessionMainDispatcher.deliver.startedDelta',
+      ),
+      assistantMessage,
+      routerDecisionReason: 'session.main.router.delivery_workflow.start',
+      executionIntent: options.skillPlan.executionIntent,
+      requiresConfirmation: false,
+      selectedSurface: options.selectionMetadata.selectedSurface,
+      selectedBy: options.selectionMetadata.selectedBy,
+      sessionRoutingPreferenceApplied: options.selectionMetadata.sessionRoutingPreferenceApplied,
+      referencedCapabilityIds: [SESSION_MAIN_CAPABILITY_ID.DELIVER],
+      skillId: options.skillPlan.skillId,
+      skillVersion: options.skillPlan.skillVersion,
+      handoffExecutionMode: options.skillPlan.handoffExecutionMode,
+      deliveryWorkflowState,
+      invokedRoleIds: [],
+    };
+  }
+
   private resolveImplicitRoleDelegateId(executionIntent: string): string | null {
     if (executionIntent === 'plan.generate') {
       return SESSION_MAIN_IMPLICIT_PLANNER_ROLE_ID;
@@ -532,6 +624,58 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
     };
   }
 
+  private isDeliverWorkflowIntent(executionIntent: string): boolean {
+    return executionIntent === 'deliver.requirement_to_cr';
+  }
+
+  private resolveDeliverWorkflowState(turnContext: SessionMainSupervisorTurnContext): {
+    state: NonNullable<SessionMainSupervisorTurnContext['deliveryWorkflowState']>;
+    reusedExistingState: boolean;
+  } {
+    const existingState = turnContext.deliveryWorkflowState;
+    if (
+      existingState?.capabilityId === SESSION_DELIVERY_WORKFLOW_CAPABILITY_ID.DELIVER &&
+      existingState.currentPhase !== SESSION_DELIVERY_WORKFLOW_PHASE.RESOLVED &&
+      existingState.currentPhase !== SESSION_DELIVERY_WORKFLOW_PHASE.BLOCKED
+    ) {
+      return {
+        state: {
+          ...existingState,
+          requirementReviewGate: {
+            ...existingState.requirementReviewGate,
+          },
+          relatedArtifactPaths: [...existingState.relatedArtifactPaths],
+          childWorkflowBacklinks: existingState.childWorkflowBacklinks.map((backlink) => ({
+            ...backlink,
+          })),
+        },
+        reusedExistingState: true,
+      };
+    }
+
+    return {
+      state: {
+        version: SESSION_DELIVERY_WORKFLOW_VERSION,
+        workflowId: `delivery-workflow-${turnContext.sessionId}-${turnContext.turnId}`,
+        capabilityId: SESSION_DELIVERY_WORKFLOW_CAPABILITY_ID.DELIVER,
+        currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.REQUIREMENT_CAPTURE,
+        requirementReviewGate: {
+          outcome: SESSION_DELIVERY_REQUIREMENT_REVIEW_OUTCOME.PENDING,
+          evidenceArtifactPath: null,
+        },
+        approvedDeliveryBriefPath: null,
+        pendingAction:
+          SESSION_DELIVERY_WORKFLOW_PENDING_ACTION.CAPTURE_REQUIREMENT_OR_ATTACH_APPROVED_BRIEF,
+        selectedTargetStream: null,
+        relatedArtifactPaths: [],
+        childWorkflowBacklinks: [],
+        blockedReason: null,
+        resultSummary: null,
+      },
+      reusedExistingState: false,
+    };
+  }
+
   private resolvePreferredSurface(
     sessionRoutingPreference: string | undefined,
   ): AdapterSurface | null {
@@ -555,6 +699,34 @@ export class LocalOrchestrationServiceSessionMainAgentDispatcher {
       return 'answer';
     }
     return firstNonEmptyLine.slice(0, SESSION_MAIN_FALLBACK_ANSWER_DELTA_MAX_LENGTH);
+  }
+
+  private async resolveTranslate(
+    requestedLocale?: string,
+  ): Promise<(translationKey: string, interpolation?: Record<string, string>) => string> {
+    const runtime = await this.resolveTranslateRuntime(requestedLocale);
+    return (translationKey: string, interpolation?: Record<string, string>) =>
+      runtime.t(translationKey, interpolation);
+  }
+
+  private resolveTranslateRuntime(requestedLocale?: string): Promise<I18nRuntime> {
+    const cacheKey = requestedLocale?.trim() || DEFAULT_I18N_LOCALE;
+    const cachedRuntime = this.translateRuntimeCache.get(cacheKey);
+    if (cachedRuntime) {
+      return cachedRuntime;
+    }
+
+    const runtimePromise = (async () => {
+      const runtime = new I18nRuntime();
+      await runtime.initialize(DEFAULT_I18N_RUNTIME_CONFIG, cacheKey);
+      return runtime;
+    })().catch((error) => {
+      this.translateRuntimeCache.delete(cacheKey);
+      throw error;
+    });
+
+    this.translateRuntimeCache.set(cacheKey, runtimePromise);
+    return runtimePromise;
   }
 
   private readOptionalString(candidate: unknown): string | undefined {

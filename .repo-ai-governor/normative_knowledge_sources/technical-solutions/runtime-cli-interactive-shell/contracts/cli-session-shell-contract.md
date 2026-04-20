@@ -1,7 +1,7 @@
 # CLI Session Shell Contract
 
 - Status: active
-- Date: 2026-04-13
+- Date: 2026-04-16
 - Contract ID: `contract.cli.session-shell.v1`
 - Producer Module: `runtime.cli-interactive-shell`
 
@@ -45,6 +45,9 @@
 32. `turn_capability_answer_kind`
 33. `turn_referenced_capability_ids`
 34. `turn_suggested_actions`
+35. `turn_delivery_phase`
+36. `turn_delivery_pending_action`
+37. `turn_delivery_related_artifact_paths`
 
 ## 3. Allowed Values
 
@@ -161,6 +164,9 @@
 38. `secure_local_capture` 的 raw buffer 只能存在于 shell-local ephemeral controller state；不得写入 `transcript_items`、`handoff_state` payload、`artifact_backlinks`、turn metadata、running dock、localized error strings 或 thrown error metadata。
 39. `secure_local_capture` 成功、失败、取消与清理路径只允许追加 redacted system notice / summary；用户可见文字中不得包含 secret 原文、前后缀、长度或带 secret 的 command recap。
 40. shell 在 secure-local path 中必须直接调用本地 secret mutation seam；不得把 raw secret 重新封装成 `bridgeArgv`、nested CLI JSON stdout/stderr payload 或其他可回放的 governed handoff artifact。
+41. 当 turn 属于 `deliver` orchestration 时，shell 只能消费 shared session truth 中的 `turn_delivery_phase / turn_delivery_pending_action / turn_delivery_related_artifact_paths` 等 presenter-safe metadata；不得在本地根据 artifact 名称、slash 选择或用户输入重算 phase truth。
+42. `deliver` 作为 requirement-to-CR parent workflow 时，默认 primary entry 仍是 conversational answer；若 presenter 暴露 `/deliver`，它也只能作为 discoverability alias，不得生成与自然语言入口并列的第二份 pending confirmation truth。
+43. 当 `deliver` phase 指向 `requirement_review_pending`、`solution_review_pending`、`task_plan_commit_pending` 或 `review_verify_pending` 时，shell 只允许渲染待确认/待处理摘要与 artifact backlink；canonical approval、commit 与 resolution 必须回到各自底层 workflow/ledger/review surface。
 
 ## 5. Consumers
 
@@ -182,3 +188,4 @@
 10. `v1` 现进一步接受“session-shell theme preset choice discoverability”补充方向；`/workspace set-ui-theme` 在 session shell 中需要暴露 preset-choice palette path，但这仍是既有 `workspace set-ui-theme <preset>` 语义的 presenter-level discoverability 增强。
 11. `v1` 现进一步接受“显式 `/secret set <keyName>` secure local capture”补充方向；当前 formal scope 只覆盖 shell-initiated secure capture、pre-commit suffix rejection 与 redacted local mutation handoff，`session.main`-triggered secure-input outcome 以及 desktop / VS Code secure prompt parity 仍留在后续独立 solution。
 12. `v1` 现进一步接受“web-inspired theme pack expansion”补充方向；新增 preset 仍必须复用同一套 shared preset enum、selector、slash palette 与 help discoverability 真值，不得为单个主题引入额外配置层或独立 command surface。
+13. `v1` 现进一步接受“requirement-to-CR governed delivery orchestration”补充方向：`deliver` 作为 parent AI workflow 可以被 session shell 解释和引导，但 shell 只消费 phase summary / pending action / artifact backlinks，不额外拥有 requirement、solution、task-plan 或 review lifecycle 的 canonical state。

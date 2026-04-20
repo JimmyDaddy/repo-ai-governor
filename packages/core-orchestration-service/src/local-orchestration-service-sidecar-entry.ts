@@ -1,6 +1,9 @@
 import type { MemoryRuntimeConfig } from '@repo-ai-governor/shared';
 import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
-import { LOCAL_ORCHESTRATION_SERVICE_SIDECAR_MEMORY_CONFIG_ENV } from './constants/index.js';
+import {
+  LOCAL_ORCHESTRATION_SERVICE_SIDECAR_MEMORY_CONFIG_ENV,
+  LOCAL_ORCHESTRATION_SERVICE_SIDECAR_REPOSITORY_ROOT_ENV,
+} from './constants/index.js';
 import { LocalOrchestrationServiceSidecarHost } from './local-orchestration-service-sidecar-host.js';
 
 function resolveWorkspaceRoot(argv: string[]): string {
@@ -52,9 +55,19 @@ function resolveMemoryConfig(environment: NodeJS.ProcessEnv): MemoryRuntimeConfi
   return parsedConfig as MemoryRuntimeConfig;
 }
 
+function resolveRepositoryRoot(environment: NodeJS.ProcessEnv): string | undefined {
+  const repositoryRoot = environment[LOCAL_ORCHESTRATION_SERVICE_SIDECAR_REPOSITORY_ROOT_ENV];
+  if (!repositoryRoot) {
+    return undefined;
+  }
+
+  return repositoryRoot;
+}
+
 const workspaceRoot = resolveWorkspaceRoot(process.argv);
 const host = new LocalOrchestrationServiceSidecarHost({
   workspaceRoot,
+  repositoryRoot: resolveRepositoryRoot(process.env),
   memoryConfig: resolveMemoryConfig(process.env),
 });
 host.attachToCurrentProcess();

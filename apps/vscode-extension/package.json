@@ -31,14 +31,29 @@
     "workspaceContains:.repo-ai-governor",
     "onView:repoAiGovernor.executionBoard",
     "onView:repoAiGovernor.hitlInbox",
+    "onView:repoAiGovernor.reviewQueue",
+    "onView:repoAiGovernor.automationQueue",
     "onView:repoAiGovernor.workspaceContext",
+    "onView:repoAiGovernor.workflowStudio",
     "onView:repoAiGovernor.reviewDetail",
     "onCommand:repoAiGovernor.refresh",
+    "onCommand:repoAiGovernor.runWorkspaceBootstrap",
+    "onCommand:repoAiGovernor.runConnect",
+    "onCommand:repoAiGovernor.runDoctor",
+    "onCommand:repoAiGovernor.runCheck",
+    "onCommand:repoAiGovernor.runWorkflowPreview",
+    "onCommand:repoAiGovernor.runWorkflowCreate",
+    "onCommand:repoAiGovernor.runWorkflowEdit",
+    "onCommand:repoAiGovernor.openWorkflowStudio",
     "onCommand:repoAiGovernor.openReviewDetail",
     "onCommand:repoAiGovernor.openHandoffTarget",
+    "onCommand:repoAiGovernor.stageTemporaryBridge",
     "onCommand:repoAiGovernor.submitHitlDecision",
     "onCommand:repoAiGovernor.recoverExecution",
     "onCommand:repoAiGovernor.terminateExecution",
+    "onCommand:repoAiGovernor.openUserConfig",
+    "onCommand:repoAiGovernor.configureUserDefault",
+    "onCommand:repoAiGovernor.setManagedSecret",
     "onChatParticipant:repo-ai-governor.governor"
   ],
   "contributes": {
@@ -55,7 +70,7 @@
       "repoAiGovernor": [
         {
           "id": "repoAiGovernor.executionBoard",
-          "name": "%views.executionBoard.title%",
+          "name": "%views.taskBoard.title%",
           "contextualTitle": "%views.container.title%"
         },
         {
@@ -64,8 +79,24 @@
           "contextualTitle": "%views.container.title%"
         },
         {
+          "id": "repoAiGovernor.reviewQueue",
+          "name": "%views.reviewQueue.title%",
+          "contextualTitle": "%views.container.title%"
+        },
+        {
+          "id": "repoAiGovernor.automationQueue",
+          "name": "%views.automationQueue.title%",
+          "contextualTitle": "%views.container.title%"
+        },
+        {
           "id": "repoAiGovernor.workspaceContext",
-          "name": "%views.workspaceContext.title%",
+          "name": "%views.workbenchOverview.title%",
+          "contextualTitle": "%views.container.title%"
+        },
+        {
+          "id": "repoAiGovernor.workflowStudio",
+          "type": "webview",
+          "name": "%views.workflowStudio.title%",
           "contextualTitle": "%views.container.title%"
         },
         {
@@ -83,6 +114,46 @@
         "category": "%commands.category%"
       },
       {
+        "command": "repoAiGovernor.runWorkspaceBootstrap",
+        "title": "%commands.runWorkspaceBootstrap.title%",
+        "category": "%commands.category%"
+      },
+      {
+        "command": "repoAiGovernor.runConnect",
+        "title": "%commands.runConnect.title%",
+        "category": "%commands.category%"
+      },
+      {
+        "command": "repoAiGovernor.runDoctor",
+        "title": "%commands.runDoctor.title%",
+        "category": "%commands.category%"
+      },
+      {
+        "command": "repoAiGovernor.runCheck",
+        "title": "%commands.runCheck.title%",
+        "category": "%commands.category%"
+      },
+      {
+        "command": "repoAiGovernor.runWorkflowPreview",
+        "title": "%commands.runWorkflowPreview.title%",
+        "category": "%commands.category%"
+      },
+      {
+        "command": "repoAiGovernor.runWorkflowCreate",
+        "title": "%commands.runWorkflowCreate.title%",
+        "category": "%commands.category%"
+      },
+      {
+        "command": "repoAiGovernor.runWorkflowEdit",
+        "title": "%commands.runWorkflowEdit.title%",
+        "category": "%commands.category%"
+      },
+      {
+        "command": "repoAiGovernor.openWorkflowStudio",
+        "title": "%commands.openWorkflowStudio.title%",
+        "category": "%commands.category%"
+      },
+      {
         "command": "repoAiGovernor.openReviewDetail",
         "title": "%commands.openReviewDetail.title%",
         "category": "%commands.category%"
@@ -90,6 +161,11 @@
       {
         "command": "repoAiGovernor.openHandoffTarget",
         "title": "%commands.openHandoffTarget.title%",
+        "category": "%commands.category%"
+      },
+      {
+        "command": "repoAiGovernor.stageTemporaryBridge",
+        "title": "%commands.stageTemporaryBridge.title%",
         "category": "%commands.category%"
       },
       {
@@ -106,26 +182,81 @@
         "command": "repoAiGovernor.terminateExecution",
         "title": "%commands.terminateExecution.title%",
         "category": "%commands.category%"
+      },
+      {
+        "command": "repoAiGovernor.openUserConfig",
+        "title": "%commands.openUserConfig.title%",
+        "category": "%commands.category%"
+      },
+      {
+        "command": "repoAiGovernor.configureUserDefault",
+        "title": "%commands.configureUserDefault.title%",
+        "category": "%commands.category%"
+      },
+      {
+        "command": "repoAiGovernor.setManagedSecret",
+        "title": "%commands.setManagedSecret.title%",
+        "category": "%commands.category%"
       }
     ],
     "menus": {
       "view/title": [
         {
           "command": "repoAiGovernor.refresh",
-          "when": "view == repoAiGovernor.executionBoard || view == repoAiGovernor.hitlInbox || view == repoAiGovernor.workspaceContext",
+          "when": "view == repoAiGovernor.executionBoard || view == repoAiGovernor.hitlInbox || view == repoAiGovernor.reviewQueue || view == repoAiGovernor.automationQueue || view == repoAiGovernor.workspaceContext || view == repoAiGovernor.workflowStudio",
           "group": "navigation"
         }
       ],
       "view/item/context": [
         {
           "command": "repoAiGovernor.openReviewDetail",
-          "when": "view == repoAiGovernor.executionBoard || view == repoAiGovernor.hitlInbox || view == repoAiGovernor.workspaceContext",
+          "when": "view == repoAiGovernor.executionBoard || view == repoAiGovernor.hitlInbox || view == repoAiGovernor.reviewQueue || view == repoAiGovernor.workspaceContext",
+          "group": "inline"
+        },
+        {
+          "command": "repoAiGovernor.openWorkflowStudio",
+          "when": "view == repoAiGovernor.automationQueue",
           "group": "inline"
         }
       ],
       "commandPalette": [
         {
+          "command": "repoAiGovernor.runWorkspaceBootstrap",
+          "when": "isWorkspaceTrusted"
+        },
+        {
+          "command": "repoAiGovernor.runConnect",
+          "when": "isWorkspaceTrusted"
+        },
+        {
+          "command": "repoAiGovernor.runDoctor",
+          "when": "isWorkspaceTrusted"
+        },
+        {
+          "command": "repoAiGovernor.runCheck",
+          "when": "isWorkspaceTrusted"
+        },
+        {
+          "command": "repoAiGovernor.runWorkflowPreview",
+          "when": "isWorkspaceTrusted"
+        },
+        {
+          "command": "repoAiGovernor.runWorkflowCreate",
+          "when": "isWorkspaceTrusted"
+        },
+        {
+          "command": "repoAiGovernor.runWorkflowEdit",
+          "when": "isWorkspaceTrusted"
+        },
+        {
+          "command": "repoAiGovernor.openWorkflowStudio"
+        },
+        {
           "command": "repoAiGovernor.openHandoffTarget",
+          "when": "isWorkspaceTrusted"
+        },
+        {
+          "command": "repoAiGovernor.stageTemporaryBridge",
           "when": "isWorkspaceTrusted"
         },
         {
@@ -138,6 +269,18 @@
         },
         {
           "command": "repoAiGovernor.terminateExecution",
+          "when": "isWorkspaceTrusted"
+        },
+        {
+          "command": "repoAiGovernor.openUserConfig",
+          "when": "isWorkspaceTrusted"
+        },
+        {
+          "command": "repoAiGovernor.configureUserDefault",
+          "when": "isWorkspaceTrusted"
+        },
+        {
+          "command": "repoAiGovernor.setManagedSecret",
           "when": "isWorkspaceTrusted"
         }
       ]
@@ -157,6 +300,78 @@
           {
             "name": "review",
             "description": "%chat.commands.review.description%"
+          },
+          {
+            "name": "refresh",
+            "description": "%chat.commands.refresh.description%"
+          },
+          {
+            "name": "workspace-bootstrap",
+            "description": "%chat.commands.workspaceBootstrap.description%"
+          },
+          {
+            "name": "connect",
+            "description": "%chat.commands.connect.description%"
+          },
+          {
+            "name": "doctor",
+            "description": "%chat.commands.doctor.description%"
+          },
+          {
+            "name": "check",
+            "description": "%chat.commands.check.description%"
+          },
+          {
+            "name": "workflow-preview",
+            "description": "%chat.commands.workflowPreview.description%"
+          },
+          {
+            "name": "workflow-create",
+            "description": "%chat.commands.workflowCreate.description%"
+          },
+          {
+            "name": "workflow-edit",
+            "description": "%chat.commands.workflowEdit.description%"
+          },
+          {
+            "name": "workflow-studio",
+            "description": "%chat.commands.workflowStudio.description%"
+          },
+          {
+            "name": "review-detail",
+            "description": "%chat.commands.reviewDetail.description%"
+          },
+          {
+            "name": "handoff-target",
+            "description": "%chat.commands.handoffTarget.description%"
+          },
+          {
+            "name": "repository-operation",
+            "description": "%chat.commands.repositoryOperation.description%"
+          },
+          {
+            "name": "submit-hitl-decision",
+            "description": "%chat.commands.submitHitlDecision.description%"
+          },
+          {
+            "name": "recover-execution",
+            "description": "%chat.commands.recoverExecution.description%"
+          },
+          {
+            "name": "terminate-execution",
+            "description": "%chat.commands.terminateExecution.description%"
+          },
+          {
+            "name": "open-user-config",
+            "description": "%chat.commands.openUserConfig.description%"
+          },
+          {
+            "name": "configure-user-default",
+            "description": "%chat.commands.configureUserDefault.description%"
+          },
+          {
+            "name": "set-managed-secret",
+            "description": "%chat.commands.setManagedSecret.description%"
           }
         ]
       }
@@ -169,6 +384,8 @@
     }
   },
   "dependencies": {
+    "@repo-ai-governor/cli": "workspace:*",
+    "@repo-ai-governor/config": "workspace:*",
     "@repo-ai-governor/core-orchestration-service": "workspace:*",
     "@repo-ai-governor/orchestration-service-client": "workspace:*",
     "@repo-ai-governor/shared": "workspace:*"

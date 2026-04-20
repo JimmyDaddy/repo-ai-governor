@@ -11,7 +11,7 @@ import {
 
 const GATE_NAME = 'task-ledger-sync';
 const CURRENT_CONTEXT_PATH = '.repo-ai-governor/context/current-context.md';
-const TASK_CARD_FILE_PATTERN = /^(?:TK|CR)-\d{3}.*\.md$/;
+const TASK_CARD_FILE_PATTERN = /^(?:TK|CR)-\d{3,}.*\.md$/;
 const REQUIRED_TASK_METADATA_KEYS = ['Status', 'Date', 'Owner', 'Priority', 'Project', 'Sprint'];
 const PLACEHOLDER_VALUES = new Set(['待执行', '待验证']);
 const ACTIVE_STREAM_STATUSES = new Set(['active', 'in_progress', 'running']);
@@ -246,7 +246,7 @@ function parseCanonicalTaskCards(tasksDirPath) {
  * }}
  */
 function parseCanonicalTaskCard(content, filePath) {
-  const headingMatch = content.match(/^#\s*((?:TK|CR)-\d{3})\s+(.+?)\s*$/m);
+  const headingMatch = content.match(/^#\s*((?:TK|CR)-\d{3,})\s+(.+?)\s*$/m);
   if (!headingMatch) {
     return null;
   }
@@ -349,7 +349,7 @@ function parseChecklist(checklistPath) {
   const checklistMap = new Map();
 
   for (const line of checklistContent.split(/\r?\n/)) {
-    const checklistMatch = line.match(/^- \[(x| )\] ((?:TK|CR)-\d{3}) (.+)$/i);
+    const checklistMatch = line.match(/^- \[(x| )\] ((?:TK|CR)-\d{3,}) (.+)$/i);
     if (!checklistMatch) {
       continue;
     }

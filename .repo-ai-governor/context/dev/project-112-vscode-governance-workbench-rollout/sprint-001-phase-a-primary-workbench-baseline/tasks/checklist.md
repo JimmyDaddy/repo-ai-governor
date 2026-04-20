@@ -1,0 +1,25 @@
+# checklist
+
+- [x] TK-936 freeze vscode primary workbench baseline and service-owned task-review seams
+  - 2026-04-16：任务创建，状态初始化为 `planned`。
+  - 2026-04-17：随着 `project-110` 完成 final closeout，当前任务已切换为 `in_progress`，开始承接 VS Code primary workbench baseline、task/review queue seam 与 service-owned projection contract 的 Phase A 实施。
+  - 2026-04-17：已把 VS Code extension contract 从 companion-era freeze 扩到 Phase A primary workbench baseline；当前 surface metadata、task board/review queue/workbench overview contribution、service-owned queue overview seam 与 review-source fallback 已落到 `apps/vscode-extension/**`，且未引入任何 `.repo-ai-governor/**` 直读 shadow truth。
+  - 2026-04-17：已完成 `pnpm run build` 与 4 个 VS Code extension 定向 vitest，用于验证 contract freeze、service runtime、presentation builder 与 controller/review-detail 兼容性；当前任务实现窗口已满足进入 fresh reviewer CR round 的前置条件，任务状态切换为 `completed`。
+  - 2026-04-17：已修复 round-1 reviewer 提出的 capability metadata contract drift 与 review-queue fallback coverage gap；当前 frozen capability taxonomy 已对齐 formal contract，controller/provider/runtime 已补齐 review queue selection 与 review-source-only fallback 回归测试，同窗口 `pnpm run build` 与扩展后的 4 个 VS Code extension 定向 vitest 已重跑通过，当前等待 fresh reviewer clean recheck。
+  - 2026-04-17：round-2 reviewer 继续发现 review-only queue item 会错误回退到最新 execution detail；当前已修复 service runtime 对显式 cleared `executionId` 的错误 fallback，并让 execution/HITL re-anchor 路径显式清空 stale `reviewSourcePath`，同时补齐 runtime 与 controller/provider 回归测试；同窗口 `pnpm run build`、4 个 VS Code extension 定向 vitest 与 review/task-ledger lifecycle gates 已重跑通过，当前等待下一轮 fresh reviewer clean recheck。
+- [x] TK-937 close sprint-001 and hand off phase-b outer-loop consolidation
+  - 2026-04-16：任务创建，状态初始化为 `planned`。
+  - 2026-04-17：latest fresh reviewer round `CR-003` 已 clean `resolved`；当前任务切换为 `in_progress`，开始执行 sprint-001 closeout、`DA-937` handoff packet、project/sprint/current-context/completed-history truth write-back、delivery registry 前移与 sprint-002 / `TK-938` activation。
+  - 2026-04-17：已完成 `DA-937`、sprint-001 completed write-back、sprint-002 / `TK-938` activation 与 delivery registry 前移；当前任务切换为 `completed`，下一步只保留 sprint-001 boundary `pnpm run check` 与本地 commit 收口。
+  - 2026-04-17：`pnpm run check` 已通过；同窗口 artifact-registry maintenance 额外收紧了 `DA-934` 对已关闭 `TK-936` 的 stale dependency，并把超出窗口的无依赖 active/deprecated artifact backlog 下沉到 archive，当前 sprint-001 closeout truth 在 task ledger、review lifecycle、delivery registry 与 artifact registry 之间保持同步，可进入 boundary commit。
+- [x] CR-001 sprint-001-phase-a-primary-workbench-baseline delegated review loop round 1
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：已完成 fresh reviewer round-1 findings 复核；`Frozen capability metadata drift` 与 `review-queue fallback coverage gap` 均判定为 **accepted**，当前 task 状态推进为 `verified`，进入修复与重验窗口。
+  - 2026-04-17：已完成 accepted findings 修复，并重跑 `pnpm run build`、扩展后的 VS Code extension 定向 vitest 与 review/task-ledger lifecycle gates；当前 round-1 report 已满足 `resolved` 条件，等待新的 fresh reviewer clean recheck。
+- [x] CR-002 sprint-001-phase-a-primary-workbench-baseline delegated recheck loop round 2
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：fresh reviewer round-2 发现 review-only queue item 在显式清空 `executionId` 时仍会错误回退到最新 execution detail；该问题判定为 **accepted**，当前 task 状态推进为 `verified`，进入修复与重验窗口。
+  - 2026-04-17：已修复 review-only detail fallback、execution/HITL re-anchor stale `reviewSourcePath` 清理链，并补齐 service runtime 与 controller/provider 回归测试；同窗口 `pnpm run build`、4 个 VS Code extension 定向 vitest 与 review/task-ledger lifecycle gates 已重跑通过，当前 report/task 已满足 `resolved` 条件，等待新的 fresh reviewer clean recheck。
+- [x] CR-003 sprint-001-phase-a-primary-workbench-baseline delegated review loop round 3
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：latest fresh reviewer round 返回 clean verdict，未发现新的 actionable finding；当前 task/report 直接满足 `resolved` 条件，可用于 sprint-001 closeout。

@@ -1,7 +1,7 @@
 # Session Durable Storage Contract
 
 - Status: active
-- Date: 2026-04-02
+- Date: 2026-04-16
 - Contract ID: `contract.runtime.session-durable-storage.v1`
 - Producer Module: `runtime.durable-storage`
 
@@ -14,7 +14,8 @@
 1. `sessions` 摘要事实
 2. `session_events` append-only event log
 3. `session_diagnostics` / projection
-4. session write transaction 与 recovery/replay baseline
+4. `session_delivery_workflows` 或等价 delivery workflow projection
+5. session write transaction 与 recovery/replay baseline
 
 ## 3. Required Contract
 
@@ -32,6 +33,13 @@
    - `update required projection`
 7. 收尾阶段写入 `TURN_COMPLETED / TURN_FAILED` 时，不得依赖先读出完整历史 blob 才能完成写回。
 8. `/resume`、replay 与 shell diagnostics 必须以 `session metadata + event log + latest projection` 为恢复事实源。
+9. 当 `deliver` workflow 已进入 governed phase machine 时，durable storage 可以持有 presenter-safe workflow projection，包括：
+   - `current_phase`
+   - `related_artifact_paths`
+   - `pending_confirmation`
+   - `blocked_reason`
+   - `phase_result_summaries`
+10. 上述 delivery workflow projection 只能作为 orchestration summary / backlink 索引；不得替代 approved durable brief、technical-solution lifecycle、task ledger、review artifact 或 `CR-xxx` 的 canonical truth。
 
 ## 4. Recommended Physical Model
 
@@ -63,9 +71,20 @@
    - `category`
    - `detail_json`
    - `created_at`
+4. `session_delivery_workflows`
+   - internal `id`
+   - `session_id`
+   - `workflow_id`
+   - `current_phase`
+   - `pending_confirmation`
+   - `blocked_reason`
+   - `related_artifact_paths_json`
+   - `phase_result_summaries_json`
+   - `updated_at`
 
 ## 5. Non-Goals
 
 1. 不规定 recall policy 与 memory semantic selection 细节。
 2. 不规定 interactive shell presenter 的具体 UI 呈现。
 3. 不要求所有 durable surfaces 同步采用同一张 schema。
+4. 不创建新的 requirement lifecycle registry、solution lifecycle registry 或 review lifecycle registry。

@@ -39,7 +39,7 @@ Pick the runbook that matches the question you are trying to answer.
 | Rehearse a clean-room install path | `pnpm run release:verify-cleanroom-local-install` | Install-mode evidence |
 | Rehearse real-project interactive behavior | Build once, then run the real-target command chain | Real target operator flow |
 | Recheck examples and docs-backed scenarios | `pnpm run check:examples-doc-smoke`, `pnpm run check:examples-runtime-smoke` | Example coherence and runnable scenario contract |
-| Recheck VS Code companion boundary | targeted vitest slice plus `release:verify-vscode-extension-distribution` | Editor-native companion packaging and contract |
+| Recheck VS Code primary-workbench boundary | targeted vitest slice plus `release:verify-vscode-extension-distribution` | Editor-native primary-workbench packaging and contract |
 | Recheck host-native asset boundary | targeted vitest slice plus `release:verify-host-distribution` | Codex / Claude Code / GitHub Copilot host follow-up boundary |
 | Recheck desktop foundation boundary | targeted vitest slice plus `check:desktop-entry-smoke` and `release:verify-local` | Desktop foundation-only truth |
 | Recheck official governance pack catalog | targeted vitest slice plus `pnpm run build` | Pack catalog contract and runtime loader compatibility |
@@ -61,7 +61,7 @@ Expect this to answer:
 
 1. Does the packaged CLI still behave like the currently documented local distribution?
 2. Does the tarball still ship the expected adopter docs and reference assets?
-3. Are we accidentally overstating packaged support for secondary surfaces?
+3. Are we accidentally overstating packaged support for non-CLI surfaces?
 
 Published tarballs are expected to carry:
 
@@ -131,16 +131,16 @@ This runbook is most valuable when you need to answer:
 2. Do example assertions still match actual output contracts?
 3. Did documentation drift away from the example assets without anyone noticing?
 
-## 6. Secondary-surface Validation
+## 6. Editor-native And Secondary-surface Validation
 
-### VS Code companion
+### VS Code primary workbench
 
-Use this runbook when refreshing the editor-native companion boundary:
+Use this runbook when refreshing the editor-native primary-workbench boundary:
 
 ```bash
-pnpm exec vitest run apps/vscode-extension/test/vscode-extension-service-runtime.test.ts apps/vscode-extension/test/vscode-extension-contract.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-selection-store.test.ts apps/vscode-extension/test/vscode-extension-packaging-boundary.test.ts --maxWorkers=1 --maxConcurrency=1
+pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test/vscode-extension-contract.test.ts apps/vscode-extension/test/vscode-extension-host.activation.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-service-runtime.test.ts apps/vscode-extension/test/vscode-extension-selection-store.test.ts apps/vscode-extension/test/vscode-extension-packaging-boundary.test.ts
 pnpm run build
-pnpm run release:verify-vscode-extension-distribution -- --output .tmp/project-064-vscode-extension-distribution-report.json
+pnpm run release:verify-vscode-extension-distribution -- --output .tmp/project-114-project-final-vscode-distribution-report.json
 pnpm pack --json --dry-run
 pnpm run check:ide-entry-smoke
 pnpm run check:ide-docs-parity
@@ -151,6 +151,9 @@ Optional manual rehearsal:
 ```bash
 code --extensionDevelopmentPath <governor-repo>/apps/vscode-extension <target-repo>
 ```
+
+This refresh now expects the packaged extension root and the extracted VSIX to both pass module smoke, sidecar smoke, CLI-backed secure-authoring, scratch-isolated `doctor` diagnostics capture with surfaced check totals, pnpm-metadata closure checks, and the symlink-payload allowlist gate before public docs can stay at `primary_workbench_claim`.
+Use the rerun evidence to validate the zero-CLI human-path claim as well: the public story is no longer "CLI first, VS Code second", but "VS Code for supported human work, CLI for optional automation / scriptable / session-shell use". Treat `.tmp/project-114-project-final-vscode-distribution-report.json` as scratch output only, then promote it into the active sprint's immutable evidence snapshot plus the sprint-local zero-cli rehearsal summary before refreshing `docs/support-matrix*` or any maintainer-facing backlink.
 
 ### Host-native asset boundary
 
@@ -218,18 +221,20 @@ When you update docs or support claims, keep the evidence model disciplined:
 1. Update `docs/support-matrix.md` first when the supported boundary changes.
 2. Keep this playbook focused on command order, operator intent, and evidence backlinks.
 3. Prefer one authoritative evidence file per validation chain over scattered status notes.
-4. Do not turn this playbook into a second support matrix.
+4. For the current `project-114` VS Code primary-workbench boundary, keep the timestamped snapshot under `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/` as the authoritative backlink, pair it with `project-114-sprint-005-zero-cli-rehearsal-summary.md`, and treat `.tmp/project-114-project-final-vscode-distribution-report.json` as scratch rerun output only.
+5. Do not turn this playbook into a second support matrix.
 
 Common evidence paths referenced by this runbook include:
 
 1. `.tmp/project-063-sprint-001-local-distribution-report.json`
 2. `.tmp/project-063-sprint-001-cleanroom-tgz-report.json`
-3. `.tmp/project-064-vscode-extension-distribution-report.json`
-4. `.tmp/project-065-sprint-001-desktop-foundation-report.json`
-5. `.tmp/project-067-sprint-001-host-distribution-report.json`
-6. `.tmp/project-068-sprint-002-github-com-agent-reserved-target-report.json`
-7. `.tmp/project-076-sprint-003-cleanroom-report.json`
-8. `.tmp/project-076-sprint-003-local-distribution-report.json`
+3. `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/project-114-sprint-005-vscode-distribution-report-20260418T124824Z.json` (authoritative snapshot for the current VS Code primary-workbench claim)
+4. `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/project-114-sprint-005-zero-cli-rehearsal-summary.md`
+5. `.tmp/project-065-sprint-001-desktop-foundation-report.json`
+6. `.tmp/project-067-sprint-001-host-distribution-report.json`
+7. `.tmp/project-068-sprint-002-github-com-agent-reserved-target-report.json`
+8. `.tmp/project-076-sprint-003-cleanroom-report.json`
+9. `.tmp/project-076-sprint-003-local-distribution-report.json`
 
 ## 10. Interpreting Adopter Warnings
 

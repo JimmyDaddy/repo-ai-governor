@@ -1,14 +1,23 @@
 import {
+  type OrchestrationArtifactPaneQueryRequest,
   OrchestrationClientSurface,
   OrchestrationExecutionKind,
   OrchestrationExecutionStatus,
+  OrchestrationServiceHostKind,
+  OrchestrationServiceLifecycleStatus,
+  OrchestrationServiceTransportKind,
+  OrchestrationSessionStatus,
 } from '@repo-ai-governor/orchestration-service-client';
 import { DesktopArtifactQueryGateState } from '../src/constants/index.js';
 import { DesktopPreloadBridge } from '../src/runtime/desktop-preload-bridge.js';
+import type {
+  DesktopLifecycleSnapshot,
+  DesktopShellBootstrapSnapshot,
+} from '../src/types/index.js';
 
-function createLifecycleSnapshot() {
+function createLifecycleSnapshot(): DesktopLifecycleSnapshot {
   return {
-    serviceLifecycleStatus: 'ready',
+    serviceLifecycleStatus: OrchestrationServiceLifecycleStatus.READY,
     restartCount: 0,
     windowWakeCount: 0,
     notificationCount: 0,
@@ -18,9 +27,9 @@ function createLifecycleSnapshot() {
 
 function createHealthResponse() {
   return {
-    serviceHostKind: 'sidecar',
-    serviceTransportKind: 'ipc',
-    lifecycleStatus: 'ready',
+    serviceHostKind: OrchestrationServiceHostKind.SIDECAR,
+    serviceTransportKind: OrchestrationServiceTransportKind.IPC,
+    lifecycleStatus: OrchestrationServiceLifecycleStatus.READY,
     checkpointCapable: true,
     workspaceRoot: '/tmp/workspace/.repo-ai-governor',
     startedAt: '2026-04-05T00:00:00.000Z',
@@ -52,7 +61,7 @@ function createExecutionSummary(executionId: string, executionSessionId: string)
 function createSessionSummary(sessionId: string) {
   return {
     sessionId,
-    status: 'open',
+    status: OrchestrationSessionStatus.ACTIVE,
     openedAt: '2026-04-05T00:00:00.000Z',
     latestEventSequence: 0,
     nextCursor: '0',
@@ -114,7 +123,7 @@ describe('DesktopPreloadBridge', () => {
           ]),
         queryHitlInbox: async () => createHitlInboxResponse(),
         queryQueueOverview: async () => createQueueOverviewResponse(),
-        queryArtifactPane: async (request) => {
+        queryArtifactPane: async (request?: OrchestrationArtifactPaneQueryRequest) => {
           artifactPaneRequests.push({ ...(request ?? {}) });
           return {
             artifacts: [],
@@ -134,9 +143,9 @@ describe('DesktopPreloadBridge', () => {
         getSnapshot: () => createLifecycleSnapshot(),
       } as never,
       {
-        build: (payload) => payload,
+        build: (payload: unknown) => payload,
       } as never,
-      async () => ({
+      async (): Promise<DesktopShellBootstrapSnapshot> => ({
         baseline: {} as never,
         health: createHealthResponse(),
         lifecycle: createLifecycleSnapshot(),
@@ -165,7 +174,7 @@ describe('DesktopPreloadBridge', () => {
         queryExecutionBoard: async () => createExecutionBoardResponse([]),
         queryHitlInbox: async () => createHitlInboxResponse(),
         queryQueueOverview: async () => createQueueOverviewResponse(),
-        queryArtifactPane: async (request) => {
+        queryArtifactPane: async (request?: OrchestrationArtifactPaneQueryRequest) => {
           artifactPaneRequests.push({ ...(request ?? {}) });
           return {
             artifacts: [],
@@ -185,9 +194,9 @@ describe('DesktopPreloadBridge', () => {
         getSnapshot: () => createLifecycleSnapshot(),
       } as never,
       {
-        build: (payload) => payload,
+        build: (payload: unknown) => payload,
       } as never,
-      async () => ({
+      async (): Promise<DesktopShellBootstrapSnapshot> => ({
         baseline: {} as never,
         health: createHealthResponse(),
         lifecycle: createLifecycleSnapshot(),
@@ -219,7 +228,7 @@ describe('DesktopPreloadBridge', () => {
           ]),
         queryHitlInbox: async () => createHitlInboxResponse(),
         queryQueueOverview: async () => createQueueOverviewResponse(),
-        queryArtifactPane: async (request) => {
+        queryArtifactPane: async (request?: OrchestrationArtifactPaneQueryRequest) => {
           artifactPaneRequests.push({ ...(request ?? {}) });
           return {
             artifacts: [],
@@ -239,9 +248,9 @@ describe('DesktopPreloadBridge', () => {
         getSnapshot: () => createLifecycleSnapshot(),
       } as never,
       {
-        build: (payload) => payload,
+        build: (payload: unknown) => payload,
       } as never,
-      async () => ({
+      async (): Promise<DesktopShellBootstrapSnapshot> => ({
         baseline: {} as never,
         health: createHealthResponse(),
         lifecycle: createLifecycleSnapshot(),

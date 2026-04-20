@@ -1,0 +1,34 @@
+# checklist
+
+- [x] TK-931 align deliver discoverability rollout guidance and runtime evidence
+  - 2026-04-16：任务创建，状态初始化为 `planned`。
+  - 2026-04-17：随着 `TK-930` 完成 sprint-003 closeout 与 sprint-004 activation handoff，本任务已切换为 `in_progress`，开始承接 conversational deliver explainer、optional `/deliver` alias、CLI/session-shell discoverability 与 rollout evidence 收口。
+  - 2026-04-17：已完成 discoverability rollout implementation：`deliver` 进入 full discoverability/help appendix，explainer/help wording 从 reserved alias 收紧为 optional alias，launcher shortlist 继续保持 chat-first 不展示 `/deliver`；同窗口 `4` 个定向测试文件与 `pnpm run build` 均已通过，证据汇总见 `DA-931`。
+  - 2026-04-17：已完成 `CR-003` 接受问题修复：session-shell AI workflow prompt 现已统一走 shared locale key，`/deliver` 在 `zh-CN` 下不再回退为英文 handoff prompt；同窗口定向 vitest、`pnpm run build` 与 governance gates 均已通过，等待 fresh clean reviewer round。
+  - 2026-04-17：fresh reviewer round `CR-004` 返回 `no actionable findings`；`TK-931` 已达到 clean state，并切换为 `completed`，可进入 sprint-004 closeout。
+- [x] TK-932 finalize project-110 rollout closeout and delivery evidence handoff
+  - 2026-04-16：任务创建，状态初始化为 `planned`。
+  - 2026-04-17：`TK-931` 已在 `CR-004` clean round 后切换为 `completed`；当前任务进入 `in_progress`，开始写入 sprint-004 exit acceptance packet、project-final review handoff 与后续 project closeout 输入。
+  - 2026-04-17：project-final `CR-005` 修复了 sprint-004 review lifecycle drift，fresh clean round `CR-006` 返回 `no actionable findings`；当前任务已完成 completion audit summary、`DA-933` final closeout artifact、delivery registry completion write-back 与 `project-112 / sprint-001` activation handoff。
+- [x] CR-001 TK-931 delegated review loop round 1
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：fresh reviewer round 1 返回 `2` 条 actionable findings；主 agent 复核后全部接受，分别针对 CR ledger drift 与 optional alias 泛化问题执行修复。
+  - 2026-04-17：accepted findings 已在同窗口修复并通过定向 vitest、`pnpm run build`、task-ledger / sprint-plan / review-status / delivery-registry gates；当前 finding set 已收口为 `resolved`，下一步进入 fresh recheck round。
+- [x] CR-002 TK-931 delegated review loop round 2
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：fresh reviewer round 2 返回 `1` 条 residual finding，指出 capability explainer 仍会把 `/help` 呈现为 deliver-style optional alias；主 agent 复核后予以接受。
+  - 2026-04-17：accepted round-2 finding 已修复并通过定向 vitest、`pnpm run build` 与 ledger/review/delivery gates；当前 finding set 已收口为 `resolved`，下一步进入 fresh clean recheck。
+- [x] CR-003 TK-931 delegated review loop round 3
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：fresh reviewer round 3 返回 `1` 条 residual finding，指出 `/deliver` slash handoff prompt 仍在 `apps/**` 中直接拼接英文文案，绕过 shared i18n 路径；主 agent 复核后予以接受。
+  - 2026-04-17：accepted round-3 finding 已修复并通过定向 vitest、`pnpm run build` 与 task/review/delivery gates；当前 finding set 已收口为 `resolved`，下一步进入 fresh clean recheck。
+- [x] CR-004 TK-931 delegated recheck loop round 4
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：fresh reviewer round 4 返回 `no actionable findings`，确认 TK-931 当前实现边界已达到 clean state。
+- [x] CR-005 project-110-requirement-to-cr-delivery-orchestration-rollout final delegated review loop round 5
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：project-final fresh reviewer 返回 `1` 条 actionable finding，指出 sprint-004 review/ 中仍保留已 resolved rounds 的重复 `code_review_` 与 `verified_code_review_` 生命周期文件；主 agent 复核后予以接受。
+  - 2026-04-17：已删除 `20260417-0623`、`20260417-0637`、`20260417-0644` 三轮遗留的重复 pending/verified review 文件，仅保留对应 `resolved_code_review_*` 作为 canonical lifecycle artifact；review/task ledger/worktree routing gates 已通过，本轮 finding set 收口为 `resolved`。
+- [x] CR-006 project-110-requirement-to-cr-delivery-orchestration-rollout delegated recheck loop round 6
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：fresh reviewer round 6 返回 `no actionable findings`，确认 project-110 当前 project-final closeout-ready boundary 已达到 clean state。

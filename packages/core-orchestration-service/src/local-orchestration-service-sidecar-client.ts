@@ -11,6 +11,7 @@ import type {
   OrchestrationArchiveSessionResponse,
   OrchestrationArtifactPaneQueryRequest,
   OrchestrationArtifactPaneQueryResponse,
+  OrchestrationBootstrapReadinessSnapshot,
   OrchestrationExecutionBoardQueryRequest,
   OrchestrationExecutionBoardQueryResponse,
   OrchestrationExecutionSummary,
@@ -28,10 +29,16 @@ import type {
   OrchestrationRecoverExecutionResponse,
   OrchestrationResumeSessionRequest,
   OrchestrationResumeSessionResponse,
+  OrchestrationSecureAuthoringQueryRequest,
+  OrchestrationSecureAuthoringSnapshot,
   OrchestrationSendSessionTurnRequest,
   OrchestrationSendSessionTurnResponse,
   OrchestrationServiceHealthResponse,
   OrchestrationSessionSummary,
+  OrchestrationSetManagedSecretRequest,
+  OrchestrationSetManagedSecretResponse,
+  OrchestrationSetUserConfigValueRequest,
+  OrchestrationSetUserConfigValueResponse,
   OrchestrationStartExecutionRequest,
   OrchestrationStartExecutionResponse,
   OrchestrationStartSessionRequest,
@@ -46,10 +53,13 @@ import type {
   OrchestrationTerminateExecutionResponse,
   OrchestrationUnarchiveSessionRequest,
   OrchestrationUnarchiveSessionResponse,
+  OrchestrationWorkspaceOperationRequest,
+  OrchestrationWorkspaceOperationResponse,
 } from '@repo-ai-governor/orchestration-service-client';
 import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import {
   LOCAL_ORCHESTRATION_SERVICE_SIDECAR_MEMORY_CONFIG_ENV,
+  LOCAL_ORCHESTRATION_SERVICE_SIDECAR_REPOSITORY_ROOT_ENV,
   LocalOrchestrationServiceSidecarOperation,
 } from './constants/index.js';
 import type {
@@ -65,6 +75,7 @@ import type {
 } from './types/interfaces/local-orchestration-service-sidecar.interface.js';
 
 const DEFAULT_SIDECAR_REQUEST_TIMEOUT_MS = 10000;
+const DEFAULT_WORKSPACE_OPERATION_REQUEST_TIMEOUT_MS = 300000;
 
 interface PendingRequest {
   resolve: (payload: unknown) => void;
@@ -89,6 +100,48 @@ export class LocalOrchestrationServiceSidecarClient {
   public async getHealth(): Promise<OrchestrationServiceHealthResponse> {
     return this.sendRequest<OrchestrationServiceHealthResponse>(
       LocalOrchestrationServiceSidecarOperation.GET_HEALTH,
+    );
+  }
+
+  public async queryBootstrapReadiness(): Promise<OrchestrationBootstrapReadinessSnapshot> {
+    return this.sendRequest<OrchestrationBootstrapReadinessSnapshot>(
+      LocalOrchestrationServiceSidecarOperation.QUERY_BOOTSTRAP_READINESS,
+    );
+  }
+
+  public async querySecureAuthoring(
+    request?: OrchestrationSecureAuthoringQueryRequest,
+  ): Promise<OrchestrationSecureAuthoringSnapshot> {
+    return this.sendRequest<OrchestrationSecureAuthoringSnapshot>(
+      LocalOrchestrationServiceSidecarOperation.QUERY_SECURE_AUTHORING,
+      request,
+    );
+  }
+
+  public async setUserConfigValue(
+    request: OrchestrationSetUserConfigValueRequest,
+  ): Promise<OrchestrationSetUserConfigValueResponse> {
+    return this.sendRequest<OrchestrationSetUserConfigValueResponse>(
+      LocalOrchestrationServiceSidecarOperation.SET_USER_CONFIG_VALUE,
+      request,
+    );
+  }
+
+  public async setManagedSecret(
+    request: OrchestrationSetManagedSecretRequest,
+  ): Promise<OrchestrationSetManagedSecretResponse> {
+    return this.sendRequest<OrchestrationSetManagedSecretResponse>(
+      LocalOrchestrationServiceSidecarOperation.SET_MANAGED_SECRET,
+      request,
+    );
+  }
+
+  public async runWorkspaceOperation(
+    request: OrchestrationWorkspaceOperationRequest,
+  ): Promise<OrchestrationWorkspaceOperationResponse> {
+    return this.sendRequest<OrchestrationWorkspaceOperationResponse>(
+      LocalOrchestrationServiceSidecarOperation.RUN_WORKSPACE_OPERATION,
+      request,
     );
   }
 
@@ -343,7 +396,7 @@ export class LocalOrchestrationServiceSidecarClient {
             },
           ),
         );
-      }, this.dependencies.requestTimeoutMs ?? DEFAULT_SIDECAR_REQUEST_TIMEOUT_MS);
+      }, this.resolveRequestTimeoutMs(operation));
 
       this.pendingRequests.set(requestId, {
         resolve: (responsePayload) => resolve(responsePayload as T),
@@ -508,6 +561,17 @@ export class LocalOrchestrationServiceSidecarClient {
     return [];
   }
 
+  private resolveRequestTimeoutMs(operation: LocalOrchestrationServiceSidecarOperation): number {
+    if (operation === LocalOrchestrationServiceSidecarOperation.RUN_WORKSPACE_OPERATION) {
+      return (
+        this.dependencies.workspaceOperationRequestTimeoutMs ??
+        DEFAULT_WORKSPACE_OPERATION_REQUEST_TIMEOUT_MS
+      );
+    }
+
+    return this.dependencies.requestTimeoutMs ?? DEFAULT_SIDECAR_REQUEST_TIMEOUT_MS;
+  }
+
   /**
    * Builds the sidecar environment, including optional serialized memory config.
    * @returns Environment passed to the child sidecar process.
@@ -520,6 +584,10 @@ export class LocalOrchestrationServiceSidecarClient {
       resolvedEnvironment[LOCAL_ORCHESTRATION_SERVICE_SIDECAR_MEMORY_CONFIG_ENV] = JSON.stringify(
         this.dependencies.memoryConfig,
       );
+    }
+    if (this.dependencies.repositoryRoot) {
+      resolvedEnvironment[LOCAL_ORCHESTRATION_SERVICE_SIDECAR_REPOSITORY_ROOT_ENV] =
+        this.dependencies.repositoryRoot;
     }
     return resolvedEnvironment;
   }

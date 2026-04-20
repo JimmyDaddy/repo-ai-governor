@@ -1,0 +1,65 @@
+# CR-001 verify phase-f secure authoring baseline
+
+- Status: resolved
+- Date: 2026-04-17
+- Owner: AI-Agent
+- Priority: P1
+- Project: `project-113-vscode-primary-workbench-full-cutover`
+- Sprint: `sprint-003-phase-f-secure-authoring-and-user-settings`
+
+## 1. 任务目标
+
+验证 Phase F secure authoring baseline 的 service/runtime/docs delta，并收敛 accepted findings。
+
+## 2. Depends On
+
+1. prepare sprint-003 exit acceptance and phase-g handoff
+
+## 3. 预期产物
+
+1. review artifact for CR-001
+2. task card update for CR-001
+3. aligned checklist/tasks.csv ledger views
+
+## 4. Required Inputs
+
+1. apps/vscode-extension/README.md
+2. .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/module-overview.md
+3. .repo-ai-governor/context/current-context.md
+4. /Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-003-phase-f-secure-authoring-and-user-settings/plan.md
+
+## 5. Traceback References
+
+1. .repo-ai-governor/context/dev/project-088-local-user-config-and-secret-command-promotion-and-decomposition/sprint-001-promotion-and-followup-decomposition/tasks/DA-786-local-user-config-promotion-and-rollout-decomposition-handoff.md
+2. /Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/plan.md
+3. .repo-ai-governor/normative_knowledge_sources/governance/task-card-template.md
+
+## 6. 实施计划
+
+1. 确认本任务边界、依赖与预期产物。
+2. 按标准模板推进实现或治理动作。
+3. 完成 ledger sync 与必要验证后更新产出。
+
+## 7. Development Verification
+
+1. 待执行：按本轮 review boundary 补充定向验证命令。
+2. node ./scripts/governance/check-code-review-status-sync.js
+
+## 8. Delivery Verification
+
+1. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-003-phase-f-secure-authoring-and-user-settings/tasks" --task-id CR-001
+2. node ./scripts/governance/check-task-required-inputs.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-003-phase-f-secure-authoring-and-user-settings/tasks" --task-id CR-001
+3. node ./scripts/governance/check-task-ledger-sync.js
+4. node ./scripts/governance/check-sprint-plan-status-sync.js
+5. node ./scripts/governance/check-code-review-status-sync.js
+
+## 9. 执行记录
+
+1. 2026-04-17：任务创建，状态初始化为 `planned`。
+2. 2026-04-17：decomposition scaffold 预种下的 `CR-001` 未被作为首个 fresh reviewer round 实际消费；当前 worktree 在 bootstrap 时自动分配了 `CR-002` 作为真实 delegated review surface。
+3. 2026-04-17：为避免保留一个悬挂的非终态 scaffold CR 阻塞 sprint closeout，当前任务切换为 `resolved`，并将实际 findings / verification / repair lifecycle 全部收口到 `CR-002` 与 `resolved_code_review_working-tree-20260417-2126.md`。
+
+## 10. 产出
+
+1. /Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-003-phase-f-secure-authoring-and-user-settings/tasks/CR-002.md
+2. /Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-113-vscode-primary-workbench-full-cutover/sprint-003-phase-f-secure-authoring-and-user-settings/review/resolved_code_review_working-tree-20260417-2126.md

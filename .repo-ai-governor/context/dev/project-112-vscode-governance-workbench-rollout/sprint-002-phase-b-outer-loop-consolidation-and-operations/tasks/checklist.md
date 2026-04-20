@@ -1,0 +1,69 @@
+# checklist
+
+- [x] TK-938 land outer-loop consolidation and typed cli bridge governance baseline
+  - 2026-04-16：任务创建，状态初始化为 `planned`。
+  - 2026-04-17：随着 sprint-001 在 latest fresh reviewer clean round `CR-003` 后完成 closeout，当前任务已切换为 `in_progress`，开始承接 automation queue、artifact workbench、multi-workspace overview 与 typed CLI bridge governance 的 Phase B 实施。
+  - 2026-04-17：已完成 service-owned temporary bridge typed contract、queue overview projection、VS Code automation queue view、artifact workbench detail 扩展，以及 multi-workspace / parallel lane / temporary bridge overview nodes 的实现。
+  - 2026-04-17：已取得同窗口 `pnpm run build` 与 5 个定向 vitest 文件 + 1 个 core orchestration shell unit test 的通过证据，当前进入 sprint-002 fresh reviewer round 前的治理台账同步窗口。
+  - 2026-04-17：fresh reviewer round 4 识别出 `tool_managed` 下 temporary bridge repo-root 仍在本地猜测，以及 upgrade bridge 仍投影占位 report path；当前已把 `repositoryRoot` 升级为 runtime 显式契约、让 upgrade bridge 只投影真实 report，并再次取得同窗口定向 vitest + `pnpm run build` 通过证据，下一步进入 fresh clean recheck round 5。
+  - 2026-04-17：fresh reviewer round 5 进一步识别出 temporary bridge preview command 尚未对含空格路径做 shell-safe 渲染，以及 `serviceOwnerProvider` 仍绕过 `repositoryRoot` contract；当前已补齐 shell-safe argv staging 与 provider owner context 契约，并再次取得同窗口定向 vitest + CLI runtime tests + `pnpm run build` 通过证据，下一步进入 fresh clean recheck round 6。
+  - 2026-04-17：fresh reviewer round 6 识别出 VS Code extension runtime 仍把打开的 repo root 当成 sidecar workspace；当前已让 extension runtime 先解析默认 `tool_managed/repo_local` governance workspace，再把 `governanceWorkspaceRoot + repositoryRoot` 一起传给 sidecar，并补齐 tool-managed regression test，下一步进入 fresh clean recheck round 7。
+  - 2026-04-17：fresh reviewer round 7 进一步识别出 custom `repoLocalRoot` 且缺少默认 shadow config 的仓库仍会让 VS Code sidecar 回退到错误 workspace；当前已在 shared config 层补齐 workspace config discovery，并新增 custom repo-local root regression test，再次取得 full vitest bundle + `pnpm run build` 通过证据，下一步进入 fresh clean recheck round 8。
+  - 2026-04-17：fresh reviewer round 8 识别出 round-7 的递归 discovery 仍可能被无关 nested custom `governor.yaml` hijack；当前已把 auto-discovery 收紧为“具备 canonical workspace marker 的唯一 candidate 才能被认领，否则 fail closed”，并补齐防 hijack regression test，再次取得 full vitest bundle + `pnpm run build` 通过证据，下一步进入 fresh clean recheck round 9。
+  - 2026-04-17：fresh reviewer round 9 识别出 queue-only handoff fallback、repo-opened discovery cache 与 `CS-027` exception 记录仍未闭环；当前已让 handoff command 优先消费 queue-provided targets、为 workspace context 加入 per-opened-workspace cache，并在 task ledger 中登记 `presentation-builder` 的临时分解计划，下一步进入 fresh clean recheck round 10。
+  - 2026-04-17：fresh reviewer round 10 识别出 `CR-010` 初始化后未立即同步进 canonical ledgers，以及 runtime-level workspace context cache 会在同会话 config 变更后变陈旧；当前已补齐 round-10 ledger sync，并把缓存边界下沉到 shared discovery candidate path 级别，同时新增 config change 与 cached-candidate regression tests，下一步进入 fresh clean recheck round 11。
+  - 2026-04-17：fresh reviewer round 11 识别出 custom repo-local temporary bridge 仍会被重写到伪造的 nested governance root，以及缺失 `repositoryRoot` 时 bridge cwd/`--repo` 仍会被本地猜测；当前已把 `workspaceRoot` 固定为 bridge governance truth、对缺失 `repositoryRoot` 的 bridge projection fail closed，并补齐 desktop `repositoryRoot` owner-context/sidecar 透传与回归测试，下一步进入 fresh clean recheck round 12。
+  - 2026-04-17：fresh reviewer round 12 返回 `NO_ACTIONABLE_FINDINGS`；当前任务已在同窗口 full vitest bundle + `pnpm run build` 通过证据上完成 clean 收口，正式推进为 `completed`，并切换到 `TK-939` 承接 sprint-002 closeout。
+- [x] TK-939 close sprint-002 and hand off phase-c full-workbench cutover
+  - 2026-04-16：任务创建，状态初始化为 `planned`。
+  - 2026-04-17：latest fresh reviewer round `CR-012` 已 clean `resolved`；当前任务切换为 `in_progress`，开始执行 sprint-002 closeout、`DA-939` handoff packet、project/sprint/current-context/completed-history truth write-back、delivery registry 前移与 sprint-003 / `TK-940` activation。
+  - 2026-04-17：已完成 `DA-939`、sprint-002 completed write-back、sprint-003 / `TK-940` activation 与 delivery registry / artifact registry 前移；当前任务切换为 `completed`，下一步只保留 sprint-002 boundary `pnpm run check` 与本地 commit 收口。
+  - 2026-04-17：已顺序完成 `run-artifact-lifecycle-maintenance`、`sync-task-ledger TK-939/TK-940`、`check-task-required-inputs`、`check-task-ledger-sync`、`check-sprint-plan-status-sync`、`check-code-review-status-sync`、`check-worktree-review-target`、`check-technical-solution-delivery-registry`，并在同窗口通过 `pnpm run check`；当前边界已具备 sprint-002 local commit 条件。
+  - 2026-04-17: confirmed sprint-002 closeout gates and pnpm run check passed; boundary is ready for the sprint-002 local commit.
+- [x] CR-001 TK-938 delegated review loop round 1
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：fresh reviewer round 1 返回 2 条 actionable findings，分别涉及 temporary bridge preview command 与 automation queue detail fallback。
+  - 2026-04-17：主 agent 已接受并修复全部 findings，补齐回归测试，并以同窗口 `pnpm run build` + 定向 vitest 通过证据将当前 CR 生命周期推进到 `resolved`。
+- [x] CR-002 TK-938 delegated recheck loop round 2
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：fresh reviewer round 2 识别出 temporary bridge 在治理目录与受治理 repo 根之间仍存在 cwd / path-base 漂移风险。
+  - 2026-04-17：主 agent 已接受并修复该问题，补齐 command working directory + absolute governance path 的 contract 与回归测试，并以同窗口 `pnpm run build` + 定向 vitest 通过证据将当前 CR 生命周期推进到 `resolved`。
+- [x] CR-003 TK-938 delegated recheck loop round 3
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：fresh reviewer round 3 识别出 queue fallback 仅在首屏可用，以及 temporary bridge palette command 缺少 selection-backed state 两个剩余问题。
+  - 2026-04-17：主 agent 已接受并修复全部 findings，补齐跨 refresh continuity 与 palette-style bridge fallback 的回归测试，并以同窗口 `pnpm run build` + 定向 vitest 通过证据将当前 CR 生命周期推进到 `resolved`。
+- [x] CR-004 TK-938 delegated recheck loop round 4
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：fresh reviewer round 4 识别出 temporary bridge 在默认 `tool_managed` 下仍把 workspace container 当成 governed repo，以及 upgrade bridge 继续使用占位 report path 两个剩余问题。
+  - 2026-04-17：主 agent 已接受并修复全部 findings，把 `repositoryRoot` 升级为 runtime 显式事实、让 upgrade bridge 只投影真实 report，并以同窗口定向 vitest + `pnpm run build` 通过证据将当前 CR 生命周期推进到 `resolved`。
+- [x] CR-005 TK-938 delegated recheck loop round 5
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：fresh reviewer round 5 识别出 temporary bridge shell staging 尚未覆盖含空格路径，以及 `serviceOwnerProvider` 仍绕开 `repositoryRoot` contract 两个剩余问题。
+  - 2026-04-17：主 agent 已接受并修复全部 findings，把 preview command 切换到 shell-safe argv 渲染、扩展 provider owner context 契约，并以同窗口定向 vitest + CLI runtime tests + `pnpm run build` 通过证据将当前 CR 生命周期推进到 `resolved`。
+- [x] CR-006 TK-938 delegated recheck loop round 6
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：fresh reviewer round 6 识别出 VS Code extension runtime 仍把打开的 repo root 直接传给 sidecar client，导致默认 `tool_managed` workspace contract 还没有在 extension path 上真正落地。
+  - 2026-04-17：主 agent 已接受并修复该问题，让 extension runtime 先解析 governance workspace root 再连接 sidecar，并补齐 tool-managed regression test，以同窗口定向 vitest + CLI runtime tests + `pnpm run build` 通过证据将当前 CR 生命周期推进到 `resolved`。
+- [x] CR-007 TK-938 delegated recheck loop round 7
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：fresh reviewer round 7 识别出 custom `repoLocalRoot` 且缺少默认 shadow config 的仓库仍会让 VS Code sidecar 解析到错误的 governance workspace root。
+  - 2026-04-17：主 agent 已将 repo-opened workspace config 发现上提到 shared config 层，补齐 custom repo-local root discovery 与回归测试，并以同窗口 full vitest bundle + `pnpm run build` 通过证据将当前 CR 生命周期推进到 `resolved`。
+- [x] CR-008 TK-938 delegated review loop round 8
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：fresh reviewer round 8 识别出 round-7 新增的 repo-opened workspace discovery fallback 仍可能被无关 nested custom `governor.yaml` hijack。
+  - 2026-04-17：主 agent 已把 auto-discovery 收紧为“具备 canonical workspace marker 的唯一 candidate 才可被认领，否则 fail closed”，并补齐正反两类 bootstrap regression test，以同窗口 full vitest bundle + `pnpm run build` 通过证据将当前 CR 生命周期推进到 `resolved`。
+- [x] CR-009 TK-938 delegated review loop round 9
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：fresh reviewer round 9 识别出 queue-only handoff fallback、workspace discovery cache 与 `CS-027` exception 记录仍存在缺口。
+  - 2026-04-17：主 agent 已让 handoff command 优先消费 queue-provided targets、为 repo-opened service workspace context 增加 cache，并补齐 `presentation-builder` 的 `god-object-exception` 标记与 `TK-940` 拆分计划，以同窗口 full vitest bundle + `pnpm run build` 通过证据将当前 CR 生命周期推进到 `resolved`。
+- [x] CR-010 TK-938 delegated review loop round 10
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：fresh reviewer round 10 识别出 `CR-010` 初始化后尚未同步进 checklist/tasks.csv，以及 runtime-level workspace context cache 会在同会话 config 变更后保持陈旧。
+  - 2026-04-17：主 agent 已同步 `CR-010` 到 canonical ledger surface，并将 cache 下沉到 shared discovery candidate path 级别，同时补齐 config change + cached candidate regression tests，以同窗口 full vitest bundle + `pnpm run build` 通过证据将当前 CR 生命周期推进到 `resolved`。
+- [x] CR-011 TK-938 delegated review loop round 11
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：fresh reviewer round 11 识别出 custom repo-local temporary bridge 仍会被重写到伪造的 nested governance root，以及缺失 `repositoryRoot` 时 bridge cwd/`--repo` 仍会被本地猜测。
+  - 2026-04-17：主 agent 已把 temporary bridge projection 收紧为“`workspaceRoot` 直接作为 governance truth，缺失 `repositoryRoot` 则 fail closed”，同时把 desktop runtime 的 owner context / sidecar path 升级为显式 `repositoryRoot` 透传，并以同窗口 full vitest bundle + `pnpm run build` 通过证据将当前 CR 生命周期推进到 `resolved`。
+- [x] CR-012 TK-938 delegated review loop round 12
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：fresh reviewer round 12 返回 `NO_ACTIONABLE_FINDINGS`，确认当前 TK-938 working tree 已达到 clean recheck 标准。

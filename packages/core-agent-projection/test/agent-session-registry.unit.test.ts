@@ -1,4 +1,5 @@
-import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
+import { WorkspaceMode } from '@repo-ai-governor/config';
+import { AdapterSurface, GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import type { AgentDescriptor, AgentSessionRegistryReader } from '../src/index.js';
 import { AgentSessionRegistry } from '../src/index.js';
 
@@ -8,8 +9,8 @@ function createDescriptor(overrides: Partial<AgentDescriptor> = {}): AgentDescri
     agentRole: 'coder',
     roleProfileId: 'coder-default',
     roleSource: 'default',
-    primarySurface: 'codex',
-    fallbackSurfaces: ['github-copilot'],
+    primarySurface: AdapterSurface.CODEX,
+    fallbackSurfaces: [AdapterSurface.GITHUB_COPILOT],
     capabilities: ['tool_calling'],
     permissionLevel: 'edit',
     inputSchemaRef: null,
@@ -24,14 +25,16 @@ function createDescriptor(overrides: Partial<AgentDescriptor> = {}): AgentDescri
     timeoutPolicyRef: null,
     budgetPolicyRef: null,
     workspaceId: 'workspace-001',
-    workspaceMode: 'repo_local',
+    workspaceMode: WorkspaceMode.REPO_LOCAL,
     executionId: 'exec-001',
     sessionId: 'shared-exec-001',
     selectedBy: null,
-    selectedSurface: 'codex',
+    selectedSurface: AdapterSurface.CODEX,
     projectionStatus: 'running',
     failureReasons: [],
     ...overrides,
+    unsupportedCapabilities: overrides.unsupportedCapabilities ?? [],
+    degradedCapabilities: overrides.degradedCapabilities ?? [],
   };
 }
 

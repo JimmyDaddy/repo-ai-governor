@@ -8,6 +8,7 @@ import type {
   OrchestrationArchiveSessionResponse,
   OrchestrationArtifactPaneQueryRequest,
   OrchestrationArtifactPaneQueryResponse,
+  OrchestrationBootstrapReadinessSnapshot,
   OrchestrationExecutionBoardQueryRequest,
   OrchestrationExecutionBoardQueryResponse,
   OrchestrationExecutionSummary,
@@ -25,10 +26,16 @@ import type {
   OrchestrationRecoverExecutionResponse,
   OrchestrationResumeSessionRequest,
   OrchestrationResumeSessionResponse,
+  OrchestrationSecureAuthoringQueryRequest,
+  OrchestrationSecureAuthoringSnapshot,
   OrchestrationSendSessionTurnRequest,
   OrchestrationSendSessionTurnResponse,
   OrchestrationServiceHealthResponse,
   OrchestrationSessionSummary,
+  OrchestrationSetManagedSecretRequest,
+  OrchestrationSetManagedSecretResponse,
+  OrchestrationSetUserConfigValueRequest,
+  OrchestrationSetUserConfigValueResponse,
   OrchestrationStartExecutionRequest,
   OrchestrationStartExecutionResponse,
   OrchestrationStartSessionRequest,
@@ -43,6 +50,8 @@ import type {
   OrchestrationTerminateExecutionResponse,
   OrchestrationUnarchiveSessionRequest,
   OrchestrationUnarchiveSessionResponse,
+  OrchestrationWorkspaceOperationRequest,
+  OrchestrationWorkspaceOperationResponse,
 } from '@repo-ai-governor/orchestration-service-client';
 import type { GovernorErrorCode, MemoryRuntimeConfig } from '@repo-ai-governor/shared';
 import type { LocalOrchestrationServiceSidecarOperation } from '../../constants/index.js';
@@ -83,6 +92,19 @@ export interface LocalOrchestrationServiceSidecarShutdownResponse {
 
 export interface LocalOrchestrationServiceSidecarDispatchTable {
   getHealth(): Promise<OrchestrationServiceHealthResponse>;
+  queryBootstrapReadiness(): Promise<OrchestrationBootstrapReadinessSnapshot>;
+  querySecureAuthoring(
+    request?: OrchestrationSecureAuthoringQueryRequest,
+  ): Promise<OrchestrationSecureAuthoringSnapshot>;
+  setUserConfigValue(
+    request: OrchestrationSetUserConfigValueRequest,
+  ): Promise<OrchestrationSetUserConfigValueResponse>;
+  setManagedSecret(
+    request: OrchestrationSetManagedSecretRequest,
+  ): Promise<OrchestrationSetManagedSecretResponse>;
+  runWorkspaceOperation(
+    request: OrchestrationWorkspaceOperationRequest,
+  ): Promise<OrchestrationWorkspaceOperationResponse>;
   startExecution(
     payload: LocalOrchestrationServiceSidecarStartExecutionPayload,
   ): Promise<OrchestrationStartExecutionResponse>;
@@ -154,6 +176,8 @@ export interface LocalOrchestrationServiceSidecarHostDependencies
 export interface LocalOrchestrationServiceSidecarClientDependencies {
   sidecarEntryPath?: string;
   requestTimeoutMs?: number;
+  workspaceOperationRequestTimeoutMs?: number;
+  repositoryRoot?: string;
   memoryConfig?: MemoryRuntimeConfig;
   env?: NodeJS.ProcessEnv;
   execArgv?: string[];

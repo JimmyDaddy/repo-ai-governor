@@ -514,6 +514,44 @@ export const EN_US_TRANSLATIONS = {
           summary: 'Inspect or pin the current foreground session route naming baseline.',
         },
       },
+      aiWorkflowPrompts: {
+        deliver: {
+          currentRepoIntro:
+            'Start the governed requirement-to-CR deliver workflow for the current repo.',
+          requestIntro:
+            'Start the governed requirement-to-CR deliver workflow for the following request.',
+          aliasNotice:
+            'Treat `/deliver` only as an explicit acceleration alias for the chat-first deliver entry.',
+          requestLine: 'Delivery request: {{request}}',
+        },
+        plan: {
+          currentGoalIntro:
+            'Use the standard planning template to create an execution plan for the current goal.',
+          goalIntro:
+            'Use the standard planning template to create an execution plan for the following goal.',
+          noSyncNotice: 'Do not sync anything to the sprint ledger yet.',
+          goalLine: 'Goal: {{goal}}',
+        },
+        review: {
+          currentScopeIntro:
+            'Run the standard governed code-review workflow for the current working scope.',
+          scopeIntro: 'Run the standard governed code-review workflow for the following scope.',
+          focusNotice: 'Focus on user-visible regressions, behavior risk, and missing tests.',
+          structuredNotice:
+            'Return a structured review-style result instead of a free-form expert brainstorm.',
+          scopeLine: 'Review scope: {{target}}',
+        },
+        reviewVerify: {
+          currentTargetIntro:
+            'Run the standard review-verification workflow for the latest governed review context.',
+          targetIntro: 'Run the standard review-verification workflow for the following target.',
+          recheckNotice:
+            'Recheck the existing review artifact or fix result and determine whether accepted findings are actually resolved.',
+          structuredNotice:
+            'Return a structured verification result rather than an open-ended expert discussion.',
+          targetLine: 'Verification target: {{target}}',
+        },
+      },
       responses: {
         welcome:
           'Session shell is active. Plain text, slash commands, and service-backed transcript replay now share one foreground surface.',
@@ -573,6 +611,13 @@ export const EN_US_TRANSLATIONS = {
           'The current session shell attachment does not have a command-execution bridge.',
         commandArtifact: 'artifact={{artifactPath}}',
         commandArtifactsMore: '+{{count}} more related artifacts were written.',
+        deliveryPhaseField: 'Delivery phase: {{phase}}',
+        deliveryPendingActionField: 'Pending action: {{pendingAction}}',
+        deliverySelectedStreamField: 'Target stream: {{selectedStream}}',
+        deliveryResultSummaryField: 'Delivery summary: {{resultSummary}}',
+        deliverySummaryTitle: 'Delivery workflow',
+        deliverySummarySummaryLine: 'Presenter-safe delivery workflow summary is available.',
+        relatedLinksTitle: 'Related',
         commandSummary: 'Summary: {{summary}}',
         commandStatusSummary: 'Key status: {{summary}}',
         commandFailureSummary: 'Failure: {{summary}}',
@@ -1397,11 +1442,25 @@ export const EN_US_TRANSLATIONS = {
     helpAppendix: {
       catalogTitle: 'Governed capability catalog:',
       capabilityTitle: 'Session.main governed capability: {{title}}',
+      primaryEntry: 'Primary entry:',
+      optionalAlias: 'Optional discoverability alias:',
+      optionalAliasInline: '(optional alias: {{command}})',
+      reservedAlias: 'Reserved discoverability alias:',
       suggestedSlashCommand: 'Suggested slash command:',
       executionMode: 'Execution path:',
       examplePromptsTitle: 'Example prompts:',
       relatedCapabilitiesTitle: 'Related capabilities:',
+      entryBadges: {
+        chatFirst: '[chat-first]',
+      },
+      primaryEntries: {
+        conversationalAnswer: 'direct chat request',
+        roleMention: 'role mention',
+        cliCommand: 'CLI command',
+        slashCommand: 'slash command {{command}}',
+      },
       executionModes: {
+        aiWorkflow: 'productized AI workflow',
         directExecute: 'direct execute (no extra confirmation)',
         previewConfirm: 'preview first, then confirm',
       },
@@ -1468,6 +1527,17 @@ export const EN_US_TRANSLATIONS = {
           1: 'Open the workflow template surface for this repo.',
         },
       },
+      deliver: {
+        title: 'Deliver',
+        summary:
+          'Coordinate the governed requirement-to-CR delivery path from requirement intake to clean review closure.',
+        detail:
+          'Deliver is the parent AI workflow for requirement-to-CR orchestration. It keeps requirement capture, approved durable brief gating, solution review, task decomposition, execution, and governed CR closure on one orchestration-owned path without creating a second registry.',
+        examples: {
+          0: 'Help me deliver this requirement through the governed path.',
+          1: 'Start the requirement-to-CR delivery workflow for this repo.',
+        },
+      },
       plan: {
         title: 'Plan',
         summary: 'Run the productized planning workflow for the current goal.',
@@ -1509,6 +1579,18 @@ export const EN_US_TRANSLATIONS = {
           1: 'Execute the task-driven delivery flow for TK-123.',
         },
       },
+    },
+  },
+  sessionMainDispatcher: {
+    deliver: {
+      startedDelta: 'Started governed deliver workflow.',
+      startedMessage:
+        'Started the governed deliver workflow. Share the requirement or point me to an approved durable brief so I can anchor the next phase on the orchestration-owned path.',
+      resumedDelta: 'Resumed governed deliver workflow.',
+      resumedMessage:
+        'Resumed the governed deliver workflow at phase `{{phase}}`. Continue from the current shared-session state instead of restarting from requirement capture.',
+      resumedMessageWithAction:
+        'Resumed the governed deliver workflow at phase `{{phase}}`. Continue with pending action `{{pendingAction}}` from the current shared-session state.',
     },
   },
   __internal: {

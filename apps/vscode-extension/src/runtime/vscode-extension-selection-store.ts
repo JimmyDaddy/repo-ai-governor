@@ -18,7 +18,45 @@ export class VsCodeExtensionSelectionStore {
    * @returns One shallow-cloned selection snapshot.
    */
   public getSnapshot(): VsCodeExtensionSelectionSnapshot {
-    return { ...this.snapshot };
+    return {
+      ...('executionId' in this.snapshot
+        ? {
+            executionId: this.snapshot.executionId,
+          }
+        : {}),
+      ...('executionSessionId' in this.snapshot
+        ? {
+            executionSessionId: this.snapshot.executionSessionId,
+          }
+        : {}),
+      ...('reviewSourcePath' in this.snapshot
+        ? {
+            reviewSourcePath: this.snapshot.reviewSourcePath,
+          }
+        : {}),
+      ...('queueEntry' in this.snapshot
+        ? {
+            queueEntry: this.snapshot.queueEntry,
+          }
+        : {}),
+      ...('temporaryBridge' in this.snapshot
+        ? {
+            temporaryBridge: this.snapshot.temporaryBridge,
+          }
+        : {}),
+      ...(this.snapshot.workspaceOperationKind !== undefined
+        ? {
+            workspaceOperationKind: this.snapshot.workspaceOperationKind,
+          }
+        : {}),
+      ...(this.snapshot.workspaceOperationArguments
+        ? {
+            workspaceOperationArguments: {
+              ...this.snapshot.workspaceOperationArguments,
+            },
+          }
+        : {}),
+    };
   }
 
   /**
@@ -30,19 +68,46 @@ export class VsCodeExtensionSelectionStore {
       return;
     }
 
-    if (request.executionId) {
+    if (request.clearExecutionSelection) {
+      this.snapshot.executionId = undefined;
+      this.snapshot.executionSessionId = undefined;
+      this.snapshot.queueEntry = undefined;
+      this.snapshot.temporaryBridge = undefined;
+      this.snapshot.workspaceOperationKind = undefined;
+      this.snapshot.workspaceOperationArguments = undefined;
+    }
+
+    if ('executionId' in request) {
       this.snapshot.executionId = request.executionId;
     }
-    if (request.executionSessionId) {
+    if ('executionSessionId' in request) {
       this.snapshot.executionSessionId = request.executionSessionId;
     }
     if ('reviewSourcePath' in request) {
       this.snapshot.reviewSourcePath = request.reviewSourcePath;
     }
+    if (
+      'queueEntry' in request ||
+      'temporaryBridge' in request ||
+      'workspaceOperationKind' in request ||
+      'workspaceOperationArguments' in request ||
+      'executionId' in request ||
+      'executionSessionId' in request ||
+      'reviewSourcePath' in request
+    ) {
+      this.snapshot.queueEntry = request.queueEntry;
+      this.snapshot.temporaryBridge = request.temporaryBridge;
+      this.snapshot.workspaceOperationKind =
+        'workspaceOperationKind' in request ? request.workspaceOperationKind : undefined;
+      this.snapshot.workspaceOperationArguments =
+        'workspaceOperationArguments' in request && request.workspaceOperationArguments
+          ? { ...request.workspaceOperationArguments }
+          : undefined;
+    }
   }
 
   /**
-   * Remembers the selected execution identifiers.
+   * Remembers the selected execution identifiers and clears any stale review-only backlink.
    * @param executionId Execution identifier.
    * @param executionSessionId Optional execution-session identifier.
    */
@@ -50,6 +115,7 @@ export class VsCodeExtensionSelectionStore {
     this.applyCommandRequest({
       executionId,
       executionSessionId,
+      reviewSourcePath: undefined,
     });
   }
 
@@ -58,8 +124,6 @@ export class VsCodeExtensionSelectionStore {
    * @param reviewSourcePath Optional review path.
    */
   public rememberReviewSourcePath(reviewSourcePath?: string): void {
-    this.applyCommandRequest({
-      reviewSourcePath,
-    });
+    this.snapshot.reviewSourcePath = reviewSourcePath;
   }
 }

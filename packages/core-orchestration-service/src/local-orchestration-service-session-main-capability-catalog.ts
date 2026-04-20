@@ -91,6 +91,23 @@ export class LocalOrchestrationServiceSessionMainCapabilityCatalog {
         relatedCapabilityIds: [SESSION_MAIN_CAPABILITY_ID.PLAN, SESSION_MAIN_CAPABILITY_ID.RUN],
       }),
       this.createDescriptorSeed({
+        capabilityId: SESSION_MAIN_CAPABILITY_ID.DELIVER,
+        skillId: 'skill.deliver.workflow',
+        executionIntent: 'deliver.requirement_to_cr',
+        suggestedSlashCommand: '/deliver',
+        handoffExecutionMode: SESSION_MAIN_HANDOFF_EXECUTION_MODE.DIRECT_EXECUTE,
+        interactionModel: SESSION_MAIN_CAPABILITY_INTERACTION_MODEL.AI_FIXED_WORKFLOW,
+        primaryEntry: SESSION_MAIN_CAPABILITY_PRIMARY_ENTRY.CONVERSATIONAL_ANSWER,
+        backingExecution: SESSION_MAIN_CAPABILITY_BACKING_EXECUTION.TEMPLATED_AI_WORKFLOW,
+        confirmationRequired: false,
+        relatedCapabilityIds: [
+          SESSION_MAIN_CAPABILITY_ID.PLAN,
+          SESSION_MAIN_CAPABILITY_ID.REVIEW,
+          SESSION_MAIN_CAPABILITY_ID.REVIEW_VERIFY,
+          SESSION_MAIN_CAPABILITY_ID.RUN,
+        ],
+      }),
+      this.createDescriptorSeed({
         capabilityId: SESSION_MAIN_CAPABILITY_ID.PLAN,
         skillId: 'skill.plan.task',
         executionIntent: 'plan.generate',

@@ -9,6 +9,7 @@ export {
 } from './local-orchestration-service-governance-query.constant.js';
 export {
   LOCAL_ORCHESTRATION_SERVICE_SIDECAR_MEMORY_CONFIG_ENV,
+  LOCAL_ORCHESTRATION_SERVICE_SIDECAR_REPOSITORY_ROOT_ENV,
   LOCAL_ORCHESTRATION_SERVICE_SIDECAR_PROTOCOL_VERSION,
   LocalOrchestrationServiceSidecarOperation,
 } from './local-orchestration-service-sidecar.constant.js';
@@ -32,3 +33,11 @@ export {
   SESSION_PROVIDER_CONTINUATIONS_CONTEXT_KEY,
   SESSION_PROVIDER_CONTINUATIONS_VERSION,
 } from './provider-continuation.constant.js';
+export {
+  SESSION_DELIVERY_REQUIREMENT_REVIEW_OUTCOME,
+  SESSION_DELIVERY_WORKFLOW_CAPABILITY_ID,
+  SESSION_DELIVERY_WORKFLOW_CONTEXT_KEY,
+  SESSION_DELIVERY_WORKFLOW_PENDING_ACTION,
+  SESSION_DELIVERY_WORKFLOW_PHASE,
+  SESSION_DELIVERY_WORKFLOW_VERSION,
+} from './session-delivery-workflow.constant.js';

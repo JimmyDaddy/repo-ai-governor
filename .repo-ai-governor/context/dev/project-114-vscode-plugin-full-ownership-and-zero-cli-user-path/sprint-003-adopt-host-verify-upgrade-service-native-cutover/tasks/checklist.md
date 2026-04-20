@@ -1,0 +1,24 @@
+# checklist
+
+- [x] TK-971 freeze adopt-host-verify-upgrade bridge-exit contract
+  - 2026-04-18：任务创建，状态初始化为 `planned`。
+  - 2026-04-18：随着 sprint-003 activation 完成，TK-971 状态切换为 `active`，并作为当前首个 implementation lane 开始冻结 adopt / host / verify / upgrade 的 bridge-exit contract。
+  - 2026-04-18：冻结 sprint-003 bridge-exit contract：VS Code 主用户路径改为直接携带 `workspaceOperationKind / workspaceOperationArguments` 的 service-native request；`temporaryBridge` 只保留为兼容性证据、receipt/backlink provenance 与 exit-criteria trace，不再承担主执行语义。
+- [x] TK-972 implement service-native adopt-host-verify-upgrade orchestration seams
+  - 2026-04-18：任务创建，状态初始化为 `planned`。
+  - 2026-04-18：将 extension repository-operation 主路径切到 service-native orchestration seam：`stageTemporaryBridge` 现在优先消费 direct workspace-operation request，并在无预选 bridge 时通过 queue-overview catalog 提供原生 operation picker，覆盖 adopt / host / verify / upgrade preview / upgrade apply 的受治理执行入口。
+- [x] TK-973 land workbench-native adopt-host-verify-upgrade trust-sensitive surfaces
+  - 2026-04-18：任务创建，状态初始化为 `planned`。
+  - 2026-04-18：workbench overview 与 workflow studio 已改为直接投影 service-native repository operations；新增 upgrade preview 原生入口，repository operation action 不再把用户主路径编码为 temporary bridge request，同时 selection store 与 presenter 测试同步覆盖 direct operation request。
+- [x] TK-974 prepare sprint-003 exit acceptance and sprint-004 handoff
+  - 2026-04-18：任务创建，状态初始化为 `planned`。
+  - 2026-04-18：完成 sprint-003 当前实现窗口的 acceptance package：`pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-selection-store.test.ts`、`pnpm run build`、`pnpm run check` 已通过；sprint-004 handoff 继续基于现有 workflow studio / review detail / automation primary surfaces 推进，不回退本 sprint 的 direct repository-operation 主路径。
+- [x] TK-985 close sprint-003 boundary and activate sprint-004 execution surface
+  - 2026-04-18：任务创建，状态初始化为 `planned`。
+  - 2026-04-18：`CR-001` 已 resolved，sprint-003 的 review/task truth、project plan、sprint plan 与 current-context 已统一切换到 closeout-ready state。
+  - 2026-04-18：已将 sprint-003 标记为 completed，并激活 sprint-004 作为新的 primary execution surface；sprint-004 `CR-001` 与 `TK-975` 已在同窗口完成 activation write-back。
+  - 2026-04-18: TK-985 completed after CR-001 resolved, sprint-003 switched to completed truth, and sprint-004 activation surfaces were written back.
+- [x] CR-001 sprint-003-adopt-host-verify-upgrade-service-native-cutover delegated review loop round 1
+  - 2026-04-18：随着 sprint-003 activation 完成，预留 `CR-001` 作为本 sprint 的首轮 fresh reviewer 编号，状态初始化为 `review_pending`。
+  - 2026-04-18：fresh reviewer round 发现 2 条 accepted findings：显式 `temporaryBridge` 请求会被陈旧 direct-operation state 抢占、review-detail refresh 未保留 direct workspace-operation selection。
+  - 2026-04-18：主 agent 已修复上述问题，补充回归测试，并重新跑通 targeted vitest、`pnpm run build` 与 `pnpm run check`；`CR-001` 收口为 `resolved`。

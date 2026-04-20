@@ -1,9 +1,16 @@
 export const LOCAL_ORCHESTRATION_SERVICE_SIDECAR_PROTOCOL_VERSION = '1';
 export const LOCAL_ORCHESTRATION_SERVICE_SIDECAR_MEMORY_CONFIG_ENV =
   'REPO_AI_GOVERNOR_LOCAL_ORCHESTRATION_MEMORY_CONFIG_JSON';
+export const LOCAL_ORCHESTRATION_SERVICE_SIDECAR_REPOSITORY_ROOT_ENV =
+  'REPO_AI_GOVERNOR_LOCAL_ORCHESTRATION_REPOSITORY_ROOT';
 
 export enum LocalOrchestrationServiceSidecarOperation {
   GET_HEALTH = 'get_health',
+  QUERY_BOOTSTRAP_READINESS = 'query_bootstrap_readiness',
+  QUERY_SECURE_AUTHORING = 'query_secure_authoring',
+  SET_USER_CONFIG_VALUE = 'set_user_config_value',
+  SET_MANAGED_SECRET = 'set_managed_secret',
+  RUN_WORKSPACE_OPERATION = 'run_workspace_operation',
   START_EXECUTION = 'start_execution',
   GET_EXECUTION = 'get_execution',
   QUERY_EXECUTION_BOARD = 'query_execution_board',

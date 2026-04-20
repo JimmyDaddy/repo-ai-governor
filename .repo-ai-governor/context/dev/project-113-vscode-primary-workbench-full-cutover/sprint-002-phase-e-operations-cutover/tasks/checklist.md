@@ -1,0 +1,39 @@
+# checklist
+
+- [x] TK-946 freeze phase-e operations cutover and bridge-exit criteria
+  - 2026-04-17：任务创建，状态初始化为 `planned`。
+  - 2026-04-17：随着 sprint-001 在 `CR-003` clean round 后完成 closeout，当前任务已切换为 `in_progress`，开始冻结 Phase E operations cutover 与 degraded fallback boundary。
+  - 2026-04-17：当前仍保持 clean baseline；下一步从 `.tmp/project-113-boundary-parking/phase-e.patch` 重放 review detail / workflow studio / queue query fallback delta，并将 review surface 收敛在 service-backed empty/degraded view，而不是继续扩展 Phase D activation 范围。
+  - 2026-04-17：已将 Phase E contract 冻结为“`queryExecutionBoard` / `queryHitlInbox` / `queryQueueOverview` 失败时返回 empty DTO，review detail 与 workflow studio restore 失败时渲染 degraded-but-restorable HTML，而不是把异常直接冒泡到 UI”；同窗口 `pnpm run build` 与 2 个 VS Code extension 定向 vitest 已通过，当前任务切换为 `completed`。
+- [x] TK-947 implement service-native operations seams and receipts
+  - 2026-04-17：任务创建，状态初始化为 `planned`。
+  - 2026-04-17：当前任务切换为 `in_progress`，开始将 Phase E sidecar/query restore failure 收敛到 service-native empty response / undefined fallback，而不是让 provider 侧承受未处理异常。
+  - 2026-04-17：`VsCodeExtensionServiceRuntime` 已补齐 execution board / HITL inbox / queue overview 的 empty DTO fallback，以及 execution lookup 的 catch-and-return-undefined 语义；同窗口 `pnpm run build` 与 2 个 VS Code extension 定向 vitest 已通过，当前任务切换为 `completed`。
+  - 2026-04-17：`CR-001` accepted finding 已补齐 `queryHitlInbox()` 的 reject-path 回归覆盖，并把 artifact-pane restore failure 从 runtime swallow 调整为显式交给 provider degraded surface 处理；同窗口 `pnpm run build` 与定向 vitest 已重跑通过。
+- [x] TK-948 land operations workbench surfaces and bridge fallback governance
+  - 2026-04-17：任务创建，状态初始化为 `planned`。
+  - 2026-04-17：当前任务切换为 `in_progress`，开始把 review detail / workflow studio 的 restore failure 从抛错或无限 loading 收敛到可恢复的 degraded service-backed page。
+  - 2026-04-17：`VsCodeExtensionPresentationBuilder` 已新增通用 `buildServiceFailureHtml()`，review detail 与 workflow studio provider 均改为捕获 restore 异常并渲染 degraded page；controller/provider 定向测试已补齐对应 failure-state coverage，同窗口 `pnpm run build` 与 2 个 VS Code extension 定向 vitest 已通过，当前任务切换为 `completed`。
+  - 2026-04-17：`CR-001` accepted finding 已把 artifact-pane restore failure 调整为由 runtime 显式抛给 provider degraded path，而不再伪装成“未选中执行”的假空态；同窗口 `pnpm run build` 与定向 vitest 已重跑通过。
+- [x] TK-949 prepare sprint-002 exit acceptance and phase-f handoff
+  - 2026-04-17：任务创建，状态初始化为 `planned`。
+  - 2026-04-17：当前任务切换为 `in_progress`，开始整理 sprint-002 exit evidence，并为 Phase F secure authoring / settings / secret readiness handoff 准备 activation-ready inputs。
+  - 2026-04-17：已确认当前 sprint-002 只交付 Phase E degraded fallback；Phase H patch 继续停放在 `.tmp/project-113-boundary-parking/phase-h.patch`，Phase F / G 仍保持 clean baseline，不把 secure authoring 或 workflow authoring 范围提前混入本 sprint。
+  - 2026-04-17：已完成 `pnpm run build` 与 2 个 VS Code extension 定向 vitest，当前 exit evidence 足以进入 sprint-002 `CR-001` fresh reviewer round；下一 sprint 将从 clean baseline实现 secure authoring、user settings 与 secret readiness UX。
+  - 2026-04-17：当前任务切换为 `completed`，后续只待 `CR-001` clean round 放行，再继续 sprint-002 closeout 与 sprint-003 activation write-back。
+  - 2026-04-17：`CR-001` 已接受并修复 artifact-pane restore failure 假空态与 HITL fallback 证据缺口；sprint-002 exit evidence 现已回到“queue/execution/HITL empty DTO + review detail/workflow studio degraded restore page” 的一致口径，等待 fresh recheck round 放行。
+  - 2026-04-17：`CR-002 ~ CR-003` 已全部进入 `resolved`，其中 latest clean recheck round 未发现新增 actionable finding；当前 sprint-002 已完成 closeout，`current-context.md` 与 project/sprint plan 已切到 sprint-003 / `TK-950` activation truth。
+- [x] CR-001 verify phase-e operations cutover
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：fresh reviewer round-1 指出 artifact-pane restore failure 仍会把 review detail 伪装成“未选中执行”的空态，以及 HITL inbox empty-DTO fallback 缺少验证证据；两条 finding 均判定为 **accepted**，当前 task 进入 `verified` 结论窗口。
+  - 2026-04-17：已把 artifact-pane restore failure 改为由 runtime 显式交给 review detail / workflow studio provider degraded path 处理，并补齐 `queryHitlInbox()` reject-path 覆盖；同窗口 `pnpm run build`、2 个 VS Code extension 定向 vitest 与 task-required-inputs/task-ledger/sprint-plan/code-review/worktree-review-target gates 已重跑通过，当前 task/report 满足 `resolved` 条件。
+  - 2026-04-17：`CR-001` 已收口 round-1 accepted findings；下一步继续发起 fresh recheck round，只有当最新 reviewer 无 actionable finding 时 sprint-002 才能进入 closeout。
+- [x] CR-002 sprint-002-phase-e-operations-cutover delegated recheck loop round 2
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：fresh reviewer round-2 指出两条 actionable finding：`apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts` 新增 reject-path 测试直接使用原生 `new Error(...)`，违反 `CS-022`；`apps/vscode-extension/src/runtime/vscode-extension-service-runtime.ts` 的 fallback DTO helper 缺少 `CS-017` 所需的 `// oop-function-allowed: reason` 说明。两条 finding 均判定为 **accepted**。
+  - 2026-04-17：已把两条 accepted finding 完成修复，并重跑 `pnpm run build`、2 个 VS Code extension 定向 vitest、`check-standardized-error-usage`、task-required-inputs/task-ledger/sprint-plan/code-review/worktree-review-target gates；当前 task/report 满足 `resolved` 条件。
+  - 2026-04-17：`CR-002` 已收口 round-2 findings；下一步继续发起 fresh recheck round，只有当最新 reviewer 无 actionable finding 时 sprint-002 才能进入 closeout。
+- [x] CR-003 sprint-002-phase-e-operations-cutover delegated review loop round 3
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：latest clean recheck 未发现 actionable finding；当前 round 直接满足 `resolved` 条件，可作为 sprint-002 closeout 的评审放行证据。
+  - 2026-04-17：CR-003 clean round 已回填 resolved evidence，sprint-002 closeout 与 sprint-003 activation 已具备可回放验证链。

@@ -18,6 +18,7 @@ describe('Cli codex exec fixture runtime', () => {
     expect(runner).toBeDefined();
     const result = await runner?.({
       command: 'codex',
+      commandArguments: ['exec', '--json', '-'],
       cwd: process.cwd(),
       env: process.env,
       prompt: 'probe',

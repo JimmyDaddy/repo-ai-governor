@@ -1,12 +1,24 @@
 import {
+  OrchestrationBootstrapReadinessActionId,
   OrchestrationClientSurface,
   OrchestrationExecutionKind,
   OrchestrationExecutionStatus,
   OrchestrationGovernanceActionKind,
+  OrchestrationGovernanceAttentionLevel,
+  OrchestrationGovernanceFollowUpSlaState,
+  OrchestrationGovernanceNotificationStatus,
+  OrchestrationGovernanceQueueKind,
+  OrchestrationGovernanceTemporaryBridgeBacklinkSurface,
+  OrchestrationGovernanceTemporaryBridgeCapabilityClass,
+  OrchestrationGovernanceTemporaryBridgeExitCriterion,
+  OrchestrationGovernanceTemporaryBridgeReceiptKind,
   OrchestrationHandoffTargetKind,
+  OrchestrationServiceEventType,
   OrchestrationServiceHostKind,
   OrchestrationServiceLifecycleStatus,
   OrchestrationServiceTransportKind,
+  OrchestrationSessionStatus,
+  OrchestrationWorkspaceOperationKind,
 } from '@repo-ai-governor/orchestration-service-client';
 import type {
   OrchestrationExecutionBoardEntry,
@@ -21,8 +33,8 @@ describe('VsCodeExtensionPresentationBuilder', () => {
     localizeText: (english: string) => english,
   });
 
-  it('renders execution-board nodes from service-owned actions and handoff targets', () => {
-    const nodes = builder.buildExecutionBoardNodes([
+  it('renders task-board nodes from service-owned actions and handoff targets', () => {
+    const nodes = builder.buildTaskBoardNodes([
       createExecutionBoardEntry({
         pendingHitl: true,
       }),
@@ -33,6 +45,7 @@ describe('VsCodeExtensionPresentationBuilder', () => {
     expect(nodes[0]?.children?.map((child) => child.label)).toEqual(
       expect.arrayContaining([
         'Status',
+        'Workflow stage',
         'Latest event',
         'Open review detail',
         'Approve and resume',
@@ -96,12 +109,53 @@ describe('VsCodeExtensionPresentationBuilder', () => {
         resolvedExecutionId: 'execution-1',
         resolvedSessionId: 'session-1',
         reviewSourcePath: '/repo/.repo-ai-governor/review/resolved.md',
+        reviewLifecycle: {
+          totalReviewCount: 1,
+          pendingReviewCount: 0,
+          verifiedReviewCount: 0,
+          resolvedReviewCount: 1,
+          latestReviewId: 'review-1',
+          latestLifecycleStatus: 'resolved',
+          latestReviewFilePath: '/repo/.repo-ai-governor/review/resolved.md',
+          navigationReviewIds: ['review-1'],
+        },
+        workbench: {
+          artifactCount: 1,
+          reviewCount: 1,
+          transcriptCount: 1,
+          latestArtifactId: 'artifact-1',
+          latestArtifactPath: '/repo/.repo-ai-governor/context/review.md',
+          latestReviewId: 'review-1',
+          latestReviewFilePath: '/repo/.repo-ai-governor/review/resolved.md',
+          latestTranscriptEntryId: 'entry-1',
+          latestTranscriptCreatedAt: '2026-04-05T09:15:00.000Z',
+        },
+        evidenceBacklinks: {
+          governanceWorkspacePath: '/repo',
+          artifactPaths: ['/repo/.repo-ai-governor/context/review.md'],
+          reviewPaths: ['/repo/.repo-ai-governor/review/resolved.md'],
+          transcriptEntryIds: ['entry-1'],
+        },
+        policyTrace: {
+          executionId: 'execution-1',
+          executionStatus: OrchestrationExecutionStatus.RUNNING,
+          pendingHitl: false,
+          recoveryCapable: true,
+          currentStageId: 'review',
+          latestEventType: OrchestrationServiceEventType.EXECUTION_STARTED,
+          taskId: 'TK-563',
+          projectId: 'project-048-governance-surface-clients-rollout',
+          sprintId: 'sprint-002-vscode-editor-companion-mvp',
+          reviewDocumentPath: '/repo/.repo-ai-governor/review/resolved.md',
+        },
       },
     });
 
     expect(html).toContain('Governor review detail');
     expect(html).toContain('Sprint 002 review');
     expect(html).toContain('/repo/.repo-ai-governor/review/resolved.md');
+    expect(html).toContain('Artifact workbench');
+    expect(html).toContain('Evidence backlinks');
     expect(html).toContain('review · active');
     expect(html).toContain('Service lifecycle');
     expect(html).toContain('sidecar via ipc');
@@ -151,6 +205,23 @@ describe('VsCodeExtensionPresentationBuilder', () => {
             },
           ],
           transcript: [],
+          reviewLifecycle: {
+            totalReviewCount: 1,
+            pendingReviewCount: 0,
+            verifiedReviewCount: 0,
+            resolvedReviewCount: 1,
+            navigationReviewIds: ['review-1'],
+          },
+          workbench: {
+            artifactCount: 0,
+            reviewCount: 1,
+            transcriptCount: 0,
+          },
+          evidenceBacklinks: {
+            artifactPaths: [],
+            reviewPaths: ['/repo/.repo-ai-governor/review/resolved.md'],
+            transcriptEntryIds: [],
+          },
         },
       },
     });
@@ -165,9 +236,9 @@ describe('VsCodeExtensionPresentationBuilder', () => {
     expect(markdown).toContain('Memory provider: @repo-ai-governor/memory-provider-sqlite-fs');
   });
 
-  it('renders workspace-context nodes with trust-sensitive and service diagnostics', () => {
-    const nodes = builder.buildWorkspaceContextNodes(
-      {
+  it('renders workbench-overview nodes with trust-sensitive and service diagnostics', () => {
+    const nodes = builder.buildWorkbenchOverviewNodes({
+      workspaceContext: {
         workspaceLabel: 'ai-governor',
         workspaceRoot: '/repo',
         workspaceTrusted: false,
@@ -180,29 +251,822 @@ describe('VsCodeExtensionPresentationBuilder', () => {
           pid: 4321,
         },
       },
-      createExecutionBoardEntry(),
-      '/repo/.repo-ai-governor/review/resolved.md',
-    );
+      queueOverview: {
+        generatedAt: '2026-04-17T10:00:00.000Z',
+        automationInbox: [
+          {
+            queueEntryId: 'automation:execution-1',
+            queueKind: OrchestrationGovernanceQueueKind.AUTOMATION_INBOX,
+            workspaceId: 'workspace-1',
+            workspaceRoot: '/repo',
+            executionId: 'execution-1',
+            executionKind: OrchestrationExecutionKind.RUN,
+            executionStatus: OrchestrationExecutionStatus.RUNNING,
+            taskId: 'TK-563',
+            projectId: 'project-048-governance-surface-clients-rollout',
+            sprintId: 'sprint-002-vscode-editor-companion-mvp',
+            attentionLevel: OrchestrationGovernanceAttentionLevel.WARNING,
+            notificationStatus: OrchestrationGovernanceNotificationStatus.FOLLOW_UP_REQUIRED,
+            followUpSlaState: OrchestrationGovernanceFollowUpSlaState.DUE_SOON,
+            actions: [],
+            handoffTargets: [],
+          },
+        ],
+        reviewQueue: [
+          {
+            queueEntryId: 'review:review-1',
+            queueKind: OrchestrationGovernanceQueueKind.REVIEW_QUEUE,
+            workspaceId: 'workspace-1',
+            workspaceRoot: '/repo',
+            executionId: 'execution-1',
+            executionKind: OrchestrationExecutionKind.RUN,
+            executionStatus: OrchestrationExecutionStatus.RUNNING,
+            taskId: 'TK-563',
+            projectId: 'project-048-governance-surface-clients-rollout',
+            sprintId: 'sprint-002-vscode-editor-companion-mvp',
+            reviewId: 'review-1',
+            reviewLifecycleStatus: 'review_pending',
+            reviewFilePath: '/repo/.repo-ai-governor/review/resolved.md',
+            attentionLevel: OrchestrationGovernanceAttentionLevel.WARNING,
+            notificationStatus: OrchestrationGovernanceNotificationStatus.FOLLOW_UP_REQUIRED,
+            followUpSlaState: OrchestrationGovernanceFollowUpSlaState.DUE_SOON,
+            actions: [],
+            handoffTargets: [],
+          },
+        ],
+        parallelLanes: [],
+        workspaceSummary: [
+          {
+            workspaceId: 'workspace-1',
+            workspaceRoot: '/repo',
+            totalExecutionCount: 1,
+            activeExecutionCount: 1,
+            pendingHitlCount: 0,
+            automationInboxCount: 1,
+            reviewQueueCount: 1,
+            overdueFollowUpCount: 0,
+            attentionLevel: OrchestrationGovernanceAttentionLevel.WARNING,
+            latestExecutionId: 'execution-1',
+            latestUpdatedAt: '2026-04-17T10:00:00.000Z',
+          },
+        ],
+        temporaryBridges: [
+          {
+            bridgeId: 'temporary-bridge-host-verify',
+            capabilityClass: OrchestrationGovernanceTemporaryBridgeCapabilityClass.HOST_VERIFY,
+            workspaceRoot: '/repo/.repo-ai-governor',
+            commandWorkingDirectory: '/repo',
+            previewCommandLine:
+              'repo-ai-governor host verify --output-dir /repo/.repo-ai-governor/generated/hosts/github-copilot',
+            receiptKind: OrchestrationGovernanceTemporaryBridgeReceiptKind.HOST_VERIFY_RECEIPT,
+            backlinkSurface:
+              OrchestrationGovernanceTemporaryBridgeBacklinkSurface.ARTIFACT_WORKBENCH,
+            exitCriteria: [
+              OrchestrationGovernanceTemporaryBridgeExitCriterion.SERVICE_NATIVE_HOST_QUERY,
+              OrchestrationGovernanceTemporaryBridgeExitCriterion.ARTIFACT_BACKLINK_PROJECTED,
+            ],
+          },
+        ],
+        notificationOwnership: {
+          ownerSurface: OrchestrationClientSurface.DESKTOP,
+          pendingItemCount: 2,
+          dueSoonItemCount: 2,
+          overdueItemCount: 0,
+          activeWorkspaceCount: 1,
+          defaultFollowUpSlaMinutes: 60,
+          notificationStatus: OrchestrationGovernanceNotificationStatus.FOLLOW_UP_REQUIRED,
+        },
+        latestWorkspaceOperation: {
+          operationKind: OrchestrationWorkspaceOperationKind.DOCTOR,
+          completedAt: '2026-04-17T09:59:30.000Z',
+          message: 'Doctor completed with attach_mode=read_only.',
+          result: {
+            operation: 'env_doctor',
+            summary: 'Doctor completed with attach_mode=read_only.',
+            checkTotals: {
+              pass: 5,
+              warn: 1,
+              fail: 0,
+            },
+            checks: [
+              {
+                id: 'artifact_registry_state',
+                status: 'warn',
+                detail: 'artifact registry is not initialized yet',
+              },
+            ],
+            artifacts: [
+              {
+                id: 'doctor_diagnostics',
+                path: '/repo/.repo-ai-governor/context/diagnostics/doctor/doctor-1.json',
+              },
+            ],
+            interactionPrompts: [
+              {
+                title: 'Workspace is read-only',
+                action:
+                  'Switch to writable attach mode if you need to create/update governance artifacts.',
+                blocking: false,
+              },
+            ],
+            layeredLogs: {
+              summary: ['attach_mode=read_only'],
+              detailed: ['workspace_root=/repo/.repo-ai-governor'],
+            },
+          },
+        },
+      },
+      secureAuthoring: {
+        userConfig: {
+          configPath: '/Users/test/.repo-ai-governor/user-config.yaml',
+          configExists: true,
+          legacyPreferencePath: '/Users/test/.repo-ai-governor/cli-preferences.yaml',
+          legacyPreferenceExists: false,
+          themePreference: 'calm',
+          workspaceModePreference: 'repo_local',
+          entries: [
+            {
+              keyPath: 'tools.codex.remoteApi.credentialRef',
+              value: 'secret://openai/api-key',
+            },
+          ],
+        },
+        secretReadiness: {
+          selectedBackendId: 'os-keychain',
+          defaultBackendId: 'os-keychain',
+          indexPath: '/Users/test/.repo-ai-governor/secret-index.json',
+          backends: [
+            {
+              backendId: 'os-keychain',
+              available: true,
+              detail: 'Ready',
+            },
+          ],
+          records: [
+            {
+              keyName: 'openai/api-key',
+              backendId: 'os-keychain',
+              exists: true,
+            },
+          ],
+          configuredCredentialRefs: ['secret://openai/api-key'],
+          unresolvedCredentialRefs: [],
+        },
+      },
+      bootstrapReadiness: {
+        workspaceId: 'workspace-1',
+        repositoryRoot: '/repo',
+        workspaceRoot: '/repo/.repo-ai-governor',
+        configPath: '/repo/.repo-ai-governor/governor.yaml',
+        configExists: false,
+        workspaceMode: 'repo_local',
+        workspaceModeSource: 'config',
+        recommendedActions: [
+          OrchestrationBootstrapReadinessActionId.RUN_WORKSPACE_BOOTSTRAP,
+          OrchestrationBootstrapReadinessActionId.REFRESH_WORKSPACE_STATE,
+        ],
+      },
+      selectedExecution: createExecutionBoardEntry(),
+      reviewSourcePath: '/repo/.repo-ai-governor/review/resolved.md',
+    });
 
     expect(nodes.map((node) => node.label)).toEqual(
       expect.arrayContaining([
         'Workspace root',
         'Workspace trust',
         'Trust-sensitive actions',
+        'User-local defaults',
+        'Secret readiness',
+        'Bootstrap readiness',
+        'Latest workspace operation',
+        'Public support level',
+        'Desktop relationship',
+        'Workflow studio gate',
+        'Queue ownership',
+        'Review queue',
+        'Automation queue',
+        'Multi-workspace overview',
+        'Parallel execution lanes',
+        'Workspace operations',
+        'Compatibility bridge exit evidence',
         'Service lifecycle',
         'Service topology',
         'Checkpoint support',
         'Memory provider',
+        'Active editor',
+        'Selected execution',
+        'Review source',
       ]),
     );
+    expect(
+      nodes.find((node) => node.nodeId === 'temporary-bridges')?.children?.[0]?.command?.command,
+    ).toBe(VSCODE_EXTENSION_COMMAND_IDS.STAGE_TEMPORARY_BRIDGE);
     expect(nodes.find((node) => node.nodeId === 'trust-sensitive-actions')?.description).toBe(
       'Blocked',
+    );
+    expect(nodes.find((node) => node.nodeId === 'public-support-level')?.description).toBe(
+      'Primary workbench claim active',
+    );
+    expect(nodes.find((node) => node.nodeId === 'desktop-relationship')?.description).toBe(
+      'Foundation-only secondary surface',
+    );
+    expect(nodes.find((node) => node.nodeId === 'workflow-studio-gate')?.description).toBe(
+      'Primary-workbench claim active',
     );
     expect(nodes.find((node) => node.nodeId === 'service-topology')?.description).toBe(
       'sidecar via ipc',
     );
     expect(nodes.find((node) => node.nodeId === 'memory-provider')?.description).toBe(
       '@repo-ai-governor/memory-provider-sqlite-fs',
+    );
+    expect(nodes.find((node) => node.nodeId === 'bootstrap-readiness')?.tooltip).toContain(
+      'Recommended actions: Run workspace bootstrap, Refresh governance views',
+    );
+    expect(nodes.find((node) => node.nodeId === 'latest-workspace-operation')?.description).toBe(
+      'Run doctor · 5 pass / 1 warn / 0 fail',
+    );
+    expect(
+      nodes
+        .find((node) => node.nodeId === 'user-default-authoring')
+        ?.children?.some(
+          (child) => child.command?.command === VSCODE_EXTENSION_COMMAND_IDS.CONFIGURE_USER_DEFAULT,
+        ),
+    ).toBe(true);
+    expect(
+      nodes
+        .find((node) => node.nodeId === 'secret-readiness')
+        ?.children?.some(
+          (child) => child.command?.command === VSCODE_EXTENSION_COMMAND_IDS.SET_MANAGED_SECRET,
+        ),
+    ).toBe(true);
+  });
+
+  it('localizes bootstrap readiness labels and action guidance for zh-CN users', () => {
+    const zhBuilder = new VsCodeExtensionPresentationBuilder({
+      localizeText: (_english: string, chinese: string) => chinese,
+    });
+    const nodes = zhBuilder.buildWorkbenchOverviewNodes({
+      workspaceContext: {
+        workspaceLabel: 'ai-governor',
+        workspaceRoot: '/repo',
+        workspaceTrusted: true,
+      },
+      queueOverview: {
+        generatedAt: '2026-04-17T10:00:00.000Z',
+        automationInbox: [],
+        reviewQueue: [],
+        parallelLanes: [],
+        workspaceSummary: [],
+        temporaryBridges: [],
+        notificationOwnership: {
+          ownerSurface: OrchestrationClientSurface.DESKTOP,
+          pendingItemCount: 0,
+          dueSoonItemCount: 0,
+          overdueItemCount: 0,
+          activeWorkspaceCount: 1,
+          defaultFollowUpSlaMinutes: 60,
+          notificationStatus: OrchestrationGovernanceNotificationStatus.IDLE,
+        },
+      },
+      bootstrapReadiness: {
+        workspaceId: 'workspace-1',
+        repositoryRoot: '/repo',
+        workspaceRoot: '/repo/.repo-ai-governor',
+        configPath: '/repo/.repo-ai-governor/governor.yaml',
+        configExists: false,
+        workspaceMode: 'repo_local',
+        workspaceModeSource: 'config',
+        recommendedActions: [
+          OrchestrationBootstrapReadinessActionId.RUN_WORKSPACE_BOOTSTRAP,
+          OrchestrationBootstrapReadinessActionId.REFRESH_WORKSPACE_STATE,
+        ],
+      },
+    });
+
+    const bootstrapNode = nodes.find((node) => node.nodeId === 'bootstrap-readiness');
+
+    expect(bootstrapNode?.label).toBe('初始化就绪度');
+    expect(bootstrapNode?.tooltip).toContain('建议动作: 执行工作区初始化, 刷新治理视图');
+    expect(bootstrapNode?.tooltip).not.toContain('run_workspace_bootstrap');
+  });
+
+  it('guards locale-sensitive workspace-operation details when the snapshot was captured in another locale', () => {
+    const zhBuilder = new VsCodeExtensionPresentationBuilder({
+      localizeText: (_english: string, chinese: string) => chinese,
+    });
+    const nodes = zhBuilder.buildWorkbenchOverviewNodes({
+      workspaceContext: {
+        workspaceLabel: 'ai-governor',
+        workspaceRoot: '/repo',
+        workspaceTrusted: true,
+      },
+      queueOverview: {
+        generatedAt: '2026-04-17T10:00:00.000Z',
+        automationInbox: [],
+        reviewQueue: [],
+        parallelLanes: [],
+        workspaceSummary: [],
+        temporaryBridges: [],
+        notificationOwnership: {
+          ownerSurface: OrchestrationClientSurface.DESKTOP,
+          pendingItemCount: 0,
+          dueSoonItemCount: 0,
+          overdueItemCount: 0,
+          activeWorkspaceCount: 1,
+          defaultFollowUpSlaMinutes: 60,
+          notificationStatus: OrchestrationGovernanceNotificationStatus.IDLE,
+        },
+        latestWorkspaceOperation: {
+          operationKind: OrchestrationWorkspaceOperationKind.DOCTOR,
+          completedAt: '2026-04-17T09:59:30.000Z',
+          locale: 'en-US',
+          message: 'Doctor completed with attach_mode=read_only.',
+          result: {
+            operation: 'env_doctor',
+            summary: 'Doctor completed with attach_mode=read_only.',
+            checkTotals: {
+              pass: 5,
+              warn: 1,
+              fail: 0,
+            },
+            checks: [
+              {
+                id: 'artifact_registry_state',
+                status: 'warn',
+                detail: 'artifact registry is not initialized yet',
+              },
+            ],
+            interactionPrompts: [
+              {
+                title: 'Workspace is read-only',
+                action:
+                  'Switch to writable attach mode if you need to create/update governance artifacts.',
+                blocking: false,
+              },
+            ],
+            layeredLogs: {
+              summary: ['attach_mode=read_only'],
+              detailed: ['workspace_root=/repo/.repo-ai-governor'],
+            },
+            artifacts: [
+              {
+                id: 'doctor_diagnostics',
+                path: '/repo/.repo-ai-governor/context/diagnostics/doctor/doctor-1.json',
+              },
+            ],
+          },
+        },
+      },
+    });
+
+    const latestWorkspaceOperationNode = nodes.find(
+      (node) => node.nodeId === 'latest-workspace-operation',
+    );
+
+    expect(latestWorkspaceOperationNode?.tooltip).toContain('请在当前 VS Code 语言下重新执行');
+    expect(
+      latestWorkspaceOperationNode?.children?.find(
+        (child) => child.nodeId === 'latest-workspace-operation:summary',
+      )?.description,
+    ).toContain('该结果是在另一种语言下采集的');
+    expect(
+      latestWorkspaceOperationNode?.children?.find(
+        (child) => child.nodeId === 'latest-workspace-operation:localized-details',
+      )?.description,
+    ).toBe('需要重新执行');
+    expect(
+      latestWorkspaceOperationNode?.children?.some(
+        (child) => child.nodeId === 'latest-workspace-operation:prompt:0',
+      ),
+    ).toBe(false);
+    expect(
+      latestWorkspaceOperationNode?.children?.some(
+        (child) => child.nodeId === 'latest-workspace-operation:summary-log:0',
+      ),
+    ).toBe(false);
+  });
+
+  it('renders automation-queue nodes with bridge-safe service-owned follow-up metadata', () => {
+    const nodes = builder.buildAutomationQueueNodes([
+      {
+        queueEntryId: 'automation:execution-1',
+        queueKind: OrchestrationGovernanceQueueKind.AUTOMATION_INBOX,
+        workspaceId: 'workspace-1',
+        workspaceRoot: '/repo',
+        executionId: 'execution-1',
+        executionKind: OrchestrationExecutionKind.RUN,
+        executionStatus: OrchestrationExecutionStatus.RUNNING,
+        taskId: 'TK-563',
+        projectId: 'project-048-governance-surface-clients-rollout',
+        sprintId: 'sprint-002-vscode-editor-companion-mvp',
+        attentionLevel: OrchestrationGovernanceAttentionLevel.WARNING,
+        notificationStatus: OrchestrationGovernanceNotificationStatus.FOLLOW_UP_REQUIRED,
+        followUpSlaState: OrchestrationGovernanceFollowUpSlaState.DUE_SOON,
+        actions: [],
+        handoffTargets: [],
+      },
+    ]);
+
+    expect(nodes[0]?.label).toBe('TK-563');
+    expect(nodes[0]?.description).toContain('Due soon');
+    expect(nodes[0]?.selectionRequest?.queueEntry?.queueEntryId).toBe('automation:execution-1');
+    expect(nodes[0]?.children?.map((child) => child.label)).toEqual(
+      expect.arrayContaining(['Queue kind', 'Execution status', 'Follow-up SLA', 'Workspace root']),
+    );
+  });
+
+  it('surfaces warning-bearing secret backends in workbench overview nodes', () => {
+    const nodes = builder.buildWorkbenchOverviewNodes({
+      workspaceContext: {
+        workspaceLabel: 'ai-governor',
+        workspaceRoot: '/repo',
+        workspaceTrusted: true,
+      },
+      queueOverview: {
+        generatedAt: '2026-04-17T10:00:00.000Z',
+        automationInbox: [],
+        reviewQueue: [],
+        parallelLanes: [],
+        workspaceSummary: [],
+        temporaryBridges: [],
+        notificationOwnership: {
+          ownerSurface: OrchestrationClientSurface.DESKTOP,
+          pendingItemCount: 0,
+          dueSoonItemCount: 0,
+          overdueItemCount: 0,
+          activeWorkspaceCount: 1,
+          defaultFollowUpSlaMinutes: 60,
+          notificationStatus: OrchestrationGovernanceNotificationStatus.IDLE,
+        },
+      },
+      secureAuthoring: {
+        secretReadiness: {
+          selectedBackendId: 'unsafe-local-file',
+          defaultBackendId: 'unsafe-local-file',
+          indexPath: '/Users/test/.repo-ai-governor/secrets.json',
+          backends: [
+            {
+              backendId: 'unsafe-local-file',
+              available: true,
+              detail: '/Users/test/.repo-ai-governor/secrets.json',
+              warning: 'plaintext fallback',
+            },
+          ],
+          records: [],
+          configuredCredentialRefs: [],
+          unresolvedCredentialRefs: [],
+        },
+      },
+    });
+
+    expect(nodes.find((node) => node.nodeId === 'secret-readiness')?.description).toBe('Warning');
+    expect(
+      nodes
+        .find((node) => node.nodeId === 'secret-readiness')
+        ?.children?.find((child) => child.nodeId === 'secret-readiness:backend-availability')
+        ?.children?.[0]?.description,
+    ).toBe('Available with warning');
+  });
+
+  it('renders workflow-studio html with desktop decision and support-truth evidence', () => {
+    const html = builder.buildWorkflowStudioHtml({
+      workspaceContext: {
+        workspaceLabel: 'ai-governor',
+        workspaceRoot: '/repo',
+        workspaceTrusted: true,
+        serviceHealth: {
+          lifecycleStatus: OrchestrationServiceLifecycleStatus.READY,
+          serviceHostKind: OrchestrationServiceHostKind.SIDECAR,
+          serviceTransportKind: OrchestrationServiceTransportKind.IPC,
+          checkpointCapable: true,
+          memoryStoreProviderId: '@repo-ai-governor/memory-provider-sqlite-fs',
+          pid: 4321,
+        },
+      },
+      queueOverview: {
+        generatedAt: '2026-04-17T10:15:00.000Z',
+        automationInbox: [],
+        reviewQueue: [],
+        parallelLanes: [],
+        workspaceSummary: [],
+        temporaryBridges: [
+          {
+            bridgeId: 'temporary-bridge-host-verify',
+            capabilityClass: OrchestrationGovernanceTemporaryBridgeCapabilityClass.HOST_VERIFY,
+            workspaceRoot: '/repo/.repo-ai-governor',
+            commandWorkingDirectory: '/repo',
+            previewCommandLine:
+              'repo-ai-governor host verify --output-dir /repo/.repo-ai-governor/generated/hosts/github-copilot',
+            receiptKind: OrchestrationGovernanceTemporaryBridgeReceiptKind.HOST_VERIFY_RECEIPT,
+            backlinkSurface:
+              OrchestrationGovernanceTemporaryBridgeBacklinkSurface.ARTIFACT_WORKBENCH,
+            exitCriteria: [
+              OrchestrationGovernanceTemporaryBridgeExitCriterion.SERVICE_NATIVE_HOST_QUERY,
+              OrchestrationGovernanceTemporaryBridgeExitCriterion.ARTIFACT_BACKLINK_PROJECTED,
+            ],
+          },
+        ],
+        notificationOwnership: {
+          ownerSurface: OrchestrationClientSurface.DESKTOP,
+          pendingItemCount: 1,
+          dueSoonItemCount: 1,
+          overdueItemCount: 0,
+          activeWorkspaceCount: 1,
+          defaultFollowUpSlaMinutes: 60,
+          notificationStatus: OrchestrationGovernanceNotificationStatus.FOLLOW_UP_REQUIRED,
+        },
+        latestWorkspaceOperation: {
+          operationKind: OrchestrationWorkspaceOperationKind.DOCTOR,
+          completedAt: '2026-04-17T10:14:30.000Z',
+          message: 'Doctor completed with attach_mode=read_only.',
+          result: {
+            operation: 'env_doctor',
+            summary: 'Doctor completed with attach_mode=read_only.',
+            checkTotals: {
+              pass: 5,
+              warn: 1,
+              fail: 0,
+            },
+            checks: [
+              {
+                id: 'artifact_registry_state',
+                status: 'warn',
+                detail: 'artifact registry is not initialized yet',
+              },
+            ],
+            artifacts: [
+              {
+                id: 'doctor_diagnostics',
+                path: '/repo/.repo-ai-governor/context/diagnostics/doctor/doctor-1.json',
+              },
+            ],
+            interactionPrompts: [
+              {
+                title: 'Workspace is read-only',
+                action:
+                  'Switch to writable attach mode if you need to create/update governance artifacts.',
+                blocking: false,
+              },
+            ],
+            layeredLogs: {
+              summary: ['attach_mode=read_only'],
+              detailed: ['workspace_root=/repo/.repo-ai-governor'],
+            },
+          },
+        },
+      },
+      selectedExecution: createExecutionBoardEntry({
+        currentStageId: 'review_verify',
+      }),
+      secureAuthoring: {
+        userConfig: {
+          configPath: '/Users/test/.repo-ai-governor/user-config.yaml',
+          configExists: true,
+          legacyPreferencePath: '/Users/test/.repo-ai-governor/cli-preferences.yaml',
+          legacyPreferenceExists: false,
+          themePreference: 'calm',
+          workspaceModePreference: 'repo_local',
+          entries: [],
+        },
+        secretReadiness: {
+          selectedBackendId: 'os-keychain',
+          defaultBackendId: 'os-keychain',
+          indexPath: '/Users/test/.repo-ai-governor/secret-index.json',
+          backends: [
+            {
+              backendId: 'os-keychain',
+              available: true,
+              detail: 'Ready',
+            },
+          ],
+          records: [],
+          configuredCredentialRefs: [],
+          unresolvedCredentialRefs: [],
+        },
+      },
+      artifactPane: {
+        artifacts: [],
+        reviews: [],
+        transcript: [],
+        resolvedExecutionId: 'execution-1',
+        resolvedSessionId: 'session-1',
+        reviewSourcePath: '/repo/.repo-ai-governor/review/resolved.md',
+        reviewLifecycle: {
+          totalReviewCount: 1,
+          pendingReviewCount: 0,
+          verifiedReviewCount: 0,
+          resolvedReviewCount: 1,
+          latestReviewId: 'review-1',
+          latestLifecycleStatus: 'resolved',
+          latestReviewFilePath: '/repo/.repo-ai-governor/review/resolved.md',
+          navigationReviewIds: ['review-1'],
+        },
+        workbench: {
+          artifactCount: 1,
+          reviewCount: 1,
+          transcriptCount: 0,
+          latestArtifactId: 'artifact-1',
+          latestArtifactPath: '/repo/.repo-ai-governor/context/review.md',
+          latestReviewId: 'review-1',
+          latestReviewFilePath: '/repo/.repo-ai-governor/review/resolved.md',
+        },
+        evidenceBacklinks: {
+          governanceWorkspacePath: '/repo/.repo-ai-governor',
+          artifactPaths: ['/repo/.repo-ai-governor/context/review.md'],
+          reviewPaths: ['/repo/.repo-ai-governor/review/resolved.md'],
+          transcriptEntryIds: [],
+        },
+        policyTrace: {
+          executionId: 'execution-1',
+          executionStatus: OrchestrationExecutionStatus.RUNNING,
+          pendingHitl: false,
+          recoveryCapable: true,
+          currentStageId: 'review_verify',
+          latestEventType: OrchestrationServiceEventType.STAGE_PROGRESS,
+          latestArtifactId: 'artifact-1',
+          latestArtifactPath: '/repo/.repo-ai-governor/context/review.md',
+          taskId: 'TK-563',
+          projectId: 'project-112-vscode-governance-workbench-rollout',
+          sprintId: 'sprint-003-phase-c-workflow-studio-and-full-workbench-cutover',
+          reviewDocumentPath: '/repo/.repo-ai-governor/review/resolved.md',
+        },
+      },
+      sessionContinuity: {
+        sessionId: 'session-1',
+        sessionStatus: OrchestrationSessionStatus.ACTIVE,
+        currentRouteId: 'workflow_authoring',
+        latestTurnId: 'turn-1',
+        latestEventSequence: 7,
+        nextCursor: 'cursor-session-1:latest',
+        resumeSelector: 'session://execution-1',
+      },
+      reviewSourcePath: '/repo/.repo-ai-governor/review/resolved.md',
+    });
+
+    expect(html).toContain('Governor workflow studio');
+    expect(html).toContain('Latest workspace operation');
+    expect(html).toContain('Governed run control');
+    expect(html).toContain('Continuity and handoff');
+    expect(html).toContain('Support-truth gate');
+    expect(html).toContain('Desktop decision surface');
+    expect(html).toContain('Foundation-only secondary surface');
+    expect(html).toContain('Primary workbench claim active');
+    expect(html).toContain('review_verify');
+    expect(html).toContain('Run doctor');
+    expect(html).toContain('artifact registry is not initialized yet');
+    expect(html).toContain('/repo/.repo-ai-governor/context/diagnostics/doctor/doctor-1.json');
+    expect(html).toContain('attach_mode=read_only');
+    expect(html).toContain('Service-native host query replaces this bridge.');
+    expect(html).toContain('Selected backend: os-keychain');
+    expect(html).toContain('Theme default: calm');
+    expect(html).toContain('Resume selector: session://execution-1');
+    expect(html).toContain('command:repoAiGovernor.openReviewDetail');
+    expect(html).toContain('Compatibility bridges stay evidence-only');
+    expect(html).toContain('command:repoAiGovernor.recoverExecution');
+    expect(html).toContain('command:repoAiGovernor.terminateExecution');
+    expect(html).toContain('command:repoAiGovernor.openHandoffTarget');
+    expect(html).toContain('command:repoAiGovernor.stageTemporaryBridge');
+    expect(html).toContain('Run repository operation: Preview upgrade');
+    expect(html).not.toContain('Run repository operation: Verify host assets');
+    expect(html).not.toContain('Stage bridge command');
+
+    expect(
+      readCommandRequestFromWorkflowStudioHtml(
+        html,
+        VSCODE_EXTENSION_COMMAND_IDS.STAGE_TEMPORARY_BRIDGE,
+      ),
+    ).toMatchObject({
+      workspaceOperationKind: OrchestrationWorkspaceOperationKind.UPGRADE_PREVIEW,
+    });
+  });
+
+  it('surfaces the ready support-truth branch when the selected execution stage is present and no bridge remains', () => {
+    const html = builder.buildWorkflowStudioHtml({
+      workspaceContext: {
+        workspaceLabel: 'ai-governor',
+        workspaceRoot: '/repo',
+        workspaceTrusted: true,
+      },
+      queueOverview: {
+        generatedAt: '2026-04-17T10:20:00.000Z',
+        automationInbox: [],
+        reviewQueue: [],
+        parallelLanes: [],
+        workspaceSummary: [],
+        temporaryBridges: [],
+        notificationOwnership: {
+          ownerSurface: OrchestrationClientSurface.DESKTOP,
+          pendingItemCount: 0,
+          dueSoonItemCount: 0,
+          overdueItemCount: 0,
+          activeWorkspaceCount: 1,
+          defaultFollowUpSlaMinutes: 60,
+          notificationStatus: OrchestrationGovernanceNotificationStatus.IDLE,
+        },
+      },
+      selectedExecution: createExecutionBoardEntry({
+        currentStageId: 'support_truth_review',
+      }),
+      artifactPane: {
+        artifacts: [],
+        reviews: [],
+        transcript: [],
+        resolvedExecutionId: 'execution-1',
+        resolvedSessionId: 'session-1',
+        reviewSourcePath: '/repo/.repo-ai-governor/review/resolved.md',
+        reviewLifecycle: {
+          totalReviewCount: 1,
+          pendingReviewCount: 0,
+          verifiedReviewCount: 0,
+          resolvedReviewCount: 1,
+          latestReviewId: 'review-1',
+          latestLifecycleStatus: 'resolved',
+          latestReviewFilePath: '/repo/.repo-ai-governor/review/resolved.md',
+          navigationReviewIds: ['review-1'],
+        },
+        workbench: {
+          artifactCount: 1,
+          reviewCount: 1,
+          transcriptCount: 0,
+        },
+        evidenceBacklinks: {
+          governanceWorkspacePath: '/repo/.repo-ai-governor',
+          artifactPaths: [],
+          reviewPaths: ['/repo/.repo-ai-governor/review/resolved.md'],
+          transcriptEntryIds: [],
+        },
+      },
+    });
+
+    expect(html).toContain('Primary-workbench claim active');
+    expect(html).toContain(
+      'Desktop remains the foundation-only secondary surface while VS Code owns the public primary-workbench claim.',
+    );
+  });
+
+  it('keeps review-only workflow-studio actions inside the plugin review surface', () => {
+    const html = builder.buildWorkflowStudioHtml({
+      workspaceContext: {
+        workspaceLabel: 'ai-governor',
+        workspaceRoot: '/repo',
+        workspaceTrusted: true,
+      },
+      queueOverview: {
+        generatedAt: '2026-04-17T10:20:00.000Z',
+        automationInbox: [],
+        reviewQueue: [],
+        parallelLanes: [],
+        workspaceSummary: [],
+        temporaryBridges: [],
+        notificationOwnership: {
+          ownerSurface: OrchestrationClientSurface.DESKTOP,
+          pendingItemCount: 0,
+          dueSoonItemCount: 0,
+          overdueItemCount: 0,
+          activeWorkspaceCount: 1,
+          defaultFollowUpSlaMinutes: 60,
+          notificationStatus: OrchestrationGovernanceNotificationStatus.IDLE,
+        },
+      },
+      reviewSourcePath: '/repo/review-only.md',
+    });
+
+    expect(html).toContain('command:repoAiGovernor.openReviewDetail');
+    expect(html).not.toContain('command:repoAiGovernor.openHandoffTarget');
+  });
+
+  it('renders automation queue nodes with workflow-studio-first actions', () => {
+    const nodes = builder.buildAutomationQueueNodes([
+      {
+        queueEntryId: 'automation:execution-1',
+        queueKind: OrchestrationGovernanceQueueKind.AUTOMATION_INBOX,
+        workspaceId: 'workspace-1',
+        workspaceRoot: '/repo',
+        executionId: 'execution-1',
+        executionKind: OrchestrationExecutionKind.RUN,
+        executionStatus: OrchestrationExecutionStatus.RUNNING,
+        taskId: 'TK-563',
+        projectId: 'project-048-governance-surface-clients-rollout',
+        sprintId: 'sprint-002-vscode-editor-companion-mvp',
+        attentionLevel: OrchestrationGovernanceAttentionLevel.WARNING,
+        notificationStatus: OrchestrationGovernanceNotificationStatus.FOLLOW_UP_REQUIRED,
+        followUpSlaState: OrchestrationGovernanceFollowUpSlaState.DUE_SOON,
+        actions: [
+          {
+            actionId: 'execution-1:view',
+            actionKind: OrchestrationGovernanceActionKind.VIEW_EXECUTION,
+            executionId: 'execution-1',
+            enabled: true,
+            requiresConfirmation: false,
+          },
+        ],
+        handoffTargets: [],
+      },
+    ]);
+
+    expect(nodes[0]?.command?.command).toBe(VSCODE_EXTENSION_COMMAND_IDS.OPEN_WORKFLOW_STUDIO);
+    expect(nodes[0]?.children?.map((child) => child.label)).toEqual(
+      expect.arrayContaining(['Open workflow studio']),
     );
   });
 });
@@ -294,7 +1158,7 @@ function createExecutionSummary(
     updatedAt: '2026-04-05T09:05:00.000Z',
     pendingHitl: false,
     lastEventAt: '2026-04-05T09:05:00.000Z',
-    latestEventType: 'execution.started',
+    latestEventType: OrchestrationServiceEventType.EXECUTION_STARTED,
     latestEventSequence: 1,
     nextCursor: 'cursor-1',
     currentStageId: 'review',
@@ -303,4 +1167,20 @@ function createExecutionSummary(
     sprintId: 'sprint-002-vscode-editor-companion-mvp',
     ...overrides,
   };
+}
+
+function readCommandRequestFromWorkflowStudioHtml(
+  html: string,
+  commandId: string,
+): Record<string, unknown> {
+  const escapedCommandId = commandId.replaceAll('.', '\\.');
+  const commandMatch = html.match(new RegExp(`command:${escapedCommandId}\\?([^"]+)`));
+  expect(commandMatch).toBeTruthy();
+  const encodedRequest = commandMatch?.[1];
+  expect(encodedRequest).toBeTruthy();
+
+  const [request] = JSON.parse(decodeURIComponent(String(encodedRequest))) as Array<
+    Record<string, unknown>
+  >;
+  return request;
 }

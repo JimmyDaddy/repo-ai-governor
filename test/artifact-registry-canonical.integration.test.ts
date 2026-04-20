@@ -63,12 +63,16 @@ describe('artifact registry canonical sqlite + rendered CSV integration', () => 
       expect(canonicalState.mainRows[0]?.artifact_id).toBe('DA-200');
       expect(canonicalState.archiveRows).toHaveLength(1);
       expect(canonicalState.archiveRows[0]?.artifact_id).toBe('DA-201');
+      const firstMainRow = canonicalState.mainRows[0];
+      const { __rowNumber: _ignoredRowNumber, ...nextMainRow } = (firstMainRow ?? {}) as
+        | (Record<string, string> & { __rowNumber?: number })
+        | { __rowNumber?: number };
 
       replaceArtifactRegistryCanonicalState({
         databaseFilePath,
         mainRows: [
           {
-            ...canonicalState.mainRows[0],
+            ...nextMainRow,
             dependent_tasks: 'TK-480',
             last_updated_at: '2026-04-03',
           },

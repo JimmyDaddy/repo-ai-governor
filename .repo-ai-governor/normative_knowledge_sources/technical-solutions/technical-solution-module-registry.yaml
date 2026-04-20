@@ -1,5 +1,5 @@
 schema_version: 2
-generated_at: 2026-04-15
+generated_at: 2026-04-16
 status: active
 owner: architecture
 
@@ -275,6 +275,8 @@ modules:
         kind: contract
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-durable-storage/contracts/registry-and-ledger-projection-contract.md
         kind: contract
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-durable-storage/contracts/delivery-workflow-summary-and-artifact-backlink-contract.md
+        kind: contract
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-durable-storage/adrs/sqlite-fs-default-runtime-truth-and-rendered-csv-views.md
         kind: adr
     north_star_refs:
@@ -285,10 +287,13 @@ modules:
     exports_contracts:
       - contract.runtime.session-durable-storage.v1
       - contract.runtime.registry-projection.v1
+      - contract.runtime.delivery-workflow-summary-projection.v1
     imports_contracts:
       - contract.memory-provider.loading.v1
+      - contract.runtime.session-main.delivery-orchestration.v1
     depends_on_modules:
       - runtime.memory-provider-loading
+      - runtime.orchestration
     load_triggers:
       - runtime_contract_change
       - memory_provider_change
@@ -332,11 +337,17 @@ modules:
         kind: contract
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/contracts/session-main-capability-interaction-model-contract.md
         kind: contract
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/contracts/session-main-delivery-orchestration-contract.md
+        kind: contract
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/contracts/governance-workbench-aggregation-facade-contract.md
+        kind: contract
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/adrs/graph-first-runtime-and-service-backed-execution-cutover.md
         kind: adr
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/adrs/session-main-supervisor-and-role-subagent-collaboration.md
         kind: adr
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/adrs/session-main-prompt-first-command-model-and-deterministic-workflow-split.md
+        kind: adr
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/adrs/requirement-to-cr-governed-delivery-orchestration.md
         kind: adr
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/adrs/standards-native-review-engine-and-provenance-aware-cr.md
         kind: adr
@@ -347,6 +358,8 @@ modules:
     exports_contracts:
       - contract.runtime.graph-execution.v1
       - contract.runtime.session-main.capability-interaction-model.v1
+      - contract.runtime.session-main.delivery-orchestration.v1
+      - contract.runtime.governance-workbench-aggregation-facade.v1
     imports_contracts:
       - contract.memory-provider.loading.v1
       - contract.memory.context-assembly.v1
@@ -425,6 +438,8 @@ modules:
         kind: adr
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/acp-host-facing-transport-formalization-and-distribution-boundary.md
         kind: adr
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/acp-execution-bridge-and-invoke-stream-confirm-cutover.md
+        kind: adr
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-agent-projection/adrs/provider-session-reuse-and-continuation-handle-seam.md
         kind: adr
     north_star_refs:
@@ -486,6 +501,8 @@ modules:
         kind: contract
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/contracts/cli-session-shell-contract.md
         kind: contract
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/contracts/session-shell-delivery-workflow-presenter-contract.md
+        kind: contract
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/adrs/session-first-shell-and-service-owned-session-state.md
         kind: adr
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-cli-interactive-shell/adrs/ink-owned-input-and-action-driven-session-shell.md
@@ -506,10 +523,14 @@ modules:
     exports_contracts:
       - contract.cli.interactive-shell.v1
       - contract.cli.session-shell.v1
+      - contract.cli.session-shell.delivery-workflow-presenter.v1
     imports_contracts:
       - contract.runtime.graph-execution.v1
+      - contract.runtime.session-main.delivery-orchestration.v1
+      - contract.runtime.delivery-workflow-summary-projection.v1
     depends_on_modules:
       - runtime.orchestration
+      - runtime.durable-storage
     load_triggers:
       - technical_solution_module_change
       - technical_solution_promotion_change
@@ -543,13 +564,21 @@ modules:
     detail_docs:
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/governance-surface-client-contract.md
         kind: contract
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/vscode-governance-workbench-surface-contract.md
+        kind: contract
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/local-user-config-and-secret-command-contract.md
+        kind: contract
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/provider-onboarding-and-direct-api-key-entry-contract.md
         kind: contract
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/governance-host-distribution-contract.md
         kind: contract
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/governance-adoption-pack-install-contract.md
         kind: contract
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/desktop-command-center-and-vscode-editor-companion-split.md
+        kind: adr
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/vscode-primary-full-governance-workbench.md
+        kind: adr
+      - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/vscode-plugin-direct-api-key-and-secret-backed-provider-onboarding.md
         kind: adr
       - path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/host-native-distribution-and-target-specific-consumption.md
         kind: adr
@@ -570,13 +599,16 @@ modules:
       - architecture.governance-boundary
     exports_contracts:
       - contract.runtime.governance-surface-client.v1
+      - contract.runtime.vscode-governance-workbench-surface.v1
       - contract.runtime.governance-local-config-and-secret-command.v1
+      - contract.runtime.governance-provider-onboarding.v1
       - contract.runtime.governance-host-distribution.v1
       - contract.runtime.adoption-pack-install.v1
     imports_contracts:
       - contract.runtime.graph-execution.v1
       - contract.runtime.agent-projection.v1
       - contract.cli.session-shell.v1
+      - contract.runtime.governance-workbench-aggregation-facade.v1
     depends_on_modules:
       - runtime.orchestration
       - runtime.agent-projection

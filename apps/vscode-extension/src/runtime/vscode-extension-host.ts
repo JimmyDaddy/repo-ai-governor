@@ -15,13 +15,15 @@ import { VsCodeExtensionReviewDetailProvider } from './vscode-extension-review-d
 import { VsCodeExtensionSelectionStore } from './vscode-extension-selection-store.js';
 import { VsCodeExtensionServiceRuntime } from './vscode-extension-service-runtime.js';
 import { VsCodeExtensionTreeDataProvider } from './vscode-extension-tree-data-provider.js';
+import { VsCodeExtensionWorkflowStudioProvider } from './vscode-extension-workflow-studio-provider.js';
 
 /**
- * Wires the full VS Code companion MVP during extension activation.
+ * Wires the Phase C VS Code primary workbench baseline during extension activation.
  *
  * Why this exists:
- * activation should assemble lightweight views, chat, and commands around the frozen contract
- * while keeping service access and presentation logic delegated to focused runtime classes.
+ * activation should assemble task/review/automation/workbench/workflow-studio surfaces around the
+ * frozen contract while keeping service access and presentation logic delegated to focused runtime
+ * classes.
  */
 export class VsCodeExtensionHost {
   private readonly localizer = new VsCodeExtensionLocalizer();
@@ -30,53 +32,65 @@ export class VsCodeExtensionHost {
   private readonly presentationBuilder = new VsCodeExtensionPresentationBuilder(this.localizer);
 
   /**
-   * Activates the Governor companion inside the VS Code extension host.
+   * Activates the Governor workbench baseline inside the VS Code extension host.
    * @param context Extension activation context.
    */
   public async activate(context: vscode.ExtensionContext): Promise<void> {
-    const executionBoardProvider = new VsCodeExtensionTreeDataProvider(async () => {
+    const taskBoardProvider = new VsCodeExtensionTreeDataProvider(async () => {
       const executionBoard = await this.serviceRuntime.queryExecutionBoard();
-      return [...this.presentationBuilder.buildExecutionBoardNodes(executionBoard.executions)];
+      return [...this.presentationBuilder.buildTaskBoardNodes(executionBoard.executions)];
     });
     const hitlInboxProvider = new VsCodeExtensionTreeDataProvider(async () => {
       const hitlInbox = await this.serviceRuntime.queryHitlInbox();
       return [...this.presentationBuilder.buildHitlInboxNodes(hitlInbox.pendingDecisions)];
     });
-    const workspaceContextProvider = new VsCodeExtensionTreeDataProvider(async () => {
-      const [workspaceContext, selectedExecution] = await Promise.all([
-        this.serviceRuntime.resolveWorkspaceContextSnapshot(),
-        this.serviceRuntime.resolveExecutionBoardEntry(
-          this.selectionStore.getSnapshot().executionId,
-        ),
-      ]);
-      return [
-        ...this.presentationBuilder.buildWorkspaceContextNodes(
-          workspaceContext,
-          selectedExecution,
-          this.selectionStore.getSnapshot().reviewSourcePath,
-        ),
-      ];
+    const reviewQueueProvider = new VsCodeExtensionTreeDataProvider(async () => {
+      const queueOverview = await this.serviceRuntime.queryQueueOverview();
+      return [...this.presentationBuilder.buildReviewQueueNodes(queueOverview.reviewQueue)];
+    });
+    const automationQueueProvider = new VsCodeExtensionTreeDataProvider(async () => {
+      const queueOverview = await this.serviceRuntime.queryQueueOverview();
+      return [...this.presentationBuilder.buildAutomationQueueNodes(queueOverview.automationInbox)];
+    });
+    const workbenchOverviewProvider = new VsCodeExtensionTreeDataProvider(async () => {
+      const overviewSnapshot = await this.serviceRuntime.resolveWorkbenchOverviewSnapshot(
+        this.selectionStore.getSnapshot(),
+      );
+      return [...this.presentationBuilder.buildWorkbenchOverviewNodes(overviewSnapshot)];
     });
     const reviewDetailProvider = new VsCodeExtensionReviewDetailProvider(
       this.serviceRuntime,
       this.selectionStore,
       this.presentationBuilder,
     );
-    const executionBoardView = vscode.window.createTreeView(
-      VSCODE_EXTENSION_VIEW_IDS.EXECUTION_BOARD,
-      {
-        treeDataProvider: executionBoardProvider,
-        showCollapseAll: true,
-      },
+    const workflowStudioProvider = new VsCodeExtensionWorkflowStudioProvider(
+      this.serviceRuntime,
+      this.selectionStore,
+      this.presentationBuilder,
     );
+    const taskBoardView = vscode.window.createTreeView(VSCODE_EXTENSION_VIEW_IDS.TASK_BOARD, {
+      treeDataProvider: taskBoardProvider,
+      showCollapseAll: true,
+    });
     const hitlInboxView = vscode.window.createTreeView(VSCODE_EXTENSION_VIEW_IDS.HITL_INBOX, {
       treeDataProvider: hitlInboxProvider,
       showCollapseAll: true,
     });
-    const workspaceContextView = vscode.window.createTreeView(
-      VSCODE_EXTENSION_VIEW_IDS.WORKSPACE_CONTEXT,
+    const reviewQueueView = vscode.window.createTreeView(VSCODE_EXTENSION_VIEW_IDS.REVIEW_QUEUE, {
+      treeDataProvider: reviewQueueProvider,
+      showCollapseAll: true,
+    });
+    const automationQueueView = vscode.window.createTreeView(
+      VSCODE_EXTENSION_VIEW_IDS.AUTOMATION_QUEUE,
       {
-        treeDataProvider: workspaceContextProvider,
+        treeDataProvider: automationQueueProvider,
+        showCollapseAll: true,
+      },
+    );
+    const workbenchOverviewView = vscode.window.createTreeView(
+      VSCODE_EXTENSION_VIEW_IDS.WORKBENCH_OVERVIEW,
+      {
+        treeDataProvider: workbenchOverviewProvider,
         showCollapseAll: false,
       },
     );
@@ -85,28 +99,26 @@ export class VsCodeExtensionHost {
       this.selectionStore,
       this.localizer,
       {
-        executionBoardProvider,
+        taskBoardProvider,
         hitlInboxProvider,
-        workspaceContextProvider,
+        reviewQueueProvider,
+        automationQueueProvider,
+        workbenchOverviewProvider,
+        workflowStudioProvider,
         reviewDetailProvider,
       },
     );
-    const chatParticipant = new VsCodeExtensionChatParticipantRuntime(
-      this.serviceRuntime,
-      this.selectionStore,
-      this.presentationBuilder,
-      this.localizer,
-    ).createParticipant(VSCODE_EXTENSION_CHAT_PARTICIPANT_ID);
-    chatParticipant.iconPath = vscode.Uri.joinPath(
-      context.extensionUri,
-      'resources',
-      'governor.svg',
-    );
 
     context.subscriptions.push(
-      executionBoardView,
+      taskBoardView,
       hitlInboxView,
-      workspaceContextView,
+      reviewQueueView,
+      automationQueueView,
+      workbenchOverviewView,
+      vscode.window.registerWebviewViewProvider(
+        VSCODE_EXTENSION_VIEW_IDS.WORKFLOW_STUDIO,
+        workflowStudioProvider,
+      ),
       vscode.window.registerWebviewViewProvider(
         VSCODE_EXTENSION_VIEW_IDS.REVIEW_DETAIL,
         reviewDetailProvider,
@@ -118,9 +130,34 @@ export class VsCodeExtensionHost {
           providedCodeActionKinds: [vscode.CodeActionKind.QuickFix],
         },
       ),
-      chatParticipant,
       vscode.commands.registerCommand(VSCODE_EXTENSION_COMMAND_IDS.REFRESH, async (request) =>
         commandController.refresh(request),
+      ),
+      vscode.commands.registerCommand(
+        VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKSPACE_BOOTSTRAP,
+        async () => commandController.runWorkspaceBootstrap(),
+      ),
+      vscode.commands.registerCommand(VSCODE_EXTENSION_COMMAND_IDS.RUN_CONNECT, async () =>
+        commandController.runConnect(),
+      ),
+      vscode.commands.registerCommand(VSCODE_EXTENSION_COMMAND_IDS.RUN_DOCTOR, async () =>
+        commandController.runDoctor(),
+      ),
+      vscode.commands.registerCommand(VSCODE_EXTENSION_COMMAND_IDS.RUN_CHECK, async () =>
+        commandController.runCheck(),
+      ),
+      vscode.commands.registerCommand(VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKFLOW_PREVIEW, async () =>
+        commandController.runWorkflowPreview(),
+      ),
+      vscode.commands.registerCommand(VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKFLOW_CREATE, async () =>
+        commandController.runWorkflowCreate(),
+      ),
+      vscode.commands.registerCommand(VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKFLOW_EDIT, async () =>
+        commandController.runWorkflowEdit(),
+      ),
+      vscode.commands.registerCommand(
+        VSCODE_EXTENSION_COMMAND_IDS.OPEN_WORKFLOW_STUDIO,
+        async (request) => commandController.openWorkflowStudio(request),
       ),
       vscode.commands.registerCommand(
         VSCODE_EXTENSION_COMMAND_IDS.OPEN_REVIEW_DETAIL,
@@ -129,6 +166,10 @@ export class VsCodeExtensionHost {
       vscode.commands.registerCommand(
         VSCODE_EXTENSION_COMMAND_IDS.OPEN_HANDOFF_TARGET,
         async (request) => commandController.openHandoffTarget(request),
+      ),
+      vscode.commands.registerCommand(
+        VSCODE_EXTENSION_COMMAND_IDS.STAGE_TEMPORARY_BRIDGE,
+        async (request) => commandController.stageTemporaryBridge(request),
       ),
       vscode.commands.registerCommand(
         VSCODE_EXTENSION_COMMAND_IDS.SUBMIT_HITL_DECISION,
@@ -142,11 +183,31 @@ export class VsCodeExtensionHost {
         VSCODE_EXTENSION_COMMAND_IDS.TERMINATE_EXECUTION,
         async (request) => commandController.terminateExecution(request),
       ),
-      executionBoardView.onDidChangeSelection((event) => {
+      vscode.commands.registerCommand(VSCODE_EXTENSION_COMMAND_IDS.OPEN_USER_CONFIG, async () =>
+        commandController.openUserConfig(),
+      ),
+      vscode.commands.registerCommand(
+        VSCODE_EXTENSION_COMMAND_IDS.CONFIGURE_USER_DEFAULT,
+        async (request) => commandController.configureUserDefault(request),
+      ),
+      vscode.commands.registerCommand(
+        VSCODE_EXTENSION_COMMAND_IDS.SET_MANAGED_SECRET,
+        async (request) => commandController.setManagedSecret(request),
+      ),
+      taskBoardView.onDidChangeSelection((event) => {
         void commandController.handleExecutionBoardSelection(event.selection);
       }),
       hitlInboxView.onDidChangeSelection((event) => {
         void commandController.handleHitlInboxSelection(event.selection);
+      }),
+      reviewQueueView.onDidChangeSelection((event) => {
+        void commandController.handleReviewQueueSelection(event.selection);
+      }),
+      automationQueueView.onDidChangeSelection((event) => {
+        void commandController.handleAutomationQueueSelection(event.selection);
+      }),
+      workbenchOverviewView.onDidChangeSelection((event) => {
+        commandController.handleWorkbenchOverviewSelection(event.selection);
       }),
       vscode.workspace.onDidGrantWorkspaceTrust(() => {
         void this.refreshContextKeys();
@@ -156,7 +217,7 @@ export class VsCodeExtensionHost {
         void commandController.refresh();
       }),
       vscode.window.onDidChangeActiveTextEditor(() => {
-        workspaceContextProvider.refresh();
+        workbenchOverviewProvider.refresh();
       }),
       {
         dispose: () => {
@@ -164,6 +225,11 @@ export class VsCodeExtensionHost {
         },
       },
     );
+
+    const chatParticipant = this.createOptionalChatParticipant(context, commandController);
+    if (chatParticipant) {
+      context.subscriptions.push(chatParticipant);
+    }
 
     await this.refreshContextKeys();
     await commandController.refresh();
@@ -181,6 +247,36 @@ export class VsCodeExtensionHost {
       'setContext',
       VSCODE_EXTENSION_CONTEXT_KEYS.WORKSPACE_TRUSTED,
       vscode.workspace.isTrusted,
+    );
+  }
+
+  private createOptionalChatParticipant(
+    context: vscode.ExtensionContext,
+    commandController: VsCodeExtensionCommandController,
+  ): vscode.Disposable | undefined {
+    if (!this.hasChatParticipantSupport()) {
+      return undefined;
+    }
+
+    const chatParticipant = new VsCodeExtensionChatParticipantRuntime(
+      this.serviceRuntime,
+      this.selectionStore,
+      commandController,
+      this.presentationBuilder,
+      this.localizer,
+    ).createParticipant(VSCODE_EXTENSION_CHAT_PARTICIPANT_ID);
+    chatParticipant.iconPath = vscode.Uri.joinPath(
+      context.extensionUri,
+      'resources',
+      'governor.svg',
+    );
+    return chatParticipant;
+  }
+
+  private hasChatParticipantSupport(): boolean {
+    return (
+      typeof (vscode as typeof vscode & { chat?: { createChatParticipant?: unknown } }).chat
+        ?.createChatParticipant === 'function'
     );
   }
 }

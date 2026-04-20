@@ -49,22 +49,26 @@ describe('CLI command integration', () => {
     const { stdoutBuffer, stderrBuffer, io } = createBufferedIo();
 
     const exitCode = await runCli(['node', 'repo-ai-governor', '--locale', 'en-US', '--help'], io);
+    const stdout = stdoutBuffer.join('');
 
     expect(exitCode).toBe(0);
     expect(stderrBuffer.join('')).toBe('');
-    expect(stdoutBuffer.join('')).toContain('config');
-    expect(stdoutBuffer.join('')).toContain('secret');
-    expect(stdoutBuffer.join('')).toContain('connect');
-    expect(stdoutBuffer.join('')).toContain('review-verify');
-    expect(stdoutBuffer.join('')).not.toContain('\n  verify');
-    expect(stdoutBuffer.join('')).toContain('adopt');
-    expect(stdoutBuffer.join('')).toContain('host');
-    expect(stdoutBuffer.join('')).toContain('upgrade');
-    expect(stdoutBuffer.join('')).toContain('set-ui-theme');
-    expect(stdoutBuffer.join('')).toContain('workspace');
-    expect(stdoutBuffer.join('')).toContain('workflow');
-    expect(stdoutBuffer.join('')).toContain('Governed capability catalog:');
-    expect(stdoutBuffer.join('')).toContain('/review verify');
+    expect(stdout).toContain('config');
+    expect(stdout).toContain('secret');
+    expect(stdout).toContain('connect');
+    expect(stdout).toContain('review-verify');
+    expect(stdout).not.toContain('\n  verify');
+    expect(stdout).toContain('adopt');
+    expect(stdout).toContain('host');
+    expect(stdout).toContain('upgrade');
+    expect(stdout).toContain('set-ui-theme');
+    expect(stdout).toContain('workspace');
+    expect(stdout).toContain('workflow');
+    expect(stdout).toContain('Governed capability catalog:');
+    expect(stdout).toContain('[chat-first]     Deliver:');
+    expect(stdout).toContain('/review verify');
+    expect(stdout).toContain('/deliver');
+    expect(stdout).not.toContain('(optional alias: /help)');
   });
 
   it('shows explicit workflow create/edit/preview subcommands in workflow help', async () => {

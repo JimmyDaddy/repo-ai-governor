@@ -273,11 +273,11 @@ pnpm exec repo-ai-governor workspace set-ui-theme --output pretty
 pnpm exec repo-ai-governor set-ui-theme calm --theme-scope workspace --output pretty
 ```
 
-## 9. Optional Secondary Surfaces And Lower-level Paths
+## 9. VS Code Primary Workbench And Lower-level Paths
 
-These surfaces are real, but they are not the default adopter story.
+For built-source checkout and one maintainer-produced local VSIX, VS Code is now the primary human-facing workbench. The lower-level CLI surfaces still exist, but they are optional when you are following the supported VS Code path.
 
-### VS Code companion
+### VS Code primary workbench
 
 ```bash
 cd <governor-repo>
@@ -285,7 +285,17 @@ pnpm run build
 code --extensionDevelopmentPath <governor-repo>/apps/vscode-extension <target-repo>
 ```
 
-Use this only when you want the editor-native companion on top of the normal CLI path. Current support is limited to a built source checkout and local VSIX or packaged-extension-root rehearsal.
+Use this when you want the built-source editor-native primary workbench. Public support covers the built source checkout plus one locally generated VSIX or packaged extension root. It does not widen support to Marketplace or published npm/tgz install surfaces.
+
+After the extension is running, stay in VS Code for the supported human path:
+
+1. Use Workbench Overview to run workspace bootstrap, `doctor`, and `check`.
+2. Use Workflow Studio for workflow preview/create/edit plus service-backed run-control.
+3. Use Execution Board, HITL Inbox, Review Queue, Review Detail, and Automation Queue for day-to-day governed execution and review work.
+4. Use the service-backed workbench actions for `adopt / host / verify / upgrade` instead of treating the CLI as a required handoff.
+5. Keep CLI only for automation, CI, session-shell, or debugging scenarios where a terminal-native surface is still preferable.
+
+If you receive one local VSIX instead of running the development host, install it from VS Code with `Extensions: Install from VSIX...` as a maintainer-guided manual rehearsal. The intended user experience is the same zero-CLI workbench flow, but the release-blocking evidence baseline today still stops at packaged-root and extracted-VSIX verification.
 
 ### Desktop foundation
 
@@ -310,7 +320,11 @@ For packaged local host bootstrap, import the sidecar only from `repo-ai-governo
 
 ### ACP host-facing readiness
 
+If you want to switch Codex explicitly to ACP instead of continuing on `remote_api` or the default CLI-backed path, use this minimum sequence:
+
 ```bash
+pnpm exec repo-ai-governor config set tools.codex.transport acp_exec
+pnpm exec repo-ai-governor config get tools.codex.transport
 pnpm exec repo-ai-governor host export --host codex --mode project-local --output-dir .repo-ai-governor/generated/hosts/codex --apply-to-repo /absolute/path/to/<target-repo>
 pnpm exec repo-ai-governor host pack --host codex --mode plugin-bundle --output-dir .repo-ai-governor/generated/hosts/codex-plugin --bundle-dir .repo-ai-governor/generated/bundles/codex-plugin
 pnpm exec repo-ai-governor host verify --manifest .repo-ai-governor/generated/hosts/codex/host-export.manifest.json
@@ -319,9 +333,10 @@ pnpm exec repo-ai-governor doctor --adapters --output json
 
 Read this surface conservatively:
 
-1. `acp_exec` is explicit host-facing transport truth. It is never an alias or silent fallback of `cli_exec`.
-2. Treat ACP as support-ready only when `doctor` or `verify` projects `acp_host_companion` with runtime-service readiness, packaged-distribution readiness, and the clean-room verified summary.
-3. If ACP invoke, stream, or confirm still reports a blocked/fail-closed state, keep it blocked. Do not reinterpret that result as same-surface `cli_exec` success.
+1. The ACP config value is `acp_exec`. It is not `remote_api`, and it is never an alias or silent fallback of `cli_exec`.
+2. If you already keep `tools.codex.remoteApi.*` endpoint/model/credential truth in config, you usually do not need to remove it first; explicit `transport=acp_exec` can coexist with that configuration.
+3. Treat ACP as support-ready only when `doctor` or `verify` projects `transport=acp_exec` and `acp_host_companion` with runtime-service readiness, packaged-distribution readiness, and the clean-room verified summary.
+4. If ACP invoke, stream, or confirm still reports a blocked/fail-closed state, keep it blocked. Do not reinterpret that result as same-surface `cli_exec` success.
 
 ## 10. Troubleshooting And Known Boundaries
 

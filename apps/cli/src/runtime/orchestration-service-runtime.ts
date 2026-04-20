@@ -200,8 +200,19 @@ export class CliOrchestrationServiceRuntime {
   private async resolveServiceOwner(): Promise<CliOrchestrationServiceOwner> {
     if (!this.serviceOwnerPromise) {
       this.serviceOwnerPromise = (async () => {
+        const repositoryRoot =
+          this.dependencies.repositoryRoot ??
+          this.dependencies.embeddedShellDependencies?.repositoryRoot ??
+          this.dependencies.sidecarClientDependencies?.repositoryRoot;
         if (this.dependencies.serviceOwnerProvider) {
-          return this.dependencies.serviceOwnerProvider(this.workspaceRoot);
+          return this.dependencies.serviceOwnerProvider({
+            workspaceRoot: this.workspaceRoot,
+            ...(repositoryRoot
+              ? {
+                  repositoryRoot,
+                }
+              : {}),
+          });
         }
         if (this.dependencies.runtimeMode === CliOrchestrationServiceRuntimeMode.SIDECAR_IPC) {
           const { LocalOrchestrationServiceSidecarClient } = await import(
@@ -214,6 +225,11 @@ export class CliOrchestrationServiceRuntime {
                 }
               : {}),
             ...this.dependencies.sidecarClientDependencies,
+            ...(repositoryRoot
+              ? {
+                  repositoryRoot,
+                }
+              : {}),
           }) as CliOrchestrationServiceOwner;
         }
         const { LocalOrchestrationServiceShell } = await import(
@@ -227,6 +243,11 @@ export class CliOrchestrationServiceRuntime {
               }
             : {}),
           ...this.dependencies.embeddedShellDependencies,
+          ...(repositoryRoot
+            ? {
+                repositoryRoot,
+              }
+            : {}),
         });
       })().catch((error) => {
         this.serviceOwnerPromise = null;

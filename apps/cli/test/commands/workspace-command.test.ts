@@ -34,6 +34,7 @@ import type {
   CliCommandExecutorContext,
   CliWorkspaceCommandOptions,
 } from '../../src/types/index.js';
+import { createCliNormalizedRuntimeDebugOptions } from '../test-support/cli-command-fixtures.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -130,31 +131,16 @@ async function createWorkspaceCommandFixture(
     buildDefaultConfigContent: () => '',
     toRfc3339SecondsTimestamp: (value: Date) => value.toISOString().replace(/\.\d{3}Z$/u, 'Z'),
     formatExecFailureDetail: (error: unknown) => standardizeError(error).message,
-    resolveRuntimeDebugOptions: () => ({
-      interactive: false,
-      requestedUiMode: null,
-      requestedUiTheme: null,
-      uiMode: CliInteractiveUiMode.NONE,
-      uiTheme: CliReactThemePreset.GOVERNOR,
-      uiFallbackBehavior: null,
-      inputTty: false,
-      stderrTty: false,
-      dryRun: false,
-      trace: false,
-      replayPath: null,
-      adapters: false,
-      fix: false,
-      recordLedger: false,
-      taskId: null,
-      restrictedNetwork: false,
-      restrictedReason: null,
-      allowLocalFallback: true,
-      hitlDecision: null,
-      hitlDecisionReason: null,
-      hitlResumeAction: null,
-      hitlDecidedBy: null,
-      hitlConstraints: [],
-    }),
+    resolveRuntimeDebugOptions: () =>
+      createCliNormalizedRuntimeDebugOptions({
+        interactive: false,
+        requestedUiMode: null,
+        requestedUiTheme: null,
+        uiMode: CliInteractiveUiMode.NONE,
+        uiTheme: CliReactThemePreset.GOVERNOR,
+        inputTty: false,
+        stderrTty: false,
+      }),
     resolveExecutionStreamMetadata: async () => ({}),
     resolveAdapterVerification: async () => ({
       allRequiredRolesSatisfied: true,
@@ -245,31 +231,14 @@ describe('CliWorkspaceCommand', () => {
     });
 
     try {
-      fixture.context.resolveRuntimeDebugOptions = () => ({
-        interactive: true,
-        requestedUiMode: CliInteractiveUiMode.REACT,
-        requestedUiTheme: null,
-        uiMode: CliInteractiveUiMode.REACT,
-        uiTheme: CliReactThemePreset.GOVERNOR,
-        uiFallbackBehavior: null,
-        inputTty: true,
-        stderrTty: true,
-        dryRun: false,
-        trace: false,
-        replayPath: null,
-        adapters: false,
-        fix: false,
-        recordLedger: false,
-        taskId: null,
-        restrictedNetwork: false,
-        restrictedReason: null,
-        allowLocalFallback: true,
-        hitlDecision: null,
-        hitlDecisionReason: null,
-        hitlResumeAction: null,
-        hitlDecidedBy: null,
-        hitlConstraints: [],
-      });
+      fixture.context.resolveRuntimeDebugOptions = () =>
+        createCliNormalizedRuntimeDebugOptions({
+          interactive: true,
+          requestedUiMode: CliInteractiveUiMode.REACT,
+          uiMode: CliInteractiveUiMode.REACT,
+          inputTty: true,
+          stderrTty: true,
+        });
       fixture.context.options.outputMode = ErrorOutputEnvironment.PRETTY;
       fixture.context.options.workspaceCommandOptions = {
         action: 'dry-run',
@@ -438,31 +407,11 @@ describe('CliWorkspaceCommand', () => {
         targetRoot: null,
         planPath: null,
       };
-      fixture.context.resolveRuntimeDebugOptions = () => ({
-        interactive: false,
-        requestedUiMode: null,
-        requestedUiTheme: CliReactThemePreset.CATPPUCCIN,
-        uiMode: CliInteractiveUiMode.NONE,
-        uiTheme: CliReactThemePreset.CATPPUCCIN,
-        uiFallbackBehavior: null,
-        inputTty: false,
-        stderrTty: false,
-        dryRun: false,
-        trace: false,
-        replayPath: null,
-        adapters: false,
-        fix: false,
-        recordLedger: false,
-        taskId: null,
-        restrictedNetwork: false,
-        restrictedReason: null,
-        allowLocalFallback: true,
-        hitlDecision: null,
-        hitlDecisionReason: null,
-        hitlResumeAction: null,
-        hitlDecidedBy: null,
-        hitlConstraints: [],
-      });
+      fixture.context.resolveRuntimeDebugOptions = () =>
+        createCliNormalizedRuntimeDebugOptions({
+          requestedUiTheme: CliReactThemePreset.CATPPUCCIN,
+          uiTheme: CliReactThemePreset.CATPPUCCIN,
+        });
 
       const command = new CliWorkspaceCommand();
       const result = await command.execute(fixture.context);
@@ -528,31 +477,14 @@ describe('CliWorkspaceCommand', () => {
         targetRoot: null,
         planPath: null,
       };
-      fixture.context.resolveRuntimeDebugOptions = () => ({
-        interactive: true,
-        requestedUiMode: CliInteractiveUiMode.REACT,
-        requestedUiTheme: null,
-        uiMode: CliInteractiveUiMode.REACT,
-        uiTheme: CliReactThemePreset.GOVERNOR,
-        uiFallbackBehavior: null,
-        inputTty: true,
-        stderrTty: true,
-        dryRun: false,
-        trace: false,
-        replayPath: null,
-        adapters: false,
-        fix: false,
-        recordLedger: false,
-        taskId: null,
-        restrictedNetwork: false,
-        restrictedReason: null,
-        allowLocalFallback: true,
-        hitlDecision: null,
-        hitlDecisionReason: null,
-        hitlResumeAction: null,
-        hitlDecidedBy: null,
-        hitlConstraints: [],
-      });
+      fixture.context.resolveRuntimeDebugOptions = () =>
+        createCliNormalizedRuntimeDebugOptions({
+          interactive: true,
+          requestedUiMode: CliInteractiveUiMode.REACT,
+          uiMode: CliInteractiveUiMode.REACT,
+          inputTty: true,
+          stderrTty: true,
+        });
       const selectorRun = vi.fn().mockResolvedValue(CliReactThemePreset.CALM);
       const command = new CliWorkspaceCommand({
         themeSelectRunner: {
@@ -626,31 +558,11 @@ describe('CliWorkspaceCommand', () => {
         targetRoot: null,
         planPath: null,
       };
-      fixture.context.resolveRuntimeDebugOptions = () => ({
-        interactive: false,
-        requestedUiMode: null,
-        requestedUiTheme: CliReactThemePreset.CALM,
-        uiMode: CliInteractiveUiMode.NONE,
-        uiTheme: CliReactThemePreset.CALM,
-        uiFallbackBehavior: null,
-        inputTty: false,
-        stderrTty: false,
-        dryRun: false,
-        trace: false,
-        replayPath: null,
-        adapters: false,
-        fix: false,
-        recordLedger: false,
-        taskId: null,
-        restrictedNetwork: false,
-        restrictedReason: null,
-        allowLocalFallback: true,
-        hitlDecision: null,
-        hitlDecisionReason: null,
-        hitlResumeAction: null,
-        hitlDecidedBy: null,
-        hitlConstraints: [],
-      });
+      fixture.context.resolveRuntimeDebugOptions = () =>
+        createCliNormalizedRuntimeDebugOptions({
+          requestedUiTheme: CliReactThemePreset.CALM,
+          uiTheme: CliReactThemePreset.CALM,
+        });
 
       const command = new CliWorkspaceCommand();
       const result = await command.execute(fixture.context);
@@ -709,31 +621,11 @@ describe('CliWorkspaceCommand', () => {
         themeScope: 'global',
         themePreferencePath: globalPreferencePath,
       };
-      fixture.context.resolveRuntimeDebugOptions = () => ({
-        interactive: false,
-        requestedUiMode: null,
-        requestedUiTheme: CliReactThemePreset.CALM,
-        uiMode: CliInteractiveUiMode.NONE,
-        uiTheme: CliReactThemePreset.CALM,
-        uiFallbackBehavior: null,
-        inputTty: false,
-        stderrTty: false,
-        dryRun: false,
-        trace: false,
-        replayPath: null,
-        adapters: false,
-        fix: false,
-        recordLedger: false,
-        taskId: null,
-        restrictedNetwork: false,
-        restrictedReason: null,
-        allowLocalFallback: true,
-        hitlDecision: null,
-        hitlDecisionReason: null,
-        hitlResumeAction: null,
-        hitlDecidedBy: null,
-        hitlConstraints: [],
-      });
+      fixture.context.resolveRuntimeDebugOptions = () =>
+        createCliNormalizedRuntimeDebugOptions({
+          requestedUiTheme: CliReactThemePreset.CALM,
+          uiTheme: CliReactThemePreset.CALM,
+        });
 
       const command = new CliWorkspaceCommand();
       const result = await command.execute(fixture.context);
@@ -1186,31 +1078,11 @@ describe('CliWorkspaceCommand', () => {
       await execFileAsync('git', ['switch', '-c', 'feature/testing'], {
         cwd: fixture.tempRoot,
       });
-      fixture.context.resolveRuntimeDebugOptions = () => ({
-        interactive: false,
-        requestedUiMode: CliInteractiveUiMode.REACT,
-        requestedUiTheme: null,
-        uiMode: CliInteractiveUiMode.REACT,
-        uiTheme: CliReactThemePreset.GOVERNOR,
-        uiFallbackBehavior: null,
-        inputTty: false,
-        stderrTty: false,
-        dryRun: false,
-        trace: false,
-        replayPath: null,
-        adapters: false,
-        fix: false,
-        recordLedger: false,
-        taskId: null,
-        restrictedNetwork: false,
-        restrictedReason: null,
-        allowLocalFallback: true,
-        hitlDecision: null,
-        hitlDecisionReason: null,
-        hitlResumeAction: null,
-        hitlDecidedBy: null,
-        hitlConstraints: [],
-      });
+      fixture.context.resolveRuntimeDebugOptions = () =>
+        createCliNormalizedRuntimeDebugOptions({
+          requestedUiMode: CliInteractiveUiMode.REACT,
+          uiMode: CliInteractiveUiMode.REACT,
+        });
       fixture.context.options.workspaceCommandOptions = {
         action: 'switch-branch',
         actionValue: 'main',

@@ -19,6 +19,7 @@ import type { MemoryRuntimeConfig } from '@repo-ai-governor/shared';
 import type { SessionMainSupervisorRuntimeContract } from './session-main-supervisor-runtime.interface.js';
 
 export interface LocalOrchestrationServiceShellDependencies {
+  repositoryRoot?: string;
   checkpointer?: LangGraphCheckpointer;
   memoryConfig?: MemoryRuntimeConfig;
   memoryProviderRegistry?: MemoryProviderRegistry;

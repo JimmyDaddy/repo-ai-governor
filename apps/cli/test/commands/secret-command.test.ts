@@ -10,6 +10,7 @@ import { vi } from 'vitest';
 import { CliSecretCommand } from '../../src/commands/secret-command.js';
 import { CliInteractiveUiMode } from '../../src/constants/cli-interactive-shell.constant.js';
 import type { CliCommandExecutorContext } from '../../src/types/index.js';
+import { createCliNormalizedRuntimeDebugOptions } from '../test-support/cli-command-fixtures.js';
 
 async function createSecretCommandContext(): Promise<CliCommandExecutorContext> {
   const i18nRuntime = new I18nRuntime();
@@ -22,6 +23,9 @@ async function createSecretCommandContext(): Promise<CliCommandExecutorContext> 
       secretCommandOptions: {
         action: 'set',
         keyName: 'openai/api-key',
+        backend: null,
+        stdin: false,
+        fromEnv: null,
       },
     },
     commandExperienceBuilder: {
@@ -32,31 +36,16 @@ async function createSecretCommandContext(): Promise<CliCommandExecutorContext> 
       warn: checks.filter((check) => check.status === 'warn').length,
       fail: checks.filter((check) => check.status === 'fail').length,
     }),
-    resolveRuntimeDebugOptions: () => ({
-      interactive: true,
-      requestedUiMode: null,
-      requestedUiTheme: null,
-      uiMode: CliInteractiveUiMode.NONE,
-      uiTheme: CliReactThemePreset.GOVERNOR,
-      uiFallbackBehavior: null,
-      inputTty: true,
-      stderrTty: true,
-      dryRun: false,
-      trace: false,
-      replayPath: null,
-      adapters: false,
-      fix: false,
-      recordLedger: false,
-      taskId: null,
-      restrictedNetwork: false,
-      restrictedReason: null,
-      allowLocalFallback: true,
-      hitlDecision: null,
-      hitlDecisionReason: null,
-      hitlResumeAction: null,
-      hitlDecidedBy: null,
-      hitlConstraints: [],
-    }),
+    resolveRuntimeDebugOptions: () =>
+      createCliNormalizedRuntimeDebugOptions({
+        interactive: true,
+        requestedUiMode: null,
+        requestedUiTheme: null,
+        uiMode: CliInteractiveUiMode.NONE,
+        uiTheme: CliReactThemePreset.GOVERNOR,
+        inputTty: true,
+        stderrTty: true,
+      }),
     translate: (key: string, interpolation?: Record<string, string>) =>
       i18nRuntime.t(key, interpolation),
     localizeText: (english: string) => english,
@@ -114,7 +103,9 @@ describe('CliSecretCommand', () => {
     context.options.secretCommandOptions = {
       action: 'set',
       keyName: 'openai/api-key',
+      backend: null,
       stdin: true,
+      fromEnv: null,
     };
     const setSecret = vi.fn(async () => ({
       keyName: 'openai/api-key',
@@ -144,6 +135,8 @@ describe('CliSecretCommand', () => {
     context.options.secretCommandOptions = {
       action: 'set',
       keyName: 'openai/api-key',
+      backend: null,
+      stdin: false,
       fromEnv: 'OPENAI_API_KEY',
     };
     const setSecret = vi.fn();
@@ -165,7 +158,9 @@ describe('CliSecretCommand', () => {
     context.options.secretCommandOptions = {
       action: 'set',
       keyName: 'openai/api-key',
+      backend: null,
       stdin: true,
+      fromEnv: null,
     };
     const warning =
       'unsafe-local-file stores plaintext secrets on disk; use it only with explicit local-only opt-in.';

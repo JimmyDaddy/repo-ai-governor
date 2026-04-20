@@ -479,7 +479,7 @@ describe('Cli adapter verification runtime', () => {
           unavailableReasons: ['health_check_failed:codex:acp_host_transport_not_ready'],
           healthCheck,
         }),
-      } as AgentProtocolContract,
+      } as unknown as AgentProtocolContract,
     });
     adapterRoutingRuntime.resolveRoleBindingCandidateSurfaces = (roleBinding) => [
       roleBinding.primarySurface,
@@ -1536,7 +1536,6 @@ describe('Cli adapter verification runtime', () => {
   });
 
   it('preserves cli_exec launch truth when probe parsing fails before onboarding consumers read verification rows', async () => {
-    const _i18nRuntime = new I18nRuntime(DEFAULT_I18N_RUNTIME_CONFIG);
     const adaptersConfig: AdaptersConfig = {
       roles: [
         {

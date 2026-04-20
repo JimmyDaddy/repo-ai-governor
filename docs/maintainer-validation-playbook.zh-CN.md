@@ -39,7 +39,7 @@
 | 演练 clean-room 安装路径 | `pnpm run release:verify-cleanroom-local-install` | install-mode 证据 |
 | 演练真实项目里的交互行为 | 先 build，再跑 real-target 命令链 | 真实目标仓库的操作者体验 |
 | 复核 examples 与 docs-backed scenarios | `pnpm run check:examples-doc-smoke`、`pnpm run check:examples-runtime-smoke` | 示例一致性与可运行契约 |
-| 复核 VS Code companion 边界 | 定向 vitest + `release:verify-vscode-extension-distribution` | editor-native companion 的打包与契约 |
+| 复核 VS Code 主工作台边界 | 定向 vitest + `release:verify-vscode-extension-distribution` | editor-native 主工作台的打包与契约 |
 | 复核宿主原生资产边界 | 定向 vitest + `release:verify-host-distribution` | Codex / Claude Code / GitHub Copilot 宿主 follow-up 边界 |
 | 复核 desktop foundation 边界 | 定向 vitest + `check:desktop-entry-smoke` + `release:verify-local` | desktop foundation-only 真值 |
 | 复核官方治理模板目录 | 定向 vitest + `pnpm run build` | pack catalog 契约与 runtime loader 兼容性 |
@@ -61,7 +61,7 @@ pnpm pack --json --dry-run
 
 1. 当前 packaged CLI 行为是否仍与文档描述一致？
 2. tarball 是否仍携带预期的 adopter 文档和参考资产？
-3. 我们有没有无意中夸大 secondary surface 的 packaged support？
+3. 我们有没有无意中夸大非 CLI surface 的 packaged support？
 
 当前 published tarball 预期至少包含：
 
@@ -131,16 +131,16 @@ pnpm run check:examples-smoke
 2. example 断言是否仍与真实输出契约一致？
 3. 文档有没有在没人注意的情况下偏离 example 资产？
 
-## 6. Secondary Surface 验证
+## 6. Editor-native / secondary-surface 验证
 
-### VS Code companion
+### VS Code 主工作台
 
-当你要刷新 editor-native companion 边界时，用：
+当你要刷新 editor-native 主工作台边界时，用：
 
 ```bash
-pnpm exec vitest run apps/vscode-extension/test/vscode-extension-service-runtime.test.ts apps/vscode-extension/test/vscode-extension-contract.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-selection-store.test.ts apps/vscode-extension/test/vscode-extension-packaging-boundary.test.ts --maxWorkers=1 --maxConcurrency=1
+pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test/vscode-extension-contract.test.ts apps/vscode-extension/test/vscode-extension-host.activation.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-service-runtime.test.ts apps/vscode-extension/test/vscode-extension-selection-store.test.ts apps/vscode-extension/test/vscode-extension-packaging-boundary.test.ts
 pnpm run build
-pnpm run release:verify-vscode-extension-distribution -- --output .tmp/project-064-vscode-extension-distribution-report.json
+pnpm run release:verify-vscode-extension-distribution -- --output .tmp/project-114-project-final-vscode-distribution-report.json
 pnpm pack --json --dry-run
 pnpm run check:ide-entry-smoke
 pnpm run check:ide-docs-parity
@@ -151,6 +151,9 @@ pnpm run check:ide-docs-parity
 ```bash
 code --extensionDevelopmentPath <governor-repo>/apps/vscode-extension <target-repo>
 ```
+
+这一轮 VS Code refresh 现在要求 packaged extension root 与 extracted VSIX 两个视角都通过 module smoke、sidecar smoke、CLI-backed secure-authoring、带有 check totals 读回的 scratch-isolated `doctor` diagnostics capture、pnpm metadata 闭包检查与 symlink payload 白名单检查；只有在这组证据与 support docs 同窗收口后，才允许公开切到 `primary_workbench_claim`。
+这组 rerun 还要同时验证 zero-cli human path 的公开叙事：支持面已经不再是“CLI first、VS Code second”，而是“VS Code 承接支持范围内的人类工作，CLI 退到 optional automation / scriptable / session-shell 用途”。`.tmp/project-114-project-final-vscode-distribution-report.json` 只应作为本轮 rerun 的工作输出；在刷新 `docs/support-matrix*` 或任何 maintainer 回链之前，先把它提升为当前 active sprint 下带时间戳的 immutable snapshot，并和 sprint-local 的 zero-cli rehearsal summary 成对回链。
 
 ### 宿主原生资产边界
 
@@ -218,18 +221,20 @@ pnpm run release:ga-check
 1. 支持边界变化时，先更新 `docs/support-matrix.zh-CN.md`
 2. 这份 playbook 只负责命令顺序、操作者意图和证据回链
 3. 每条验证链尽量只保留一份权威 evidence file，不要到处散落状态说明
-4. 不要把这份 playbook 写成第二张 support matrix
+4. 对当前 `project-114` 的 VS Code 主工作台边界，权威回链固定为 `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/` 下的带时间戳 snapshot，并与 `project-114-sprint-005-zero-cli-rehearsal-summary.md` 配对使用；`.tmp/project-114-project-final-vscode-distribution-report.json` 只保留为 rerun 工作输出。
+5. 不要把这份 playbook 写成第二张 support matrix
 
 这份 runbook 常引用的 evidence 路径包括：
 
 1. `.tmp/project-063-sprint-001-local-distribution-report.json`
 2. `.tmp/project-063-sprint-001-cleanroom-tgz-report.json`
-3. `.tmp/project-064-vscode-extension-distribution-report.json`
-4. `.tmp/project-065-sprint-001-desktop-foundation-report.json`
-5. `.tmp/project-067-sprint-001-host-distribution-report.json`
-6. `.tmp/project-068-sprint-002-github-com-agent-reserved-target-report.json`
-7. `.tmp/project-076-sprint-003-cleanroom-report.json`
-8. `.tmp/project-076-sprint-003-local-distribution-report.json`
+3. `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/project-114-sprint-005-vscode-distribution-report-20260418T124824Z.json`（当前 VS Code 主工作台声明的权威 snapshot）
+4. `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/project-114-sprint-005-zero-cli-rehearsal-summary.md`
+5. `.tmp/project-065-sprint-001-desktop-foundation-report.json`
+6. `.tmp/project-067-sprint-001-host-distribution-report.json`
+7. `.tmp/project-068-sprint-002-github-com-agent-reserved-target-report.json`
+8. `.tmp/project-076-sprint-003-cleanroom-report.json`
+9. `.tmp/project-076-sprint-003-local-distribution-report.json`
 
 ## 10. 如何理解 adopter warning
 

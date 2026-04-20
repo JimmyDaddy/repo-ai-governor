@@ -6,6 +6,7 @@ import { promisify } from 'node:util';
 
 import {
   CliReactThemePreset,
+  ErrorOutputEnvironment,
   GovernorErrorCode,
   RuntimeError,
   standardizeError,
@@ -30,6 +31,7 @@ import type {
   CliReviewFinding,
   CliReviewRequestArtifactPayload,
 } from '../../src/types/interfaces/index.js';
+import { createCliNormalizedRuntimeDebugOptions } from '../test-support/cli-command-fixtures.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -93,7 +95,7 @@ async function createReviewVerifyFixture(
         workspaceRoot,
       },
       locale: 'en-US',
-      outputMode: 'plain',
+      outputMode: ErrorOutputEnvironment.PLAIN,
     },
     artifactWriter,
     reviewQueueRuntime,
@@ -130,31 +132,18 @@ async function createReviewVerifyFixture(
     buildDefaultConfigContent: () => '',
     toRfc3339SecondsTimestamp: (value: Date) => value.toISOString().replace(/\.\d{3}Z$/u, 'Z'),
     formatExecFailureDetail: (error: unknown) => standardizeError(error).message,
-    resolveRuntimeDebugOptions: () => ({
-      interactive: false,
-      requestedUiMode: null,
-      requestedUiTheme: null,
-      uiMode: CliInteractiveUiMode.NONE,
-      uiTheme: CliReactThemePreset.GOVERNOR,
-      uiFallbackBehavior: null,
-      inputTty: false,
-      stderrTty: false,
-      dryRun: false,
-      trace: false,
-      replayPath: null,
-      adapters: false,
-      fix: false,
-      recordLedger: options.recordLedger === true,
-      taskId: options.taskId ?? null,
-      restrictedNetwork: false,
-      restrictedReason: null,
-      allowLocalFallback: true,
-      hitlDecision: null,
-      hitlDecisionReason: null,
-      hitlResumeAction: null,
-      hitlDecidedBy: null,
-      hitlConstraints: [],
-    }),
+    resolveRuntimeDebugOptions: () =>
+      createCliNormalizedRuntimeDebugOptions({
+        interactive: false,
+        requestedUiMode: null,
+        requestedUiTheme: null,
+        uiMode: CliInteractiveUiMode.NONE,
+        uiTheme: CliReactThemePreset.GOVERNOR,
+        inputTty: false,
+        stderrTty: false,
+        recordLedger: options.recordLedger === true,
+        taskId: options.taskId ?? null,
+      }),
     resolveExecutionStreamMetadata: async () => ({}),
     resolveAdapterVerification: async () => ({
       allRequiredRolesSatisfied: true,
@@ -271,7 +260,7 @@ function createRequestPayload(options: {
     workspaceId: 'test-workspace',
     workspaceRoot: options.workspaceRoot,
     locale: 'en-US',
-    outputMode: 'plain',
+    outputMode: ErrorOutputEnvironment.PLAIN,
     ...(options.taskId ? { taskId: options.taskId } : {}),
     recordLedger: options.recordLedger === true,
     reviewSlug: options.reviewSlug,

@@ -435,6 +435,7 @@ export async function runCli(
       commandName,
       adoptCommandOptions,
     );
+    const runtimeWorkspaceRootOverride = resolveRuntimeWorkspaceRootOverride(rawArgs);
     const runtimeContext = resolveRuntimeContext(
       io.cwd(),
       requestedProfileId ?? undefined,
@@ -444,6 +445,7 @@ export async function runCli(
       undefined,
       runtimeRepositoryRootOverride,
       runtimeWorkspaceModeOverride,
+      runtimeWorkspaceRootOverride,
     );
     const configCommandOptions = resolveConfigCommandOptions(rawArgs);
     const secretCommandOptions = resolveSecretCommandOptions(rawArgs);
@@ -474,6 +476,7 @@ export async function runCli(
     sessionShellOrchestrationServiceRuntime = new CliOrchestrationServiceRuntime(
       runtimeContext.workspace.workspaceRoot,
       {
+        repositoryRoot: runtimeContext.workspace.repositoryRoot,
         memoryConfig: runtimeContext.memory,
         embeddedShellDependencies: {
           sessionMainSupervisorRuntime: new CliSessionMainSupervisorRuntime({
@@ -1537,7 +1540,7 @@ function buildSessionMainCapabilityCatalogHelpText(
     i18n.t('sessionMainCapabilities.helpAppendix.catalogTitle'),
     ...capabilityViews.map(
       (capabilityView) =>
-        `  ${capabilityView.suggestedSlashCommand.padEnd(16)} ${capabilityView.title}: ${capabilityView.summary}`,
+        `  ${formatGovernedCapabilityEntry(capabilityView, i18n).padEnd(16)} ${capabilityView.title}: ${formatGovernedCapabilityCatalogSummary(capabilityView, i18n)}`,
     ),
   ].join('\n');
 }
@@ -1568,9 +1571,11 @@ function buildGovernedCapabilityHelpText(
     (translationKey) => i18n.t(translationKey),
   );
   const executionModeSummary =
-    descriptorView.handoffExecutionMode === SESSION_MAIN_HANDOFF_EXECUTION_MODE.DIRECT_EXECUTE
-      ? i18n.t('sessionMainCapabilities.helpAppendix.executionModes.directExecute')
-      : i18n.t('sessionMainCapabilities.helpAppendix.executionModes.previewConfirm');
+    descriptorView.backingExecution === 'templated_ai_workflow'
+      ? i18n.t('sessionMainCapabilities.helpAppendix.executionModes.aiWorkflow')
+      : descriptorView.handoffExecutionMode === SESSION_MAIN_HANDOFF_EXECUTION_MODE.DIRECT_EXECUTE
+        ? i18n.t('sessionMainCapabilities.helpAppendix.executionModes.directExecute')
+        : i18n.t('sessionMainCapabilities.helpAppendix.executionModes.previewConfirm');
 
   return [
     '',
@@ -1580,7 +1585,14 @@ function buildGovernedCapabilityHelpText(
     `  ${descriptorView.summary}`,
     `  ${descriptorView.detail}`,
     '',
-    `${i18n.t('sessionMainCapabilities.helpAppendix.suggestedSlashCommand')} ${descriptorView.suggestedSlashCommand}`,
+    `${i18n.t('sessionMainCapabilities.helpAppendix.primaryEntry')} ${formatGovernedCapabilityPrimaryEntry(descriptorView, i18n)}`,
+    ...(descriptorView.primaryEntry === 'conversational_answer'
+      ? [
+          `${i18n.t('sessionMainCapabilities.helpAppendix.optionalAlias')} ${descriptorView.suggestedSlashCommand}`,
+        ]
+      : [
+          `${i18n.t('sessionMainCapabilities.helpAppendix.suggestedSlashCommand')} ${descriptorView.suggestedSlashCommand}`,
+        ]),
     `${i18n.t('sessionMainCapabilities.helpAppendix.executionMode')} ${executionModeSummary}`,
     '',
     i18n.t('sessionMainCapabilities.helpAppendix.examplePromptsTitle'),
@@ -1591,11 +1603,71 @@ function buildGovernedCapabilityHelpText(
           i18n.t('sessionMainCapabilities.helpAppendix.relatedCapabilitiesTitle'),
           ...relatedCapabilityViews.map(
             (relatedCapabilityView) =>
-              `  ${relatedCapabilityView.suggestedSlashCommand.padEnd(16)} ${relatedCapabilityView.title}: ${relatedCapabilityView.summary}`,
+              `  ${formatGovernedCapabilityEntry(relatedCapabilityView, i18n).padEnd(16)} ${relatedCapabilityView.title}: ${relatedCapabilityView.summary}`,
           ),
         ]
       : []),
   ].join('\n');
+}
+
+function formatGovernedCapabilityEntry(
+  capabilityView: {
+    primaryEntry: 'role_mention' | 'slash_command' | 'cli_command' | 'conversational_answer';
+    suggestedSlashCommand: string;
+  },
+  i18n: I18nRuntime,
+): string {
+  if (capabilityView.primaryEntry === 'conversational_answer') {
+    return i18n.t('sessionMainCapabilities.helpAppendix.entryBadges.chatFirst');
+  }
+
+  return capabilityView.suggestedSlashCommand;
+}
+
+function formatGovernedCapabilityCatalogSummary(
+  capabilityView: {
+    capabilityId: SessionMainCapabilityId;
+    primaryEntry: 'role_mention' | 'slash_command' | 'cli_command' | 'conversational_answer';
+    suggestedSlashCommand: string;
+    summary: string;
+  },
+  i18n: I18nRuntime,
+): string {
+  if (!shouldRenderOptionalAlias(capabilityView.capabilityId)) {
+    return capabilityView.summary;
+  }
+
+  return `${capabilityView.summary} ${i18n.t(
+    'sessionMainCapabilities.helpAppendix.optionalAliasInline',
+    {
+      command: capabilityView.suggestedSlashCommand,
+    },
+  )}`;
+}
+
+function formatGovernedCapabilityPrimaryEntry(
+  capabilityView: {
+    primaryEntry: 'role_mention' | 'slash_command' | 'cli_command' | 'conversational_answer';
+    suggestedSlashCommand: string;
+  },
+  i18n: I18nRuntime,
+): string {
+  switch (capabilityView.primaryEntry) {
+    case 'conversational_answer':
+      return i18n.t('sessionMainCapabilities.helpAppendix.primaryEntries.conversationalAnswer');
+    case 'role_mention':
+      return i18n.t('sessionMainCapabilities.helpAppendix.primaryEntries.roleMention');
+    case 'cli_command':
+      return i18n.t('sessionMainCapabilities.helpAppendix.primaryEntries.cliCommand');
+    default:
+      return i18n.t('sessionMainCapabilities.helpAppendix.primaryEntries.slashCommand', {
+        command: capabilityView.suggestedSlashCommand,
+      });
+  }
+}
+
+function shouldRenderOptionalAlias(capabilityId: SessionMainCapabilityId): boolean {
+  return capabilityId === SESSION_MAIN_CAPABILITY_ID.DELIVER;
 }
 
 /**
@@ -1661,6 +1733,7 @@ function resolveRuntimeContext(
   }),
   repositoryRootOverride?: string,
   workspaceModeOverride?: ResolvedWorkspace['mode'],
+  workspaceRootOverride?: string,
 ): ResolvedCliRuntimeContext {
   const configLoader = new ConfigLoader();
   const profileResolver = new ProfileResolver();
@@ -1668,13 +1741,23 @@ function resolveRuntimeContext(
   const runtimeRepositoryRoot = repositoryRootOverride
     ? resolve(repositoryRootOverride)
     : resolve(currentWorkingDirectory);
-  const explicitRuntimeWorkspaceOverrides = workspaceModeOverride
-    ? {
-        runtimeOverrides: {
-          mode: workspaceModeOverride,
-        },
-      }
-    : {};
+  const explicitRuntimeWorkspaceOverrides =
+    workspaceModeOverride || workspaceRootOverride
+      ? {
+          runtimeOverrides: {
+            ...(workspaceModeOverride
+              ? {
+                  mode: workspaceModeOverride,
+                }
+              : {}),
+            ...(workspaceRootOverride
+              ? {
+                  workspaceRoot: workspaceRootOverride,
+                }
+              : {}),
+          },
+        }
+      : {};
   const defaultWorkspace = workspaceResolver.resolve({
     currentWorkingDirectory: runtimeRepositoryRoot,
     repositoryRootOverride,
@@ -1736,10 +1819,19 @@ function resolveRuntimeContext(
   const fallbackWorkspace = workspaceResolver.resolve({
     currentWorkingDirectory: runtimeRepositoryRoot,
     repositoryRootOverride,
-    ...(effectiveRuntimeWorkspaceMode
+    ...(effectiveRuntimeWorkspaceMode || workspaceRootOverride
       ? {
           runtimeOverrides: {
-            mode: effectiveRuntimeWorkspaceMode,
+            ...(effectiveRuntimeWorkspaceMode
+              ? {
+                  mode: effectiveRuntimeWorkspaceMode,
+                }
+              : {}),
+            ...(workspaceRootOverride
+              ? {
+                  workspaceRoot: workspaceRootOverride,
+                }
+              : {}),
           },
         }
       : {}),
@@ -1783,6 +1875,10 @@ function resolveRuntimeWorkspaceModeOverride(
   }
 
   return adoptCommandOptions.workspaceMode ?? undefined;
+}
+
+function resolveRuntimeWorkspaceRootOverride(args: string[]): string | undefined {
+  return readOptionValue(args, '--workspace-root') ?? undefined;
 }
 
 function buildDefaultGovernorConfig(workspaceMode: ResolvedWorkspace['mode']): GovernorConfig {

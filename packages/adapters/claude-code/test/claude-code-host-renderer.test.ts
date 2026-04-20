@@ -1,6 +1,9 @@
 import { PUBLIC_SERVICE_HOST_PACKAGE_EXPORT } from '@repo-ai-governor/shared';
 import {
   HostDistributionHandoffBridge,
+  HostDistributionHost,
+  HostDistributionMode,
+  HostDistributionTarget,
   StructuredWorkflowAssetRegistry,
 } from '@repo-ai-governor/standards';
 import { ClaudeCodeHostRenderer } from '../src/claude-code-host-renderer.js';
@@ -15,24 +18,28 @@ describe('ClaudeCodeHostRenderer', () => {
     return JSON.parse(file?.content ?? '{}') as Record<string, unknown>;
   }
 
-  function createRegistry(target: 'claude_code.project_local' | 'claude_code.plugin') {
+  function createRegistry(
+    target:
+      | HostDistributionTarget.CLAUDE_CODE_PROJECT_LOCAL
+      | HostDistributionTarget.CLAUDE_CODE_PLUGIN,
+  ) {
     return new StructuredWorkflowAssetRegistry({
       records: [
         {
           workflowId:
-            target === 'claude_code.project_local'
+            target === HostDistributionTarget.CLAUDE_CODE_PROJECT_LOCAL
               ? 'workspace-code-review-workflow'
               : 'technical-solution-promotion',
           workflowVersion: '1.0.0',
           workflowStatus: 'active',
           semanticOwnerModule: 'runtime.governance-clients',
           displayName:
-            target === 'claude_code.project_local'
+            target === HostDistributionTarget.CLAUDE_CODE_PROJECT_LOCAL
               ? 'Workspace Code Review Workflow'
               : 'Technical Solution Promotion',
           description: 'Claude Code host renderer fixture.',
           canonicalSourceRefs: [
-            target === 'claude_code.project_local'
+            target === HostDistributionTarget.CLAUDE_CODE_PROJECT_LOCAL
               ? '.codex/skills/workspace-code-review-workflow/SKILL.md'
               : '.codex/skills/technical-solution-promotion/SKILL.md',
           ],
@@ -53,21 +60,21 @@ describe('ClaudeCodeHostRenderer', () => {
 
   it('renders a project-local staged export tree with .claude skills and settings', () => {
     const renderer = new ClaudeCodeHostRenderer({
-      registry: createRegistry('claude_code.project_local'),
+      registry: createRegistry(HostDistributionTarget.CLAUDE_CODE_PROJECT_LOCAL),
       currentWorkingDirectory: process.cwd(),
     });
     const result = renderer.render({
-      host: 'claude-code',
-      target: 'claude_code.project_local',
-      mode: 'project-local',
+      host: HostDistributionHost.CLAUDE_CODE,
+      target: HostDistributionTarget.CLAUDE_CODE_PROJECT_LOCAL,
+      mode: HostDistributionMode.PROJECT_LOCAL,
       stagedExportRoot: '.repo-ai-governor/generated/hosts/claude-code',
       exportManifestPath: '.repo-ai-governor/generated/hosts/claude-code/host-export.manifest.json',
       verificationSummaryPath:
         '.repo-ai-governor/generated/hosts/claude-code/host-verification.summary.json',
     });
 
-    expect(result.exportManifest.host).toBe('claude-code');
-    expect(result.exportManifest.target).toBe('claude_code.project_local');
+    expect(result.exportManifest.host).toBe(HostDistributionHost.CLAUDE_CODE);
+    expect(result.exportManifest.target).toBe(HostDistributionTarget.CLAUDE_CODE_PROJECT_LOCAL);
     expect(
       result.projectedFiles.some(
         (file) => file.relativePath === '.claude/skills/workspace-code-review-workflow/SKILL.md',
@@ -98,13 +105,13 @@ describe('ClaudeCodeHostRenderer', () => {
 
   it('renders a plugin bundle with plugin manifest, skills, agents, and hooks', () => {
     const renderer = new ClaudeCodeHostRenderer({
-      registry: createRegistry('claude_code.plugin'),
+      registry: createRegistry(HostDistributionTarget.CLAUDE_CODE_PLUGIN),
       currentWorkingDirectory: process.cwd(),
     });
     const result = renderer.render({
-      host: 'claude-code',
-      target: 'claude_code.plugin',
-      mode: 'plugin-bundle',
+      host: HostDistributionHost.CLAUDE_CODE,
+      target: HostDistributionTarget.CLAUDE_CODE_PLUGIN,
+      mode: HostDistributionMode.PLUGIN_BUNDLE,
       stagedExportRoot: '.repo-ai-governor/generated/hosts/claude-code',
       exportManifestPath: '.repo-ai-governor/generated/hosts/claude-code/host-export.manifest.json',
       verificationSummaryPath:

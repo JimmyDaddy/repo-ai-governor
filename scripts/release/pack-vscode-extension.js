@@ -1,7 +1,15 @@
 #!/usr/bin/env node
 
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -25,10 +33,23 @@ const REQUIRED_PACKAGED_PATHS = [
   'dist/src/extension.js',
   'dist/src/index.js',
   'src/index.ts',
+  'node_modules/.modules.yaml',
+  'node_modules/@repo-ai-governor/cli/package.json',
+  'node_modules/@repo-ai-governor/config/package.json',
   'node_modules/@repo-ai-governor/core-orchestration-service/package.json',
   'node_modules/@repo-ai-governor/orchestration-service-client/package.json',
   'node_modules/@repo-ai-governor/shared/package.json',
+  'node_modules/@repo-ai-governor/core-runtime-langgraph/package.json',
+  'node_modules/@repo-ai-governor/core-memory/package.json',
+  'node_modules/@repo-ai-governor/core-session/package.json',
+  'node_modules/@repo-ai-governor/memory-provider-registry/package.json',
+  'node_modules/@repo-ai-governor/memory-store-adapter/package.json',
+  'node_modules/@repo-ai-governor/artifact-registry/package.json',
   'node_modules/i18next/package.json',
+];
+const PNPM_DEPLOY_ARGS = [
+  '--config.inject-workspace-packages=true',
+  '--config.node-linker=hoisted',
 ];
 
 /**
@@ -162,7 +183,7 @@ function resolveDefaultVsixPath(manifest, workingRoot) {
 }
 
 /**
- * Copies the deployed extension root into a portable packaged root without pnpm virtual-store metadata.
+ * Copies the deployed extension root into a packaged root.
  * @param {string} deployedRoot Absolute deployed-root path.
  * @param {string} packageRoot Absolute packaged-root path.
  */
@@ -170,10 +191,37 @@ function materializePackagedRoot(deployedRoot, packageRoot) {
   rmSync(packageRoot, { recursive: true, force: true });
   cpSync(deployedRoot, packageRoot, {
     recursive: true,
-    dereference: true,
   });
-  rmSync(resolve(packageRoot, 'node_modules/.pnpm'), { recursive: true, force: true });
-  rmSync(resolve(packageRoot, 'node_modules/.modules.yaml'), { force: true });
+}
+
+/**
+ * Removes packaged CLI shim directories because VS Code installations do not preserve symlink
+ * entries reliably and the extension runtime never executes package-manager bin shims.
+ * @param {string} packageRoot Absolute packaged-root path.
+ */
+function pruneNodeModulesBinDirectories(packageRoot) {
+  const rootNodeModulesPath = resolve(packageRoot, 'node_modules');
+  const pendingDirectories = [rootNodeModulesPath];
+
+  while (pendingDirectories.length > 0) {
+    const currentDirectoryPath = pendingDirectories.pop();
+    if (!currentDirectoryPath || !existsSync(currentDirectoryPath)) {
+      continue;
+    }
+
+    for (const entry of readdirSync(currentDirectoryPath, { withFileTypes: true })) {
+      const entryPath = resolve(currentDirectoryPath, entry.name);
+
+      if (entry.isDirectory()) {
+        if (entry.name === '.bin') {
+          rmSync(entryPath, { recursive: true, force: true });
+          continue;
+        }
+
+        pendingDirectories.push(entryPath);
+      }
+    }
+  }
 }
 
 /**
@@ -216,13 +264,14 @@ function repackVsixWithRuntimeDependencies(packageRoot, vsixPath, workingRoot) {
     cwd: PROJECT_ROOT,
     label: 'unzip packaged VSIX',
   });
+  rmSync(resolve(stageExtensionRoot, 'node_modules'), { recursive: true, force: true });
   cpSync(resolve(packageRoot, 'node_modules'), resolve(stageExtensionRoot, 'node_modules'), {
     recursive: true,
-    dereference: true,
+    verbatimSymlinks: true,
   });
 
   rmSync(vsixPath, { force: true });
-  runCommand('zip', ['-q', '-r', vsixPath, '.'], {
+  runCommand('zip', ['-y', '-q', '-r', vsixPath, '.'], {
     cwd: stageRoot,
     label: 'zip packaged VSIX',
   });
@@ -264,12 +313,17 @@ export function packageVscodeExtensionDistribution(options = {}) {
   mkdirSync(workingRoot, { recursive: true });
   rmSync(vsixPath, { force: true });
 
-  runCommand('pnpm', ['--filter', manifest.name, 'deploy', '--legacy', '--prod', deployedRoot], {
-    cwd: PROJECT_ROOT,
-    label: 'pnpm deploy',
-  });
+  runCommand(
+    'pnpm',
+    [...PNPM_DEPLOY_ARGS, '--filter', manifest.name, 'deploy', '--prod', deployedRoot],
+    {
+      cwd: PROJECT_ROOT,
+      label: 'pnpm deploy',
+    },
+  );
 
   materializePackagedRoot(deployedRoot, packageRoot);
+  pruneNodeModulesBinDirectories(packageRoot);
   verifyPackagedRoot(packageRoot);
 
   runCommand(

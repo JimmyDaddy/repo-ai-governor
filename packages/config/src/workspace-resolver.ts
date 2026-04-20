@@ -34,8 +34,9 @@ export class WorkspaceResolver {
     const modeResolution = this.resolveWorkspaceMode(runtimeOverrides.mode, configWorkspace?.mode);
     const workspaceId = this.buildWorkspaceId(repositoryRoot);
 
-    const workspaceRoot =
-      modeResolution.mode === WorkspaceMode.REPO_LOCAL
+    const workspaceRoot = runtimeOverrides.workspaceRoot?.trim().length
+      ? this.resolveAbsolutePath(runtimeOverrides.workspaceRoot, repositoryRoot)
+      : modeResolution.mode === WorkspaceMode.REPO_LOCAL
         ? this.resolveRepoLocalWorkspaceRoot(
             repositoryRoot,
             runtimeOverrides.repoLocalRoot,

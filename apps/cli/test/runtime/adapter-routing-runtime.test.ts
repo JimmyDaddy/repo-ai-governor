@@ -190,6 +190,9 @@ describe('Cli adapter routing runtime', () => {
     const reconfiguredToolConfigBySurface = new Map(baselineToolConfigBySurface);
     const githubCopilotToolConfig = baselineToolConfigBySurface.get(AdapterSurface.GITHUB_COPILOT);
     expect(githubCopilotToolConfig).toBeDefined();
+    if (!githubCopilotToolConfig) {
+      return;
+    }
     reconfiguredToolConfigBySurface.set(AdapterSurface.GITHUB_COPILOT, {
       ...githubCopilotToolConfig,
       availability: AdapterAvailability.UNAVAILABLE,
@@ -238,6 +241,9 @@ describe('Cli adapter routing runtime', () => {
     const reconfiguredToolConfigBySurface = new Map(baselineToolConfigBySurface);
     const codexToolConfig = baselineToolConfigBySurface.get(AdapterSurface.CODEX);
     expect(codexToolConfig).toBeDefined();
+    if (!codexToolConfig) {
+      return;
+    }
     reconfiguredToolConfigBySurface.set(AdapterSurface.CODEX, {
       ...codexToolConfig,
       transport: AdapterTransportKind.REMOTE_API,

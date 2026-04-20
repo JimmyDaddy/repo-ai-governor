@@ -1,0 +1,106 @@
+# checklist
+
+- [x] TK-925 freeze deliver capability and approved durable brief baseline
+  - 2026-04-16：任务创建，状态初始化为 `planned`。
+  - 2026-04-16：已激活 `project-110 / sprint-001` primary stream，任务状态切换为 `in_progress`，开始冻结 deliver capability、approved durable brief export boundary 与 requirement review gate baseline。
+  - 2026-04-16：已完成 deliver capability catalog、chat-first explainer/help discoverability、shared-session delivery workflow gate runtime 与对应单测的 Phase A baseline 落地。
+  - 2026-04-16：已完成 `pnpm run build`、定向 vitest、task-ledger/sprint-status/delivery-registry gates，当前进入 fresh reviewer CR round 准备窗口。
+  - 2026-04-16：已修复 fresh reviewer 提出的 deliver conversational routing 缺口；新增 chat-first deliver intent matcher、dispatcher `deliveryWorkflow` state 初始化与 explain-plus-execute bridge 回归测试，当前等待下一轮 fresh reviewer clean recheck。
+  - 2026-04-16：已完成 round-2 reviewer 提出的 matcher 误伤与 resume 文案漂移修复；当前 deliver intent 仅匹配 start-style phrasing，resume 回复会跟随既有 phase/pendingAction，同窗口 build、定向 vitest 与治理 gates 已重跑通过。
+  - 2026-04-16：已完成 round-3 reviewer 提出的 approved durable brief receipt/backlink gate 与 child capability explainer 吞边界问题修复；当前等待新的 fresh reviewer clean round。
+  - 2026-04-16：已完成 round-4 reviewer 提出的 deliver explain-plus-execute availability drift 修复；当前等待新的 fresh reviewer clean round。
+  - 2026-04-16：已完成 round-5 reviewer 提出的 generic English `deliver` matcher 误伤修复；当前等待新的 fresh reviewer clean round。
+  - 2026-04-16：已完成 round-6 reviewer 提出的 generic repo/repository/workflow deliver matcher 误伤修复；当前等待新的 fresh reviewer clean round。
+  - 2026-04-16：已完成 round-7 reviewer 提出的 generic requirement delivery wording 误伤与 deliver locale cache drift 修复；同窗口 `pnpm run build`、扩展后的 deliver/CLI 定向 vitest 与治理 gates 已重跑，当前等待新的 fresh reviewer clean round。
+  - 2026-04-16：已完成 round-8 reviewer 提出的 delivery workflow shared-session persistence/resume shell-level coverage 修复；同窗口 `pnpm run build`、扩展后的 deliver/shell/CLI 定向 vitest 与治理 gates 已重跑，当前等待新的 fresh reviewer clean round。
+  - 2026-04-16：已完成 round-9 reviewer 提出的 Chinese deliver explainer over-capture 修复；同窗口 `pnpm run build`、扩展后的 deliver/shell/CLI 定向 vitest 与治理 gates 已重跑，当前等待新的 fresh reviewer clean round。
+  - 2026-04-16：已完成 round-10 reviewer 提出的 deliver child workflow routing 与 `TURN_COMPLETED` delivery presenter metadata 修复；同窗口 `pnpm run build`、扩展后的 deliver/shell/CLI 定向 vitest 与治理 gates 已重跑通过，当前等待新的 fresh reviewer clean round。
+  - 2026-04-16：已完成 round-11 reviewer 提出的 public CLI help alias-only deliver contract coverage 修复；同窗口 `pnpm run build`、扩展后的 deliver/shell/CLI help 定向 vitest 与治理 gates 已重跑通过，当前等待新的 fresh reviewer clean round。
+  - 2026-04-16：已完成 round-12 reviewer 提出的 deliver-vs-run matcher 误伤修复；当前 deliver 英文 start-style 仅匹配 delivery-specific wording，generic start-style delivery asks 会继续 fall through，explicit reusable governed workflow ask 会稳定保留在 `/run`，同窗口 `pnpm run build` 与扩展后的 deliver shell/registry 定向 vitest 已重跑通过，当前等待新的 fresh reviewer clean round。
+  - 2026-04-17：已完成 round-13 reviewer 提出的 preview-style delivery workflow 误启动与 generic English delivery prose explainer 误捕获修复；当前 preview-style asks 会稳定回到 `/workflow` preview route，generic English delivery prose 不再被 Deliver capability explainer 抢答，同窗口 `pnpm run build` 与扩展后的 deliver shell/registry/explainer 定向 vitest 已重跑通过，当前等待新的 fresh reviewer clean round。
+  - 2026-04-17：已完成 round-14 reviewer 提出的 generic `delivery workflow` English phrasing 误捕获修复；当前 generic start/run `delivery workflow` phrasing 不会再启动 Deliver parent workflow，generic `delivery workflow` detail/examples 也不会再被 Deliver/Workflow capability surface 抢答，同窗口 `pnpm run build` 与扩展后的 deliver shell/registry/explainer 定向 vitest 已重跑通过，当前等待新的 fresh reviewer clean round。
+  - 2026-04-17：已完成 round-15 reviewer 提出的 explain-style `deliver + governed path` English prompt 误启动修复；当前 governed-path explain/example prompts 已稳定回到 Deliver capability explainer，不再创建 `deliveryWorkflowState`，同窗口三组定向回归、`pnpm run build`、9-file deliver/CLI bundle 与 task-ledger/review-status/delivery-registry gates 已重跑通过，当前等待新的 fresh reviewer clean round。
+  - 2026-04-17：已完成 round-16 reviewer 提出的 English `what does ... do` governed-path explain prompt 误启动修复；当前 English governed-path `what does ... do` prompts 已稳定回到 Deliver capability explainer，不再创建 `deliveryWorkflowState`，同窗口三组定向回归、`pnpm run build`、9-file deliver/CLI bundle 与 task-ledger/review-status/delivery-registry gates 已重跑通过，当前等待新的 fresh reviewer clean round。
+  - 2026-04-17：已完成 round-17 reviewer 提出的 English governed-path help/detail paraphrase family 误启动修复；当前 `what can`、`when/why should I use`、`tell me what ... does`、`how should I use` 等 governed-path English prompts 已稳定回到 Deliver capability explainer，不再创建 `deliveryWorkflowState`，同窗口三组定向回归、`pnpm run build` 与 9-file deliver/CLI bundle 已重跑通过，当前等待新的 fresh reviewer clean round。
+  - 2026-04-17：为避免 English fallback 持续被新 paraphrase 复用，已把 deliver fallback execution matcher 进一步收窄到“带明确交付对象的执行句式”；`Please deliver this requirement through the governed path.` 仍可稳定启动 Deliver workflow，而 explain/help-style governed-path prompts 不再依赖无限扩充 suppression pattern 才能避开执行路径，同窗口三组定向回归、`pnpm run build` 与 9-file deliver/CLI bundle 已重跑通过，当前等待新的 fresh reviewer clean round。
+  - 2026-04-17：已完成 round-18 reviewer 提出的 help-style governed-path deliver guidance prompt 误启动修复；`how do I`、`show me how`、`what steps`、`walk me through` 等 English guidance prompts 已稳定回到 Deliver capability explainer example path，不再创建 `deliveryWorkflowState`，同窗口三组定向回归、`pnpm run build` 与 9-file deliver/CLI bundle 已重跑通过，当前等待新的 fresh reviewer clean round。
+  - 2026-04-17：fresh reviewer `Gauss` 的 round-19 clean recheck 未发现新的 actionable finding；当前实现、tests、delivery registry 与 sprint ledger surface 已满足本任务完成态前置条件，任务状态切换为 `completed`，下一步进入 `TK-926` sprint closeout。
+- [x] TK-926 close sprint-001 and hand off task-plan commit follow-up
+  - 2026-04-16：任务创建，状态初始化为 `planned`。
+  - 2026-04-17：`CR-019` fresh reviewer clean round 已返回无 actionable finding，`TK-925` 同步切换为 `completed`；当前任务激活为 `in_progress`，开始执行 sprint-001 closeout、`pnpm run check` 边界 gate 与 sprint-002 activation handoff。
+  - 2026-04-17：已完成 `DA-926` closeout/handoff packet、artifact dependency reconcile、`pnpm run check` 边界 gate 与 sprint-001 plan/project plan closeout write-back；当前任务切换为 `completed`，下一步在边界 commit 后激活 sprint-002。
+- [x] CR-001 sprint-001-deliver-capability-and-requirement-brief-baseline delegated review loop round 1
+  - 2026-04-16：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-16：fresh reviewer round 识别到 deliver conversational routing 缺口；主 agent 复核后判定 finding `2.1` 为认可，进入 `verified` 并开始修复。
+  - 2026-04-16：已完成 deliver conversational routing、shared-session `deliveryWorkflow` state 初始化与 explain-plus-execute bridge 修复；重跑 build、定向 vitest 与治理 gates 后进入 `resolved`。
+- [x] CR-002 sprint-001-deliver-capability-and-requirement-brief-baseline delegated recheck loop round 2
+  - 2026-04-16：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-16：fresh reviewer recheck 识别到 deliver matcher 误伤 review/plan，以及 resumed deliver 回复未跟随 shared-session phase truth；主 agent 复核后均判定为认可，进入 `verified` 并开始修复。
+  - 2026-04-16：已完成 deliver matcher 收窄、resume phase-aware 文案与新增负向/恢复测试；build、定向 vitest 与治理 gates 通过后进入 `resolved`。
+- [x] CR-003 sprint-001-deliver-capability-and-requirement-brief-baseline delegated recheck loop round 3
+  - 2026-04-16：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-16：主 agent 已复核 round-3 findings，确认 approved durable brief receipt/backlink gate 缺口与 child capability explainer 吞边界问题均成立，结论为 `认可`。
+  - 2026-04-16：已完成 round-3 accepted findings 修复，当前 `CR-003` 推进为 `resolved`，下一步进入新的 fresh reviewer clean round。
+- [x] CR-004 sprint-001-deliver-capability-and-requirement-brief-baseline delegated recheck loop round 4
+  - 2026-04-16：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-16：主 agent 已复核 round-4 finding，确认 deliver explain-plus-execute bridge 与 explainer suggested action 仍被 availability overlay 改写，结论为 `认可`。
+  - 2026-04-16：已完成 round-4 accepted finding 修复，当前 `CR-004` 推进为 `resolved`，下一步进入新的 fresh reviewer clean round。
+- [x] CR-005 sprint-001-deliver-capability-and-requirement-brief-baseline delegated recheck loop round 5
+  - 2026-04-16：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-16：主 agent 已复核 round-5 finding，确认 generic English `deliver` phrasing 仍会误触 requirement-to-CR workflow，结论为 `认可`。
+  - 2026-04-16：已完成 round-5 accepted finding 修复，当前 `CR-005` 推进为 `resolved`，下一步进入新的 fresh reviewer clean round。
+- [x] CR-006 sprint-001-deliver-capability-and-requirement-brief-baseline delegated recheck loop round 6
+  - 2026-04-16：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-16：主 agent 已复核 round-6 finding，确认 generic repo/repository/workflow wording 仍会误触 deliver workflow，结论为 `认可`。
+  - 2026-04-16：已完成 round-6 accepted finding 修复，当前 `CR-006` 推进为 `resolved`，下一步进入新的 fresh reviewer clean round。
+- [x] CR-007 sprint-001-deliver-capability-and-requirement-brief-baseline delegated recheck loop round 7
+  - 2026-04-16：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-16：主 agent 已复核 round-7 findings，确认 generic requirement delivery wording 与 deliver locale cache drift 均成立，结论为 `认可`，当前推进到 `verified`。
+  - 2026-04-16：已完成 round-7 accepted findings 修复；`pnpm run build`、扩展后的 deliver/CLI 定向 vitest 与 task-ledger/review-status/delivery-registry gates 已通过，当前 `CR-007` 推进为 `resolved`，下一步进入新的 fresh reviewer clean round。
+- [x] CR-008 sprint-001-deliver-capability-and-requirement-brief-baseline delegated recheck loop round 8
+  - 2026-04-16：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-16：主 agent 已复核 round-8 finding，确认 delivery workflow shared-session persistence/resume seam 缺少 shell-level coverage，结论为 `认可`，当前推进到 `verified`。
+  - 2026-04-16：已完成 round-8 accepted finding 修复；`pnpm run build` 与扩展后的 deliver/shell/CLI 定向 vitest 已通过，当前 `CR-008` 推进为 `resolved`，下一步进入新的 fresh reviewer clean round。
+- [x] CR-009 sprint-001-deliver-capability-and-requirement-brief-baseline delegated recheck loop round 9
+  - 2026-04-16：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-16：主 agent 已复核 round-9 finding，确认 Chinese deliver explainer 对 generic `交付` detail prompts 仍过宽，结论为 `认可`，当前推进到 `verified`。
+  - 2026-04-16：已完成 round-9 accepted finding 修复；`pnpm run build` 与扩展后的 deliver/shell/CLI 定向 vitest 已通过，当前 `CR-009` 推进为 `resolved`，下一步进入新的 fresh reviewer clean round。
+- [x] CR-010 sprint-001-deliver-capability-and-requirement-brief-baseline delegated recheck loop round 10
+  - 2026-04-16：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-16：主 agent 已复核 round-10 findings，确认 deliver child workflow start 仍被 parent matcher 吞掉、且 `TURN_COMPLETED` 缺少结构化 delivery presenter metadata，结论均为 `认可`，当前推进到 `verified`。
+  - 2026-04-16：已完成 round-10 accepted findings 修复；`pnpm run build`、扩展后的 deliver shell/registry 定向 vitest 与治理 gates 已通过，当前 `CR-010` 推进为 `resolved`，下一步进入新的 fresh reviewer clean round。
+- [x] CR-011 sprint-001-deliver-capability-and-requirement-brief-baseline delegated review loop round 11
+  - 2026-04-16：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-16：主 agent 已复核 round-11 finding，确认 public CLI help 对 `deliver` chat-first / alias-only contract 的 coverage 仍有缺口，结论为 `认可`，当前推进到 `verified`。
+  - 2026-04-16：已完成 round-11 accepted finding 修复；`pnpm run build`、扩展后的 deliver shell/registry/CLI help 定向 vitest 与治理基线已通过，当前 `CR-011` 推进为 `resolved`，下一步进入新的 fresh reviewer clean round。
+- [x] CR-012 sprint-001-deliver-capability-and-requirement-brief-baseline delegated review loop round 12
+  - 2026-04-16：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-16：主 agent 已复核 round-12 finding，确认 deliver 英文 start-style matcher 把 generic `governed workflow` 误并入 parent deliver workflow，导致 reusable `/run` ask 被错误路由；结论为 `认可`，当前推进到 `verified`。
+  - 2026-04-16：已完成 round-12 accepted finding 修复；deliver matcher 已收窄回 delivery-specific wording，registry/dispatcher 回归测试已覆盖 generic start-style delivery fallthrough 与 explicit `/run` governed workflow ask，当前 `CR-012` 推进为 `resolved`，下一步进入新的 fresh reviewer clean round。
+- [x] CR-013 sprint-001-deliver-capability-and-requirement-brief-baseline delegated review loop round 13
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：主 agent 已复核 round-13 findings，确认 preview-style delivery workflow asks 会误启动 deliver execution path、generic English delivery prose 会被 Deliver capability explainer 抢答；两项结论均为 `认可`，当前推进到 `verified`。
+  - 2026-04-17：已完成 round-13 accepted findings 修复；preview-style asks 已稳定回到 `/workflow` preview route，generic English delivery prose 不再触发 Deliver capability explainer，当前 `CR-013` 推进为 `resolved`，下一步进入新的 fresh reviewer clean round。
+- [x] CR-014 sprint-001-deliver-capability-and-requirement-brief-baseline delegated review loop round 14
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：主 agent 已复核 round-14 findings，确认 generic English `delivery workflow` start/run phrasing 会误启动 Deliver parent workflow，且 generic `delivery workflow` detail/examples 仍会被 capability/discoverability surface 抢答；两项结论均为 `认可`，当前推进到 `verified`。
+  - 2026-04-17：已完成 round-14 accepted findings 修复；generic `delivery workflow` phrasing 已不再启动 Deliver parent workflow，也不会再被 Deliver/Workflow capability surface 抢答，当前 `CR-014` 推进为 `resolved`，下一步进入新的 fresh reviewer clean round。
+- [x] CR-015 sprint-001-deliver-capability-and-requirement-brief-baseline delegated review loop round 15
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：主 agent 已复核 round-15 finding，确认 explain-style `deliver + governed path` English prompts 会误启动 Deliver workflow 并创建 `deliveryWorkflowState`；结论为 `认可`，当前推进到 `verified`。
+  - 2026-04-17：已完成 round-15 accepted finding 修复；governed-path explain/example prompts 已稳定回到 Deliver capability explainer，不再触发 Deliver workflow state mutation，同窗口 `pnpm run build`、三组定向回归、9-file deliver/CLI bundle 与 task-ledger/review-status/delivery-registry gates 已重跑通过，当前 `CR-015` 推进为 `resolved`，下一步进入新的 fresh reviewer clean round。
+- [x] CR-016 sprint-001-deliver-capability-and-requirement-brief-baseline delegated review loop round 16
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：主 agent 已复核 round-16 finding，确认 English `what does ... do` governed-path deliver prompts 会误启动 Deliver workflow 并创建 `deliveryWorkflowState`；结论为 `认可`，当前推进到 `verified`。
+  - 2026-04-17：已完成 round-16 accepted finding 修复；English governed-path `what does ... do` prompts 已稳定回到 Deliver capability explainer，同窗口 `pnpm run build`、三组定向回归、9-file deliver/CLI bundle 与 task-ledger/review-status/delivery-registry gates 已重跑通过，当前 `CR-016` 推进为 `resolved`，下一步进入新的 fresh reviewer clean round。
+- [x] CR-017 sprint-001-deliver-capability-and-requirement-brief-baseline delegated review loop round 17
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：主 agent 已复核 round-17 finding，确认 English governed-path deliver paraphrase family 仍会误启动 Deliver workflow 并创建 `deliveryWorkflowState`；结论为 `认可`，当前推进到 `verified`。
+  - 2026-04-17：已完成 round-17 accepted finding 修复；English governed-path help/detail paraphrase family 已稳定回到 Deliver capability explainer，同窗口 `pnpm run build`、三组定向回归与 9-file deliver/CLI bundle 已重跑通过，当前 `CR-017` 推进为 `resolved`，下一步进入新的 fresh reviewer clean round。
+- [x] CR-018 sprint-001-deliver-capability-and-requirement-brief-baseline delegated review loop round 18
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：主 agent 已复核 round-18 finding，确认 help-style governed-path deliver guidance prompts 仍会误启动 Deliver workflow 并创建 `deliveryWorkflowState`；结论为 `认可`，当前推进到 `verified`。
+  - 2026-04-17：已完成 round-18 accepted finding 修复；`how do I`、`show me how`、`what steps` 等 governed-path guidance prompts 已稳定回到 Deliver capability explainer example path，同窗口 `pnpm run build`、三组定向回归与 9-file deliver/CLI bundle 已重跑通过，当前 `CR-018` 推进为 `resolved`，下一步进入新的 fresh reviewer clean round。
+- [x] CR-019 sprint-001-deliver-capability-and-requirement-brief-baseline delegated review loop round 19
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：fresh delegated reviewer `Gauss` 对 sprint-001 当前实现、tests 与 ledger/review surface 做只读 clean recheck，返回 `No actionable findings.`；当前 round 直接收口为 `resolved`，下一步进入 `TK-925` 完成态与 `TK-926` closeout。

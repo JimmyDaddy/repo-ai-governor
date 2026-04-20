@@ -1,5 +1,9 @@
-import type { GovernorConfig } from '@repo-ai-governor/config';
-import { AdapterSurface, AdapterTransportKind } from '@repo-ai-governor/shared';
+import { type GovernorConfig, WorkspaceMode } from '@repo-ai-governor/config';
+import {
+  AdapterSurface,
+  AdapterTransportKind,
+  WorkspaceMigrationPolicy,
+} from '@repo-ai-governor/shared';
 import { CliUserConfigProjectionService } from '../../src/runtime/cli-user-config-projection-service.js';
 import type { CliUserConfigService } from '../../src/runtime/cli-user-config-service.js';
 
@@ -17,13 +21,19 @@ describe('CliUserConfigProjectionService', () => {
             },
           },
         }),
-      } as CliUserConfigService,
+      } as unknown as CliUserConfigService,
     });
     const config: GovernorConfig = {
       schemaVersion: '1.1',
       workspace: {
-        mode: 'repo_local',
-        migrationPolicy: 'copy_verify_switch_rollback',
+        mode: WorkspaceMode.REPO_LOCAL,
+        migrationPolicy: WorkspaceMigrationPolicy.COPY_VERIFY_SWITCH_ROLLBACK,
+      },
+      i18n: {
+        runtimeEngine: 'i18next',
+        defaultLocale: 'en-US',
+        fallbackLocale: 'en-US',
+        supportedLocales: ['en-US'],
       },
       adapters: {
         roles: [],

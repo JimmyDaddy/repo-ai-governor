@@ -28,7 +28,17 @@ import {
   MemoryStoreEngine,
   standardizeError,
 } from '@repo-ai-governor/shared';
-import { LocalOrchestrationServiceShell } from '../src/index.js';
+import {
+  LocalOrchestrationServiceShell,
+  SESSION_DELIVERY_REQUIREMENT_REVIEW_OUTCOME,
+  SESSION_DELIVERY_WORKFLOW_CAPABILITY_ID,
+  SESSION_DELIVERY_WORKFLOW_CONTEXT_KEY,
+  SESSION_DELIVERY_WORKFLOW_PENDING_ACTION,
+  SESSION_DELIVERY_WORKFLOW_PHASE,
+  SESSION_DELIVERY_WORKFLOW_VERSION,
+  SESSION_MAIN_CAPABILITY_ID,
+  type SessionMainSupervisorTurnOutcome,
+} from '../src/index.js';
 
 function createGraphPlan() {
   const compiler = new ProcessCompiler();
@@ -259,18 +269,31 @@ describe('core-orchestration-service local shell', () => {
 
   it('builds execution-board and HITL inbox read models with service-owned actions and handoff targets', async () => {
     const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-governance-'));
-    const workspaceRoot = join(temporaryRoot, '.repo-ai-governor');
-    const executionWorkspaceRoot = join(temporaryRoot, 'workspace');
+    const repositoryRoot = join(temporaryRoot, 'governed repo');
+    const workspaceRoot = join(
+      temporaryRoot,
+      'tool managed',
+      'workspace governance',
+      '.repo-ai-governor',
+    );
+    const executionWorkspaceRoot = repositoryRoot;
     const reviewDirectoryPath = join(workspaceRoot, 'context/dev/project-048/sprint-001/review');
     const artifactPath = join(executionWorkspaceRoot, 'artifacts/summary.md');
     const orchestrationService = new LocalOrchestrationServiceShell({
       workspaceRoot,
+      repositoryRoot,
     });
 
     try {
-      await mkdir(join(workspaceRoot, 'context'), { recursive: true });
+      await mkdir(join(workspaceRoot, 'context', 'upgrade'), { recursive: true });
       await mkdir(join(executionWorkspaceRoot, 'artifacts'), { recursive: true });
       await mkdir(reviewDirectoryPath, { recursive: true });
+      const upgradeReportPath = join(
+        workspaceRoot,
+        'context',
+        'upgrade',
+        'upgrade-202604171203.report.json',
+      );
       await writeFile(
         join(workspaceRoot, 'context/current-context.md'),
         `# Workspace Current Context
@@ -284,6 +307,12 @@ describe('core-orchestration-service local shell', () => {
 - Task records: \`.repo-ai-governor/context/dev/project-048/sprint-001/tasks/\`
 - Review records: \`.repo-ai-governor/context/dev/project-048/sprint-001/review\`
 `,
+      );
+      await writeFile(
+        upgradeReportPath,
+        JSON.stringify({
+          upgradeId: 'upgrade-202604171203',
+        }),
       );
       const reviewDocumentPath560 = join(reviewDirectoryPath, 'code_review_tk-560.md');
       const reviewDocumentPath561 = join(reviewDirectoryPath, 'code_review_tk-561.md');
@@ -435,6 +464,17 @@ describe('core-orchestration-service local shell', () => {
       expect(queueOverview.parallelLanes).toHaveLength(1);
       expect(queueOverview.parallelLanes[0]?.activeExecutionCount).toBe(2);
       expect(queueOverview.workspaceSummary).toHaveLength(1);
+      expect(queueOverview.temporaryBridges).toHaveLength(6);
+      expect(queueOverview.temporaryBridges[0]?.workspaceRoot).toBe(workspaceRoot);
+      expect(queueOverview.temporaryBridges[0]?.commandWorkingDirectory).toBe(repositoryRoot);
+      expect(queueOverview.temporaryBridges.map((entry) => entry.previewCommandLine)).toEqual([
+        `repo-ai-governor adopt bootstrap adopter-complete --repo '${repositoryRoot}' --hosts codex,claude-code`,
+        `repo-ai-governor adopt apply adopter-complete --repo '${repositoryRoot}' --hosts codex,claude-code,github-copilot`,
+        `repo-ai-governor host export --host codex --mode project-local --output-dir '${join(workspaceRoot, 'generated', 'hosts', 'codex')}'`,
+        `repo-ai-governor host verify --output-dir '${join(workspaceRoot, 'generated', 'hosts', 'github-copilot')}'`,
+        `repo-ai-governor host pack --host claude-code --mode plugin-bundle --bundle-dir '${join(workspaceRoot, 'generated', 'bundles', 'claude')}'`,
+        `repo-ai-governor upgrade apply '${upgradeReportPath}' --confirm-upgrade approve --output pretty`,
+      ]);
       expect(queueOverview.workspaceSummary[0]?.workspaceId).toBe('workspace-governance');
       expect(queueOverview.workspaceSummary[0]?.reviewQueueCount).toBe(2);
       expect(queueOverview.notificationOwnership.ownerSurface).toBe(
@@ -450,6 +490,81 @@ describe('core-orchestration-service local shell', () => {
       );
       expect(queueOverview.reviewQueue[0]?.reviewId).toContain('code_review_tk-');
       expect(queueOverview.reviewQueue[0]?.reviewFilePath).toContain('/review/code_review_tk-');
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('treats custom repo-local workspace roots as the authoritative bridge workspace root', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-custom-bridge-'));
+    const repositoryRoot = join(temporaryRoot, 'governed repo');
+    const workspaceRoot = join(repositoryRoot, 'governance', 'state');
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot,
+      repositoryRoot,
+    });
+
+    try {
+      await mkdir(join(workspaceRoot, 'context'), { recursive: true });
+      const queueOverview = await orchestrationService.queryQueueOverview();
+
+      expect(queueOverview.temporaryBridges).toHaveLength(5);
+      expect(queueOverview.temporaryBridges[0]?.workspaceRoot).toBe(workspaceRoot);
+      expect(queueOverview.temporaryBridges[0]?.commandWorkingDirectory).toBe(repositoryRoot);
+      expect(queueOverview.temporaryBridges.map((entry) => entry.previewCommandLine)).toEqual([
+        `repo-ai-governor adopt bootstrap adopter-complete --repo '${repositoryRoot}' --hosts codex,claude-code`,
+        `repo-ai-governor adopt apply adopter-complete --repo '${repositoryRoot}' --hosts codex,claude-code,github-copilot`,
+        `repo-ai-governor host export --host codex --mode project-local --output-dir '${join(workspaceRoot, 'generated', 'hosts', 'codex')}'`,
+        `repo-ai-governor host verify --output-dir '${join(workspaceRoot, 'generated', 'hosts', 'github-copilot')}'`,
+        `repo-ai-governor host pack --host claude-code --mode plugin-bundle --bundle-dir '${join(workspaceRoot, 'generated', 'bundles', 'claude')}'`,
+      ]);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('suppresses temporary bridges when repository-root facts are unavailable', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-no-repo-root-'));
+    const workspaceRoot = join(temporaryRoot, 'governance', 'state');
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot,
+    });
+
+    try {
+      await mkdir(join(workspaceRoot, 'context'), { recursive: true });
+      const queueOverview = await orchestrationService.queryQueueOverview();
+
+      expect(queueOverview.temporaryBridges).toEqual([]);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('suppresses the upgrade temporary bridge when no upgrade report artifact exists', async () => {
+    const temporaryRoot = await mkdtemp(
+      join(tmpdir(), 'local-orchestration-shell-upgrade-bridge-'),
+    );
+    const repositoryRoot = join(temporaryRoot, 'governed-repo');
+    const workspaceRoot = join(
+      temporaryRoot,
+      'tool-managed',
+      'workspace-upgrade',
+      '.repo-ai-governor',
+    );
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot,
+      repositoryRoot,
+    });
+
+    try {
+      await mkdir(join(workspaceRoot, 'context'), { recursive: true });
+      const queueOverview = await orchestrationService.queryQueueOverview();
+
+      expect(
+        queueOverview.temporaryBridges.some(
+          (entry) => entry.bridgeId === 'temporary-bridge-upgrade',
+        ),
+      ).toBe(false);
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }
@@ -1326,6 +1441,332 @@ describe('core-orchestration-service local shell', () => {
           }),
         ]),
       );
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('projects delivery workflow presenter metadata into the canonical TURN_COMPLETED payload', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+    });
+
+    try {
+      const started = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
+      await orchestrationService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: 'Help me deliver this requirement through the governed path.',
+        metadata: {
+          locale: 'en-US',
+        },
+      });
+      const subscription = await orchestrationService.subscribeSession({
+        sessionId: started.session.sessionId,
+      });
+      const completedEvent = subscription.events.find(
+        (event) => event.type === OrchestrationSessionEventType.TURN_COMPLETED,
+      );
+
+      expect(completedEvent?.payload).toMatchObject({
+        role: OrchestrationSessionTranscriptRole.ASSISTANT,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        responseMode: 'answer',
+        executionIntent: 'deliver.requirement_to_cr',
+        turn_delivery_phase: SESSION_DELIVERY_WORKFLOW_PHASE.REQUIREMENT_CAPTURE,
+        turn_delivery_pending_action: 'capture_requirement_or_attach_approved_brief',
+        turn_delivery_selected_stream: null,
+        turn_delivery_result_summary: null,
+      });
+      expect(completedEvent?.payload.turn_delivery_related_artifact_paths).toEqual([]);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('merges plan preview delivery updates into session context and appended transcript metadata', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+    });
+
+    try {
+      const started = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
+      await orchestrationService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: 'Help me deliver this requirement through the governed path.',
+        metadata: {
+          locale: 'en-US',
+        },
+      });
+
+      const appendResult = await orchestrationService.appendSessionMessage({
+        sessionId: started.session.sessionId,
+        role: OrchestrationSessionTranscriptRole.ASSISTANT,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        lines: ['Summary: plan preview is ready for confirmation.'],
+        metadata: {
+          renderKind: 'command_recap',
+          commandLine: 'plan --output pretty',
+          deliveryWorkflowUpdate: {
+            currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.TASK_PLAN_COMMIT_PENDING,
+            pendingAction: 'confirm_task_plan_commit',
+            selectedTargetStream: 'stream-project-110-sprint-002',
+            relatedArtifactPaths: [
+              '.repo-ai-governor/context/plan/plan-001.preview.json',
+              '.repo-ai-governor/context/dev/project-110/sprint-002/plan.md',
+              '.repo-ai-governor/context/dev/project-110/sprint-002/tasks/checklist.md',
+            ],
+            resultSummary: 'Task plan preview is ready for confirmation.',
+            childWorkflowBacklinks: [
+              {
+                capabilityId: SESSION_MAIN_CAPABILITY_ID.PLAN,
+                artifactPath: '.repo-ai-governor/context/plan/plan-001.preview.json',
+                summary: 'Task plan preview artifact.',
+              },
+            ],
+          },
+        },
+      });
+      const session = await orchestrationService.getSession(started.session.sessionId);
+      const deliveryWorkflowState = session?.context[
+        SESSION_DELIVERY_WORKFLOW_CONTEXT_KEY
+      ] as Record<string, unknown> | null;
+
+      expect(deliveryWorkflowState).toEqual(
+        expect.objectContaining({
+          capabilityId: SESSION_DELIVERY_WORKFLOW_CAPABILITY_ID.DELIVER,
+          currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.TASK_PLAN_COMMIT_PENDING,
+          pendingAction: 'confirm_task_plan_commit',
+          selectedTargetStream: 'stream-project-110-sprint-002',
+          resultSummary: 'Task plan preview is ready for confirmation.',
+        }),
+      );
+      expect(deliveryWorkflowState?.relatedArtifactPaths).toEqual([
+        '.repo-ai-governor/context/plan/plan-001.preview.json',
+        '.repo-ai-governor/context/dev/project-110/sprint-002/plan.md',
+        '.repo-ai-governor/context/dev/project-110/sprint-002/tasks/checklist.md',
+      ]);
+      expect(deliveryWorkflowState?.childWorkflowBacklinks).toEqual([
+        {
+          capabilityId: SESSION_MAIN_CAPABILITY_ID.PLAN,
+          artifactPath: '.repo-ai-governor/context/plan/plan-001.preview.json',
+          summary: 'Task plan preview artifact.',
+        },
+      ]);
+      expect(appendResult.event.payload.metadata).toMatchObject({
+        turn_delivery_phase: SESSION_DELIVERY_WORKFLOW_PHASE.TASK_PLAN_COMMIT_PENDING,
+        turn_delivery_pending_action: 'confirm_task_plan_commit',
+        turn_delivery_selected_stream: 'stream-project-110-sprint-002',
+        turn_delivery_result_summary: 'Task plan preview is ready for confirmation.',
+      });
+      const appendedMetadata = appendResult.event.payload.metadata as
+        | { turn_delivery_related_artifact_paths?: string[] }
+        | undefined;
+
+      expect(appendedMetadata?.turn_delivery_related_artifact_paths).toEqual([
+        '.repo-ai-governor/context/plan/plan-001.preview.json',
+        '.repo-ai-governor/context/dev/project-110/sprint-002/plan.md',
+        '.repo-ai-governor/context/dev/project-110/sprint-002/tasks/checklist.md',
+      ]);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('bootstraps canonical delivery workflow state from appended metadata when no prior delivery turn exists', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+    });
+
+    try {
+      const started = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
+
+      const appendResult = await orchestrationService.appendSessionMessage({
+        sessionId: started.session.sessionId,
+        role: OrchestrationSessionTranscriptRole.ASSISTANT,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        lines: ['Summary: plan preview is ready for confirmation.'],
+        metadata: {
+          renderKind: 'command_recap',
+          commandLine: 'plan --output pretty',
+          deliveryWorkflowUpdate: {
+            currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.TASK_PLAN_COMMIT_PENDING,
+            pendingAction: 'confirm_task_plan_commit',
+            selectedTargetStream: 'stream-project-110-sprint-002',
+            relatedArtifactPaths: [
+              '.repo-ai-governor/context/plan/plan-001.preview.json',
+              '.repo-ai-governor/context/dev/project-110/sprint-002/tasks/checklist.md',
+            ],
+            resultSummary: 'Task plan preview is ready for confirmation.',
+            childWorkflowBacklinks: [
+              {
+                capabilityId: SESSION_MAIN_CAPABILITY_ID.PLAN,
+                artifactPath: '.repo-ai-governor/context/plan/plan-001.preview.json',
+                summary: 'Task plan preview artifact.',
+              },
+            ],
+          },
+        },
+      });
+      const session = await orchestrationService.getSession(started.session.sessionId);
+      const deliveryWorkflowState = session?.context[
+        SESSION_DELIVERY_WORKFLOW_CONTEXT_KEY
+      ] as Record<string, unknown> | null;
+
+      expect(deliveryWorkflowState).toEqual(
+        expect.objectContaining({
+          version: SESSION_DELIVERY_WORKFLOW_VERSION,
+          workflowId: expect.stringContaining(`delivery-workflow-${started.session.sessionId}`),
+          capabilityId: SESSION_DELIVERY_WORKFLOW_CAPABILITY_ID.DELIVER,
+          currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.TASK_PLAN_COMMIT_PENDING,
+          pendingAction: 'confirm_task_plan_commit',
+          selectedTargetStream: 'stream-project-110-sprint-002',
+          resultSummary: 'Task plan preview is ready for confirmation.',
+          requirementReviewGate: {
+            outcome: SESSION_DELIVERY_REQUIREMENT_REVIEW_OUTCOME.PENDING,
+            evidenceArtifactPath: null,
+          },
+        }),
+      );
+      expect(deliveryWorkflowState?.relatedArtifactPaths).toEqual([
+        '.repo-ai-governor/context/plan/plan-001.preview.json',
+        '.repo-ai-governor/context/dev/project-110/sprint-002/tasks/checklist.md',
+      ]);
+      expect(appendResult.event.payload.metadata).toMatchObject({
+        turn_delivery_phase: SESSION_DELIVERY_WORKFLOW_PHASE.TASK_PLAN_COMMIT_PENDING,
+        turn_delivery_pending_action: 'confirm_task_plan_commit',
+        turn_delivery_selected_stream: 'stream-project-110-sprint-002',
+        turn_delivery_result_summary: 'Task plan preview is ready for confirmation.',
+      });
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('preserves the selected target stream when later deliver updates omit it', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+    });
+
+    try {
+      const started = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
+
+      await orchestrationService.appendSessionMessage({
+        sessionId: started.session.sessionId,
+        role: OrchestrationSessionTranscriptRole.ASSISTANT,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        lines: ['Summary: task plan preview is ready for confirmation.'],
+        metadata: {
+          renderKind: 'command_recap',
+          commandLine: 'plan --output pretty',
+          deliveryWorkflowUpdate: {
+            currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.TASK_PLAN_COMMIT_PENDING,
+            pendingAction: SESSION_DELIVERY_WORKFLOW_PENDING_ACTION.CONFIRM_TASK_PLAN_COMMIT,
+            selectedTargetStream: 'stream-project-110-sprint-003',
+            relatedArtifactPaths: ['.repo-ai-governor/context/plan/plan-003.preview.json'],
+            resultSummary: 'Task plan preview is ready for confirmation.',
+            childWorkflowBacklinks: [
+              {
+                capabilityId: SESSION_MAIN_CAPABILITY_ID.PLAN,
+                artifactPath: '.repo-ai-governor/context/plan/plan-003.preview.json',
+                summary: 'Task plan preview artifact.',
+              },
+            ],
+          },
+        },
+      });
+
+      const appendResult = await orchestrationService.appendSessionMessage({
+        sessionId: started.session.sessionId,
+        role: OrchestrationSessionTranscriptRole.ASSISTANT,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        lines: ['Summary: governed review verify completed and clean recheck is next.'],
+        metadata: {
+          renderKind: 'command_recap',
+          commandLine: 'review-verify --output pretty',
+          deliveryWorkflowUpdate: {
+            currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.RESOLVED,
+            pendingAction: SESSION_DELIVERY_WORKFLOW_PENDING_ACTION.RUN_FRESH_CLEAN_RECHECK,
+            relatedArtifactPaths: [
+              '.repo-ai-governor/context/dev/project-110/sprint-003/review/resolved_code_review_tk-929.md',
+              '.repo-ai-governor/context/dev/project-110/sprint-003/tasks/CR-001.md',
+            ],
+            resultSummary: 'Governed review verify completed and clean recheck is next.',
+            childWorkflowBacklinks: [
+              {
+                capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW,
+                artifactPath:
+                  '.repo-ai-governor/context/dev/project-110/sprint-003/review/resolved_code_review_tk-929.md',
+                summary: 'Governed review verify completed and clean recheck is next.',
+              },
+              {
+                capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW_VERIFY,
+                artifactPath:
+                  '.repo-ai-governor/context/dev/project-110/sprint-003/review/resolved_code_review_tk-929.md',
+                summary: 'Governed review verify completed and clean recheck is next.',
+              },
+            ],
+          },
+        },
+      });
+      const session = await orchestrationService.getSession(started.session.sessionId);
+      const deliveryWorkflowState = session?.context[
+        SESSION_DELIVERY_WORKFLOW_CONTEXT_KEY
+      ] as Record<string, unknown> | null;
+
+      expect(deliveryWorkflowState).toEqual(
+        expect.objectContaining({
+          capabilityId: SESSION_DELIVERY_WORKFLOW_CAPABILITY_ID.DELIVER,
+          currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.RESOLVED,
+          pendingAction: SESSION_DELIVERY_WORKFLOW_PENDING_ACTION.RUN_FRESH_CLEAN_RECHECK,
+          selectedTargetStream: 'stream-project-110-sprint-003',
+          resultSummary: 'Governed review verify completed and clean recheck is next.',
+        }),
+      );
+      expect(deliveryWorkflowState?.relatedArtifactPaths).toEqual([
+        '.repo-ai-governor/context/plan/plan-003.preview.json',
+        '.repo-ai-governor/context/dev/project-110/sprint-003/review/resolved_code_review_tk-929.md',
+        '.repo-ai-governor/context/dev/project-110/sprint-003/tasks/CR-001.md',
+      ]);
+      expect(deliveryWorkflowState?.childWorkflowBacklinks).toEqual([
+        {
+          capabilityId: SESSION_MAIN_CAPABILITY_ID.PLAN,
+          artifactPath: '.repo-ai-governor/context/plan/plan-003.preview.json',
+          summary: 'Task plan preview artifact.',
+        },
+        {
+          capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW,
+          artifactPath:
+            '.repo-ai-governor/context/dev/project-110/sprint-003/review/resolved_code_review_tk-929.md',
+          summary: 'Governed review verify completed and clean recheck is next.',
+        },
+        {
+          capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW_VERIFY,
+          artifactPath:
+            '.repo-ai-governor/context/dev/project-110/sprint-003/review/resolved_code_review_tk-929.md',
+          summary: 'Governed review verify completed and clean recheck is next.',
+        },
+      ]);
+      expect(appendResult.event.payload.metadata).toMatchObject({
+        turn_delivery_phase: SESSION_DELIVERY_WORKFLOW_PHASE.RESOLVED,
+        turn_delivery_pending_action:
+          SESSION_DELIVERY_WORKFLOW_PENDING_ACTION.RUN_FRESH_CLEAN_RECHECK,
+        turn_delivery_selected_stream: 'stream-project-110-sprint-003',
+        turn_delivery_result_summary: 'Governed review verify completed and clean recheck is next.',
+      });
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }
@@ -2313,19 +2754,22 @@ describe('core-orchestration-service local shell', () => {
 
   it('keeps command handoff governance ahead of explicit role mentions for connect-like turns', async () => {
     const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
-    const resolveTurn = vi.fn(async () => ({
-      responseMode: 'role_collaboration',
-      interactionMode: 'single_role_delegate',
-      assistantDelta: '## Planner perspective',
-      assistantMessage: '## Planner perspective\n\n- this should not be emitted',
-      executionIntent: 'session.role_delegate.planner',
-      requiresConfirmation: false,
-      selectedSurface: 'ollama',
-      selectedBy: 'session.main.role_delegate.safe_fallback',
-      sessionRoutingPreferenceApplied: false,
-      invokedRoleIds: ['planner'],
-      subagentCount: 1,
-    }));
+    const resolveTurn = vi.fn(
+      async () =>
+        ({
+          responseMode: 'role_collaboration',
+          interactionMode: 'single_role_delegate',
+          assistantDelta: '## Planner perspective',
+          assistantMessage: '## Planner perspective\n\n- this should not be emitted',
+          executionIntent: 'session.role_delegate.planner',
+          requiresConfirmation: false,
+          selectedSurface: 'ollama',
+          selectedBy: 'session.main.role_delegate.safe_fallback',
+          sessionRoutingPreferenceApplied: false,
+          invokedRoleIds: ['planner'],
+          subagentCount: 1,
+        }) satisfies SessionMainSupervisorTurnOutcome,
+    );
     const orchestrationService = new LocalOrchestrationServiceShell({
       workspaceRoot: temporaryRoot,
       sessionMainSupervisorRuntime: {
@@ -2360,19 +2804,22 @@ describe('core-orchestration-service local shell', () => {
 
   it('preserves direct-execute review handoff when one unknown @mention is not a configured role', async () => {
     const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
-    const resolveTurn = vi.fn(async () => ({
-      responseMode: 'role_collaboration',
-      interactionMode: 'single_role_delegate',
-      assistantDelta: '## Planner perspective',
-      assistantMessage: '## Planner perspective\n\n- this should not be emitted',
-      executionIntent: 'session.role_delegate.planner',
-      requiresConfirmation: false,
-      selectedSurface: 'ollama',
-      selectedBy: 'session.main.role_delegate.safe_fallback',
-      sessionRoutingPreferenceApplied: false,
-      invokedRoleIds: ['planner'],
-      subagentCount: 1,
-    }));
+    const resolveTurn = vi.fn(
+      async () =>
+        ({
+          responseMode: 'role_collaboration',
+          interactionMode: 'single_role_delegate',
+          assistantDelta: '## Planner perspective',
+          assistantMessage: '## Planner perspective\n\n- this should not be emitted',
+          executionIntent: 'session.role_delegate.planner',
+          requiresConfirmation: false,
+          selectedSurface: 'ollama',
+          selectedBy: 'session.main.role_delegate.safe_fallback',
+          sessionRoutingPreferenceApplied: false,
+          invokedRoleIds: ['planner'],
+          subagentCount: 1,
+        }) satisfies SessionMainSupervisorTurnOutcome,
+    );
     const orchestrationService = new LocalOrchestrationServiceShell({
       workspaceRoot: temporaryRoot,
       sessionMainSupervisorRuntime: {
@@ -2650,49 +3097,52 @@ describe('core-orchestration-service local shell', () => {
       roleId: null,
       policyEnvelope: 'chat_only',
     };
-    const firstResolveTurn = vi.fn(async () => ({
-      responseMode: 'answer',
-      interactionMode: 'direct_answer',
-      assistantDelta: 'continued answer',
-      assistantMessage: 'continued answer',
-      executionIntent: 'session.answer',
-      requiresConfirmation: false,
-      selectedSurface: 'codex',
-      selectedBy: 'session.main.answer.primary',
-      sessionRoutingPreferenceApplied: false,
-      invokedRoleIds: [],
-      subagentCount: 0,
-      providerContinuationSummaries: [createdSummary],
-      providerContinuationMutations: [
-        {
-          laneKey,
-          summary: createdSummary,
-          slot: {
-            laneKey,
-            routeId: 'session.main',
-            stageId: 'stage-session-main-answer',
-            roleId: null,
-            selectedSurface: 'codex',
-            providerId: 'openai',
-            transportKind: 'remote_api',
-            model: 'gpt-5',
-            policyEnvelope: 'chat_only',
-            workspaceRoot: temporaryRoot,
-            currentWorkingDirectory: temporaryRoot,
-            handle: {
-              providerId: 'openai',
-              surface: 'codex',
-              transportKind: 'remote_api',
-              handleKind: 'response_id',
-              value: 'resp-1',
-              model: 'gpt-5',
-              acquiredAt: '2026-04-04T12:00:00.000Z',
+    const firstResolveTurn = vi.fn(
+      async () =>
+        ({
+          responseMode: 'answer',
+          interactionMode: 'direct_answer',
+          assistantDelta: 'continued answer',
+          assistantMessage: 'continued answer',
+          executionIntent: 'session.answer',
+          requiresConfirmation: false,
+          selectedSurface: 'codex',
+          selectedBy: 'session.main.answer.primary',
+          sessionRoutingPreferenceApplied: false,
+          invokedRoleIds: [],
+          subagentCount: 0,
+          providerContinuationSummaries: [createdSummary],
+          providerContinuationMutations: [
+            {
+              laneKey,
+              summary: createdSummary,
+              slot: {
+                laneKey,
+                routeId: 'session.main',
+                stageId: 'stage-session-main-answer',
+                roleId: null,
+                selectedSurface: 'codex',
+                providerId: 'openai',
+                transportKind: 'remote_api',
+                model: 'gpt-5',
+                policyEnvelope: 'chat_only',
+                workspaceRoot: temporaryRoot,
+                currentWorkingDirectory: temporaryRoot,
+                handle: {
+                  providerId: 'openai',
+                  surface: 'codex',
+                  transportKind: 'remote_api',
+                  handleKind: 'response_id',
+                  value: 'resp-1',
+                  model: 'gpt-5',
+                  acquiredAt: '2026-04-04T12:00:00.000Z',
+                },
+                updatedAt: '2026-04-04T12:00:00.000Z',
+              },
             },
-            updatedAt: '2026-04-04T12:00:00.000Z',
-          },
-        },
-      ],
-    }));
+          ],
+        }) satisfies SessionMainSupervisorTurnOutcome,
+    );
     const orchestrationService = new LocalOrchestrationServiceShell({
       workspaceRoot: temporaryRoot,
       sessionMainSupervisorRuntime: {
@@ -2752,7 +3202,7 @@ describe('core-orchestration-service local shell', () => {
           sessionRoutingPreferenceApplied: false,
           invokedRoleIds: [],
           subagentCount: 0,
-        };
+        } satisfies SessionMainSupervisorTurnOutcome;
       });
       const resumedService = new LocalOrchestrationServiceShell({
         workspaceRoot: temporaryRoot,
@@ -2789,25 +3239,160 @@ describe('core-orchestration-service local shell', () => {
     }
   });
 
+  it('persists delivery workflow state into session context and reloads it on resumed turns', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+    });
+
+    try {
+      const started = await orchestrationService.startSession({
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
+      await orchestrationService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: 'Help me deliver this requirement through the governed path.',
+        metadata: {
+          locale: 'en-US',
+        },
+      });
+      const session = await orchestrationService.getSession(started.session.sessionId);
+
+      expect(session?.context[SESSION_DELIVERY_WORKFLOW_CONTEXT_KEY]).toEqual(
+        expect.objectContaining({
+          capabilityId: SESSION_DELIVERY_WORKFLOW_CAPABILITY_ID.DELIVER,
+          currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.REQUIREMENT_CAPTURE,
+          pendingAction: 'capture_requirement_or_attach_approved_brief',
+        }),
+      );
+
+      const resumedResolveTurn = vi.fn(async (context) => {
+        expect(context.deliveryWorkflowState).toEqual(
+          expect.objectContaining({
+            capabilityId: SESSION_DELIVERY_WORKFLOW_CAPABILITY_ID.DELIVER,
+            currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.REQUIREMENT_CAPTURE,
+            pendingAction: 'capture_requirement_or_attach_approved_brief',
+          }),
+        );
+        return {
+          responseMode: 'answer' as const,
+          interactionMode: 'direct_answer' as const,
+          assistantDelta: 'Resumed the governed deliver workflow.',
+          assistantMessage: 'Resumed the governed deliver workflow.',
+          executionIntent: 'deliver.requirement_to_cr',
+          requiresConfirmation: false,
+          selectedSurface: 'codex',
+          selectedBy: 'session.main.router.delivery_workflow.start',
+          sessionRoutingPreferenceApplied: false,
+          referencedCapabilityIds: [SESSION_MAIN_CAPABILITY_ID.DELIVER],
+          skillId: 'skill.deliver.workflow',
+          skillVersion: '2026-04-08',
+          handoffExecutionMode: 'direct_execute' as const,
+          deliveryWorkflowState: {
+            version: SESSION_DELIVERY_WORKFLOW_VERSION,
+            workflowId:
+              context.deliveryWorkflowState?.workflowId ?? 'delivery-workflow-shell-resumed-001',
+            capabilityId: SESSION_DELIVERY_WORKFLOW_CAPABILITY_ID.DELIVER,
+            currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.SOLUTION_REVIEW_PENDING,
+            requirementReviewGate: {
+              outcome: SESSION_DELIVERY_REQUIREMENT_REVIEW_OUTCOME.EXPLICIT_APPROVAL,
+              evidenceArtifactPath: '.repo-ai-governor/context/evidence/approval.md',
+            },
+            approvedDeliveryBriefPath: '.repo-ai-governor/context/durable/approved-brief.md',
+            pendingAction: 'review_solution_artifact',
+            selectedTargetStream: 'stream-project-110-sprint-001',
+            relatedArtifactPaths: ['.repo-ai-governor/context/durable/approved-brief.md'],
+            childWorkflowBacklinks: [
+              {
+                capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW,
+                artifactPath: '.repo-ai-governor/context/review/approved-requirement.md',
+                summary: 'Requirement review receipt.',
+              },
+            ],
+            blockedReason: null,
+            resultSummary: 'Approved durable brief exported.',
+          },
+          invokedRoleIds: [],
+          subagentCount: 0,
+        } satisfies SessionMainSupervisorTurnOutcome;
+      });
+      const resumedService = new LocalOrchestrationServiceShell({
+        workspaceRoot: temporaryRoot,
+        sessionMainSupervisorRuntime: {
+          resolveTurn: resumedResolveTurn,
+        },
+      });
+      const resumed = await resumedService.resumeSession({
+        sessionId: started.session.sessionId,
+      });
+
+      expect(resumed.session.context[SESSION_DELIVERY_WORKFLOW_CONTEXT_KEY]).toEqual(
+        expect.objectContaining({
+          capabilityId: SESSION_DELIVERY_WORKFLOW_CAPABILITY_ID.DELIVER,
+          currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.REQUIREMENT_CAPTURE,
+        }),
+      );
+
+      await resumedService.sendSessionTurn({
+        sessionId: started.session.sessionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: 'Summarize the current session state for me.',
+      });
+      const resumedSession = await resumedService.getSession(started.session.sessionId);
+      const resumedSubscription = await resumedService.subscribeSession({
+        sessionId: started.session.sessionId,
+      });
+      const resumedCompletedEvent = resumedSubscription.events
+        .filter((event) => event.type === OrchestrationSessionEventType.TURN_COMPLETED)
+        .at(-1);
+
+      expect(resumedResolveTurn).toHaveBeenCalledTimes(1);
+      expect(resumedSession?.context[SESSION_DELIVERY_WORKFLOW_CONTEXT_KEY]).toEqual(
+        expect.objectContaining({
+          capabilityId: SESSION_DELIVERY_WORKFLOW_CAPABILITY_ID.DELIVER,
+          currentPhase: SESSION_DELIVERY_WORKFLOW_PHASE.SOLUTION_REVIEW_PENDING,
+          pendingAction: 'review_solution_artifact',
+          approvedDeliveryBriefPath: '.repo-ai-governor/context/durable/approved-brief.md',
+        }),
+      );
+      expect(resumedCompletedEvent?.payload).toMatchObject({
+        executionIntent: 'deliver.requirement_to_cr',
+        turn_delivery_phase: SESSION_DELIVERY_WORKFLOW_PHASE.SOLUTION_REVIEW_PENDING,
+        turn_delivery_pending_action: 'review_solution_artifact',
+        turn_delivery_selected_stream: 'stream-project-110-sprint-001',
+        turn_delivery_result_summary: 'Approved durable brief exported.',
+      });
+      expect(resumedCompletedEvent?.payload.turn_delivery_related_artifact_paths).toEqual([
+        '.repo-ai-governor/context/durable/approved-brief.md',
+      ]);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
   it('persists supervisor execution details lines on completed turns', async () => {
     const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-session-'));
-    const resolveTurn = vi.fn(async () => ({
-      responseMode: 'answer',
-      interactionMode: 'direct_answer',
-      assistantDelta: '## Session Main Answer',
-      assistantMessage: '## Session Main Answer\n\nNo eligible direct-answer surface.',
-      executionDetailsLines: [
-        'Surface probe diagnostics for this turn:',
-        'codex · not eligible · Codex probe exited with code 1.',
-      ],
-      executionIntent: 'session.answer',
-      requiresConfirmation: false,
-      selectedSurface: 'guarded-direct-answer',
-      selectedBy: 'session.main.answer.guard',
-      sessionRoutingPreferenceApplied: false,
-      invokedRoleIds: [],
-      subagentCount: 0,
-    }));
+    const resolveTurn = vi.fn(
+      async () =>
+        ({
+          responseMode: 'answer',
+          interactionMode: 'direct_answer',
+          assistantDelta: '## Session Main Answer',
+          assistantMessage: '## Session Main Answer\n\nNo eligible direct-answer surface.',
+          executionDetailsLines: [
+            'Surface probe diagnostics for this turn:',
+            'codex · not eligible · Codex probe exited with code 1.',
+          ],
+          executionIntent: 'session.answer',
+          requiresConfirmation: false,
+          selectedSurface: 'guarded-direct-answer',
+          selectedBy: 'session.main.answer.guard',
+          sessionRoutingPreferenceApplied: false,
+          invokedRoleIds: [],
+          subagentCount: 0,
+        }) satisfies SessionMainSupervisorTurnOutcome,
+    );
     const orchestrationService = new LocalOrchestrationServiceShell({
       workspaceRoot: temporaryRoot,
       sessionMainSupervisorRuntime: {
@@ -2863,49 +3448,52 @@ describe('core-orchestration-service local shell', () => {
       roleId: null,
       policyEnvelope: 'chat_only',
     };
-    const firstResolveTurn = vi.fn(async () => ({
-      responseMode: 'answer',
-      interactionMode: 'direct_answer',
-      assistantDelta: 'continued answer',
-      assistantMessage: 'continued answer',
-      executionIntent: 'session.answer',
-      requiresConfirmation: false,
-      selectedSurface: 'codex',
-      selectedBy: 'session.main.answer.primary',
-      sessionRoutingPreferenceApplied: false,
-      invokedRoleIds: [],
-      subagentCount: 0,
-      providerContinuationSummaries: [createdSummary],
-      providerContinuationMutations: [
-        {
-          laneKey,
-          summary: createdSummary,
-          slot: {
-            laneKey,
-            routeId: 'session.main',
-            stageId: 'stage-session-main-answer',
-            roleId: null,
-            selectedSurface: 'codex',
-            providerId: 'openai',
-            transportKind: 'remote_api',
-            model: 'gpt-5',
-            policyEnvelope: 'chat_only',
-            workspaceRoot: temporaryRoot,
-            currentWorkingDirectory: temporaryRoot,
-            handle: {
-              providerId: 'openai',
-              surface: 'codex',
-              transportKind: 'remote_api',
-              handleKind: 'response_id',
-              value: 'resp-1',
-              model: 'gpt-5',
-              acquiredAt: '2026-04-04T12:00:00.000Z',
+    const firstResolveTurn = vi.fn(
+      async () =>
+        ({
+          responseMode: 'answer',
+          interactionMode: 'direct_answer',
+          assistantDelta: 'continued answer',
+          assistantMessage: 'continued answer',
+          executionIntent: 'session.answer',
+          requiresConfirmation: false,
+          selectedSurface: 'codex',
+          selectedBy: 'session.main.answer.primary',
+          sessionRoutingPreferenceApplied: false,
+          invokedRoleIds: [],
+          subagentCount: 0,
+          providerContinuationSummaries: [createdSummary],
+          providerContinuationMutations: [
+            {
+              laneKey,
+              summary: createdSummary,
+              slot: {
+                laneKey,
+                routeId: 'session.main',
+                stageId: 'stage-session-main-answer',
+                roleId: null,
+                selectedSurface: 'codex',
+                providerId: 'openai',
+                transportKind: 'remote_api',
+                model: 'gpt-5',
+                policyEnvelope: 'chat_only',
+                workspaceRoot: temporaryRoot,
+                currentWorkingDirectory: temporaryRoot,
+                handle: {
+                  providerId: 'openai',
+                  surface: 'codex',
+                  transportKind: 'remote_api',
+                  handleKind: 'response_id',
+                  value: 'resp-1',
+                  model: 'gpt-5',
+                  acquiredAt: '2026-04-04T12:00:00.000Z',
+                },
+                updatedAt: '2026-04-04T12:00:00.000Z',
+              },
             },
-            updatedAt: '2026-04-04T12:00:00.000Z',
-          },
-        },
-      ],
-    }));
+          ],
+        }) satisfies SessionMainSupervisorTurnOutcome,
+    );
     const orchestrationService = new LocalOrchestrationServiceShell({
       workspaceRoot: temporaryRoot,
       sessionMainSupervisorRuntime: {
@@ -2970,7 +3558,7 @@ describe('core-orchestration-service local shell', () => {
               },
             },
           ],
-        };
+        } satisfies SessionMainSupervisorTurnOutcome;
       });
       const resumedService = new LocalOrchestrationServiceShell({
         workspaceRoot: temporaryRoot,

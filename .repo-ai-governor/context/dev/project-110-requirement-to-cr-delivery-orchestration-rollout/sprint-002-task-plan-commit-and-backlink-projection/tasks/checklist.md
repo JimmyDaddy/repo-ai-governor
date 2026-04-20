@@ -1,0 +1,34 @@
+# checklist
+
+- [x] TK-927 land task plan preview-commit bridge and durable backlink projection
+  - 2026-04-16：任务创建，状态初始化为 `planned`。
+  - 2026-04-17：sprint-001 boundary commit `51cad3ca` 已落地；当前任务切换为 `in_progress`，开始把 task decomposition preview/commit 与 deliver durable backlink summary 接到 sprint-002 的 Phase B baseline。
+  - 2026-04-17：已完成 `plan` preview/commit target stream receipt 扩展；preview/commit artifact details 现在会稳定携带 `target_stream_id`、`checklist_path`、`tasks_csv_path` 与 stream-level backlink inputs，供 delivery overlay 复用而不复制 canonical task body。
+  - 2026-04-17：已完成 session-shell nested command bridge 与 shared-session delivery runtime 接线；`plan_preview` / `plan_commit` 的 JSON 结果现在会被归一为 presenter-safe `deliveryWorkflowUpdate`，并在 `appendSessionMessage()` 中合并回 canonical `deliveryWorkflowState` 与 turn-level presenter metadata。
+  - 2026-04-17：已完成 transcript / React presenter / i18n 投影；command recap 现在会展示 delivery phase、pending action、selected stream、result summary 与 artifact backlinks，shell 只消费 summary/backlink metadata，不在 presenter 侧重算 canonical truth。
+  - 2026-04-17：已完成 `pnpm run build` 与两组定向 session-shell/runtime 单测，当前实现进入 fresh reviewer CR round 准备窗口，任务状态切换为 `completed`。
+- [x] TK-928 close sprint-002 and hand off execution-orchestration follow-up
+  - 2026-04-16：任务创建，状态初始化为 `planned`。
+  - 2026-04-17：latest fresh reviewer round `CR-005` 已 clean，无 actionable finding；当前任务激活为 `in_progress`，开始执行 sprint-002 closeout、project/sprint/current-context truth 切换与 sprint-003 activation handoff。
+  - 2026-04-17：已完成 `DA-928` closeout/handoff packet、sprint-002/project-110/current-context truth write-back 与 sprint-003 activation；当前任务切换为 `completed`，下一步在 boundary commit 后进入 `TK-929`。
+  - 2026-04-17：已完成 sprint-002 closeout、DA-928 handoff、project/sprint/current-context truth 切换；下一条执行边界固定为 sprint-003 / TK-929。
+- [x] CR-001 sprint-002-task-plan-commit-and-backlink-projection delegated review loop round 1
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：fresh reviewer `Hooke` round-1 返回 4 个 actionable finding，主 agent 复核后全部判定为 accepted。
+  - 2026-04-17：已补上 `/plan sync` preview -> commit follow-up handoff、delivery pending-action constants、details summary recount 与 backlink i18n 收口；同窗口 `pnpm run build` 与 5-file targeted vitest 已重跑通过，当前任务状态切换为 `resolved`，下一步进入新的 fresh reviewer clean recheck。
+- [x] CR-002 sprint-002-task-plan-commit-and-backlink-projection delegated recheck loop round 2
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：fresh reviewer `Rawls` 返回 2 个 actionable finding，分别指向 follow-up confirm preview 的 resume 缺口，以及 brand-new session append message 未能 bootstrap canonical delivery workflow state。
+  - 2026-04-17：已补上 `sessionMainPendingCommandPreview` 持久化恢复链路与 appended delivery metadata bootstrap；同窗口 `pnpm run build`、5-file targeted vitest bundle 与 governance gates 已通过，当前任务状态切换为 `resolved`，下一步进入新的 fresh reviewer clean recheck。
+- [x] CR-003 sprint-002-task-plan-commit-and-backlink-projection delegated recheck loop round 3
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：fresh reviewer clean recheck round 3 返回 1 个 actionable finding，指出 `CR-003` 自身尚未同步进 rendered task ledger，导致 `check-task-ledger-sync.js` 报 `missing row in tasks.csv`。
+  - 2026-04-17：已对 `CR-003` 执行 canonical/rendered ledger write-back，并复跑 task-ledger/code-review/sprint-plan/worktree gates；当前任务状态切换为 `resolved`，下一步继续发起 fresh clean recheck。
+- [x] CR-004 sprint-002-task-plan-commit-and-backlink-projection delegated recheck loop round 4
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：fresh reviewer clean recheck round 4 返回 1 个 actionable finding，指出 delivery bootstrap path 重新引入了未集中管理的 pending-action 业务字面量，违反 `CS-009` / `CS-032`。
+  - 2026-04-17：已把 delivery bootstrap pending-action vocabulary 收敛到 core-orchestration-service constants，并复跑 build、5-file vitest bundle 与 governance gates；当前任务状态切换为 `resolved`，下一步继续发起 fresh clean recheck。
+- [x] CR-005 sprint-002-task-plan-commit-and-backlink-projection delegated recheck loop round 5
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：latest fresh reviewer clean recheck round 5 返回 clean verdict，未发现新的 actionable finding；仅记录一条非阻塞 residual risk（`deliveryWorkflow` key 已存在但值不可读/为 `null` 时的 appended bootstrap 分支缺少专门回归测试）。
+  - 2026-04-17：已以 clean round 结论推进 `CR-005 -> resolved`，当前 sprint-002 满足“最新 fresh reviewer round 无 actionable finding”的 closeout 前提。

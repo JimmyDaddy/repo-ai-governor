@@ -1,0 +1,92 @@
+schemaVersion: "1.1"
+workspace:
+  mode: tool_managed
+  toolManagedRoot: /tmp/review-workspace-root-2kPLfY/managed-root
+  migrationPolicy: copy_verify_switch_rollback
+i18n:
+  runtimeEngine: i18next
+  defaultLocale: zh-CN
+  fallbackLocale: en-US
+  supportedLocales:
+    - zh-CN
+    - en-US
+memory:
+  storeEngine: sqlite_fs
+  storeRoot: context/memory
+ui:
+  react:
+    theme: governor
+adapters:
+  roles:
+    - roleId: planner
+      roleProfileId: planner-default
+      requiredCapabilities:
+        - structured_output
+      required: true
+    - roleId: architect
+      roleProfileId: architect-default
+      requiredCapabilities:
+        - structured_output
+      required: true
+    - roleId: coder
+      roleProfileId: coder-default
+      requiredCapabilities:
+        - tool_calling
+      required: true
+    - roleId: tester
+      roleProfileId: tester-default
+      requiredCapabilities:
+        - tool_calling
+      required: true
+    - roleId: reviewer
+      roleProfileId: reviewer-default
+      requiredCapabilities:
+        - structured_output
+      required: true
+    - roleId: verifier
+      roleProfileId: verifier-default
+      requiredCapabilities:
+        - structured_output
+      required: true
+  routing:
+    roleBindings:
+      planner:
+        primarySurface: codex
+        fallbackSurfaces:
+          - claude-code
+          - github-copilot
+      architect:
+        primarySurface: codex
+        fallbackSurfaces:
+          - claude-code
+          - github-copilot
+      coder:
+        primarySurface: codex
+        fallbackSurfaces:
+          - github-copilot
+          - claude-code
+      tester:
+        primarySurface: github-copilot
+        fallbackSurfaces:
+          - codex
+          - claude-code
+      reviewer:
+        primarySurface: claude-code
+        fallbackSurfaces:
+          - codex
+          - github-copilot
+      verifier:
+        primarySurface: codex
+        fallbackSurfaces:
+          - claude-code
+          - github-copilot
+  tools:
+    - toolId: codex
+      enabled: true
+      availability: available
+    - toolId: github-copilot
+      enabled: true
+      availability: available
+    - toolId: claude-code
+      enabled: true
+      availability: available

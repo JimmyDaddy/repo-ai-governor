@@ -1,0 +1,23 @@
+# checklist
+
+- [x] TK-913 review requirement-to-cr governed delivery orchestration solution to approval readiness
+  - 2026-04-16：任务创建，状态初始化为 `planned`。
+  - 2026-04-16：已激活 `project-109 / sprint-001` 为本轮 canonical review surface，开始构建 draft baseline、lifecycle entry 与 review artifact 路径。
+  - 2026-04-16：首轮 review 识别并接受三类 blocking finding：`deliver` capability interaction-model landing、`delivery brief` preview/durable truth 边界、以及 orchestration phase overlay 与既有 lifecycle truth 的映射缺口。
+  - 2026-04-16：draft 已补齐 `deliver` capability formal landing、approved durable brief 边界、direct target module 收敛，以及 overlay-to-canonical truth mapping。
+  - 2026-04-16：fresh re-review 未发现新的 actionable finding；canonical review artifact 已推进到 `approved`，并同步 lifecycle 条目到 `approved`。
+- [x] TK-914 promote approved requirement-to-cr delivery solution into formal docs and registries
+  - 2026-04-16：任务创建，状态初始化为 `planned`。
+  - 2026-04-16：完成 `runtime.orchestration` 的 `deliver` capability / phase-machine formal landing，并新增 producer ADR。
+  - 2026-04-16：完成 `runtime.durable-storage` 的 delivery workflow summary/backlink projection contract 增量，以及 `runtime.cli-interactive-shell` 的 consumer-side discoverability/pending-state contract 增量。
+  - 2026-04-16：完成 lifecycle / delivery / module registry / manifest 同步，solution 已推进到 `active`。
+- [x] TK-915 decompose requirement-to-cr delivery rollout into planned project-110 and activation handoff
+  - 2026-04-16：任务创建，状态初始化为 `planned`。
+  - 2026-04-16：已创建 `project-110` 的四个 planned sprint、八个 task card、checklist、tasks.csv 与 review scaffold。
+  - 2026-04-16：已形成 `DA-915` handoff artifact，并将 `project-110 / sprint-001` 登记到 `current-context.md` 的 planned follow-up stream。
+  - 2026-04-16：delivery registry 已指向 `project-110` 的真实 planned rollout surface。
+- [x] TK-916 finalize project-109 closeout and completion audit
+  - 2026-04-16：任务创建，状态初始化为 `planned`。
+  - 2026-04-16：已生成 `project-109` completion audit summary，并把 milestone 入口回链到 project plan。
+  - 2026-04-16：已将 current-context note 更新为 promotion complete，并登记 `project-110 / sprint-001` 为 planned follow-up stream。
+  - 2026-04-16：project-109 closeout 真值已固定，current-context 保持 project-109 为临时 primary closeout surface，project-110 仅登记为 planned follow-up。

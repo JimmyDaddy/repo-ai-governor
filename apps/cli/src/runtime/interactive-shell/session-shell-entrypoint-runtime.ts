@@ -1,14 +1,31 @@
+import {
+  SESSION_DELIVERY_WORKFLOW_PHASE,
+  SESSION_MAIN_CAPABILITY_ID,
+  type SessionMainCapabilityId,
+} from '@repo-ai-governor/core-orchestration-service';
 import { RuntimeExecutionStatus } from '@repo-ai-governor/core-runtime';
 import {
   type ErrorOutputEnvironment,
   ExecutionProgressStatus,
   GovernorErrorCode,
 } from '@repo-ai-governor/shared';
-import { CLI_COMMAND_NAMES, CLI_PROGRAM_NAME } from '../../constants/cli-command.constant.js';
+import {
+  CLI_COMMAND_NAMES,
+  CLI_PROGRAM_NAME,
+  CliCommandName,
+} from '../../constants/cli-command.constant.js';
 import { CliRuntimeOperation } from '../../constants/cli-governance-runtime.constant.js';
 import { CliInteractiveUiMode } from '../../constants/cli-interactive-shell.constant.js';
 import { CLI_OPTIONS_REQUIRING_VALUE, CliNextAction } from '../../constants/cli-output.constant.js';
+import {
+  CliPlanAction,
+  CliPlanCommitReadiness,
+  CliPlanCommitStatus,
+  CliPlanConfirmationDecision,
+} from '../../constants/cli-plan.constant.js';
 import type { CliReactThemePreset } from '../../constants/cli-react-theme.constant.js';
+import { CliReviewLifecycleStatus } from '../../constants/cli-review.constant.js';
+import { CLI_SESSION_SHELL_DELIVERY_PENDING_ACTION } from '../../constants/cli-session-shell-delivery-workflow.constant.js';
 import { CliWorkspaceAction } from '../../constants/cli-workspace.constant.js';
 import type {
   CliCommandExperiencePayload,
@@ -18,6 +35,8 @@ import type {
   CliRuntimeDebugOptions,
   CliSessionShellCommandExecutionResult,
   CliSessionShellCommandExecutor,
+  CliSessionShellCommandFollowUp,
+  CliSessionShellDeliveryWorkflowUpdate,
   CliSessionShellRunOptions,
   CliSessionShellSecureSecretMutator,
   CliSessionShellServiceClientLike,
@@ -392,10 +411,31 @@ export class CliSessionShellEntrypointRuntime {
       parsedPayload,
       artifactPaths,
     );
+    const deliveryWorkflowUpdate =
+      logicalFailure.status === 'success'
+        ? CliSessionShellEntrypointRuntime.resolveDeliveryWorkflowUpdate(
+            parsedPayload,
+            artifactPaths,
+          )
+        : undefined;
+    const followUpCommand =
+      logicalFailure.status === 'success'
+        ? CliSessionShellEntrypointRuntime.resolveFollowUpCommand(parsedPayload)
+        : undefined;
 
     return {
       artifactPaths,
       commandLine: options.commandLine,
+      ...(deliveryWorkflowUpdate
+        ? {
+            deliveryWorkflowUpdate,
+          }
+        : {}),
+      ...(followUpCommand
+        ? {
+            followUpCommand,
+          }
+        : {}),
       message: logicalFailure.failureReason ?? parsedPayload.message,
       status: logicalFailure.status,
       summaryLines: CliSessionShellEntrypointRuntime.dedupeSummaryLines([
@@ -426,6 +466,402 @@ export class CliSessionShellEntrypointRuntime {
     };
   }
 
+  private static resolveDeliveryWorkflowUpdate(
+    parsedPayload: CliSuccessOutputPayload,
+    artifactPaths: string[],
+  ): CliSessionShellDeliveryWorkflowUpdate | undefined {
+    const commandResult = parsedPayload.command_result;
+    if (!commandResult) {
+      return undefined;
+    }
+
+    switch (commandResult.operation) {
+      case CliRuntimeOperation.PLAN_PREVIEW:
+        return CliSessionShellEntrypointRuntime.resolvePlanPreviewDeliveryWorkflowUpdate(
+          parsedPayload,
+          artifactPaths,
+        );
+      case CliRuntimeOperation.PLAN_COMMIT:
+        return CliSessionShellEntrypointRuntime.resolvePlanCommitDeliveryWorkflowUpdate(
+          parsedPayload,
+          artifactPaths,
+        );
+      case CliRuntimeOperation.GOVERNANCE_RUN:
+        return CliSessionShellEntrypointRuntime.resolveGovernanceRunDeliveryWorkflowUpdate(
+          parsedPayload,
+          artifactPaths,
+        );
+      case CliRuntimeOperation.REVIEW_QUEUE:
+        return CliSessionShellEntrypointRuntime.resolveReviewQueueDeliveryWorkflowUpdate(
+          parsedPayload,
+          artifactPaths,
+        );
+      case CliRuntimeOperation.REVIEW_VERIFY:
+        return CliSessionShellEntrypointRuntime.resolveReviewVerifyDeliveryWorkflowUpdate(
+          parsedPayload,
+          artifactPaths,
+        );
+      default:
+        return undefined;
+    }
+  }
+
+  private static resolvePlanPreviewDeliveryWorkflowUpdate(
+    parsedPayload: CliSuccessOutputPayload,
+    artifactPaths: string[],
+  ): CliSessionShellDeliveryWorkflowUpdate | undefined {
+    const commandResult = parsedPayload.command_result;
+    if (!commandResult || commandResult.operation !== CliRuntimeOperation.PLAN_PREVIEW) {
+      return undefined;
+    }
+
+    const details = commandResult.details ?? {};
+    const commitReadiness =
+      typeof details.commit_readiness === 'string' ? details.commit_readiness : null;
+    return {
+      currentPhase:
+        commitReadiness === CliPlanCommitReadiness.READY
+          ? SESSION_DELIVERY_WORKFLOW_PHASE.TASK_PLAN_COMMIT_PENDING
+          : SESSION_DELIVERY_WORKFLOW_PHASE.TASK_DECOMPOSITION_PREVIEW,
+      pendingAction:
+        commitReadiness === CliPlanCommitReadiness.READY
+          ? CLI_SESSION_SHELL_DELIVERY_PENDING_ACTION.CONFIRM_TASK_PLAN_COMMIT
+          : CLI_SESSION_SHELL_DELIVERY_PENDING_ACTION.REFINE_TASK_PLAN_PREVIEW,
+      selectedTargetStream:
+        CliSessionShellEntrypointRuntime.readDetailString(details, 'target_stream_id') ?? null,
+      relatedArtifactPaths: CliSessionShellEntrypointRuntime.dedupeArtifactPaths([
+        ...artifactPaths,
+        CliSessionShellEntrypointRuntime.readDetailString(details, 'sprint_plan_path'),
+        CliSessionShellEntrypointRuntime.readDetailString(details, 'checklist_path'),
+        CliSessionShellEntrypointRuntime.readDetailString(details, 'tasks_csv_path'),
+      ]),
+      resultSummary: commandResult.summary || parsedPayload.message,
+      childWorkflowBacklinks:
+        artifactPaths[0] === undefined
+          ? []
+          : [
+              {
+                capabilityId: SESSION_MAIN_CAPABILITY_ID.PLAN,
+                artifactPath: artifactPaths[0],
+                summary: commandResult.summary || parsedPayload.message,
+              },
+            ],
+    };
+  }
+
+  private static resolvePlanCommitDeliveryWorkflowUpdate(
+    parsedPayload: CliSuccessOutputPayload,
+    artifactPaths: string[],
+  ): CliSessionShellDeliveryWorkflowUpdate | undefined {
+    const commandResult = parsedPayload.command_result;
+    if (!commandResult || commandResult.operation !== CliRuntimeOperation.PLAN_COMMIT) {
+      return undefined;
+    }
+
+    const details = commandResult.details ?? {};
+    const commitStatus = typeof details.commit_status === 'string' ? details.commit_status : null;
+    return {
+      currentPhase:
+        commitStatus === CliPlanCommitStatus.COMMITTED
+          ? SESSION_DELIVERY_WORKFLOW_PHASE.EXECUTION_ACTIVE
+          : SESSION_DELIVERY_WORKFLOW_PHASE.TASK_DECOMPOSITION_PREVIEW,
+      pendingAction:
+        commitStatus === CliPlanCommitStatus.COMMITTED
+          ? CLI_SESSION_SHELL_DELIVERY_PENDING_ACTION.START_TASK_DRIVEN_EXECUTION_FLOW
+          : CLI_SESSION_SHELL_DELIVERY_PENDING_ACTION.REFINE_TASK_PLAN_PREVIEW_OR_RECONFIRM,
+      selectedTargetStream:
+        CliSessionShellEntrypointRuntime.readDetailString(details, 'target_stream_id') ?? null,
+      relatedArtifactPaths: CliSessionShellEntrypointRuntime.dedupeArtifactPaths([
+        ...artifactPaths,
+        CliSessionShellEntrypointRuntime.readDetailString(details, 'source_preview_path'),
+        CliSessionShellEntrypointRuntime.readDetailString(details, 'sprint_plan_path'),
+        CliSessionShellEntrypointRuntime.readDetailString(details, 'checklist_path'),
+        CliSessionShellEntrypointRuntime.readDetailString(details, 'tasks_csv_path'),
+      ]),
+      resultSummary: commandResult.summary || parsedPayload.message,
+      childWorkflowBacklinks:
+        artifactPaths[0] === undefined
+          ? []
+          : [
+              {
+                capabilityId: SESSION_MAIN_CAPABILITY_ID.PLAN,
+                artifactPath: artifactPaths[0],
+                summary: commandResult.summary || parsedPayload.message,
+              },
+            ],
+    };
+  }
+
+  private static resolveGovernanceRunDeliveryWorkflowUpdate(
+    parsedPayload: CliSuccessOutputPayload,
+    _artifactPaths: string[],
+  ): CliSessionShellDeliveryWorkflowUpdate | undefined {
+    const commandResult = parsedPayload.command_result;
+    if (!commandResult || commandResult.operation !== CliRuntimeOperation.GOVERNANCE_RUN) {
+      return undefined;
+    }
+
+    const details = commandResult.details ?? {};
+    const executionReportPath = CliSessionShellEntrypointRuntime.readCommandArtifactPath(
+      commandResult,
+      'execution_report',
+    );
+    const reviewArtifactStatus = CliSessionShellEntrypointRuntime.readReviewLifecycleStatus(
+      details,
+      'inline_review_artifact_status',
+    );
+    const currentPhase =
+      reviewArtifactStatus === CliReviewLifecycleStatus.REVIEW_PENDING
+        ? SESSION_DELIVERY_WORKFLOW_PHASE.REVIEW_PENDING
+        : reviewArtifactStatus === CliReviewLifecycleStatus.VERIFIED
+          ? SESSION_DELIVERY_WORKFLOW_PHASE.REVIEW_VERIFY_PENDING
+          : reviewArtifactStatus === CliReviewLifecycleStatus.RESOLVED
+            ? SESSION_DELIVERY_WORKFLOW_PHASE.RESOLVED
+            : SESSION_DELIVERY_WORKFLOW_PHASE.EXECUTION_ACTIVE;
+    const reviewArtifactPath = CliSessionShellEntrypointRuntime.readDetailString(
+      details,
+      'inline_review_artifact_path',
+    );
+    const reviewVerifyDecision = CliSessionShellEntrypointRuntime.readDetailString(
+      details,
+      'inline_review_verify_decision',
+    );
+    const resultSummary = commandResult.summary || parsedPayload.message;
+    const reviewVerifyArtifactPath =
+      reviewArtifactStatus === CliReviewLifecycleStatus.VERIFIED ||
+      reviewArtifactStatus === CliReviewLifecycleStatus.RESOLVED
+        ? reviewArtifactPath
+        : null;
+
+    return {
+      currentPhase,
+      pendingAction:
+        currentPhase === SESSION_DELIVERY_WORKFLOW_PHASE.REVIEW_PENDING
+          ? CLI_SESSION_SHELL_DELIVERY_PENDING_ACTION.RUN_REVIEW_VERIFY
+          : currentPhase === SESSION_DELIVERY_WORKFLOW_PHASE.REVIEW_VERIFY_PENDING
+            ? CLI_SESSION_SHELL_DELIVERY_PENDING_ACTION.ADDRESS_ACCEPTED_REVIEW_FINDINGS
+            : currentPhase === SESSION_DELIVERY_WORKFLOW_PHASE.RESOLVED
+              ? CLI_SESSION_SHELL_DELIVERY_PENDING_ACTION.RUN_FRESH_CLEAN_RECHECK
+              : CLI_SESSION_SHELL_DELIVERY_PENDING_ACTION.START_GOVERNED_REVIEW_FLOW,
+      relatedArtifactPaths: CliSessionShellEntrypointRuntime.dedupeArtifactPaths([
+        executionReportPath,
+        reviewArtifactPath,
+      ]),
+      resultSummary,
+      childWorkflowBacklinks: [
+        ...CliSessionShellEntrypointRuntime.buildChildWorkflowBacklink(
+          SESSION_MAIN_CAPABILITY_ID.RUN,
+          executionReportPath,
+          resultSummary,
+        ),
+        ...CliSessionShellEntrypointRuntime.buildChildWorkflowBacklink(
+          SESSION_MAIN_CAPABILITY_ID.REVIEW,
+          reviewArtifactPath,
+          resultSummary,
+        ),
+        ...CliSessionShellEntrypointRuntime.buildChildWorkflowBacklink(
+          SESSION_MAIN_CAPABILITY_ID.REVIEW_VERIFY,
+          reviewVerifyArtifactPath,
+          reviewVerifyDecision ? resultSummary : null,
+        ),
+      ],
+    };
+  }
+
+  private static resolveReviewQueueDeliveryWorkflowUpdate(
+    parsedPayload: CliSuccessOutputPayload,
+    _artifactPaths: string[],
+  ): CliSessionShellDeliveryWorkflowUpdate | undefined {
+    const commandResult = parsedPayload.command_result;
+    if (!commandResult || commandResult.operation !== CliRuntimeOperation.REVIEW_QUEUE) {
+      return undefined;
+    }
+
+    const details = commandResult.details ?? {};
+    const reviewStatus = CliSessionShellEntrypointRuntime.readReviewLifecycleStatus(
+      details,
+      'review_status',
+    );
+    if (!reviewStatus) {
+      return undefined;
+    }
+
+    const reviewArtifactPath =
+      CliSessionShellEntrypointRuntime.readDetailString(details, 'review_artifact_path') ??
+      CliSessionShellEntrypointRuntime.readCommandArtifactPath(commandResult, 'review_artifact');
+    const reviewTaskCardPath = CliSessionShellEntrypointRuntime.readDetailString(
+      details,
+      'review_task_card_path',
+    );
+    const resultSummary = commandResult.summary || parsedPayload.message;
+
+    return {
+      currentPhase:
+        reviewStatus === CliReviewLifecycleStatus.RESOLVED
+          ? SESSION_DELIVERY_WORKFLOW_PHASE.RESOLVED
+          : SESSION_DELIVERY_WORKFLOW_PHASE.REVIEW_PENDING,
+      pendingAction:
+        reviewStatus === CliReviewLifecycleStatus.RESOLVED
+          ? null
+          : CLI_SESSION_SHELL_DELIVERY_PENDING_ACTION.RUN_REVIEW_VERIFY,
+      relatedArtifactPaths: CliSessionShellEntrypointRuntime.dedupeArtifactPaths([
+        reviewArtifactPath,
+        reviewTaskCardPath,
+      ]),
+      resultSummary,
+      childWorkflowBacklinks: CliSessionShellEntrypointRuntime.buildChildWorkflowBacklink(
+        SESSION_MAIN_CAPABILITY_ID.REVIEW,
+        reviewArtifactPath,
+        resultSummary,
+      ),
+    };
+  }
+
+  private static resolveReviewVerifyDeliveryWorkflowUpdate(
+    parsedPayload: CliSuccessOutputPayload,
+    _artifactPaths: string[],
+  ): CliSessionShellDeliveryWorkflowUpdate | undefined {
+    const commandResult = parsedPayload.command_result;
+    if (!commandResult || commandResult.operation !== CliRuntimeOperation.REVIEW_VERIFY) {
+      return undefined;
+    }
+
+    const details = commandResult.details ?? {};
+    const reviewStatus = CliSessionShellEntrypointRuntime.readReviewLifecycleStatus(
+      details,
+      'review_status',
+    );
+    if (!reviewStatus) {
+      return undefined;
+    }
+
+    const reviewArtifactPath =
+      CliSessionShellEntrypointRuntime.readDetailString(details, 'review_artifact_path') ??
+      CliSessionShellEntrypointRuntime.readCommandArtifactPath(commandResult, 'review_artifact');
+    const reviewTaskCardPath = CliSessionShellEntrypointRuntime.readDetailString(
+      details,
+      'review_task_card_path',
+    );
+    const overallDecision = CliSessionShellEntrypointRuntime.readDetailString(
+      details,
+      'overall_decision',
+    );
+    const resultSummary = commandResult.summary || parsedPayload.message;
+
+    return {
+      currentPhase:
+        reviewStatus === CliReviewLifecycleStatus.VERIFIED
+          ? SESSION_DELIVERY_WORKFLOW_PHASE.REVIEW_VERIFY_PENDING
+          : SESSION_DELIVERY_WORKFLOW_PHASE.RESOLVED,
+      pendingAction:
+        reviewStatus === CliReviewLifecycleStatus.VERIFIED
+          ? CLI_SESSION_SHELL_DELIVERY_PENDING_ACTION.ADDRESS_ACCEPTED_REVIEW_FINDINGS
+          : CLI_SESSION_SHELL_DELIVERY_PENDING_ACTION.RUN_FRESH_CLEAN_RECHECK,
+      relatedArtifactPaths: CliSessionShellEntrypointRuntime.dedupeArtifactPaths([
+        reviewArtifactPath,
+        reviewTaskCardPath,
+      ]),
+      resultSummary,
+      childWorkflowBacklinks: [
+        ...CliSessionShellEntrypointRuntime.buildChildWorkflowBacklink(
+          SESSION_MAIN_CAPABILITY_ID.REVIEW,
+          reviewArtifactPath,
+          resultSummary,
+        ),
+        ...CliSessionShellEntrypointRuntime.buildChildWorkflowBacklink(
+          SESSION_MAIN_CAPABILITY_ID.REVIEW_VERIFY,
+          reviewArtifactPath,
+          overallDecision ? resultSummary : null,
+        ),
+      ],
+    };
+  }
+
+  private static resolveFollowUpCommand(
+    parsedPayload: CliSuccessOutputPayload,
+  ): CliSessionShellCommandFollowUp | undefined {
+    const commandResult = parsedPayload.command_result;
+    if (!commandResult || commandResult.operation !== CliRuntimeOperation.PLAN_PREVIEW) {
+      return undefined;
+    }
+
+    const details = commandResult.details ?? {};
+    const commitReadiness =
+      typeof details.commit_readiness === 'string' ? details.commit_readiness : null;
+    const previewPath = CliSessionShellEntrypointRuntime.readDetailString(details, 'preview_path');
+    if (commitReadiness !== CliPlanCommitReadiness.READY || !previewPath) {
+      return undefined;
+    }
+
+    const argv = [
+      CliCommandName.PLAN,
+      CliPlanAction.COMMIT,
+      previewPath,
+      '--confirm-plan',
+      CliPlanConfirmationDecision.APPROVE,
+    ];
+    return {
+      argv,
+      previewCommandLine: argv.join(' '),
+      slashQuery: '/plan sync',
+    };
+  }
+
+  private static readDetailString(
+    details: NonNullable<NonNullable<CliSuccessOutputPayload['command_result']>['details']>,
+    fieldName: string,
+  ): string | undefined {
+    const value = details[fieldName];
+    return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
+  }
+
+  private static dedupeArtifactPaths(paths: Array<string | null | undefined>): string[] {
+    return [...new Set(paths.filter((path): path is string => typeof path === 'string'))];
+  }
+
+  private static readCommandArtifactPath(
+    commandResult: NonNullable<CliSuccessOutputPayload['command_result']>,
+    artifactId: string,
+  ): string | null {
+    const artifactPath =
+      commandResult.artifacts?.find((artifact) => artifact.id === artifactId)?.path ?? null;
+    return typeof artifactPath === 'string' && artifactPath.trim().length > 0
+      ? artifactPath.trim()
+      : null;
+  }
+
+  private static readReviewLifecycleStatus(
+    details: NonNullable<NonNullable<CliSuccessOutputPayload['command_result']>['details']>,
+    fieldName: string,
+  ): CliReviewLifecycleStatus | null {
+    const statusValue = CliSessionShellEntrypointRuntime.readDetailString(details, fieldName);
+    if (!statusValue) {
+      return null;
+    }
+
+    return Object.values(CliReviewLifecycleStatus).includes(statusValue as CliReviewLifecycleStatus)
+      ? (statusValue as CliReviewLifecycleStatus)
+      : null;
+  }
+
+  private static buildChildWorkflowBacklink(
+    capabilityId: SessionMainCapabilityId,
+    artifactPath: string | null | undefined,
+    summary: string | null,
+  ): CliSessionShellDeliveryWorkflowUpdate['childWorkflowBacklinks'] {
+    if (!artifactPath) {
+      return [];
+    }
+
+    return [
+      {
+        capabilityId,
+        artifactPath,
+        summary,
+      },
+    ];
+  }
+
   private static resolvePrimarySummaryLine(
     parsedPayload: CliSuccessOutputPayload,
     artifactPaths: string[],
@@ -436,7 +872,7 @@ export class CliSessionShellEntrypointRuntime {
       return null;
     }
 
-    return CliSessionShellEntrypointRuntime.replaceArtifactPathsWithShortForms(
+    return CliSessionShellEntrypointRuntime.replaceArtifactPathsWithDisplayForms(
       summaryCandidate,
       artifactPaths,
     );
@@ -579,7 +1015,7 @@ export class CliSessionShellEntrypointRuntime {
     const compactSegments = experienceLines
       .slice(0, 2)
       .map((line) =>
-        CliSessionShellEntrypointRuntime.replaceArtifactPathsWithShortForms(line, artifactPaths),
+        CliSessionShellEntrypointRuntime.replaceArtifactPathsWithDisplayForms(line, artifactPaths),
       )
       .filter((line) => line.length > 0);
     if (compactSegments.length === 0) {
@@ -618,7 +1054,7 @@ export class CliSessionShellEntrypointRuntime {
         parsedPayload.command_result?.experience,
         artifactPaths,
       ) ??
-      CliSessionShellEntrypointRuntime.replaceArtifactPathsWithShortForms(
+      CliSessionShellEntrypointRuntime.replaceArtifactPathsWithDisplayForms(
         `runtime_status=${runtimeStatus}`,
         artifactPaths,
       );
@@ -642,7 +1078,7 @@ export class CliSessionShellEntrypointRuntime {
       (entry) => entry.status === ExecutionProgressStatus.FAILED,
     );
     if (failedProgressEntry) {
-      return CliSessionShellEntrypointRuntime.replaceArtifactPathsWithShortForms(
+      return CliSessionShellEntrypointRuntime.replaceArtifactPathsWithDisplayForms(
         [failedProgressEntry.summary, failedProgressEntry.detail]
           .filter((segment): segment is string => typeof segment === 'string' && segment.length > 0)
           .join(' · '),
@@ -654,7 +1090,7 @@ export class CliSessionShellEntrypointRuntime {
       line.startsWith('failed_reason='),
     );
     return failureDetail
-      ? CliSessionShellEntrypointRuntime.replaceArtifactPathsWithShortForms(
+      ? CliSessionShellEntrypointRuntime.replaceArtifactPathsWithDisplayForms(
           failureDetail,
           artifactPaths,
         )
@@ -698,23 +1134,15 @@ export class CliSessionShellEntrypointRuntime {
     return dedupedLines;
   }
 
-  private static replaceArtifactPathsWithShortForms(text: string, artifactPaths: string[]): string {
+  private static replaceArtifactPathsWithDisplayForms(
+    text: string,
+    artifactPaths: string[],
+  ): string {
     let nextText = text;
     for (const artifactPath of artifactPaths) {
-      nextText = nextText
-        .split(artifactPath)
-        .join(CliSessionShellEntrypointRuntime.shortenArtifactPath(artifactPath));
+      nextText = nextText.split(artifactPath).join(artifactPath);
     }
     return nextText;
-  }
-
-  private static shortenArtifactPath(artifactPath: string): string {
-    const segments = artifactPath.split(/[\\/]/u).filter((segment) => segment.length > 0);
-    if (segments.length <= 4) {
-      return artifactPath;
-    }
-
-    return `.../${segments.slice(-4).join('/')}`;
   }
 
   private static truncateLine(line: string, maxLength: number): string {

@@ -1,0 +1,31 @@
+# checklist
+
+- [x] TK-950 freeze phase-f secure authoring boundary
+  - 2026-04-17：任务创建，状态初始化为 `planned`。
+  - 2026-04-17：随着 sprint-002 在 `CR-003` clean round 后完成 closeout，当前任务已切换为 `in_progress`，开始从 clean baseline 冻结 secure authoring、user settings、secret readiness 与 trust-sensitive interaction boundary。
+  - 2026-04-17：已将 Phase F boundary 冻结为“VS Code 只通过 embedded CLI `config|secret status/list/set` JSON contract 投影和写入 secure authoring truth；`user-config.yaml` 与 secret backend 仍保持 CLI/runtime canonical ownership，不在扩展内复制第二份 config/secret state”。
+  - 2026-04-17：`repoAiGovernor.openUserConfig`、`repoAiGovernor.configureUserDefault` 与 `repoAiGovernor.setManagedSecret` 已纳入 trust-gated command surface；同窗口 `pnpm run build` 与 5 个 VS Code extension 定向 vitest 已通过，当前任务切换为 `completed`。
+- [x] TK-951 implement secure authoring seams and redaction baseline
+  - 2026-04-17：任务创建，状态初始化为 `planned`。
+  - 2026-04-17：当前任务切换为 `in_progress`，开始把 secure authoring readiness、redaction baseline 与 managed secret mutation 全部收口到 embedded CLI seam，而不是在 VS Code 扩展内重写 config/secret 规则。
+  - 2026-04-17：`VsCodeExtensionServiceRuntime` 已补齐 secure authoring snapshot cache、`config/secret status/list` 解析、`setUserConfigValue()`、`setManagedSecret()` 与 degraded snapshot fallback；managed secret 写入固定使用 `stdin`，不把 raw secret 放到 argv、preview 或 UI message 中。
+  - 2026-04-17：`apps/vscode-extension/test/vscode-extension-service-runtime.test.ts` 已补齐 embedded CLI contract/caching 覆盖，`pnpm run build` 与 5 个 VS Code extension 定向 vitest 已通过，当前任务切换为 `completed`。
+- [x] TK-952 land user settings and secret readiness ux
+  - 2026-04-17：任务创建，状态初始化为 `planned`。
+  - 2026-04-17：当前任务切换为 `in_progress`，开始把 user settings、secret readiness 与 trust-sensitive UX 从 scaffold 补成 editor-native quick pick / password prompt 行为。
+  - 2026-04-17：`VsCodeExtensionCommandController` 已补齐 `openUserConfig / configureUserDefault / setManagedSecret` 三个 trust-gated command；workbench overview / workflow studio 现可投影 user-local defaults、selector readiness 与 backend availability，并允许从 secure-authoring 节点直接触发配置或 secret rotation。
+  - 2026-04-17：`apps/vscode-extension/package.json`、`package.nls*.json` 与 host/contract/presentation tests 已同步新增命令贡献、激活事件、本地化标题与 embedded CLI 依赖，`pnpm run build` 与 5 个 VS Code extension 定向 vitest 已通过，当前任务切换为 `completed`。
+- [x] TK-953 prepare sprint-003 exit acceptance and phase-g handoff
+  - 2026-04-17：任务创建，状态初始化为 `planned`。
+  - 2026-04-17：当前任务切换为 `in_progress`，开始整理 Phase F exit evidence，并把 secure authoring / user settings / secret readiness 的 activation-ready truth 写回 sprint surface。
+  - 2026-04-17：当前 sprint-003 exit acceptance 已固定为“embedded CLI dependency 被纳入 VS Code extension manifest；secure authoring diagnostics 可投影到 workbench overview / workflow studio；user-local defaults 与 managed secrets 通过 trust-gated editor-native UX 写入 canonical seam，raw secret 不会进入 argv 或 UI 回显”。
+  - 2026-04-17：Phase G handoff 已固定为“从当前 secure authoring baseline 继续实现 workflow authoring、run-control 与 continuity UX，同时保持 Phase E degraded fallback contract 不回退，也不在 sprint-004 提前混入 Phase H distribution/readme promotion 事项”；同窗口 `pnpm run build` 与 5 个 VS Code extension 定向 vitest 已通过，当前任务切换为 `completed`。
+  - 2026-04-17：`CR-002` 已在同窗口完成 accepted finding 修复与复验，当前 sprint-003 已完成 closeout，`current-context.md`、project plan 与 sprint plan 已切到 sprint-004 / `TK-954` activation truth。
+- [x] CR-001 verify phase-f secure authoring baseline
+  - 2026-04-17：任务创建，状态初始化为 `planned`。
+  - 2026-04-17：decomposition scaffold 预种下的 `CR-001` 未被作为首个 fresh reviewer round 实际消费；当前 worktree 在 bootstrap 时自动分配了 `CR-002` 作为真实 delegated review surface。
+  - 2026-04-17：为避免保留一个悬挂的非终态 scaffold CR 阻塞 sprint closeout，当前任务切换为 `resolved`，并将实际 findings / verification / repair lifecycle 全部收口到 `CR-002` 与 `resolved_code_review_working-tree-20260417-2126.md`。
+- [x] CR-002 sprint-003-phase-f-secure-authoring-and-user-settings delegated review loop round 2
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：fresh reviewer round 识别出 2 个 actionable finding：warning-bearing unsafe backend metadata 未被 VS Code surface 保留，且 degraded secure-authoring snapshot 在 transient failure 后会被缓存到不可自愈。
+  - 2026-04-17：主 agent 已认可上述 2 个 finding，并补齐 warning-bearing backend projection、secret write explicit confirm 与 degraded snapshot auto-retry 语义；同窗口 `pnpm run build` 与 5 个 VS Code extension 定向 vitest 已重跑通过，当前任务切换为 `resolved`。

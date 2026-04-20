@@ -1,0 +1,37 @@
+# checklist
+
+- [x] TK-942 freeze phase-d onboarding contract
+  - 2026-04-17：任务创建，状态初始化为 `planned`。
+  - 2026-04-17：随着 `project-113 / sprint-001-phase-d-onboarding-cutover` 被激活为 primary stream，当前任务切换为 `in_progress`，开始冻结 Phase D activation contract 与 chat capability probe 边界。
+  - 2026-04-17：已将 Phase D contract 收敛为“chat participant 按运行时能力可选注册，`repoAiGovernor.refresh`、tree views、review detail 与 workflow studio provider 仍必须完成 host activation wiring”；当前 contract freeze 已落实到 `apps/vscode-extension/src/runtime/vscode-extension-host.ts`。
+  - 2026-04-17：已完成 `pnpm run build` 与 VS Code extension 的 3 个定向 vitest，确认 Phase D activation contract freeze 与 host-level fallback regression 同窗口通过；当前任务切换为 `completed`。
+- [x] TK-943 implement onboarding aggregation facade and diagnostics seams
+  - 2026-04-17：任务创建，状态初始化为 `planned`。
+  - 2026-04-17：当前任务切换为 `in_progress`，开始把 chat-dependent activation 流程拆成 capability probe 与 optional participant seam，避免 chat API 缺失时整条 host wiring 失败。
+  - 2026-04-17：`VsCodeExtensionHost` 已补齐 `createOptionalChatParticipant()` 与 `hasChatParticipantSupport()`，chat participant runtime 仅在 `vscode.chat.createChatParticipant` 可用时注册；core command/controller/provider wiring 保持原位注册，不再与 chat capability 强耦合。
+  - 2026-04-17：已完成 `pnpm run build` 与 VS Code extension 的 3 个定向 vitest，确认 optional participant seam 与现有 service runtime / controller-provider contract 同窗口通过；当前任务切换为 `completed`。
+- [x] TK-944 land onboarding wizard and readiness workbench surfaces
+  - 2026-04-17：任务创建，状态初始化为 `planned`。
+  - 2026-04-17：当前任务切换为 `in_progress`，开始验证 chat API 缺失时 VS Code primary workbench 的基础 surface 仍能完成 activation，并保持 command / tree view / webview provider 注册。
+  - 2026-04-17：已新增 `apps/vscode-extension/test/vscode-extension-host.activation.test.ts`，覆盖 `vscode.chat` 不可用时的 host activation regression，确认 `repoAiGovernor.refresh`、review detail 打开命令、tree view 与 webview view provider 仍完成注册。
+  - 2026-04-17：已完成 `pnpm run build` 与 VS Code extension 的 3 个定向 vitest，确认 workbench surface regression 已被锁进测试窗口；当前任务切换为 `completed`。
+- [x] TK-945 prepare sprint-001 exit acceptance and phase-e handoff
+  - 2026-04-17：任务创建，状态初始化为 `planned`。
+  - 2026-04-17：当前任务切换为 `in_progress`，开始整理 sprint-001 exit evidence，并为后续 Phase E degraded restore / empty DTO fallback 边界准备 activation-ready handoff。
+  - 2026-04-17：已确认当前 sprint-001 只交付 Phase D activation fallback；`phase-e.patch`、`phase-h.patch` 与 out-of-scope governance delta 均继续停放在 `.tmp/project-113-boundary-parking/` 与 path-scoped stash，不参与本 sprint 的 CR 与 boundary commit。
+  - 2026-04-17：已完成 `pnpm run build` 与 VS Code extension 的 3 个定向 vitest，当前 exit evidence 足以进入 `CR-001` fresh reviewer round；下一 sprint 将从 clean baseline 重放 `phase-e.patch`，收敛 review detail / workflow studio / queue query 的 degraded fallback 行为。
+  - 2026-04-17：当前任务切换为 `completed`，后续只待 `CR-001` clean round 放行，再继续 sprint-001 closeout 与 sprint-002 activation write-back。
+  - 2026-04-17：`CR-001 ~ CR-003` 已全部进入 `resolved`，其中 latest fresh reviewer round `CR-003` 返回 clean verdict；当前 sprint-001 已完成 closeout，`current-context.md` 与 project/sprint plan 已切到 sprint-002 / `TK-946` activation truth。
+- [x] CR-001 verify phase-d onboarding cutover
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：fresh reviewer round-1 指出 chat-capable activation path 仍缺少正向回归覆盖；该问题按 risk-based inference 判定为 **accepted**，当前 task 已进入 `verified` 结论窗口。
+  - 2026-04-17：已补齐 `vscode.chat.createChatParticipant` 可用时的正向 activation regression，验证 participant 创建、`iconPath` 赋值与 `context.subscriptions` 注册链；同窗口 `pnpm run build`、3 个 VS Code extension 定向 vitest、task-required-inputs/task-ledger/sprint-plan/code-review status gates 已重跑通过，当前 task/report 满足 `resolved` 条件。
+  - 2026-04-17：`CR-001` 已收口 round-1 accepted finding；下一步若 fresh reviewer clean recheck 仍返回 actionable finding，则按计划新建 `CR-002`，不重开本轮。
+- [x] CR-002 sprint-001-phase-d-onboarding-cutover delegated recheck loop round 2
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：fresh reviewer round-2 指出 project/sprint plan 仍把 `CR-001` 记作当前 blocking round，未同步 `CR-001 resolved + CR-002 review_pending` 的真实状态；该问题判定为 **accepted**，当前 task 已进入 `verified` 结论窗口。
+  - 2026-04-17：已更新 project/sprint plan 的 sprint-001 task package、WBS 与 milestone notes，使 `CR-001` 标记为 `resolved`，并把 `CR-002` 写成当前 `review_pending` recheck round；同窗口 `pnpm run build`、3 个 VS Code extension 定向 vitest、task-required-inputs/task-ledger/sprint-plan/code-review status gates 已重跑通过，当前 task/report 满足 `resolved` 条件。
+  - 2026-04-17：`CR-002` 已收口 round-2 accepted finding；下一步继续发起 fresh clean recheck，只有当最新 reviewer 无 actionable finding 时 sprint-001 才进入 closeout。
+- [x] CR-003 sprint-001-phase-d-onboarding-cutover delegated recheck loop round 3
+  - 2026-04-17：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-17：latest fresh reviewer clean recheck 返回无 actionable finding；当前 round 直接满足 `resolved` 条件，可作为 sprint-001 closeout 的评审放行证据。

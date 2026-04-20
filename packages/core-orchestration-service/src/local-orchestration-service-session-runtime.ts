@@ -57,10 +57,12 @@ import {
   type StandardizedError,
   standardizeError,
 } from '@repo-ai-governor/shared';
+import { LocalOrchestrationServiceSessionDeliveryWorkflowRuntime } from './local-orchestration-service-session-delivery-workflow-runtime.js';
 import { LocalOrchestrationServiceSessionMainAgentDispatcher } from './local-orchestration-service-session-main-agent-dispatcher.js';
 import { ProviderContinuationSessionRuntime } from './provider-continuation-session-runtime.js';
 import type {
   LocalOrchestrationServicePublishEventRequest,
+  SessionDeliveryWorkflowSessionState,
   SessionMainSupervisorRuntimeContract,
   SessionMainSupervisorStreamEvent,
 } from './types/index.js';
@@ -106,6 +108,8 @@ export class LocalOrchestrationServiceSessionRuntime {
   private readonly nowProvider: () => Date;
   private readonly memoryProviderRegistry: MemoryProviderRegistry;
   private readonly mainAgentDispatcher: LocalOrchestrationServiceSessionMainAgentDispatcher;
+  private readonly deliveryWorkflowSessionRuntime =
+    new LocalOrchestrationServiceSessionDeliveryWorkflowRuntime();
   private readonly providerContinuationSessionRuntime = new ProviderContinuationSessionRuntime();
   private memoryProviderStatePromise: Promise<LocalOrchestrationServiceSessionMemoryProviderState> | null =
     null;
@@ -289,6 +293,9 @@ export class LocalOrchestrationServiceSessionRuntime {
         providerContinuationState: this.providerContinuationSessionRuntime.readSessionState(
           existingSession.context,
         ),
+        deliveryWorkflowState: this.deliveryWorkflowSessionRuntime.readSessionState(
+          existingSession.context,
+        ),
         publishStreamEvent: async (streamEvent) => {
           emittedStreamDeltaCount += 1;
           await appendSessionEvent({
@@ -332,6 +339,14 @@ export class LocalOrchestrationServiceSessionRuntime {
           this.providerContinuationSessionRuntime.createContextPatch(
             currentContext,
             dispatchResult.providerContinuationMutations,
+          ),
+        );
+      }
+      if (Object.hasOwn(dispatchResult, 'deliveryWorkflowState')) {
+        await updateSessionContextWithLatest((currentContext) =>
+          this.deliveryWorkflowSessionRuntime.createContextPatch(
+            currentContext,
+            dispatchResult.deliveryWorkflowState ?? null,
           ),
         );
       }
@@ -451,6 +466,7 @@ export class LocalOrchestrationServiceSessionRuntime {
                 ),
               }
             : {}),
+          ...this.createDeliveryWorkflowTurnPayload(dispatchResult.deliveryWorkflowState ?? null),
         },
       });
       sessionProjectionContextPatch[SESSION_CONTEXT_PREVIEW_SUMMARY_KEY] =
@@ -532,7 +548,7 @@ export class LocalOrchestrationServiceSessionRuntime {
     request: OrchestrationAppendSessionMessageRequest,
   ): Promise<OrchestrationAppendSessionMessageResponse> {
     const sessionManager = await this.resolveSharedSessionManager();
-    await sessionManager.getSession(request.sessionId);
+    const currentSession = await sessionManager.getSession(request.sessionId);
     const createdAt = this.toTimestamp();
     const normalizedLines = request.lines
       .map((line) => line.trimEnd())
@@ -550,6 +566,21 @@ export class LocalOrchestrationServiceSessionRuntime {
     const role = this.assertSupportedTranscriptRole(request.role);
     const routeId = request.routeId ?? OrchestrationSessionRouteId.MAIN;
     this.assertSupportedRouteId(routeId);
+    const deliveryWorkflowMetadataUpdate =
+      this.deliveryWorkflowSessionRuntime.resolveMessageMetadataUpdate(
+        currentSession.context,
+        request.metadata,
+        request.sessionId,
+      );
+    const eventMetadata =
+      request.metadata || deliveryWorkflowMetadataUpdate
+        ? {
+            ...(request.metadata ? { ...request.metadata } : {}),
+            ...(deliveryWorkflowMetadataUpdate
+              ? { ...deliveryWorkflowMetadataUpdate.presenterMetadata }
+              : {}),
+          }
+        : undefined;
     await sessionManager.appendEvent({
       sessionId: request.sessionId,
       type: OrchestrationSessionEventType.SESSION_MESSAGE_APPENDED,
@@ -558,12 +589,14 @@ export class LocalOrchestrationServiceSessionRuntime {
         role,
         routeId,
         lines: normalizedLines,
-        ...(request.metadata ? { metadata: { ...request.metadata } } : {}),
+        ...(eventMetadata ? { metadata: eventMetadata } : {}),
       },
     });
     const noteContextPatch = this.buildAppendedMessageContextPatch(
+      currentSession.context,
       normalizedLines,
-      request.metadata,
+      eventMetadata,
+      deliveryWorkflowMetadataUpdate?.nextState ?? null,
     );
     if (Object.keys(noteContextPatch).length > 0) {
       await sessionManager.updateContext({
@@ -1104,6 +1137,29 @@ export class LocalOrchestrationServiceSessionRuntime {
     };
   }
 
+  /**
+   * Projects presenter-safe delivery workflow summary fields into TURN_COMPLETED payloads.
+   *
+   * Why this exists:
+   * session shell must consume orchestration-owned delivery phase truth from shared-session
+   * metadata instead of inferring it from assistant prose or local presenter heuristics.
+   */
+  private createDeliveryWorkflowTurnPayload(
+    deliveryWorkflowState: SessionDeliveryWorkflowSessionState | null,
+  ): Record<string, unknown> {
+    if (!deliveryWorkflowState) {
+      return {};
+    }
+
+    return {
+      turn_delivery_phase: deliveryWorkflowState.currentPhase,
+      turn_delivery_pending_action: deliveryWorkflowState.pendingAction,
+      turn_delivery_related_artifact_paths: [...deliveryWorkflowState.relatedArtifactPaths],
+      turn_delivery_selected_stream: deliveryWorkflowState.selectedTargetStream,
+      turn_delivery_result_summary: deliveryWorkflowState.resultSummary,
+    };
+  }
+
   private async publishExecutionLivenessEvent(options: {
     executionId: string | null;
     routeId: string;
@@ -1369,30 +1425,40 @@ export class LocalOrchestrationServiceSessionRuntime {
   }
 
   private buildAppendedMessageContextPatch(
+    currentContext: Record<string, unknown>,
     lines: string[],
     metadata?: Record<string, unknown>,
+    deliveryWorkflowState?: SessionDeliveryWorkflowSessionState | null,
   ): Record<string, unknown> {
-    if (!metadata || typeof metadata !== 'object') {
-      return {};
+    const noteContextPatch: Record<string, unknown> = {};
+    if (metadata && typeof metadata === 'object') {
+      const renderKind = this.readOptionalMetadataString(metadata, 'renderKind');
+      const commandLine = this.readOptionalMetadataString(metadata, 'commandLine');
+      if (commandLine || renderKind === 'collaboration_recap') {
+        const previewSummary = lines[0] ? this.toSingleLineSummary(lines[0]) : undefined;
+        const latestNoteSummary = commandLine
+          ? `last_command=${this.toSingleLineSummary(commandLine)}`
+          : previewSummary;
+        if (previewSummary) {
+          noteContextPatch[SESSION_CONTEXT_PREVIEW_SUMMARY_KEY] = previewSummary;
+        }
+        if (latestNoteSummary) {
+          noteContextPatch[SESSION_CONTEXT_LATEST_NOTE_SUMMARY_KEY] = latestNoteSummary;
+        }
+      }
     }
 
-    const renderKind = this.readOptionalMetadataString(metadata, 'renderKind');
-    const commandLine = this.readOptionalMetadataString(metadata, 'commandLine');
-    if (!commandLine && renderKind !== 'collaboration_recap') {
-      return {};
+    const deliveryContextPatch = deliveryWorkflowState
+      ? this.deliveryWorkflowSessionRuntime.createContextPatch(
+          currentContext,
+          deliveryWorkflowState,
+        )
+      : null;
+    if (deliveryContextPatch) {
+      Object.assign(noteContextPatch, deliveryContextPatch);
     }
 
-    const previewSummary = lines[0] ? this.toSingleLineSummary(lines[0]) : undefined;
-    const latestNoteSummary = commandLine
-      ? `last_command=${this.toSingleLineSummary(commandLine)}`
-      : previewSummary;
-
-    return {
-      ...(previewSummary ? { [SESSION_CONTEXT_PREVIEW_SUMMARY_KEY]: previewSummary } : {}),
-      ...(latestNoteSummary
-        ? { [SESSION_CONTEXT_LATEST_NOTE_SUMMARY_KEY]: latestNoteSummary }
-        : {}),
-    };
+    return noteContextPatch;
   }
 
   private buildSessionPreviewSummary(options: {
