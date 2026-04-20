@@ -1,6 +1,6 @@
 {
   "schemaVersion": "host-export-manifest-v1",
-  "generatedAt": "2026-04-15T05:27:17.103Z",
+  "generatedAt": "2026-04-20T12:23:05.813Z",
   "host": "claude-code",
   "mode": "plugin-bundle",
   "target": "claude_code.plugin",
@@ -68,7 +68,7 @@
   "verificationSummary": {
     "schemaVersion": "host-verification-summary-v1",
     "status": "pass",
-    "verifiedAt": "2026-04-15T05:27:17.103Z",
+    "verifiedAt": "2026-04-20T12:23:05.813Z",
     "verificationSummaryPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/claude-code/packaged-distribution/tgz/generated/hosts/claude-code-plugin/host-verification.summary.json",
     "exportManifestPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/claude-code/packaged-distribution/tgz/generated/hosts/claude-code-plugin/host-export.manifest.json",
     "checks": [

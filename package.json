@@ -145,6 +145,8 @@
     "release:verify-github-com-agent-reserved-target": "node ./scripts/release/verify-github-com-agent-reserved-target.mjs",
     "release:verify-cleanroom-local-install": "node ./scripts/release/verify-cleanroom-local-install.js",
     "release:verify-cleanroom-local-install:plugin-enabled": "node ./scripts/release/verify-cleanroom-local-install.js --distribution-mode plugin-enabled",
+    "release:verify-cleanroom-local-install:acp-execution": "node ./scripts/release/verify-cleanroom-local-install.js --modes path,link,tgz --iterations 1 --acp-host-verify --acp-execution-verify --emit-acp-evidence .repo-ai-governor/generated/acp/acp-cleanroom-verification.summary.json --output .tmp/release-acp-cleanroom-validation-report.json",
+    "release:verify-cleanroom-local-install:acp-execution:tgz": "node ./scripts/release/verify-cleanroom-local-install.js --modes tgz --iterations 1 --acp-host-verify --acp-execution-verify --emit-acp-evidence .repo-ai-governor/generated/acp/acp-cleanroom-verification.summary.json --output .tmp/release-acp-cleanroom-tgz-validation-report.json",
     "release:verify-cleanroom-local-install:tgz": "node ./scripts/release/verify-cleanroom-local-install.js --modes tgz --iterations 1 --output .tmp/release-cleanroom-tgz-validation-report.json",
     "release:verify-cleanroom-local-install:plugin-enabled:tgz": "node ./scripts/release/verify-cleanroom-local-install.js --distribution-mode plugin-enabled --modes tgz --iterations 1 --output .tmp/release-cleanroom-plugin-enabled-tgz-validation-report.json",
     "debug:cleanroom-session-shell": "node ./scripts/dev/debug-cleanroom-session-shell.js",

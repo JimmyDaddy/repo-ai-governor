@@ -1,6 +1,6 @@
 {
   "schemaVersion": "host-pack-report-v1",
-  "packedAt": "2026-04-15T05:27:00.162Z",
+  "packedAt": "2026-04-20T12:22:44.525Z",
   "host": "codex",
   "mode": "plugin-bundle",
   "target": "codex.plugin",
@@ -51,7 +51,7 @@
   "verificationSummary": {
     "schemaVersion": "host-verification-summary-v1",
     "status": "pass",
-    "verifiedAt": "2026-04-15T05:27:00.162Z",
+    "verifiedAt": "2026-04-20T12:22:44.525Z",
     "verificationSummaryPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/codex/packaged-distribution/link/generated/hosts/codex-plugin/host-pack.report.json",
     "exportManifestPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/codex/packaged-distribution/link/generated/hosts/codex-plugin/host-export.manifest.json",
     "checks": [

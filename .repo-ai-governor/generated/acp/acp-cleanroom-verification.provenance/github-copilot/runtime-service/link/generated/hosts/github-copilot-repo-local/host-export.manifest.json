@@ -1,6 +1,6 @@
 {
   "schemaVersion": "host-export-manifest-v1",
-  "generatedAt": "2026-04-15T05:27:03.155Z",
+  "generatedAt": "2026-04-20T12:22:47.598Z",
   "host": "github-copilot",
   "mode": "project-local",
   "target": "github_copilot.repo_local",
@@ -76,7 +76,7 @@
   "verificationSummary": {
     "schemaVersion": "host-verification-summary-v1",
     "status": "pass",
-    "verifiedAt": "2026-04-15T05:27:03.155Z",
+    "verifiedAt": "2026-04-20T12:22:47.598Z",
     "verificationSummaryPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/runtime-service/link/generated/hosts/github-copilot-repo-local/host-verification.summary.json",
     "exportManifestPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/runtime-service/link/generated/hosts/github-copilot-repo-local/host-export.manifest.json",
     "checks": [

@@ -1,9 +1,26 @@
 # checklist
 
-- [ ] TK-998 build source-checkout acp execution clean-room slice
+- [x] TK-998 build source-checkout acp execution clean-room slice
   - 2026-04-20：任务创建，状态初始化为 `planned`。
   - 2026-04-20：`CR-001` 确认 sprint-003 reviewer-clean 后，本任务切换为 `in_progress`，作为 sprint-004-clean-room-execution-and-packaged-evidence 的首个 active execution surface。
-- [ ] TK-999 land packaged distribution and runtime-service execution evidence
+  - 2026-04-20：在 `scripts/release/verify-cleanroom-local-install.js` 中新增 `--acp-execution-verify` clean-room 分支，通过安装包内 `dist/**` runtime 动态导入，真实覆盖 routed `invokeStage`、`streamEvents` tool bridge replay、permission bridge 与 cancel cleanup。
+  - 2026-04-20：source-checkout smoke 与 formal clean-room execution 已通过；`path/link/tgz` 三种安装模式都返回 `status=passed`，且 cancellation failure code 保持 `PROCESS_RUNTIME_CANCELLED`，terminal/create 与 `fs/read_text_file` bridge replay 顺序稳定。
+- [x] TK-999 land packaged distribution and runtime-service execution evidence
   - 2026-04-20：任务创建，状态初始化为 `planned`。
-- [ ] TK-1000 prepare sprint-004 closeout and support-truth readiness recommendation
+  - 2026-04-20：`TK-998` 完成 source-checkout clean-room slice 后，本任务切换为 `in_progress`，开始把 runtime-service / packaged-distribution 证据并入统一 ACP clean-room report 与 summary surface。
+  - 2026-04-20：formal clean-room run 已刷新 `.repo-ai-governor/generated/acp/acp-cleanroom-verification.summary.json`，三种安装模式下的 `claude-code`、`codex` 与 `github-copilot` runtime-service / packaged-distribution receipts 全部回写为 `pass`。
+  - 2026-04-20：execution 证据保留在 `.tmp/project-115-sprint-004-acp-cleanroom-report.json` 的 `acpExecutionScenarios`，support-facing clean-room summary 则继续作为 conservative receipt index 供 runtime readiness 消费。
+- [x] TK-1000 prepare sprint-004 closeout and support-truth readiness recommendation
   - 2026-04-20：任务创建，状态初始化为 `planned`。
+  - 2026-04-20：`TK-999` 完成 distribution/runtime-service receipt write-back 后，本任务切换为 `in_progress`，开始整理 sprint-004 closeout handoff 与 support truth boundary。
+  - 2026-04-20：已形成 `DA-1000`，确认当前窗口可保守宣称 clean-room execution evidence 已具备，但 external ACP consumer rehearsal 仍保持 optional/non-blocking，support wording uplift 必须延后到 sprint-005 复核。
+  - 2026-04-20：当前实现不新增单独的 execution-summary runtime consumer；`CliAcpHostEvidenceRuntime` 继续消费 refreshed clean-room summary 作为 readiness receipt，而更细粒度的 execution semantics 保留在 report-level artifact，避免提前扩张 public/support claim。
+- [x] CR-001 sprint-004-clean-room-execution-and-packaged-evidence delegated review loop round 1
+  - 2026-04-20：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-20：fresh delegated reviewer `Locke` 返回 1 条 actionable finding：ACP execution harness 的 installed-module loader 缺少 `dynamic-import-allowed` 标记，违反 `CS-008`；其余 execution-summary persistence 与 stage9aHardExit iteration 仅记录为 residual risk。
+  - 2026-04-20：主 agent 接受该 finding，补齐 dynamic-import exception 注释后重跑 clean-room verify、targeted vitest、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`，当前轮次推进为 `resolved`，sprint-004 已满足进入 closeout task 的 review 条件。
+- [x] TK-1021 close sprint-004 boundary and activate sprint-005 execution surface
+  - 2026-04-20：任务创建，状态初始化为 `in_progress`。
+  - 2026-04-20：`CR-001` 已 resolved，当前任务作为 sprint-004 的 closeout surface 被立即创建，用于完成 boundary gate、local commit 与 sprint-005 activation write-back。
+  - 2026-04-20：`pnpm run check` 已在当前 closeout 窗口通过，`current-context.md`、completed stream history、project plan、sprint-004 / sprint-005 plans 已统一切换到 sprint-004 completed / sprint-005 active truth。
+  - 2026-04-20：`TK-1001` 已在同窗口切换为 `in_progress`，作为 sprint-005 的首个 active execution boundary；当前任务切换为 `completed`，下一步仅保留 sprint-004 boundary local commit 作为交付动作。

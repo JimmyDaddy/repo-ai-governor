@@ -3,20 +3,20 @@
 ## Primary Stream
 
 - Status: active
-- Stream: `stream-project-115-sprint-004`
+- Stream: `stream-project-115-sprint-005`
 - Project: `project-115-acp-execution-bridge-rollout`
-- Sprint: `sprint-004-clean-room-execution-and-packaged-evidence`
+- Sprint: `sprint-005-external-interoperability-and-rollout-closeout`
 - Docs: `.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout`
-- Plan: `.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-004-clean-room-execution-and-packaged-evidence/plan.md`
-- Tasks: `.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-004-clean-room-execution-and-packaged-evidence/tasks/`
-- Checklist: `.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-004-clean-room-execution-and-packaged-evidence/tasks/checklist.md`
-- CSV: `.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-004-clean-room-execution-and-packaged-evidence/tasks/tasks.csv`
-- Review: `.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-004-clean-room-execution-and-packaged-evidence/review/`
-- Note: `2026-04-20`：`project-115 / sprint-003-permission-terminal-filesystem-bridge-hardening` 已在 `CR-001` reviewer-clean 后完成 closeout 并移入 completed history；当前继续在同一共享分支上激活 `sprint-004-clean-room-execution-and-packaged-evidence`。`project-116-vscode-direct-provider-onboarding-rollout` 仍保持 planned follow-up，待 project-115 完成 closeout 后再切换。
+- Plan: `.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-005-external-interoperability-and-rollout-closeout/plan.md`
+- Tasks: `.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-005-external-interoperability-and-rollout-closeout/tasks/`
+- Checklist: `.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-005-external-interoperability-and-rollout-closeout/tasks/checklist.md`
+- CSV: `.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-005-external-interoperability-and-rollout-closeout/tasks/tasks.csv`
+- Review: `.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-005-external-interoperability-and-rollout-closeout/review/`
+- Note: `2026-04-20`：`project-115 / sprint-004-clean-room-execution-and-packaged-evidence` 已在 `CR-001` resolved、`TK-1021` closeout gate 通过后完成 closeout 并移入 completed history；当前继续在同一共享分支上激活 `sprint-005-external-interoperability-and-rollout-closeout`。`project-116-vscode-direct-provider-onboarding-rollout` 仍保持 planned follow-up，待 project-115 完成 closeout 后再切换。
 
 ## Active Streams
 
-- `stream-project-115-sprint-004`: project=`project-115-acp-execution-bridge-rollout`, sprint=`sprint-004-clean-room-execution-and-packaged-evidence`, docs=`.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout`, plan=`.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-004-clean-room-execution-and-packaged-evidence/plan.md`, tasks=`.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-004-clean-room-execution-and-packaged-evidence/tasks/`, checklist=`.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-004-clean-room-execution-and-packaged-evidence/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-004-clean-room-execution-and-packaged-evidence/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-004-clean-room-execution-and-packaged-evidence/review/`, status=`active`, role=`primary`
+- `stream-project-115-sprint-005`: project=`project-115-acp-execution-bridge-rollout`, sprint=`sprint-005-external-interoperability-and-rollout-closeout`, docs=`.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout`, plan=`.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-005-external-interoperability-and-rollout-closeout/plan.md`, tasks=`.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-005-external-interoperability-and-rollout-closeout/tasks/`, checklist=`.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-005-external-interoperability-and-rollout-closeout/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-005-external-interoperability-and-rollout-closeout/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-005-external-interoperability-and-rollout-closeout/review/`, status=`active`, role=`primary`
 
 ## Planned Follow-Up Streams
 

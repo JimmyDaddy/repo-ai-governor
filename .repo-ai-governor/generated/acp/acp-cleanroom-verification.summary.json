@@ -1,8 +1,8 @@
 {
   "schemaVersion": "acp-cleanroom-verification-summary-v1",
   "overallStatus": "passed",
-  "verifiedAt": "2026-04-15T05:27:57.144Z",
-  "sourceReportPath": ".tmp/project-105-sprint-003-acp-cleanroom-report.json",
+  "verifiedAt": "2026-04-20T12:23:56.827Z",
+  "sourceReportPath": ".tmp/project-115-sprint-004-acp-cleanroom-report.json",
   "distributionMode": "default",
   "surfaces": [
     {

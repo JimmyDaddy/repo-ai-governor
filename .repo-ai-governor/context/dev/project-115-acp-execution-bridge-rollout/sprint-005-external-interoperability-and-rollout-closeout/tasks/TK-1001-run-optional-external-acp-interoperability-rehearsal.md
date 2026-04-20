@@ -1,6 +1,6 @@
 # TK-1001 run optional external acp interoperability rehearsal
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-04-20
 - Owner: AI-Agent
 - Priority: P1
@@ -52,6 +52,7 @@
 ## 9. 执行记录
 
 1. 2026-04-20：任务创建，状态初始化为 `planned`。
+2. 2026-04-20：`TK-1021` 完成 sprint-004 closeout gate 与 activation write-back 后，本任务切换为 `in_progress`，作为 sprint-005-external-interoperability-and-rollout-closeout 的首个 active execution boundary。
 
 ## 10. 产出
 

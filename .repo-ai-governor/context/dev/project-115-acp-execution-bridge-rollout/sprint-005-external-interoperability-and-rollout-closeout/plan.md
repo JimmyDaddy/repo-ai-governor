@@ -1,6 +1,6 @@
 # sprint-005-external-interoperability-and-rollout-closeout 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-20
 - Sprint Goal: 完成外部 ACP interoperability rehearsal、support 边界复核与 rollout closeout
 - Project: `project-115-acp-execution-bridge-rollout`
@@ -17,7 +17,7 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-1001 | run optional external acp interoperability rehearsal | sprint-004-clean-room-execution-and-packaged-evidence planned handoff | planned |
+| TK-1001 | run optional external acp interoperability rehearsal | sprint-004-clean-room-execution-and-packaged-evidence planned handoff | in_progress |
 | TK-1002 | review support wording uplift and rollout claim boundary | TK-1001 | planned |
 | TK-1003 | close rollout project and publish completion audit | TK-1002 | planned |
 
@@ -32,3 +32,4 @@
 1. bootstrap 阶段不预生成 code_review 生命周期文件。
 2. 若用户只要求拆解，不自动修改 current-context.md。
 3. 该 sprint 默认保持 planned，等待 sprint-004-clean-room-execution-and-packaged-evidence handoff 或用户显式激活。
+4. `2026-04-20`：`TK-1021` 完成 sprint-004 closeout gate 与 activation write-back 后，本 sprint 被切换为新的 primary execution surface，`TK-1001` 成为当前 in-progress boundary。
