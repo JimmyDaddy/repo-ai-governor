@@ -6,6 +6,7 @@
   - 2026-04-21：已对成立的 review feedback 实施最小修复：`cli-user-config-projection-service` 与 `agent-onboarding-runtime` 改为按 `!== undefined` 保留 `credentialEnvVar/credentialRef`；`connect-phase2.integration.test` 同步隔离 `USERPROFILE` 与可推导的 `HOMEDRIVE/HOMEPATH`；`runtime-governance-clients/module-overview.md` 修正 `vendorBinding` typo。
   - 2026-04-21：为 session-main deferred relay 增加 `selectedSurface/selectedBy` metadata fallback，并补充回归测试覆盖“ACP primary fallback token 未显式携带 surface 元数据”场景。
   - 2026-04-21：当前任务切换为 `completed`，交由 `TK-1034` 承接本地验证、提交与推送。
+  - 2026-04-21：补齐 terminal ledger row 的 result/verify/review_delta 字段，消除 quality-gate 中的 task-ledger-sync placeholder drift。
 - [ ] TK-1034 verify pr-23 remediation locally and push updated branch
   - 2026-04-21：任务创建，状态初始化为 `planned`。
   - 2026-04-21：当前任务切换为 `in_progress`，开始执行本地验证并准备提交/推送当前 PR remediation。
