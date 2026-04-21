@@ -80,6 +80,17 @@ interface VsCodeExtensionResolvedChatRequest {
   promptText?: string;
 }
 
+interface VsCodeExtensionChatCommandExecutionHooks {
+  onDidStart?: (event: VsCodeExtensionChatCommandStartEvent) => void;
+}
+
+interface VsCodeExtensionChatCommandStartEvent {
+  commandName: string;
+  promptText?: string;
+  inferredFromPrompt: boolean;
+  allowPendingRunningSummary: boolean;
+}
+
 interface VsCodeExtensionChatPromptIntentRule {
   commandName: string;
   promptRoutingMode: VsCodeExtensionChatPromptRoutingMode;
@@ -107,6 +118,14 @@ const VSCODE_EXTENSION_CHAT_POLITE_PREFIXES = [
   '帮我',
   '麻烦',
   '请',
+] as const;
+
+// literal-allowed: these regexes intentionally stay local to the chat controller because they
+// recognize participant-only imperative phrasing that should reuse the governed `/doctor` path
+// without widening the frozen slash-command contribution surface.
+const VSCODE_EXTENSION_CHAT_WORKSPACE_DOCTOR_PATTERNS = [
+  /^(?:diagnose|check)\s+(?:the\s+)?current\s+(?:workspace|project|repo)(?:[.?!])?$/iu,
+  /^(?:诊断|检查|体检)(?:一下)?(?:当前|这个)?(?:项目|仓库|工作区)(?:的)?(?:环境|状态|健康状况)?(?:[吧呀啊呢吗])?(?:[.。!！?？])?$/u,
 ] as const;
 
 const VSCODE_EXTENSION_CHAT_PROMPT_INTENT_RULES: readonly VsCodeExtensionChatPromptIntentRule[] = [
@@ -335,16 +354,32 @@ export class VsCodeExtensionCommandController {
   public async executeChatRequest(
     commandName: string | undefined,
     promptText?: string,
+    hooks?: VsCodeExtensionChatCommandExecutionHooks,
   ): Promise<VsCodeExtensionChatCommandExecutionResult | undefined> {
-    const resolvedChatRequest =
-      commandName === undefined
-        ? this.resolveChatPromptIntentRequest(promptText)
-        : {
-            commandName,
-            promptText,
-          };
+    const inferredFromPrompt = commandName === undefined;
+    const resolvedChatRequest = inferredFromPrompt
+      ? this.resolveChatPromptIntentRequest(promptText)
+      : {
+          commandName,
+          promptText,
+        };
     if (!resolvedChatRequest) {
       return undefined;
+    }
+
+    if (
+      resolvedChatRequest.commandName !== VSCODE_EXTENSION_CHAT_COMMAND_IDS.STATUS &&
+      resolvedChatRequest.commandName !== VSCODE_EXTENSION_CHAT_COMMAND_IDS.REVIEW
+    ) {
+      hooks?.onDidStart?.({
+        commandName: resolvedChatRequest.commandName,
+        promptText: resolvedChatRequest.promptText,
+        inferredFromPrompt,
+        allowPendingRunningSummary: this.shouldAllowPendingRunningSummary(
+          resolvedChatRequest.commandName,
+          resolvedChatRequest.promptText,
+        ),
+      });
     }
 
     return this.executeChatCommand(resolvedChatRequest.commandName, resolvedChatRequest.promptText);
@@ -3077,6 +3112,22 @@ export class VsCodeExtensionCommandController {
     };
   }
 
+  private shouldAllowPendingRunningSummary(commandName: string, promptText?: string): boolean {
+    const trimmedPrompt = promptText?.trim();
+    switch (commandName) {
+      case VSCODE_EXTENSION_CHAT_COMMAND_IDS.WORKSPACE_BOOTSTRAP:
+      case VSCODE_EXTENSION_CHAT_COMMAND_IDS.DOCTOR:
+      case VSCODE_EXTENSION_CHAT_COMMAND_IDS.CHECK:
+        return true;
+      case VSCODE_EXTENSION_CHAT_COMMAND_IDS.WORKFLOW_PREVIEW:
+      case VSCODE_EXTENSION_CHAT_COMMAND_IDS.WORKFLOW_CREATE:
+      case VSCODE_EXTENSION_CHAT_COMMAND_IDS.WORKFLOW_EDIT:
+        return typeof trimmedPrompt === 'string' && trimmedPrompt.length > 0;
+      default:
+        return false;
+    }
+  }
+
   private isChatCommandTrustBlocked(commandName: string): boolean {
     if (vscode.workspace.isTrusted) {
       return false;
@@ -3117,6 +3168,12 @@ export class VsCodeExtensionCommandController {
     }
 
     const normalizedPrompt = strippedPrompt.toLowerCase();
+    const workspaceDoctorRequest =
+      this.resolveImplicitWorkspaceDoctorPromptIntent(normalizedPrompt);
+    if (workspaceDoctorRequest) {
+      return workspaceDoctorRequest;
+    }
+
     for (const rule of VSCODE_EXTENSION_CHAT_PROMPT_INTENT_RULES) {
       const matchedPhrase =
         rule.exactPhrases?.find((phrase) => normalizedPrompt === phrase) ??
@@ -3146,6 +3203,32 @@ export class VsCodeExtensionCommandController {
             commandName: rule.commandName,
           };
       }
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Resolves tightly-scoped natural-language workspace health-check prompts to `/doctor`.
+   *
+   * Why this exists:
+   * users often phrase the request as “帮我诊断一下当前项目” instead of typing `/doctor`, and we
+   * want that wording to execute the governed doctor operation directly without accidentally
+   * hijacking broader repo-analysis conversations such as “检查一下当前项目结构”.
+   * @param normalizedPrompt Lowercased, de-prefixed prompt text.
+   * @returns The governed doctor command when the prompt is clearly a workspace diagnosis request.
+   */
+  private resolveImplicitWorkspaceDoctorPromptIntent(
+    normalizedPrompt: string,
+  ): VsCodeExtensionResolvedChatRequest | undefined {
+    if (
+      VSCODE_EXTENSION_CHAT_WORKSPACE_DOCTOR_PATTERNS.some((pattern) =>
+        pattern.test(normalizedPrompt),
+      )
+    ) {
+      return {
+        commandName: VSCODE_EXTENSION_CHAT_COMMAND_IDS.DOCTOR,
+      };
     }
 
     return undefined;

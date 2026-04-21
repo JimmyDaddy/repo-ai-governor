@@ -12,7 +12,7 @@
 - Checklist: `none`
 - CSV: `none`
 - Review: `none`
-- Note: `2026-04-21` project-116 final closeout 已完成，`CR-002` clean 收口后工作区已恢复到 idle，等待下一条执行流激活。
+- Note: `2026-04-21` project-119 scoped closeout 已完成；`CR-001` clean 收口后工作区已恢复到 idle。`check-standardized-error-usage.js`、`pnpm run build` 与 `pnpm run check` 当前均已通过。
 
 ## Active Streams
 

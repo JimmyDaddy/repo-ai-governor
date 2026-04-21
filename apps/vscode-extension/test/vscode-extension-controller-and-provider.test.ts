@@ -2826,6 +2826,69 @@ describe('VsCode extension controller/provider integration', () => {
     });
   });
 
+  it('infers doctor from one natural-language workspace diagnosis prompt and executes it directly', async () => {
+    vscodeMock.state.trusted = true;
+
+    const serviceRuntime = {
+      runWorkspaceOperation: vi.fn().mockResolvedValue({
+        message: 'Doctor completed.',
+        result: {},
+      }),
+    };
+    const controller = new VsCodeExtensionCommandController(
+      serviceRuntime as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    const result = await controller.executeChatRequest(undefined, '帮我诊断一下当前项目');
+
+    expect(serviceRuntime.runWorkspaceOperation).toHaveBeenCalledWith('doctor', undefined);
+    expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith('Doctor completed.');
+    expect(result).toMatchObject({
+      commandName: 'doctor',
+      status: 'completed',
+    });
+  });
+
+  it('keeps general project inspection prompts in chat instead of coercing them into doctor', async () => {
+    vscodeMock.state.trusted = true;
+
+    const serviceRuntime = {
+      runWorkspaceOperation: vi.fn(),
+    };
+    const controller = new VsCodeExtensionCommandController(
+      serviceRuntime as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    const result = await controller.executeChatRequest(undefined, '帮我检查一下当前项目结构');
+
+    expect(serviceRuntime.runWorkspaceOperation).not.toHaveBeenCalled();
+    expect(result).toBeUndefined();
+  });
+
   it('extracts one workflow template suffix from an imperative prompt before executing workflow preview', async () => {
     vscodeMock.state.trusted = true;
 

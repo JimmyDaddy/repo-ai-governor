@@ -187,6 +187,7 @@ export interface LocalOrchestrationServiceSidecarClientDependencies {
   sidecarEntryPath?: string;
   requestTimeoutMs?: number;
   workspaceOperationRequestTimeoutMs?: number;
+  sessionTurnRequestTimeoutMs?: number;
   repositoryRoot?: string;
   memoryConfig?: MemoryRuntimeConfig;
   env?: NodeJS.ProcessEnv;

@@ -93,7 +93,10 @@ vi.mock('vscode', () => ({
 
 vi.mock('@repo-ai-governor/core-orchestration-service/sidecar-client', () => ({
   LocalOrchestrationServiceSidecarClient: class LocalOrchestrationServiceSidecarClient {
-    public constructor(workspaceRoot: string, dependencies?: { repositoryRoot?: string }) {
+    public constructor(
+      workspaceRoot: string,
+      dependencies?: { repositoryRoot?: string; env?: NodeJS.ProcessEnv },
+    ) {
       serviceClientMock.construct(workspaceRoot, dependencies);
     }
 
@@ -901,9 +904,12 @@ describe('VsCodeExtensionServiceRuntime', () => {
 
     expect(serviceClientMock.construct).toHaveBeenCalledWith(
       '/Users/test/.repo-ai-governor/workspaces/abcd1234/.repo-ai-governor',
-      {
+      expect.objectContaining({
         repositoryRoot: '/repo',
-      },
+        env: expect.objectContaining({
+          REPO_AI_GOVERNOR_LOCAL_ORCHESTRATION_LOCALE: 'en-US',
+        }),
+      }),
     );
   });
 
@@ -2287,12 +2293,26 @@ describe('VsCodeExtensionServiceRuntime', () => {
       );
       await runtime.queryQueueOverview();
 
-      expect(serviceClientMock.construct).toHaveBeenNthCalledWith(1, defaultWorkspaceRoot, {
-        repositoryRoot,
-      });
-      expect(serviceClientMock.construct).toHaveBeenNthCalledWith(2, nextWorkspaceRoot, {
-        repositoryRoot,
-      });
+      expect(serviceClientMock.construct).toHaveBeenNthCalledWith(
+        1,
+        defaultWorkspaceRoot,
+        expect.objectContaining({
+          repositoryRoot,
+          env: expect.objectContaining({
+            REPO_AI_GOVERNOR_LOCAL_ORCHESTRATION_LOCALE: 'en-US',
+          }),
+        }),
+      );
+      expect(serviceClientMock.construct).toHaveBeenNthCalledWith(
+        2,
+        nextWorkspaceRoot,
+        expect.objectContaining({
+          repositoryRoot,
+          env: expect.objectContaining({
+            REPO_AI_GOVERNOR_LOCAL_ORCHESTRATION_LOCALE: 'en-US',
+          }),
+        }),
+      );
     } finally {
       await runtime.dispose();
       rmSync(scratchRoot, { recursive: true, force: true });
@@ -2346,9 +2366,15 @@ describe('VsCodeExtensionServiceRuntime', () => {
     try {
       await runtime.queryQueueOverview();
 
-      expect(serviceClientMock.construct).toHaveBeenCalledWith(customWorkspaceRoot, {
-        repositoryRoot,
-      });
+      expect(serviceClientMock.construct).toHaveBeenCalledWith(
+        customWorkspaceRoot,
+        expect.objectContaining({
+          repositoryRoot,
+          env: expect.objectContaining({
+            REPO_AI_GOVERNOR_LOCAL_ORCHESTRATION_LOCALE: 'en-US',
+          }),
+        }),
+      );
     } finally {
       await runtime.dispose();
       rmSync(scratchRoot, { recursive: true, force: true });
@@ -2404,9 +2430,15 @@ describe('VsCodeExtensionServiceRuntime', () => {
     try {
       await runtime.queryQueueOverview();
 
-      expect(serviceClientMock.construct).toHaveBeenCalledWith(expectedWorkspaceRoot, {
-        repositoryRoot,
-      });
+      expect(serviceClientMock.construct).toHaveBeenCalledWith(
+        expectedWorkspaceRoot,
+        expect.objectContaining({
+          repositoryRoot,
+          env: expect.objectContaining({
+            REPO_AI_GOVERNOR_LOCAL_ORCHESTRATION_LOCALE: 'en-US',
+          }),
+        }),
+      );
     } finally {
       await runtime.dispose();
       rmSync(scratchRoot, { recursive: true, force: true });

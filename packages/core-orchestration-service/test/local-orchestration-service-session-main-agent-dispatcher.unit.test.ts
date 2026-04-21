@@ -155,6 +155,37 @@ describe('LocalOrchestrationServiceSessionMainAgentDispatcher', () => {
     expect(result.assistantMessage).toContain('/review');
   });
 
+  it('keeps Chinese capability-detail prompts on chat answer instead of command handoff', async () => {
+    const resolveTurn = vi.fn();
+    const dispatcher = new LocalOrchestrationServiceSessionMainAgentDispatcher({
+      resolveTurn,
+      resolveMentionedRoleId: () => null,
+    });
+
+    const result = await dispatcher.dispatch({
+      sessionId: 'session-capability-zh-001',
+      routeId: 'session.main',
+      turnId: 'turn-capability-zh-001',
+      turnIndex: 5,
+      userMessage: 'connect 是什么？',
+      selectedSurface: AdapterSurface.CODEX,
+      selectedBy: 'session.main.default',
+      sessionRoutingPreferenceApplied: false,
+    });
+
+    expect(resolveTurn).not.toHaveBeenCalled();
+    expect(result).toEqual(
+      expect.objectContaining({
+        responseMode: 'answer',
+        interactionMode: 'direct_answer',
+        capabilityAnswerKind: 'detail',
+        executionIntent: 'session.capability_explainer',
+        referencedCapabilityIds: [SESSION_MAIN_CAPABILITY_ID.CONNECT],
+      }),
+    );
+    expect(result.assistantMessage).toContain('/connect');
+  });
+
   it('keeps capability explanation output aligned with the active locale instead of the prompt script', async () => {
     const resolveTurn = vi.fn();
     const dispatcher = new LocalOrchestrationServiceSessionMainAgentDispatcher({

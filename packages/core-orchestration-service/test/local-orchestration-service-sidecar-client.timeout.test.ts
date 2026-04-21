@@ -2,7 +2,10 @@ import { EventEmitter } from 'node:events';
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { OrchestrationWorkspaceOperationKind } from '@repo-ai-governor/orchestration-service-client';
+import {
+  OrchestrationSessionRouteId,
+  OrchestrationWorkspaceOperationKind,
+} from '@repo-ai-governor/orchestration-service-client';
 import { GovernorErrorCode } from '@repo-ai-governor/shared';
 import { LocalOrchestrationServiceSidecarClient } from '../src/local-orchestration-service-sidecar-client.js';
 
@@ -67,5 +70,38 @@ describe('LocalOrchestrationServiceSidecarClient timeout policy', () => {
 
     await vi.advanceTimersByTimeAsync(40);
     await workspaceOperationRejection;
+  });
+
+  it('uses the session-turn timeout budget instead of the generic 10s request timeout', async () => {
+    vi.useFakeTimers();
+
+    const childProcess = new FakeChildProcess();
+    const client = new LocalOrchestrationServiceSidecarClient('/repo/.repo-ai-governor', {
+      sidecarEntryPath: '/tmp/local-orchestration-sidecar-entry.js',
+      requestTimeoutMs: 10,
+      sessionTurnRequestTimeoutMs: 50,
+      childProcessFactory: () => childProcess as never,
+    });
+
+    let sessionTurnSettled = false;
+    const sessionTurnPromise = client
+      .sendSessionTurn({
+        sessionId: 'session-main',
+        routeId: OrchestrationSessionRouteId.MAIN,
+        userMessage: 'hello',
+      })
+      .finally(() => {
+        sessionTurnSettled = true;
+      });
+    const sessionTurnRejection = expect(sessionTurnPromise).rejects.toMatchObject({
+      code: GovernorErrorCode.PROCESS_RUNTIME_FLOW_TIMEOUT,
+    });
+
+    await vi.advanceTimersByTimeAsync(11);
+    await Promise.resolve();
+    expect(sessionTurnSettled).toBe(false);
+
+    await vi.advanceTimersByTimeAsync(40);
+    await sessionTurnRejection;
   });
 });

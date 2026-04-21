@@ -40,10 +40,15 @@ const SESSION_MAIN_DETAIL_PATTERNS = [
   /how should (?:i|we) use/iu,
   /explain/iu,
   /how does/iu,
-  /介绍一下/u,
+  /介绍(?:一下|下)?/u,
   /说说/u,
   /讲讲/u,
-  /解释一下/u,
+  /聊聊/u,
+  /解释(?:一下|下)?/u,
+  /是什么/u,
+  /做什么(?:的)?/u,
+  /什么意思/u,
+  /有(?:什么|啥)作用/u,
 ] as const;
 
 const SESSION_MAIN_EXAMPLE_PATTERNS = [
@@ -59,6 +64,10 @@ const SESSION_MAIN_EXAMPLE_PATTERNS = [
   /例子/u,
   /怎么用/u,
   /如何使用/u,
+  /怎么操作/u,
+  /如何操作/u,
+  /使用方法/u,
+  /步骤/u,
 ] as const;
 
 const SESSION_MAIN_COMPARISON_PATTERNS = [

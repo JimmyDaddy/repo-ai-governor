@@ -138,16 +138,17 @@ node ./dist/bin/repo-ai-governor.js --help >/dev/null
 
 ## Pending Integration Memo
 
-1. Prepared scripts for future gate integration:
+1. Existing but not-fully-hardened checker script:
+   - `scripts/governance/check-package-dependency-boundary.js`（warning 模式已接入，blocking 待切换）
+2. Deferred checker implementations (rule defined, script not created yet):
    - `scripts/governance/check-monorepo-naming.js`
-2. Planned script for follow-up integration:
    - `scripts/governance/check-monorepo-versioning-policy.js`
    - `scripts/governance/check-god-object-boundary.js`
-3. Planned command wiring (not active yet):
+3. Planned command wiring after the deferred scripts land (not active yet):
    - `node ./scripts/governance/check-monorepo-naming.js`
    - `node ./scripts/governance/check-monorepo-versioning-policy.js`
    - `node ./scripts/governance/check-god-object-boundary.js`
-4. Current status: `check-package-dependency-boundary` 以 warning 模式接入；`normative-loading-manifest`、`technical-solution-module-graph`、`technical-solution-lifecycle-registry` 与 `technical-solution-delivery-registry` 已切换默认 blocking；其余脚本维持 implementation-ready，待专门窗口激活。
+4. Current status: `check-package-dependency-boundary` 以 warning 模式接入；`normative-loading-manifest`、`technical-solution-module-graph`、`technical-solution-lifecycle-registry` 与 `technical-solution-delivery-registry` 已切换默认 blocking；monorepo naming / versioning policy / god-object boundary 规则仍有效，但对应 checker script 尚未实现，因此当前不应视为 implementation-ready gate assets。
 
 ## Notes
 

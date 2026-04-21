@@ -10,6 +10,7 @@ import {
   WorkspaceConfigDiscoveryService,
   WorkspaceResolver,
 } from '@repo-ai-governor/config';
+import { LOCAL_ORCHESTRATION_SERVICE_SIDECAR_LOCALE_ENV } from '@repo-ai-governor/core-orchestration-service';
 import { LocalOrchestrationServiceSidecarClient } from '@repo-ai-governor/core-orchestration-service/sidecar-client';
 import type {
   OrchestrationApplyProviderOnboardingResponse,
@@ -1500,6 +1501,10 @@ export class VsCodeExtensionServiceRuntime {
     this.clientPromise = Promise.resolve(
       new LocalOrchestrationServiceSidecarClient(serviceWorkspaceContext.governanceWorkspaceRoot, {
         repositoryRoot: serviceWorkspaceContext.repositoryRoot,
+        env: {
+          ...process.env,
+          [LOCAL_ORCHESTRATION_SERVICE_SIDECAR_LOCALE_ENV]: this.resolveEmbeddedCliLocale(),
+        },
       }),
     );
     return this.clientPromise;

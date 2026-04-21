@@ -59,6 +59,50 @@ const SESSION_MAIN_DOCTOR_PATTERNS = [
   /(?:帮我|请)?(?:诊断|检查|体检|排查)(?:一下)?(?:当前|这个)?(?:项目|仓库|workspace|repo)(?:环境|状态|接入|配置)?/iu,
   /(?:diagnose|health check|inspect|troubleshoot|check)\s+(?:the\s+)?(?:current\s+)?(?:project|repo|repository|workspace)(?:\s+(?:health|environment|setup|adapters?))?/iu,
 ];
+const SESSION_MAIN_CAPABILITY_DISCUSSION_PATTERNS = [
+  /\btell me about\b/iu,
+  /\bwhat is\b/iu,
+  /\bwhat does\b/iu,
+  /\bwhat can\b.*\bdo\b/iu,
+  /\btell me what\b.*\bdoes\b/iu,
+  /\bwhen should (?:i|we) use\b/iu,
+  /\bwhy should (?:i|we) use\b/iu,
+  /\bhow should (?:i|we) use\b/iu,
+  /\bhow do (?:i|we)\b/iu,
+  /\bshow me how\b/iu,
+  /\bwhat steps\b/iu,
+  /\bwalk me through\b/iu,
+  /\bexplain\b/iu,
+  /\bhow does\b/iu,
+  /\bshow me examples?\b/iu,
+  /\bhow to use\b/iu,
+  /\bsample prompt\b/iu,
+  /\bcompare\b/iu,
+  /\bdifference\b/iu,
+  /\bdifferent\b/iu,
+  /\bversus\b/iu,
+  /\bvs\b/iu,
+  /介绍(?:一下|下)?/u,
+  /说说/u,
+  /讲讲/u,
+  /聊聊/u,
+  /解释(?:一下|下)?/u,
+  /是什么/u,
+  /做什么(?:的)?/u,
+  /什么意思/u,
+  /怎么用/u,
+  /如何使用/u,
+  /怎么操作/u,
+  /如何操作/u,
+  /使用方法/u,
+  /示例/u,
+  /例子/u,
+  /步骤/u,
+  /区别/u,
+  /不同/u,
+  /对比/u,
+  /比较/u,
+] as const;
 const SESSION_MAIN_VERIFY_ACTION_PATTERNS = [
   /\b(?:verify|validation|validate)\b/iu,
   /(?:验证|校验)/u,
@@ -246,6 +290,9 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
     }
 
     if (this.matchesReviewVerifyIntent(normalizedMessage)) {
+      if (this.matchesCapabilityDiscussionIntent(rawMessage)) {
+        return null;
+      }
       return this.createPlanFromCapabilityId({
         capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW_VERIFY,
         routerDecisionReason: 'session.main.router.command_handoff_preview.review_verify',
@@ -259,6 +306,9 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
       this.matchesAnyPattern(normalizedMessage, SESSION_MAIN_DOCTOR_PATTERNS) ||
       this.includesAnyKeyword(normalizedMessage, SESSION_MAIN_DOCTOR_KEYWORDS)
     ) {
+      if (this.matchesCapabilityDiscussionIntent(rawMessage)) {
+        return null;
+      }
       return this.createPlanFromCapabilityId({
         capabilityId: SESSION_MAIN_CAPABILITY_ID.DOCTOR,
         routerDecisionReason: 'session.main.router.direct_execute.doctor',
@@ -273,6 +323,9 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
     }
 
     if (this.includesAnyKeyword(normalizedMessage, SESSION_MAIN_CONNECT_KEYWORDS)) {
+      if (this.matchesCapabilityDiscussionIntent(rawMessage)) {
+        return null;
+      }
       return this.createPlanFromCapabilityId({
         capabilityId: SESSION_MAIN_CAPABILITY_ID.CONNECT,
         routerDecisionReason: 'session.main.router.command_handoff_preview.connect',
@@ -316,6 +369,9 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
     }
 
     if (this.matchesPlanIntent(normalizedMessage)) {
+      if (this.matchesCapabilityDiscussionIntent(rawMessage)) {
+        return null;
+      }
       return this.createPlanFromCapabilityId({
         capabilityId: SESSION_MAIN_CAPABILITY_ID.PLAN,
         routerDecisionReason: 'session.main.router.direct_execute.plan',
@@ -330,6 +386,9 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
     }
 
     if (this.matchesReviewIntent(normalizedMessage)) {
+      if (this.matchesCapabilityDiscussionIntent(rawMessage)) {
+        return null;
+      }
       return this.createPlanFromCapabilityId({
         capabilityId: SESSION_MAIN_CAPABILITY_ID.REVIEW,
         routerDecisionReason: 'session.main.router.direct_execute.review',
@@ -352,6 +411,9 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
     }
 
     if (this.matchesRunIntent(rawMessage)) {
+      if (this.matchesCapabilityDiscussionIntent(rawMessage)) {
+        return null;
+      }
       return this.createPlanFromCapabilityId({
         capabilityId: SESSION_MAIN_CAPABILITY_ID.RUN,
         routerDecisionReason: 'session.main.router.command_handoff_preview.run',
@@ -366,6 +428,9 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
     }
 
     if (this.matchesAnyPattern(normalizedMessage, SESSION_MAIN_WORKFLOW_PATTERNS)) {
+      if (this.matchesCapabilityDiscussionIntent(rawMessage)) {
+        return null;
+      }
       return this.createPlanFromCapabilityId({
         capabilityId: SESSION_MAIN_CAPABILITY_ID.WORKFLOW,
         routerDecisionReason: 'session.main.router.direct_execute.workflow',
@@ -526,6 +591,10 @@ export class LocalOrchestrationServiceSessionMainSkillRegistry {
       this.matchesAnyPattern(message, SESSION_MAIN_RUN_PATTERNS) &&
       !this.matchesAnyPattern(message, SESSION_MAIN_EXECUTION_EXCLUDED_PATTERNS)
     );
+  }
+
+  private matchesCapabilityDiscussionIntent(message: string): boolean {
+    return this.matchesAnyPattern(message, SESSION_MAIN_CAPABILITY_DISCUSSION_PATTERNS);
   }
 
   private matchesAnyPattern(message: string, patterns: readonly RegExp[]): boolean {
