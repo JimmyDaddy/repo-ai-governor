@@ -2,21 +2,21 @@
 
 ## Primary Stream
 
-- Status: idle
-- Stream: `none`
-- Project: `none`
-- Sprint: `none`
-- Docs: `none`
-- Plan: `none`
-- Tasks: `none`
-- Checklist: `none`
-- CSV: `none`
-- Review: `none`
-- Note: `2026-04-21` project-119 scoped closeout 已完成；`CR-001` clean 收口后工作区已恢复到 idle。`check-standardized-error-usage.js`、`pnpm run build` 与 `pnpm run check` 当前均已通过。
+- Status: active
+- Stream: `stream-project-120-sprint-001`
+- Project: `project-120-pr-23-copilot-review-remediation`
+- Sprint: `sprint-001-unresolved-thread-fix-and-pr-recheck`
+- Docs: `.repo-ai-governor/context/dev/project-120-pr-23-copilot-review-remediation`
+- Plan: `.repo-ai-governor/context/dev/project-120-pr-23-copilot-review-remediation/sprint-001-unresolved-thread-fix-and-pr-recheck/plan.md`
+- Tasks: `.repo-ai-governor/context/dev/project-120-pr-23-copilot-review-remediation/sprint-001-unresolved-thread-fix-and-pr-recheck/tasks/`
+- Checklist: `.repo-ai-governor/context/dev/project-120-pr-23-copilot-review-remediation/sprint-001-unresolved-thread-fix-and-pr-recheck/tasks/checklist.md`
+- CSV: `.repo-ai-governor/context/dev/project-120-pr-23-copilot-review-remediation/sprint-001-unresolved-thread-fix-and-pr-recheck/tasks/tasks.csv`
+- Review: `.repo-ai-governor/context/dev/project-120-pr-23-copilot-review-remediation/sprint-001-unresolved-thread-fix-and-pr-recheck/review/`
+- Note: `2026-04-21`：用户要求使用 `$gh-pr-remediation` 处理 PR #23。fresh PR snapshot 显示 7 条来自 `copilot-pull-request-reviewer` 的 unresolved thread，required checks 全绿，因此激活 `project-120 / sprint-001-unresolved-thread-fix-and-pr-recheck` 来修复成立的 review feedback、推送更新并收口已闭环线程。
 
 ## Active Streams
 
-- None currently.
+- `stream-project-120-sprint-001`: project=`project-120-pr-23-copilot-review-remediation`, sprint=`sprint-001-unresolved-thread-fix-and-pr-recheck`, docs=`.repo-ai-governor/context/dev/project-120-pr-23-copilot-review-remediation`, plan=`.repo-ai-governor/context/dev/project-120-pr-23-copilot-review-remediation/sprint-001-unresolved-thread-fix-and-pr-recheck/plan.md`, tasks=`.repo-ai-governor/context/dev/project-120-pr-23-copilot-review-remediation/sprint-001-unresolved-thread-fix-and-pr-recheck/tasks/`, checklist=`.repo-ai-governor/context/dev/project-120-pr-23-copilot-review-remediation/sprint-001-unresolved-thread-fix-and-pr-recheck/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-120-pr-23-copilot-review-remediation/sprint-001-unresolved-thread-fix-and-pr-recheck/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-120-pr-23-copilot-review-remediation/sprint-001-unresolved-thread-fix-and-pr-recheck/review/`, status=`active`, role=`primary`
 
 ## Planned Follow-Up Streams
 

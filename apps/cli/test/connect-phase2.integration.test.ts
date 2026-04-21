@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { resolve } from 'node:path';
+import { parse, resolve } from 'node:path';
 
 import {
   CliClaudeCodeExecFixtureEnvironmentKey,
@@ -53,7 +53,13 @@ function createBufferedIo(
   const stderrBuffer: string[] = [];
   const environment = createDeterministicCliEnvironment(environmentOverrides);
   const isolatedHomeDirectory =
-    environmentOverrides.HOME ?? resolve(currentWorkingDirectory, '.connect-test-home');
+    environmentOverrides.HOME ??
+    environmentOverrides.USERPROFILE ??
+    resolve(currentWorkingDirectory, '.connect-test-home');
+  const isolatedHomeRoot = parse(isolatedHomeDirectory).root;
+  const isolatedWindowsHomeDrive = /^[A-Za-z]:[\\/]/u.test(isolatedHomeRoot)
+    ? isolatedHomeRoot.slice(0, 2)
+    : undefined;
 
   return {
     stdoutBuffer,
@@ -72,6 +78,13 @@ function createBufferedIo(
       env: () => ({
         ...environment,
         HOME: isolatedHomeDirectory,
+        USERPROFILE: isolatedHomeDirectory,
+        ...(isolatedWindowsHomeDrive
+          ? {
+              HOMEDRIVE: isolatedWindowsHomeDrive,
+              HOMEPATH: isolatedHomeDirectory.slice(isolatedWindowsHomeDrive.length),
+            }
+          : {}),
       }),
     },
   };

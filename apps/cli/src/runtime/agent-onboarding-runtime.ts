@@ -1032,7 +1032,7 @@ export class CliAgentOnboardingRuntime {
     const credentialEnvVar =
       override.credentialEnvVar ??
       existingRemoteApi?.credentialEnvVar ??
-      (existingCredentialRef
+      (existingCredentialRef !== undefined
         ? undefined
         : this.remoteApiAuthoringDefaultsService.resolveCredentialEnvVarForTool(options.toolId));
 
@@ -1042,8 +1042,8 @@ export class CliAgentOnboardingRuntime {
         options.toolId,
       ),
       model: candidateModel,
-      ...(credentialEnvVar ? { credentialEnvVar } : {}),
-      ...(existingCredentialRef ? { credentialRef: existingCredentialRef } : {}),
+      ...(credentialEnvVar !== undefined ? { credentialEnvVar } : {}),
+      ...(existingCredentialRef !== undefined ? { credentialRef: existingCredentialRef } : {}),
       ...(existingRemoteApi?.allowProviderLocalConfig !== undefined
         ? { allowProviderLocalConfig: existingRemoteApi.allowProviderLocalConfig }
         : {}),

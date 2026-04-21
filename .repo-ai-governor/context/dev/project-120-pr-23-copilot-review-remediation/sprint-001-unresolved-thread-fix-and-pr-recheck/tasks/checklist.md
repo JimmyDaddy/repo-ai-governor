@@ -1,0 +1,22 @@
+# checklist
+
+- [x] TK-1033 remediate valid copilot review findings for pr-23
+  - 2026-04-21：任务创建，状态初始化为 `planned`。
+  - 2026-04-21：`project-120 / sprint-001` 已创建并激活；当前任务切换为 `in_progress`，用于执行 PR #23 unresolved thread remediation。
+  - 2026-04-21：已对成立的 review feedback 实施最小修复：`cli-user-config-projection-service` 与 `agent-onboarding-runtime` 改为按 `!== undefined` 保留 `credentialEnvVar/credentialRef`；`connect-phase2.integration.test` 同步隔离 `USERPROFILE` 与可推导的 `HOMEDRIVE/HOMEPATH`；`runtime-governance-clients/module-overview.md` 修正 `vendorBinding` typo。
+  - 2026-04-21：为 session-main deferred relay 增加 `selectedSurface/selectedBy` metadata fallback，并补充回归测试覆盖“ACP primary fallback token 未显式携带 surface 元数据”场景。
+  - 2026-04-21：当前任务切换为 `completed`，交由 `TK-1034` 承接本地验证、提交与推送。
+- [ ] TK-1034 verify pr-23 remediation locally and push updated branch
+  - 2026-04-21：任务创建，状态初始化为 `planned`。
+  - 2026-04-21：当前任务切换为 `in_progress`，开始执行本地验证并准备提交/推送当前 PR remediation。
+  - 2026-04-21：`pnpm exec vitest run --config vitest.packages.config.ts apps/cli/test/runtime/session-main-supervisor-runtime.test.ts apps/cli/test/connect-phase2.integration.test.ts` 通过。
+  - 2026-04-21：`pnpm run build` 通过。
+  - 2026-04-21：首次 `pnpm run check` 因 `gate:format` 提示 `session-main-supervisor-runtime.ts` 格式化差异失败；修正格式后复跑。
+  - 2026-04-21：复跑 `pnpm run build` 与 targeted tests 通过；第二次 `pnpm run check` 曾命中一次 `test/e2e/blackbox-governance-flow.e2e.test.ts` replay 黑盒波动，随后单独复现 `plan -> run -> review -> review-verify -> replay` 与 `pnpm exec vitest run --config vitest.e2e.config.ts test/e2e/blackbox-governance-flow.e2e.test.ts` 均通过。
+  - 2026-04-21：第三次 `pnpm run check` 全量通过；当前仅剩 commit/push 动作待完成。
+- [ ] TK-1035 recheck github pr status and resolve addressed threads
+  - 2026-04-21：任务创建，状态初始化为 `planned`。
+- [ ] TK-1036 finalize project-120 closeout and restore idle context
+  - 2026-04-21：任务创建，状态初始化为 `planned`。
+- [ ] CR-001 review project-120 pr remediation window
+  - 2026-04-21：任务创建，状态初始化为 `review_pending`。

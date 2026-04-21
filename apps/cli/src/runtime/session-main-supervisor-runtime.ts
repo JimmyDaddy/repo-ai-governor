@@ -368,6 +368,7 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     let successfulDirectAnswerContinuation: ReturnType<
       SessionMainProviderContinuationRuntime['prepareRequest']
     > | null = null;
+    let resolvedSelectedBy: string | null = null;
     while (candidateSafeSurfaces.length > 0) {
       const primaryAnswerSurface = candidateSafeSurfaces[0] ?? AdapterSurface.CODEX;
       attemptedDirectAnswerSurfaces.add(primaryAnswerSurface);
@@ -419,6 +420,13 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
         primaryAnswerSurface,
         toolConfigBySurface,
       );
+      const attemptSelectedByHint = invokeFallbackActivated
+        ? 'session.main.answer.fallback'
+        : this.resolveSelectedBy(
+            undefined,
+            context.sessionRoutingPreferenceApplied,
+            !safeCandidateSurfaces.includes(context.selectedSurface as AdapterSurface),
+          );
       const relayPromise =
         directAnswerContinuation?.suppressStreamRelay || deferRelayUntilSelection
           ? Promise.resolve()
@@ -427,6 +435,10 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
               protocolBySurface[primaryAnswerSurface],
               dispatchRequest,
               attemptRelayState,
+              {
+                selectedSurface: primaryAnswerSurface,
+                selectedBy: attemptSelectedByHint,
+              },
             );
       const directAnswerInvokeStartedAtMs = Date.now();
       const routeRunner = this.createRouteRunner({
@@ -437,6 +449,13 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       });
       try {
         dispatchResult = await routeRunner.dispatchStage(dispatchRequest);
+        const successfulAttemptSelectedBy = invokeFallbackActivated
+          ? 'session.main.answer.fallback'
+          : this.resolveSelectedBy(
+              dispatchResult.auditRecord.selectedBy,
+              context.sessionRoutingPreferenceApplied,
+              !safeCandidateSurfaces.includes(context.selectedSurface as AdapterSurface),
+            );
         await (directAnswerContinuation?.suppressStreamRelay
           ? Promise.resolve()
           : deferRelayUntilSelection
@@ -445,10 +464,15 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
                 protocolBySurface[dispatchResult.selectedSurface],
                 dispatchRequest,
                 attemptRelayState,
+                {
+                  selectedSurface: dispatchResult.selectedSurface,
+                  selectedBy: successfulAttemptSelectedBy,
+                },
               )
             : relayPromise);
         successfulRelayState = attemptRelayState;
         successfulDirectAnswerContinuation = directAnswerContinuation;
+        resolvedSelectedBy = successfulAttemptSelectedBy;
         const directAnswerInvokeElapsedMs =
           typeof dispatchResult.invokeResult.elapsedMs === 'number'
             ? Math.max(dispatchResult.invokeResult.elapsedMs, 0)
@@ -533,17 +557,16 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
         'The direct-answer stage did not produce a dispatch result.',
       );
     }
+    if (resolvedSelectedBy === null) {
+      throw new RuntimeError(
+        GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+        'The direct-answer stage did not produce a selection source.',
+      );
+    }
     const assistantMessage = this.resolveAssistantMessage(
       dispatchResult.invokeResult.output,
       context,
     );
-    const resolvedSelectedBy = invokeFallbackActivated
-      ? 'session.main.answer.fallback'
-      : this.resolveSelectedBy(
-          dispatchResult.auditRecord.selectedBy,
-          context.sessionRoutingPreferenceApplied,
-          !safeCandidateSurfaces.includes(context.selectedSurface as AdapterSurface),
-        );
     if (!successfulRelayState.sawToken) {
       await this.publishAssistantTokenStream(context, assistantMessage, {
         title: this.localizeText('Assistant Draft', '回答草稿'),
@@ -561,6 +584,7 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       stageId: SESSION_MAIN_ANSWER_STAGE_ID,
       routeKey: SESSION_MAIN_ANSWER_ROUTE_KEY,
       selectedSurface: dispatchResult.selectedSurface,
+      selectedBy: resolvedSelectedBy,
     });
     const providerContinuationMutations = [
       ...preflightProviderContinuationMutations,
@@ -1760,11 +1784,25 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
             relayState,
             {
               roleId: preparedDispatch.descriptor.roleId,
+              selectedSurface: primaryRoleSurface,
+              selectedBy: this.resolveRoleDelegateSelectedBy(
+                undefined,
+                context.sessionRoutingPreferenceApplied,
+                !preparedDispatch.safeCandidateSurfaces.includes(
+                  context.selectedSurface as AdapterSurface,
+                ),
+              ),
             },
           );
     let dispatchResult: Awaited<ReturnType<typeof routeRunner.dispatchStage>>;
+    let selectedBy: string | null = null;
     try {
       dispatchResult = await routeRunner.dispatchStage(dispatchRequest);
+      selectedBy = this.resolveRoleDelegateSelectedBy(
+        dispatchResult.auditRecord.selectedBy,
+        context.sessionRoutingPreferenceApplied,
+        !preparedDispatch.safeCandidateSurfaces.includes(context.selectedSurface as AdapterSurface),
+      );
     } catch (error) {
       await relayPromise;
       await this.publishStreamEvent(context, {
@@ -1784,6 +1822,12 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       });
       throw error;
     }
+    if (selectedBy === null) {
+      throw new RuntimeError(
+        GovernorErrorCode.ADAPTER_PROTOCOL_INVOKE_FAILED,
+        'The role-delegate stage did not produce a selection source.',
+      );
+    }
     await (roleDelegateContinuation?.suppressStreamRelay
       ? Promise.resolve()
       : deferRelayUntilSelection
@@ -1794,6 +1838,8 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
             relayState,
             {
               roleId: preparedDispatch.descriptor.roleId,
+              selectedSurface: dispatchResult.selectedSurface,
+              selectedBy,
             },
           )
         : relayPromise);
@@ -1801,11 +1847,6 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
       dispatchResult.invokeResult.output,
       context,
       preparedDispatch.descriptor,
-    );
-    const selectedBy = this.resolveRoleDelegateSelectedBy(
-      dispatchResult.auditRecord.selectedBy,
-      context.sessionRoutingPreferenceApplied,
-      !preparedDispatch.safeCandidateSurfaces.includes(context.selectedSurface as AdapterSurface),
     );
     const providerContinuationMutations = this.providerContinuationRuntime.resolveMutations(
       roleDelegateContinuation,
@@ -1891,6 +1932,8 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
     relayState: ProtocolStreamRelayState,
     metadata: {
       roleId?: string;
+      selectedSurface?: string;
+      selectedBy?: string;
     } = {},
   ): Promise<void> {
     if (!protocol || !context.publishStreamEvent) {
@@ -1944,7 +1987,9 @@ export class CliSessionMainSupervisorRuntime implements SessionMainSupervisorRun
           roleId: metadata.roleId,
           stageId: request.stageId,
           routeKey: request.routeKey,
-          selectedSurface: this.readOptionalString(event.payload.surface),
+          selectedSurface:
+            this.readOptionalString(event.payload.surface) ?? metadata.selectedSurface,
+          selectedBy: this.readOptionalString(event.payload.selectedBy) ?? metadata.selectedBy,
           toolName:
             this.readOptionalString(event.payload.toolName) ??
             this.readOptionalString(event.payload.name),

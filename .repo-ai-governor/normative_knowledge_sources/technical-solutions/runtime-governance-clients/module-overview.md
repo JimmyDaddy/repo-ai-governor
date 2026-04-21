@@ -122,7 +122,7 @@
    - host-facing direct entry 必须落到显式 provider-onboarding mutation seam；`connect / doctor / verify` 继续保持 analyze-first / read-only truth。
    - canonical owner split 固定为 `runtime.governance-clients` 负责 host-facing UX / CTA mapping，`runtime.agent-projection` 继续负责 `transport / provider / vendorBinding / next_action(s)` truth。
    - direct onboarding 允许持久化的 canonical config target 以 `tools.<tool>.transport`、`tools.<tool>.remoteApi.provider`、`tools.<tool>.remoteApi.vendorBinding`、`tools.<tool>.remoteApi.model`、`tools.<tool>.remoteApi.endpoint`、`tools.<tool>.remoteApi.credentialRef` 为准，不再使用 `tools.<tool>.remoteApi.transport`。
-   - 当 selected secret backend 不可写，或 `tool/provider` 组合无法唯一收敛到 canonical provider/venderBinding pairing 时，provider-onboarding seam 必须 fail-closed，而不是回退到 host-side heuristics。
+   - 当 selected secret backend 不可写，或 `tool/provider` 组合无法唯一收敛到 canonical provider/vendorBinding pairing 时，provider-onboarding seam 必须 fail-closed，而不是回退到 host-side heuristics。
    - 真实 runtime/docs/support truth rollout 由 `project-116-vscode-direct-provider-onboarding-rollout` 承接。
 
 ## 9. Detail Docs

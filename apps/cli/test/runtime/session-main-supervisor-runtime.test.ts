@@ -729,6 +729,18 @@ describe('Cli session-main supervisor runtime', () => {
       [AdapterSurface.CLAUDE_CODE]: createAvailableProtocol(
         AdapterSurface.CLAUDE_CODE,
         'Recovered answer from Claude Code',
+        {
+          streamEvents: [
+            {
+              eventType: AgentStreamEventType.TOKEN,
+              payload: {
+                title: 'Recovered fallback draft',
+                chunkText: 'Recovered answer from Claude Code',
+                accumulatedText: 'Recovered answer from Claude Code',
+              },
+            },
+          ],
+        },
       ),
       [AdapterSurface.OLLAMA]: createUnavailableProtocol(AdapterSurface.OLLAMA),
     });

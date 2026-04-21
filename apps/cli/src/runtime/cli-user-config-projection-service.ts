@@ -161,18 +161,18 @@ export class CliUserConfigProjectionService {
     const credentialEnvVar =
       currentRemoteApi?.credentialEnvVar ??
       userRemoteApiDefaults?.credentialEnvVar ??
-      (credentialRef ? undefined : this.resolveCredentialEnvVar(options.toolId));
+      (credentialRef !== undefined ? undefined : this.resolveCredentialEnvVar(options.toolId));
 
     return {
       provider,
       vendorBinding,
       model,
-      ...(credentialEnvVar
+      ...(credentialEnvVar !== undefined
         ? {
             credentialEnvVar,
           }
         : {}),
-      ...(credentialRef
+      ...(credentialRef !== undefined
         ? {
             credentialRef,
           }
