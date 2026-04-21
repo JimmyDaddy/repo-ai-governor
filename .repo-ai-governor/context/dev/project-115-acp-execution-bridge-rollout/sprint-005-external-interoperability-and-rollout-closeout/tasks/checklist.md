@@ -1,8 +1,21 @@
 # checklist
 
-- [ ] TK-1001 run optional external acp interoperability rehearsal
+- [x] TK-1001 run optional external acp interoperability rehearsal
   - 2026-04-20：任务创建，状态初始化为 `planned`。
-- [ ] TK-1002 review support wording uplift and rollout claim boundary
+  - 2026-04-20：`TK-1021` 完成 sprint-004 closeout gate 与 activation write-back 后，本任务切换为 `in_progress`，作为 sprint-005-external-interoperability-and-rollout-closeout 的首个 active execution boundary。
+  - 2026-04-20：已完成本地 external ACP consumer availability 检查：`command -v paseo`、`command -v a2a`、`command -v acp` 均未命中，仓库内也未找到可直接复用的 external-consumer rehearsal scaffold；仅 `npx` 存在，但本轮不把它视为本地 availability。
+  - 2026-04-20：已形成 `DA-1001`，将 optional interoperability rehearsal 记录为 `unavailable optional evidence`；当前任务切换为 `completed`，并明确不通过安装新的 third-party consumer 来伪造本地 rehearsal 证据。
+- [x] TK-1002 review support wording uplift and rollout claim boundary
   - 2026-04-20：任务创建，状态初始化为 `planned`。
-- [ ] TK-1003 close rollout project and publish completion audit
+  - 2026-04-20：已复核 `DA-1000`、`DA-1001`、`docs/local-adoption-playbook*`、`docs/support-matrix*` 与 ACP execution ADR；结论是当前 public/support wording 已经保持保守边界，不需要在 external consumer unavailable 的前提下继续 uplift。
+  - 2026-04-20：已形成 `DA-1002`，明确保留现有 evidence-backed readiness / bootstrap truth，不宣称 external ACP consumer interoperability 已完成；因为本轮不修改可执行代码，也不变更 public docs 文本，build not required。
+- [x] TK-1003 close rollout project and publish completion audit
   - 2026-04-20：任务创建，状态初始化为 `planned`。
+  - 2026-04-20：`CR-001` 已 clean 收口为 `resolved`，当前任务切换为真正的 final closeout 窗口。
+  - 2026-04-20：已写入 `DA-1003` 与 `project-115` completion audit summary，并将 project / sprint 计划面、`current-context.md`、completed stream history 与 delivery registry 切换到 completed / next-stream-activated 真值；当前共享分支上的下一条 primary stream 已切到 `project-116 / sprint-001`，`TK-1004` 成为新的 active execution boundary。
+  - 2026-04-20：same-window final closeout verification 已通过：`check-task-ledger-sync`、`check-sprint-plan-status-sync`、`check-code-review-status-sync`、`check-worktree-review-target`、`check-technical-solution-delivery-registry` 与 `pnpm run check` 全部通过；当前任务保持 `completed`，可进入 project-115 boundary commit。
+- [x] CR-001 sprint-005-external-interoperability-and-rollout-closeout delegated review loop round 1
+  - 2026-04-20：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-20：fresh delegated reviewer `Euler` 返回 1 条 P1 finding：`CR-001` 已创建但未同步到 sprint ledger，导致 `check-task-ledger-sync` 报告 `missing row in tasks.csv`；reviewer 同时确认 ACP support wording 本身没有新的 evidence overstatement。
+  - 2026-04-20：主 agent 认可该 finding，并已将 `CR-001` 以 `review_pending` 正式同步到 canonical ledger 与 rendered checklist/tasks.csv；当前任务推进到 `verified`。
+  - 2026-04-20：accepted finding 已完成修复并复验：`CR-001` 的 review lifecycle、task card 与 rendered ledger 已同步一致，`check-code-review-status-sync`、`check-task-ledger-sync`、`check-sprint-plan-status-sync` 与 `check-worktree-review-target` 均通过；当前任务推进到 `resolved`。

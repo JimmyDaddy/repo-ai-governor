@@ -57,18 +57,18 @@ For command-level enforcement, always use `.repo-ai-governor/normative_knowledge
 
 ## Pending Gate Integration Memo
 
-1. Prepared scripts:
-   - `scripts/governance/check-monorepo-naming.js`
+1. Implemented scripts:
    - `scripts/governance/check-package-dependency-boundary.js`（warning 模式已接入，blocking 待切换）
    - `scripts/governance/check-normative-loading-manifest.js`（由 runner 调用，默认 blocking）
    - `scripts/governance/check-technical-solution-module-graph.js`（默认 blocking）
    - `scripts/governance/check-technical-solution-lifecycle-registry.js`（默认 blocking）
    - `scripts/governance/check-technical-solution-delivery-registry.js`（默认 blocking）
-2. Planned script:
+2. Deferred checker implementations (rule defined, script not created yet):
+   - `scripts/governance/check-monorepo-naming.js`
    - `scripts/governance/check-monorepo-versioning-policy.js`
    - `scripts/governance/check-god-object-boundary.js`
 3. Planned wiring target: `.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md -> Verification Commands`.
-4. Current decision: 依赖边界检查保持 warning 模式运行并持续清零；规范加载清单检查、技术方案模块图检查、技术方案生命周期检查与技术方案 delivery handoff 检查已切换默认 blocking。其余脚本维持 implementation-ready，待专门窗口激活。
+4. Current decision: 依赖边界检查保持 warning 模式运行并持续清零；规范加载清单检查、技术方案模块图检查、技术方案生命周期检查与技术方案 delivery handoff 检查已切换默认 blocking。monorepo naming / versioning policy / god-object boundary 的规则面保持有效，但在对应 checker script 真正落地前，文档不得再把它们描述为 prepared / implementation-ready gate assets。
 
 ## Normative Loading Gate Rollout Policy
 

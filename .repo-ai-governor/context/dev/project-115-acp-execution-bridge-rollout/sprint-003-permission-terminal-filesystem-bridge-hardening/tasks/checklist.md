@@ -1,8 +1,26 @@
 # checklist
 
-- [ ] TK-995 implement permission bridge and active tool-call confirmation mapping
+- [x] TK-995 implement permission bridge and active tool-call confirmation mapping
   - 2026-04-20：任务创建，状态初始化为 `planned`。
-- [ ] TK-996 implement terminal and filesystem bridge runtime hardening
+  - 2026-04-20：`CR-008` 确认 sprint-002 reviewer-clean 后，本任务切换为 `in_progress`，作为 sprint-003-permission-terminal-filesystem-bridge-hardening 的首个 active execution surface。
+  - 2026-04-20：补齐 confirmation -> invocationState lookup，把 `requestConfirmation` 收敛到 active ACP turn 上的 metadata-driven permission bridge，并对缺失/非法 metadata 保持 fail-closed。
+  - 2026-04-20：新增 active confirmation bridge / invalid metadata / settled-turn fail-closed / session confirmation lookup tests，并通过 targeted vitest 与 `tsc --noEmit`。
+- [x] TK-996 implement terminal and filesystem bridge runtime hardening
   - 2026-04-20：任务创建，状态初始化为 `planned`。
-- [ ] TK-997 verify failure-path matrix and sprint-003 handoff
+  - 2026-04-20：`TK-995` 完成后，本任务切换为 `in_progress`，开始梳理 terminal/* 与 fs/* bridge 的 capability-gated fail-closed 语义和 cleanup 边界。
+  - 2026-04-20：在 `CliAcpTransportClientRuntime` 中补齐 fixture-backed `tool_call` bridge、terminal carrier tracking、filesystem capability gate，以及 cancel 后的 terminal/permission carrier cleanup。
+  - 2026-04-20：新增 terminal/fs available path、missing capability fail-closed、cancel cleanup 三类回归测试，并通过 targeted vitest 与 `tsc --noEmit`。
+- [x] TK-997 verify failure-path matrix and sprint-003 handoff
   - 2026-04-20：任务创建，状态初始化为 `planned`。
+  - 2026-04-20：`TK-996` 完成后，本任务切换为 `in_progress`，开始执行 sprint-003 的 failure-path matrix、broader runtime verification 与 handoff 收口。
+  - 2026-04-20：完成 ACP sprint-003 broader verification，覆盖 adapter routing、session supervisor、agent onboarding、adapter-sdk smoke、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`。
+  - 2026-04-20：sprint-003 implementation/verification boundary 已完成，下一步进入 fresh delegated CR round 与 reviewer-clean 收口。
+- [x] CR-001 sprint-003-permission-terminal-filesystem-bridge-hardening delegated review loop
+  - 2026-04-20：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-20：initial delegated review 先返回 3 条 actionable findings：forged `toolCallId` 仍可命中 live turn、unknown `fs/*` carrier 未 fail-closed、default tool-call detail 未走 i18n；主 agent 复核后全部接受并完成第一轮修复。
+  - 2026-04-20：subsequent fresh rechecks 继续接受 7 条 follow-up findings：explicit `requiredCapabilities` 下的 unknown `fs/*` 绕过、permission-request replay fact mismatch、partial emission 后 interrupted cleanup、default permission reason i18n、cached permission-resolution cleanup coverage、malformed fixture payload detail i18n，以及 cancel ACK 后的 late confirmation fail-closed；每次修复后都已重跑 targeted vitest、`tsc --noEmit`、broader vitest、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`。
+  - 2026-04-20：final fresh delegated reviewer `Averroes` 返回 `No actionable findings.`；当前轮次推进为 `resolved`，sprint-003 进入 closeout / sprint-004 activation window。
+- [x] TK-1020 close sprint-003 boundary and activate sprint-004 execution surface
+  - 2026-04-20：任务创建，状态初始化为 `completed`。
+  - 2026-04-20：`CR-001` 在 multi-round delegated review loop 中 reviewer-clean 后，sprint-003 的 review/task truth、project plan、sprint plans、completed history 与 current-context 已统一切换到 closeout-ready / sprint-004 activation truth。
+  - 2026-04-20：`TK-998` 已在同窗口切换为 `in_progress`，作为 sprint-004 的首个 active execution boundary；下一步只保留 sprint-003 boundary gate 与 local commit。

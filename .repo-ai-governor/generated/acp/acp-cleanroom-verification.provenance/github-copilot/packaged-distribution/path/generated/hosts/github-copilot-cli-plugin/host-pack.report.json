@@ -1,6 +1,6 @@
 {
   "schemaVersion": "host-pack-report-v1",
-  "packedAt": "2026-04-15T05:26:57.537Z",
+  "packedAt": "2026-04-20T12:22:41.727Z",
   "host": "github-copilot",
   "mode": "plugin-bundle",
   "target": "github_copilot.cli_plugin",
@@ -60,7 +60,7 @@
   "verificationSummary": {
     "schemaVersion": "host-verification-summary-v1",
     "status": "pass",
-    "verifiedAt": "2026-04-15T05:26:57.537Z",
+    "verifiedAt": "2026-04-20T12:22:41.727Z",
     "verificationSummaryPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/packaged-distribution/path/generated/hosts/github-copilot-cli-plugin/host-pack.report.json",
     "exportManifestPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/packaged-distribution/path/generated/hosts/github-copilot-cli-plugin/host-export.manifest.json",
     "checks": [

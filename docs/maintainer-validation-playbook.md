@@ -140,7 +140,7 @@ Use this runbook when refreshing the editor-native primary-workbench boundary:
 ```bash
 pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test/vscode-extension-contract.test.ts apps/vscode-extension/test/vscode-extension-host.activation.test.ts apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-service-runtime.test.ts apps/vscode-extension/test/vscode-extension-selection-store.test.ts apps/vscode-extension/test/vscode-extension-packaging-boundary.test.ts
 pnpm run build
-pnpm run release:verify-vscode-extension-distribution -- --output .tmp/project-114-project-final-vscode-distribution-report.json
+pnpm run release:verify-vscode-extension-distribution -- --output .tmp/vscode-extension-distribution-report.json
 pnpm pack --json --dry-run
 pnpm run check:ide-entry-smoke
 pnpm run check:ide-docs-parity
@@ -154,6 +154,7 @@ code --extensionDevelopmentPath <governor-repo>/apps/vscode-extension <target-re
 
 This refresh now expects the packaged extension root and the extracted VSIX to both pass module smoke, sidecar smoke, CLI-backed secure-authoring, scratch-isolated `doctor` diagnostics capture with surfaced check totals, pnpm-metadata closure checks, and the symlink-payload allowlist gate before public docs can stay at `primary_workbench_claim`.
 Use the rerun evidence to validate the zero-CLI human-path claim as well: the public story is no longer "CLI first, VS Code second", but "VS Code for supported human work, CLI for optional automation / scriptable / session-shell use". Treat `.tmp/project-114-project-final-vscode-distribution-report.json` as scratch output only, then promote it into the active sprint's immutable evidence snapshot plus the sprint-local zero-cli rehearsal summary before refreshing `docs/support-matrix*` or any maintainer-facing backlink.
+This refresh also validates the direct-provider-onboarding boundary: `Connect Provider` / `Update API Key` / `Reconnect Provider` must remain host-native, raw API-key capture must stay behind the secure prompt plus managed-secret-backed `credentialRef`, and the built-source/local-VSIX evidence must not regress into manual `credentialEnvVar` authoring for the plugin human path. Treat `.tmp/vscode-extension-distribution-report.json` as scratch rerun output only, then promote it into the active sprint's immutable evidence snapshot plus the sprint-local zero-env-var clean-room summary and rollout claim-parity summary before refreshing README/playbook/support wording. The final support claim remains conservative: live remote-provider success is still out of scope, GUI `Install from VSIX...` remains optional manual evidence, and CLI/headless `credentialEnvVar` compatibility stays supported outside the plugin-first human path.
 
 ### Host-native asset boundary
 
@@ -221,7 +222,7 @@ When you update docs or support claims, keep the evidence model disciplined:
 1. Update `docs/support-matrix.md` first when the supported boundary changes.
 2. Keep this playbook focused on command order, operator intent, and evidence backlinks.
 3. Prefer one authoritative evidence file per validation chain over scattered status notes.
-4. For the current `project-114` VS Code primary-workbench boundary, keep the timestamped snapshot under `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/` as the authoritative backlink, pair it with `project-114-sprint-005-zero-cli-rehearsal-summary.md`, and treat `.tmp/project-114-project-final-vscode-distribution-report.json` as scratch rerun output only.
+4. For the current VS Code surfaces, keep the claim-specific timestamped snapshot authoritative: use `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/` plus `project-114-sprint-005-zero-cli-rehearsal-summary.md` for the primary-workbench cutover, and use `.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-005-clean-room-validation-and-rollout-closeout/` plus `project-116-sprint-005-zero-env-var-clean-room-summary.md` and `project-116-sprint-005-rollout-claim-parity-summary.md` for the direct-provider-onboarding final closeout. Treat `.tmp/project-114-project-final-vscode-distribution-report.json` and `.tmp/vscode-extension-distribution-report.json` as scratch rerun outputs only.
 5. Do not turn this playbook into a second support matrix.
 
 Common evidence paths referenced by this runbook include:
@@ -230,11 +231,14 @@ Common evidence paths referenced by this runbook include:
 2. `.tmp/project-063-sprint-001-cleanroom-tgz-report.json`
 3. `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/project-114-sprint-005-vscode-distribution-report-20260418T124824Z.json` (authoritative snapshot for the current VS Code primary-workbench claim)
 4. `.repo-ai-governor/context/dev/project-114-vscode-plugin-full-ownership-and-zero-cli-user-path/sprint-005-support-truth-migration-and-cli-deprecation-closeout/project-114-sprint-005-zero-cli-rehearsal-summary.md`
-5. `.tmp/project-065-sprint-001-desktop-foundation-report.json`
-6. `.tmp/project-067-sprint-001-host-distribution-report.json`
-7. `.tmp/project-068-sprint-002-github-com-agent-reserved-target-report.json`
-8. `.tmp/project-076-sprint-003-cleanroom-report.json`
-9. `.tmp/project-076-sprint-003-local-distribution-report.json`
+5. `.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-005-clean-room-validation-and-rollout-closeout/project-116-sprint-005-vscode-distribution-report-20260420T193604Z.json` (authoritative snapshot for the final direct-provider-onboarding closeout)
+6. `.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-005-clean-room-validation-and-rollout-closeout/project-116-sprint-005-zero-env-var-clean-room-summary.md`
+7. `.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-005-clean-room-validation-and-rollout-closeout/project-116-sprint-005-rollout-claim-parity-summary.md`
+8. `.tmp/project-065-sprint-001-desktop-foundation-report.json`
+9. `.tmp/project-067-sprint-001-host-distribution-report.json`
+10. `.tmp/project-068-sprint-002-github-com-agent-reserved-target-report.json`
+11. `.tmp/project-076-sprint-003-cleanroom-report.json`
+12. `.tmp/project-076-sprint-003-local-distribution-report.json`
 
 ## 10. Interpreting Adopter Warnings
 

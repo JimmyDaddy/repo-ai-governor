@@ -1,6 +1,6 @@
 # project-115-acp-execution-bridge-rollout 计划
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-20
 - Stage Mapping: runtime agent-projection rollout
 - Phase Mapping: ACP execution bridge productization
@@ -18,31 +18,31 @@
 
 ## 2.1 sprint-001-contract-and-runtime-decomposition
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 完成 ACP execution bridge 的 contract gap 收敛、runtime owner 拆分与 shared invocation model 基线
 - Task Package: `TK-989、TK-990、TK-991`
 
 ## 2.2 sprint-002-executable-acp-exec-baseline
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 完成 session/new prompt cancel 主链路与 invoke/stream shared turn execution 基线
 - Task Package: `TK-992、TK-993、TK-994`
 
 ## 2.3 sprint-003-permission-terminal-filesystem-bridge-hardening
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 完成 permission terminal filesystem bridge hardening 与 capability-gated fail-closed 语义
 - Task Package: `TK-995、TK-996、TK-997`
 
 ## 2.4 sprint-004-clean-room-execution-and-packaged-evidence
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 完成 source-checkout packaged clean-room execution evidence 与 failure-path 验证
 - Task Package: `TK-998、TK-999、TK-1000`
 
 ## 2.5 sprint-005-external-interoperability-and-rollout-closeout
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 完成外部 ACP interoperability rehearsal、support 边界复核与 rollout closeout
 - Task Package: `TK-1001、TK-1002、TK-1003`
 
@@ -50,21 +50,23 @@
 
 | task_id | sprint | title | 目标产出类型 | depends_on | status |
 | --- | --- | --- | --- | --- | --- |
-| TK-989 | sprint-001-contract-and-runtime-decomposition | freeze acp execution bridge runtime contract boundary | contract baseline | scaffold baseline | planned |
-| TK-990 | sprint-001-contract-and-runtime-decomposition | decompose transport client session turn and host-operation runtimes | runtime decomposition | TK-989 | planned |
-| TK-991 | sprint-001-contract-and-runtime-decomposition | prepare sprint-001 handoff and activation recommendation | governance handoff | TK-990 | planned |
-| TK-992 | sprint-002-executable-acp-exec-baseline | implement executable acp_exec invoke prompt and cancel baseline | execution baseline | sprint-001-contract-and-runtime-decomposition planned handoff | planned |
-| TK-993 | sprint-002-executable-acp-exec-baseline | land shared invocation store and stream attachment semantics | shared execution | TK-992 | planned |
-| TK-994 | sprint-002-executable-acp-exec-baseline | verify fixture-backed acp contract baseline and sprint-002 handoff | verification handoff | TK-993 | planned |
-| TK-995 | sprint-003-permission-terminal-filesystem-bridge-hardening | implement permission bridge and active tool-call confirmation mapping | permission bridge | sprint-002-executable-acp-exec-baseline planned handoff | planned |
-| TK-996 | sprint-003-permission-terminal-filesystem-bridge-hardening | implement terminal and filesystem bridge runtime hardening | host operation bridge | TK-995 | planned |
-| TK-997 | sprint-003-permission-terminal-filesystem-bridge-hardening | verify failure-path matrix and sprint-003 handoff | verification handoff | TK-996 | planned |
-| TK-998 | sprint-004-clean-room-execution-and-packaged-evidence | build source-checkout acp execution clean-room slice | clean-room evidence | sprint-003-permission-terminal-filesystem-bridge-hardening planned handoff | planned |
-| TK-999 | sprint-004-clean-room-execution-and-packaged-evidence | land packaged distribution and runtime-service execution evidence | distribution evidence | TK-998 | planned |
-| TK-1000 | sprint-004-clean-room-execution-and-packaged-evidence | prepare sprint-004 closeout and support-truth readiness recommendation | closeout handoff | TK-999 | planned |
-| TK-1001 | sprint-005-external-interoperability-and-rollout-closeout | run optional external acp interoperability rehearsal | interoperability rehearsal | sprint-004-clean-room-execution-and-packaged-evidence planned handoff | planned |
-| TK-1002 | sprint-005-external-interoperability-and-rollout-closeout | review support wording uplift and rollout claim boundary | support truth review | TK-1001 | planned |
-| TK-1003 | sprint-005-external-interoperability-and-rollout-closeout | close rollout project and publish completion audit | project closeout | TK-1002 | planned |
+| TK-989 | sprint-001-contract-and-runtime-decomposition | freeze acp execution bridge runtime contract boundary | contract baseline | scaffold baseline | completed |
+| TK-990 | sprint-001-contract-and-runtime-decomposition | decompose transport client session turn and host-operation runtimes | runtime decomposition | TK-989 | completed |
+| TK-991 | sprint-001-contract-and-runtime-decomposition | prepare sprint-001 handoff and activation recommendation | governance handoff | TK-990 | completed |
+| TK-992 | sprint-002-executable-acp-exec-baseline | implement executable acp_exec invoke prompt and cancel baseline | execution baseline | sprint-001-contract-and-runtime-decomposition planned handoff | completed |
+| TK-993 | sprint-002-executable-acp-exec-baseline | land shared invocation store and stream attachment semantics | shared execution | TK-992 | completed |
+| TK-994 | sprint-002-executable-acp-exec-baseline | verify fixture-backed acp contract baseline and sprint-002 handoff | verification handoff | TK-993 | completed |
+| TK-995 | sprint-003-permission-terminal-filesystem-bridge-hardening | implement permission bridge and active tool-call confirmation mapping | permission bridge | sprint-002-executable-acp-exec-baseline planned handoff | completed |
+| TK-996 | sprint-003-permission-terminal-filesystem-bridge-hardening | implement terminal and filesystem bridge runtime hardening | host operation bridge | TK-995 | completed |
+| TK-997 | sprint-003-permission-terminal-filesystem-bridge-hardening | verify failure-path matrix and sprint-003 handoff | verification handoff | TK-996 | completed |
+| TK-1020 | sprint-003-permission-terminal-filesystem-bridge-hardening | close sprint-003 boundary and activate sprint-004 execution surface | sprint closeout | CR-001 reviewer-clean handoff | completed |
+| TK-998 | sprint-004-clean-room-execution-and-packaged-evidence | build source-checkout acp execution clean-room slice | clean-room evidence | sprint-003-permission-terminal-filesystem-bridge-hardening planned handoff | completed |
+| TK-999 | sprint-004-clean-room-execution-and-packaged-evidence | land packaged distribution and runtime-service execution evidence | distribution evidence | TK-998 | completed |
+| TK-1000 | sprint-004-clean-room-execution-and-packaged-evidence | prepare sprint-004 closeout and support-truth readiness recommendation | closeout handoff | TK-999 | completed |
+| TK-1021 | sprint-004-clean-room-execution-and-packaged-evidence | close sprint-004 boundary and activate sprint-005 execution surface | sprint closeout | CR-001 reviewer-clean handoff | completed |
+| TK-1001 | sprint-005-external-interoperability-and-rollout-closeout | run optional external acp interoperability rehearsal | interoperability rehearsal | sprint-004-clean-room-execution-and-packaged-evidence planned handoff | completed |
+| TK-1002 | sprint-005-external-interoperability-and-rollout-closeout | review support wording uplift and rollout claim boundary | support truth review | TK-1001 | completed |
+| TK-1003 | sprint-005-external-interoperability-and-rollout-closeout | close rollout project and publish completion audit | project closeout | TK-1002 | completed |
 
 ## 4. 依赖产物策略
 
@@ -81,7 +83,17 @@
 ## 6. 里程碑记录
 
 1. 2026-04-20：创建 project-115-acp-execution-bridge-rollout 全量执行流骨架，覆盖 sprint-001-contract-and-runtime-decomposition、sprint-002-executable-acp-exec-baseline、sprint-003-permission-terminal-filesystem-bridge-hardening、sprint-004-clean-room-execution-and-packaged-evidence、sprint-005-external-interoperability-and-rollout-closeout。
+2. 2026-04-20：完成 sprint-001 implementation baseline，固定 ACP runtime owner split、shared invocation state 基线与 sprint-002 activation recommendation，代码验证已通过 targeted runtime vitest、`pnpm run build` 与 `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`。
+3. 2026-04-20：`CR-001` 已 resolved，sprint-001 正式完成并切换到 `sprint-002-executable-acp-exec-baseline`；`TK-992` 已激活为当前 in-progress execution surface。
+4. 2026-04-20：完成 sprint-002 implementation baseline 与 verification handoff，落地 fixture-backed ACP invoke/stream/cancel、shared invocation replay 与 targeted/build/package verification；下一步进入 sprint-002 delegated CR round。
+5. 2026-04-20：`CR-008` fresh delegated review 返回 `No actionable findings.`，sprint-002 在 round-8 reviewer-clean 后完成 closeout，并把 primary execution surface 正式切换到 `sprint-003-permission-terminal-filesystem-bridge-hardening`。
+6. 2026-04-20：`CR-001` 在 sprint-003 delegated review loop 中 reviewer-clean，sprint-003 已完成 closeout；`TK-1020` 完成同窗口 activation write-back，primary execution surface 切换到 `sprint-004-clean-room-execution-and-packaged-evidence`，`TK-998` 成为当前 in-progress boundary。
+7. 2026-04-20：sprint-004 implementation boundary 已完成，`TK-998 / TK-999 / TK-1000` 形成 ACP execution clean-room report、refresh 后的 packaged/runtime-service receipts 与 `DA-1000` activation handoff；下一步进入 sprint-004 fresh delegated review。
+8. 2026-04-20：sprint-004 的 `CR-001` 已 resolved；为满足 sprint closeout 规则，`TK-1021` 已创建并成为当前 active closeout surface，下一步执行 `pnpm run check`、boundary commit 与 sprint-005 activation write-back。
+9. 2026-04-20：`TK-1021` 已完成 sprint-004 closeout gate 与 sprint-005 activation write-back；primary execution surface 切换到 `sprint-005-external-interoperability-and-rollout-closeout`，`TK-1001` 成为当前 in-progress boundary。
+10. 2026-04-20：`TK-1001 / TK-1002` 已完成 sprint-005 implementation boundary。`DA-1001` 确认本地 external ACP consumer unavailable，因此 optional interoperability rehearsal 按 non-blocking evidence 记录；`DA-1002` 则确认现有 ACP support wording 已保持正确的保守边界，当前下一步固定进入 sprint-005 fresh delegated review。
+11. 2026-04-20：`CR-001` 已 clean 收口，唯一 accepted finding 仅为 review lifecycle ledger sync drift，现已在同窗口修复；`TK-1003 / DA-1003` 随后完成 project-115 final closeout、completion audit、completed history 回写与 `project-116 / sprint-001` activation handoff。
 
 ## 7. 里程碑记录入口
 
-1. 待 closeout 后补齐 completion audit summary。
+1. [project-115-acp-execution-bridge-rollout-completion-audit-summary.md](./project-115-acp-execution-bridge-rollout-completion-audit-summary.md)

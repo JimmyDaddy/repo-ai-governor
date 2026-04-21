@@ -1717,6 +1717,69 @@ function buildThemeHelpTextBlock(i18n: I18nRuntime): string[] {
 }
 
 /**
+ * Creates the CLI-owned `session.main` supervisor runtime for embedded hosts such as VS Code.
+ *
+ * Why this exists:
+ * host-side orchestration entrypoints need the same direct-answer routing, adapter probing, and
+ * managed-secret credential resolution as the CLI shell so free-form session turns behave like
+ * real chat instead of falling back to the placeholder answer seam.
+ *
+ * @param options Embedded-host workspace, locale, and environment inputs.
+ * @returns One fully wired supervisor runtime that mirrors CLI session-main behavior.
+ */
+export async function createEmbeddedSessionMainSupervisorRuntime(options: {
+  currentWorkingDirectory: string;
+  requestedLocale?: string;
+  environment?: NodeJS.ProcessEnv;
+  repositoryRootOverride?: string;
+  workspaceModeOverride?: ResolvedWorkspace['mode'];
+  workspaceRootOverride?: string;
+}): Promise<CliSessionMainSupervisorRuntime> {
+  const environment = options.environment ?? process.env;
+  const cliUserConfigService = new CliUserConfigService();
+  const cliUserConfigProjectionService = new CliUserConfigProjectionService({
+    userConfigService: cliUserConfigService,
+  });
+  const globalCliThemePreferenceService = new GlobalCliThemePreferenceService(cliUserConfigService);
+  const runtimeContext = resolveRuntimeContext(
+    options.currentWorkingDirectory,
+    undefined,
+    environment,
+    globalCliThemePreferenceService,
+    cliUserConfigService,
+    cliUserConfigProjectionService,
+    options.repositoryRootOverride,
+    options.workspaceModeOverride,
+    options.workspaceRootOverride,
+  );
+  const i18nRuntime = new I18nRuntime();
+  const resolvedLocale = await i18nRuntime.initialize(runtimeContext.i18n, options.requestedLocale);
+  const localizeText = (english: string, chinese: string) =>
+    localizeTextForLocale(resolvedLocale, english, chinese);
+  const cliSecretService = new CliSecretService({
+    localizeText,
+  });
+
+  cliUserConfigService.setLocalizeText(localizeText);
+
+  return new CliSessionMainSupervisorRuntime({
+    workspaceRoot: runtimeContext.workspace.workspaceRoot,
+    currentWorkingDirectory: options.currentWorkingDirectory,
+    workspace: runtimeContext.workspace,
+    locale: resolvedLocale,
+    adaptersConfig: runtimeContext.adapters,
+    adapterRoutingRuntimeCacheNamespace: `session-main:${runtimeContext.workspace.workspaceRoot}`,
+    resolveCredentialRef: async (selector: string) =>
+      (
+        await cliSecretService.resolveSecretValue({
+          selector,
+          environment,
+        })
+      )?.value ?? null,
+  });
+}
+
+/**
  * Resolves runtime config from repository file when available, otherwise uses defaults.
  * @param currentWorkingDirectory Execution working directory.
  * @param requestedProfileId Optional requested profile id.

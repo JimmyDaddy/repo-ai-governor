@@ -1,0 +1,35 @@
+# checklist
+
+- [x] TK-1033 remediate valid copilot review findings for pr-23
+  - 2026-04-21：任务创建，状态初始化为 `planned`。
+  - 2026-04-21：`project-120 / sprint-001` 已创建并激活；当前任务切换为 `in_progress`，用于执行 PR #23 unresolved thread remediation。
+  - 2026-04-21：已对成立的 review feedback 实施最小修复：`cli-user-config-projection-service` 与 `agent-onboarding-runtime` 改为按 `!== undefined` 保留 `credentialEnvVar/credentialRef`；`connect-phase2.integration.test` 同步隔离 `USERPROFILE` 与可推导的 `HOMEDRIVE/HOMEPATH`；`runtime-governance-clients/module-overview.md` 修正 `vendorBinding` typo。
+  - 2026-04-21：为 session-main deferred relay 增加 `selectedSurface/selectedBy` metadata fallback，并补充回归测试覆盖“ACP primary fallback token 未显式携带 surface 元数据”场景。
+  - 2026-04-21：当前任务切换为 `completed`，交由 `TK-1034` 承接本地验证、提交与推送。
+- [x] TK-1034 verify pr-23 remediation locally and push updated branch
+  - 2026-04-21：任务创建，状态初始化为 `planned`。
+  - 2026-04-21：当前任务切换为 `in_progress`，开始执行本地验证并准备提交/推送当前 PR remediation。
+  - 2026-04-21：`pnpm exec vitest run --config vitest.packages.config.ts apps/cli/test/runtime/session-main-supervisor-runtime.test.ts apps/cli/test/connect-phase2.integration.test.ts` 通过。
+  - 2026-04-21：`pnpm run build` 通过。
+  - 2026-04-21：首次 `pnpm run check` 因 `gate:format` 提示 `session-main-supervisor-runtime.ts` 格式化差异失败；修正格式后复跑。
+  - 2026-04-21：复跑 `pnpm run build` 与 targeted tests 通过；第二次 `pnpm run check` 曾命中一次 `test/e2e/blackbox-governance-flow.e2e.test.ts` replay 黑盒波动，随后单独复现 `plan -> run -> review -> review-verify -> replay` 与 `pnpm exec vitest run --config vitest.e2e.config.ts test/e2e/blackbox-governance-flow.e2e.test.ts` 均通过。
+  - 2026-04-21：第三次 `pnpm run check` 全量通过；当前仅剩 commit/push 动作待完成。
+  - 2026-04-21：已创建并推送 remediation commit `7a4b0834`（`fix(cli): remediate pr 23 review feedback`）。
+  - 2026-04-21：首次 push 后，GitHub `quality-gate-full` 因 `TK-1033` terminal row 的 placeholder `verify/review_delta` 失败；已在同窗口补齐 canonical ledger row，并再次本地执行 `pnpm run check` 通过。
+  - 2026-04-21：已创建并推送 follow-up commit `7991a159`（`chore(governance): sync project 120 task ledger`）；当前任务切换为 `completed`，由 `TK-1035` 继续执行 PR recheck 与 thread closure。
+- [x] TK-1035 recheck github pr status and resolve addressed threads
+  - 2026-04-21：任务创建，状态初始化为 `planned`。
+  - 2026-04-21：首次 push 后 fresh PR snapshot 显示 unresolved thread count=`7 / 7`，其中 3 条已自动变为 `outdated=true`；required check `quality-gate-full` 先 pending，后因 `TK-1033` task-ledger placeholder drift 失败。
+  - 2026-04-21：补齐 `TK-1033` terminal ledger row 后，再次 push 并 fresh recheck；`quality-gate-fast-affected (affected/fast)` 与 `quality-gate-full` 最终全部通过。
+  - 2026-04-21：在 fresh PR snapshot 确认 required checks pass=`1 / 1` 后，使用 `github_pr_tool.py resolve-thread` 依次 resolve `PRRT_kwDORj4P2c58iVS5`、`PRRT_kwDORj4P2c58iVT8`、`PRRT_kwDORj4P2c58iVUN`、`PRRT_kwDORj4P2c58iVUb`、`PRRT_kwDORj4P2c58iVU0`、`PRRT_kwDORj4P2c58iVVN`、`PRRT_kwDORj4P2c58iVVv`。
+  - 2026-04-21：最终 fresh PR snapshot 显示 unresolved thread count=`0 / 7`、required checks fail/pending=`0 / 0`；当前任务切换为 `completed`。
+- [x] TK-1036 finalize project-120 closeout and restore idle context
+  - 2026-04-21：任务创建，状态初始化为 `planned`。
+  - 2026-04-21：已产出 resolved review artifact 与 completion audit，汇总本地验证、CI 结果与 GitHub thread closure 结论。
+  - 2026-04-21：已将 project-120 / sprint-001 写回最终 `completed` 真值，并将 `stream-project-120-sprint-001` 追加到 completed history。
+  - 2026-04-21：`current-context.md` 已恢复到 idle 主执行面；当前任务切换为 `completed`。
+- [x] CR-001 review project-120 pr remediation window
+  - 2026-04-21：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-21：复核 project-120 scope 后确认本轮修复只覆盖成立的 reviewer feedback，没有额外扩大协议面或无关脏改动。
+  - 2026-04-21：本地验证证据完整：targeted tests、`pnpm run build` 与最终 `pnpm run check` 均在同一 remediation change window 通过。
+  - 2026-04-21：fresh PR snapshot 已确认 required checks pass=`1 / 1`、unresolved threads=`0 / 7`；当前任务切换为 `resolved`，允许进入 `TK-1036` closeout。

@@ -80,6 +80,14 @@ export class LocalOrchestrationServiceSidecarHost
     return this.shell.querySecureAuthoring(request);
   }
 
+  public queryProviderOnboarding(
+    request: Parameters<
+      LocalOrchestrationServiceSidecarDispatchTable['queryProviderOnboarding']
+    >[0],
+  ) {
+    return this.shell.queryProviderOnboarding(request);
+  }
+
   public setUserConfigValue(
     request: Parameters<LocalOrchestrationServiceSidecarDispatchTable['setUserConfigValue']>[0],
   ) {
@@ -90,6 +98,14 @@ export class LocalOrchestrationServiceSidecarHost
     request: Parameters<LocalOrchestrationServiceSidecarDispatchTable['setManagedSecret']>[0],
   ) {
     return this.shell.setManagedSecret(request);
+  }
+
+  public applyProviderOnboarding(
+    request: Parameters<
+      LocalOrchestrationServiceSidecarDispatchTable['applyProviderOnboarding']
+    >[0],
+  ) {
+    return this.shell.applyProviderOnboarding(request);
   }
 
   public runWorkspaceOperation(
@@ -274,6 +290,12 @@ export class LocalOrchestrationServiceSidecarHost
             LocalOrchestrationServiceSidecarDispatchTable['querySecureAuthoring']
           >[0],
         );
+      case LocalOrchestrationServiceSidecarOperation.QUERY_PROVIDER_ONBOARDING:
+        return this.queryProviderOnboarding(
+          this.assertPayload<
+            Parameters<LocalOrchestrationServiceSidecarDispatchTable['queryProviderOnboarding']>[0]
+          >(payload, operation),
+        );
       case LocalOrchestrationServiceSidecarOperation.SET_USER_CONFIG_VALUE:
         return this.setUserConfigValue(
           this.assertPayload<
@@ -284,6 +306,12 @@ export class LocalOrchestrationServiceSidecarHost
         return this.setManagedSecret(
           this.assertPayload<
             Parameters<LocalOrchestrationServiceSidecarDispatchTable['setManagedSecret']>[0]
+          >(payload, operation),
+        );
+      case LocalOrchestrationServiceSidecarOperation.APPLY_PROVIDER_ONBOARDING:
+        return this.applyProviderOnboarding(
+          this.assertPayload<
+            Parameters<LocalOrchestrationServiceSidecarDispatchTable['applyProviderOnboarding']>[0]
           >(payload, operation),
         );
       case LocalOrchestrationServiceSidecarOperation.RUN_WORKSPACE_OPERATION:

@@ -800,7 +800,7 @@ describe('Cli adapter routing runtime', () => {
     }
   });
 
-  it('localizes the acp_exec fail-closed runtime error through the routing bridge', async () => {
+  it('returns fixture-backed acp_exec invoke output through the routing bridge without reusing cli_exec truth', async () => {
     const acpAdaptersConfig: AdaptersConfig = {
       ...adaptersConfig,
       tools: [
@@ -819,12 +819,26 @@ describe('Cli adapter routing runtime', () => {
       runtime.createToolConfigBySurfaceMap(),
     );
 
-    await expect(
-      protocolBySurface[AdapterSurface.CODEX]?.invokeStage({} as never),
-    ).rejects.toMatchObject({
-      message:
-        'ACP host-facing transport 尚未为 codex 就绪；在 rollout enablement 完成前，调用 将保持 fail-closed。',
+    const invokeResult = await protocolBySurface[AdapterSurface.CODEX]?.invokeStage({
+      processId: 'process-001',
+      executionId: 'execution-001',
+      stageId: 'stage-001',
+      routeKey: 'session.main',
+      input: {
+        prompt: '通过 ACP bridge 执行一次 prompt turn。',
+      },
     });
+
+    expect(invokeResult?.output).toEqual(
+      expect.objectContaining({
+        adapterSurface: AdapterSurface.CODEX,
+        routeKey: 'session.main',
+        stageId: 'stage-001',
+        responseText: 'ACP（codex）：通过 ACP bridge 执行一次 prompt turn。',
+        acpSessionId: 'codex::process-001::execution-001::stage-001::acp-session',
+        acpInvocationKey: 'codex::process-001::execution-001::stage-001::session.main',
+      }),
+    );
   });
 
   it('preserves config-disabled ACP probe truth instead of rewriting it as host-not-ready', async () => {

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "host-verification-summary-v1",
   "status": "pass",
-  "verifiedAt": "2026-04-15T05:27:00.656Z",
+  "verifiedAt": "2026-04-20T12:22:45.023Z",
   "verificationSummaryPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/codex/packaged-distribution/link/generated/hosts/codex-plugin/host-verification.summary.json",
   "exportManifestPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/codex/packaged-distribution/link/generated/hosts/codex-plugin/host-export.manifest.json",
   "checks": [

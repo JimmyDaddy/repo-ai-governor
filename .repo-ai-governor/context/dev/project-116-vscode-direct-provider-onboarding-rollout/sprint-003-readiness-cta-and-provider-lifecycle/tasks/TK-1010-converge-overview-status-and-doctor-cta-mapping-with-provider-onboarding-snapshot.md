@@ -1,6 +1,6 @@
 # TK-1010 converge overview status and doctor cta mapping with provider-onboarding snapshot
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-20
 - Owner: AI-Agent
 - Priority: P1
@@ -39,21 +39,26 @@ Align plugin-native CTAs with the onboarding snapshot and canonical next actions
 
 ## 7. Development Verification
 
-1. 待执行：按任务范围补充 fast/targeted verification。
+1. `pnpm exec vitest run apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts apps/vscode-extension/test/vscode-extension-service-runtime.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts apps/vscode-extension/test/vscode-extension-chat-participant.test.ts`
 2. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-003-readiness-cta-and-provider-lifecycle/tasks" --task-id TK-1010
 
 ## 8. Delivery Verification
 
-1. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-003-readiness-cta-and-provider-lifecycle/tasks" --task-id TK-1010
-2. node ./scripts/governance/check-task-required-inputs.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-003-readiness-cta-and-provider-lifecycle/tasks" --task-id TK-1010
-3. node ./scripts/governance/check-task-ledger-sync.js
-4. node ./scripts/governance/check-sprint-plan-status-sync.js
+1. `pnpm run build`
+2. `pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`
+3. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-003-readiness-cta-and-provider-lifecycle/tasks" --task-id TK-1010
+4. node ./scripts/governance/check-task-required-inputs.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-116-vscode-direct-provider-onboarding-rollout/sprint-003-readiness-cta-and-provider-lifecycle/tasks" --task-id TK-1010
+5. node ./scripts/governance/check-task-ledger-sync.js
+6. node ./scripts/governance/check-sprint-plan-status-sync.js
 
 ## 9. 执行记录
 
 1. 2026-04-20：任务创建，状态初始化为 `planned`。
+2. 2026-04-20：`sprint-002-plugin-native-direct-api-key-entry` 已完成 closeout write-back，当前任务切换为 `in_progress`，作为 `project-116 / sprint-003-readiness-cta-and-provider-lifecycle` 的首个 active execution boundary。
+3. 2026-04-20：已将 provider lifecycle 投影接入 workbench overview、workflow studio 与 chat status surface，并把 `Connect Provider / Update API Key / Reconnect Provider / Run Doctor` 统一收敛为 host-level CTA 映射。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. `apps/vscode-extension/src/runtime/vscode-extension-service-runtime.ts`
+2. `apps/vscode-extension/src/runtime/vscode-extension-presentation-builder.ts`
+3. `apps/vscode-extension/src/runtime/vscode-extension-chat-participant.ts`

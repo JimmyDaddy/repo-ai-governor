@@ -1,6 +1,6 @@
 # TK-992 implement executable acp_exec invoke prompt and cancel baseline
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-20
 - Owner: AI-Agent
 - Priority: P1
@@ -39,21 +39,27 @@
 
 ## 7. Development Verification
 
-1. 待执行：按任务范围补充 fast/targeted verification。
-2. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-002-executable-acp-exec-baseline/tasks" --task-id TK-992
+1. pnpm vitest run apps/cli/test/runtime/cli-acp-prompt-turn-runtime.test.ts apps/cli/test/runtime/adapter-routing-runtime.test.ts
+2. pnpm exec tsc -p tsconfig.json --noEmit
+3. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-002-executable-acp-exec-baseline/tasks" --task-id TK-992
 
 ## 8. Delivery Verification
 
-1. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-002-executable-acp-exec-baseline/tasks" --task-id TK-992
-2. node ./scripts/governance/check-task-required-inputs.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-002-executable-acp-exec-baseline/tasks" --task-id TK-992
-3. node ./scripts/governance/check-task-ledger-sync.js
-4. node ./scripts/governance/check-sprint-plan-status-sync.js
+1. pnpm run build
+2. pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1
+3. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-002-executable-acp-exec-baseline/tasks" --task-id TK-992
+4. node ./scripts/governance/check-task-required-inputs.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-002-executable-acp-exec-baseline/tasks" --task-id TK-992
+5. node ./scripts/governance/check-task-ledger-sync.js
+6. node ./scripts/governance/check-sprint-plan-status-sync.js
 
 ## 9. 执行记录
 
 1. 2026-04-20：任务创建，状态初始化为 `planned`。
+2. 2026-04-20：由于 `sprint-001-contract-and-runtime-decomposition` 已完成 delegated CR loop 并完成 activation handoff，当前任务切换为 `in_progress`；本窗口开始推进真实 `acp_exec` invoke prompt / cancel baseline，并明确禁止 `cli_exec` aliasing 与双执行。
+3. 2026-04-20：实现 `CliAcpTransportClientRuntime` 的 fixture-backed `session/new -> session/prompt -> session/cancel` 主链路，`CliAcpPromptTurnRuntime` 改为向 transport owner 传递真实 request，`CliAcpHostOperationRuntime` 则通过 `CliAcpSessionRuntime.findInvocationState()` 回查共享 invocation 并执行 transport-scoped cancel。
+4. 2026-04-20：补齐 `apps/cli/test/runtime/cli-acp-prompt-turn-runtime.test.ts` 与 routing/runtime 定向回归，验证 invoke self-sufficient、stream attach、cancel rejection 与无 `cli_exec` aliasing 的 ACP baseline。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. `apps/cli/src/runtime/cli-acp-transport-client-runtime.ts`：提供 fixture-backed ACP prompt-turn execution、buffered event replay 与 transport-scoped cancel acknowledgement。
+2. `apps/cli/src/runtime/cli-acp-prompt-turn-runtime.ts`、`apps/cli/src/runtime/cli-acp-host-operation-runtime.ts`、`apps/cli/src/runtime/cli-acp-session-runtime.ts`：完成 request handoff、cancel lookup 与 invoke/stream shared execution wiring。

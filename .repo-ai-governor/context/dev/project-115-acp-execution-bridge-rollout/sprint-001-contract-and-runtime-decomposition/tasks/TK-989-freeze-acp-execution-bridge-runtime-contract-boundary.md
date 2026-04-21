@@ -1,6 +1,6 @@
 # TK-989 freeze acp execution bridge runtime contract boundary
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-20
 - Owner: AI-Agent
 - Priority: P1
@@ -42,8 +42,9 @@
 
 ## 7. Development Verification
 
-1. 待执行：按任务范围补充 fast/targeted verification。
-2. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-001-contract-and-runtime-decomposition/tasks" --task-id TK-989
+1. pnpm exec vitest run --config vitest.packages.config.ts apps/cli/test/runtime/cli-acp-session-runtime.test.ts apps/cli/test/runtime/adapter-routing-runtime.test.ts --maxWorkers=1 --maxConcurrency=1
+2. pnpm run build
+3. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-001-contract-and-runtime-decomposition/tasks" --task-id TK-989
 
 ## 8. Delivery Verification
 
@@ -55,8 +56,10 @@
 ## 9. 执行记录
 
 1. 2026-04-20：任务创建，状态初始化为 `planned`。
+2. 2026-04-20：任务切换为 `in_progress`，同步激活 `current-context.md`、project-115 plan 与 sprint-001 plan，并固定当前窗口只在 `project-115 / sprint-001` 内推进 ACP execution bridge runtime boundary。
+3. 2026-04-20：通过 `CliAcpHostAvailabilityResolution`、`CliAcpInvocationContext`、`CliAcpInvocationExecutionState` 与 `CliAcpHostProtocol` owner composition 明确 probe / invoke / stream / confirm / cancel 的 runtime ownership，保持 `acp_exec` fail-closed 且不回退成 `cli_exec` alias；同窗口 `pnpm exec vitest run --config vitest.packages.config.ts apps/cli/test/runtime/cli-acp-session-runtime.test.ts apps/cli/test/runtime/adapter-routing-runtime.test.ts --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run build` 已通过，当前任务切换为 `completed`。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. `.repo-ai-governor/context/current-context.md`、`.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/plan.md` 与 `.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-001-contract-and-runtime-decomposition/plan.md` 已写回 sprint-001 active truth，并把 contract boundary 固定为当前 primary execution surface。
+2. `apps/cli/src/types/interfaces/cli-acp-host-runtime.interface.ts`、`apps/cli/src/types/interfaces/index.ts`、`apps/cli/src/types/index.ts` 与 `apps/cli/src/runtime/cli-acp-host-protocol.ts` 已落地 ACP host-facing runtime contract baseline，明确 capability discovery、shared invocation context 与 fail-closed entrypoint contract。

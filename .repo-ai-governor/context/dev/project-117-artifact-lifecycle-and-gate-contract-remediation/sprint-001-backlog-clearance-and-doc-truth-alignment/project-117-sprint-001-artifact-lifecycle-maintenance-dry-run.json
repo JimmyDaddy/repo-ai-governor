@@ -1,0 +1,49 @@
+{
+  "dryRun": true,
+  "databaseFilePath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/artifact-registry/sqlite/artifact-registry.sqlite",
+  "mainRegistryPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/artifact-registry/artifacts.csv",
+  "archiveRegistryPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/artifact-registry/archive/artifacts.archive.csv",
+  "bootstrappedFromCsv": false,
+  "batchSummary": {
+    "dryRun": true,
+    "databaseFilePath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/artifact-registry/sqlite/artifact-registry.sqlite",
+    "mainRegistryPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/artifact-registry/artifacts.csv",
+    "archiveRegistryPath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/artifact-registry/archive/artifacts.archive.csv",
+    "bootstrappedFromCsv": false,
+    "updatedRows": 0,
+    "unresolvedArtifactDependencyRefs": 0,
+    "markedDeprecatedCount": 7,
+    "movedToArchiveCount": 9,
+    "renderedCsvViewsRefreshed": false
+  },
+  "reconcile": {
+    "dryRun": true,
+    "databaseFilePath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/artifact-registry/sqlite/artifact-registry.sqlite",
+    "bootstrappedFromCsv": false,
+    "taskCsvFiles": 273,
+    "indexedTasks": 964,
+    "taskCardFiles": 1017,
+    "openTaskCards": 0,
+    "fallbackStatusCards": 3,
+    "updatedRows": 0,
+    "correctedDateInversionCount": 0,
+    "activeArtifactWithDependentsCount": 0,
+    "activeArtifactWithoutDependentsCount": 10,
+    "totalResolvedDependencyLinks": 0,
+    "unresolvedArtifactDependencyRefs": 0
+  },
+  "compact": {
+    "dryRun": true,
+    "databaseFilePath": "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/artifact-registry/sqlite/artifact-registry.sqlite",
+    "bootstrappedFromCsv": false,
+    "inactiveDays": 7,
+    "deprecationDays": 14,
+    "mainRowsBefore": 29,
+    "mainRowsAfter": 20,
+    "archiveRowsBefore": 267,
+    "archiveRowsAfter": 276,
+    "markedDeprecatedCount": 7,
+    "movedToArchiveCount": 9
+  },
+  "unresolvedArtifactIds": []
+}

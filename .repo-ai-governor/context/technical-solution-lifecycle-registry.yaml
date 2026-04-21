@@ -618,6 +618,7 @@ solutions:
       - .repo-ai-governor/draft/repo-ai-governor-priority-roadmap-project-sprint-task-package-proposal.md
       - .repo-ai-governor/draft/repo-ai-governor-current-app-feature-implementation-vs-baseline-priority-assessment.md
       - .repo-ai-governor/draft/repo-ai-governor-current-surface-gap-guide-project-sprint-task-decomposition.md
+      - .repo-ai-governor/draft/repo-ai-governor-current-improvement-priorities-and-governance-remediation-refresh.md
     review_paths:
       - .repo-ai-governor/context/dev/project-051-priority-roadmap-promotion-and-decomposition/sprint-001-promotion-and-followup-decomposition/review/resolved_code_review_tk-586-588-priority-roadmap-promotion-and-decomposition.md
       - .repo-ai-governor/context/dev/project-072-current-surface-priority-promotion-and-decomposition/sprint-001-promotion-and-formal-followup-decomposition/review/resolved_code_review_tk-694-696-current-surface-priority-promotion-and-decomposition.md

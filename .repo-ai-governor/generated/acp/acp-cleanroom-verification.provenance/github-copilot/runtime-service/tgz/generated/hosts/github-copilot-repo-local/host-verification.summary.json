@@ -1,7 +1,7 @@
 {
   "schemaVersion": "host-verification-summary-v1",
   "status": "pass",
-  "verifiedAt": "2026-04-15T05:27:18.702Z",
+  "verifiedAt": "2026-04-20T12:23:07.501Z",
   "verificationSummaryPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/runtime-service/tgz/generated/hosts/github-copilot-repo-local/host-verification.summary.json",
   "exportManifestPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/github-copilot/runtime-service/tgz/generated/hosts/github-copilot-repo-local/host-export.manifest.json",
   "checks": [

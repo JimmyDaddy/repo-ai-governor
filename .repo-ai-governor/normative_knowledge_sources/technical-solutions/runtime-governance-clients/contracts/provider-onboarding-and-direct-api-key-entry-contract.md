@@ -50,7 +50,7 @@
 2. raw API key 只允许经由 host-local secure prompt 进入 mutation request；不得写入 `settings.json`、`governor.yaml`、`user-config.yaml`、chat transcript、command preview、日志、diagnostics 或其他 presenter-safe copy surface。
 3. canonical secret owner 固定为 Governor managed secret backend；VS Code `SecretStorage` 或其他 extension-local storage 只允许作为补充平台能力，不得被升格为正式持久化真值。
 4. host-facing onboarding 只允许持久化非敏感 provider config 与 selector truth；默认允许的 config target 仅限：
-   - `tools.<tool>.remoteApi.transport`
+   - `tools.<tool>.transport`
    - `tools.<tool>.remoteApi.provider`
    - `tools.<tool>.remoteApi.vendorBinding`
    - `tools.<tool>.remoteApi.model`

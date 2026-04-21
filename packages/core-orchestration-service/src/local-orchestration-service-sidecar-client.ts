@@ -7,6 +7,8 @@ import type { LangGraphRecoveredExecution } from '@repo-ai-governor/core-runtime
 import type {
   OrchestrationAppendSessionMessageRequest,
   OrchestrationAppendSessionMessageResponse,
+  OrchestrationApplyProviderOnboardingRequest,
+  OrchestrationApplyProviderOnboardingResponse,
   OrchestrationArchiveSessionRequest,
   OrchestrationArchiveSessionResponse,
   OrchestrationArtifactPaneQueryRequest,
@@ -23,6 +25,8 @@ import type {
   OrchestrationListExecutionsResponse,
   OrchestrationListSessionsRequest,
   OrchestrationListSessionsResponse,
+  OrchestrationProviderOnboardingSnapshot,
+  OrchestrationProviderOnboardingSnapshotRequest,
   OrchestrationQueueOverviewQueryRequest,
   OrchestrationQueueOverviewQueryResponse,
   OrchestrationRecoverExecutionRequest,
@@ -76,6 +80,7 @@ import type {
 
 const DEFAULT_SIDECAR_REQUEST_TIMEOUT_MS = 10000;
 const DEFAULT_WORKSPACE_OPERATION_REQUEST_TIMEOUT_MS = 300000;
+const DEFAULT_SESSION_TURN_REQUEST_TIMEOUT_MS = 300000;
 
 interface PendingRequest {
   resolve: (payload: unknown) => void;
@@ -118,6 +123,15 @@ export class LocalOrchestrationServiceSidecarClient {
     );
   }
 
+  public async queryProviderOnboarding(
+    request: OrchestrationProviderOnboardingSnapshotRequest,
+  ): Promise<OrchestrationProviderOnboardingSnapshot> {
+    return this.sendRequest<OrchestrationProviderOnboardingSnapshot>(
+      LocalOrchestrationServiceSidecarOperation.QUERY_PROVIDER_ONBOARDING,
+      request,
+    );
+  }
+
   public async setUserConfigValue(
     request: OrchestrationSetUserConfigValueRequest,
   ): Promise<OrchestrationSetUserConfigValueResponse> {
@@ -132,6 +146,15 @@ export class LocalOrchestrationServiceSidecarClient {
   ): Promise<OrchestrationSetManagedSecretResponse> {
     return this.sendRequest<OrchestrationSetManagedSecretResponse>(
       LocalOrchestrationServiceSidecarOperation.SET_MANAGED_SECRET,
+      request,
+    );
+  }
+
+  public async applyProviderOnboarding(
+    request: OrchestrationApplyProviderOnboardingRequest,
+  ): Promise<OrchestrationApplyProviderOnboardingResponse> {
+    return this.sendRequest<OrchestrationApplyProviderOnboardingResponse>(
+      LocalOrchestrationServiceSidecarOperation.APPLY_PROVIDER_ONBOARDING,
       request,
     );
   }
@@ -566,6 +589,11 @@ export class LocalOrchestrationServiceSidecarClient {
       return (
         this.dependencies.workspaceOperationRequestTimeoutMs ??
         DEFAULT_WORKSPACE_OPERATION_REQUEST_TIMEOUT_MS
+      );
+    }
+    if (operation === LocalOrchestrationServiceSidecarOperation.SEND_SESSION_TURN) {
+      return (
+        this.dependencies.sessionTurnRequestTimeoutMs ?? DEFAULT_SESSION_TURN_REQUEST_TIMEOUT_MS
       );
     }
 

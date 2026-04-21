@@ -155,6 +155,7 @@ const DEFAULT_REPO_LOCAL_CONFIG_CONTENT = [
  *   outputPath: string;
  *   keepTemp: boolean;
  *   includeAcpHostVerify: boolean;
+ *   includeAcpExecutionVerify: boolean;
  *   emitAcpEvidencePath: string | null;
  *   distributionMode: "default" | "plugin-enabled";
  * }}
@@ -167,6 +168,7 @@ function parseCliOptions() {
   let keepTemp = false;
   let distributionMode = DEFAULT_DISTRIBUTION_MODE;
   let includeAcpHostVerify = false;
+  let includeAcpExecutionVerify = false;
   let emitAcpEvidencePath = null;
 
   for (let index = 0; index < args.length; index += 1) {
@@ -225,6 +227,11 @@ function parseCliOptions() {
       continue;
     }
 
+    if (arg === '--acp-execution-verify') {
+      includeAcpExecutionVerify = true;
+      continue;
+    }
+
     if (arg === '--emit-acp-evidence') {
       const value = args[index + 1];
       if (typeof value !== 'string' || value.trim().length === 0) {
@@ -265,6 +272,7 @@ function parseCliOptions() {
     outputPath,
     keepTemp,
     includeAcpHostVerify,
+    includeAcpExecutionVerify,
     emitAcpEvidencePath,
     distributionMode,
   };
@@ -1399,6 +1407,332 @@ function createServiceHostMemoryProviderCheckScript(distributionMode) {
 }
 
 /**
+ * Builds one clean-room script that verifies ACP execution through the installed package by
+ * exercising invoke/stream/confirmation/cancel semantics from the packaged runtime.
+ * @returns {string}
+ */
+function createAcpExecutionCheckScript() {
+  return [
+    'import { createRequire } from "node:module";',
+    'import { dirname, resolve } from "node:path";',
+    'import { pathToFileURL } from "node:url";',
+    '',
+    'const require = createRequire(import.meta.url);',
+    'const packageJsonPath = require.resolve("repo-ai-governor/package.json");',
+    'const packageRoot = dirname(packageJsonPath);',
+    '/* dynamic-import-allowed: the clean-room harness must load the installed package dist output by resolved file path so it validates packaged runtime behavior instead of the source workspace. */',
+    'const importInstalledModule = async (relativePath) =>',
+    '  await import(pathToFileURL(resolve(packageRoot, relativePath)).href);',
+    'const assert = (condition, message) => {',
+    '  if (!condition) {',
+    '    throw new Error(message);',
+    '  }',
+    '};',
+    '',
+    'const { CliAdapterRoutingRuntime } = await importInstalledModule(',
+    '  "dist/apps/cli/src/runtime/adapter-routing-runtime.js",',
+    ');',
+    'const { CliAcpSessionRuntime } = await importInstalledModule(',
+    '  "dist/apps/cli/src/runtime/cli-acp-session-runtime.js",',
+    ');',
+    'const { CliAcpPromptTurnRuntime } = await importInstalledModule(',
+    '  "dist/apps/cli/src/runtime/cli-acp-prompt-turn-runtime.js",',
+    ');',
+    'const { CliAcpTransportClientRuntime } = await importInstalledModule(',
+    '  "dist/apps/cli/src/runtime/cli-acp-transport-client-runtime.js",',
+    ');',
+    'const { CliAcpHostOperationRuntime } = await importInstalledModule(',
+    '  "dist/apps/cli/src/runtime/cli-acp-host-operation-runtime.js",',
+    ');',
+    '',
+    'const ACP_LOCALIZE_TEXT = (_english, chinese) => chinese;',
+    '',
+    'const createStreamRequest = (input, overrides = {}) => ({',
+    '  processId: overrides.processId ?? "process-acp-001",',
+    '  executionId: overrides.executionId ?? "execution-acp-001",',
+    '  stageId: overrides.stageId ?? "stage-acp-001",',
+    '  routeKey: overrides.routeKey ?? "session.main",',
+    '  input,',
+    '});',
+    '',
+    'const createConfirmationRequest = (overrides = {}, metadata) => ({',
+    '  processId: overrides.processId ?? "process-acp-001",',
+    '  executionId: overrides.executionId ?? "execution-acp-001",',
+    '  stageId: overrides.stageId ?? "stage-acp-001",',
+    '  routeKey: overrides.routeKey ?? "session.main",',
+    '  prompt: "Confirm this ACP tool call.",',
+    '  ...(metadata ? { metadata } : {}),',
+    '});',
+    '',
+    'const collectStreamEvents = async (runtime, request) => {',
+    '  const events = [];',
+    '  for await (const event of runtime.streamEvents(request)) {',
+    '    events.push(event);',
+    '  }',
+    '  return events;',
+    '};',
+    '',
+    'const createPromptTurnHarness = () => {',
+    '  const sessionRuntime = new CliAcpSessionRuntime();',
+    '  const transportClientRuntime = new CliAcpTransportClientRuntime({',
+    '    forgetInvocationState: (invocationState) =>',
+    '      sessionRuntime.forgetInvocationState(invocationState),',
+    '  });',
+    '  const promptTurnRuntime = new CliAcpPromptTurnRuntime({',
+    '    surfaceId: "codex",',
+    '    localizeText: ACP_LOCALIZE_TEXT,',
+    '    sessionRuntime,',
+    '    transportClientRuntime,',
+    '  });',
+    '  const hostOperationRuntime = new CliAcpHostOperationRuntime({',
+    '    surfaceId: "codex",',
+    '    localizeText: ACP_LOCALIZE_TEXT,',
+    '    sessionRuntime,',
+    '    transportClientRuntime,',
+    '  });',
+    '  return {',
+    '    sessionRuntime,',
+    '    promptTurnRuntime,',
+    '    hostOperationRuntime,',
+    '  };',
+    '};',
+    '',
+    'const routingRuntime = new CliAdapterRoutingRuntime(',
+    '  {',
+    '    roles: [',
+    '      {',
+    '        roleId: "reviewer",',
+    '        roleProfileId: "reviewer-default",',
+    '        requiredCapabilities: [],',
+    '        required: true,',
+    '      },',
+    '    ],',
+    '    routing: {',
+    '      roleBindings: {',
+    '        reviewer: {',
+    '          primarySurface: "codex",',
+    '        },',
+    '      },',
+    '    },',
+    '    tools: [',
+    '      {',
+    '        toolId: "codex",',
+    '        enabled: true,',
+    '        availability: "available",',
+    '        transport: "acp_exec",',
+    '      },',
+    '    ],',
+    '  },',
+    '  {',
+    '    localizeText: ACP_LOCALIZE_TEXT,',
+    '  },',
+    ');',
+    'const protocolBySurface = routingRuntime.createProtocolBySurface(',
+    '  routingRuntime.createToolConfigBySurfaceMap(),',
+    ');',
+    'const routedInvokeResult = await protocolBySurface.codex.invokeStage({',
+    '  processId: "process-001",',
+    '  executionId: "execution-001",',
+    '  stageId: "stage-001",',
+    '  routeKey: "session.main",',
+    '  input: {',
+    '    prompt: "通过 ACP bridge 执行一次 prompt turn。",',
+    '  },',
+    '});',
+    'assert(',
+    '  routedInvokeResult.output.responseText === "ACP（codex）：通过 ACP bridge 执行一次 prompt turn。",',
+    '  "ACP clean-room routed invoke result did not preserve the expected response text.",',
+    ');',
+    'assert(',
+    '  routedInvokeResult.output.acpSessionId ===',
+    '    "codex::process-001::execution-001::stage-001::acp-session",',
+    '  "ACP clean-room routed invoke result did not preserve the expected session id.",',
+    ');',
+    '',
+    'const toolHarness = createPromptTurnHarness();',
+    'const toolRequest = createStreamRequest({',
+    '  prompt: "Run ACP terminal and filesystem bridge operations.",',
+    '  acpCapabilities: {',
+    '    terminal: true,',
+    '    fsReadTextFile: true,',
+    '  },',
+    '  toolCalls: [',
+    '    {',
+    '      toolCallId: "tool-call-terminal-001",',
+    '      toolName: "terminal/create",',
+    '      terminalId: "terminal-001",',
+    '      detail: "Create the ACP terminal session.",',
+    '    },',
+    '    {',
+    '      toolCallId: "tool-call-fs-001",',
+    '      toolName: "fs/read_text_file",',
+    '      detail: "Read one governed file through ACP.",',
+    '    },',
+    '  ],',
+    '});',
+    'const toolInvokeResult = await toolHarness.promptTurnRuntime.invokeStage(toolRequest);',
+    'const toolEvents = await collectStreamEvents(toolHarness.promptTurnRuntime, toolRequest);',
+    'const toolState = toolHarness.sessionRuntime.ensureInvocationState("codex", toolRequest);',
+    'assert(',
+    '  JSON.stringify(toolEvents.map((event) => event.eventType)) ===',
+    '    JSON.stringify(["status", "tool_call", "tool_call", "token", "completed"]),',
+    '  "ACP clean-room bridge events did not preserve the expected tool-call replay sequence.",',
+    ');',
+    'assert(',
+    '  JSON.stringify(',
+    '    toolEvents',
+    '      .filter((event) => event.eventType === "tool_call")',
+    '      .map((event) => event.payload.toolName),',
+    '  ) === JSON.stringify(["terminal/create", "fs/read_text_file"]),',
+    '  "ACP clean-room bridge events did not preserve the expected tool names.",',
+    ');',
+    'assert(',
+    '  JSON.stringify(toolState.terminalIds) === JSON.stringify(["terminal-001"]),',
+    '  "ACP clean-room bridge state did not preserve the tracked terminal ids.",',
+    ');',
+    '',
+    'const permissionHarness = createPromptTurnHarness();',
+    'const permissionRequest = createStreamRequest({',
+    '  prompt: "Bridge this ACP confirmation request through active tool-call metadata.",',
+    '  toolCalls: [',
+    '    {',
+    '      toolCallId: "tool-call-001",',
+    '      toolName: "approval/request",',
+    '      detail: "Bridge approval metadata onto the live ACP turn.",',
+    '      requiredCapabilities: [],',
+    '    },',
+    '  ],',
+    '});',
+    'const permissionInvokePromise = permissionHarness.promptTurnRuntime.invokeStage(',
+    '  permissionRequest,',
+    ');',
+    'let permissionState = permissionHarness.sessionRuntime.ensureInvocationState(',
+    '  "codex",',
+    '  permissionRequest,',
+    ');',
+    'for (',
+    '  let attempt = 0;',
+    '  attempt < 5 && !permissionState.emittedToolCallIds.includes("tool-call-001");',
+    '  attempt += 1',
+    ') {',
+    '  await Promise.resolve();',
+    '  permissionState = permissionHarness.sessionRuntime.ensureInvocationState(',
+    '    "codex",',
+    '    permissionRequest,',
+    '  );',
+    '}',
+    'const confirmationResult = await permissionHarness.hostOperationRuntime.requestConfirmation(',
+    '  createConfirmationRequest({}, {',
+    '    acpPermissionRequestId: "permission-001",',
+    '    toolCallId: "tool-call-001",',
+    '    allowedDecisions: ["approve", "reject"],',
+    '    decision: "approve",',
+    '    constraints: ["workspace.write"],',
+    '    reason: "Approved from the active ACP permission bridge.",',
+    '  }),',
+    ');',
+    'await permissionInvokePromise;',
+    'assert(',
+    '  confirmationResult.decision === "approve",',
+    '  "ACP clean-room confirmation bridge did not preserve the approved decision.",',
+    ');',
+    'assert(',
+    '  JSON.stringify(permissionState.permissionRequestIds) === JSON.stringify(["permission-001"]),',
+    '  "ACP clean-room confirmation bridge did not persist the tracked permission request id.",',
+    ');',
+    '',
+    'const cancelHarness = createPromptTurnHarness();',
+    'const cancelRequest = createStreamRequest({',
+    '  prompt: "Cancel one ACP terminal bridge turn after the tool call starts.",',
+    '  acpCapabilities: {',
+    '    terminal: true,',
+    '  },',
+    '  toolCalls: [',
+    '    {',
+    '      toolCallId: "tool-call-terminal-002",',
+    '      toolName: "terminal/create",',
+    '      terminalId: "terminal-002",',
+    '      detail: "Create the cancellable ACP terminal session.",',
+    '    },',
+    '  ],',
+    '});',
+    'const cancelInvokePromise = cancelHarness.promptTurnRuntime.invokeStage(cancelRequest);',
+    'let cancelState = cancelHarness.sessionRuntime.ensureInvocationState("codex", cancelRequest);',
+    'for (let attempt = 0; attempt < 5 && cancelState.terminalIds.length === 0; attempt += 1) {',
+    '  await Promise.resolve();',
+    '  cancelState = cancelHarness.sessionRuntime.ensureInvocationState("codex", cancelRequest);',
+    '}',
+    'const cancelAcknowledgement = await cancelHarness.hostOperationRuntime.cancel({',
+    '  processId: cancelRequest.processId,',
+    '  executionId: cancelRequest.executionId,',
+    '  stageId: cancelRequest.stageId,',
+    '  routeKey: cancelRequest.routeKey,',
+    '  scope: "stage",',
+    '  reason: "user_requested",',
+    '});',
+    'let cancelFailure = null;',
+    'try {',
+    '  await cancelInvokePromise;',
+    '} catch (error) {',
+    '  cancelFailure = {',
+    '    code: error?.code ?? null,',
+    '    message: error?.message ?? String(error),',
+    '  };',
+    '}',
+    'const cancelEvents = await collectStreamEvents(cancelHarness.promptTurnRuntime, cancelRequest);',
+    'assert(',
+    '  cancelAcknowledgement.acknowledged === true,',
+    '  "ACP clean-room cancellation bridge did not acknowledge the live turn cancellation.",',
+    ');',
+    'assert(',
+    '  cancelFailure?.code === "PROCESS_RUNTIME_CANCELLED",',
+    '  "ACP clean-room cancellation bridge did not surface the expected cancellation code.",',
+    ');',
+    'assert(',
+    '  JSON.stringify(cancelState.terminalIds) === JSON.stringify([]),',
+    '  "ACP clean-room cancellation bridge did not clear tracked terminal ids.",',
+    ');',
+    'assert(',
+    '  JSON.stringify(cancelEvents.map((event) => event.eventType)) ===',
+    '    JSON.stringify(["status", "tool_call", "failed"]),',
+    '  "ACP clean-room cancellation bridge did not preserve the expected failed replay sequence.",',
+    ');',
+    '',
+    'console.log(',
+    '  JSON.stringify({',
+    '    status: "passed",',
+    '    routeInvoke: {',
+    '      responseText: routedInvokeResult.output.responseText,',
+    '      acpSessionId: routedInvokeResult.output.acpSessionId,',
+    '      acpInvocationKey: routedInvokeResult.output.acpInvocationKey,',
+    '    },',
+    '    toolBridge: {',
+    '      responseText: toolInvokeResult.output.responseText,',
+    '      eventTypes: toolEvents.map((event) => event.eventType),',
+    '      toolNames: toolEvents',
+    '        .filter((event) => event.eventType === "tool_call")',
+    '        .map((event) => event.payload.toolName),',
+    '      terminalIds: [...toolState.terminalIds],',
+    '    },',
+    '    permissionBridge: {',
+    '      decision: confirmationResult.decision,',
+    '      reason: confirmationResult.reason,',
+    '      permissionRequestIds: [...permissionState.permissionRequestIds],',
+    '      emittedToolCallIds: [...permissionState.emittedToolCallIds],',
+    '    },',
+    '    cancellation: {',
+    '      acknowledged: cancelAcknowledgement.acknowledged,',
+    '      failureCode: cancelFailure?.code ?? null,',
+    '      eventTypes: cancelEvents.map((event) => event.eventType),',
+    '      terminalIdsAfterCancel: [...cancelState.terminalIds],',
+    '    },',
+    '  }),',
+    ');',
+    '',
+  ].join('\n');
+}
+
+/**
  * Executes clean-room installed-package host export/pack/verify across ACP-capable surfaces and
  * captures a machine-readable evidence packet per mode.
  * @param {{
@@ -1532,6 +1866,55 @@ function runAcpHostTransportScenario(options) {
     repositoryPath,
     install,
     surfaces,
+  };
+}
+
+/**
+ * Executes one clean-room ACP execution harness against the installed package and records the
+ * invoke/stream/confirm/cancel boundary through the packaged runtime.
+ * @param {{
+ *   mode: string;
+ *   workingRoot: string;
+ *   installAssets: {repositoryRoot: string; tarballPath: string | null};
+ * }} options Scenario options.
+ * @returns {Record<string, unknown>}
+ */
+function runAcpExecutionScenario(options) {
+  const scenarioRoot = resolve(options.workingRoot, `acp-execution-${options.mode}`);
+  const repositoryPath = resolve(scenarioRoot, 'target-repo');
+  const homePath = resolve(scenarioRoot, 'home');
+  const runtimeEnv = buildIsolatedRuntimeEnv(homePath);
+  initializeCleanroomRepository(repositoryPath, `cleanroom-acp-execution-${options.mode}`);
+  const install = installCleanroomPackage({
+    mode: options.mode,
+    repositoryPath,
+    runtimeEnv,
+    installAssets: options.installAssets,
+  });
+  const scriptRelativePath = 'verify-acp-execution.mjs';
+  const scriptPath = resolve(repositoryPath, scriptRelativePath);
+  writeFileSync(scriptPath, createAcpExecutionCheckScript(), 'utf8');
+
+  const executionStep = runCommand(process.execPath, [scriptRelativePath], {
+    cwd: repositoryPath,
+    env: runtimeEnv,
+    label: `acp-execution(${options.mode})`,
+  });
+  const payload = parseJsonOutput(executionStep.stdout, `acp-execution(${options.mode})`);
+  if (payload.status !== 'passed') {
+    throw new Error(
+      `ACP clean-room execution scenario for mode=${options.mode} returned status=${String(payload.status)}.`,
+    );
+  }
+
+  return {
+    mode: options.mode,
+    status: 'passed',
+    repositoryPath,
+    install,
+    executionCommand: executionStep.command,
+    executionDurationMs: executionStep.durationMs,
+    summary: payload,
   };
 }
 
@@ -2287,6 +2670,8 @@ async function main() {
   const remoteApiScenarios = [];
   /** @type {Array<Record<string, unknown>>} */
   let acpHostTransportScenarios = [];
+  /** @type {Array<Record<string, unknown>>} */
+  let acpExecutionScenarios = [];
 
   try {
     for (const mode of options.modes) {
@@ -2373,6 +2758,18 @@ async function main() {
       });
     }
 
+    if (options.includeAcpExecutionVerify) {
+      acpExecutionScenarios = options.modes.map((mode) => {
+        const scenario = runAcpExecutionScenario({
+          mode,
+          workingRoot: createdTempRoot,
+          installAssets,
+        });
+        gateInfo(GATE_NAME, `ACP execution clean-room scenario passed for mode=${mode}.`);
+        return scenario;
+      });
+    }
+
     if (options.distributionMode === PLUGIN_ENABLED_DISTRIBUTION_MODE) {
       pluginEnabledMemoryProviderScenarios = options.modes.map((mode) => {
         const scenario = runPluginEnabledMemoryProviderScenario({
@@ -2405,6 +2802,7 @@ async function main() {
     serviceHostMemoryProviderScenarios,
     remoteApiScenarios,
     acpHostTransportScenarios,
+    acpExecutionScenarios,
     pluginEnabledMemoryProviderScenarios,
     stage9aHardExit: {
       requiredModeMinimum: 2,
@@ -2417,6 +2815,8 @@ async function main() {
     notes: {
       tgzModeSelected: options.modes.includes('tgz'),
       pluginEnabledDistribution: options.distributionMode === PLUGIN_ENABLED_DISTRIBUTION_MODE,
+      acpHostVerifySelected: options.includeAcpHostVerify,
+      acpExecutionVerifySelected: options.includeAcpExecutionVerify,
       cleanupPolicy: options.keepTemp || overallStatus === 'failed' ? 'keep_temp' : 'remove_temp',
     },
   };

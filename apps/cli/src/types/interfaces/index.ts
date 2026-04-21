@@ -155,6 +155,12 @@ export type {
   CliLocalAdapterProbeResolution,
 } from './cli-adapter-verification.interface.js';
 export type {
+  CliAcpHostAvailabilityResolution,
+  CliAcpInvocationContext,
+  CliAcpInvocationExecutionState,
+  CliAcpPermissionRequestResolution,
+} from './cli-acp-host-runtime.interface.js';
+export type {
   CliTaskCardContext,
   CliTaskDrivenRunAssembly,
   CliTaskInputArtifactReference,

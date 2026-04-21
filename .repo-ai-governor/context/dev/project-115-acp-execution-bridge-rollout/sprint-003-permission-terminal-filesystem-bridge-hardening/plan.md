@@ -1,6 +1,6 @@
 # sprint-003-permission-terminal-filesystem-bridge-hardening 计划
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-20
 - Sprint Goal: 完成 permission terminal filesystem bridge hardening 与 capability-gated fail-closed 语义
 - Project: `project-115-acp-execution-bridge-rollout`
@@ -17,9 +17,10 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-995 | implement permission bridge and active tool-call confirmation mapping | sprint-002-executable-acp-exec-baseline planned handoff | planned |
-| TK-996 | implement terminal and filesystem bridge runtime hardening | TK-995 | planned |
-| TK-997 | verify failure-path matrix and sprint-003 handoff | TK-996 | planned |
+| TK-995 | implement permission bridge and active tool-call confirmation mapping | sprint-002-executable-acp-exec-baseline planned handoff | completed |
+| TK-996 | implement terminal and filesystem bridge runtime hardening | TK-995 | completed |
+| TK-997 | verify failure-path matrix and sprint-003 handoff | TK-996 | completed |
+| TK-1020 | close sprint-003 boundary and activate sprint-004 execution surface | CR-001 reviewer-clean handoff | completed |
 
 ## 3. Exit Criteria
 
@@ -32,3 +33,5 @@
 1. bootstrap 阶段不预生成 code_review 生命周期文件。
 2. 若用户只要求拆解，不自动修改 current-context.md。
 3. 该 sprint 默认保持 planned，等待 sprint-002-executable-acp-exec-baseline handoff 或用户显式激活。
+4. `2026-04-20`：`CR-008` 确认 sprint-002 reviewer-clean 后，本 sprint 被正式激活为 primary execution surface；后续实现从 `TK-995` 开始推进 permission / terminal / filesystem bridge hardening。
+5. `2026-04-20`：`CR-001` 在 multi-round delegated recheck 后 reviewer-clean，当前 sprint 已完成 closeout；下一条 primary execution surface 切换到 `sprint-004-clean-room-execution-and-packaged-evidence`。

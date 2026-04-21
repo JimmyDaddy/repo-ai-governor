@@ -9,6 +9,7 @@ import {
   OrchestrationBootstrapReadinessActionId,
   OrchestrationWorkspaceOperationKind,
 } from '@repo-ai-governor/orchestration-service-client';
+import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import { LocalOrchestrationServiceWorkspaceOpsRuntime } from '../src/local-orchestration-service-workspace-ops-runtime.js';
 
 type WorkspaceOpsDependencies = ConstructorParameters<
@@ -145,7 +146,7 @@ describe('LocalOrchestrationServiceWorkspaceOpsRuntime', () => {
         return {
           command_result: {
             details: createCliDetailsRecord({
-              records: 'openai/api-key@os-keychain:present',
+              records: 'openai/api-key@os-keychain:missing',
             }),
           },
         };
@@ -226,6 +227,415 @@ describe('LocalOrchestrationServiceWorkspaceOpsRuntime', () => {
       currentWorkingDirectory: '/repo',
       stdin: 'sk-managed-secret',
       locale: 'zh-CN',
+    });
+  });
+
+  it('projects provider-onboarding snapshot and apply through the managed secret and config seams', async () => {
+    const cliExecutor = vi.fn<WorkspaceOpsCliExecutor>(async (request) => {
+      if (request.args[0] === 'config' && request.args[1] === 'status') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              config_path: '/repo/.repo-ai-governor/user-config.yaml',
+              config_exists: true,
+              legacy_preference_path: '/repo/.repo-ai-governor/cli-preferences.yaml',
+              legacy_preference_exists: false,
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'config' && request.args[1] === 'list') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              entries:
+                'tools.codex.remoteApi.provider=openai | tools.codex.remoteApi.model=gpt-5.4 | tools.codex.remoteApi.credentialRef=secret://openai/api-key',
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'secret' && request.args[1] === 'status') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              selected_backend: 'os-keychain',
+              default_backend: 'os-keychain',
+              index_path: '/repo/.repo-ai-governor/secret-index.json',
+            }),
+            checks: [
+              {
+                id: 'secret_backend_os-keychain',
+                status: 'pass',
+                detail: 'Ready',
+              },
+            ],
+          },
+        };
+      }
+
+      if (request.args[0] === 'secret' && request.args[1] === 'list') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              records: 'openai/api-key@os-keychain:missing',
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'secret' && request.args[1] === 'set') {
+        return {
+          message: 'secret updated',
+          command_result: {
+            details: createCliDetailsRecord({
+              selector: 'secret://openai/api-key',
+              backend: 'os-keychain',
+            }),
+          },
+        };
+      }
+
+      return {
+        message: 'config updated',
+        command_result: {
+          details: createCliDetailsRecord({
+            value: request.args[3],
+          }),
+        },
+      };
+    });
+    const runtime = new LocalOrchestrationServiceWorkspaceOpsRuntime({
+      workspaceRoot: '/repo/.repo-ai-governor',
+      repositoryRoot: '/repo',
+      workspaceResolver: createWorkspaceResolver(),
+      pathExists: () => false,
+      cliExecutor,
+    });
+
+    await expect(
+      runtime.queryProviderOnboarding({
+        tool: 'codex' as never,
+        entrypointKind: 'quick_pick_form',
+      }),
+    ).resolves.toMatchObject({
+      tool: 'codex',
+      provider: 'openai',
+      transport: 'remote_api',
+      credentialRef: 'secret://openai/api-key',
+      selectedBackendId: 'os-keychain',
+      defaultBackendId: 'os-keychain',
+    });
+    await expect(
+      runtime.applyProviderOnboarding({
+        tool: 'codex' as never,
+        entrypointKind: 'quick_pick_form',
+        model: 'gpt-5.5',
+        apiKey: 'sk-live',
+      }),
+    ).resolves.toMatchObject({
+      tool: 'codex',
+      provider: 'openai',
+      secretBackend: 'os-keychain',
+      nextAction: 'repoAiGovernor.runConnect',
+    });
+    expect(cliExecutor).toHaveBeenCalledWith({
+      args: ['secret', 'set', 'openai/api-key', '--backend', 'os-keychain', '--stdin'],
+      currentWorkingDirectory: '/repo',
+      stdin: 'sk-live',
+      locale: undefined,
+    });
+    expect(cliExecutor).toHaveBeenCalledWith({
+      args: ['config', 'set', 'tools.codex.transport', 'remote_api'],
+      currentWorkingDirectory: '/repo',
+      locale: undefined,
+    });
+    expect(cliExecutor).toHaveBeenCalledWith({
+      args: ['config', 'unset', 'tools.codex.remoteApi.credentialEnvVar'],
+      currentWorkingDirectory: '/repo',
+      locale: undefined,
+    });
+  });
+
+  it('clears one stale endpoint during direct provider onboarding when the endpoint override is blank', async () => {
+    const cliExecutor = vi.fn<WorkspaceOpsCliExecutor>(async (request) => {
+      if (request.args[0] === 'config' && request.args[1] === 'status') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              config_path: '/repo/.repo-ai-governor/user-config.yaml',
+              config_exists: true,
+              legacy_preference_path: '/repo/.repo-ai-governor/cli-preferences.yaml',
+              legacy_preference_exists: false,
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'config' && request.args[1] === 'list') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              entries:
+                'tools.codex.remoteApi.provider=openai | tools.codex.remoteApi.model=gpt-5.4 | tools.codex.remoteApi.credentialRef=secret://openai/api-key | tools.codex.remoteApi.endpoint=https://stale.example/v1',
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'secret' && request.args[1] === 'status') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              selected_backend: 'os-keychain',
+              default_backend: 'os-keychain',
+              index_path: '/repo/.repo-ai-governor/secret-index.json',
+            }),
+            checks: [
+              {
+                id: 'secret_backend_os-keychain',
+                status: 'pass',
+                detail: 'Ready',
+              },
+            ],
+          },
+        };
+      }
+
+      if (request.args[0] === 'secret' && request.args[1] === 'list') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              records: 'openai/api-key@os-keychain:missing',
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'secret' && request.args[1] === 'set') {
+        return {
+          message: 'secret updated',
+          command_result: {
+            details: createCliDetailsRecord({
+              selector: 'secret://openai/api-key',
+              backend: 'os-keychain',
+            }),
+          },
+        };
+      }
+
+      return {
+        message: 'config updated',
+        command_result: {
+          details: createCliDetailsRecord({
+            value: request.args[3] ?? null,
+          }),
+        },
+      };
+    });
+    const runtime = new LocalOrchestrationServiceWorkspaceOpsRuntime({
+      workspaceRoot: '/repo/.repo-ai-governor',
+      repositoryRoot: '/repo',
+      workspaceResolver: createWorkspaceResolver(),
+      pathExists: () => false,
+      cliExecutor,
+    });
+
+    await expect(
+      runtime.applyProviderOnboarding({
+        tool: 'codex' as never,
+        entrypointKind: 'quick_pick_form',
+        model: 'gpt-5.5',
+        apiKey: 'sk-live',
+        endpoint: '',
+      }),
+    ).resolves.toMatchObject({
+      configTargets: expect.arrayContaining(['tools.codex.remoteApi.endpoint']),
+    });
+
+    expect(cliExecutor).toHaveBeenCalledWith({
+      args: ['config', 'unset', 'tools.codex.remoteApi.endpoint'],
+      currentWorkingDirectory: '/repo',
+      locale: undefined,
+    });
+  });
+
+  it('falls back to defaultBackendId when the selected backend is no longer writable', async () => {
+    const cliExecutor = vi.fn<WorkspaceOpsCliExecutor>(async (request) => {
+      if (request.args[0] === 'config' && request.args[1] === 'status') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              config_path: '/repo/.repo-ai-governor/user-config.yaml',
+              config_exists: true,
+              legacy_preference_path: '/repo/.repo-ai-governor/cli-preferences.yaml',
+              legacy_preference_exists: false,
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'config' && request.args[1] === 'list') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              entries:
+                'tools.codex.remoteApi.provider=openai | tools.codex.remoteApi.model=gpt-5.4 | tools.codex.remoteApi.credentialRef=secret://openai/api-key',
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'secret' && request.args[1] === 'status') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              selected_backend: 'unsafe-local-file',
+              default_backend: 'os-keychain',
+              index_path: '/repo/.repo-ai-governor/secret-index.json',
+            }),
+            checks: [
+              {
+                id: 'secret_backend_unsafe-local-file',
+                status: 'fail',
+                detail: 'disabled',
+              },
+              {
+                id: 'secret_backend_os-keychain',
+                status: 'pass',
+                detail: 'Ready',
+              },
+            ],
+          },
+        };
+      }
+
+      if (request.args[0] === 'secret' && request.args[1] === 'list') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              records: 'openai/api-key@os-keychain:missing',
+            }),
+          },
+        };
+      }
+
+      return {
+        message: 'unexpected mutation',
+        command_result: {
+          details: createCliDetailsRecord({}),
+        },
+      };
+    });
+    const runtime = new LocalOrchestrationServiceWorkspaceOpsRuntime({
+      workspaceRoot: '/repo/.repo-ai-governor',
+      repositoryRoot: '/repo',
+      workspaceResolver: createWorkspaceResolver(),
+      pathExists: () => false,
+      cliExecutor,
+    });
+
+    await expect(
+      runtime.applyProviderOnboarding({
+        tool: 'codex' as never,
+        entrypointKind: 'quick_pick_form',
+        model: 'gpt-5.5',
+        apiKey: 'sk-live',
+      }),
+    ).resolves.toMatchObject({
+      tool: 'codex',
+      provider: 'openai',
+      secretBackend: 'os-keychain',
+    });
+
+    expect(cliExecutor).toHaveBeenCalledWith({
+      args: ['secret', 'set', 'openai/api-key', '--backend', 'os-keychain', '--stdin'],
+      currentWorkingDirectory: '/repo',
+      stdin: 'sk-live',
+      locale: undefined,
+    });
+  });
+
+  it('fails closed when provider onboarding receives an unsupported tool/provider pairing', async () => {
+    const cliExecutor = vi.fn<WorkspaceOpsCliExecutor>(async (request) => {
+      if (request.args[0] === 'config' && request.args[1] === 'status') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              config_path: '/repo/.repo-ai-governor/user-config.yaml',
+              config_exists: true,
+              legacy_preference_path: '/repo/.repo-ai-governor/cli-preferences.yaml',
+              legacy_preference_exists: false,
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'config' && request.args[1] === 'list') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              entries: '',
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'secret' && request.args[1] === 'status') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              selected_backend: 'os-keychain',
+              default_backend: 'os-keychain',
+              index_path: '/repo/.repo-ai-governor/secret-index.json',
+            }),
+            checks: [
+              {
+                id: 'secret_backend_os-keychain',
+                status: 'pass',
+                detail: 'Ready',
+              },
+            ],
+          },
+        };
+      }
+
+      return {
+        command_result: {
+          details: createCliDetailsRecord({
+            records: '',
+          }),
+        },
+      };
+    });
+    const runtime = new LocalOrchestrationServiceWorkspaceOpsRuntime({
+      workspaceRoot: '/repo/.repo-ai-governor',
+      repositoryRoot: '/repo',
+      workspaceResolver: createWorkspaceResolver(),
+      pathExists: () => false,
+      cliExecutor,
+    });
+
+    await expect(
+      runtime.queryProviderOnboarding({
+        tool: 'codex' as never,
+        entrypointKind: 'quick_pick_form',
+        provider: 'anthropic' as never,
+      }),
+    ).rejects.toMatchObject({
+      code: GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+      message: 'Provider onboarding only supports provider openai for tool codex.',
+    });
+    await expect(
+      runtime.queryProviderOnboarding({
+        tool: 'claude-code' as never,
+        entrypointKind: 'quick_pick_form',
+        provider: 'openai' as never,
+      }),
+    ).rejects.toMatchObject({
+      code: GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+      message: 'Provider onboarding only supports provider anthropic for tool claude-code.',
     });
   });
 
@@ -416,6 +826,767 @@ describe('LocalOrchestrationServiceWorkspaceOpsRuntime', () => {
 
     expect(zhBootstrapSource).toContain('当前内嵌 CLI 模块未导出 runCli()。');
     expect(zhBootstrapSource).not.toContain('Embedded CLI module did not expose runCli().');
+  });
+
+  it('rolls back staged onboarding mutations when CONNECT apply fails', async () => {
+    const cliExecutor = vi.fn<WorkspaceOpsCliExecutor>(async (request) => {
+      if (request.args[0] === 'config' && request.args[1] === 'status') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              config_path: '/repo/.repo-ai-governor/user-config.yaml',
+              config_exists: true,
+              legacy_preference_path: '/repo/.repo-ai-governor/cli-preferences.yaml',
+              legacy_preference_exists: false,
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'config' && request.args[1] === 'list') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              entries:
+                'tools.codex.transport=remote_api | tools.codex.remoteApi.provider=openai | tools.codex.remoteApi.vendorBinding=openai_responses | tools.codex.remoteApi.model=gpt-4o | tools.codex.remoteApi.credentialRef=secret://openai/api-key | tools.codex.remoteApi.endpoint=https://old.example/v1 | tools.codex.remoteApi.credentialEnvVar=OPENAI_API_KEY',
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'secret' && request.args[1] === 'status') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              selected_backend: 'os-keychain',
+              default_backend: 'os-keychain',
+              index_path: '/repo/.repo-ai-governor/secret-index.json',
+            }),
+            checks: [
+              {
+                id: 'secret_backend_os-keychain',
+                status: 'pass',
+                detail: 'Ready',
+              },
+            ],
+          },
+        };
+      }
+
+      if (request.args[0] === 'secret' && request.args[1] === 'list') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              records: 'openai/api-key@os-keychain:missing',
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'connect' && request.args[1] === 'apply') {
+        throw new RuntimeError(
+          GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+          'connect apply failed',
+        );
+      }
+
+      if (request.args[0] === 'connect') {
+        return {
+          message: 'connect plan prepared',
+          command_result: {
+            operation: 'connect_generate',
+            summary: 'connect plan prepared',
+          },
+        };
+      }
+
+      return {
+        message: 'mutation applied',
+        command_result: {
+          details: createCliDetailsRecord({
+            value: request.args[3] ?? null,
+          }),
+        },
+      };
+    });
+    const runtime = new LocalOrchestrationServiceWorkspaceOpsRuntime({
+      workspaceRoot: '/repo/.repo-ai-governor',
+      repositoryRoot: '/repo',
+      workspaceResolver: createWorkspaceResolver(),
+      pathExists: () => false,
+      cliExecutor,
+    });
+
+    await expect(
+      runtime.runWorkspaceOperation({
+        operationKind: OrchestrationWorkspaceOperationKind.CONNECT,
+        arguments: {
+          presetId: 'multi-tool-default',
+          tools: ['codex'],
+          toolTransportBindings: ['codex=remote_api'],
+          providerOnboardingTool: 'codex',
+          providerOnboardingEntrypointKind: 'quick_pick_form',
+          providerOnboardingProvider: 'openai',
+          providerOnboardingModel: 'gpt-5.5',
+          providerOnboardingApiKey: 'sk-live',
+          providerOnboardingEndpoint: '',
+          providerOnboardingBackendId: 'os-keychain',
+        },
+      }),
+    ).rejects.toThrow('connect apply failed');
+
+    expect(cliExecutor).toHaveBeenCalledWith({
+      args: ['secret', 'set', 'openai/api-key', '--backend', 'os-keychain', '--stdin'],
+      currentWorkingDirectory: '/repo',
+      stdin: 'sk-live',
+      locale: undefined,
+    });
+    expect(cliExecutor).toHaveBeenCalledWith({
+      args: ['config', 'set', 'tools.codex.remoteApi.endpoint', 'https://old.example/v1'],
+      currentWorkingDirectory: '/repo',
+      locale: undefined,
+    });
+    expect(cliExecutor).toHaveBeenCalledWith({
+      args: ['config', 'set', 'tools.codex.remoteApi.credentialEnvVar', 'OPENAI_API_KEY'],
+      currentWorkingDirectory: '/repo',
+      locale: undefined,
+    });
+    expect(cliExecutor).toHaveBeenCalledWith({
+      args: ['secret', 'delete', 'openai/api-key', '--backend', 'os-keychain'],
+      currentWorkingDirectory: '/repo',
+      locale: undefined,
+    });
+  });
+
+  it('fails closed before connect when direct onboarding would overwrite an existing managed secret', async () => {
+    const cliExecutor = vi.fn<WorkspaceOpsCliExecutor>(async (request) => {
+      if (request.args[0] === 'config' && request.args[1] === 'status') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              config_path: '/repo/.repo-ai-governor/user-config.yaml',
+              config_exists: true,
+              legacy_preference_path: '/repo/.repo-ai-governor/cli-preferences.yaml',
+              legacy_preference_exists: false,
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'config' && request.args[1] === 'list') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              entries:
+                'tools.codex.transport=remote_api | tools.codex.remoteApi.provider=openai | tools.codex.remoteApi.vendorBinding=openai_responses | tools.codex.remoteApi.model=gpt-4o | tools.codex.remoteApi.credentialRef=secret://openai/api-key',
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'secret' && request.args[1] === 'status') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              selected_backend: 'os-keychain',
+              default_backend: 'os-keychain',
+              index_path: '/repo/.repo-ai-governor/secret-index.json',
+            }),
+            checks: [
+              {
+                id: 'secret_backend_os-keychain',
+                status: 'pass',
+                detail: 'Ready',
+              },
+            ],
+          },
+        };
+      }
+
+      if (request.args[0] === 'secret' && request.args[1] === 'list') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              records: 'openai/api-key@os-keychain:present',
+            }),
+          },
+        };
+      }
+
+      return {
+        message: 'unexpected mutation',
+        command_result: {
+          details: createCliDetailsRecord({}),
+        },
+      };
+    });
+    const runtime = new LocalOrchestrationServiceWorkspaceOpsRuntime({
+      workspaceRoot: '/repo/.repo-ai-governor',
+      repositoryRoot: '/repo',
+      workspaceResolver: createWorkspaceResolver(),
+      pathExists: () => false,
+      cliExecutor,
+    });
+
+    await expect(
+      runtime.runWorkspaceOperation({
+        operationKind: OrchestrationWorkspaceOperationKind.CONNECT,
+        arguments: {
+          presetId: 'multi-tool-default',
+          tools: ['codex'],
+          toolTransportBindings: ['codex=remote_api'],
+          providerOnboardingTool: 'codex',
+          providerOnboardingEntrypointKind: 'quick_pick_form',
+          providerOnboardingProvider: 'openai',
+          providerOnboardingModel: 'gpt-5.5',
+          providerOnboardingApiKey: 'sk-live',
+          providerOnboardingEndpoint: '',
+          providerOnboardingBackendId: 'os-keychain',
+        },
+      }),
+    ).rejects.toMatchObject({
+      code: GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+      message:
+        'Connect onboarding will not overwrite existing managed secret secret://openai/api-key. Use the dedicated update/reconnect flow instead.',
+    });
+
+    expect(cliExecutor).toHaveBeenCalledTimes(4);
+  });
+
+  it('reuses an existing managed secret during connect while still applying cleanup mutations', async () => {
+    const cliExecutor = vi.fn<WorkspaceOpsCliExecutor>(async (request) => {
+      if (request.args[0] === 'config' && request.args[1] === 'status') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              config_path: '/repo/.repo-ai-governor/user-config.yaml',
+              config_exists: true,
+              legacy_preference_path: '/repo/.repo-ai-governor/cli-preferences.yaml',
+              legacy_preference_exists: false,
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'config' && request.args[1] === 'list') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              entries:
+                'tools.codex.transport=remote_api | tools.codex.remoteApi.provider=openai | tools.codex.remoteApi.vendorBinding=openai_responses | tools.codex.remoteApi.model=gpt-4o | tools.codex.remoteApi.credentialRef=secret://openai/api-key | tools.codex.remoteApi.endpoint=https://stale.example/v1 | tools.codex.remoteApi.credentialEnvVar=OPENAI_API_KEY',
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'secret' && request.args[1] === 'status') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              selected_backend: 'os-keychain',
+              default_backend: 'os-keychain',
+              index_path: '/repo/.repo-ai-governor/secret-index.json',
+            }),
+            checks: [
+              {
+                id: 'secret_backend_os-keychain',
+                status: 'pass',
+                detail: 'Ready',
+              },
+            ],
+          },
+        };
+      }
+
+      if (request.args[0] === 'secret' && request.args[1] === 'list') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              records: 'openai/api-key@os-keychain:present',
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'connect') {
+        return {
+          message: request.args[1] === 'apply' ? 'connect applied' : 'connect generated',
+          command_result: {
+            operation: request.args[1] === 'apply' ? 'connect_apply' : 'connect_generate',
+            summary: request.args[1] === 'apply' ? 'connect applied' : 'connect generated',
+          },
+        };
+      }
+
+      return {
+        message: 'mutation applied',
+        command_result: {
+          details: createCliDetailsRecord({
+            value: request.args[3] ?? null,
+          }),
+        },
+      };
+    });
+    const runtime = new LocalOrchestrationServiceWorkspaceOpsRuntime({
+      workspaceRoot: '/repo/.repo-ai-governor',
+      repositoryRoot: '/repo',
+      workspaceResolver: createWorkspaceResolver(),
+      pathExists: () => false,
+      cliExecutor,
+    });
+
+    await expect(
+      runtime.runWorkspaceOperation({
+        operationKind: OrchestrationWorkspaceOperationKind.CONNECT,
+        arguments: {
+          presetId: 'multi-tool-default',
+          tools: ['codex'],
+          toolTransportBindings: ['codex=remote_api'],
+          providerOnboardingTool: 'codex',
+          providerOnboardingEntrypointKind: 'quick_pick_form',
+          providerOnboardingProvider: 'openai',
+          providerOnboardingModel: 'gpt-5.5',
+          providerOnboardingReuseExistingCredential: true,
+          providerOnboardingEndpoint: '',
+          providerOnboardingBackendId: 'os-keychain',
+        },
+      }),
+    ).resolves.toMatchObject({
+      message: 'connect applied',
+    });
+
+    expect(cliExecutor).not.toHaveBeenCalledWith({
+      args: ['secret', 'set', 'openai/api-key', '--backend', 'os-keychain', '--stdin'],
+      currentWorkingDirectory: '/repo',
+      stdin: '',
+      locale: undefined,
+    });
+    expect(cliExecutor).toHaveBeenCalledWith({
+      args: ['config', 'unset', 'tools.codex.remoteApi.endpoint'],
+      currentWorkingDirectory: '/repo',
+      locale: undefined,
+    });
+    expect(cliExecutor).toHaveBeenCalledWith({
+      args: ['config', 'unset', 'tools.codex.remoteApi.credentialEnvVar'],
+      currentWorkingDirectory: '/repo',
+      locale: undefined,
+    });
+  });
+
+  it('keeps same-backend reuse stable when duplicate managed-secret keys exist on multiple backends', async () => {
+    const cliExecutor = vi.fn<WorkspaceOpsCliExecutor>(async (request) => {
+      if (request.args[0] === 'config' && request.args[1] === 'status') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              config_path: '/repo/.repo-ai-governor/user-config.yaml',
+              config_exists: true,
+              legacy_preference_path: '/repo/.repo-ai-governor/cli-preferences.yaml',
+              legacy_preference_exists: false,
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'config' && request.args[1] === 'list') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              entries:
+                'tools.codex.transport=remote_api | tools.codex.remoteApi.provider=openai | tools.codex.remoteApi.vendorBinding=openai_responses | tools.codex.remoteApi.model=gpt-4o | tools.codex.remoteApi.credentialRef=secret://openai/api-key | tools.codex.remoteApi.credentialEnvVar=OPENAI_API_KEY',
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'secret' && request.args[1] === 'status') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              selected_backend: 'unsafe-local-file',
+              default_backend: 'os-keychain',
+              index_path: '/repo/.repo-ai-governor/secret-index.json',
+            }),
+            checks: [
+              {
+                id: 'secret_backend_unsafe-local-file',
+                status: 'pass',
+                detail: 'Local plaintext',
+              },
+              {
+                id: 'secret_backend_os-keychain',
+                status: 'pass',
+                detail: 'Ready',
+              },
+            ],
+          },
+        };
+      }
+
+      if (request.args[0] === 'secret' && request.args[1] === 'list') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              records:
+                'openai/api-key@unsafe-local-file:present | openai/api-key@os-keychain:present',
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'connect') {
+        return {
+          message: request.args[1] === 'apply' ? 'connect applied' : 'connect generated',
+          command_result: {
+            operation: request.args[1] === 'apply' ? 'connect_apply' : 'connect_generate',
+            summary: request.args[1] === 'apply' ? 'connect applied' : 'connect generated',
+          },
+        };
+      }
+
+      return {
+        message: 'mutation applied',
+        command_result: {
+          details: createCliDetailsRecord({
+            value: request.args[3] ?? null,
+          }),
+        },
+      };
+    });
+    const runtime = new LocalOrchestrationServiceWorkspaceOpsRuntime({
+      workspaceRoot: '/repo/.repo-ai-governor',
+      repositoryRoot: '/repo',
+      workspaceResolver: createWorkspaceResolver(),
+      pathExists: () => false,
+      cliExecutor,
+    });
+
+    await expect(
+      runtime.runWorkspaceOperation({
+        operationKind: OrchestrationWorkspaceOperationKind.CONNECT,
+        arguments: {
+          presetId: 'multi-tool-default',
+          tools: ['codex'],
+          toolTransportBindings: ['codex=remote_api'],
+          providerOnboardingTool: 'codex',
+          providerOnboardingEntrypointKind: 'quick_pick_form',
+          providerOnboardingProvider: 'openai',
+          providerOnboardingModel: 'gpt-5.5',
+          providerOnboardingReuseExistingCredential: true,
+          providerOnboardingEndpoint: '',
+          providerOnboardingBackendId: 'os-keychain',
+        },
+      }),
+    ).resolves.toMatchObject({
+      message: 'connect applied',
+    });
+
+    expect(cliExecutor).not.toHaveBeenCalledWith({
+      args: ['secret', 'set', 'openai/api-key', '--backend', 'os-keychain', '--stdin'],
+      currentWorkingDirectory: '/repo',
+      stdin: '',
+      locale: undefined,
+    });
+    expect(cliExecutor).toHaveBeenCalledWith({
+      args: ['config', 'unset', 'tools.codex.remoteApi.credentialEnvVar'],
+      currentWorkingDirectory: '/repo',
+      locale: undefined,
+    });
+  });
+
+  it('prefers defaultBackendId over selectedBackendId when direct provider onboarding omits an explicit backend override', async () => {
+    const cliExecutor = vi.fn<WorkspaceOpsCliExecutor>(async (request) => {
+      if (request.args[0] === 'config' && request.args[1] === 'status') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              config_path: '/repo/.repo-ai-governor/user-config.yaml',
+              config_exists: true,
+              legacy_preference_path: '/repo/.repo-ai-governor/cli-preferences.yaml',
+              legacy_preference_exists: false,
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'config' && request.args[1] === 'list') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              entries:
+                'tools.codex.remoteApi.provider=openai | tools.codex.remoteApi.model=gpt-4o | tools.codex.remoteApi.credentialRef=secret://openai/api-key',
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'secret' && request.args[1] === 'status') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              selected_backend: 'unsafe-local-file',
+              default_backend: 'os-keychain',
+              index_path: '/repo/.repo-ai-governor/secret-index.json',
+            }),
+            checks: [
+              {
+                id: 'secret_backend_unsafe-local-file',
+                status: 'pass',
+                detail: 'Local plaintext',
+              },
+              {
+                id: 'secret_backend_os-keychain',
+                status: 'pass',
+                detail: 'Ready',
+              },
+            ],
+          },
+        };
+      }
+
+      if (request.args[0] === 'secret' && request.args[1] === 'list') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              records: 'openai/api-key@os-keychain:missing',
+            }),
+          },
+        };
+      }
+
+      return {
+        message: 'mutation applied',
+        command_result: {
+          details: createCliDetailsRecord({
+            value: request.args[3] ?? null,
+          }),
+        },
+      };
+    });
+    const runtime = new LocalOrchestrationServiceWorkspaceOpsRuntime({
+      workspaceRoot: '/repo/.repo-ai-governor',
+      repositoryRoot: '/repo',
+      workspaceResolver: createWorkspaceResolver(),
+      pathExists: () => false,
+      cliExecutor,
+    });
+
+    await expect(
+      runtime.applyProviderOnboarding({
+        tool: 'codex' as never,
+        entrypointKind: 'quick_pick_form',
+        model: 'gpt-5.5',
+        apiKey: 'sk-live',
+      }),
+    ).resolves.toMatchObject({
+      tool: 'codex',
+      provider: 'openai',
+      secretBackend: 'os-keychain',
+    });
+
+    expect(cliExecutor).toHaveBeenCalledWith({
+      args: ['secret', 'set', 'openai/api-key', '--backend', 'os-keychain', '--stdin'],
+      currentWorkingDirectory: '/repo',
+      stdin: 'sk-live',
+      locale: undefined,
+    });
+  });
+
+  it('reuses an existing managed secret during direct provider onboarding without rewriting it', async () => {
+    const cliExecutor = vi.fn<WorkspaceOpsCliExecutor>(async (request) => {
+      if (request.args[0] === 'config' && request.args[1] === 'status') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              config_path: '/repo/.repo-ai-governor/user-config.yaml',
+              config_exists: true,
+              legacy_preference_path: '/repo/.repo-ai-governor/cli-preferences.yaml',
+              legacy_preference_exists: false,
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'config' && request.args[1] === 'list') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              entries:
+                'tools.codex.remoteApi.provider=openai | tools.codex.remoteApi.model=gpt-4o | tools.codex.remoteApi.credentialRef=secret://openai/api-key | tools.codex.remoteApi.credentialEnvVar=OPENAI_API_KEY',
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'secret' && request.args[1] === 'status') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              selected_backend: 'unsafe-local-file',
+              default_backend: 'os-keychain',
+              index_path: '/repo/.repo-ai-governor/secret-index.json',
+            }),
+            checks: [
+              {
+                id: 'secret_backend_unsafe-local-file',
+                status: 'pass',
+                detail: 'Local plaintext',
+              },
+              {
+                id: 'secret_backend_os-keychain',
+                status: 'pass',
+                detail: 'Ready',
+              },
+            ],
+          },
+        };
+      }
+
+      if (request.args[0] === 'secret' && request.args[1] === 'list') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              records:
+                'openai/api-key@unsafe-local-file:present | openai/api-key@os-keychain:present',
+            }),
+          },
+        };
+      }
+
+      return {
+        message: 'mutation applied',
+        command_result: {
+          details: createCliDetailsRecord({
+            value: request.args[3] ?? null,
+          }),
+        },
+      };
+    });
+    const runtime = new LocalOrchestrationServiceWorkspaceOpsRuntime({
+      workspaceRoot: '/repo/.repo-ai-governor',
+      repositoryRoot: '/repo',
+      workspaceResolver: createWorkspaceResolver(),
+      pathExists: () => false,
+      cliExecutor,
+    });
+
+    await expect(
+      runtime.applyProviderOnboarding({
+        tool: 'codex' as never,
+        entrypointKind: 'quick_pick_form',
+        model: 'gpt-5.5',
+        apiKey: '',
+        reuseExistingCredential: true,
+      }),
+    ).resolves.toMatchObject({
+      tool: 'codex',
+      provider: 'openai',
+      secretBackend: 'os-keychain',
+      credentialRef: 'secret://openai/api-key',
+    });
+
+    expect(cliExecutor).not.toHaveBeenCalledWith({
+      args: ['secret', 'set', 'openai/api-key', '--backend', 'os-keychain', '--stdin'],
+      currentWorkingDirectory: '/repo',
+      stdin: '',
+      locale: undefined,
+    });
+    expect(cliExecutor).toHaveBeenCalledWith({
+      args: ['config', 'unset', 'tools.codex.remoteApi.credentialEnvVar'],
+      currentWorkingDirectory: '/repo',
+      locale: undefined,
+    });
+  });
+
+  it('fails closed before direct provider onboarding overwrites an existing managed secret', async () => {
+    const cliExecutor = vi.fn<WorkspaceOpsCliExecutor>(async (request) => {
+      if (request.args[0] === 'config' && request.args[1] === 'status') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              config_path: '/repo/.repo-ai-governor/user-config.yaml',
+              config_exists: true,
+              legacy_preference_path: '/repo/.repo-ai-governor/cli-preferences.yaml',
+              legacy_preference_exists: false,
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'config' && request.args[1] === 'list') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              entries:
+                'tools.codex.remoteApi.provider=openai | tools.codex.remoteApi.model=gpt-4o | tools.codex.remoteApi.credentialRef=secret://openai/api-key',
+            }),
+          },
+        };
+      }
+
+      if (request.args[0] === 'secret' && request.args[1] === 'status') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              selected_backend: 'os-keychain',
+              default_backend: 'os-keychain',
+              index_path: '/repo/.repo-ai-governor/secret-index.json',
+            }),
+            checks: [
+              {
+                id: 'secret_backend_os-keychain',
+                status: 'pass',
+                detail: 'Ready',
+              },
+            ],
+          },
+        };
+      }
+
+      if (request.args[0] === 'secret' && request.args[1] === 'list') {
+        return {
+          command_result: {
+            details: createCliDetailsRecord({
+              records: 'openai/api-key@os-keychain:present',
+            }),
+          },
+        };
+      }
+
+      return {
+        message: 'unexpected mutation',
+        command_result: {
+          details: createCliDetailsRecord({}),
+        },
+      };
+    });
+    const runtime = new LocalOrchestrationServiceWorkspaceOpsRuntime({
+      workspaceRoot: '/repo/.repo-ai-governor',
+      repositoryRoot: '/repo',
+      workspaceResolver: createWorkspaceResolver(),
+      pathExists: () => false,
+      cliExecutor,
+    });
+
+    await expect(
+      runtime.applyProviderOnboarding({
+        tool: 'codex' as never,
+        entrypointKind: 'quick_pick_form',
+        model: 'gpt-5.5',
+        apiKey: 'sk-live',
+      }),
+    ).rejects.toMatchObject({
+      code: GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+      message:
+        'Provider onboarding will not overwrite existing managed secret secret://openai/api-key. Use the dedicated update/reconnect flow instead.',
+    });
+
+    expect(cliExecutor).not.toHaveBeenCalledWith({
+      args: ['secret', 'set', 'openai/api-key', '--backend', 'os-keychain', '--stdin'],
+      currentWorkingDirectory: '/repo',
+      stdin: 'sk-live',
+      locale: undefined,
+    });
   });
 
   it('captures layered logs and the latest service-owned workspace-operation snapshot', async () => {

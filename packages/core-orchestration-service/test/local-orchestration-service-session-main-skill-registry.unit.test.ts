@@ -85,6 +85,28 @@ describe('LocalOrchestrationServiceSessionMainSkillRegistry', () => {
     expect(reviewVerifyPlan).toBeNull();
   });
 
+  it('does not auto-route connect discussion prompts into the connect command', () => {
+    const registry = new LocalOrchestrationServiceSessionMainSkillRegistry();
+
+    const connectPlan = registry.resolvePlan('connect 是什么？', {
+      preferredSurface: AdapterSurface.CODEX,
+      configuredRoleMentionPresent: false,
+    });
+
+    expect(connectPlan).toBeNull();
+  });
+
+  it('does not auto-route doctor usage questions into the doctor command', () => {
+    const registry = new LocalOrchestrationServiceSessionMainSkillRegistry();
+
+    const doctorPlan = registry.resolvePlan('doctor 怎么用？', {
+      preferredSurface: AdapterSurface.CODEX,
+      configuredRoleMentionPresent: false,
+    });
+
+    expect(doctorPlan).toBeNull();
+  });
+
   it('routes the official English deliver example to the governed deliver workflow', () => {
     const registry = new LocalOrchestrationServiceSessionMainSkillRegistry();
 

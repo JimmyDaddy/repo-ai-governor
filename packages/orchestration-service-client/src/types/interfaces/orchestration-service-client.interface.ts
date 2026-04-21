@@ -1,5 +1,11 @@
 import type { MemoryProviderCompositionSummary } from '@repo-ai-governor/memory-provider-registry';
 import type {
+  AdapterProviderKind,
+  AdapterSurface,
+  AdapterTransportKind,
+  AdapterVendorBindingKind,
+} from '@repo-ai-governor/shared';
+import type {
   OrchestrationBootstrapReadinessActionId,
   OrchestrationClientSurface,
   OrchestrationExecutionKind,
@@ -586,6 +592,64 @@ export interface OrchestrationSetManagedSecretResponse {
   warning?: string;
 }
 
+export interface OrchestrationProviderOnboardingSnapshotRequest {
+  tool: AdapterSurface;
+  entrypointKind: string;
+  provider?: AdapterProviderKind;
+  locale?: string;
+}
+
+export interface OrchestrationProviderOnboardingSnapshot {
+  surfaceId: string;
+  entrypointKind: string;
+  mutationMode: string;
+  tool: AdapterSurface;
+  transport: AdapterTransportKind;
+  provider: AdapterProviderKind;
+  vendorBinding: AdapterVendorBindingKind;
+  secretCaptureMode: string;
+  secretOwner: string;
+  credentialRefStrategy: string;
+  readinessProjectionSource: string;
+  configTargets: string[];
+  receiptFields: string[];
+  credentialRef: string;
+  model?: string;
+  endpoint?: string;
+  selectedBackendId?: string;
+  defaultBackendId?: string;
+  availableBackends: OrchestrationSecretBackendStatus[];
+  warnings: string[];
+}
+
+export interface OrchestrationApplyProviderOnboardingRequest {
+  tool: AdapterSurface;
+  entrypointKind: string;
+  model: string;
+  apiKey: string;
+  reuseExistingCredential?: boolean;
+  provider?: AdapterProviderKind;
+  endpoint?: string;
+  backendId?: string;
+  locale?: string;
+}
+
+export interface OrchestrationApplyProviderOnboardingResponse {
+  surfaceId: string;
+  entrypointKind: string;
+  mutationMode: string;
+  tool: AdapterSurface;
+  transport: AdapterTransportKind;
+  provider: AdapterProviderKind;
+  vendorBinding: AdapterVendorBindingKind;
+  credentialRef: string;
+  secretBackend: string;
+  configTargets: string[];
+  receiptFields: string[];
+  warnings: string[];
+  nextAction: string;
+}
+
 export interface OrchestrationWorkspaceOperationCheck {
   id: string;
   status: string;
@@ -790,12 +854,18 @@ export interface OrchestrationServiceClient {
   querySecureAuthoring(
     request?: OrchestrationSecureAuthoringQueryRequest,
   ): Promise<OrchestrationSecureAuthoringSnapshot>;
+  queryProviderOnboarding(
+    request: OrchestrationProviderOnboardingSnapshotRequest,
+  ): Promise<OrchestrationProviderOnboardingSnapshot>;
   setUserConfigValue(
     request: OrchestrationSetUserConfigValueRequest,
   ): Promise<OrchestrationSetUserConfigValueResponse>;
   setManagedSecret(
     request: OrchestrationSetManagedSecretRequest,
   ): Promise<OrchestrationSetManagedSecretResponse>;
+  applyProviderOnboarding(
+    request: OrchestrationApplyProviderOnboardingRequest,
+  ): Promise<OrchestrationApplyProviderOnboardingResponse>;
   runWorkspaceOperation(
     request: OrchestrationWorkspaceOperationRequest,
   ): Promise<OrchestrationWorkspaceOperationResponse>;

@@ -1,4 +1,5 @@
 export {
+  ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS,
   ORCHESTRATION_SESSION_DISPLAY_USER_MESSAGE_METADATA_KEY,
   OrchestrationBootstrapReadinessActionId,
   OrchestrationGovernanceAttentionLevel,
@@ -37,6 +38,8 @@ export type {
   OrchestrationArtifactPaneWorkbenchDetail,
   OrchestrationArchiveSessionRequest,
   OrchestrationArchiveSessionResponse,
+  OrchestrationApplyProviderOnboardingRequest,
+  OrchestrationApplyProviderOnboardingResponse,
   OrchestrationAppendSessionMessageRequest,
   OrchestrationAppendSessionMessageResponse,
   OrchestrationBootstrapReadinessSnapshot,
@@ -65,6 +68,8 @@ export type {
   OrchestrationListSessionsFilter,
   OrchestrationListSessionsRequest,
   OrchestrationListSessionsResponse,
+  OrchestrationProviderOnboardingSnapshot,
+  OrchestrationProviderOnboardingSnapshotRequest,
   OrchestrationQueueOverviewQueryRequest,
   OrchestrationQueueOverviewQueryResponse,
   OrchestrationRecoverExecutionRequest,

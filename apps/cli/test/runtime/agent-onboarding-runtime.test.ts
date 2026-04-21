@@ -406,7 +406,7 @@ describe('CliAgentOnboardingRuntime', () => {
             routeKey: 'cli.adapter.probe.codex',
             unavailableReasons: ['health_check_failed:codex:acp_host_transport_not_ready'],
             transportKind: AdapterTransportKind.ACP_EXEC,
-            requestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+            requestCancellationMode: AdapterRequestCancellationMode.LOCAL_ABORT_ONLY,
           }),
           capabilitySupportByCapability: new Map(),
           failureAttributions: ['environment_precondition'],
@@ -460,6 +460,10 @@ describe('CliAgentOnboardingRuntime', () => {
           distributionBoundary: CliAcpHostDistributionBoundary.PACKAGED_DISTRIBUTION_PENDING,
           companionStateSummary: 'runtime_service_enablement_pending',
         },
+        invoke_liveness_diagnostics: expect.objectContaining({
+          transport_kind: AdapterTransportKind.ACP_EXEC,
+          request_cancellation_mode: AdapterRequestCancellationMode.LOCAL_ABORT_ONLY,
+        }),
       }),
     ]);
     expect(onboardingPayload.enabled_tools).toEqual([
@@ -495,7 +499,7 @@ describe('CliAgentOnboardingRuntime', () => {
       routeKey: 'cli.adapter.probe.codex',
       unavailableReasons: ['health_check_failed:codex:acp_host_transport_not_ready'],
       transportKind: AdapterTransportKind.ACP_EXEC,
-      requestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+      requestCancellationMode: AdapterRequestCancellationMode.LOCAL_ABORT_ONLY,
       diagnostics: [
         {
           layer: 'protocol',
@@ -589,6 +593,14 @@ describe('CliAgentOnboardingRuntime', () => {
         },
       }),
     ]);
+    expect(verifyPayload.tool_transport_matrix).toEqual([
+      expect.objectContaining({
+        tool_id: AdapterSurface.CODEX,
+        invoke_liveness_diagnostics: expect.objectContaining({
+          request_cancellation_mode: AdapterRequestCancellationMode.LOCAL_ABORT_ONLY,
+        }),
+      }),
+    ]);
     expect(verifyPayload.role_binding_matrix).toEqual([
       expect.objectContaining({
         primary_tool: AdapterSurface.CODEX,
@@ -620,7 +632,7 @@ describe('CliAgentOnboardingRuntime', () => {
       routeKey: 'cli.adapter.probe.codex',
       unavailableReasons: ['health_check_failed:codex:acp_host_transport_not_ready'],
       transportKind: AdapterTransportKind.ACP_EXEC,
-      requestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+      requestCancellationMode: AdapterRequestCancellationMode.LOCAL_ABORT_ONLY,
       diagnostics: [
         {
           layer: 'protocol',
@@ -1046,6 +1058,52 @@ describe('CliAgentOnboardingRuntime', () => {
         }),
       }),
     ]);
+  });
+
+  it('does not synthesize a default credential env var when remote_api already uses credentialRef-only truth', () => {
+    const runtime = new CliAgentOnboardingRuntime();
+    const sourceConfig = createGovernorConfigFixture();
+    sourceConfig.adapters.tools = [
+      {
+        toolId: AdapterSurface.CODEX,
+        enabled: true,
+        availability: AdapterAvailability.AVAILABLE,
+        transport: AdapterTransportKind.REMOTE_API,
+        remoteApi: {
+          provider: AdapterProviderKind.OPENAI,
+          vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+          model: 'gpt-5',
+          credentialRef: 'secret://openai/api-key',
+        },
+      },
+    ];
+
+    const resolution = runtime.buildConnectCandidateConfig({
+      sourceConfig,
+      presetId: CliAgentOnboardingPreset.MULTI_TOOL_DEFAULT,
+      requestedTools: [AdapterSurface.CODEX],
+      toolTransportOverrides: [],
+      remoteApiOverrides: [],
+      overwrite: true,
+      singleToolAllRoles: false,
+      roleBindingOverrides: [],
+    });
+
+    expect(resolution.candidateAdaptersConfig.tools).toEqual([
+      expect.objectContaining({
+        toolId: AdapterSurface.CODEX,
+        transport: AdapterTransportKind.REMOTE_API,
+        remoteApi: expect.objectContaining({
+          provider: AdapterProviderKind.OPENAI,
+          vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+          model: 'gpt-5',
+          credentialRef: 'secret://openai/api-key',
+        }),
+      }),
+    ]);
+    expect(resolution.candidateAdaptersConfig.tools?.[0]?.remoteApi).not.toHaveProperty(
+      'credentialEnvVar',
+    );
   });
 
   it('materializes inferred remote_api transport for transport-aware connect candidates', () => {

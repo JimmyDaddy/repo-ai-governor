@@ -10,8 +10,10 @@ import {
   WorkspaceConfigDiscoveryService,
   WorkspaceResolver,
 } from '@repo-ai-governor/config';
+import { LOCAL_ORCHESTRATION_SERVICE_SIDECAR_LOCALE_ENV } from '@repo-ai-governor/core-orchestration-service';
 import { LocalOrchestrationServiceSidecarClient } from '@repo-ai-governor/core-orchestration-service/sidecar-client';
 import type {
+  OrchestrationApplyProviderOnboardingResponse,
   OrchestrationArtifactPaneQueryResponse,
   OrchestrationBootstrapReadinessSnapshot,
   OrchestrationExecutionBoardEntry,
@@ -20,6 +22,7 @@ import type {
   OrchestrationGovernanceQueueEntry,
   OrchestrationHitlInboxEntry,
   OrchestrationHitlInboxQueryResponse,
+  OrchestrationProviderOnboardingSnapshot,
   OrchestrationQueueOverviewQueryResponse,
   OrchestrationRecoverExecutionRequest,
   OrchestrationRecoverExecutionResponse,
@@ -39,14 +42,39 @@ import {
   OrchestrationSessionRouteId,
   OrchestrationSessionStatus,
 } from '@repo-ai-governor/orchestration-service-client';
-import { GovernorErrorCode, RuntimeError, standardizeError } from '@repo-ai-governor/shared';
 import {
+  AdapterProviderKind,
+  AdapterSurface,
+  AdapterTransportKind,
+  AdapterVendorBindingKind,
+  GovernorErrorCode,
+  RuntimeError,
+  standardizeError,
+} from '@repo-ai-governor/shared';
+import {
+  VSCODE_EXTENSION_COMMAND_IDS,
   VSCODE_EXTENSION_DEFAULT_EXECUTION_LIMIT,
   VSCODE_EXTENSION_DEFAULT_LANE_LIMIT,
   VSCODE_EXTENSION_DEFAULT_QUEUE_LIMIT,
   VSCODE_EXTENSION_DEFAULT_WORKSPACE_SUMMARY_LIMIT,
+  VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS,
+  VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES,
+  VSCODE_EXTENSION_PROVIDER_ONBOARDING_CONFIG_TARGET_SUFFIXES,
+  VSCODE_EXTENSION_PROVIDER_ONBOARDING_CREDENTIAL_REF_STRATEGY,
+  VSCODE_EXTENSION_PROVIDER_ONBOARDING_ENTRYPOINT_KINDS,
+  VSCODE_EXTENSION_PROVIDER_ONBOARDING_MUTATION_MODE,
+  VSCODE_EXTENSION_PROVIDER_ONBOARDING_READINESS_PROJECTION_SOURCES,
+  VSCODE_EXTENSION_PROVIDER_ONBOARDING_RECEIPT_FIELDS,
+  VSCODE_EXTENSION_PROVIDER_ONBOARDING_SECRET_CAPTURE_MODE,
+  VSCODE_EXTENSION_PROVIDER_ONBOARDING_SECRET_OWNER,
+  VSCODE_EXTENSION_PROVIDER_ONBOARDING_SURFACE_ID,
 } from '../constants/index.js';
 import type {
+  VsCodeExtensionProviderLifecycleSnapshot,
+  VsCodeExtensionProviderOnboardingApplyReceipt,
+  VsCodeExtensionProviderOnboardingApplyRequest,
+  VsCodeExtensionProviderOnboardingEntrypointKind,
+  VsCodeExtensionProviderOnboardingSnapshot,
   VsCodeExtensionReviewDetailSnapshot,
   VsCodeExtensionSecretBackendStatusSnapshot,
   VsCodeExtensionSecretReadinessSnapshot,
@@ -166,6 +194,14 @@ interface VsCodeExtensionCliCommandSuccessPayload {
       }>;
     };
   };
+}
+
+interface VsCodeExtensionResolvedProviderOnboardingState {
+  provider: AdapterProviderKind;
+  vendorBinding: AdapterVendorBindingKind;
+  credentialRef: string;
+  model?: string;
+  endpoint?: string;
 }
 
 /**
@@ -548,12 +584,14 @@ export class VsCodeExtensionServiceRuntime {
       bootstrapReadiness,
       queueOverview,
       secureAuthoring,
+      providerLifecycleSnapshots,
       selectedExecution,
     ] = await Promise.all([
       this.resolveWorkspaceContextSnapshot(),
       this.queryBootstrapReadiness(),
       this.queryQueueOverview(),
       this.resolveSecureAuthoringSnapshot(),
+      this.resolveProviderLifecycleSnapshots(),
       this.resolveSelectedExecution(selection),
     ]);
 
@@ -568,6 +606,11 @@ export class VsCodeExtensionServiceRuntime {
       ...(secureAuthoring
         ? {
             secureAuthoring,
+          }
+        : {}),
+      ...(providerLifecycleSnapshots.length > 0
+        ? {
+            providerLifecycleSnapshots,
           }
         : {}),
       ...(selectedExecution
@@ -596,12 +639,14 @@ export class VsCodeExtensionServiceRuntime {
       bootstrapReadiness,
       queueOverview,
       secureAuthoring,
+      providerLifecycleSnapshots,
       selectedExecution,
     ] = await Promise.all([
       this.resolveWorkspaceContextSnapshot(),
       this.queryBootstrapReadiness(),
       this.queryQueueOverview(),
       this.resolveSecureAuthoringSnapshot(),
+      this.resolveProviderLifecycleSnapshots(),
       this.resolveSelectedExecution(selection),
     ]);
     const [artifactPane, sessionContinuity] = await Promise.all([
@@ -625,6 +670,11 @@ export class VsCodeExtensionServiceRuntime {
       ...(secureAuthoring
         ? {
             secureAuthoring,
+          }
+        : {}),
+      ...(providerLifecycleSnapshots.length > 0
+        ? {
+            providerLifecycleSnapshots,
           }
         : {}),
       ...(selectedExecution
@@ -810,6 +860,23 @@ export class VsCodeExtensionServiceRuntime {
   }
 
   /**
+   * Clears one user-local default through the embedded CLI seam when a mutation must remove stale
+   * compatibility state instead of persisting another value.
+   * @param keyPath Canonical user-config key path to remove.
+   */
+  private async unsetUserConfigValueInEmbeddedCli(keyPath: string): Promise<void> {
+    await this.executeEmbeddedCliJsonCommand(
+      {
+        args: ['config', 'unset', keyPath],
+        currentWorkingDirectory: this.requireRepositoryRootForEmbeddedCli(),
+      },
+      'Failed to clear the requested user-local default.',
+      '清除请求的用户本地默认值失败。',
+    );
+    this.clearSecureAuthoringSnapshotCache();
+  }
+
+  /**
    * Persists one managed secret value through the service-owned workspace ops seam without
    * exposing the raw value to argv, transcript, or local command previews.
    * @param keyName Canonical managed secret key.
@@ -864,6 +931,264 @@ export class VsCodeExtensionServiceRuntime {
       backendId:
         'backendId' in payload ? payload.backendId : this.readDetailString(payload, 'backend'),
       warning: 'warning' in payload ? payload.warning : this.readDetailString(payload, 'warning'),
+    };
+  }
+
+  /**
+   * Resolves the service-owned provider-onboarding baseline for one VS Code host entrypoint.
+   * @param tool Tool surface that will receive provider defaults.
+   * @param entrypointKind Host-native entrypoint that requested the snapshot.
+   * @param provider Optional provider override chosen by the host before apply.
+   * @returns One typed snapshot that keeps host UX aligned with managed secret and selector truth.
+   */
+  public async resolveProviderOnboardingSnapshot(
+    tool: AdapterSurface,
+    entrypointKind: VsCodeExtensionProviderOnboardingEntrypointKind,
+    provider?: AdapterProviderKind,
+  ): Promise<VsCodeExtensionProviderOnboardingSnapshot | undefined> {
+    if (!this.preferEmbeddedCliExecutor) {
+      const client = await this.requireClient();
+      return this.mapProviderOnboardingSnapshot(
+        await client.queryProviderOnboarding({
+          tool,
+          entrypointKind,
+          ...(provider
+            ? {
+                provider,
+              }
+            : {}),
+          locale: this.resolveEmbeddedCliLocale(),
+        }),
+      );
+    }
+
+    const secureAuthoring = await this.resolveSecureAuthoringSnapshot();
+    const resolvedState = this.resolveProviderOnboardingState(secureAuthoring, tool, provider);
+    const warnings = this.buildProviderOnboardingWarnings(
+      secureAuthoring?.secretReadiness,
+      resolvedState.credentialRef,
+    );
+
+    return {
+      surfaceId: VSCODE_EXTENSION_PROVIDER_ONBOARDING_SURFACE_ID,
+      entrypointKind,
+      mutationMode: VSCODE_EXTENSION_PROVIDER_ONBOARDING_MUTATION_MODE,
+      tool,
+      transport: AdapterTransportKind.REMOTE_API,
+      provider: resolvedState.provider,
+      vendorBinding: resolvedState.vendorBinding,
+      secretCaptureMode: VSCODE_EXTENSION_PROVIDER_ONBOARDING_SECRET_CAPTURE_MODE,
+      secretOwner: VSCODE_EXTENSION_PROVIDER_ONBOARDING_SECRET_OWNER,
+      credentialRefStrategy: VSCODE_EXTENSION_PROVIDER_ONBOARDING_CREDENTIAL_REF_STRATEGY,
+      readinessProjectionSource:
+        VSCODE_EXTENSION_PROVIDER_ONBOARDING_READINESS_PROJECTION_SOURCES.SNAPSHOT,
+      configTargets: this.resolveProviderOnboardingConfigTargets(tool),
+      receiptFields: VSCODE_EXTENSION_PROVIDER_ONBOARDING_RECEIPT_FIELDS,
+      credentialRef: resolvedState.credentialRef,
+      ...(resolvedState.model
+        ? {
+            model: resolvedState.model,
+          }
+        : {}),
+      ...(resolvedState.endpoint
+        ? {
+            endpoint: resolvedState.endpoint,
+          }
+        : {}),
+      ...(secureAuthoring?.secretReadiness?.selectedBackendId
+        ? {
+            selectedBackendId: secureAuthoring.secretReadiness.selectedBackendId,
+          }
+        : {}),
+      ...(secureAuthoring?.secretReadiness?.defaultBackendId
+        ? {
+            defaultBackendId: secureAuthoring.secretReadiness.defaultBackendId,
+          }
+        : {}),
+      availableBackends: secureAuthoring?.secretReadiness?.backends ?? [],
+      warnings,
+    };
+  }
+
+  /**
+   * Resolves host-facing provider lifecycle summaries for the current workspace without inventing
+   * a second readiness taxonomy outside the provider-onboarding and secure-authoring seams.
+   * @returns Provider lifecycle snapshots ordered by visible workbench priority.
+   */
+  public async resolveProviderLifecycleSnapshots(): Promise<
+    readonly VsCodeExtensionProviderLifecycleSnapshot[]
+  > {
+    const secureAuthoring = await this.resolveSecureAuthoringSnapshot();
+    const tools = this.resolveProviderLifecycleTools(secureAuthoring);
+    const snapshots = await Promise.all(
+      tools.map(async (tool) => {
+        try {
+          const snapshot = await this.resolveProviderOnboardingSnapshot(
+            tool,
+            VSCODE_EXTENSION_PROVIDER_ONBOARDING_ENTRYPOINT_KINDS.OVERVIEW_CTA,
+          );
+          return snapshot
+            ? this.buildProviderLifecycleSnapshot(snapshot, secureAuthoring)
+            : undefined;
+        } catch {
+          return undefined;
+        }
+      }),
+    );
+
+    return snapshots.filter((snapshot): snapshot is VsCodeExtensionProviderLifecycleSnapshot =>
+      Boolean(snapshot),
+    );
+  }
+
+  /**
+   * Applies one explicit provider-onboarding mutation through the managed secret and config seams.
+   * @param request One direct-onboarding request carrying the redacted authoring boundary.
+   * @returns Redacted receipt that the host can surface without leaking raw API-key content.
+   */
+  public async applyProviderOnboarding(
+    request: VsCodeExtensionProviderOnboardingApplyRequest,
+  ): Promise<VsCodeExtensionProviderOnboardingApplyReceipt> {
+    if (!this.preferEmbeddedCliExecutor) {
+      const client = await this.requireClient();
+      return this.mapProviderOnboardingApplyReceipt(
+        await client.applyProviderOnboarding({
+          ...request,
+          locale: this.resolveEmbeddedCliLocale(),
+        }),
+      );
+    }
+
+    const reuseExistingCredential = request.reuseExistingCredential === true;
+    const normalizedApiKey = request.apiKey.trim();
+    if (!reuseExistingCredential && normalizedApiKey.length === 0) {
+      throw new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        'Provider onboarding requires one non-empty API key value.',
+      );
+    }
+    const normalizedModel = request.model.trim();
+    if (normalizedModel.length === 0) {
+      throw new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        'Provider onboarding requires one non-empty model value.',
+      );
+    }
+
+    const snapshot = await this.resolveProviderOnboardingSnapshot(
+      request.tool,
+      request.entrypointKind,
+      request.provider,
+    );
+    if (!snapshot) {
+      throw new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        'Provider onboarding snapshot is unavailable for the current workspace.',
+      );
+    }
+
+    const backendId = this.resolveProviderOnboardingBackendId(
+      snapshot.availableBackends,
+      request.backendId,
+      snapshot.defaultBackendId,
+      snapshot.selectedBackendId,
+    );
+    const secretKeyName = this.extractManagedSecretKeyName(snapshot.credentialRef);
+    if (!secretKeyName) {
+      throw new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        `Provider onboarding credentialRef must use ${CREDENTIAL_SELECTOR_PREFIX} selectors.`,
+      );
+    }
+
+    const secureAuthoring = await this.resolveSecureAuthoringSnapshot();
+    if (secureAuthoring?.degradedReason || !secureAuthoring?.secretReadiness) {
+      throw new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        secureAuthoring?.degradedReason ??
+          'Provider onboarding secure-authoring snapshot is unavailable for the current workspace.',
+      );
+    }
+    const existingCredentialRecord = this.findManagedSecretRecord(
+      secureAuthoring.secretReadiness.records,
+      secretKeyName,
+      backendId,
+    );
+    if (reuseExistingCredential) {
+      if (!existingCredentialRecord || existingCredentialRecord.backendId !== backendId) {
+        throw new RuntimeError(
+          GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+          `Provider onboarding can reuse ${snapshot.credentialRef} only when the managed secret already exists on backend ${backendId}.`,
+        );
+      }
+    } else if (existingCredentialRecord) {
+      throw new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        `Provider onboarding will not overwrite existing managed secret ${snapshot.credentialRef}. Use the dedicated update/reconnect flow instead.`,
+      );
+    }
+
+    const secretResult = reuseExistingCredential
+      ? {
+          selector: snapshot.credentialRef,
+          backendId,
+          warning: undefined,
+        }
+      : await this.setManagedSecret(secretKeyName, normalizedApiKey, backendId);
+    const endpointKeyPath = `tools.${request.tool}.remoteApi.endpoint`;
+    const configWrites = [
+      {
+        keyPath: `tools.${request.tool}.transport`,
+        value: AdapterTransportKind.REMOTE_API,
+      },
+      {
+        keyPath: `tools.${request.tool}.remoteApi.provider`,
+        value: snapshot.provider,
+      },
+      {
+        keyPath: `tools.${request.tool}.remoteApi.vendorBinding`,
+        value: snapshot.vendorBinding,
+      },
+      {
+        keyPath: `tools.${request.tool}.remoteApi.model`,
+        value: normalizedModel,
+      },
+      {
+        keyPath: `tools.${request.tool}.remoteApi.credentialRef`,
+        value: snapshot.credentialRef,
+      },
+    ];
+    for (const write of configWrites) {
+      await this.setUserConfigValue(write.keyPath, write.value);
+    }
+    const configTargets = configWrites.map((write) => write.keyPath);
+    if (request.endpoint !== undefined) {
+      if (request.endpoint.trim().length > 0) {
+        await this.setUserConfigValue(endpointKeyPath, request.endpoint.trim());
+      } else {
+        await this.unsetUserConfigValueInEmbeddedCli(endpointKeyPath);
+      }
+      configTargets.push(endpointKeyPath);
+    }
+    configTargets.push(`tools.${request.tool}.remoteApi.credentialEnvVar`);
+    await this.unsetUserConfigValueInEmbeddedCli(
+      `tools.${request.tool}.remoteApi.credentialEnvVar`,
+    );
+
+    return {
+      surfaceId: VSCODE_EXTENSION_PROVIDER_ONBOARDING_SURFACE_ID,
+      entrypointKind: request.entrypointKind,
+      mutationMode: VSCODE_EXTENSION_PROVIDER_ONBOARDING_MUTATION_MODE,
+      tool: request.tool,
+      transport: AdapterTransportKind.REMOTE_API,
+      provider: snapshot.provider,
+      vendorBinding: snapshot.vendorBinding,
+      credentialRef: secretResult.selector ?? snapshot.credentialRef,
+      secretBackend: secretResult.backendId ?? backendId,
+      configTargets,
+      receiptFields: VSCODE_EXTENSION_PROVIDER_ONBOARDING_RECEIPT_FIELDS,
+      warnings: [...snapshot.warnings, ...(secretResult.warning ? [secretResult.warning] : [])],
+      nextAction: VSCODE_EXTENSION_COMMAND_IDS.RUN_CONNECT,
     };
   }
 
@@ -1176,6 +1501,10 @@ export class VsCodeExtensionServiceRuntime {
     this.clientPromise = Promise.resolve(
       new LocalOrchestrationServiceSidecarClient(serviceWorkspaceContext.governanceWorkspaceRoot, {
         repositoryRoot: serviceWorkspaceContext.repositoryRoot,
+        env: {
+          ...process.env,
+          [LOCAL_ORCHESTRATION_SERVICE_SIDECAR_LOCALE_ENV]: this.resolveEmbeddedCliLocale(),
+        },
       }),
     );
     return this.clientPromise;
@@ -1661,5 +1990,398 @@ export class VsCodeExtensionServiceRuntime {
   private clearSecureAuthoringSnapshotCache(): void {
     this.secureAuthoringSnapshotPromise = null;
     this.secureAuthoringRepositoryRoot = undefined;
+  }
+
+  private resolveProviderOnboardingState(
+    secureAuthoring: VsCodeExtensionSecureAuthoringSnapshot | undefined,
+    tool: AdapterSurface,
+    provider?: AdapterProviderKind,
+  ): VsCodeExtensionResolvedProviderOnboardingState {
+    const configuredProvider = this.readUserConfigEntryValue(
+      secureAuthoring,
+      tool,
+      'remoteApi.provider',
+    );
+    const resolvedProvider =
+      provider ??
+      (configuredProvider &&
+      Object.values(AdapterProviderKind).includes(configuredProvider as AdapterProviderKind)
+        ? (configuredProvider as AdapterProviderKind)
+        : this.resolveDefaultRemoteApiProvider(tool));
+    const resolvedCompatibility = this.resolveProviderOnboardingCompatibility(
+      tool,
+      resolvedProvider,
+    );
+    const configuredVendorBinding = this.readUserConfigEntryValue(
+      secureAuthoring,
+      tool,
+      'remoteApi.vendorBinding',
+    );
+    if (
+      configuredVendorBinding &&
+      Object.values(AdapterVendorBindingKind).includes(
+        configuredVendorBinding as AdapterVendorBindingKind,
+      ) &&
+      configuredVendorBinding !== resolvedCompatibility.vendorBinding
+    ) {
+      throw new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        `Provider onboarding requires ${resolvedCompatibility.vendorBinding} when tool ${tool} uses provider ${resolvedCompatibility.provider}.`,
+      );
+    }
+    const credentialRef =
+      this.readUserConfigEntryValue(secureAuthoring, tool, 'remoteApi.credentialRef') ??
+      this.resolveDefaultCredentialRefSelector(resolvedCompatibility.provider);
+
+    return {
+      provider: resolvedCompatibility.provider,
+      vendorBinding: resolvedCompatibility.vendorBinding,
+      credentialRef,
+      ...(this.readUserConfigEntryValue(secureAuthoring, tool, 'remoteApi.model')
+        ? {
+            model: this.readUserConfigEntryValue(secureAuthoring, tool, 'remoteApi.model'),
+          }
+        : {}),
+      ...(this.readUserConfigEntryValue(secureAuthoring, tool, 'remoteApi.endpoint')
+        ? {
+            endpoint: this.readUserConfigEntryValue(secureAuthoring, tool, 'remoteApi.endpoint'),
+          }
+        : {}),
+    };
+  }
+
+  private resolveProviderLifecycleTools(
+    secureAuthoring: VsCodeExtensionSecureAuthoringSnapshot | undefined,
+  ): readonly AdapterSurface[] {
+    const configuredTools = new Set<AdapterSurface>();
+    for (const entry of secureAuthoring?.userConfig?.entries ?? []) {
+      const match = /^tools\.([^.]+)\./u.exec(entry.keyPath);
+      const toolId = match?.[1];
+      if (!toolId || !Object.values(AdapterSurface).includes(toolId as AdapterSurface)) {
+        continue;
+      }
+      configuredTools.add(toolId as AdapterSurface);
+    }
+
+    if (configuredTools.size === 0) {
+      configuredTools.add(AdapterSurface.CODEX);
+    }
+
+    return [...configuredTools];
+  }
+
+  private buildProviderLifecycleSnapshot(
+    snapshot: VsCodeExtensionProviderOnboardingSnapshot,
+    secureAuthoring: VsCodeExtensionSecureAuthoringSnapshot | undefined,
+  ): VsCodeExtensionProviderLifecycleSnapshot {
+    const configuredCredentialRef = this.readUserConfigEntryValue(
+      secureAuthoring,
+      snapshot.tool,
+      'remoteApi.credentialRef',
+    );
+    const configuredModel = this.readUserConfigEntryValue(
+      secureAuthoring,
+      snapshot.tool,
+      'remoteApi.model',
+    );
+    const preferredBackendId = this.resolveProviderLifecyclePreferredBackendId(snapshot);
+    const keyName = this.extractManagedSecretKeyName(snapshot.credentialRef);
+    const credentialResolved =
+      keyName && secureAuthoring?.secretReadiness
+        ? Boolean(
+            this.findManagedSecretRecord(
+              secureAuthoring.secretReadiness.records,
+              keyName,
+              preferredBackendId,
+            ),
+          )
+        : false;
+    const preferredBackendWarning =
+      preferredBackendId &&
+      snapshot.availableBackends.find((backend) => backend.backendId === preferredBackendId)
+        ?.warning;
+    const degradedReason =
+      secureAuthoring?.degradedReason ??
+      preferredBackendWarning ??
+      (snapshot.availableBackends.some((backend) => backend.available)
+        ? undefined
+        : 'Provider onboarding does not currently have a writable managed secret backend.');
+
+    const status = degradedReason
+      ? VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES.DEGRADED
+      : !configuredCredentialRef || !configuredModel
+        ? VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES.CONNECT_REQUIRED
+        : credentialResolved
+          ? VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES.READY
+          : VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES.RECONNECT_REQUIRED;
+
+    const availableActions =
+      status === VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES.DEGRADED
+        ? [
+            VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.RUN_DOCTOR,
+            ...(configuredCredentialRef
+              ? [VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.UPDATE_API_KEY]
+              : []),
+          ]
+        : status === VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES.CONNECT_REQUIRED
+          ? [VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.CONNECT_PROVIDER]
+          : status === VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES.RECONNECT_REQUIRED
+            ? [
+                VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.UPDATE_API_KEY,
+                VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.RUN_DOCTOR,
+              ]
+            : [
+                VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.UPDATE_API_KEY,
+                ...(configuredModel && credentialResolved
+                  ? [VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.RECONNECT_PROVIDER]
+                  : []),
+              ];
+
+    return {
+      tool: snapshot.tool,
+      provider: snapshot.provider,
+      vendorBinding: snapshot.vendorBinding,
+      readinessProjectionSource: snapshot.readinessProjectionSource,
+      status,
+      availableActions,
+      credentialRef: snapshot.credentialRef,
+      ...(snapshot.model
+        ? {
+            model: snapshot.model,
+          }
+        : {}),
+      ...(snapshot.endpoint
+        ? {
+            endpoint: snapshot.endpoint,
+          }
+        : {}),
+      ...(preferredBackendId
+        ? {
+            preferredBackendId,
+          }
+        : {}),
+      ...(snapshot.defaultBackendId
+        ? {
+            defaultBackendId: snapshot.defaultBackendId,
+          }
+        : {}),
+      ...(snapshot.selectedBackendId
+        ? {
+            selectedBackendId: snapshot.selectedBackendId,
+          }
+        : {}),
+      configuredCredentialRef: Boolean(configuredCredentialRef),
+      configuredModel: Boolean(configuredModel),
+      credentialResolved,
+      ...(degradedReason
+        ? {
+            degradedReason,
+          }
+        : {}),
+      warnings: [...snapshot.warnings],
+    };
+  }
+
+  private buildProviderOnboardingWarnings(
+    secretReadiness: VsCodeExtensionSecretReadinessSnapshot | undefined,
+    credentialRef: string,
+  ): string[] {
+    const warnings =
+      secretReadiness?.backends
+        .map((backend) => backend.warning)
+        .filter((warning): warning is string => Boolean(warning)) ?? [];
+    if (secretReadiness?.unresolvedCredentialRefs.includes(credentialRef)) {
+      warnings.push(`${credentialRef} does not resolve through the current managed backend state.`);
+    }
+    return warnings;
+  }
+
+  private mapProviderOnboardingSnapshot(
+    snapshot: OrchestrationProviderOnboardingSnapshot,
+  ): VsCodeExtensionProviderOnboardingSnapshot {
+    return {
+      ...snapshot,
+      entrypointKind: snapshot.entrypointKind as VsCodeExtensionProviderOnboardingEntrypointKind,
+      readinessProjectionSource:
+        snapshot.readinessProjectionSource as VsCodeExtensionProviderOnboardingSnapshot['readinessProjectionSource'],
+      availableBackends: [...snapshot.availableBackends],
+      configTargets: [...snapshot.configTargets],
+      receiptFields: [...snapshot.receiptFields],
+      warnings: [...snapshot.warnings],
+    };
+  }
+
+  private mapProviderOnboardingApplyReceipt(
+    receipt: OrchestrationApplyProviderOnboardingResponse,
+  ): VsCodeExtensionProviderOnboardingApplyReceipt {
+    return {
+      ...receipt,
+      entrypointKind: receipt.entrypointKind as VsCodeExtensionProviderOnboardingEntrypointKind,
+      configTargets: [...receipt.configTargets],
+      receiptFields: [...receipt.receiptFields],
+      warnings: [...receipt.warnings],
+    };
+  }
+
+  private resolveProviderOnboardingConfigTargets(tool: AdapterSurface): string[] {
+    return VSCODE_EXTENSION_PROVIDER_ONBOARDING_CONFIG_TARGET_SUFFIXES.map(
+      (suffix) => `tools.${tool}.${suffix}`,
+    );
+  }
+
+  private resolveProviderLifecyclePreferredBackendId(
+    snapshot: VsCodeExtensionProviderOnboardingSnapshot,
+  ): string | undefined {
+    if (!snapshot.availableBackends.some((backend) => backend.available)) {
+      return undefined;
+    }
+
+    return this.resolveProviderOnboardingBackendId(
+      snapshot.availableBackends,
+      undefined,
+      snapshot.defaultBackendId,
+      snapshot.selectedBackendId,
+    );
+  }
+
+  private resolveProviderOnboardingBackendId(
+    availableBackends: readonly VsCodeExtensionSecretBackendStatusSnapshot[],
+    requestedBackendId?: string,
+    defaultBackendId?: string,
+    selectedBackendId?: string,
+  ): string {
+    const writableBackends = availableBackends.filter((backend) => backend.available);
+    const matchedRequestedBackend =
+      requestedBackendId &&
+      writableBackends.find((backend) => backend.backendId === requestedBackendId);
+    if (requestedBackendId && !matchedRequestedBackend) {
+      throw new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        `Requested secret backend ${requestedBackendId} is not writable for provider onboarding.`,
+      );
+    }
+    if (matchedRequestedBackend) {
+      return matchedRequestedBackend.backendId;
+    }
+
+    const matchedDefaultBackend =
+      defaultBackendId &&
+      writableBackends.find((backend) => backend.backendId === defaultBackendId);
+    if (matchedDefaultBackend) {
+      return matchedDefaultBackend.backendId;
+    }
+    if (defaultBackendId) {
+      throw new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        `Default secret backend ${defaultBackendId} is not writable for provider onboarding.`,
+      );
+    }
+
+    const matchedSelectedBackend =
+      selectedBackendId &&
+      writableBackends.find((backend) => backend.backendId === selectedBackendId);
+    if (matchedSelectedBackend) {
+      return matchedSelectedBackend.backendId;
+    }
+    if (selectedBackendId) {
+      throw new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        `Selected secret backend ${selectedBackendId} is not writable for provider onboarding.`,
+      );
+    }
+
+    const fallbackBackend = writableBackends[0];
+    if (!fallbackBackend) {
+      throw new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        'No writable secret backend is available for provider onboarding.',
+      );
+    }
+
+    return fallbackBackend.backendId;
+  }
+
+  private findManagedSecretRecord(
+    records: readonly VsCodeExtensionSecretRecordSnapshot[],
+    keyName: string,
+    preferredBackendId?: string,
+  ): VsCodeExtensionSecretRecordSnapshot | undefined {
+    return (
+      (preferredBackendId
+        ? records.find(
+            (record) =>
+              record.keyName === keyName &&
+              record.backendId === preferredBackendId &&
+              record.exists,
+          )
+        : undefined) ?? records.find((record) => record.keyName === keyName && record.exists)
+    );
+  }
+
+  private extractManagedSecretKeyName(selector: string): string | undefined {
+    if (!selector.startsWith(CREDENTIAL_SELECTOR_PREFIX)) {
+      return undefined;
+    }
+
+    const keyName = selector.slice(CREDENTIAL_SELECTOR_PREFIX.length).trim();
+    return keyName.length > 0 ? keyName : undefined;
+  }
+
+  private readUserConfigEntryValue(
+    secureAuthoring: VsCodeExtensionSecureAuthoringSnapshot | undefined,
+    tool: AdapterSurface,
+    suffix: string,
+  ): string | undefined {
+    return secureAuthoring?.userConfig?.entries.find(
+      (entry) => entry.keyPath === `tools.${tool}.${suffix}`,
+    )?.value;
+  }
+
+  private resolveDefaultRemoteApiProvider(tool: AdapterSurface): AdapterProviderKind {
+    return tool === AdapterSurface.CLAUDE_CODE
+      ? AdapterProviderKind.ANTHROPIC
+      : AdapterProviderKind.OPENAI;
+  }
+
+  private resolveProviderOnboardingCompatibility(
+    tool: AdapterSurface,
+    provider: AdapterProviderKind,
+  ): {
+    provider: AdapterProviderKind;
+    vendorBinding: AdapterVendorBindingKind;
+  } {
+    switch (tool) {
+      case AdapterSurface.CODEX:
+        if (provider !== AdapterProviderKind.OPENAI) {
+          throw new RuntimeError(
+            GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+            `Provider onboarding only supports provider ${AdapterProviderKind.OPENAI} for tool ${tool}.`,
+          );
+        }
+        return {
+          provider: AdapterProviderKind.OPENAI,
+          vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+        };
+      case AdapterSurface.CLAUDE_CODE:
+        if (provider !== AdapterProviderKind.ANTHROPIC) {
+          throw new RuntimeError(
+            GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+            `Provider onboarding only supports provider ${AdapterProviderKind.ANTHROPIC} for tool ${tool}.`,
+          );
+        }
+        return {
+          provider: AdapterProviderKind.ANTHROPIC,
+          vendorBinding: AdapterVendorBindingKind.ANTHROPIC_MESSAGES,
+        };
+      default:
+        throw new RuntimeError(
+          GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+          `Provider onboarding is not supported for tool ${tool}.`,
+        );
+    }
+  }
+
+  private resolveDefaultCredentialRefSelector(provider: AdapterProviderKind): string {
+    return `${CREDENTIAL_SELECTOR_PREFIX}${provider}/api-key`;
   }
 }

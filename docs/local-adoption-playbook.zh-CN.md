@@ -290,12 +290,13 @@ code --extensionDevelopmentPath <governor-repo>/apps/vscode-extension <target-re
 扩展运行起来之后，支持范围内的人类路径可以直接留在 VS Code 内完成：
 
 1. 通过 Workbench Overview 执行 workspace bootstrap、`doctor` 和 `check`。
-2. 通过 Workflow Studio 完成 workflow preview/create/edit 与 service-backed run-control。
-3. 通过 Execution Board、HITL Inbox、Review Queue、Review Detail、Automation Queue 完成日常治理执行与评审交互。
-4. 通过 workbench 内的 service-backed 动作执行 `adopt / host / verify / upgrade`，而不是再把 CLI 当成必需交接面。
-5. CLI 只保留给 automation、CI、session-shell 或 debugging 这类 terminal-native 场景。
+2. 通过 `Connect Provider`、`Update API Key`、`Reconnect Provider` 完成 provider authoring。当前受支持的插件人类路径会只通过 secure prompt 采集原始 API key，把 managed secret backend 保持为 canonical secret owner，并且只持久化非敏感 provider 默认值与 `credentialRef`。
+3. 通过 Workflow Studio 完成 workflow preview/create/edit 与 service-backed run-control。
+4. 通过 Execution Board、HITL Inbox、Review Queue、Review Detail、Automation Queue 完成日常治理执行与评审交互。
+5. 通过 workbench 内的 service-backed 动作执行 `adopt / host / verify / upgrade`，而不是再把 CLI 当成必需交接面。
+6. CLI 只保留给 automation、CI、session-shell、debugging，或显式 headless `credentialEnvVar` 兼容这类 terminal-native 场景。
 
-如果你拿到的是一份本地 VSIX，而不是直接启动 extension-development host，请在 VS Code 里使用 `Extensions: Install from VSIX...` 安装，把它当成维护者引导下的人工演练。目标用户体验仍然是同一套 zero-cli workbench flow，但当前 release-blocking 的证据基线仍先收敛在 packaged-root 与 extracted-VSIX 验证。
+如果你拿到的是一份本地 VSIX，而不是直接启动 extension-development host，请在 VS Code 里使用 `Extensions: Install from VSIX...` 安装，把它当成维护者引导下的人工演练。目标用户体验仍然是同一套 zero-cli workbench flow 加上宿主原生 direct provider onboarding，而当前 closeout 证据已经支撑这些 built-source/local-VSIX 受支持路径上的 zero-env-var claim。当前 release-blocking 的证据基线仍先收敛在 packaged-root 与 extracted-VSIX 验证，因此 GUI 安装仍属于附加人工证据，而不是必需的自动化 gate。
 
 ### Desktop foundation
 

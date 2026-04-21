@@ -241,6 +241,12 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
     return this.workspaceOpsRuntime.querySecureAuthoring(request);
   }
 
+  public async queryProviderOnboarding(
+    request: Parameters<LocalOrchestrationServiceWorkspaceOpsRuntime['queryProviderOnboarding']>[0],
+  ) {
+    return this.workspaceOpsRuntime.queryProviderOnboarding(request);
+  }
+
   public async setUserConfigValue(
     request: Parameters<LocalOrchestrationServiceWorkspaceOpsRuntime['setUserConfigValue']>[0],
   ) {
@@ -251,6 +257,12 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
     request: Parameters<LocalOrchestrationServiceWorkspaceOpsRuntime['setManagedSecret']>[0],
   ) {
     return this.workspaceOpsRuntime.setManagedSecret(request);
+  }
+
+  public async applyProviderOnboarding(
+    request: Parameters<LocalOrchestrationServiceWorkspaceOpsRuntime['applyProviderOnboarding']>[0],
+  ) {
+    return this.workspaceOpsRuntime.applyProviderOnboarding(request);
   }
 
   public async runWorkspaceOperation(

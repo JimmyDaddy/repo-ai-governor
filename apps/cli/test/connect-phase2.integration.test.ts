@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { resolve } from 'node:path';
+import { parse, resolve } from 'node:path';
 
 import {
   CliClaudeCodeExecFixtureEnvironmentKey,
@@ -52,6 +52,14 @@ function createBufferedIo(
   const stdoutBuffer: string[] = [];
   const stderrBuffer: string[] = [];
   const environment = createDeterministicCliEnvironment(environmentOverrides);
+  const isolatedHomeDirectory =
+    environmentOverrides.HOME ??
+    environmentOverrides.USERPROFILE ??
+    resolve(currentWorkingDirectory, '.connect-test-home');
+  const isolatedHomeRoot = parse(isolatedHomeDirectory).root;
+  const isolatedWindowsHomeDrive = /^[A-Za-z]:[\\/]/u.test(isolatedHomeRoot)
+    ? isolatedHomeRoot.slice(0, 2)
+    : undefined;
 
   return {
     stdoutBuffer,
@@ -67,7 +75,17 @@ function createBufferedIo(
       isStdoutTty: () => false,
       isStdinTty: () => false,
       isStderrTty: () => false,
-      env: () => environment,
+      env: () => ({
+        ...environment,
+        HOME: isolatedHomeDirectory,
+        USERPROFILE: isolatedHomeDirectory,
+        ...(isolatedWindowsHomeDrive
+          ? {
+              HOMEDRIVE: isolatedWindowsHomeDrive,
+              HOMEPATH: isolatedHomeDirectory.slice(isolatedWindowsHomeDrive.length),
+            }
+          : {}),
+      }),
     },
   };
 }
@@ -443,16 +461,16 @@ describe('connect phase-2 integration', () => {
       expect(defaultsResult.payload.status).toBe('success');
       expect(defaultsCandidateContent).toContain('transport: remote_api');
       expect(defaultsCandidateContent).toContain('model: gpt-5-from-user-config');
-      expect(defaultsCandidateContent).toContain('credentialEnvVar: OPENAI_API_KEY');
       expect(defaultsCandidateContent).toContain('credentialRef: secret://openai/api-key');
       expect(defaultsCandidateContent).toContain('endpoint: https://example.invalid/v1/responses');
+      expect(defaultsCandidateContent).not.toContain('credentialEnvVar: OPENAI_API_KEY');
 
       expect(overrideResult.exitCode).toBe(0);
       expect(overrideResult.payload.status).toBe('success');
       expect(overrideCandidateContent).toContain('model: gpt-5-override');
-      expect(overrideCandidateContent).toContain('credentialEnvVar: OPENAI_API_KEY');
       expect(overrideCandidateContent).toContain('credentialRef: secret://openai/api-key');
       expect(overrideCandidateContent).toContain('endpoint: https://example.invalid/v1/responses');
+      expect(overrideCandidateContent).not.toContain('credentialEnvVar: OPENAI_API_KEY');
     } finally {
       await rm(fixtureRepositoryRoot, { recursive: true, force: true });
       await rm(temporaryHomeRoot, { recursive: true, force: true });

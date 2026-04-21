@@ -1,8 +1,24 @@
 # checklist
 
-- [ ] TK-1016 run zero-env-var clean-room rehearsal and failure-path validation
+- [x] TK-1016 run zero-env-var clean-room rehearsal and failure-path validation
   - 2026-04-20：任务创建，状态初始化为 `planned`。
-- [ ] TK-1017 review rollout claim parity and remaining cli compatibility wording
+  - 2026-04-21：`sprint-004-docs-distribution-and-workbench-evidence` 已完成 closeout write-back，当前任务切换为 `in_progress`，作为 `project-116 / sprint-005-clean-room-validation-and-rollout-closeout` 的首个 active execution boundary。
+  - 2026-04-21：已完成 zero-env-var clean-room evidence window：VS Code direct-onboarding targeted tests、CLI `credentialRef` zero-env-var regression、`pnpm run build`、`pnpm run test:packages`、fresh pack report，以及 packaged-root / extracted-VSIX scratch-isolated distribution verification 全部通过。
+- [x] TK-1017 review rollout claim parity and remaining cli compatibility wording
   - 2026-04-20：任务创建，状态初始化为 `planned`。
-- [ ] TK-1018 close rollout project and publish completion audit
+  - 2026-04-21：`TK-1016` 已完成 zero-env-var clean-room evidence window；当前任务切换为 `in_progress`，用于把 public support wording 从“sprint-005 defer”收口到最终 claim-parity truth。
+  - 2026-04-21：已完成 README / playbook / support-matrix 的 sprint-005 文案收口，新增 `project-116-sprint-005-rollout-claim-parity-summary.md`，并通过 `pnpm pack --json --dry-run`、`pnpm run check:ide-entry-smoke`、`pnpm run check:ide-docs-parity` 后将当前任务切换为 `completed`；下一步激活 `TK-1018` 进入 project-final closeout 与 delegated CR loop。
+- [x] TK-1018 close rollout project and publish completion audit
   - 2026-04-20：任务创建，状态初始化为 `planned`。
+  - 2026-04-21：`TK-1017` 已完成最终 claim-parity 文案收口与 doc-facing verification；当前任务切换为 `in_progress`，用于承接 project-final delegated CR、completion audit 与 idle-context restoration。
+  - 2026-04-21：`CR-001` 首轮 reviewer 指出 project-final closeout 仍缺 completion-audit artifact 与 milestone backlink；当前窗口已补齐 `project-116-vscode-direct-provider-onboarding-rollout-completion-audit-summary.md`、项目计划回链，以及本任务产出清单，等待 fresh reviewer recheck 后继续完成 idle-context restoration。
+  - 2026-04-21：`CR-002` fresh reviewer recheck 继续指出 completion audit 仍引用 pre-recheck blocker state；当前窗口已把审计摘要刷新到 latest-ledger truth，并在治理校验后继续执行同一 closeout boundary 的 fresh reviewer loop，直到 project-final scope 回到 zero actionable findings。
+  - 2026-04-21：`CR-002` 在 accepted finding 修复后 clean 收口；当前窗口已将 `project-116` completion audit 提升为 completed truth、把 sprint-005 / project plan 恢复到 completed、将 `current-context.md` 恢复到 idle，并把 `stream-project-116-sprint-005` 移入 completed history。
+  - 2026-04-21：closeout delta 在 `CR-002` clean 收口后保持为治理/台账窗口；`check-task-required-inputs`、task/review/context gates 与 `pnpm run check` 已全部通过，当前任务正式保持 `completed`。
+- [x] CR-001 project-116-vscode-direct-provider-onboarding-rollout final delegated review loop round 1
+  - 2026-04-21：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-21：reviewer 首轮返回 1 条认可问题：project-final closeout 缺少 completion-audit artifact 与 milestone backlink；当前窗口已补齐审计摘要、项目计划回链与 `TK-1018` 产出，并在治理-only 复核命令全部通过后将本任务切换为 `resolved`。
+- [x] CR-002 project-116-vscode-direct-provider-onboarding-rollout final delegated review loop round 2
+  - 2026-04-21：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-21：fresh reviewer round `working-tree-20260421-0416` 返回 1 条认可问题：project-level completion audit 仍停留在 pre-recheck blocker state。当前窗口正在按最新 ledger 刷新审计摘要、补写 pending review artifact，并会在治理校验后发起同一 `CR-002` 的 fresh recheck。
+  - 2026-04-21：accepted finding 已修复，fresh delegated recheck 确认 `CR-002` 在修复后不存在新的 actionable finding；当前任务收口为 `resolved`，并将 project-final closeout surface 交回 `TK-1018`。

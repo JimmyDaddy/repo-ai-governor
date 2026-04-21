@@ -243,7 +243,7 @@ function createAcpVerificationFixture(): CliAdapterVerificationResolution {
           routeKey: 'cli.adapter.probe.codex',
           unavailableReasons: ['health_check_failed:codex:acp_host_transport_not_ready'],
           transportKind: AdapterTransportKind.ACP_EXEC,
-          requestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+          requestCancellationMode: AdapterRequestCancellationMode.LOCAL_ABORT_ONLY,
           diagnostics,
         }),
         capabilitySupportByCapability: new Map(),
@@ -269,7 +269,7 @@ function createAcpVerificationFixture(): CliAdapterVerificationResolution {
           routeKey: 'cli.adapter.role.coder',
           unavailableReasons: ['health_check_failed:codex:acp_host_transport_not_ready'],
           transportKind: AdapterTransportKind.ACP_EXEC,
-          requestCancellationMode: AdapterRequestCancellationMode.NOT_SUPPORTED,
+          requestCancellationMode: AdapterRequestCancellationMode.LOCAL_ABORT_ONLY,
           diagnostics,
         }),
         status: CliGovernanceCheckStatus.WARN,
@@ -483,6 +483,7 @@ describe('Cli adapter diagnostics runtime', () => {
       companionStateSummary: CLI_ACP_HOST_CLEAN_ROOM_VERIFIED_STATE_SUMMARY,
     });
     expect(roleRow?.acp_host_companion).toEqual(toolRow?.acp_host_companion);
+    expect(toolDetail).toContain('cancel=local_abort_only');
     expect(toolDetail).toContain('acp_runtime=runtime_service_ready');
     expect(toolDetail).toContain('acp_distribution=packaged_distribution_ready');
     expect(toolDetail).toContain(`acp_state=${CLI_ACP_HOST_CLEAN_ROOM_VERIFIED_STATE_SUMMARY}`);

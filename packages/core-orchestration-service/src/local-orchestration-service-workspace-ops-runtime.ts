@@ -10,7 +10,11 @@ import {
   WorkspaceResolver,
 } from '@repo-ai-governor/config';
 import type {
+  OrchestrationApplyProviderOnboardingRequest,
+  OrchestrationApplyProviderOnboardingResponse,
   OrchestrationBootstrapReadinessSnapshot,
+  OrchestrationProviderOnboardingSnapshot,
+  OrchestrationProviderOnboardingSnapshotRequest,
   OrchestrationSecretBackendStatus,
   OrchestrationSecretReadinessSnapshot,
   OrchestrationSecretRecord,
@@ -28,10 +32,19 @@ import type {
   OrchestrationWorkspaceOperationSnapshot,
 } from '@repo-ai-governor/orchestration-service-client';
 import {
+  ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS,
   OrchestrationBootstrapReadinessActionId,
   OrchestrationWorkspaceOperationKind,
 } from '@repo-ai-governor/orchestration-service-client';
-import { GovernorErrorCode, RuntimeError, standardizeError } from '@repo-ai-governor/shared';
+import {
+  AdapterProviderKind,
+  AdapterSurface,
+  AdapterTransportKind,
+  AdapterVendorBindingKind,
+  GovernorErrorCode,
+  RuntimeError,
+  standardizeError,
+} from '@repo-ai-governor/shared';
 
 const EMBEDDED_CLI_PACKAGE_SPECIFIER = '@repo-ai-governor/cli';
 const EMBEDDED_CLI_ARGV_ENVIRONMENT_KEY = 'REPO_AI_GOVERNOR_EMBEDDED_CLI_ARGV';
@@ -39,6 +52,29 @@ const DEFAULT_USER_CONFIG_ENTRY_DELIMITER = ' | ';
 const DEFAULT_SECRET_RECORD_DELIMITER = ' | ';
 const CREDENTIAL_SELECTOR_PREFIX = 'secret://';
 const UNSAFE_LOCAL_FILE_SECRET_BACKEND_ID = 'unsafe-local-file';
+const PROVIDER_ONBOARDING_SURFACE_ID = 'vscode_provider_onboarding';
+const PROVIDER_ONBOARDING_MUTATION_MODE = 'explicit_provider_onboarding_command';
+const PROVIDER_ONBOARDING_SECRET_CAPTURE_MODE = 'host_secure_prompt';
+const PROVIDER_ONBOARDING_SECRET_OWNER = 'governor_managed_secret_backend';
+const PROVIDER_ONBOARDING_CREDENTIAL_REF_STRATEGY = 'provider_default_api_key';
+const PROVIDER_ONBOARDING_READINESS_PROJECTION_SOURCE = 'provider_onboarding_snapshot';
+const PROVIDER_ONBOARDING_CONFIG_TARGET_SUFFIXES = [
+  'transport',
+  'remoteApi.provider',
+  'remoteApi.vendorBinding',
+  'remoteApi.model',
+  'remoteApi.endpoint',
+  'remoteApi.credentialEnvVar',
+  'remoteApi.credentialRef',
+] as const;
+const PROVIDER_ONBOARDING_RECEIPT_FIELDS = [
+  'tool',
+  'provider',
+  'credentialRef',
+  'secretBackend',
+  'warnings',
+  'nextAction',
+] as const;
 const UPGRADE_REPORT_FILE_PATTERN = /^upgrade-(\d+)\.report\.json$/u;
 const LATEST_WORKSPACE_OPERATION_SNAPSHOT_FILE_NAME = 'latest-workspace-operation.snapshot.json';
 // Service-owned workspace ops must stay machine-readable so embedded CLI execution can be parsed.
@@ -109,6 +145,24 @@ interface LocalOrchestrationServiceWorkspaceOpsRuntimeDependencies {
     locale?: string;
   }) => Promise<CliSuccessOutputPayload>;
   nowProvider?: () => Date;
+}
+
+interface ResolvedProviderOnboardingState {
+  provider: AdapterProviderKind;
+  vendorBinding: AdapterVendorBindingKind;
+  credentialRef: string;
+  model?: string;
+  endpoint?: string;
+}
+
+interface ProviderOnboardingConfigRestoreEntry {
+  keyPath: string;
+  previousValue?: string;
+}
+
+interface StagedConnectProviderOnboardingTransaction {
+  finalizeAfterConnect: () => Promise<void>;
+  rollbackAfterFailure: () => Promise<void>;
 }
 
 /**
@@ -223,6 +277,61 @@ export class LocalOrchestrationServiceWorkspaceOpsRuntime {
     }
   }
 
+  public async queryProviderOnboarding(
+    request: OrchestrationProviderOnboardingSnapshotRequest,
+  ): Promise<OrchestrationProviderOnboardingSnapshot> {
+    const secureAuthoring = await this.querySecureAuthoring({
+      locale: request.locale,
+    });
+    const resolvedState = this.resolveProviderOnboardingState(
+      secureAuthoring,
+      request.tool,
+      request.provider,
+    );
+
+    return {
+      surfaceId: PROVIDER_ONBOARDING_SURFACE_ID,
+      entrypointKind: request.entrypointKind,
+      mutationMode: PROVIDER_ONBOARDING_MUTATION_MODE,
+      tool: request.tool,
+      transport: AdapterTransportKind.REMOTE_API,
+      provider: resolvedState.provider,
+      vendorBinding: resolvedState.vendorBinding,
+      secretCaptureMode: PROVIDER_ONBOARDING_SECRET_CAPTURE_MODE,
+      secretOwner: PROVIDER_ONBOARDING_SECRET_OWNER,
+      credentialRefStrategy: PROVIDER_ONBOARDING_CREDENTIAL_REF_STRATEGY,
+      readinessProjectionSource: PROVIDER_ONBOARDING_READINESS_PROJECTION_SOURCE,
+      configTargets: this.resolveProviderOnboardingConfigTargets(request.tool),
+      receiptFields: [...PROVIDER_ONBOARDING_RECEIPT_FIELDS],
+      credentialRef: resolvedState.credentialRef,
+      ...(resolvedState.model
+        ? {
+            model: resolvedState.model,
+          }
+        : {}),
+      ...(resolvedState.endpoint
+        ? {
+            endpoint: resolvedState.endpoint,
+          }
+        : {}),
+      ...(secureAuthoring.secretReadiness?.selectedBackendId
+        ? {
+            selectedBackendId: secureAuthoring.secretReadiness.selectedBackendId,
+          }
+        : {}),
+      ...(secureAuthoring.secretReadiness?.defaultBackendId
+        ? {
+            defaultBackendId: secureAuthoring.secretReadiness.defaultBackendId,
+          }
+        : {}),
+      availableBackends: [...(secureAuthoring.secretReadiness?.backends ?? [])],
+      warnings: this.buildProviderOnboardingWarnings(
+        secureAuthoring.secretReadiness,
+        resolvedState.credentialRef,
+      ),
+    };
+  }
+
   public async setUserConfigValue(
     request: OrchestrationSetUserConfigValueRequest,
   ): Promise<OrchestrationSetUserConfigValueResponse> {
@@ -238,6 +347,18 @@ export class LocalOrchestrationServiceWorkspaceOpsRuntime {
       configPath: this.readDetailString(payload, 'config_path'),
       persistedValue: this.readDetailString(payload, 'value'),
     };
+  }
+
+  private async unsetUserConfigValue(request: {
+    keyPath: string;
+    locale?: string;
+  }): Promise<void> {
+    const context = this.resolveWorkspaceContext();
+    await this.cliExecutor({
+      args: ['config', 'unset', request.keyPath],
+      currentWorkingDirectory: context.repositoryRoot,
+      locale: request.locale,
+    });
   }
 
   public async setManagedSecret(
@@ -262,6 +383,180 @@ export class LocalOrchestrationServiceWorkspaceOpsRuntime {
       selector: this.readDetailString(payload, 'selector'),
       backendId: this.readDetailString(payload, 'backend'),
       warning: this.readDetailString(payload, 'warning'),
+    };
+  }
+
+  public async applyProviderOnboarding(
+    request: OrchestrationApplyProviderOnboardingRequest,
+  ): Promise<OrchestrationApplyProviderOnboardingResponse> {
+    const reuseExistingCredential = request.reuseExistingCredential === true;
+    const normalizedApiKey = request.apiKey.trim();
+    if (!reuseExistingCredential && normalizedApiKey.length === 0) {
+      throw new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        'Provider onboarding requires one non-empty API key value.',
+      );
+    }
+    const normalizedModel = request.model.trim();
+    if (normalizedModel.length === 0) {
+      throw new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        'Provider onboarding requires one non-empty model value.',
+      );
+    }
+
+    const snapshot = await this.queryProviderOnboarding({
+      tool: request.tool,
+      entrypointKind: request.entrypointKind,
+      ...(request.provider
+        ? {
+            provider: request.provider,
+          }
+        : {}),
+      locale: request.locale,
+    });
+    const backendId = this.resolveProviderOnboardingBackendId(
+      snapshot.availableBackends,
+      request.backendId,
+      snapshot.defaultBackendId,
+      snapshot.selectedBackendId,
+    );
+    const secretKeyName = this.extractManagedSecretKeyName(snapshot.credentialRef);
+    if (!secretKeyName) {
+      throw new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        `Provider onboarding credentialRef must use ${CREDENTIAL_SELECTOR_PREFIX} selectors.`,
+      );
+    }
+
+    const secureAuthoring = await this.querySecureAuthoring({
+      locale: request.locale,
+    });
+    if (secureAuthoring.degradedReason || !secureAuthoring.secretReadiness) {
+      throw new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        secureAuthoring.degradedReason ??
+          this.localizeText(
+            request.locale,
+            'Provider onboarding secure-authoring snapshot is unavailable for the current workspace.',
+            '当前工作区的 provider onboarding secure-authoring 快照不可用。',
+          ),
+      );
+    }
+    const existingCredentialRecord = this.findManagedSecretRecord(
+      secureAuthoring.secretReadiness.records,
+      secretKeyName,
+      backendId,
+    );
+    if (reuseExistingCredential) {
+      if (!existingCredentialRecord || existingCredentialRecord.backendId !== backendId) {
+        throw new RuntimeError(
+          GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+          this.localizeText(
+            request.locale,
+            `Provider onboarding can reuse ${snapshot.credentialRef} only when the managed secret already exists on backend ${backendId}.`,
+            `provider onboarding 只有在 backend ${backendId} 上已经存在受管 secret ${snapshot.credentialRef} 时才能复用该 credential。`,
+          ),
+          {
+            credentialRef: snapshot.credentialRef,
+            backendId,
+          },
+        );
+      }
+    } else if (existingCredentialRecord) {
+      throw new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        this.localizeText(
+          request.locale,
+          `Provider onboarding will not overwrite existing managed secret ${snapshot.credentialRef}. Use the dedicated update/reconnect flow instead.`,
+          `provider onboarding 不会覆盖已有的受管 secret ${snapshot.credentialRef}。请改用专门的更新/重连流程。`,
+        ),
+        {
+          credentialRef: snapshot.credentialRef,
+          backendId: existingCredentialRecord.backendId,
+        },
+      );
+    }
+
+    const secretResult = reuseExistingCredential
+      ? {
+          selector: snapshot.credentialRef,
+          backendId,
+          warning: undefined,
+        }
+      : await this.setManagedSecret({
+          keyName: secretKeyName,
+          value: normalizedApiKey,
+          backendId,
+          locale: request.locale,
+        });
+    const endpointKeyPath = `tools.${request.tool}.remoteApi.endpoint`;
+    const configWrites = [
+      {
+        keyPath: `tools.${request.tool}.transport`,
+        value: AdapterTransportKind.REMOTE_API,
+      },
+      {
+        keyPath: `tools.${request.tool}.remoteApi.provider`,
+        value: snapshot.provider,
+      },
+      {
+        keyPath: `tools.${request.tool}.remoteApi.vendorBinding`,
+        value: snapshot.vendorBinding,
+      },
+      {
+        keyPath: `tools.${request.tool}.remoteApi.model`,
+        value: normalizedModel,
+      },
+      {
+        keyPath: `tools.${request.tool}.remoteApi.credentialRef`,
+        value: snapshot.credentialRef,
+      },
+    ];
+
+    for (const write of configWrites) {
+      await this.setUserConfigValue({
+        keyPath: write.keyPath,
+        value: write.value,
+        locale: request.locale,
+      });
+    }
+    const configTargets = configWrites.map((write) => write.keyPath);
+    if (request.endpoint !== undefined) {
+      if (request.endpoint.trim().length > 0) {
+        await this.setUserConfigValue({
+          keyPath: endpointKeyPath,
+          value: request.endpoint.trim(),
+          locale: request.locale,
+        });
+      } else {
+        await this.unsetUserConfigValue({
+          keyPath: endpointKeyPath,
+          locale: request.locale,
+        });
+      }
+      configTargets.push(endpointKeyPath);
+    }
+    configTargets.push(`tools.${request.tool}.remoteApi.credentialEnvVar`);
+    await this.unsetUserConfigValue({
+      keyPath: `tools.${request.tool}.remoteApi.credentialEnvVar`,
+      locale: request.locale,
+    });
+
+    return {
+      surfaceId: PROVIDER_ONBOARDING_SURFACE_ID,
+      entrypointKind: request.entrypointKind,
+      mutationMode: PROVIDER_ONBOARDING_MUTATION_MODE,
+      tool: request.tool,
+      transport: AdapterTransportKind.REMOTE_API,
+      provider: snapshot.provider,
+      vendorBinding: snapshot.vendorBinding,
+      credentialRef: secretResult.selector ?? snapshot.credentialRef,
+      secretBackend: secretResult.backendId ?? backendId,
+      configTargets,
+      receiptFields: [...PROVIDER_ONBOARDING_RECEIPT_FIELDS],
+      warnings: [...snapshot.warnings, ...(secretResult.warning ? [secretResult.warning] : [])],
+      nextAction: 'repoAiGovernor.runConnect',
     };
   }
 
@@ -302,25 +597,339 @@ export class LocalOrchestrationServiceWorkspaceOpsRuntime {
     request: OrchestrationWorkspaceOperationRequest,
     context: WorkspaceOpsContext,
   ): Promise<OrchestrationWorkspaceOperationResponse> {
-    const generatePayload = await this.cliExecutor({
-      args: this.buildConnectGenerateArgs(request),
-      currentWorkingDirectory: context.repositoryRoot,
-      locale: request.locale,
-    });
-    const applyPayload = await this.cliExecutor({
-      args: this.buildConnectApplyArgs(request),
-      currentWorkingDirectory: context.repositoryRoot,
-      locale: request.locale,
-    });
-    const response = this.buildWorkspaceOperationResponse(request, applyPayload);
-    const combinedArtifacts = this.mergeArtifacts(
-      this.readArtifactsFromPayload(generatePayload),
-      response.result.artifacts,
-    );
-    if (combinedArtifacts.length > 0) {
-      response.result.artifacts = combinedArtifacts;
+    const providerOnboardingRequest = this.resolveConnectProviderOnboardingRequest(request);
+    let stagedProviderOnboarding: StagedConnectProviderOnboardingTransaction | undefined;
+    let connectApplied = false;
+
+    try {
+      if (providerOnboardingRequest) {
+        stagedProviderOnboarding = await this.stageConnectProviderOnboarding(
+          providerOnboardingRequest,
+          request.locale,
+        );
+      }
+
+      const generatePayload = await this.cliExecutor({
+        args: this.buildConnectGenerateArgs(request),
+        currentWorkingDirectory: context.repositoryRoot,
+        locale: request.locale,
+      });
+      const applyPayload = await this.cliExecutor({
+        args: this.buildConnectApplyArgs(request),
+        currentWorkingDirectory: context.repositoryRoot,
+        locale: request.locale,
+      });
+      connectApplied = true;
+      await stagedProviderOnboarding?.finalizeAfterConnect();
+
+      const response = this.buildWorkspaceOperationResponse(request, applyPayload);
+      const combinedArtifacts = this.mergeArtifacts(
+        this.readArtifactsFromPayload(generatePayload),
+        response.result.artifacts,
+      );
+      if (combinedArtifacts.length > 0) {
+        response.result.artifacts = combinedArtifacts;
+      }
+      return response;
+    } catch (error) {
+      if (stagedProviderOnboarding && !connectApplied) {
+        try {
+          await stagedProviderOnboarding.rollbackAfterFailure();
+        } catch (rollbackError) {
+          throw new RuntimeError(
+            GovernorErrorCode.UNKNOWN,
+            this.localizeText(
+              request.locale,
+              'Connect provider onboarding failed and rollback could not restore the previous state.',
+              'connect 的 provider onboarding 失败，且回滚无法恢复先前状态。',
+            ),
+            {
+              connectError: standardizeError(error).message,
+              rollbackError: standardizeError(rollbackError).message,
+            },
+            error,
+          );
+        }
+      }
+      throw error;
     }
-    return response;
+  }
+
+  private resolveConnectProviderOnboardingRequest(
+    request: OrchestrationWorkspaceOperationRequest,
+  ): OrchestrationApplyProviderOnboardingRequest | undefined {
+    const args = request.arguments ?? {};
+    const toolValue = args[ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS.TOOL];
+    if (toolValue === undefined || toolValue === null) {
+      return undefined;
+    }
+
+    const readRequiredString = (key: string): string => {
+      const value = args[key];
+      if (typeof value === 'string' && value.trim().length > 0) {
+        return value.trim();
+      }
+
+      throw new RuntimeError(
+        GovernorErrorCode.AGENT_PROTOCOL_INVALID,
+        this.localizeText(
+          request.locale,
+          `Connect provider onboarding argument "${key}" is required.`,
+          `connect provider onboarding 参数“${key}”为必填项。`,
+        ),
+      );
+    };
+
+    const tool = readRequiredString(ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS.TOOL);
+    if (!Object.values(AdapterSurface).includes(tool as AdapterSurface)) {
+      throw new RuntimeError(
+        GovernorErrorCode.AGENT_PROTOCOL_INVALID,
+        this.localizeText(
+          request.locale,
+          `Unsupported provider onboarding tool "${tool}".`,
+          `不支持的 provider onboarding 工具 "${tool}"。`,
+        ),
+      );
+    }
+
+    const providerValue = args[ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS.PROVIDER];
+    if (
+      providerValue !== undefined &&
+      providerValue !== null &&
+      (!(
+        typeof providerValue === 'string' &&
+        Object.values(AdapterProviderKind).includes(providerValue as AdapterProviderKind)
+      ) ||
+        providerValue.trim().length === 0)
+    ) {
+      throw new RuntimeError(
+        GovernorErrorCode.AGENT_PROTOCOL_INVALID,
+        this.localizeText(
+          request.locale,
+          `Unsupported provider onboarding provider "${String(providerValue)}".`,
+          `不支持的 provider onboarding provider "${String(providerValue)}"。`,
+        ),
+      );
+    }
+
+    const backendIdValue = args[ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS.BACKEND_ID];
+    const reuseExistingCredential =
+      args[ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS.REUSE_EXISTING_CREDENTIAL] ===
+      true;
+    if (
+      backendIdValue !== undefined &&
+      backendIdValue !== null &&
+      !(typeof backendIdValue === 'string' && backendIdValue.trim().length > 0)
+    ) {
+      throw new RuntimeError(
+        GovernorErrorCode.AGENT_PROTOCOL_INVALID,
+        this.localizeText(
+          request.locale,
+          'Provider onboarding backend override must be one non-empty string when provided.',
+          'provider onboarding backend 覆写在提供时必须是一个非空字符串。',
+        ),
+      );
+    }
+
+    const endpointKey = ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS.ENDPOINT;
+    const endpointIsProvided = Object.prototype.hasOwnProperty.call(args, endpointKey);
+    const endpointValue = args[endpointKey];
+    if (
+      endpointIsProvided &&
+      endpointValue !== null &&
+      endpointValue !== undefined &&
+      typeof endpointValue !== 'string'
+    ) {
+      throw new RuntimeError(
+        GovernorErrorCode.AGENT_PROTOCOL_INVALID,
+        this.localizeText(
+          request.locale,
+          'Provider onboarding endpoint override must be a string when provided.',
+          'provider onboarding endpoint 覆写在提供时必须是字符串。',
+        ),
+      );
+    }
+
+    return {
+      tool: tool as AdapterSurface,
+      entrypointKind: readRequiredString(
+        ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS.ENTRYPOINT_KIND,
+      ),
+      model: readRequiredString(ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS.MODEL),
+      apiKey: reuseExistingCredential
+        ? ''
+        : readRequiredString(ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS.API_KEY),
+      ...(reuseExistingCredential
+        ? {
+            reuseExistingCredential: true,
+          }
+        : {}),
+      ...(typeof providerValue === 'string' && providerValue.trim().length > 0
+        ? {
+            provider: providerValue as AdapterProviderKind,
+          }
+        : {}),
+      ...(endpointIsProvided
+        ? {
+            endpoint: typeof endpointValue === 'string' ? endpointValue : '',
+          }
+        : {}),
+      ...(typeof backendIdValue === 'string' && backendIdValue.trim().length > 0
+        ? {
+            backendId: backendIdValue.trim(),
+          }
+        : {}),
+    };
+  }
+
+  // Connect needs compensating provider-onboarding truth so a failed CONNECT does not strand
+  // partially applied user-config or managed-secret mutations in the workspace.
+  private async stageConnectProviderOnboarding(
+    request: OrchestrationApplyProviderOnboardingRequest,
+    locale: string | undefined,
+  ): Promise<StagedConnectProviderOnboardingTransaction> {
+    const reuseExistingCredential = request.reuseExistingCredential === true;
+    const normalizedApiKey = request.apiKey.trim();
+    if (!reuseExistingCredential && normalizedApiKey.length === 0) {
+      throw new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        'Provider onboarding requires one non-empty API key value.',
+      );
+    }
+    const normalizedModel = request.model.trim();
+    if (normalizedModel.length === 0) {
+      throw new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        'Provider onboarding requires one non-empty model value.',
+      );
+    }
+
+    const secureAuthoring = await this.querySecureAuthoring({
+      locale,
+    });
+    if (secureAuthoring.degradedReason || !secureAuthoring.secretReadiness) {
+      throw new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        secureAuthoring.degradedReason ??
+          this.localizeText(
+            locale,
+            'Provider onboarding secure-authoring snapshot is unavailable for the current workspace.',
+            '当前工作区的 provider onboarding secure-authoring 快照不可用。',
+          ),
+      );
+    }
+
+    const resolvedState = this.resolveProviderOnboardingState(
+      secureAuthoring,
+      request.tool,
+      request.provider,
+    );
+    const backendId = this.resolveProviderOnboardingBackendId(
+      secureAuthoring.secretReadiness.backends,
+      request.backendId,
+      secureAuthoring.secretReadiness.defaultBackendId,
+      secureAuthoring.secretReadiness.selectedBackendId,
+    );
+    const finalKeyName = this.extractManagedSecretKeyName(resolvedState.credentialRef);
+    if (!finalKeyName) {
+      throw new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        `Provider onboarding credentialRef must use ${CREDENTIAL_SELECTOR_PREFIX} selectors.`,
+      );
+    }
+    const existingCredentialRecord = this.findManagedSecretRecord(
+      secureAuthoring.secretReadiness.records,
+      finalKeyName,
+      backendId,
+    );
+    if (reuseExistingCredential) {
+      if (!existingCredentialRecord || existingCredentialRecord.backendId !== backendId) {
+        throw new RuntimeError(
+          GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+          this.localizeText(
+            locale,
+            `Connect onboarding can reuse ${resolvedState.credentialRef} only when the managed secret already exists on backend ${backendId}.`,
+            `connect onboarding 只有在 backend ${backendId} 上已经存在受管 secret ${resolvedState.credentialRef} 时才能复用该 credential。`,
+          ),
+          {
+            credentialRef: resolvedState.credentialRef,
+            backendId,
+          },
+        );
+      }
+    } else if (existingCredentialRecord) {
+      throw new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        this.localizeText(
+          locale,
+          `Connect onboarding will not overwrite existing managed secret ${resolvedState.credentialRef}. Use the dedicated update/reconnect flow instead.`,
+          `connect onboarding 不会覆盖已有的受管 secret ${resolvedState.credentialRef}。请改用专门的更新/重连流程。`,
+        ),
+        {
+          credentialRef: resolvedState.credentialRef,
+          backendId: existingCredentialRecord.backendId,
+        },
+      );
+    }
+    const configKeyPaths = this.createProviderOnboardingConfigKeyPaths(request.tool);
+    const restoreEntries = this.captureProviderOnboardingRestoreEntries(
+      secureAuthoring.userConfig?.entries,
+      configKeyPaths,
+    );
+    const rollbackAfterFailure = async (): Promise<void> => {
+      await this.restoreProviderOnboardingConfig(restoreEntries, locale);
+      if (!reuseExistingCredential) {
+        await this.deleteManagedSecret({
+          keyName: finalKeyName,
+          backendId,
+          locale,
+        });
+      }
+    };
+
+    try {
+      if (!reuseExistingCredential) {
+        await this.setManagedSecret({
+          keyName: finalKeyName,
+          value: normalizedApiKey,
+          backendId,
+          locale,
+        });
+      }
+      await this.applyProviderOnboardingConfigMutation({
+        tool: request.tool,
+        provider: resolvedState.provider,
+        vendorBinding: resolvedState.vendorBinding,
+        model: normalizedModel,
+        credentialRef: resolvedState.credentialRef,
+        endpoint: request.endpoint,
+        locale,
+      });
+    } catch (error) {
+      try {
+        await rollbackAfterFailure();
+      } catch (rollbackError) {
+        throw new RuntimeError(
+          GovernorErrorCode.UNKNOWN,
+          this.localizeText(
+            locale,
+            'Provider onboarding staging failed and rollback could not restore the previous state.',
+            'provider onboarding 暂存失败，且回滚无法恢复先前状态。',
+          ),
+          {
+            stagingError: standardizeError(error).message,
+            rollbackError: standardizeError(rollbackError).message,
+          },
+          error,
+        );
+      }
+      throw error;
+    }
+
+    return {
+      finalizeAfterConnect: async () => {},
+      rollbackAfterFailure,
+    };
   }
 
   private buildWorkspaceOperationResponse(
@@ -1363,6 +1972,374 @@ export class LocalOrchestrationServiceWorkspaceOpsRuntime {
         );
       }),
     );
+  }
+
+  private resolveProviderOnboardingState(
+    secureAuthoring: OrchestrationSecureAuthoringSnapshot,
+    tool: AdapterSurface,
+    provider?: AdapterProviderKind,
+  ): ResolvedProviderOnboardingState {
+    const configuredProvider = this.readUserConfigEntryValue(
+      secureAuthoring.userConfig?.entries,
+      tool,
+      'remoteApi.provider',
+    );
+    const resolvedProvider =
+      provider ??
+      (configuredProvider &&
+      Object.values(AdapterProviderKind).includes(configuredProvider as AdapterProviderKind)
+        ? (configuredProvider as AdapterProviderKind)
+        : this.resolveDefaultRemoteApiProvider(tool));
+    const resolvedCompatibility = this.resolveProviderOnboardingCompatibility(
+      tool,
+      resolvedProvider,
+    );
+    const configuredVendorBinding = this.readUserConfigEntryValue(
+      secureAuthoring.userConfig?.entries,
+      tool,
+      'remoteApi.vendorBinding',
+    );
+    if (
+      configuredVendorBinding &&
+      Object.values(AdapterVendorBindingKind).includes(
+        configuredVendorBinding as AdapterVendorBindingKind,
+      ) &&
+      configuredVendorBinding !== resolvedCompatibility.vendorBinding
+    ) {
+      throw new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        `Provider onboarding requires ${resolvedCompatibility.vendorBinding} when tool ${tool} uses provider ${resolvedCompatibility.provider}.`,
+      );
+    }
+    const credentialRef =
+      this.readUserConfigEntryValue(
+        secureAuthoring.userConfig?.entries,
+        tool,
+        'remoteApi.credentialRef',
+      ) ?? this.resolveDefaultCredentialRefSelector(resolvedCompatibility.provider);
+
+    return {
+      provider: resolvedCompatibility.provider,
+      vendorBinding: resolvedCompatibility.vendorBinding,
+      credentialRef,
+      ...(this.readUserConfigEntryValue(
+        secureAuthoring.userConfig?.entries,
+        tool,
+        'remoteApi.model',
+      )
+        ? {
+            model: this.readUserConfigEntryValue(
+              secureAuthoring.userConfig?.entries,
+              tool,
+              'remoteApi.model',
+            ),
+          }
+        : {}),
+      ...(this.readUserConfigEntryValue(
+        secureAuthoring.userConfig?.entries,
+        tool,
+        'remoteApi.endpoint',
+      )
+        ? {
+            endpoint: this.readUserConfigEntryValue(
+              secureAuthoring.userConfig?.entries,
+              tool,
+              'remoteApi.endpoint',
+            ),
+          }
+        : {}),
+    };
+  }
+
+  private buildProviderOnboardingWarnings(
+    secretReadiness: OrchestrationSecretReadinessSnapshot | undefined,
+    credentialRef: string,
+  ): string[] {
+    const warnings =
+      secretReadiness?.backends
+        .map((backend) => backend.warning)
+        .filter((warning): warning is string => Boolean(warning)) ?? [];
+    if (secretReadiness?.unresolvedCredentialRefs.includes(credentialRef)) {
+      warnings.push(`${credentialRef} does not resolve through the current managed backend state.`);
+    }
+    return warnings;
+  }
+
+  private resolveProviderOnboardingConfigTargets(tool: AdapterSurface): string[] {
+    return PROVIDER_ONBOARDING_CONFIG_TARGET_SUFFIXES.map((suffix) => `tools.${tool}.${suffix}`);
+  }
+
+  private createProviderOnboardingConfigKeyPaths(tool: AdapterSurface): Record<string, string> {
+    return {
+      transport: `tools.${tool}.transport`,
+      provider: `tools.${tool}.remoteApi.provider`,
+      vendorBinding: `tools.${tool}.remoteApi.vendorBinding`,
+      model: `tools.${tool}.remoteApi.model`,
+      endpoint: `tools.${tool}.remoteApi.endpoint`,
+      credentialRef: `tools.${tool}.remoteApi.credentialRef`,
+      credentialEnvVar: `tools.${tool}.remoteApi.credentialEnvVar`,
+    };
+  }
+
+  private captureProviderOnboardingRestoreEntries(
+    entries: readonly OrchestrationUserConfigEntry[] | undefined,
+    keyPaths: Record<string, string>,
+  ): ProviderOnboardingConfigRestoreEntry[] {
+    return Object.values(keyPaths).map((keyPath) => ({
+      keyPath,
+      previousValue: this.readUserConfigEntryValueByKeyPath(entries, keyPath),
+    }));
+  }
+
+  private async restoreProviderOnboardingConfig(
+    restoreEntries: readonly ProviderOnboardingConfigRestoreEntry[],
+    locale?: string,
+  ): Promise<void> {
+    for (const entry of restoreEntries) {
+      if (entry.previousValue !== undefined) {
+        await this.setUserConfigValue({
+          keyPath: entry.keyPath,
+          value: entry.previousValue,
+          locale,
+        });
+        continue;
+      }
+
+      await this.unsetUserConfigValue({
+        keyPath: entry.keyPath,
+        locale,
+      });
+    }
+  }
+
+  private async applyProviderOnboardingConfigMutation(options: {
+    tool: AdapterSurface;
+    provider: AdapterProviderKind;
+    vendorBinding: AdapterVendorBindingKind;
+    model: string;
+    credentialRef: string;
+    endpoint?: string;
+    locale?: string;
+  }): Promise<string[]> {
+    const keyPaths = this.createProviderOnboardingConfigKeyPaths(options.tool);
+    const configWrites = [
+      {
+        keyPath: keyPaths.transport,
+        value: AdapterTransportKind.REMOTE_API,
+      },
+      {
+        keyPath: keyPaths.provider,
+        value: options.provider,
+      },
+      {
+        keyPath: keyPaths.vendorBinding,
+        value: options.vendorBinding,
+      },
+      {
+        keyPath: keyPaths.model,
+        value: options.model,
+      },
+      {
+        keyPath: keyPaths.credentialRef,
+        value: options.credentialRef,
+      },
+    ];
+
+    for (const write of configWrites) {
+      await this.setUserConfigValue({
+        keyPath: write.keyPath,
+        value: write.value,
+        locale: options.locale,
+      });
+    }
+
+    const configTargets = configWrites.map((write) => write.keyPath);
+    if (options.endpoint !== undefined) {
+      if (options.endpoint.trim().length > 0) {
+        await this.setUserConfigValue({
+          keyPath: keyPaths.endpoint,
+          value: options.endpoint.trim(),
+          locale: options.locale,
+        });
+      } else {
+        await this.unsetUserConfigValue({
+          keyPath: keyPaths.endpoint,
+          locale: options.locale,
+        });
+      }
+      configTargets.push(keyPaths.endpoint);
+    }
+
+    await this.unsetUserConfigValue({
+      keyPath: keyPaths.credentialEnvVar,
+      locale: options.locale,
+    });
+    configTargets.push(keyPaths.credentialEnvVar);
+    return configTargets;
+  }
+
+  private async deleteManagedSecret(request: {
+    keyName: string;
+    backendId?: string;
+    locale?: string;
+  }): Promise<void> {
+    const context = this.resolveWorkspaceContext();
+    await this.cliExecutor({
+      args: [
+        'secret',
+        'delete',
+        request.keyName,
+        ...(request.backendId ? ['--backend', request.backendId] : []),
+      ],
+      currentWorkingDirectory: context.repositoryRoot,
+      locale: request.locale,
+    });
+  }
+
+  private resolveProviderOnboardingBackendId(
+    availableBackends: readonly OrchestrationSecretBackendStatus[],
+    requestedBackendId?: string,
+    defaultBackendId?: string,
+    selectedBackendId?: string,
+  ): string {
+    const writableBackends = availableBackends.filter((backend) => backend.available);
+    const matchedRequestedBackend =
+      requestedBackendId &&
+      writableBackends.find((backend) => backend.backendId === requestedBackendId);
+    if (requestedBackendId && !matchedRequestedBackend) {
+      throw new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        `Requested secret backend ${requestedBackendId} is not writable for provider onboarding.`,
+      );
+    }
+    if (matchedRequestedBackend) {
+      return matchedRequestedBackend.backendId;
+    }
+
+    const matchedDefaultBackend =
+      defaultBackendId &&
+      writableBackends.find((backend) => backend.backendId === defaultBackendId);
+    if (matchedDefaultBackend) {
+      return matchedDefaultBackend.backendId;
+    }
+    if (defaultBackendId) {
+      throw new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        `Default secret backend ${defaultBackendId} is not writable for provider onboarding.`,
+      );
+    }
+
+    const matchedSelectedBackend =
+      selectedBackendId &&
+      writableBackends.find((backend) => backend.backendId === selectedBackendId);
+    if (matchedSelectedBackend) {
+      return matchedSelectedBackend.backendId;
+    }
+    if (selectedBackendId) {
+      throw new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        `Selected secret backend ${selectedBackendId} is not writable for provider onboarding.`,
+      );
+    }
+
+    const fallbackBackend = writableBackends[0];
+    if (!fallbackBackend) {
+      throw new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        'No writable secret backend is available for provider onboarding.',
+      );
+    }
+
+    return fallbackBackend.backendId;
+  }
+
+  private findManagedSecretRecord(
+    records: readonly OrchestrationSecretRecord[],
+    keyName: string,
+    preferredBackendId?: string,
+  ): OrchestrationSecretRecord | undefined {
+    return (
+      (preferredBackendId
+        ? records.find(
+            (record) =>
+              record.keyName === keyName &&
+              record.backendId === preferredBackendId &&
+              record.exists,
+          )
+        : undefined) ?? records.find((record) => record.keyName === keyName && record.exists)
+    );
+  }
+
+  private readUserConfigEntryValue(
+    entries: readonly OrchestrationUserConfigEntry[] | undefined,
+    tool: AdapterSurface,
+    suffix: string,
+  ): string | undefined {
+    return entries?.find((entry) => entry.keyPath === `tools.${tool}.${suffix}`)?.value;
+  }
+
+  private readUserConfigEntryValueByKeyPath(
+    entries: readonly OrchestrationUserConfigEntry[] | undefined,
+    keyPath: string,
+  ): string | undefined {
+    return entries?.find((entry) => entry.keyPath === keyPath)?.value;
+  }
+
+  private resolveDefaultRemoteApiProvider(tool: AdapterSurface): AdapterProviderKind {
+    return tool === AdapterSurface.CLAUDE_CODE
+      ? AdapterProviderKind.ANTHROPIC
+      : AdapterProviderKind.OPENAI;
+  }
+
+  private resolveProviderOnboardingCompatibility(
+    tool: AdapterSurface,
+    provider: AdapterProviderKind,
+  ): {
+    provider: AdapterProviderKind;
+    vendorBinding: AdapterVendorBindingKind;
+  } {
+    switch (tool) {
+      case AdapterSurface.CODEX:
+        if (provider !== AdapterProviderKind.OPENAI) {
+          throw new RuntimeError(
+            GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+            `Provider onboarding only supports provider ${AdapterProviderKind.OPENAI} for tool ${tool}.`,
+          );
+        }
+        return {
+          provider: AdapterProviderKind.OPENAI,
+          vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
+        };
+      case AdapterSurface.CLAUDE_CODE:
+        if (provider !== AdapterProviderKind.ANTHROPIC) {
+          throw new RuntimeError(
+            GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+            `Provider onboarding only supports provider ${AdapterProviderKind.ANTHROPIC} for tool ${tool}.`,
+          );
+        }
+        return {
+          provider: AdapterProviderKind.ANTHROPIC,
+          vendorBinding: AdapterVendorBindingKind.ANTHROPIC_MESSAGES,
+        };
+      default:
+        throw new RuntimeError(
+          GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+          `Provider onboarding is not supported for tool ${tool}.`,
+        );
+    }
+  }
+
+  private resolveDefaultCredentialRefSelector(provider: AdapterProviderKind): string {
+    return `${CREDENTIAL_SELECTOR_PREFIX}${provider}/api-key`;
+  }
+
+  private extractManagedSecretKeyName(selector: string): string | undefined {
+    if (!selector.startsWith(CREDENTIAL_SELECTOR_PREFIX)) {
+      return undefined;
+    }
+
+    const keyName = selector.slice(CREDENTIAL_SELECTOR_PREFIX.length).trim();
+    return keyName.length > 0 ? keyName : undefined;
   }
 
   private resolveLatestWorkspaceOperationSnapshotDirectory(workspaceRoot: string): string {

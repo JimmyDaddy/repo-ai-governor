@@ -162,7 +162,7 @@ These are the limits that surprise new readers most often:
 1. `dist-binary` proves CLI/runtime behavior. It does not prove packaged install behavior.
 2. `tgz` is still an online packaged-install rehearsal. It is not an offline or self-contained installer.
 3. `adopt bootstrap` is the default whole-repo installer path. `host export` and `host pack` are lower-level follow-up tools.
-4. VS Code support is currently a built-source companion and local VSIX path, not Marketplace support.
+4. VS Code support is currently a built-source companion and local VSIX path, not Marketplace support. On those supported VS Code paths, `Connect Provider` / `Update API Key` / `Reconnect Provider` keep API-key capture inside the extension and persist only managed-secret-backed `credentialRef` plus non-secret provider defaults.
 5. Desktop support is currently built-source foundation-only, not a standalone desktop installer or separate desktop product.
 6. `local-model` is a constrained fallback path, not a full replacement for the primary remote adapters.
 7. The formal support truth always lives in `docs/support-matrix.md`.

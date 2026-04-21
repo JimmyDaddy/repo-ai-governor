@@ -1,4 +1,5 @@
 import {
+  ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS,
   OrchestrationBootstrapReadinessActionId,
   OrchestrationClientSurface,
   OrchestrationExecutionStatus,
@@ -29,8 +30,13 @@ import type {
   OrchestrationQueueOverviewQueryResponse,
   OrchestrationWorkspaceOperationSnapshot,
 } from '@repo-ai-governor/orchestration-service-client';
+import { AdapterTransportKind } from '@repo-ai-governor/shared';
 import {
+  VSCODE_EXTENSION_CONNECT_PRESET_IDS,
   VSCODE_EXTENSION_DESKTOP_RELATIONSHIP,
+  VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS,
+  VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES,
+  VSCODE_EXTENSION_PROVIDER_ONBOARDING_ENTRYPOINT_KINDS,
   VSCODE_EXTENSION_PUBLIC_SUPPORT_LEVEL,
   VSCODE_EXTENSION_SECRET_SELECTOR_PREFIX,
 } from '../constants/index.js';
@@ -41,6 +47,8 @@ import {
 } from '../constants/index.js';
 import type {
   VsCodeExtensionCommandRequest,
+  VsCodeExtensionProviderLifecycleActionId,
+  VsCodeExtensionProviderLifecycleSnapshot,
   VsCodeExtensionReviewDetailSnapshot,
   VsCodeExtensionSecureAuthoringSnapshot,
   VsCodeExtensionTreeNodeDescriptor,
@@ -280,6 +288,7 @@ export class VsCodeExtensionPresentationBuilder {
     const queueOverview = snapshot.queueOverview;
     const bootstrapReadiness = snapshot.bootstrapReadiness;
     const secureAuthoring = snapshot.secureAuthoring;
+    const providerLifecycleSnapshots = snapshot.providerLifecycleSnapshots ?? [];
     const selectedExecution = snapshot.selectedExecution;
     const reviewSourcePath = snapshot.reviewSourcePath;
     const latestAutomationEntry = queueOverview.automationInbox[0];
@@ -329,6 +338,7 @@ export class VsCodeExtensionPresentationBuilder {
       },
       this.buildUserConfigAuthoringNode(secureAuthoring),
       this.buildSecretReadinessNode(secureAuthoring),
+      this.buildProviderLifecycleNode(providerLifecycleSnapshots),
       this.buildBootstrapReadinessNode(bootstrapReadiness),
       this.buildLatestWorkspaceOperationNode(queueOverview.latestWorkspaceOperation),
       {
@@ -788,6 +798,9 @@ export class VsCodeExtensionPresentationBuilder {
     const selectedExecution = selectedExecutionEntry?.execution;
     const artifactPane = snapshot.artifactPane;
     const secureAuthoringLines = this.buildSecureAuthoringLines(snapshot.secureAuthoring);
+    const providerLifecycleLines = this.buildProviderLifecycleSummaryLines(
+      snapshot.providerLifecycleSnapshots ?? [],
+    );
     const workflowLines = this.buildWorkflowStudioSelectionLines(
       selectedExecution,
       artifactPane,
@@ -805,6 +818,9 @@ export class VsCodeExtensionPresentationBuilder {
     const queueLines = this.buildWorkflowStudioQueueLines(queueOverview);
     const latestWorkspaceOperationLines = this.buildLatestWorkspaceOperationLines(
       queueOverview.latestWorkspaceOperation,
+    );
+    const providerLifecycleActions = this.buildProviderLifecycleWorkflowActions(
+      snapshot.providerLifecycleSnapshots ?? [],
     );
     const supportTruthLines = this.buildWorkflowStudioSupportTruthLines(
       queueOverview,
@@ -883,6 +899,14 @@ export class VsCodeExtensionPresentationBuilder {
       this.renderStringSection(
         this.localizer.localizeText('Secure authoring readiness', '安全 Authoring Readiness'),
         secureAuthoringLines,
+      ),
+      this.renderStringSection(
+        this.localizer.localizeText('Provider lifecycle', 'Provider 生命周期'),
+        providerLifecycleLines,
+      ),
+      this.renderActionSection(
+        this.localizer.localizeText('Provider lifecycle actions', 'Provider 生命周期动作'),
+        providerLifecycleActions,
       ),
       this.renderStringSection(
         this.localizer.localizeText('Queue and rollout overview', '队列与 rollout 总览'),
@@ -965,6 +989,7 @@ export class VsCodeExtensionPresentationBuilder {
     executionBoardEntries: readonly OrchestrationExecutionBoardEntry[];
     hitlInboxEntries: readonly OrchestrationHitlInboxEntry[];
     queueOverview?: OrchestrationQueueOverviewQueryResponse;
+    providerLifecycleSnapshots?: readonly VsCodeExtensionProviderLifecycleSnapshot[];
     reviewDetailSnapshot?: VsCodeExtensionReviewDetailSnapshot;
   }): string {
     if (!options.workspaceContext.workspaceRoot) {
@@ -1022,6 +1047,14 @@ export class VsCodeExtensionPresentationBuilder {
         }
       }
     }
+    for (const snapshot of options.providerLifecycleSnapshots ?? []) {
+      lines.push(
+        `- ${this.localizer.localizeText('Provider lifecycle', 'Provider 生命周期')} (${snapshot.tool}): ${this.localizeProviderLifecycleStatus(snapshot.status)}`,
+      );
+      lines.push(
+        `- ${this.localizer.localizeText('Provider next steps', 'Provider 下一步动作')} (${snapshot.tool}): ${this.formatProviderLifecycleActionLabels(snapshot.availableActions)}`,
+      );
+    }
     if (options.workspaceContext.serviceHealth) {
       lines.push(
         `- ${this.localizer.localizeText('Service lifecycle', '服务生命周期')}: ${this.localizeServiceLifecycleStatus(options.workspaceContext.serviceHealth.lifecycleStatus)}`,
@@ -1058,6 +1091,39 @@ export class VsCodeExtensionPresentationBuilder {
     }
 
     return lines.join('\n');
+  }
+
+  /**
+   * Builds at most one provider-lifecycle chat button from the highest-priority visible action.
+   * @param snapshots Provider lifecycle snapshots already resolved by the service runtime.
+   * @returns Zero or one chat buttons that reuse existing command handlers.
+   */
+  public buildProviderLifecycleChatButtons(
+    snapshots: readonly VsCodeExtensionProviderLifecycleSnapshot[],
+  ): ReadonlyArray<{
+    command: string;
+    title: string;
+    arguments?: VsCodeExtensionCommandRequest[];
+  }> {
+    for (const snapshot of snapshots) {
+      for (const actionId of snapshot.availableActions) {
+        const request = this.createProviderLifecycleCommandRequest(actionId, snapshot);
+        if (!request && actionId !== VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.RUN_DOCTOR) {
+          continue;
+        }
+
+        return [
+          this.createCommandDescriptor(
+            this.resolveProviderLifecycleCommandId(actionId),
+            this.getProviderLifecycleActionLabel(actionId),
+            this.getProviderLifecycleActionChineseLabel(actionId),
+            request,
+          ),
+        ];
+      }
+    }
+
+    return [];
   }
 
   private buildServiceDiagnosticsNodes(
@@ -2833,6 +2899,73 @@ export class VsCodeExtensionPresentationBuilder {
         ];
   }
 
+  private buildProviderLifecycleSummaryLines(
+    snapshots: readonly VsCodeExtensionProviderLifecycleSnapshot[],
+  ): readonly string[] {
+    if (snapshots.length === 0) {
+      return [];
+    }
+
+    const lines: string[] = [];
+    for (const snapshot of snapshots) {
+      lines.push(
+        this.localizer.localizeText(
+          `${snapshot.tool} (${snapshot.provider}): ${this.localizeProviderLifecycleStatus(snapshot.status)}`,
+          `${snapshot.tool}（${snapshot.provider}）：${this.localizeProviderLifecycleStatus(snapshot.status)}`,
+        ),
+        this.localizer.localizeText(
+          `Selector ${snapshot.credentialRef} on ${snapshot.preferredBackendId ?? 'no preferred backend'}. Next steps: ${this.formatProviderLifecycleActionLabels(snapshot.availableActions)}`,
+          `Selector ${snapshot.credentialRef} 位于 ${snapshot.preferredBackendId ?? '暂无首选 backend'}。下一步动作：${this.formatProviderLifecycleActionLabels(snapshot.availableActions)}`,
+        ),
+      );
+      if (snapshot.degradedReason) {
+        lines.push(
+          this.localizer.localizeText(
+            `Degraded reason: ${snapshot.degradedReason}`,
+            `降级原因：${snapshot.degradedReason}`,
+          ),
+        );
+      }
+      for (const warning of snapshot.warnings) {
+        lines.push(this.localizer.localizeText(`Warning: ${warning}`, `警告：${warning}`));
+      }
+    }
+
+    return lines;
+  }
+
+  private buildProviderLifecycleWorkflowActions(
+    snapshots: readonly VsCodeExtensionProviderLifecycleSnapshot[],
+  ): ReadonlyArray<{
+    label: string;
+    description: string;
+    href?: string;
+    disabledReason?: string;
+  }> {
+    return snapshots.flatMap((snapshot) =>
+      snapshot.availableActions.map((actionId) => {
+        const request = this.createProviderLifecycleCommandRequest(actionId, snapshot);
+        return {
+          label: `${snapshot.tool} · ${this.localizeProviderLifecycleActionLabel(actionId)}`,
+          description: this.buildProviderLifecycleGuidance(snapshot),
+          ...(request || actionId === VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.RUN_DOCTOR
+            ? {
+                href: this.createCommandUri(
+                  this.resolveProviderLifecycleCommandId(actionId),
+                  request,
+                ),
+              }
+            : {
+                disabledReason: this.localizer.localizeText(
+                  'This action needs more provider configuration before it can run without guesswork.',
+                  '这个动作需要更多 provider 配置后才能在不猜测的前提下执行。',
+                ),
+              }),
+        };
+      }),
+    );
+  }
+
   private createActionNode(
     action: OrchestrationGovernanceActionAffordance,
     entry: OrchestrationExecutionBoardEntry | OrchestrationHitlInboxEntry,
@@ -2959,6 +3092,313 @@ export class VsCodeExtensionPresentationBuilder {
           }
         : {}),
     };
+  }
+
+  private describeProviderLifecycleCollection(
+    snapshots: readonly VsCodeExtensionProviderLifecycleSnapshot[],
+  ): string {
+    if (
+      snapshots.some(
+        (snapshot) => snapshot.status === VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES.DEGRADED,
+      )
+    ) {
+      return this.localizer.localizeText('Degraded guidance available', '存在降级指引');
+    }
+    if (
+      snapshots.some(
+        (snapshot) =>
+          snapshot.status === VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES.RECONNECT_REQUIRED,
+      )
+    ) {
+      return this.localizer.localizeText('Reconnect required', '需要重连');
+    }
+    if (
+      snapshots.some(
+        (snapshot) =>
+          snapshot.status === VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES.CONNECT_REQUIRED,
+      )
+    ) {
+      return this.localizer.localizeText('Connect required', '需要连接');
+    }
+
+    return this.localizer.localizeText('Ready', '已就绪');
+  }
+
+  private getProviderLifecycleCollectionIconId(
+    snapshots: readonly VsCodeExtensionProviderLifecycleSnapshot[],
+  ): string {
+    if (
+      snapshots.some(
+        (snapshot) => snapshot.status === VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES.DEGRADED,
+      )
+    ) {
+      return 'warning';
+    }
+    if (
+      snapshots.some(
+        (snapshot) =>
+          snapshot.status === VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES.CONNECT_REQUIRED ||
+          snapshot.status === VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES.RECONNECT_REQUIRED,
+      )
+    ) {
+      return 'plug';
+    }
+
+    return 'pass-filled';
+  }
+
+  private buildProviderLifecycleActionNode(
+    snapshot: VsCodeExtensionProviderLifecycleSnapshot,
+    actionId: VsCodeExtensionProviderLifecycleActionId,
+  ): VsCodeExtensionTreeNodeDescriptor | undefined {
+    const request = this.createProviderLifecycleCommandRequest(actionId, snapshot);
+    if (!request && actionId !== VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.RUN_DOCTOR) {
+      return undefined;
+    }
+
+    return this.createWorkbenchActionNode(
+      `provider-lifecycle:${snapshot.tool}:action:${actionId}`,
+      this.getProviderLifecycleActionLabel(actionId),
+      this.getProviderLifecycleActionChineseLabel(actionId),
+      this.buildProviderLifecycleActionDescription(actionId, snapshot),
+      this.buildProviderLifecycleActionChineseDescription(actionId, snapshot),
+      this.resolveProviderLifecycleCommandId(actionId),
+      request,
+    );
+  }
+
+  private resolveProviderLifecycleCommandId(
+    actionId: VsCodeExtensionProviderLifecycleActionId,
+  ): string {
+    switch (actionId) {
+      case VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.UPDATE_API_KEY:
+        return VSCODE_EXTENSION_COMMAND_IDS.SET_MANAGED_SECRET;
+      case VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.RUN_DOCTOR:
+        return VSCODE_EXTENSION_COMMAND_IDS.RUN_DOCTOR;
+      default:
+        return VSCODE_EXTENSION_COMMAND_IDS.RUN_CONNECT;
+    }
+  }
+
+  private createProviderLifecycleCommandRequest(
+    actionId: VsCodeExtensionProviderLifecycleActionId,
+    snapshot: VsCodeExtensionProviderLifecycleSnapshot,
+  ): VsCodeExtensionCommandRequest | undefined {
+    switch (actionId) {
+      case VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.CONNECT_PROVIDER: {
+        const workspaceOperationArguments: Record<
+          string,
+          boolean | number | string | readonly string[] | null
+        > = {
+          tools: [snapshot.tool],
+          toolTransportBindings: [`${snapshot.tool}=${AdapterTransportKind.REMOTE_API}`],
+        };
+        if (snapshot.model) {
+          workspaceOperationArguments.remoteApiModelBindings = [
+            `${snapshot.tool}=${snapshot.model}`,
+          ];
+        }
+        if (snapshot.endpoint) {
+          workspaceOperationArguments.remoteApiEndpointBindings = [
+            `${snapshot.tool}=${snapshot.endpoint}`,
+          ];
+        }
+        return {
+          workspaceOperationArguments,
+        };
+      }
+      case VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.UPDATE_API_KEY: {
+        const secretKeyName = this.extractManagedSecretKeyName(snapshot.credentialRef);
+        return secretKeyName
+          ? {
+              secretKeyName,
+            }
+          : undefined;
+      }
+      case VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.RECONNECT_PROVIDER: {
+        if (!snapshot.model || !snapshot.credentialResolved) {
+          return undefined;
+        }
+
+        const workspaceOperationArguments: Record<
+          string,
+          boolean | number | string | readonly string[] | null
+        > = {
+          presetId: VSCODE_EXTENSION_CONNECT_PRESET_IDS.SINGLE_TOOL_MINIMAL,
+          tools: [snapshot.tool],
+          toolTransportBindings: [`${snapshot.tool}=${AdapterTransportKind.REMOTE_API}`],
+          remoteApiModelBindings: [`${snapshot.tool}=${snapshot.model}`],
+          [ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS.TOOL]: snapshot.tool,
+          [ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS.ENTRYPOINT_KIND]:
+            VSCODE_EXTENSION_PROVIDER_ONBOARDING_ENTRYPOINT_KINDS.OVERVIEW_CTA,
+          [ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS.PROVIDER]: snapshot.provider,
+          [ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS.MODEL]: snapshot.model,
+          [ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS.ENDPOINT]:
+            snapshot.endpoint ?? '',
+          [ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS.REUSE_EXISTING_CREDENTIAL]: true,
+        };
+        if (snapshot.endpoint) {
+          workspaceOperationArguments.remoteApiEndpointBindings = [
+            `${snapshot.tool}=${snapshot.endpoint}`,
+          ];
+        }
+        if (snapshot.preferredBackendId) {
+          workspaceOperationArguments[
+            ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS.BACKEND_ID
+          ] = snapshot.preferredBackendId;
+        }
+        return {
+          workspaceOperationArguments,
+        };
+      }
+      case VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.RUN_DOCTOR:
+        return undefined;
+      default:
+        return undefined;
+    }
+  }
+
+  private localizeProviderLifecycleStatus(
+    status: VsCodeExtensionProviderLifecycleSnapshot['status'],
+  ): string {
+    switch (status) {
+      case VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES.CONNECT_REQUIRED:
+        return this.localizer.localizeText('Connect required', '需要连接');
+      case VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES.READY:
+        return this.localizer.localizeText('Ready', '已就绪');
+      case VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES.RECONNECT_REQUIRED:
+        return this.localizer.localizeText('Reconnect required', '需要重连');
+      default:
+        return this.localizer.localizeText('Degraded', '已降级');
+    }
+  }
+
+  private localizeProviderLifecycleProjectionSource(
+    source: VsCodeExtensionProviderLifecycleSnapshot['readinessProjectionSource'],
+  ): string {
+    return source === 'agent_onboarding_summary'
+      ? this.localizer.localizeText('Agent onboarding summary', 'Agent onboarding 摘要')
+      : this.localizer.localizeText('Provider onboarding snapshot', 'Provider onboarding 快照');
+  }
+
+  private getProviderLifecycleIconId(
+    status: VsCodeExtensionProviderLifecycleSnapshot['status'],
+  ): string {
+    switch (status) {
+      case VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES.READY:
+        return 'pass-filled';
+      case VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES.CONNECT_REQUIRED:
+      case VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES.RECONNECT_REQUIRED:
+        return 'plug';
+      default:
+        return 'warning';
+    }
+  }
+
+  private buildProviderLifecycleGuidance(
+    snapshot: VsCodeExtensionProviderLifecycleSnapshot,
+  ): string {
+    switch (snapshot.status) {
+      case VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES.CONNECT_REQUIRED:
+        return this.localizer.localizeText(
+          'Provider defaults are still incomplete. Use Connect Provider to author the model and managed credential selector through the host-owned onboarding facade.',
+          'Provider 默认值尚未完整。请使用 Connect Provider，通过宿主拥有的 onboarding facade 写入 model 与受管凭据选择器。',
+        );
+      case VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES.RECONNECT_REQUIRED:
+        return this.localizer.localizeText(
+          'A provider selector exists, but the current managed backend state cannot reuse it yet. Update API Key, then rerun connect after doctor confirms readiness.',
+          '已有 provider selector，但当前受管 backend 状态暂时无法复用它。请先执行 Update API Key，再在 doctor 确认 readiness 后重跑 connect。',
+        );
+      case VSCODE_EXTENSION_PROVIDER_LIFECYCLE_STATUSES.READY:
+        return this.localizer.localizeText(
+          'The managed selector resolves on the preferred backend. Use Update API Key to rotate the secret, or Reconnect Provider to rerun connect with the current selector.',
+          '受管 selector 已在首选 backend 上解析成功。可用 Update API Key 轮换 secret，或用 Reconnect Provider 以当前 selector 重跑 connect。',
+        );
+      default:
+        return this.localizer.localizeText(
+          `Readiness guidance is degraded. Run doctor before claiming provider readiness. ${snapshot.degradedReason ?? ''}`.trim(),
+          `Readiness 指引已降级。请先运行 doctor，再声明 provider 已就绪。${snapshot.degradedReason ?? ''}`.trim(),
+        );
+    }
+  }
+
+  private getProviderLifecycleActionLabel(
+    actionId: VsCodeExtensionProviderLifecycleActionId,
+  ): string {
+    switch (actionId) {
+      case VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.CONNECT_PROVIDER:
+        return 'Connect Provider';
+      case VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.UPDATE_API_KEY:
+        return 'Update API Key';
+      case VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.RECONNECT_PROVIDER:
+        return 'Reconnect Provider';
+      default:
+        return 'Run Doctor';
+    }
+  }
+
+  private getProviderLifecycleActionChineseLabel(
+    actionId: VsCodeExtensionProviderLifecycleActionId,
+  ): string {
+    switch (actionId) {
+      case VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.CONNECT_PROVIDER:
+        return '连接 Provider';
+      case VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.UPDATE_API_KEY:
+        return '更新 API Key';
+      case VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.RECONNECT_PROVIDER:
+        return '重连 Provider';
+      default:
+        return '执行 Doctor';
+    }
+  }
+
+  private buildProviderLifecycleActionDescription(
+    actionId: VsCodeExtensionProviderLifecycleActionId,
+    snapshot: VsCodeExtensionProviderLifecycleSnapshot,
+  ): string {
+    switch (actionId) {
+      case VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.CONNECT_PROVIDER:
+        return `Seed one host-native connect flow for ${snapshot.tool} without dropping back to credentialEnvVar-first onboarding.`;
+      case VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.UPDATE_API_KEY:
+        return `Rotate the managed secret behind ${snapshot.credentialRef} without persisting raw API-key content anywhere else.`;
+      case VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.RECONNECT_PROVIDER:
+        return `Reuse the current managed selector and rerun connect for ${snapshot.tool} on the preferred backend.`;
+      default:
+        return 'Re-run doctor so degraded readiness evidence becomes explicit before the next provider action.';
+    }
+  }
+
+  private buildProviderLifecycleActionChineseDescription(
+    actionId: VsCodeExtensionProviderLifecycleActionId,
+    snapshot: VsCodeExtensionProviderLifecycleSnapshot,
+  ): string {
+    switch (actionId) {
+      case VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.CONNECT_PROVIDER:
+        return `为 ${snapshot.tool} 启动一次宿主原生 connect 流程，而不是退回到 credentialEnvVar-first onboarding。`;
+      case VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.UPDATE_API_KEY:
+        return `轮换 ${snapshot.credentialRef} 背后的受管 secret，不会把原始 API key 持久化到其他位置。`;
+      case VSCODE_EXTENSION_PROVIDER_LIFECYCLE_ACTION_IDS.RECONNECT_PROVIDER:
+        return `复用当前受管 selector，并在首选 backend 上为 ${snapshot.tool} 重跑 connect。`;
+      default:
+        return '重新运行 doctor，让降级的 readiness 证据在下一步 provider 动作前先变得明确。';
+    }
+  }
+
+  private formatProviderLifecycleActionLabels(
+    actionIds: readonly VsCodeExtensionProviderLifecycleActionId[],
+  ): string {
+    return actionIds
+      .map((actionId) => this.localizeProviderLifecycleActionLabel(actionId))
+      .join(', ');
+  }
+
+  private localizeProviderLifecycleActionLabel(
+    actionId: VsCodeExtensionProviderLifecycleActionId,
+  ): string {
+    return this.localizer.localizeText(
+      this.getProviderLifecycleActionLabel(actionId),
+      this.getProviderLifecycleActionChineseLabel(actionId),
+    );
   }
 
   private extractManagedSecretKeyName(selector: string): string | undefined {
@@ -3448,6 +3888,128 @@ export class VsCodeExtensionPresentationBuilder {
           iconId: 'note',
         };
     }
+  }
+
+  private buildProviderLifecycleNode(
+    snapshots: readonly VsCodeExtensionProviderLifecycleSnapshot[],
+  ): VsCodeExtensionTreeNodeDescriptor {
+    if (snapshots.length === 0) {
+      return {
+        nodeId: 'provider-lifecycle',
+        label: this.localizer.localizeText('Provider lifecycle', 'Provider 生命周期'),
+        description: this.localizer.localizeText('Unavailable', '暂不可用'),
+        tooltip: this.localizer.localizeText(
+          'Provider lifecycle guidance becomes available after the secure-authoring and provider-onboarding snapshots load.',
+          '当 secure-authoring 与 provider-onboarding 快照加载完成后，Provider 生命周期指引才会出现。',
+        ),
+        themeIconId: 'circle-slash',
+        contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+      };
+    }
+
+    return {
+      nodeId: 'provider-lifecycle',
+      label: this.localizer.localizeText('Provider lifecycle', 'Provider 生命周期'),
+      description: this.describeProviderLifecycleCollection(snapshots),
+      tooltip: this.localizer.localizeText(
+        'Host-native Connect Provider / Update API Key / Reconnect Provider CTAs are projected from the provider-onboarding snapshot plus secure-authoring readiness.',
+        '宿主原生的 Connect Provider / Update API Key / Reconnect Provider CTA 会基于 provider-onboarding snapshot 与 secure-authoring readiness 投影出来。',
+      ),
+      themeIconId: this.getProviderLifecycleCollectionIconId(snapshots),
+      contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+      children: snapshots.map((snapshot) => this.buildProviderLifecycleToolNode(snapshot)),
+    };
+  }
+
+  private buildProviderLifecycleToolNode(
+    snapshot: VsCodeExtensionProviderLifecycleSnapshot,
+  ): VsCodeExtensionTreeNodeDescriptor {
+    const warningChildren = snapshot.warnings.map((warning, index) => ({
+      nodeId: `provider-lifecycle:${snapshot.tool}:warning:${index}`,
+      label: this.localizer.localizeText('Warning', '警告'),
+      description: warning,
+      tooltip: warning,
+      themeIconId: 'warning',
+      contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+    }));
+
+    return {
+      nodeId: `provider-lifecycle:${snapshot.tool}`,
+      label: `${snapshot.tool} · ${snapshot.provider}`,
+      description: this.localizeProviderLifecycleStatus(snapshot.status),
+      tooltip: this.buildProviderLifecycleGuidance(snapshot),
+      themeIconId: this.getProviderLifecycleIconId(snapshot.status),
+      contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+      children: [
+        {
+          nodeId: `provider-lifecycle:${snapshot.tool}:status`,
+          label: this.localizer.localizeText('Lifecycle status', '生命周期状态'),
+          description: this.localizeProviderLifecycleStatus(snapshot.status),
+          tooltip: this.buildProviderLifecycleGuidance(snapshot),
+          themeIconId: this.getProviderLifecycleIconId(snapshot.status),
+          contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+        },
+        {
+          nodeId: `provider-lifecycle:${snapshot.tool}:model`,
+          label: this.localizer.localizeText('Configured model', '已配置模型'),
+          description: snapshot.model ?? this.localizer.localizeText('Missing', '缺失'),
+          tooltip: this.localizer.localizeText(
+            'Reconnect Provider only becomes fully automatic after one model value is present.',
+            '只有在已有 model 值时，Reconnect Provider 才能变成完全自动的动作。',
+          ),
+          themeIconId: snapshot.model ? 'symbol-parameter' : 'warning',
+          contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+        },
+        {
+          nodeId: `provider-lifecycle:${snapshot.tool}:credential-ref`,
+          label: this.localizer.localizeText('Credential selector', '凭据选择器'),
+          description: snapshot.credentialRef,
+          tooltip: snapshot.credentialRef,
+          themeIconId: snapshot.credentialResolved ? 'pass-filled' : 'warning',
+          contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+        },
+        {
+          nodeId: `provider-lifecycle:${snapshot.tool}:preferred-backend`,
+          label: this.localizer.localizeText('Preferred backend', '首选 backend'),
+          description: snapshot.preferredBackendId ?? this.localizer.localizeText('None', '无'),
+          tooltip: this.localizer.localizeText(
+            'Reconnect and selector-resolution checks prefer the same backend order as the provider-onboarding facade.',
+            'Reconnect 与 selector 解析检查会复用 provider-onboarding facade 的同一 backend 优先级顺序。',
+          ),
+          themeIconId: 'key',
+          contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+        },
+        {
+          nodeId: `provider-lifecycle:${snapshot.tool}:projection-source`,
+          label: this.localizer.localizeText('Projection source', '投影来源'),
+          description: this.localizeProviderLifecycleProjectionSource(
+            snapshot.readinessProjectionSource,
+          ),
+          tooltip: this.localizer.localizeText(
+            'This CTA surface stays a host-level mapping over canonical runtime-owned readiness inputs.',
+            '这个 CTA surface 只是 canonical runtime-owned readiness 输入之上的宿主级映射。',
+          ),
+          themeIconId: 'symbol-event',
+          contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+        },
+        ...(snapshot.degradedReason
+          ? [
+              {
+                nodeId: `provider-lifecycle:${snapshot.tool}:degraded-reason`,
+                label: this.localizer.localizeText('Degraded reason', '降级原因'),
+                description: snapshot.degradedReason,
+                tooltip: snapshot.degradedReason,
+                themeIconId: 'warning',
+                contextValue: VSCODE_EXTENSION_TREE_ITEM_CONTEXT_VALUES.WORKBENCH_OVERVIEW,
+              },
+            ]
+          : []),
+        ...warningChildren,
+        ...snapshot.availableActions
+          .map((actionId) => this.buildProviderLifecycleActionNode(snapshot, actionId))
+          .filter((node): node is VsCodeExtensionTreeNodeDescriptor => Boolean(node)),
+      ],
+    };
   }
 
   private getDisabledActionLabel(actionKind: OrchestrationGovernanceActionKind): string {

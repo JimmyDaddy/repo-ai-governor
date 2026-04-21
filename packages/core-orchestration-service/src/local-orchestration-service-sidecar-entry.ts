@@ -1,10 +1,17 @@
+import { createRequire } from 'node:module';
+import { pathToFileURL } from 'node:url';
+
 import type { MemoryRuntimeConfig } from '@repo-ai-governor/shared';
-import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
+import { GovernorErrorCode, RuntimeError, standardizeError } from '@repo-ai-governor/shared';
 import {
+  LOCAL_ORCHESTRATION_SERVICE_SIDECAR_LOCALE_ENV,
   LOCAL_ORCHESTRATION_SERVICE_SIDECAR_MEMORY_CONFIG_ENV,
   LOCAL_ORCHESTRATION_SERVICE_SIDECAR_REPOSITORY_ROOT_ENV,
 } from './constants/index.js';
 import { LocalOrchestrationServiceSidecarHost } from './local-orchestration-service-sidecar-host.js';
+import type { SessionMainSupervisorRuntimeContract } from './types/index.js';
+
+const requireFromRuntime = createRequire(import.meta.url);
 
 function resolveWorkspaceRoot(argv: string[]): string {
   const workspaceRootIndex = argv.indexOf('--workspace-root');
@@ -64,10 +71,78 @@ function resolveRepositoryRoot(environment: NodeJS.ProcessEnv): string | undefin
   return repositoryRoot;
 }
 
+function resolveRequestedLocale(environment: NodeJS.ProcessEnv): string | undefined {
+  const requestedLocale = environment[LOCAL_ORCHESTRATION_SERVICE_SIDECAR_LOCALE_ENV];
+  if (!requestedLocale || requestedLocale.trim().length === 0) {
+    return undefined;
+  }
+
+  return requestedLocale.trim();
+}
+
+async function resolveSessionMainSupervisorRuntime(options: {
+  workspaceRoot: string;
+  repositoryRoot?: string;
+  requestedLocale?: string;
+}): Promise<SessionMainSupervisorRuntimeContract | undefined> {
+  let cliModulePath: string;
+  try {
+    cliModulePath = requireFromRuntime.resolve('@repo-ai-governor/cli');
+  } catch {
+    return undefined;
+  }
+
+  try {
+    // dynamic-import-allowed: the sidecar entry optionally reuses the CLI-owned session-main
+    // supervisor wiring when the bundled host package is available in the current installation.
+    const cliModule = (await import(pathToFileURL(cliModulePath).href)) as {
+      createEmbeddedSessionMainSupervisorRuntime?: (options: {
+        currentWorkingDirectory: string;
+        requestedLocale?: string;
+        environment?: NodeJS.ProcessEnv;
+        repositoryRootOverride?: string;
+        workspaceRootOverride?: string;
+      }) => Promise<SessionMainSupervisorRuntimeContract>;
+    };
+    if (typeof cliModule.createEmbeddedSessionMainSupervisorRuntime !== 'function') {
+      return undefined;
+    }
+
+    return await cliModule.createEmbeddedSessionMainSupervisorRuntime({
+      currentWorkingDirectory: options.repositoryRoot ?? process.cwd(),
+      requestedLocale: options.requestedLocale,
+      environment: process.env,
+      repositoryRootOverride: options.repositoryRoot,
+      workspaceRootOverride: options.workspaceRoot,
+    });
+  } catch (error) {
+    const standardizedError = standardizeError(error);
+    process.stderr.write(
+      `Failed to initialize session.main supervisor runtime: ${standardizedError.message}\n`,
+    );
+    return undefined;
+  }
+}
+
 const workspaceRoot = resolveWorkspaceRoot(process.argv);
+const repositoryRoot = resolveRepositoryRoot(process.env);
+const sessionMainSupervisorRuntime = await resolveSessionMainSupervisorRuntime({
+  workspaceRoot,
+  repositoryRoot,
+  requestedLocale: resolveRequestedLocale(process.env),
+});
 const host = new LocalOrchestrationServiceSidecarHost({
   workspaceRoot,
-  repositoryRoot: resolveRepositoryRoot(process.env),
+  ...(repositoryRoot
+    ? {
+        repositoryRoot,
+      }
+    : {}),
   memoryConfig: resolveMemoryConfig(process.env),
+  ...(sessionMainSupervisorRuntime
+    ? {
+        sessionMainSupervisorRuntime,
+      }
+    : {}),
 });
 host.attachToCurrentProcess();

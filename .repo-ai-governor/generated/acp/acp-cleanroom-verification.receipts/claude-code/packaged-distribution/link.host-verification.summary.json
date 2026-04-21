@@ -1,7 +1,7 @@
 {
   "schemaVersion": "host-verification-summary-v1",
   "status": "pass",
-  "verifiedAt": "2026-04-15T05:27:02.640Z",
+  "verifiedAt": "2026-04-20T12:22:47.103Z",
   "verificationSummaryPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/claude-code/packaged-distribution/link/generated/hosts/claude-code-plugin/host-verification.summary.json",
   "exportManifestPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/claude-code/packaged-distribution/link/generated/hosts/claude-code-plugin/host-export.manifest.json",
   "checks": [

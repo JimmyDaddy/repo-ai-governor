@@ -6,6 +6,14 @@ export type {
 } from './vscode-extension-contract.interface.js';
 export type {
   VsCodeExtensionCommandRequest,
+  VsCodeExtensionProviderOnboardingApplyReceipt,
+  VsCodeExtensionProviderOnboardingApplyRequest,
+  VsCodeExtensionProviderOnboardingEntrypointKind,
+  VsCodeExtensionProviderLifecycleActionId,
+  VsCodeExtensionProviderLifecycleSnapshot,
+  VsCodeExtensionProviderLifecycleStatus,
+  VsCodeExtensionProviderOnboardingReadinessProjectionSource,
+  VsCodeExtensionProviderOnboardingSnapshot,
   VsCodeExtensionReviewDetailSnapshot,
   VsCodeExtensionReviewQueueSelectionRequest,
   VsCodeExtensionSessionContinuitySnapshot,

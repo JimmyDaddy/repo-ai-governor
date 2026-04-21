@@ -1,0 +1,21 @@
+# checklist
+
+- [x] TK-1023 capture current improvement summary draft and activate remediation stream
+  - 2026-04-21：任务创建，状态初始化为 `planned`。
+  - 2026-04-21：`project-117 / sprint-001` 已创建并激活；当前任务切换为 `in_progress`，用于先完成 draft 落盘与 execution surface activation。
+  - 2026-04-21：已新增 `.repo-ai-governor/draft/repo-ai-governor-current-improvement-priorities-and-governance-remediation-refresh.md`，并把该 draft 追加到 `technical-solution.adopter-productization-priority-roadmap` 的 lifecycle `draft_paths`；同时已将 `project-117` scaffold 与 `current-context.md` 同步到 active execution truth。
+- [x] TK-1024 remediate artifact registry lifecycle backlog and refresh canonical views
+  - 2026-04-21：任务创建，状态初始化为 `planned`。
+  - 2026-04-21：已完成 artifact lifecycle dry-run，summary 显示本轮 canonical maintenance 将新增 `7` 个 `deprecated` 并把 `9` 个条目移入 archive，且 `unresolvedArtifactDependencyRefs=0`。
+  - 2026-04-21：已执行 canonical artifact lifecycle maintenance 并写入 `project-117-sprint-001-artifact-lifecycle-maintenance-summary.json`；`check-artifact-registry-lifecycle.js` 恢复通过。`pnpm run check` 已不再被 artifact lifecycle 阻塞，当前剩余失败仅来自 scope 外 dirty worktree 中的 biome format drift。
+- [x] TK-1025 align governance gate roadmap with executable script truth
+  - 2026-04-21：任务创建，状态初始化为 `planned`。
+  - 2026-04-21：已完成 `code_standards.md` 与 `long-term-maintenance-guide.md` 的 missing-script truth alignment；两份文档现在明确区分“规则已定义但 checker script 未创建”和“已真实落地的 gate script”。
+  - 2026-04-21：`run-normative-loading-manifest-gate.js` 已通过。`pnpm run check` 当前剩余失败仅来自 scope 外 dirty worktree 中的 biome format drift，不再来自本任务修复面。
+- [x] TK-1026 finalize project-117 closeout and restore idle context
+  - 2026-04-21：任务创建，状态初始化为 `planned`。
+  - 2026-04-21：在 `TK-1024 / TK-1025 / CR-001` scoped clean 收口后，已完成 `project-117` completion audit、project/sprint `completed` write-back、completed history 追加与 idle context 恢复。
+  - 2026-04-21：已完成 completion audit、completed history write-back 与 idle context 恢复；project-117 正式 completed。
+- [x] CR-001 review project-117 remediation window and confirm clean closeout
+  - 2026-04-21：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-21：已完成 scoped review。结论是 project-117 范围内无剩余 actionable finding；artifact lifecycle backlog 与治理脚本文档口径已按目标收口。`pnpm run check` 当前剩余失败只来自 scope 外 dirty worktree 中的 biome format drift，因此本任务收口为 `resolved`。

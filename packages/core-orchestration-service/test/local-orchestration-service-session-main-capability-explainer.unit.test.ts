@@ -51,6 +51,40 @@ describe('LocalOrchestrationServiceSessionMainCapabilityExplainer', () => {
     expect(answer?.assistantMessage).toContain('/review');
   });
 
+  it('recognizes Chinese capability-detail wording such as “是什么” for connect', async () => {
+    const explainer = new LocalOrchestrationServiceSessionMainCapabilityExplainer();
+
+    const answer = await explainer.resolveAnswer('connect 是什么？', {
+      locale: 'zh-CN',
+    });
+
+    expect(answer).toEqual(
+      expect.objectContaining({
+        answerKind: 'detail',
+        routerDecisionReason: 'session.main.router.capability_answer.detail',
+        referencedCapabilityIds: [SESSION_MAIN_CAPABILITY_ID.CONNECT],
+      }),
+    );
+    expect(answer?.assistantMessage).toContain('/connect');
+  });
+
+  it('recognizes Chinese capability-usage wording such as “怎么用” for doctor', async () => {
+    const explainer = new LocalOrchestrationServiceSessionMainCapabilityExplainer();
+
+    const answer = await explainer.resolveAnswer('doctor 怎么用？', {
+      locale: 'zh-CN',
+    });
+
+    expect(answer).toEqual(
+      expect.objectContaining({
+        answerKind: 'examples',
+        routerDecisionReason: 'session.main.router.capability_answer.examples',
+        referencedCapabilityIds: [SESSION_MAIN_CAPABILITY_ID.DOCTOR],
+      }),
+    );
+    expect(answer?.assistantMessage).toContain('/doctor');
+  });
+
   it('keeps help chat-first without advertising a deliver-style optional alias', async () => {
     const explainer = new LocalOrchestrationServiceSessionMainCapabilityExplainer();
 

@@ -246,7 +246,7 @@ describe('VsCode extension controller/provider integration', () => {
     expect(vscodeMock.openTextDocument).not.toHaveBeenCalled();
   });
 
-  it('runs connect through the service seam and persists remote-api provider defaults', async () => {
+  it('runs connect through provider onboarding and no longer asks for credential env vars', async () => {
     vscodeMock.state.trusted = true;
     vscodeMock.showQuickPick
       .mockResolvedValueOnce({
@@ -266,8 +266,8 @@ describe('VsCode extension controller/provider integration', () => {
       });
     vscodeMock.showInputBox
       .mockResolvedValueOnce('gpt-5.4')
-      .mockResolvedValueOnce('OPENAI_API_KEY')
-      .mockResolvedValueOnce('');
+      .mockResolvedValueOnce('')
+      .mockResolvedValueOnce('sk-managed-secret');
 
     const runWorkspaceOperation = vi.fn(async () => ({
       message: 'Connect applied.',
@@ -275,9 +275,78 @@ describe('VsCode extension controller/provider integration', () => {
         artifacts: [],
       },
     }));
+    const resolveProviderOnboardingSnapshot = vi.fn(async () => ({
+      surfaceId: 'vscode_provider_onboarding',
+      entrypointKind: 'quick_pick_form',
+      mutationMode: 'explicit_provider_onboarding_command',
+      tool: 'codex',
+      transport: 'remote_api',
+      provider: 'openai',
+      vendorBinding: 'openai_responses',
+      secretCaptureMode: 'host_secure_prompt',
+      secretOwner: 'governor_managed_secret_backend',
+      credentialRefStrategy: 'provider_default_api_key',
+      readinessProjectionSource: 'provider_onboarding_snapshot',
+      configTargets: [
+        'tools.codex.transport',
+        'tools.codex.remoteApi.provider',
+        'tools.codex.remoteApi.vendorBinding',
+        'tools.codex.remoteApi.model',
+        'tools.codex.remoteApi.endpoint',
+        'tools.codex.remoteApi.credentialRef',
+      ],
+      receiptFields: [
+        'tool',
+        'provider',
+        'credentialRef',
+        'secretBackend',
+        'warnings',
+        'nextAction',
+      ],
+      credentialRef: 'secret://openai/api-key',
+      selectedBackendId: 'os-keychain',
+      defaultBackendId: 'os-keychain',
+      availableBackends: [
+        {
+          backendId: 'os-keychain',
+          available: true,
+          detail: 'ready',
+        },
+      ],
+      warnings: [],
+    }));
+    const applyProviderOnboarding = vi.fn(async () => ({
+      surfaceId: 'vscode_provider_onboarding',
+      entrypointKind: 'quick_pick_form',
+      mutationMode: 'explicit_provider_onboarding_command',
+      tool: 'codex',
+      transport: 'remote_api',
+      provider: 'openai',
+      vendorBinding: 'openai_responses',
+      credentialRef: 'secret://openai/api-key',
+      secretBackend: 'os-keychain',
+      configTargets: [
+        'tools.codex.transport',
+        'tools.codex.remoteApi.provider',
+        'tools.codex.remoteApi.vendorBinding',
+        'tools.codex.remoteApi.model',
+        'tools.codex.remoteApi.credentialRef',
+      ],
+      receiptFields: [
+        'tool',
+        'provider',
+        'credentialRef',
+        'secretBackend',
+        'warnings',
+        'nextAction',
+      ],
+      warnings: [],
+      nextAction: 'repoAiGovernor.runConnect',
+    }));
     const setUserConfigValue = vi.fn(async () => ({
       message: 'updated',
     }));
+    const setManagedSecret = vi.fn();
     const workbenchOverviewProvider = {
       refresh: vi.fn(),
     };
@@ -287,7 +356,11 @@ describe('VsCode extension controller/provider integration', () => {
     const controller = new VsCodeExtensionCommandController(
       {
         runWorkspaceOperation,
+        resolveSecureAuthoringSnapshot: vi.fn(async () => undefined),
+        resolveProviderOnboardingSnapshot,
+        applyProviderOnboarding,
         setUserConfigValue,
+        setManagedSecret,
       } as never,
       new VsCodeExtensionSelectionStore(),
       {
@@ -314,21 +387,585 @@ describe('VsCode extension controller/provider integration', () => {
         tools: ['codex'],
         toolTransportBindings: ['codex=remote_api'],
         remoteApiModelBindings: ['codex=gpt-5.4'],
-        remoteApiCredentialEnvVarBindings: ['codex=OPENAI_API_KEY'],
+        providerOnboardingTool: 'codex',
+        providerOnboardingEntrypointKind: 'quick_pick_form',
+        providerOnboardingProvider: 'openai',
+        providerOnboardingModel: 'gpt-5.4',
+        providerOnboardingApiKey: 'sk-managed-secret',
+        providerOnboardingEndpoint: '',
+        providerOnboardingBackendId: 'os-keychain',
       },
     );
-    expect(setUserConfigValue).toHaveBeenNthCalledWith(
-      1,
-      'tools.codex.remoteApi.provider',
+    expect(resolveProviderOnboardingSnapshot).toHaveBeenCalledWith(
+      'codex',
+      'quick_pick_form',
       'openai',
     );
-    expect(setUserConfigValue).toHaveBeenNthCalledWith(
-      2,
-      'tools.codex.remoteApi.vendorBinding',
-      'openai_responses',
-    );
+    expect(applyProviderOnboarding).not.toHaveBeenCalled();
+    expect(setUserConfigValue).not.toHaveBeenCalled();
+    expect(setManagedSecret).not.toHaveBeenCalled();
     expect(workbenchOverviewProvider.refresh).toHaveBeenCalled();
     expect(reviewDetailProvider.refresh).toHaveBeenCalled();
+  });
+
+  it('routes the CLI default backend choice to defaultBackendId instead of the selected backend', async () => {
+    vscodeMock.state.trusted = true;
+    vscodeMock.showQuickPick
+      .mockResolvedValueOnce({
+        presetId: 'multi-tool-default',
+      })
+      .mockResolvedValueOnce({
+        scopeId: 'single_tool',
+      })
+      .mockResolvedValueOnce({
+        toolId: 'codex',
+      })
+      .mockResolvedValueOnce({
+        transport: 'remote_api',
+      })
+      .mockResolvedValueOnce({
+        provider: 'openai',
+      })
+      .mockResolvedValueOnce({
+        backendId: 'os-keychain',
+      });
+    vscodeMock.showInputBox
+      .mockResolvedValueOnce('gpt-5.4')
+      .mockResolvedValueOnce('')
+      .mockResolvedValueOnce('sk-managed-secret');
+
+    const runWorkspaceOperation = vi.fn(async () => ({
+      message: 'Connect applied.',
+      result: {
+        artifacts: [],
+      },
+    }));
+    const controller = new VsCodeExtensionCommandController(
+      {
+        runWorkspaceOperation,
+        resolveSecureAuthoringSnapshot: vi.fn(async () => undefined),
+        resolveProviderOnboardingSnapshot: vi.fn(async () => ({
+          surfaceId: 'vscode_provider_onboarding',
+          entrypointKind: 'quick_pick_form',
+          mutationMode: 'explicit_provider_onboarding_command',
+          tool: 'codex',
+          transport: 'remote_api',
+          provider: 'openai',
+          vendorBinding: 'openai_responses',
+          secretCaptureMode: 'host_secure_prompt',
+          secretOwner: 'governor_managed_secret_backend',
+          credentialRefStrategy: 'provider_default_api_key',
+          readinessProjectionSource: 'provider_onboarding_snapshot',
+          configTargets: [
+            'tools.codex.transport',
+            'tools.codex.remoteApi.provider',
+            'tools.codex.remoteApi.vendorBinding',
+            'tools.codex.remoteApi.model',
+            'tools.codex.remoteApi.endpoint',
+            'tools.codex.remoteApi.credentialRef',
+          ],
+          receiptFields: [
+            'tool',
+            'provider',
+            'credentialRef',
+            'secretBackend',
+            'warnings',
+            'nextAction',
+          ],
+          credentialRef: 'secret://openai/api-key',
+          selectedBackendId: 'unsafe-local-file',
+          defaultBackendId: 'os-keychain',
+          availableBackends: [
+            {
+              backendId: 'unsafe-local-file',
+              available: true,
+              detail: 'Local plaintext',
+              warning: 'plaintext fallback',
+            },
+            {
+              backendId: 'os-keychain',
+              available: true,
+              detail: 'Ready',
+            },
+          ],
+          warnings: [],
+        })),
+      } as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    await expect(controller.runConnect()).resolves.toBe(true);
+
+    expect(runWorkspaceOperation).toHaveBeenCalledWith(
+      OrchestrationWorkspaceOperationKind.CONNECT,
+      expect.objectContaining({
+        providerOnboardingBackendId: 'os-keychain',
+      }),
+    );
+  });
+
+  it('auto-targets defaultBackendId when only one writable backend remains during connect onboarding', async () => {
+    vscodeMock.state.trusted = true;
+    vscodeMock.showQuickPick
+      .mockResolvedValueOnce({
+        presetId: 'multi-tool-default',
+      })
+      .mockResolvedValueOnce({
+        scopeId: 'single_tool',
+      })
+      .mockResolvedValueOnce({
+        toolId: 'codex',
+      })
+      .mockResolvedValueOnce({
+        transport: 'remote_api',
+      })
+      .mockResolvedValueOnce({
+        provider: 'openai',
+      });
+    vscodeMock.showInputBox
+      .mockResolvedValueOnce('gpt-5.4')
+      .mockResolvedValueOnce('')
+      .mockResolvedValueOnce('sk-managed-secret');
+
+    const runWorkspaceOperation = vi.fn(async () => ({
+      message: 'Connect applied.',
+      result: {
+        artifacts: [],
+      },
+    }));
+    const controller = new VsCodeExtensionCommandController(
+      {
+        runWorkspaceOperation,
+        resolveSecureAuthoringSnapshot: vi.fn(async () => undefined),
+        resolveProviderOnboardingSnapshot: vi.fn(async () => ({
+          surfaceId: 'vscode_provider_onboarding',
+          entrypointKind: 'quick_pick_form',
+          mutationMode: 'explicit_provider_onboarding_command',
+          tool: 'codex',
+          transport: 'remote_api',
+          provider: 'openai',
+          vendorBinding: 'openai_responses',
+          secretCaptureMode: 'host_secure_prompt',
+          secretOwner: 'governor_managed_secret_backend',
+          credentialRefStrategy: 'provider_default_api_key',
+          readinessProjectionSource: 'provider_onboarding_snapshot',
+          configTargets: [
+            'tools.codex.transport',
+            'tools.codex.remoteApi.provider',
+            'tools.codex.remoteApi.vendorBinding',
+            'tools.codex.remoteApi.model',
+            'tools.codex.remoteApi.endpoint',
+            'tools.codex.remoteApi.credentialRef',
+          ],
+          receiptFields: [
+            'tool',
+            'provider',
+            'credentialRef',
+            'secretBackend',
+            'warnings',
+            'nextAction',
+          ],
+          credentialRef: 'secret://openai/api-key',
+          selectedBackendId: 'unsafe-local-file',
+          defaultBackendId: 'os-keychain',
+          availableBackends: [
+            {
+              backendId: 'os-keychain',
+              available: true,
+              detail: 'Ready',
+            },
+          ],
+          warnings: [],
+        })),
+      } as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    await expect(controller.runConnect()).resolves.toBe(true);
+
+    expect(runWorkspaceOperation).toHaveBeenCalledWith(
+      OrchestrationWorkspaceOperationKind.CONNECT,
+      expect.objectContaining({
+        providerOnboardingBackendId: 'os-keychain',
+      }),
+    );
+  });
+
+  it('stops before prompting for an API key when no writable backend is available', async () => {
+    vscodeMock.state.trusted = true;
+    vscodeMock.showQuickPick
+      .mockResolvedValueOnce({
+        presetId: 'multi-tool-default',
+      })
+      .mockResolvedValueOnce({
+        scopeId: 'single_tool',
+      })
+      .mockResolvedValueOnce({
+        toolId: 'codex',
+      })
+      .mockResolvedValueOnce({
+        transport: 'remote_api',
+      })
+      .mockResolvedValueOnce({
+        provider: 'openai',
+      });
+    vscodeMock.showInputBox
+      .mockResolvedValueOnce('gpt-5.4')
+      .mockResolvedValueOnce('')
+      .mockResolvedValueOnce('sk-should-not-be-used');
+
+    const runWorkspaceOperation = vi.fn();
+    const controller = new VsCodeExtensionCommandController(
+      {
+        runWorkspaceOperation,
+        resolveSecureAuthoringSnapshot: vi.fn(async () => undefined),
+        resolveProviderOnboardingSnapshot: vi.fn(async () => ({
+          surfaceId: 'vscode_provider_onboarding',
+          entrypointKind: 'quick_pick_form',
+          mutationMode: 'explicit_provider_onboarding_command',
+          tool: 'codex',
+          transport: 'remote_api',
+          provider: 'openai',
+          vendorBinding: 'openai_responses',
+          secretCaptureMode: 'host_secure_prompt',
+          secretOwner: 'governor_managed_secret_backend',
+          credentialRefStrategy: 'provider_default_api_key',
+          readinessProjectionSource: 'provider_onboarding_snapshot',
+          configTargets: [
+            'tools.codex.transport',
+            'tools.codex.remoteApi.provider',
+            'tools.codex.remoteApi.vendorBinding',
+            'tools.codex.remoteApi.model',
+            'tools.codex.remoteApi.endpoint',
+            'tools.codex.remoteApi.credentialEnvVar',
+            'tools.codex.remoteApi.credentialRef',
+          ],
+          receiptFields: [
+            'tool',
+            'provider',
+            'credentialRef',
+            'secretBackend',
+            'warnings',
+            'nextAction',
+          ],
+          credentialRef: 'secret://openai/api-key',
+          selectedBackendId: 'unsafe-local-file',
+          defaultBackendId: 'os-keychain',
+          availableBackends: [],
+          warnings: [],
+        })),
+      } as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    await expect(controller.runConnect()).resolves.toBe(false);
+
+    expect(vscodeMock.showInputBox).toHaveBeenCalledTimes(2);
+    expect(runWorkspaceOperation).not.toHaveBeenCalled();
+  });
+
+  it('reuses the existing managed secret on the same backend without prompting for a new API key', async () => {
+    vscodeMock.state.trusted = true;
+    vscodeMock.showQuickPick
+      .mockResolvedValueOnce({
+        presetId: 'multi-tool-default',
+      })
+      .mockResolvedValueOnce({
+        scopeId: 'single_tool',
+      })
+      .mockResolvedValueOnce({
+        toolId: 'codex',
+      })
+      .mockResolvedValueOnce({
+        transport: 'remote_api',
+      })
+      .mockResolvedValueOnce({
+        provider: 'openai',
+      });
+    vscodeMock.showInputBox.mockResolvedValueOnce('gpt-5.4').mockResolvedValueOnce('');
+
+    const runWorkspaceOperation = vi.fn(async () => ({
+      message: 'Connect applied.',
+      result: {
+        artifacts: [],
+      },
+    }));
+    const controller = new VsCodeExtensionCommandController(
+      {
+        runWorkspaceOperation,
+        resolveSecureAuthoringSnapshot: vi.fn(async () => ({
+          secretReadiness: {
+            selectedBackendId: 'os-keychain',
+            defaultBackendId: 'os-keychain',
+            indexPath: '/Users/test/.repo-ai-governor/secret-index.json',
+            backends: [
+              {
+                backendId: 'os-keychain',
+                available: true,
+                detail: 'Ready',
+              },
+            ],
+            records: [
+              {
+                keyName: 'openai/api-key',
+                backendId: 'os-keychain',
+                exists: true,
+              },
+            ],
+            configuredCredentialRefs: ['secret://openai/api-key'],
+            unresolvedCredentialRefs: [],
+          },
+        })),
+        resolveProviderOnboardingSnapshot: vi.fn(async () => ({
+          surfaceId: 'vscode_provider_onboarding',
+          entrypointKind: 'quick_pick_form',
+          mutationMode: 'explicit_provider_onboarding_command',
+          tool: 'codex',
+          transport: 'remote_api',
+          provider: 'openai',
+          vendorBinding: 'openai_responses',
+          secretCaptureMode: 'host_secure_prompt',
+          secretOwner: 'governor_managed_secret_backend',
+          credentialRefStrategy: 'provider_default_api_key',
+          readinessProjectionSource: 'provider_onboarding_snapshot',
+          configTargets: [
+            'tools.codex.transport',
+            'tools.codex.remoteApi.provider',
+            'tools.codex.remoteApi.vendorBinding',
+            'tools.codex.remoteApi.model',
+            'tools.codex.remoteApi.endpoint',
+            'tools.codex.remoteApi.credentialEnvVar',
+            'tools.codex.remoteApi.credentialRef',
+          ],
+          receiptFields: [
+            'tool',
+            'provider',
+            'credentialRef',
+            'secretBackend',
+            'warnings',
+            'nextAction',
+          ],
+          credentialRef: 'secret://openai/api-key',
+          selectedBackendId: 'os-keychain',
+          defaultBackendId: 'os-keychain',
+          availableBackends: [
+            {
+              backendId: 'os-keychain',
+              available: true,
+              detail: 'Ready',
+            },
+          ],
+          warnings: [],
+        })),
+      } as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    await expect(controller.runConnect()).resolves.toBe(true);
+
+    expect(vscodeMock.showInputBox).toHaveBeenCalledTimes(2);
+    expect(runWorkspaceOperation).toHaveBeenCalledWith(
+      OrchestrationWorkspaceOperationKind.CONNECT,
+      {
+        presetId: 'multi-tool-default',
+        tools: ['codex'],
+        toolTransportBindings: ['codex=remote_api'],
+        remoteApiModelBindings: ['codex=gpt-5.4'],
+        providerOnboardingTool: 'codex',
+        providerOnboardingEntrypointKind: 'quick_pick_form',
+        providerOnboardingProvider: 'openai',
+        providerOnboardingModel: 'gpt-5.4',
+        providerOnboardingReuseExistingCredential: true,
+        providerOnboardingEndpoint: '',
+        providerOnboardingBackendId: 'os-keychain',
+      },
+    );
+  });
+
+  it('reuses the targeted backend record when the same managed-secret key exists on multiple backends', async () => {
+    vscodeMock.state.trusted = true;
+    vscodeMock.showQuickPick
+      .mockResolvedValueOnce({
+        presetId: 'multi-tool-default',
+      })
+      .mockResolvedValueOnce({
+        scopeId: 'single_tool',
+      })
+      .mockResolvedValueOnce({
+        toolId: 'codex',
+      })
+      .mockResolvedValueOnce({
+        transport: 'remote_api',
+      })
+      .mockResolvedValueOnce({
+        provider: 'openai',
+      })
+      .mockResolvedValueOnce({
+        backendId: 'os-keychain',
+      });
+    vscodeMock.showInputBox.mockResolvedValueOnce('gpt-5.4').mockResolvedValueOnce('');
+
+    const runWorkspaceOperation = vi.fn(async () => ({
+      message: 'Connect applied.',
+      result: {
+        artifacts: [],
+      },
+    }));
+    const controller = new VsCodeExtensionCommandController(
+      {
+        runWorkspaceOperation,
+        resolveSecureAuthoringSnapshot: vi.fn(async () => ({
+          secretReadiness: {
+            selectedBackendId: 'unsafe-local-file',
+            defaultBackendId: 'os-keychain',
+            indexPath: '/Users/test/.repo-ai-governor/secret-index.json',
+            backends: [
+              {
+                backendId: 'unsafe-local-file',
+                available: true,
+                detail: 'Local plaintext',
+                warning: 'plaintext fallback',
+              },
+              {
+                backendId: 'os-keychain',
+                available: true,
+                detail: 'Ready',
+              },
+            ],
+            records: [
+              {
+                keyName: 'openai/api-key',
+                backendId: 'unsafe-local-file',
+                exists: true,
+              },
+              {
+                keyName: 'openai/api-key',
+                backendId: 'os-keychain',
+                exists: true,
+              },
+            ],
+            configuredCredentialRefs: ['secret://openai/api-key'],
+            unresolvedCredentialRefs: [],
+          },
+        })),
+        resolveProviderOnboardingSnapshot: vi.fn(async () => ({
+          surfaceId: 'vscode_provider_onboarding',
+          entrypointKind: 'quick_pick_form',
+          mutationMode: 'explicit_provider_onboarding_command',
+          tool: 'codex',
+          transport: 'remote_api',
+          provider: 'openai',
+          vendorBinding: 'openai_responses',
+          secretCaptureMode: 'host_secure_prompt',
+          secretOwner: 'governor_managed_secret_backend',
+          credentialRefStrategy: 'provider_default_api_key',
+          readinessProjectionSource: 'provider_onboarding_snapshot',
+          configTargets: [
+            'tools.codex.transport',
+            'tools.codex.remoteApi.provider',
+            'tools.codex.remoteApi.vendorBinding',
+            'tools.codex.remoteApi.model',
+            'tools.codex.remoteApi.endpoint',
+            'tools.codex.remoteApi.credentialEnvVar',
+            'tools.codex.remoteApi.credentialRef',
+          ],
+          receiptFields: [
+            'tool',
+            'provider',
+            'credentialRef',
+            'secretBackend',
+            'warnings',
+            'nextAction',
+          ],
+          credentialRef: 'secret://openai/api-key',
+          selectedBackendId: 'unsafe-local-file',
+          defaultBackendId: 'os-keychain',
+          availableBackends: [
+            {
+              backendId: 'unsafe-local-file',
+              available: true,
+              detail: 'Local plaintext',
+              warning: 'plaintext fallback',
+            },
+            {
+              backendId: 'os-keychain',
+              available: true,
+              detail: 'Ready',
+            },
+          ],
+          warnings: [],
+        })),
+      } as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    await expect(controller.runConnect()).resolves.toBe(true);
+
+    expect(runWorkspaceOperation).toHaveBeenCalledWith(
+      OrchestrationWorkspaceOperationKind.CONNECT,
+      expect.objectContaining({
+        providerOnboardingReuseExistingCredential: true,
+        providerOnboardingBackendId: 'os-keychain',
+      }),
+    );
+    expect(vscodeMock.showInformationMessage).not.toHaveBeenCalledWith(
+      'Connect can reuse an existing managed secret on the same backend, but rotating the key or moving it to another backend still requires the dedicated managed-secret update flow.',
+    );
   });
 
   it('falls back to reviewSourcePath handoff without reusing stale execution selection', async () => {
@@ -815,6 +1452,57 @@ describe('VsCode extension controller/provider integration', () => {
     );
   });
 
+  it('validates secret-backed credentialRef defaults before persisting them through user-config authoring', async () => {
+    vscodeMock.state.trusted = true;
+    vscodeMock.showInputBox.mockImplementationOnce(async (options) => {
+      expect(options.validateInput?.('openai/api-key')).toBe(
+        'credentialRef must use secret://... selector syntax.',
+      );
+      expect(options.validateInput?.('secret://openai/api-key')).toBeUndefined();
+      return 'secret://openai/api-key';
+    });
+
+    const setUserConfigValue = vi.fn().mockResolvedValue({
+      message: 'configured',
+      persistedValue: 'secret://openai/api-key',
+    });
+    const controller = new VsCodeExtensionCommandController(
+      {
+        resolveSecureAuthoringSnapshot: vi.fn().mockResolvedValue({
+          userConfig: {
+            configPath: '/Users/test/.repo-ai-governor/user-config.yaml',
+            configExists: true,
+            legacyPreferencePath: '/Users/test/.repo-ai-governor/cli-preferences.yaml',
+            legacyPreferenceExists: false,
+            entries: [],
+          },
+        }),
+        setUserConfigValue,
+      } as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    await controller.configureUserDefault({
+      userConfigKeyPath: 'tools.codex.remoteApi.credentialRef',
+    });
+
+    expect(setUserConfigValue).toHaveBeenCalledWith(
+      'tools.codex.remoteApi.credentialRef',
+      'secret://openai/api-key',
+    );
+  });
+
   it('captures one managed secret through a password input and never echoes the raw value back to UI notifications', async () => {
     vscodeMock.state.trusted = true;
     vscodeMock.showInputBox.mockResolvedValueOnce('sk-secret-value');
@@ -879,7 +1567,11 @@ describe('VsCode extension controller/provider integration', () => {
         ignoreFocusOut: true,
       }),
     );
-    expect(setManagedSecret).toHaveBeenCalledWith('openai/api-key', 'sk-secret-value', undefined);
+    expect(setManagedSecret).toHaveBeenCalledWith(
+      'openai/api-key',
+      'sk-secret-value',
+      'os-keychain',
+    );
     expect(workbenchOverviewProvider.refresh).toHaveBeenCalledTimes(1);
     expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith(
       'Managed secret updated for secret://openai/api-key.',
@@ -2132,6 +2824,69 @@ describe('VsCode extension controller/provider integration', () => {
       commandName: 'doctor',
       status: 'completed',
     });
+  });
+
+  it('infers doctor from one natural-language workspace diagnosis prompt and executes it directly', async () => {
+    vscodeMock.state.trusted = true;
+
+    const serviceRuntime = {
+      runWorkspaceOperation: vi.fn().mockResolvedValue({
+        message: 'Doctor completed.',
+        result: {},
+      }),
+    };
+    const controller = new VsCodeExtensionCommandController(
+      serviceRuntime as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    const result = await controller.executeChatRequest(undefined, '帮我诊断一下当前项目');
+
+    expect(serviceRuntime.runWorkspaceOperation).toHaveBeenCalledWith('doctor', undefined);
+    expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith('Doctor completed.');
+    expect(result).toMatchObject({
+      commandName: 'doctor',
+      status: 'completed',
+    });
+  });
+
+  it('keeps general project inspection prompts in chat instead of coercing them into doctor', async () => {
+    vscodeMock.state.trusted = true;
+
+    const serviceRuntime = {
+      runWorkspaceOperation: vi.fn(),
+    };
+    const controller = new VsCodeExtensionCommandController(
+      serviceRuntime as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    const result = await controller.executeChatRequest(undefined, '帮我检查一下当前项目结构');
+
+    expect(serviceRuntime.runWorkspaceOperation).not.toHaveBeenCalled();
+    expect(result).toBeUndefined();
   });
 
   it('extracts one workflow template suffix from an imperative prompt before executing workflow preview', async () => {

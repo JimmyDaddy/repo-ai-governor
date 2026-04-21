@@ -1,6 +1,6 @@
 # TK-1001 run optional external acp interoperability rehearsal
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-20
 - Owner: AI-Agent
 - Priority: P1
@@ -52,8 +52,11 @@
 ## 9. 执行记录
 
 1. 2026-04-20：任务创建，状态初始化为 `planned`。
+2. 2026-04-20：`TK-1021` 完成 sprint-004 closeout gate 与 activation write-back 后，本任务切换为 `in_progress`，作为 sprint-005-external-interoperability-and-rollout-closeout 的首个 active execution boundary。
+3. 2026-04-20：已完成本地 external ACP consumer availability 检查：`command -v paseo`、`command -v a2a`、`command -v acp` 均未命中，仓库内也未找到可直接复用的 external-consumer rehearsal scaffold；仅 `npx` 存在，但本轮不把它视为本地 availability。
+4. 2026-04-20：已形成 `DA-1001`，将 optional interoperability rehearsal 记录为 `unavailable optional evidence`；当前任务切换为 `completed`，并明确不通过安装新的 third-party consumer 来伪造本地 rehearsal 证据。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. `/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-115-acp-execution-bridge-rollout/sprint-005-external-interoperability-and-rollout-closeout/tasks/DA-1001-optional-external-acp-consumer-availability-and-rehearsal-disposition.md`
+2. `TK-1002` 的 support wording boundary review 现在必须消费本任务的 unavailable / non-blocking 结论。

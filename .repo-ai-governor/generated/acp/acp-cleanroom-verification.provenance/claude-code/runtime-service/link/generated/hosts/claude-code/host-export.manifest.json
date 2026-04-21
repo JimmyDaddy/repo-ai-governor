@@ -1,6 +1,6 @@
 {
   "schemaVersion": "host-export-manifest-v1",
-  "generatedAt": "2026-04-15T05:27:01.143Z",
+  "generatedAt": "2026-04-20T12:22:45.505Z",
   "host": "claude-code",
   "mode": "project-local",
   "target": "claude_code.project_local",
@@ -68,7 +68,7 @@
   "verificationSummary": {
     "schemaVersion": "host-verification-summary-v1",
     "status": "pass",
-    "verifiedAt": "2026-04-15T05:27:01.143Z",
+    "verifiedAt": "2026-04-20T12:22:45.505Z",
     "verificationSummaryPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/claude-code/runtime-service/link/generated/hosts/claude-code/host-verification.summary.json",
     "exportManifestPath": ".repo-ai-governor/generated/acp/acp-cleanroom-verification.provenance/claude-code/runtime-service/link/generated/hosts/claude-code/host-export.manifest.json",
     "checks": [
