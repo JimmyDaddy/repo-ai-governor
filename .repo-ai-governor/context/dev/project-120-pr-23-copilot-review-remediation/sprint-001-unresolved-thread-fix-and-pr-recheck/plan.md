@@ -1,6 +1,6 @@
 # sprint-001-unresolved-thread-fix-and-pr-recheck 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-21
 - Project: `project-120-pr-23-copilot-review-remediation`
 - Sprint Goal: 修复 PR #23 中成立的 reviewer feedback，并完成 GitHub 线程与状态复查。
@@ -25,3 +25,8 @@
 
 1. 2026-04-21：作为新的 PR remediation sprint 创建，并在同窗口激活为 primary execution surface。
 2. 2026-04-21：`TK-1033` 切换为 `in_progress`，用于执行 PR #23 unresolved thread remediation。
+3. 2026-04-21：`TK-1033` 已完成成立项修复，session-main relay metadata fallback 与相关回归测试均已落地。
+4. 2026-04-21：`TK-1034` 已完成 targeted tests、`pnpm run build`、`pnpm run check` 与 remediation branch push；task-ledger drift follow-up 也已在同窗口补齐。
+5. 2026-04-21：`TK-1035` 已确认 PR #23 required checks 全绿，并 resolve 全部 7 条 reviewer threads。
+6. 2026-04-21：`CR-001` 已完成 scoped review；当前 sprint 内无阻止 closeout 的 actionable finding。
+7. 2026-04-21：`TK-1036` 已完成 completion audit、current-context idle 恢复与 completed history write-back，当前 sprint 恢复为最终 `completed` 真值。

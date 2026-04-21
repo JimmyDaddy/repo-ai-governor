@@ -1,6 +1,6 @@
 # TK-1034 verify pr-23 remediation locally and push updated branch
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-04-21
 - Owner: AI-Agent
 - Priority: P1
@@ -54,8 +54,11 @@
 5. 2026-04-21：首次 `pnpm run check` 因 `gate:format` 提示 `session-main-supervisor-runtime.ts` 格式化差异失败；修正格式后复跑。
 6. 2026-04-21：复跑 `pnpm run build` 与 targeted tests 通过；第二次 `pnpm run check` 曾命中一次 `test/e2e/blackbox-governance-flow.e2e.test.ts` replay 黑盒波动，随后单独复现 `plan -> run -> review -> review-verify -> replay` 与 `pnpm exec vitest run --config vitest.e2e.config.ts test/e2e/blackbox-governance-flow.e2e.test.ts` 均通过。
 7. 2026-04-21：第三次 `pnpm run check` 全量通过；当前仅剩 commit/push 动作待完成。
+8. 2026-04-21：已创建并推送 remediation commit `7a4b0834`（`fix(cli): remediate pr 23 review feedback`）。
+9. 2026-04-21：首次 push 后，GitHub `quality-gate-full` 因 `TK-1033` terminal row 的 placeholder `verify/review_delta` 失败；已在同窗口补齐 canonical ledger row，并再次本地执行 `pnpm run check` 通过。
+10. 2026-04-21：已创建并推送 follow-up commit `7991a159`（`chore(governance): sync project 120 task ledger`）；当前任务切换为 `completed`，由 `TK-1035` 继续执行 PR recheck 与 thread closure。
 
 ## 10. 产出
 
 1. 已完成：targeted tests / build / full gate verification evidence
-2. 待执行：commit and push current PR remediation branch
+2. 已完成：remediation commits `7a4b0834`、`7991a159` 已推送到 `codex/project-115-116-scoped-cr-loop`

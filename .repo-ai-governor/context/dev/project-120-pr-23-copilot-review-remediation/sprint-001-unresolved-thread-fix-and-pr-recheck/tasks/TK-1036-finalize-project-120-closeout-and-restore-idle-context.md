@@ -1,6 +1,6 @@
 # TK-1036 finalize project-120 closeout and restore idle context
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-21
 - Owner: AI-Agent
 - Priority: P1
@@ -56,7 +56,11 @@
 ## 9. 执行记录
 
 1. 2026-04-21：任务创建，状态初始化为 `planned`。
+2. 2026-04-21：已产出 resolved review artifact 与 completion audit，汇总本地验证、CI 结果与 GitHub thread closure 结论。
+3. 2026-04-21：已将 project-120 / sprint-001 写回最终 `completed` 真值，并将 `stream-project-120-sprint-001` 追加到 completed history。
+4. 2026-04-21：`current-context.md` 已恢复到 idle 主执行面；当前任务切换为 `completed`。
 
 ## 10. 产出
 
-1. 待执行：project-120 completion audit
+1. 已完成：project-120 completion audit
+2. 已完成：idle current-context + completed history append
