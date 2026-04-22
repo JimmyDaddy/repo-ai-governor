@@ -16,6 +16,8 @@ import type {
   OrchestrationExecutionSummary,
   OrchestrationForkSessionRequest,
   OrchestrationForkSessionResponse,
+  OrchestrationHitlDecisionPacket,
+  OrchestrationHitlDecisionPacketQueryRequest,
   OrchestrationHitlInboxQueryRequest,
   OrchestrationHitlInboxQueryResponse,
   OrchestrationListExecutionsRequest,
@@ -30,11 +32,15 @@ import type {
   OrchestrationRecoverExecutionResponse,
   OrchestrationResumeSessionRequest,
   OrchestrationResumeSessionResponse,
+  OrchestrationRoleLaneStatusQueryRequest,
+  OrchestrationRoleLaneStatusQueryResponse,
   OrchestrationSecureAuthoringQueryRequest,
   OrchestrationSecureAuthoringSnapshot,
   OrchestrationSendSessionTurnRequest,
   OrchestrationSendSessionTurnResponse,
   OrchestrationServiceHealthResponse,
+  OrchestrationSessionContinuityQueryRequest,
+  OrchestrationSessionContinuitySnapshot,
   OrchestrationSessionSummary,
   OrchestrationSetManagedSecretRequest,
   OrchestrationSetManagedSecretResponse,
@@ -125,6 +131,15 @@ export interface LocalOrchestrationServiceSidecarDispatchTable {
   queryHitlInbox(
     request?: OrchestrationHitlInboxQueryRequest,
   ): Promise<OrchestrationHitlInboxQueryResponse>;
+  queryRoleLaneStatus(
+    request?: OrchestrationRoleLaneStatusQueryRequest,
+  ): Promise<OrchestrationRoleLaneStatusQueryResponse>;
+  querySessionContinuity(
+    request?: OrchestrationSessionContinuityQueryRequest,
+  ): Promise<OrchestrationSessionContinuitySnapshot | undefined>;
+  queryHitlDecisionPacket(
+    request?: OrchestrationHitlDecisionPacketQueryRequest,
+  ): Promise<OrchestrationHitlDecisionPacket | undefined>;
   queryQueueOverview(
     request?: OrchestrationQueueOverviewQueryRequest,
   ): Promise<OrchestrationQueueOverviewQueryResponse>;

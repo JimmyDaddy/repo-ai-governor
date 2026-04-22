@@ -37,6 +37,9 @@ const serviceClientMock = vi.hoisted(() => ({
   getExecution: vi.fn(),
   queryExecutionBoard: vi.fn(),
   queryHitlInbox: vi.fn(),
+  queryRoleLaneStatus: vi.fn(),
+  querySessionContinuity: vi.fn(),
+  queryHitlDecisionPacket: vi.fn(),
   queryQueueOverview: vi.fn(),
   queryArtifactPane: vi.fn(),
   queryBootstrapReadiness: vi.fn(),
@@ -104,6 +107,9 @@ vi.mock('@repo-ai-governor/core-orchestration-service/sidecar-client', () => ({
     public readonly getExecution = serviceClientMock.getExecution;
     public readonly queryExecutionBoard = serviceClientMock.queryExecutionBoard;
     public readonly queryHitlInbox = serviceClientMock.queryHitlInbox;
+    public readonly queryRoleLaneStatus = serviceClientMock.queryRoleLaneStatus;
+    public readonly querySessionContinuity = serviceClientMock.querySessionContinuity;
+    public readonly queryHitlDecisionPacket = serviceClientMock.queryHitlDecisionPacket;
     public readonly queryQueueOverview = serviceClientMock.queryQueueOverview;
     public readonly queryArtifactPane = serviceClientMock.queryArtifactPane;
     public readonly queryBootstrapReadiness = serviceClientMock.queryBootstrapReadiness;
@@ -175,6 +181,9 @@ describe('VsCodeExtensionServiceRuntime', () => {
     serviceClientMock.getExecution.mockReset();
     serviceClientMock.queryExecutionBoard.mockReset();
     serviceClientMock.queryHitlInbox.mockReset();
+    serviceClientMock.queryRoleLaneStatus.mockReset();
+    serviceClientMock.querySessionContinuity.mockReset();
+    serviceClientMock.queryHitlDecisionPacket.mockReset();
     serviceClientMock.queryQueueOverview.mockReset();
     serviceClientMock.queryArtifactPane.mockReset();
     serviceClientMock.queryBootstrapReadiness.mockReset();
@@ -217,6 +226,89 @@ describe('VsCodeExtensionServiceRuntime', () => {
       workspaceRoot: '/repo',
       workspaceTrusted: true,
     });
+  });
+
+  it('falls back to getSession when the session-continuity query throws', async () => {
+    serviceClientMock.querySessionContinuity.mockRejectedValueOnce(
+      new RuntimeError(GovernorErrorCode.UNKNOWN, 'session continuity query failed', {
+        surface: 'vscode_extension_test',
+      }),
+    );
+    serviceClientMock.getSession.mockResolvedValueOnce({
+      sessionId: 'session-fallback',
+      status: OrchestrationSessionStatus.ACTIVE,
+      currentRouteId: OrchestrationSessionRouteId.MAIN,
+      latestTurnId: 'turn-fallback',
+      latestEventSequence: 12,
+      nextCursor: 'cursor-fallback',
+      openedAt: '2026-04-22T00:00:00.000Z',
+      eventCount: 12,
+      context: {},
+    });
+
+    const runtime = new VsCodeExtensionServiceRuntime();
+
+    await expect(runtime.querySessionContinuity('session-fallback')).resolves.toEqual({
+      sessionId: 'session-fallback',
+      sessionStatus: OrchestrationSessionStatus.ACTIVE,
+      currentRouteId: OrchestrationSessionRouteId.MAIN,
+      latestTurnId: 'turn-fallback',
+      latestEventSequence: 12,
+      nextCursor: 'cursor-fallback',
+      resumeSelector: 'session-fallback',
+    });
+    expect(serviceClientMock.getSession).toHaveBeenCalledWith('session-fallback');
+  });
+
+  it('falls back through executionId to reconstruct session continuity for older sidecars', async () => {
+    serviceClientMock.querySessionContinuity.mockRejectedValueOnce(
+      new RuntimeError(GovernorErrorCode.UNKNOWN, 'session continuity query failed', {
+        surface: 'vscode_extension_test',
+      }),
+    );
+    serviceClientMock.getExecution.mockResolvedValueOnce({
+      executionId: 'execution-fallback',
+      executionSessionId: 'session-from-execution',
+      processId: 'process-fallback',
+      workspaceId: 'workspace-fallback',
+      workspaceRoot: '/repo',
+      executionKind: OrchestrationExecutionKind.RUN,
+      clientSurface: OrchestrationClientSurface.DESKTOP,
+      eventStreamToken: 'stream-fallback',
+      serviceHostKind: OrchestrationServiceHostKind.SIDECAR,
+      serviceTransportKind: OrchestrationServiceTransportKind.IPC,
+      status: OrchestrationExecutionStatus.RUNNING,
+      checkpointCapable: true,
+      recoveryCapable: true,
+      acceptedAt: '2026-04-22T00:00:00.000Z',
+      updatedAt: '2026-04-22T00:05:00.000Z',
+      pendingHitl: false,
+    });
+    serviceClientMock.getSession.mockResolvedValueOnce({
+      sessionId: 'session-from-execution',
+      status: OrchestrationSessionStatus.ACTIVE,
+      currentRouteId: OrchestrationSessionRouteId.MAIN,
+      latestTurnId: 'turn-fallback-execution',
+      latestEventSequence: 18,
+      nextCursor: 'cursor-fallback-execution',
+      openedAt: '2026-04-22T00:00:00.000Z',
+      eventCount: 18,
+      context: {},
+    });
+
+    const runtime = new VsCodeExtensionServiceRuntime();
+
+    await expect(runtime.querySessionContinuity(undefined, 'execution-fallback')).resolves.toEqual({
+      sessionId: 'session-from-execution',
+      sessionStatus: OrchestrationSessionStatus.ACTIVE,
+      currentRouteId: OrchestrationSessionRouteId.MAIN,
+      latestTurnId: 'turn-fallback-execution',
+      latestEventSequence: 18,
+      nextCursor: 'cursor-fallback-execution',
+      resumeSelector: 'session-from-execution',
+    });
+    expect(serviceClientMock.getExecution).toHaveBeenCalledWith('execution-fallback');
+    expect(serviceClientMock.getSession).toHaveBeenCalledWith('session-from-execution');
   });
 
   it('adds service diagnostics when the health probe succeeds', async () => {
@@ -993,17 +1085,84 @@ describe('VsCodeExtensionServiceRuntime', () => {
         transcriptEntryIds: [],
       },
     });
-    serviceClientMock.getSession.mockResolvedValueOnce({
+    serviceClientMock.queryRoleLaneStatus.mockResolvedValueOnce({
+      generatedAt: '2026-04-07T03:06:00.000Z',
+      lanes: [
+        {
+          roleId: 'reviewer-default',
+          executionId: 'execution-1',
+          sessionId: 'session-1',
+          currentStageId: 'review_verify',
+          status: 'waiting_for_hitl',
+          latestEventType: 'hitl.required',
+          updatedAt: '2026-04-07T03:10:00.000Z',
+          pendingHitl: true,
+          artifactBacklinks: [
+            {
+              backlinkId: 'execution-1:artifact:1',
+              backlinkKind: 'artifact',
+              label: '/repo/.repo-ai-governor/context/review.md',
+              target: '/repo/.repo-ai-governor/context/review.md',
+            },
+          ],
+          reviewBacklinks: [
+            {
+              backlinkId: 'execution-1:review:1',
+              backlinkKind: 'review',
+              label: '/repo/.repo-ai-governor/review/resolved.md',
+              target: '/repo/.repo-ai-governor/review/resolved.md',
+            },
+          ],
+        },
+      ],
+      returnedCount: 1,
+      totalMatchedCount: 1,
+    });
+    serviceClientMock.querySessionContinuity.mockResolvedValueOnce({
       sessionId: 'session-1',
       status: OrchestrationSessionStatus.ACTIVE,
-      openedAt: '2026-04-07T03:00:00.000Z',
+      sessionStatus: OrchestrationSessionStatus.ACTIVE,
+      currentRouteId: 'workflow_authoring',
       latestTurnId: 'turn-1',
       latestEventSequence: 5,
       nextCursor: 'cursor-session-1',
-      eventCount: 5,
-      currentRouteId: 'workflow_authoring',
+      resumeSelector: 'session-1',
+    });
+    serviceClientMock.queryHitlDecisionPacket.mockResolvedValueOnce({
       executionId: 'execution-1',
-      context: {},
+      executionSessionId: 'session-1',
+      taskId: 'TK-940',
+      reviewId: 'review-1',
+      riskFacts: [
+        {
+          riskId: 'execution-1:risk-hitl-pending',
+          riskCategory: 'hitl-decision-pending',
+          riskLevel: 'L2',
+          evidence: ['execution_id=execution-1'],
+          changeScope: 'TK-940',
+          confidence: 0.86,
+          triggerRule: 'runtime-hitl-pending',
+        },
+      ],
+      policyAction: 'confirm',
+      slaDeadlineAt: '2026-04-07T07:06:00.000Z',
+      defaultTimeoutAction: 'block',
+      allowedDecisions: [
+        {
+          optionId: 'execution-1:hitl:approve-resume',
+          decision: 'approve',
+          resumeAction: 'resume',
+        },
+      ],
+      impactSummary: 'Execution execution-1 is waiting on one HITL decision for TK-940.',
+      backlinks: [
+        {
+          backlinkId: 'execution-1:review:1',
+          backlinkKind: 'review',
+          label: '/repo/.repo-ai-governor/review/resolved.md',
+          target: '/repo/.repo-ai-governor/review/resolved.md',
+        },
+      ],
     });
 
     const runtime = new VsCodeExtensionServiceRuntime();
@@ -1029,6 +1188,9 @@ describe('VsCodeExtensionServiceRuntime', () => {
           taskId: 'TK-940',
         },
       },
+      roleLaneStatus: {
+        returnedCount: 1,
+      },
       artifactPane: {
         reviewSourcePath: '/repo/.repo-ai-governor/review/resolved.md',
       },
@@ -1040,6 +1202,11 @@ describe('VsCodeExtensionServiceRuntime', () => {
         latestEventSequence: 5,
         nextCursor: 'cursor-session-1',
         resumeSelector: 'session-1',
+      },
+      hitlDecisionPacket: {
+        executionId: 'execution-1',
+        policyAction: 'confirm',
+        defaultTimeoutAction: 'block',
       },
       reviewSourcePath: '/repo/.repo-ai-governor/review/resolved.md',
     });

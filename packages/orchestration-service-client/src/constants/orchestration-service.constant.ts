@@ -91,6 +91,7 @@ export enum OrchestrationGovernanceActionKind {
 export enum OrchestrationGovernanceActionDisabledReason {
   EXECUTION_TERMINAL = 'execution_terminal',
   HITL_NOT_PENDING = 'hitl_not_pending',
+  HITL_DECISION_UNAVAILABLE = 'hitl_decision_unavailable',
   RECOVERY_NOT_AVAILABLE = 'recovery_not_available',
   TARGET_UNAVAILABLE = 'target_unavailable',
 }
@@ -222,6 +223,17 @@ export enum OrchestrationHandoffTargetKind {
   EDITOR = 'editor',
   TERMINAL = 'terminal',
   REVIEW_DOCUMENT = 'review_document',
+}
+
+/**
+ * Defines governed backlink kinds so workbench read models share one closed-set source.
+ */
+export enum OrchestrationWorkbenchBacklinkKind {
+  ARTIFACT = 'artifact',
+  REVIEW = 'review',
+  SESSION = 'session',
+  TASK = 'task',
+  WORKSPACE = 'workspace',
 }
 
 /**

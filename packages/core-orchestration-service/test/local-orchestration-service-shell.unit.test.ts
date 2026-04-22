@@ -21,6 +21,7 @@ import {
   OrchestrationSessionRouteId,
   OrchestrationSessionStatus,
   OrchestrationSessionTranscriptRole,
+  OrchestrationWorkbenchBacklinkKind,
 } from '@repo-ai-governor/orchestration-service-client';
 import {
   GovernorError,
@@ -197,6 +198,83 @@ describe('core-orchestration-service local shell', () => {
     }
   });
 
+  it('preserves checkpoint-recovered HITL decision state across restarts', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-hitl-replay-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+      executionIdProvider: () => 'exec-shell-hitl-replay-001',
+      executionSessionIdProvider: () => 'session-shell-hitl-replay-001',
+    });
+
+    try {
+      const plan = createGraphPlan();
+      const started = await orchestrationService.startExecution(
+        {
+          workspaceId: 'workspace-unit',
+          workspaceRoot: temporaryRoot,
+          executionKind: OrchestrationExecutionKind.RUN,
+          clientSurface: OrchestrationClientSurface.CLI,
+          taskId: 'TK-151',
+          projectId: 'project-014',
+          sprintId: 'sprint-002',
+        },
+        {
+          executionId: plan.executionId,
+          processId: plan.processId,
+        },
+      );
+      const recovered = await orchestrationService.saveCheckpoint({
+        executionId: plan.executionId,
+        plan,
+        executionSessionId: started.executionSessionId,
+        activeNodeIds: ['node-review'],
+        visitedNodeIds: ['node-entry'],
+        reducedState: {
+          'execution.cursor': 'node-review',
+          'execution.visited_nodes': ['node-entry'],
+        },
+        pendingInterrupt: {
+          kind: 'hitl',
+          recordedAt: '2026-04-22T16:30:00.000Z',
+          reason: 'Awaiting checkpoint-level HITL decision.',
+        },
+      });
+      const replayedOrchestrationService = new LocalOrchestrationServiceShell({
+        workspaceRoot: temporaryRoot,
+      });
+      const executionSummary = await replayedOrchestrationService.getExecution(plan.executionId);
+      const hitlDecisionPacket = await replayedOrchestrationService.queryHitlDecisionPacket({
+        executionId: plan.executionId,
+      });
+      const decisionResult = await replayedOrchestrationService.submitHitlDecision({
+        executionId: plan.executionId,
+        executionSessionId: started.executionSessionId,
+        decision: 'approve',
+        resumeAction: 'resume',
+        actor: 'reviewer',
+      });
+
+      expect(recovered?.pendingInterrupt?.kind).toBe('hitl');
+      expect(executionSummary?.status).toBe(OrchestrationExecutionStatus.INTERRUPTED);
+      expect(executionSummary?.pendingHitl).toBe(true);
+      expect(hitlDecisionPacket).toMatchObject({
+        executionId: plan.executionId,
+        executionSessionId: started.executionSessionId,
+        policyAction: 'confirm',
+        allowedDecisions: expect.arrayContaining([
+          expect.objectContaining({
+            decision: 'approve',
+            resumeAction: 'resume',
+          }),
+        ]),
+      });
+      expect(decisionResult.accepted).toBe(true);
+      expect(decisionResult.nextStatus).toBe(OrchestrationExecutionStatus.RUNNING);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
   it('persists a HITL decision receipt artifact and exposes the receipt path in the response', async () => {
     const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-unit-'));
     const orchestrationService = new LocalOrchestrationServiceShell({
@@ -262,6 +340,330 @@ describe('core-orchestration-service local shell', () => {
         OrchestrationServiceEventType.ARTIFACT_READY,
       );
       expect(subscription.events[2]?.artifactPath).toBe(decisionResult.decisionReceiptArtifactPath);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('enforces service-owned allowed HITL decisions across submit and workbench affordances', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-hitl-gating-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+      executionIdProvider: () => 'exec-shell-hitl-gating-001',
+      executionSessionIdProvider: () => 'session-shell-hitl-gating-001',
+      nowProvider: () => new Date('2026-03-25T12:40:00Z'),
+    });
+
+    try {
+      const started = await orchestrationService.startExecution(
+        {
+          workspaceId: 'workspace-unit',
+          workspaceRoot: temporaryRoot,
+          executionKind: OrchestrationExecutionKind.RUN,
+          clientSurface: OrchestrationClientSurface.CLI,
+          taskId: 'TK-152',
+          projectId: 'project-014',
+          sprintId: 'sprint-002',
+        },
+        {
+          processId: 'process-orchestration-shell-hitl-gating',
+        },
+      );
+      await orchestrationService.publishEvent({
+        executionId: started.executionId,
+        type: OrchestrationServiceEventType.HITL_REQUIRED,
+        status: OrchestrationExecutionStatus.HITL_REQUIRED,
+        message: 'Awaiting HITL decision.',
+        hitlDecisionState: {
+          policyAction: 'confirm',
+          defaultTimeoutAction: 'block',
+          allowedDecisions: [
+            {
+              optionId: 'exec-shell-hitl-gating-001:hitl:approve-resume',
+              decision: 'approve',
+              resumeAction: 'resume',
+            },
+          ],
+          riskFacts: [
+            {
+              riskId: 'exec-shell-hitl-gating-001:hitl',
+              riskCategory: 'hitl-decision-pending',
+              riskLevel: 'L2',
+              evidence: ['execution_id=exec-shell-hitl-gating-001'],
+              changeScope: 'TK-152',
+              confidence: 0.82,
+              triggerRule: 'runtime-hitl-pending',
+            },
+          ],
+          recordedAt: '2026-03-25T12:40:00.000Z',
+        },
+      });
+
+      const executionBoard = await orchestrationService.queryExecutionBoard({
+        filter: {
+          taskId: 'TK-152',
+        },
+      });
+      const hitlInbox = await orchestrationService.queryHitlInbox({
+        filter: {
+          taskId: 'TK-152',
+        },
+      });
+      const queueOverview = await orchestrationService.queryQueueOverview({
+        filter: {
+          taskId: 'TK-152',
+        },
+      });
+      const boardDecisionAction = executionBoard.executions[0]?.actions.find(
+        (action) => action.actionKind === 'submit_hitl_decision',
+      );
+      const inboxDecisionAction = hitlInbox.pendingDecisions[0]?.actions.find(
+        (action) => action.actionKind === 'submit_hitl_decision',
+      );
+      const queueDecisionAction = queueOverview.automationInbox[0]?.actions.find(
+        (action) => action.actionKind === 'submit_hitl_decision',
+      );
+
+      let hitlDecisionError = standardizeError(
+        new GovernorError(GovernorErrorCode.UNKNOWN, 'unreachable'),
+      );
+      try {
+        await orchestrationService.submitHitlDecision({
+          executionId: started.executionId,
+          executionSessionId: started.executionSessionId,
+          decision: 'reject',
+          resumeAction: 'terminate',
+          actor: 'reviewer',
+        });
+      } catch (error) {
+        hitlDecisionError = standardizeError(error);
+      }
+
+      const decisionResult = await orchestrationService.submitHitlDecision({
+        executionId: started.executionId,
+        executionSessionId: started.executionSessionId,
+        decision: 'approve',
+        resumeAction: 'resume',
+        actor: 'reviewer',
+        reason: 'Approved for continuation.',
+      });
+
+      expect(boardDecisionAction?.hitlDecisionOptions).toEqual([
+        expect.objectContaining({
+          decision: 'approve',
+          resumeAction: 'resume',
+        }),
+      ]);
+      expect(inboxDecisionAction?.hitlDecisionOptions).toEqual([
+        expect.objectContaining({
+          decision: 'approve',
+          resumeAction: 'resume',
+        }),
+      ]);
+      expect(queueDecisionAction?.hitlDecisionOptions).toEqual([
+        expect.objectContaining({
+          decision: 'approve',
+          resumeAction: 'resume',
+        }),
+      ]);
+      expect(hitlDecisionError.code).toBe(GovernorErrorCode.POLICY_GATE_HITL_FEEDBACK_INVALID);
+      expect(decisionResult.accepted).toBe(true);
+      expect(decisionResult.nextStatus).toBe(OrchestrationExecutionStatus.RUNNING);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('fails closed when pending HITL state exposes zero allowed decisions', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-hitl-empty-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+      executionIdProvider: () => 'exec-shell-hitl-empty-001',
+      executionSessionIdProvider: () => 'session-shell-hitl-empty-001',
+      nowProvider: () => new Date('2026-03-25T12:42:00Z'),
+    });
+
+    try {
+      const started = await orchestrationService.startExecution(
+        {
+          workspaceId: 'workspace-unit',
+          workspaceRoot: temporaryRoot,
+          executionKind: OrchestrationExecutionKind.RUN,
+          clientSurface: OrchestrationClientSurface.CLI,
+          taskId: 'TK-152A',
+          projectId: 'project-014',
+          sprintId: 'sprint-002',
+        },
+        {
+          processId: 'process-orchestration-shell-hitl-empty',
+        },
+      );
+      await orchestrationService.publishEvent({
+        executionId: started.executionId,
+        type: OrchestrationServiceEventType.HITL_REQUIRED,
+        status: OrchestrationExecutionStatus.HITL_REQUIRED,
+        message: 'Awaiting HITL decision.',
+        hitlDecisionState: {
+          policyAction: 'confirm',
+          defaultTimeoutAction: 'block',
+          allowedDecisions: [],
+          riskFacts: [
+            {
+              riskId: 'exec-shell-hitl-empty-001:hitl',
+              riskCategory: 'hitl-decision-pending',
+              riskLevel: 'L2',
+              evidence: ['execution_id=exec-shell-hitl-empty-001'],
+              changeScope: 'TK-152A',
+              confidence: 0.82,
+              triggerRule: 'runtime-hitl-pending',
+            },
+          ],
+          recordedAt: '2026-03-25T12:42:00.000Z',
+        },
+      });
+
+      const executionBoard = await orchestrationService.queryExecutionBoard({
+        filter: {
+          taskId: 'TK-152A',
+        },
+      });
+      const hitlInbox = await orchestrationService.queryHitlInbox({
+        filter: {
+          taskId: 'TK-152A',
+        },
+      });
+      const queueOverview = await orchestrationService.queryQueueOverview({
+        filter: {
+          taskId: 'TK-152A',
+        },
+      });
+      const boardDecisionAction = executionBoard.executions[0]?.actions.find(
+        (action) => action.actionKind === 'submit_hitl_decision',
+      );
+      const inboxDecisionAction = hitlInbox.pendingDecisions[0]?.actions.find(
+        (action) => action.actionKind === 'submit_hitl_decision',
+      );
+      const queueDecisionAction = queueOverview.automationInbox[0]?.actions.find(
+        (action) => action.actionKind === 'submit_hitl_decision',
+      );
+
+      expect(boardDecisionAction).toEqual(
+        expect.objectContaining({
+          enabled: false,
+          disabledReason: 'hitl_decision_unavailable',
+        }),
+      );
+      expect(inboxDecisionAction).toEqual(
+        expect.objectContaining({
+          enabled: false,
+          disabledReason: 'hitl_decision_unavailable',
+        }),
+      );
+      expect(queueDecisionAction).toEqual(
+        expect.objectContaining({
+          enabled: false,
+          disabledReason: 'hitl_decision_unavailable',
+        }),
+      );
+      expect(boardDecisionAction?.hitlDecisionOptions).toBeUndefined();
+      expect(inboxDecisionAction?.hitlDecisionOptions).toBeUndefined();
+      expect(queueDecisionAction?.hitlDecisionOptions).toBeUndefined();
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('drops stale waiting_for_hitl lane state after a HITL decision resumes the execution', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-hitl-lanes-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+      executionIdProvider: () => 'exec-shell-hitl-lanes-001',
+      executionSessionIdProvider: () => 'session-shell-hitl-lanes-001',
+      nowProvider: () => new Date('2026-03-25T12:45:00Z'),
+    });
+
+    try {
+      const started = await orchestrationService.startExecution(
+        {
+          workspaceId: 'workspace-unit',
+          workspaceRoot: temporaryRoot,
+          executionKind: OrchestrationExecutionKind.RUN,
+          clientSurface: OrchestrationClientSurface.CLI,
+          taskId: 'TK-156',
+          projectId: 'project-014',
+          sprintId: 'sprint-002',
+        },
+        {
+          processId: 'process-orchestration-shell-hitl-lanes',
+        },
+      );
+      await orchestrationService.publishEvent({
+        executionId: started.executionId,
+        type: OrchestrationServiceEventType.HITL_REQUIRED,
+        status: OrchestrationExecutionStatus.HITL_REQUIRED,
+        message: 'Awaiting HITL decision.',
+        livenessSnapshot: {
+          roleId: 'reviewer-default',
+          routeKey: 'session.main',
+          status: 'waiting_for_hitl',
+          latestEventType: 'hitl.required',
+          latestEventAt: '2026-03-25T12:45:00.000Z',
+        },
+        hitlDecisionState: {
+          policyAction: 'confirm',
+          defaultTimeoutAction: 'block',
+          allowedDecisions: [
+            {
+              optionId: 'exec-shell-hitl-lanes-001:hitl:approve-resume',
+              decision: 'approve',
+              resumeAction: 'resume',
+            },
+          ],
+          riskFacts: [
+            {
+              riskId: 'exec-shell-hitl-lanes-001:hitl',
+              riskCategory: 'hitl-decision-pending',
+              riskLevel: 'L2',
+              evidence: ['execution_id=exec-shell-hitl-lanes-001'],
+              changeScope: 'TK-156',
+              confidence: 0.82,
+              triggerRule: 'runtime-hitl-pending',
+            },
+          ],
+          recordedAt: '2026-03-25T12:45:00.000Z',
+        },
+      });
+
+      const laneWhilePending = await orchestrationService.queryRoleLaneStatus({
+        executionId: started.executionId,
+      });
+      const decisionResult = await orchestrationService.submitHitlDecision({
+        executionId: started.executionId,
+        executionSessionId: started.executionSessionId,
+        decision: 'approve',
+        resumeAction: 'resume',
+        actor: 'reviewer',
+        reason: 'Approved for continuation.',
+      });
+      const laneAfterResume = await orchestrationService.queryRoleLaneStatus({
+        executionId: started.executionId,
+      });
+
+      expect(laneWhilePending.lanes[0]).toEqual(
+        expect.objectContaining({
+          pendingHitl: true,
+          status: 'waiting_for_hitl',
+          latestEventType: 'hitl.required',
+        }),
+      );
+      expect(decisionResult.nextStatus).toBe(OrchestrationExecutionStatus.RUNNING);
+      expect(laneAfterResume.lanes[0]).toEqual(
+        expect.objectContaining({
+          pendingHitl: false,
+          status: OrchestrationExecutionStatus.RUNNING,
+          latestEventType: OrchestrationServiceEventType.ARTIFACT_READY,
+        }),
+      );
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }
@@ -358,6 +760,11 @@ describe('core-orchestration-service local shell', () => {
           processId: 'process-governance-561',
         },
       );
+      await orchestrationService.startSession({
+        sessionId: started560.executionSessionId,
+        executionId: started560.executionId,
+        routeId: OrchestrationSessionRouteId.MAIN,
+      });
       await orchestrationService.publishEvent({
         executionId: started560.executionId,
         type: OrchestrationServiceEventType.ARTIFACT_READY,
@@ -371,12 +778,65 @@ describe('core-orchestration-service local shell', () => {
         type: OrchestrationServiceEventType.HITL_REQUIRED,
         status: OrchestrationExecutionStatus.HITL_REQUIRED,
         message: 'Awaiting HITL decision.',
+        livenessSnapshot: {
+          roleId: 'reviewer-default',
+          routeKey: 'session.main',
+          status: 'waiting_for_hitl',
+          latestEventType: 'hitl.required',
+          latestEventAt: '2026-04-22T00:00:00.000Z',
+        },
+        hitlDecisionState: {
+          policyAction: 'confirm',
+          defaultTimeoutAction: 'block',
+          allowedDecisions: [
+            {
+              optionId: 'exec-governance-560:hitl:approve-resume',
+              decision: 'approve',
+              resumeAction: 'resume',
+            },
+            {
+              optionId: 'exec-governance-560:hitl:request-changes-degrade',
+              decision: 'request_changes',
+              resumeAction: 'degrade',
+            },
+            {
+              optionId: 'exec-governance-560:hitl:reject-terminate',
+              decision: 'reject',
+              resumeAction: 'terminate',
+            },
+          ],
+          riskFacts: [
+            {
+              riskId: 'exec-governance-560:hitl:2026-04-22T00-00-00-000Z',
+              riskCategory: 'hitl-decision-pending',
+              riskLevel: 'L2',
+              evidence: [
+                'execution_id=exec-governance-560',
+                'status=HITL_REQUIRED',
+                'task_id=TK-560',
+              ],
+              changeScope: 'TK-560',
+              confidence: 0.86,
+              triggerRule: 'runtime-hitl-pending',
+            },
+          ],
+          recordedAt: '2026-04-22T00:00:00.000Z',
+          slaDeadlineAt: '2026-04-22T04:00:00.000Z',
+        },
       });
       await orchestrationService.publishEvent({
         executionId: started561.executionId,
         type: OrchestrationServiceEventType.HITL_REQUIRED,
         status: OrchestrationExecutionStatus.HITL_REQUIRED,
         message: 'Awaiting HITL decision.',
+      });
+      await orchestrationService.publishEvent({
+        executionId: started560.executionId,
+        type: OrchestrationServiceEventType.ARTIFACT_READY,
+        status: OrchestrationExecutionStatus.HITL_REQUIRED,
+        artifactId: 'follow-up-evidence',
+        artifactPath,
+        message: 'Follow-up evidence captured while HITL is still pending.',
       });
 
       const executionBoard = await orchestrationService.queryExecutionBoard({
@@ -394,6 +854,32 @@ describe('core-orchestration-service local shell', () => {
           projectId: 'project-048',
         },
       });
+      const sessionBeforeContinuityQuery = await orchestrationService.getSession(
+        started560.executionSessionId,
+      );
+      const roleLaneStatus = await orchestrationService.queryRoleLaneStatus({
+        executionId: started560.executionId,
+      });
+      const sessionContinuity = await orchestrationService.querySessionContinuity({
+        executionId: started560.executionId,
+      });
+      const hitlDecisionPacket = await orchestrationService.queryHitlDecisionPacket({
+        executionId: started560.executionId,
+      });
+      const repeatedHitlDecisionPacket = await orchestrationService.queryHitlDecisionPacket({
+        executionId: started560.executionId,
+      });
+      const fallbackHitlDecisionPacket = await orchestrationService.queryHitlDecisionPacket({
+        executionId: started561.executionId,
+      });
+      const repeatedFallbackHitlDecisionPacket = await orchestrationService.queryHitlDecisionPacket(
+        {
+          executionId: started561.executionId,
+        },
+      );
+      const sessionAfterContinuityQuery = await orchestrationService.getSession(
+        started560.executionSessionId,
+      );
       const execution560 = executionBoard.executions.find(
         (entry) => entry.execution.executionId === started560.executionId,
       );
@@ -490,6 +976,104 @@ describe('core-orchestration-service local shell', () => {
       );
       expect(queueOverview.reviewQueue[0]?.reviewId).toContain('code_review_tk-');
       expect(queueOverview.reviewQueue[0]?.reviewFilePath).toContain('/review/code_review_tk-');
+      expect(roleLaneStatus).toMatchObject({
+        returnedCount: 1,
+        totalMatchedCount: 1,
+        lanes: [
+          expect.objectContaining({
+            roleId: 'reviewer-default',
+            executionId: started560.executionId,
+            sessionId: started560.executionSessionId,
+            pendingHitl: true,
+            status: 'waiting_for_hitl',
+            latestEventType: 'hitl.required',
+          }),
+        ],
+      });
+      expect(roleLaneStatus.lanes[0]?.reviewBacklinks).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            backlinkKind: OrchestrationWorkbenchBacklinkKind.REVIEW,
+            target: reviewDocumentPath560,
+          }),
+        ]),
+      );
+      expect(sessionContinuity).toMatchObject({
+        sessionId: started560.executionSessionId,
+        sessionStatus: OrchestrationSessionStatus.ACTIVE,
+        currentRouteId: OrchestrationSessionRouteId.MAIN,
+        resumeSelector: started560.executionSessionId,
+      });
+      expect(sessionAfterContinuityQuery?.latestEventSequence).toBe(
+        sessionBeforeContinuityQuery?.latestEventSequence,
+      );
+      expect(sessionAfterContinuityQuery?.nextCursor).toBe(
+        sessionBeforeContinuityQuery?.nextCursor,
+      );
+      expect(hitlDecisionPacket).toMatchObject({
+        executionId: started560.executionId,
+        executionSessionId: started560.executionSessionId,
+        taskId: 'TK-560',
+        policyAction: 'confirm',
+        defaultTimeoutAction: 'block',
+        reviewId: 'code_review_tk-560.md',
+      });
+      expect(hitlDecisionPacket?.allowedDecisions).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            decision: 'approve',
+            resumeAction: 'resume',
+          }),
+        ]),
+      );
+      expect(hitlDecisionPacket?.riskFacts[0]).toEqual(
+        expect.objectContaining({
+          riskCategory: 'hitl-decision-pending',
+          riskLevel: 'L2',
+          triggerRule: 'runtime-hitl-pending',
+        }),
+      );
+      expect(repeatedHitlDecisionPacket?.slaDeadlineAt).toBe(hitlDecisionPacket?.slaDeadlineAt);
+      expect(repeatedHitlDecisionPacket?.riskFacts).toEqual(hitlDecisionPacket?.riskFacts);
+      expect(fallbackHitlDecisionPacket).toMatchObject({
+        executionId: started561.executionId,
+        executionSessionId: started561.executionSessionId,
+        taskId: 'TK-561',
+        policyAction: 'confirm',
+        defaultTimeoutAction: 'block',
+        reviewId: 'code_review_tk-561.md',
+      });
+      expect(fallbackHitlDecisionPacket?.allowedDecisions).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            decision: 'approve',
+            resumeAction: 'resume',
+          }),
+          expect.objectContaining({
+            decision: 'request_changes',
+            resumeAction: 'degrade',
+          }),
+          expect.objectContaining({
+            decision: 'reject',
+            resumeAction: 'terminate',
+          }),
+        ]),
+      );
+      expect(fallbackHitlDecisionPacket?.riskFacts[0]).toEqual(
+        expect.objectContaining({
+          riskCategory: 'hitl-decision-pending',
+          riskLevel: 'L2',
+          changeScope: 'TK-561',
+          triggerRule: 'runtime-hitl-pending',
+        }),
+      );
+      expect(fallbackHitlDecisionPacket?.slaDeadlineAt).toBeDefined();
+      expect(repeatedFallbackHitlDecisionPacket?.slaDeadlineAt).toBe(
+        fallbackHitlDecisionPacket?.slaDeadlineAt,
+      );
+      expect(repeatedFallbackHitlDecisionPacket?.riskFacts).toEqual(
+        fallbackHitlDecisionPacket?.riskFacts,
+      );
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }
@@ -874,6 +1458,226 @@ describe('core-orchestration-service local shell', () => {
     }
   });
 
+  it('fails closed for sprint working-tree review fallback when multiple executions share the same sprint', async () => {
+    const temporaryRoot = await mkdtemp(
+      join(tmpdir(), 'local-orchestration-shell-working-tree-ambiguous-'),
+    );
+    const workspaceRoot = join(temporaryRoot, '.repo-ai-governor');
+    const executionWorkspaceRoot = join(temporaryRoot, 'workspace');
+    const reviewDirectoryPath = join(workspaceRoot, 'context/dev/project-048/sprint-001/review');
+    const reviewDocumentPath = join(
+      reviewDirectoryPath,
+      'code_review_working-tree-20260422-1430.md',
+    );
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot,
+    });
+
+    try {
+      await mkdir(join(workspaceRoot, 'context'), { recursive: true });
+      await mkdir(reviewDirectoryPath, { recursive: true });
+      await mkdir(executionWorkspaceRoot, { recursive: true });
+      await writeFile(
+        join(workspaceRoot, 'context/current-context.md'),
+        `# Workspace Current Context
+
+## Primary Stream
+
+- Status: active
+- Project: \`project-048\`
+- Sprint: \`sprint-001\`
+- Docs root: \`.repo-ai-governor/context/dev/project-048\`
+- Task records: \`.repo-ai-governor/context/dev/project-048/sprint-001/tasks/\`
+- Review records: \`.repo-ai-governor/context/dev/project-048/sprint-001/review\`
+`,
+      );
+      await writeFile(
+        reviewDocumentPath,
+        `# Code Review: working-tree-20260422-1430
+
+- Status: review_pending
+- Task: \`CR-011\`
+- Scope: \`project-048 / sprint-001\`
+`,
+      );
+
+      const started560 = await orchestrationService.startExecution(
+        {
+          workspaceId: 'workspace-governance',
+          workspaceRoot: executionWorkspaceRoot,
+          executionKind: OrchestrationExecutionKind.RUN,
+          clientSurface: OrchestrationClientSurface.DESKTOP,
+          taskId: 'TK-560',
+          projectId: 'project-048',
+          sprintId: 'sprint-001',
+        },
+        {
+          executionId: 'exec-governance-working-tree-560',
+          executionSessionId: 'session-governance-working-tree-560',
+          processId: 'process-governance-working-tree-560',
+        },
+      );
+      const started561 = await orchestrationService.startExecution(
+        {
+          workspaceId: 'workspace-governance',
+          workspaceRoot: executionWorkspaceRoot,
+          executionKind: OrchestrationExecutionKind.RUN,
+          clientSurface: OrchestrationClientSurface.DESKTOP,
+          taskId: 'TK-561',
+          projectId: 'project-048',
+          sprintId: 'sprint-001',
+        },
+        {
+          executionId: 'exec-governance-working-tree-561',
+          executionSessionId: 'session-governance-working-tree-561',
+          processId: 'process-governance-working-tree-561',
+        },
+      );
+      await orchestrationService.publishEvent({
+        executionId: started560.executionId,
+        type: OrchestrationServiceEventType.HITL_REQUIRED,
+        status: OrchestrationExecutionStatus.HITL_REQUIRED,
+        message: 'Awaiting HITL decision.',
+      });
+      await orchestrationService.publishEvent({
+        executionId: started561.executionId,
+        type: OrchestrationServiceEventType.HITL_REQUIRED,
+        status: OrchestrationExecutionStatus.HITL_REQUIRED,
+        message: 'Awaiting HITL decision.',
+      });
+
+      const executionBoard = await orchestrationService.queryExecutionBoard({
+        filter: {
+          projectId: 'project-048',
+        },
+      });
+      const queueOverview = await orchestrationService.queryQueueOverview({
+        filter: {
+          projectId: 'project-048',
+        },
+      });
+      const roleLaneStatus = await orchestrationService.queryRoleLaneStatus({
+        executionId: started560.executionId,
+      });
+      const hitlDecisionPacket = await orchestrationService.queryHitlDecisionPacket({
+        executionId: started560.executionId,
+      });
+      const reviewTarget = executionBoard.executions
+        .find((entry) => entry.execution.executionId === started560.executionId)
+        ?.handoffTargets.find((target) => target.targetKind === 'review_document');
+
+      expect(reviewTarget?.exists).toBe(false);
+      expect(reviewTarget?.targetPath).toBeUndefined();
+      expect(roleLaneStatus.lanes[0]?.reviewBacklinks).toEqual([]);
+      expect(hitlDecisionPacket?.reviewId).toBeUndefined();
+      expect(
+        hitlDecisionPacket?.backlinks.filter(
+          (backlink) => backlink.backlinkKind === OrchestrationWorkbenchBacklinkKind.REVIEW,
+        ),
+      ).toEqual([]);
+      expect(queueOverview.reviewQueue).toHaveLength(1);
+      expect(queueOverview.reviewQueue[0]?.executionId).toBeUndefined();
+      expect(queueOverview.reviewQueue[0]?.reviewId).toBe(
+        'code_review_working-tree-20260422-1430.md',
+      );
+      expect(queueOverview.reviewQueue[0]?.handoffTargets).toEqual([]);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps non-working-tree CR lifecycle docs out of execution review fallback', async () => {
+    const temporaryRoot = await mkdtemp(
+      join(tmpdir(), 'local-orchestration-shell-non-working-tree-review-'),
+    );
+    const workspaceRoot = join(temporaryRoot, '.repo-ai-governor');
+    const executionWorkspaceRoot = join(temporaryRoot, 'workspace');
+    const reviewDirectoryPath = join(workspaceRoot, 'context/dev/project-048/sprint-001/review');
+    const reviewDocumentPath = join(reviewDirectoryPath, 'resolved_code_review_support-truth.md');
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot,
+    });
+
+    try {
+      await mkdir(join(workspaceRoot, 'context'), { recursive: true });
+      await mkdir(reviewDirectoryPath, { recursive: true });
+      await mkdir(executionWorkspaceRoot, { recursive: true });
+      await writeFile(
+        join(workspaceRoot, 'context/current-context.md'),
+        `# Workspace Current Context
+
+## Primary Stream
+
+- Status: active
+- Project: \`project-048\`
+- Sprint: \`sprint-001\`
+- Docs root: \`.repo-ai-governor/context/dev/project-048\`
+- Task records: \`.repo-ai-governor/context/dev/project-048/sprint-001/tasks/\`
+- Review records: \`.repo-ai-governor/context/dev/project-048/sprint-001/review\`
+`,
+      );
+      await writeFile(
+        reviewDocumentPath,
+        `# Code Review: support-truth
+
+- Status: resolved
+- Task: \`CR-011\`
+- Scope: \`project-048 / sprint-001\`
+`,
+      );
+
+      const started = await orchestrationService.startExecution(
+        {
+          workspaceId: 'workspace-governance',
+          workspaceRoot: executionWorkspaceRoot,
+          executionKind: OrchestrationExecutionKind.RUN,
+          clientSurface: OrchestrationClientSurface.DESKTOP,
+          taskId: 'TK-560',
+          projectId: 'project-048',
+          sprintId: 'sprint-001',
+        },
+        {
+          executionId: 'exec-governance-non-working-tree',
+          executionSessionId: 'session-governance-non-working-tree',
+          processId: 'process-governance-non-working-tree',
+        },
+      );
+      await orchestrationService.publishEvent({
+        executionId: started.executionId,
+        type: OrchestrationServiceEventType.HITL_REQUIRED,
+        status: OrchestrationExecutionStatus.HITL_REQUIRED,
+        message: 'Awaiting HITL decision.',
+      });
+
+      const executionBoard = await orchestrationService.queryExecutionBoard({
+        filter: {
+          projectId: 'project-048',
+        },
+      });
+      const roleLaneStatus = await orchestrationService.queryRoleLaneStatus({
+        executionId: started.executionId,
+      });
+      const hitlDecisionPacket = await orchestrationService.queryHitlDecisionPacket({
+        executionId: started.executionId,
+      });
+      const reviewTarget = executionBoard.executions
+        .find((entry) => entry.execution.executionId === started.executionId)
+        ?.handoffTargets.find((target) => target.targetKind === 'review_document');
+
+      expect(reviewTarget?.exists).toBe(false);
+      expect(reviewTarget?.targetPath).toBeUndefined();
+      expect(roleLaneStatus.lanes[0]?.reviewBacklinks).toEqual([]);
+      expect(hitlDecisionPacket?.reviewId).toBeUndefined();
+      expect(
+        hitlDecisionPacket?.backlinks.filter(
+          (backlink) => backlink.backlinkKind === OrchestrationWorkbenchBacklinkKind.REVIEW,
+        ),
+      ).toEqual([]);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
   it('terminates an execution and persists a partial snapshot before cancelling it', async () => {
     const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-terminate-'));
     const orchestrationService = new LocalOrchestrationServiceShell({
@@ -1013,7 +1817,7 @@ describe('core-orchestration-service local shell', () => {
         JSON.stringify(
           {
             executionId: started.executionId,
-            decision: 'revise',
+            decision: 'request_changes',
             resumeAction: 'degrade',
           },
           null,
@@ -1025,7 +1829,7 @@ describe('core-orchestration-service local shell', () => {
       const decisionResult = await orchestrationService.submitHitlDecision({
         executionId: started.executionId,
         executionSessionId: started.executionSessionId,
-        decision: 'revise',
+        decision: 'request_changes',
         resumeAction: 'degrade',
         actor: 'reviewer',
         decisionReceiptArtifactPath: providedReceiptPath,
@@ -1039,6 +1843,110 @@ describe('core-orchestration-service local shell', () => {
       );
       expect(decisionResult.executionSummary.pendingHitl).toBe(true);
       expect(decisionResult.executionSummary.latestArtifactPath).toBe(providedReceiptPath);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('canonicalizes legacy revise decisions before persisting a service-owned HITL receipt', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-shell-hitl-revise-'));
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+      executionIdProvider: () => 'exec-shell-hitl-revise-001',
+      executionSessionIdProvider: () => 'session-shell-hitl-revise-001',
+      nowProvider: () => new Date('2026-03-25T12:46:00Z'),
+    });
+
+    try {
+      const started = await orchestrationService.startExecution(
+        {
+          workspaceId: 'workspace-unit',
+          workspaceRoot: temporaryRoot,
+          executionKind: OrchestrationExecutionKind.RUN,
+          clientSurface: OrchestrationClientSurface.CLI,
+        },
+        {
+          processId: 'process-orchestration-shell-hitl-revise',
+        },
+      );
+      await orchestrationService.publishEvent({
+        executionId: started.executionId,
+        type: OrchestrationServiceEventType.HITL_REQUIRED,
+        status: OrchestrationExecutionStatus.HITL_REQUIRED,
+        message: 'Awaiting revised HITL decision.',
+      });
+
+      const decisionResult = await orchestrationService.submitHitlDecision({
+        executionId: started.executionId,
+        executionSessionId: started.executionSessionId,
+        decision: 'revise',
+        resumeAction: 'degrade',
+        actor: 'reviewer',
+      });
+      const receiptPayload = JSON.parse(
+        await readFile(decisionResult.decisionReceiptArtifactPath as string, 'utf8'),
+      ) as {
+        decision: string;
+        resumeAction: string;
+      };
+
+      expect(decisionResult.accepted).toBe(true);
+      expect(receiptPayload.decision).toBe('request_changes');
+      expect(receiptPayload.resumeAction).toBe('degrade');
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('localizes submitHitlDecision validation errors when the request carries a locale', async () => {
+    const temporaryRoot = await mkdtemp(
+      join(tmpdir(), 'local-orchestration-shell-hitl-locale-error-'),
+    );
+    const orchestrationService = new LocalOrchestrationServiceShell({
+      workspaceRoot: temporaryRoot,
+      executionIdProvider: () => 'exec-shell-hitl-locale-001',
+      executionSessionIdProvider: () => 'session-shell-hitl-locale-001',
+    });
+
+    try {
+      const started = await orchestrationService.startExecution({
+        workspaceId: 'workspace-invalid',
+        workspaceRoot: temporaryRoot,
+        executionKind: OrchestrationExecutionKind.RUN,
+        clientSurface: OrchestrationClientSurface.CLI,
+      });
+      await orchestrationService.publishEvent({
+        executionId: started.executionId,
+        type: OrchestrationServiceEventType.HITL_REQUIRED,
+        status: OrchestrationExecutionStatus.HITL_REQUIRED,
+        message: 'Awaiting HITL decision.',
+      });
+
+      await expect(
+        orchestrationService.submitHitlDecision({
+          executionId: started.executionId,
+          executionSessionId: 'session-shell-hitl-locale-mismatch',
+          decision: 'approve',
+          resumeAction: 'resume',
+          actor: 'reviewer',
+          locale: 'zh-CN',
+        }),
+      ).rejects.toMatchObject({
+        message: '当前本地编排执行会话不存在。',
+      });
+
+      await expect(
+        orchestrationService.submitHitlDecision({
+          executionId: started.executionId,
+          executionSessionId: started.executionSessionId,
+          decision: 'approve',
+          resumeAction: 'terminate',
+          actor: 'reviewer',
+          locale: 'zh-CN',
+        }),
+      ).rejects.toMatchObject({
+        message: '当前执行不允许请求的 HITL 决策。',
+      });
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }

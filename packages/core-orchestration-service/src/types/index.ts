@@ -10,6 +10,7 @@ export type {
 } from './aliases/index.js';
 export type {
   SessionMainCapabilityAvailability,
+  LocalOrchestrationServiceHitlDecisionState,
   LocalOrchestrationServiceMemoryProviderState,
   LocalOrchestrationServicePublishEventRequest,
   LocalOrchestrationServiceSaveCheckpointRequest,

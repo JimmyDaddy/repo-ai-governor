@@ -1,7 +1,7 @@
 # Runtime Governance Clients Module Overview
 
 - Status: active
-- Date: 2026-04-20
+- Date: 2026-04-22
 - Module ID: `runtime.governance-clients`
 - Owner: runtime
 - Layer: `runtime-core`
@@ -32,6 +32,7 @@
 18. 对显式 `/secret set <keyName>` 的 session-shell authoring path，正式要求 host-facing surface 在 slash secure route 命中后切换到本地隐藏输入与 redacted mutation handoff；raw secret 不得经由 slash text、argv、preview recap、error copy 或 transcript surface 暴露，而 skill-triggered secure-input request 与 desktop / VS Code prompt parity 继续留待后续独立 solution。
 19. 正式拥有 adopter installer quickstart convenience boundary：`adopt bootstrap` 只可 orchestrate `init -> doctor --fix -> adopt apply -> adopt verify`；`check` 继续作为显式 broader governance audit follow-up；缺省 selector 只允许落官方 built-in pack，而 existing receipt drift / mismatch rerun 必须回到 `adopt diff/upgrade/remove` lifecycle。
 20. 正式拥有 host-native provider onboarding boundary：VS Code 与后续 host surface 可以通过显式 provider-onboarding mutation seam 采集 `provider / model / endpoint / API key`，但 raw key 只能进入 Governor managed secret backend，配置层只允许持久化 `credentialRef` 与非敏感 provider defaults；`connect / doctor / verify` 继续保持 analyze-first / read-only onboarding truth。
+21. 正式拥有 VS Code direct-workbench follow-up boundary：`Workflow Studio Authoring`、`Runtime Lanes` 与 `HITL Decision Cockpit` 必须建立在 service-owned `workflow draft session / runtime lane status / session continuity / hitl decision packet` seam 之上；schema-first authoring、decision packet risk/SLA reuse 与 projection-only runtime state 不得回退为 extension-local shadow state。
 
 ## 3. 非目标
 
@@ -57,6 +58,7 @@
 2. `contract.runtime.agent-projection.v1`
 3. `contract.cli.session-shell.v1`
 4. `contract.runtime.governance-workbench-aggregation-facade.v1`
+5. `contract.runtime.direct-workbench-orchestration-runtime-hitl.v1`
 
 ## 6. Exported Contracts
 
@@ -124,6 +126,12 @@
    - direct onboarding 允许持久化的 canonical config target 以 `tools.<tool>.transport`、`tools.<tool>.remoteApi.provider`、`tools.<tool>.remoteApi.vendorBinding`、`tools.<tool>.remoteApi.model`、`tools.<tool>.remoteApi.endpoint`、`tools.<tool>.remoteApi.credentialRef` 为准，不再使用 `tools.<tool>.remoteApi.transport`。
    - 当 selected secret backend 不可写，或 `tool/provider` 组合无法唯一收敛到 canonical provider/vendorBinding pairing 时，provider-onboarding seam 必须 fail-closed，而不是回退到 host-side heuristics。
    - 真实 runtime/docs/support truth rollout 由 `project-116-vscode-direct-provider-onboarding-rollout` 承接。
+15. 截至 `2026-04-22`，本模块进一步接受“VS Code direct workbench authoring / runtime lanes / HITL decision cockpit”补充方向：
+   - `Workflow Studio` 可以演进为 direct authoring surface，但只能以 `schema-first + service-owned workflow draft session` 形态推进；graph 继续是 projection，不是 canonical source。
+   - `Runtime Lanes` 固定消费 `execution graph / role lane status / execution stage progress / session continuity / backlink` 的 service-owned projection，不允许插件本地拼装第二套状态机。
+   - `HITL Decision Cockpit` 固定消费 `hitl decision packet`，并完整复用 `risk facts + SLA + default_timeout_action` 语义；`submit / recover / terminate` 继续经过既有 trust/policy gate。
+   - 该方向是 active full-workbench solution 的 follow-up，不 supersede 现有 `primary_workbench_claim` truth；更强的 direct authoring / runtime lanes / decision cockpit public claim 仍保持 evidence-gated。
+   - 真实 implementation rollout 由 `project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout` 承接。
 
 ## 9. Detail Docs
 
@@ -137,6 +145,7 @@
 2. ADR:
    - `adrs/desktop-command-center-and-vscode-editor-companion-split.md`
    - `adrs/vscode-primary-full-governance-workbench.md`
+   - `adrs/vscode-direct-workbench-authoring-runtime-lanes-and-hitl-decision-cockpit.md`
    - `adrs/vscode-plugin-direct-api-key-and-secret-backed-provider-onboarding.md`
    - `adrs/host-native-distribution-and-target-specific-consumption.md`
    - `adrs/adopter-productization-priority-and-surface-sequencing.md`

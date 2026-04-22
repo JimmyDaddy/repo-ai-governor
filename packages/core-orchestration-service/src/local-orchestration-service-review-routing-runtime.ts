@@ -8,7 +8,12 @@ interface LocalOrchestrationServiceReviewRoutingRuntimeDependencies {
   workspaceRoot: string;
 }
 
+interface LocalOrchestrationServiceExecutionReviewResolutionOptions {
+  siblingExecutions?: readonly OrchestrationExecutionSummary[];
+}
+
 const CURRENT_CONTEXT_FILE_SEGMENTS = ['context', 'current-context.md'] as const;
+const REVIEW_DIRECTORY_FIELD_NAMES = ['Review records', 'Review'] as const;
 
 export interface LocalOrchestrationServiceReviewDocumentDescriptor {
   absolutePath: string;
@@ -19,6 +24,8 @@ export interface LocalOrchestrationServiceReviewDocumentDescriptor {
   scope?: string;
   lifecycleStatus?: string;
 }
+
+const EXECUTION_REVIEW_TASK_MATCH_SCORE = 16;
 
 /**
  * Resolves service-owned review directories and review documents from current-context truth.
@@ -47,13 +54,13 @@ export class LocalOrchestrationServiceReviewRoutingRuntime {
 
     const currentContextContent = await readFile(currentContextPath, 'utf8');
     const configuredReviewDirectoryPath =
-      this.readSectionMetadataField(
+      this.readSectionMetadataFieldAliases(
         this.extractMarkdownSection(currentContextContent, 'Worktree Review Target'),
-        'Review records',
+        REVIEW_DIRECTORY_FIELD_NAMES,
       ) ??
-      this.readSectionMetadataField(
+      this.readSectionMetadataFieldAliases(
         this.extractMarkdownSection(currentContextContent, 'Primary Stream'),
-        'Review records',
+        REVIEW_DIRECTORY_FIELD_NAMES,
       );
     if (!configuredReviewDirectoryPath || configuredReviewDirectoryPath === 'none') {
       return undefined;
@@ -124,6 +131,7 @@ export class LocalOrchestrationServiceReviewRoutingRuntime {
    */
   public async resolveExecutionReviewDocumentPath(
     execution: OrchestrationExecutionSummary,
+    options: LocalOrchestrationServiceExecutionReviewResolutionOptions = {},
   ): Promise<string | undefined> {
     const reviewDirectoryPath = await this.resolvePrimaryReviewDirectoryPath();
     if (!reviewDirectoryPath || !existsSync(reviewDirectoryPath)) {
@@ -149,7 +157,20 @@ export class LocalOrchestrationServiceReviewRoutingRuntime {
     if (!bestCandidate) {
       return undefined;
     }
-    if (nextCandidate && nextCandidate.score === bestCandidate.score) {
+    if (
+      this.isSprintWorkingTreeFallbackCandidate(bestCandidate.candidate, execution) &&
+      this.hasCompetingSprintExecution(execution, options.siblingExecutions)
+    ) {
+      return undefined;
+    }
+    if (
+      nextCandidate &&
+      nextCandidate.score === bestCandidate.score &&
+      (bestCandidate.score >= EXECUTION_REVIEW_TASK_MATCH_SCORE ||
+        !execution.taskId ||
+        !this.isSprintWorkingTreeReviewCandidate(bestCandidate.candidate) ||
+        !this.isSprintWorkingTreeReviewCandidate(nextCandidate.candidate))
+    ) {
       return undefined;
     }
     return bestCandidate.candidate.absolutePath;
@@ -190,17 +211,19 @@ export class LocalOrchestrationServiceReviewRoutingRuntime {
     candidate: LocalOrchestrationServiceReviewDocumentDescriptor,
     execution: OrchestrationExecutionSummary,
   ): number {
-    const searchText = [candidate.fileName, candidate.title, candidate.task, candidate.scope]
-      .filter((value): value is string => typeof value === 'string' && value.length > 0)
-      .join(' ');
+    const searchText = this.buildCandidateSearchText(candidate);
     let score = 0;
 
     const matchesTaskId = this.matchesExecutionFact(searchText, execution.taskId);
-    if (execution.taskId && !matchesTaskId) {
+    const isSprintWorkingTreeCandidate = this.isSprintWorkingTreeReviewCandidate(candidate);
+    if (execution.taskId && !matchesTaskId && !isSprintWorkingTreeCandidate) {
+      return 0;
+    }
+    if (isSprintWorkingTreeCandidate && !matchesTaskId && !execution.sprintId) {
       return 0;
     }
     if (matchesTaskId) {
-      score += 16;
+      score += EXECUTION_REVIEW_TASK_MATCH_SCORE;
     }
     if (this.matchesExecutionFact(searchText, execution.sprintId)) {
       score += 4;
@@ -210,6 +233,59 @@ export class LocalOrchestrationServiceReviewRoutingRuntime {
     }
 
     return score;
+  }
+
+  private buildCandidateSearchText(
+    candidate: LocalOrchestrationServiceReviewDocumentDescriptor,
+  ): string {
+    return [
+      candidate.absolutePath,
+      candidate.fileName,
+      candidate.title,
+      candidate.task,
+      candidate.scope,
+    ]
+      .filter((value): value is string => typeof value === 'string' && value.length > 0)
+      .join(' ');
+  }
+
+  private isSprintWorkingTreeReviewCandidate(
+    candidate: LocalOrchestrationServiceReviewDocumentDescriptor,
+  ): boolean {
+    const normalizedCandidateText = this.normalizeSearchText(
+      [candidate.fileName, candidate.title]
+        .filter((value): value is string => typeof value === 'string' && value.length > 0)
+        .join(' '),
+    );
+
+    return normalizedCandidateText.includes('working tree');
+  }
+
+  private isSprintWorkingTreeFallbackCandidate(
+    candidate: LocalOrchestrationServiceReviewDocumentDescriptor,
+    execution: OrchestrationExecutionSummary,
+  ): boolean {
+    if (!this.isSprintWorkingTreeReviewCandidate(candidate)) {
+      return false;
+    }
+
+    return !this.matchesExecutionFact(this.buildCandidateSearchText(candidate), execution.taskId);
+  }
+
+  private hasCompetingSprintExecution(
+    execution: OrchestrationExecutionSummary,
+    siblingExecutions: readonly OrchestrationExecutionSummary[] | undefined,
+  ): boolean {
+    if (!execution.sprintId || !siblingExecutions) {
+      return false;
+    }
+
+    return siblingExecutions.some(
+      (candidate) =>
+        candidate.executionId !== execution.executionId &&
+        candidate.sprintId === execution.sprintId &&
+        (!execution.projectId || candidate.projectId === execution.projectId),
+    );
   }
 
   private matchesExecutionFact(searchText: string, fact: string | undefined): boolean {
@@ -231,15 +307,21 @@ export class LocalOrchestrationServiceReviewRoutingRuntime {
     return headingMatch?.[1]?.trim();
   }
 
-  private readSectionMetadataField(sectionContent: string, fieldName: string): string | undefined {
-    const fieldMatch = sectionContent.match(new RegExp(`^- ${fieldName}:\\s*(.+)$`, 'mu'));
-    const rawValue = fieldMatch?.[1]?.trim();
-    if (!rawValue) {
-      return undefined;
-    }
+  private readSectionMetadataFieldAliases(
+    sectionContent: string,
+    fieldNames: readonly string[],
+  ): string | undefined {
+    for (const fieldName of fieldNames) {
+      const fieldMatch = sectionContent.match(new RegExp(`^- ${fieldName}:\\s*(.+)$`, 'mu'));
+      const rawValue = fieldMatch?.[1]?.trim();
+      if (!rawValue) {
+        continue;
+      }
 
-    const backtickMatch = rawValue.match(/^`([^`]+)`$/u);
-    return backtickMatch?.[1]?.trim() ?? rawValue;
+      const backtickMatch = rawValue.match(/^`([^`]+)`$/u);
+      return backtickMatch?.[1]?.trim() ?? rawValue;
+    }
+    return undefined;
   }
 
   private readReviewMetadataField(content: string, fieldName: string): string | undefined {

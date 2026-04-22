@@ -1,0 +1,98 @@
+# checklist
+
+- [x] TK-1037 freeze direct hitl cockpit and runtime-lane contract baseline
+  - 2026-04-22：任务创建，状态初始化为 `planned`。
+  - 2026-04-22：将 direct-workbench formal contract、ADR、module overview、manifest、lifecycle/delivery registry 与 `project-121` scaffold dirty baseline 吸收到 `sprint-001`，并把 `current-context.md` 激活到 `project-121 / sprint-001`。
+  - 2026-04-22：确认 `DA-1037` 作为 `sprint-001 -> sprint-002` activation handoff 保持可回放，当前 sprint baseline 不提前提升 public/support truth。
+- [x] TK-1038 close sprint-001 and hand off workflow draft session baseline
+  - 2026-04-22：任务创建，状态初始化为 `planned`。
+  - 2026-04-22：`TK-1037 / TK-1043 / TK-1044 / TK-1045` 的实现与首轮验证已完成，当前进入 sprint-001 ledger sync、delegated CR round 与 closeout/handoff 准备阶段。
+  - 2026-04-22：`CR-018` 已 clean `resolved`；`DA-1038`、project/sprint plan、`current-context.md` 与 completed history 已完成 closeout write-back，`sprint-002` 已登记为新的 primary execution surface，但在 `TK-1046` 开工前仍保持 plan=`planned`。
+  - 2026-04-22：已完成 sprint-001 closeout write-back、DA-1038 handoff、completed history write-back 与 sprint-002 primary stream activation，并通过 pnpm run check。
+- [x] TK-1043 extend direct-workbench runtime dto and sidecar contracts
+  - 2026-04-22：任务创建，状态初始化为 `planned`。
+  - 2026-04-22：为 orchestration service client 新增 `role_lane_status / session_continuity / hitl_decision_packet` DTO、query request/response 与 `workbench backlink / risk fact` vocabulary。
+  - 2026-04-22：扩展 sidecar operation constants、dispatch table、client 与 host，使 `queryRoleLaneStatus / querySessionContinuity / queryHitlDecisionPacket` 可以经由 sidecar 端到端透传。
+  - 2026-04-22：执行 `pnpm run typecheck`、`pnpm run build` 与 targeted vitest，确认 contract 增量与 sidecar wiring 可编译可回归。
+- [x] TK-1044 implement role-lane status and hitl-decision query runtime
+  - 2026-04-22：任务创建，状态初始化为 `planned`。
+  - 2026-04-22：将 governance query runtime 扩展为 `queryRoleLaneStatus / querySessionContinuity / queryHitlDecisionPacket` 的聚合 facade，并继续复用 service-owned execution/session/review/artifact surfaces。
+  - 2026-04-22：在 local orchestration service shell 中接入新 query seam，并补齐 runtime lane / continuity / decision packet 的 shell-level coverage。
+  - 2026-04-22：执行 `pnpm run typecheck`、`pnpm run build`、`pnpm exec vitest run --config vitest.packages.config.ts apps/vscode-extension/test/vscode-extension-service-runtime.test.ts apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts packages/core-orchestration-service/test/local-orchestration-service-shell.unit.test.ts`。
+- [x] TK-1045 wire vscode runtime lanes and hitl cockpit surfaces
+  - 2026-04-22：任务创建，状态初始化为 `planned`。
+  - 2026-04-22：扩展 VS Code workflow-studio snapshot，直接消费 `roleLaneStatus / sessionContinuity / hitlDecisionPacket` 的 service-owned projection，并保留 `selection store` 只持有 transient selection。
+  - 2026-04-22：更新 workflow-studio presentation sections，使 `Runtime Lanes` 与 `HITL Decision Packet` 独立展示，而不再把 queue summary 误当成 runtime lane truth。
+  - 2026-04-22：执行 `pnpm run typecheck`、`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm run check:ide-entry-smoke`，验证 extension runtime/presentation 回归通过。
+- [x] CR-001 sprint-001-direct-hitl-and-runtime-lanes-baseline delegated review loop round 1
+  - 2026-04-22：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-22：fresh delegated reviewer 返回 4 条 actionable findings；主 agent 已完成复核并全部判定为 `accepted`，当前推进到 `verified`。
+  - 2026-04-22：accepted findings 已全部修复并完成 build/test/smoke/gate 复验，当前推进到 `resolved`。
+- [x] CR-002 sprint-001-direct-hitl-and-runtime-lanes-baseline delegated recheck loop round 2
+  - 2026-04-22：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-22：fresh delegated reviewer 返回 2 条 actionable findings；主 agent 已完成复核并全部判定为 `accepted`，当前推进到 `verified`。
+  - 2026-04-22：accepted findings 已全部修复并完成 build/test/smoke/gate 复验，当前推进到 `resolved`。
+- [x] CR-003 sprint-001-direct-hitl-and-runtime-lanes-baseline delegated recheck loop round 3
+  - 2026-04-22：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-22：fresh delegated reviewer 返回 1 条 actionable finding；主 agent 已完成复核并判定为 `accepted`，当前推进到 `verified`。
+  - 2026-04-22：accepted finding 已修复并完成 build/test/smoke/gate 复验，当前推进到 `resolved`。
+- [x] CR-004 sprint-001-direct-hitl-and-runtime-lanes-baseline delegated recheck loop round 4
+  - 2026-04-22：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-22：fresh delegated reviewer 返回 1 条 actionable finding；主 agent 已完成复核并判定为 `accepted`，当前推进到 `verified`。
+  - 2026-04-22：accepted finding 已修复并完成 build/test/smoke/gate 复验，当前推进到 `resolved`。
+- [x] CR-005 sprint-001-direct-hitl-and-runtime-lanes-baseline delegated recheck loop round 5
+  - 2026-04-22：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-22：fresh delegated reviewer 返回 1 条 actionable finding；主 agent 已完成复核并判定为 `accepted`，当前推进到 `verified`。
+  - 2026-04-22：accepted finding 已修复并完成 build/test/smoke/gate 复验，当前推进到 `resolved`。
+- [x] CR-006 sprint-001-direct-hitl-and-runtime-lanes-baseline delegated recheck loop round 6
+  - 2026-04-22：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-22：fresh delegated reviewer 返回 1 条 actionable finding；主 agent 已完成复核并判定为 `accepted`，当前推进到 `verified`。
+  - 2026-04-22：accepted finding 已修复并完成 build/test/smoke/gate 复验，当前推进到 `resolved`。
+- [x] CR-007 sprint-001-direct-hitl-and-runtime-lanes-baseline delegated recheck loop round 7
+  - 2026-04-22：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-22：fresh delegated reviewer 返回 1 条 actionable finding；主 agent 已完成复核并判定为 `accepted`，当前推进到 `verified`。
+  - 2026-04-22：accepted finding 已修复并完成 build/test/smoke/gate 复验，当前推进到 `resolved`。
+- [x] CR-008 sprint-001-direct-hitl-and-runtime-lanes-baseline delegated recheck loop round 8
+  - 2026-04-22：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-22：fresh delegated reviewer 返回 1 条 actionable finding；主 agent 已完成复核并判定为 `accepted`，当前推进到 `verified`。
+  - 2026-04-22：accepted finding 已修复，并完成 `typecheck/build/test:packages/check:ide-entry-smoke` 复验，当前推进到 `resolved`。
+- [x] CR-009 sprint-001-direct-hitl-and-runtime-lanes-baseline delegated recheck loop round 9
+  - 2026-04-22：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-22：fresh delegated reviewer 返回 1 条 actionable finding；主 agent 已完成复核并判定为 `accepted`，当前推进到 `verified`。
+  - 2026-04-22：accepted finding 已修复，并完成 `typecheck/build/test:packages/check:ide-entry-smoke` 与 governance gate 复验，当前推进到 `resolved`。
+- [x] CR-010 sprint-001-direct-hitl-and-runtime-lanes-baseline delegated recheck loop round 10
+  - 2026-04-22：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-22：fresh delegated reviewer 返回 1 条 actionable finding；主 agent 已完成复核并判定为 `accepted`，当前推进到 `verified`。
+  - 2026-04-22：accepted finding 已修复，并完成 `typecheck/build/test:packages/check:ide-entry-smoke` 与 governance gate 复验，当前推进到 `resolved`。
+- [x] CR-011 sprint-001-direct-hitl-and-runtime-lanes-baseline delegated recheck loop round 11
+  - 2026-04-22：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-22：fresh delegated reviewer 返回 1 条 actionable finding；主 agent 已完成复核并判定为 `accepted`，当前推进到 `verified`。
+  - 2026-04-22：accepted finding 已修复，并完成 focused vitest、`typecheck/build/test:packages/check:ide-entry-smoke` 与 governance gate 复验，当前推进到 `resolved`。
+- [x] CR-012 sprint-001-direct-hitl-and-runtime-lanes-baseline delegated recheck loop round 12
+  - 2026-04-22：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-22：fresh delegated reviewer 返回 1 条 actionable finding；主 agent 已完成复核并判定为 `accepted`，当前推进到 `verified`。
+  - 2026-04-22：accepted finding 已修复，并完成 focused vitest、`typecheck/build/test:packages/check:ide-entry-smoke` 与 governance gate 复验，当前推进到 `resolved`。
+- [x] CR-013 sprint-001-direct-hitl-and-runtime-lanes-baseline delegated recheck loop round 13
+  - 2026-04-22：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-22：fresh delegated reviewer 返回 3 条 actionable findings；主 agent 已完成复核并全部判定为 `accepted`，当前推进到 `verified`。
+  - 2026-04-22：accepted findings 已修复，并完成 focused vitest、`typecheck/build/test:packages/check:ide-entry-smoke` 与 governance gate 复验，当前推进到 `resolved`。
+- [x] CR-014 sprint-001-direct-hitl-and-runtime-lanes-baseline delegated recheck loop round 14
+  - 2026-04-22：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-22：fresh delegated reviewer 返回 1 条 actionable finding；主 agent 已完成复核并判定为 `accepted`，当前推进到 `verified`。
+  - 2026-04-22：accepted finding 已修复，并完成 focused vitest、`typecheck/build/test:packages/check:ide-entry-smoke` 与 governance gate 复验，当前推进到 `resolved`。
+- [x] CR-015 sprint-001-direct-hitl-and-runtime-lanes-baseline delegated recheck loop round 15
+  - 2026-04-22：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-22：fresh delegated reviewer 返回 1 条 actionable finding；主 agent 已完成复核并判定为 `accepted`，当前推进到 `verified`。
+  - 2026-04-22：accepted finding 已修复，并完成 command-controller focused vitest、相关 seam 回归、`typecheck/build/test:packages/check:ide-entry-smoke` 与 governance gate 复验，当前推进到 `resolved`。
+- [x] CR-016 sprint-001-direct-hitl-and-runtime-lanes-baseline delegated recheck loop round 16
+  - 2026-04-22：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-22：fresh delegated reviewer 返回 2 条 actionable finding；主 agent 已完成复核并判定为 `accepted`，当前推进到 `verified`。
+  - 2026-04-22：accepted findings 已修复，并完成 core-orchestration-service focused vitest、`typecheck/build/test:packages/check:ide-entry-smoke` 与 governance gate 复验，当前推进到 `resolved`。
+- [x] CR-017 sprint-001-direct-hitl-and-runtime-lanes-baseline delegated recheck loop round 17
+  - 2026-04-22：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-22：fresh delegated reviewer 返回 2 条 actionable finding；主 agent 已完成复核并判定为 `accepted`，当前推进到 `verified`。
+  - 2026-04-22：accepted findings 已修复，并完成 VS Code runtime focused vitest、`typecheck/build/test:packages/check:ide-entry-smoke` 与 governance gate 复验，当前推进到 `resolved`。
+- [x] CR-018 sprint-001-direct-hitl-and-runtime-lanes-baseline delegated recheck loop round 18
+  - 2026-04-22：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-22：fresh delegated reviewer round 18 未发现新的 actionable findings；主 agent 直接记录 clean resolved review artifact，并保留旧 sidecar live backward-compatibility 尚未实机覆盖的 residual risk note。
+  - 2026-04-22：已完成 CR lifecycle write-back、task-ledger sync 与 governance status recheck，当前推进到 `resolved`。

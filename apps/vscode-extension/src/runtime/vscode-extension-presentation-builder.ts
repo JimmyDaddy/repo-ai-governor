@@ -815,6 +815,10 @@ export class VsCodeExtensionPresentationBuilder {
       snapshot.sessionContinuity,
       selectedExecution,
     );
+    const runtimeLaneLines = this.buildWorkflowStudioRuntimeLaneLines(
+      snapshot.roleLaneStatus,
+      selectedExecution,
+    );
     const queueLines = this.buildWorkflowStudioQueueLines(queueOverview);
     const latestWorkspaceOperationLines = this.buildLatestWorkspaceOperationLines(
       queueOverview.latestWorkspaceOperation,
@@ -829,6 +833,10 @@ export class VsCodeExtensionPresentationBuilder {
     );
     const desktopDecisionLines = this.buildWorkflowStudioDesktopDecisionLines(
       queueOverview,
+      selectedExecution,
+    );
+    const hitlDecisionPacketLines = this.buildWorkflowStudioHitlDecisionPacketLines(
+      snapshot.hitlDecisionPacket,
       selectedExecution,
     );
     const temporaryBridgeLines = this.buildWorkflowStudioTemporaryBridgeLines(
@@ -897,6 +905,10 @@ export class VsCodeExtensionPresentationBuilder {
         continuityLines,
       ),
       this.renderStringSection(
+        this.localizer.localizeText('Runtime lanes', '运行时泳道'),
+        runtimeLaneLines,
+      ),
+      this.renderStringSection(
         this.localizer.localizeText('Secure authoring readiness', '安全 Authoring Readiness'),
         secureAuthoringLines,
       ),
@@ -919,6 +931,10 @@ export class VsCodeExtensionPresentationBuilder {
       this.renderStringSection(
         this.localizer.localizeText('Desktop decision surface', 'Desktop 决策面'),
         desktopDecisionLines,
+      ),
+      this.renderStringSection(
+        this.localizer.localizeText('HITL decision packet', 'HITL 决策包'),
+        hitlDecisionPacketLines,
       ),
       this.renderStringSection(
         this.localizer.localizeText('Temporary bridge exit evidence', '临时 Bridge 退出证据'),
@@ -2292,7 +2308,7 @@ export class VsCodeExtensionPresentationBuilder {
       }
 
       if (action.actionKind === OrchestrationGovernanceActionKind.SUBMIT_HITL_DECISION) {
-        if (action.enabled && action.hitlDecisionOptions) {
+        if (action.enabled && action.hitlDecisionOptions && action.hitlDecisionOptions.length > 0) {
           for (const option of action.hitlDecisionOptions) {
             const request = {
               ...this.createExecutionRequest(entry),
@@ -4034,6 +4050,11 @@ export class VsCodeExtensionPresentationBuilder {
           'No pending HITL decision exists.',
           '当前没有待处理的 HITL 决策。',
         );
+      case OrchestrationGovernanceActionDisabledReason.HITL_DECISION_UNAVAILABLE:
+        return this.localizer.localizeText(
+          'No allowed HITL decision is available.',
+          '当前没有可提交的合法 HITL 决策。',
+        );
       case OrchestrationGovernanceActionDisabledReason.RECOVERY_NOT_AVAILABLE:
         return this.localizer.localizeText(
           'No recovery checkpoint is available.',
@@ -4169,7 +4190,11 @@ export class VsCodeExtensionPresentationBuilder {
         }
 
         if (action.actionKind === OrchestrationGovernanceActionKind.SUBMIT_HITL_DECISION) {
-          if (action.enabled && action.hitlDecisionOptions) {
+          if (
+            action.enabled &&
+            action.hitlDecisionOptions &&
+            action.hitlDecisionOptions.length > 0
+          ) {
             for (const option of action.hitlDecisionOptions) {
               actions.push({
                 label: this.getHitlDecisionLabel(option.decision, option.resumeAction),
@@ -4187,8 +4212,8 @@ export class VsCodeExtensionPresentationBuilder {
             actions.push({
               label: this.getDisabledActionLabel(action.actionKind),
               description: this.localizer.localizeText(
-                'Human review is not currently waiting on this execution.',
-                '当前执行暂时不需要人工复核。',
+                'A service-owned HITL decision is not currently available for this execution.',
+                '当前执行暂时没有可用的 service-owned HITL 决策。',
               ),
               disabledReason: action.disabledReason
                 ? this.localizeDisabledReason(action.disabledReason)
@@ -4355,6 +4380,63 @@ export class VsCodeExtensionPresentationBuilder {
     return lines;
   }
 
+  private buildWorkflowStudioRuntimeLaneLines(
+    roleLaneStatus: VsCodeExtensionWorkflowStudioSnapshot['roleLaneStatus'],
+    selectedExecution: OrchestrationExecutionSummary | undefined,
+  ): string[] {
+    if (!selectedExecution) {
+      return [
+        this.localizer.localizeText(
+          'Select one execution to inspect runtime-lane status.',
+          '请选择一个执行以查看运行时泳道状态。',
+        ),
+      ];
+    }
+
+    if (!roleLaneStatus || roleLaneStatus.lanes.length === 0) {
+      return [
+        this.localizer.localizeText(
+          'Runtime-lane projection is not available yet.',
+          '当前还没有可用的运行时泳道投影。',
+        ),
+      ];
+    }
+
+    return roleLaneStatus.lanes.flatMap(
+      (
+        lane: NonNullable<VsCodeExtensionWorkflowStudioSnapshot['roleLaneStatus']>['lanes'][number],
+        index: number,
+      ) => {
+        const unavailable = this.localizer.localizeText('Unavailable', '不可用');
+        const artifactSummary =
+          lane.artifactBacklinks.length > 0
+            ? lane.artifactBacklinks
+                .map((backlink: (typeof lane.artifactBacklinks)[number]) => backlink.target)
+                .join(', ')
+            : unavailable;
+        const reviewSummary =
+          lane.reviewBacklinks.length > 0
+            ? lane.reviewBacklinks
+                .map((backlink: (typeof lane.reviewBacklinks)[number]) => backlink.target)
+                .join(', ')
+            : unavailable;
+
+        return [
+          `${this.localizer.localizeText('Lane', '泳道')} ${String(index + 1)}: ${lane.roleId}`,
+          `${this.localizer.localizeText('Execution', '执行')}: ${lane.executionId}`,
+          `${this.localizer.localizeText('Session', '会话')}: ${lane.sessionId ?? unavailable}`,
+          `${this.localizer.localizeText('Stage', '阶段')}: ${lane.currentStageId ?? unavailable}`,
+          `${this.localizer.localizeText('Status', '状态')}: ${lane.status}`,
+          `${this.localizer.localizeText('Latest event', '最新事件')}: ${lane.latestEventType ?? unavailable}`,
+          `${this.localizer.localizeText('Pending HITL', '待处理 HITL')}: ${lane.pendingHitl ? this.localizer.localizeText('Yes', '是') : this.localizer.localizeText('No', '否')}`,
+          `${this.localizer.localizeText('Artifact backlinks', '产物回链')}: ${artifactSummary}`,
+          `${this.localizer.localizeText('Review backlinks', '评审回链')}: ${reviewSummary}`,
+          `${this.localizer.localizeText('Updated at', '更新时间')}: ${lane.updatedAt}`,
+        ];
+      },
+    );
+  }
+
   private buildWorkflowStudioQueueLines(
     queueOverview: OrchestrationQueueOverviewQueryResponse,
   ): string[] {
@@ -4406,6 +4488,81 @@ export class VsCodeExtensionPresentationBuilder {
       `${this.localizer.localizeText('Active workspaces', '活跃工作区')}: ${queueOverview.notificationOwnership.activeWorkspaceCount}`,
       `${this.localizer.localizeText('Selected execution', '当前选中执行')}: ${selectedExecution?.executionId ?? this.localizer.localizeText('None', '无')}`,
       `${this.localizer.localizeText('Decision guidance', '决策建议')}: ${this.getDesktopDecisionGuidance(queueOverview)}`,
+    ];
+  }
+
+  private buildWorkflowStudioHitlDecisionPacketLines(
+    hitlDecisionPacket: VsCodeExtensionWorkflowStudioSnapshot['hitlDecisionPacket'],
+    selectedExecution: OrchestrationExecutionSummary | undefined,
+  ): string[] {
+    if (!selectedExecution) {
+      return [
+        this.localizer.localizeText(
+          'Select one execution to inspect the HITL decision packet.',
+          '请选择一个执行以查看 HITL 决策包。',
+        ),
+      ];
+    }
+
+    if (!hitlDecisionPacket) {
+      return [
+        this.localizer.localizeText(
+          'The selected execution does not currently expose a HITL decision packet.',
+          '当前选中的执行还没有暴露 HITL 决策包。',
+        ),
+      ];
+    }
+
+    const unavailable = this.localizer.localizeText('Unavailable', '不可用');
+    const riskSummary =
+      hitlDecisionPacket.riskFacts.length > 0
+        ? hitlDecisionPacket.riskFacts
+            .map(
+              (
+                fact: NonNullable<
+                  VsCodeExtensionWorkflowStudioSnapshot['hitlDecisionPacket']
+                >['riskFacts'][number],
+              ) => `${fact.riskId} (${fact.riskLevel}, ${fact.riskCategory}, ${fact.triggerRule})`,
+            )
+            .join('; ')
+        : unavailable;
+    const decisionSummary =
+      hitlDecisionPacket.allowedDecisions.length > 0
+        ? hitlDecisionPacket.allowedDecisions
+            .map(
+              (
+                decision: NonNullable<
+                  VsCodeExtensionWorkflowStudioSnapshot['hitlDecisionPacket']
+                >['allowedDecisions'][number],
+              ) => `${decision.decision}/${decision.resumeAction}`,
+            )
+            .join(', ')
+        : unavailable;
+    const backlinkSummary =
+      hitlDecisionPacket.backlinks.length > 0
+        ? hitlDecisionPacket.backlinks
+            .map(
+              (
+                backlink: NonNullable<
+                  VsCodeExtensionWorkflowStudioSnapshot['hitlDecisionPacket']
+                >['backlinks'][number],
+              ) => backlink.target,
+            )
+            .join(', ')
+        : unavailable;
+
+    return [
+      `${this.localizer.localizeText('Execution', '执行')}: ${hitlDecisionPacket.executionId}`,
+      `${this.localizer.localizeText('Session', '会话')}: ${hitlDecisionPacket.executionSessionId ?? unavailable}`,
+      `${this.localizer.localizeText('Task', '任务')}: ${hitlDecisionPacket.taskId ?? unavailable}`,
+      `${this.localizer.localizeText('Review', '评审')}: ${hitlDecisionPacket.reviewId ?? unavailable}`,
+      `${this.localizer.localizeText('Policy action', '策略动作')}: ${hitlDecisionPacket.policyAction}`,
+      `${this.localizer.localizeText('SLA deadline', 'SLA 截止时间')}: ${hitlDecisionPacket.slaDeadlineAt ?? unavailable}`,
+      `${this.localizer.localizeText('Default timeout action', '默认超时动作')}: ${hitlDecisionPacket.defaultTimeoutAction}`,
+      `${this.localizer.localizeText('Allowed decisions', '允许的决策')}: ${decisionSummary}`,
+      `${this.localizer.localizeText('Risk facts', '风险事实')}: ${riskSummary}`,
+      `${this.localizer.localizeText('Impact summary', '影响摘要')}: ${hitlDecisionPacket.impactSummary}`,
+      `${this.localizer.localizeText('Backlinks', '回链')}: ${backlinkSummary}`,
     ];
   }
 

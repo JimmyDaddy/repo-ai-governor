@@ -29,6 +29,7 @@ import type {
   OrchestrationSessionRouteId,
   OrchestrationSessionStatus,
   OrchestrationSessionTranscriptRole,
+  OrchestrationWorkbenchBacklinkKind,
   OrchestrationWorkspaceOperationKind,
 } from '../../constants/index.js';
 
@@ -298,6 +299,7 @@ export interface OrchestrationSubmitHitlDecisionRequest {
   decision: string;
   resumeAction: string;
   actor: string;
+  locale?: string;
   reason?: string;
   constraints?: Record<string, unknown>;
   decisionReceiptArtifactPath?: string;
@@ -370,6 +372,13 @@ export interface OrchestrationHandoffTarget {
   exists: boolean;
 }
 
+export interface OrchestrationWorkbenchBacklink {
+  backlinkId: string;
+  backlinkKind: OrchestrationWorkbenchBacklinkKind;
+  label: string;
+  target: string;
+}
+
 export interface OrchestrationExecutionBoardEntry {
   execution: OrchestrationExecutionSummary;
   actions: OrchestrationGovernanceActionAffordance[];
@@ -398,6 +407,81 @@ export interface OrchestrationHitlInboxQueryResponse {
   pendingDecisions: OrchestrationHitlInboxEntry[];
   returnedCount: number;
   totalMatchedCount: number;
+}
+
+export interface OrchestrationRoleLaneStatusQueryRequest {
+  executionId?: string;
+  filter?: OrchestrationListExecutionsFilter;
+  limit?: number;
+}
+
+export interface OrchestrationRoleLaneStatusEntry {
+  roleId: string;
+  executionId: string;
+  sessionId?: string;
+  currentStageId?: string;
+  status: string;
+  latestEventType?: string;
+  updatedAt: string;
+  pendingHitl: boolean;
+  artifactBacklinks: OrchestrationWorkbenchBacklink[];
+  reviewBacklinks: OrchestrationWorkbenchBacklink[];
+}
+
+export interface OrchestrationRoleLaneStatusQueryResponse {
+  generatedAt: string;
+  lanes: OrchestrationRoleLaneStatusEntry[];
+  returnedCount: number;
+  totalMatchedCount: number;
+}
+
+export interface OrchestrationSessionContinuityQueryRequest {
+  executionId?: string;
+  sessionId?: string;
+  preferLatest?: boolean;
+  locale?: string;
+}
+
+export interface OrchestrationSessionContinuitySnapshot {
+  sessionId: string;
+  sessionStatus?: string;
+  currentRouteId?: string;
+  latestTurnId?: string;
+  latestEventSequence?: number;
+  nextCursor?: string;
+  resumeSelector?: string;
+  degradedReason?: string;
+}
+
+export interface OrchestrationRiskFact {
+  riskId: string;
+  riskCategory: string;
+  riskLevel: string;
+  evidence: string[];
+  changeScope: string;
+  confidence: number;
+  triggerRule: string;
+}
+
+export interface OrchestrationHitlDecisionPacketQueryRequest {
+  executionId?: string;
+  sessionId?: string;
+  preferLatest?: boolean;
+  locale?: string;
+}
+
+export interface OrchestrationHitlDecisionPacket {
+  executionId: string;
+  executionSessionId?: string;
+  taskId?: string;
+  reviewId?: string;
+  riskFacts: OrchestrationRiskFact[];
+  policyAction: string;
+  slaDeadlineAt?: string;
+  defaultTimeoutAction: string;
+  allowedDecisions: OrchestrationHitlDecisionOption[];
+  impactSummary: string;
+  backlinks: OrchestrationWorkbenchBacklink[];
 }
 
 export interface OrchestrationQueueOverviewQueryRequest {
@@ -879,6 +963,15 @@ export interface OrchestrationServiceClient {
   queryHitlInbox(
     request?: OrchestrationHitlInboxQueryRequest,
   ): Promise<OrchestrationHitlInboxQueryResponse>;
+  queryRoleLaneStatus(
+    request?: OrchestrationRoleLaneStatusQueryRequest,
+  ): Promise<OrchestrationRoleLaneStatusQueryResponse>;
+  querySessionContinuity(
+    request?: OrchestrationSessionContinuityQueryRequest,
+  ): Promise<OrchestrationSessionContinuitySnapshot | undefined>;
+  queryHitlDecisionPacket(
+    request?: OrchestrationHitlDecisionPacketQueryRequest,
+  ): Promise<OrchestrationHitlDecisionPacket | undefined>;
   queryQueueOverview(
     request?: OrchestrationQueueOverviewQueryRequest,
   ): Promise<OrchestrationQueueOverviewQueryResponse>;

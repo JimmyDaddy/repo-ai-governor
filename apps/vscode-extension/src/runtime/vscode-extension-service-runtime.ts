@@ -20,13 +20,16 @@ import type {
   OrchestrationExecutionBoardQueryResponse,
   OrchestrationExecutionSummary,
   OrchestrationGovernanceQueueEntry,
+  OrchestrationHitlDecisionPacket,
   OrchestrationHitlInboxEntry,
   OrchestrationHitlInboxQueryResponse,
   OrchestrationProviderOnboardingSnapshot,
   OrchestrationQueueOverviewQueryResponse,
   OrchestrationRecoverExecutionRequest,
   OrchestrationRecoverExecutionResponse,
+  OrchestrationRoleLaneStatusQueryResponse,
   OrchestrationServiceHealthResponse,
+  OrchestrationSessionContinuitySnapshot,
   OrchestrationSessionEvent,
   OrchestrationSubmitHitlDecisionRequest,
   OrchestrationSubmitHitlDecisionResponse,
@@ -82,7 +85,6 @@ import type {
   VsCodeExtensionSecureAuthoringSnapshot,
   VsCodeExtensionSelectionSnapshot,
   VsCodeExtensionServiceDiagnosticsSnapshot,
-  VsCodeExtensionSessionContinuitySnapshot,
   VsCodeExtensionUserConfigEntrySnapshot,
   VsCodeExtensionUserConfigStatusSnapshot,
   VsCodeExtensionWorkbenchOverviewSnapshot,
@@ -134,6 +136,15 @@ function createEmptyQueueOverviewResponse(): OrchestrationQueueOverviewQueryResp
       defaultFollowUpSlaMinutes: 0,
       notificationStatus: OrchestrationGovernanceNotificationStatusValue.IDLE,
     },
+  };
+}
+
+function createEmptyRoleLaneStatusResponse(): OrchestrationRoleLaneStatusQueryResponse {
+  return {
+    generatedAt: '',
+    lanes: [],
+    returnedCount: 0,
+    totalMatchedCount: 0,
   };
 }
 
@@ -362,6 +373,148 @@ export class VsCodeExtensionServiceRuntime {
       });
     } catch {
       return createEmptyHitlInboxResponse();
+    }
+  }
+
+  /**
+   * Queries the orchestration-owned role-lane status projection.
+   * @param executionId Optional execution selector for workflow-studio focus.
+   * @returns Role-lane status payload, or an empty payload without a workspace.
+   */
+  public async queryRoleLaneStatus(
+    executionId?: string,
+  ): Promise<OrchestrationRoleLaneStatusQueryResponse> {
+    const client = await this.resolveClient();
+    if (!client) {
+      return createEmptyRoleLaneStatusResponse();
+    }
+
+    try {
+      return (
+        (await client.queryRoleLaneStatus(
+          executionId
+            ? {
+                executionId,
+              }
+            : undefined,
+        )) ?? createEmptyRoleLaneStatusResponse()
+      );
+    } catch {
+      return createEmptyRoleLaneStatusResponse();
+    }
+  }
+
+  /**
+   * Queries the orchestration-owned session continuity projection.
+   * @param sessionId Optional session selector for workflow-studio focus.
+   * @param executionId Optional execution selector when session id is not available.
+   * @returns Session continuity snapshot when available.
+   */
+  public async querySessionContinuity(
+    sessionId?: string,
+    executionId?: string,
+  ): Promise<OrchestrationSessionContinuitySnapshot | undefined> {
+    const client = await this.resolveClient();
+    if (!client) {
+      return sessionId
+        ? {
+            sessionId,
+            degradedReason: this.localizeText(
+              'Local orchestration service is unavailable.',
+              '当前本地编排服务不可用。',
+            ),
+          }
+        : undefined;
+    }
+
+    let continuityQueryFailed = false;
+    try {
+      const continuitySnapshot = await client.querySessionContinuity({
+        ...(sessionId
+          ? {
+              sessionId,
+            }
+          : {}),
+        ...(executionId
+          ? {
+              executionId,
+            }
+          : {}),
+        locale: this.resolveEmbeddedCliLocale(),
+      });
+      if (continuitySnapshot) {
+        return continuitySnapshot;
+      }
+    } catch {
+      continuityQueryFailed = true;
+    }
+
+    const fallbackSessionId =
+      sessionId ??
+      (executionId ? (await this.getExecutionSummary(executionId))?.executionSessionId : undefined);
+    if (!fallbackSessionId) {
+      return undefined;
+    }
+
+    try {
+      const session = await client.getSession(fallbackSessionId);
+      if (session) {
+        return {
+          sessionId: session.sessionId,
+          sessionStatus: session.status,
+          currentRouteId: session.currentRouteId,
+          latestTurnId: session.latestTurnId,
+          latestEventSequence: session.latestEventSequence,
+          nextCursor: session.nextCursor,
+          resumeSelector: session.sessionId,
+        };
+      }
+    } catch {
+      // Fall through to the degraded continuity payload below.
+    }
+
+    return {
+      sessionId: fallbackSessionId,
+      degradedReason: this.localizeText(
+        continuityQueryFailed
+          ? 'Session continuity query failed.'
+          : 'Session continuity is unavailable.',
+        continuityQueryFailed ? '会话连续性查询失败。' : '当前无法获取会话连续性。',
+      ),
+    };
+  }
+
+  /**
+   * Queries the orchestration-owned HITL decision packet.
+   * @param executionId Optional execution selector for workflow-studio focus.
+   * @param sessionId Optional session selector when execution id is not available.
+   * @returns Decision packet when available.
+   */
+  public async queryHitlDecisionPacket(
+    executionId?: string,
+    sessionId?: string,
+  ): Promise<OrchestrationHitlDecisionPacket | undefined> {
+    const client = await this.resolveClient();
+    if (!client) {
+      return undefined;
+    }
+
+    try {
+      return await client.queryHitlDecisionPacket({
+        ...(executionId
+          ? {
+              executionId,
+            }
+          : {}),
+        ...(sessionId
+          ? {
+              sessionId,
+            }
+          : {}),
+        locale: this.resolveEmbeddedCliLocale(),
+      });
+    } catch {
+      return undefined;
     }
   }
 
@@ -649,15 +802,25 @@ export class VsCodeExtensionServiceRuntime {
       this.resolveProviderLifecycleSnapshots(),
       this.resolveSelectedExecution(selection),
     ]);
-    const [artifactPane, sessionContinuity] = await Promise.all([
-      selectedExecution
-        ? this.queryArtifactPaneForExecution(
-            selectedExecution.execution.executionId,
-            selectedExecution.execution.executionSessionId,
-          )
-        : Promise.resolve(undefined),
-      this.resolveSessionContinuitySnapshot(selectedExecution?.execution.executionSessionId),
-    ]);
+    const [artifactPane, roleLaneStatus, sessionContinuity, hitlDecisionPacket] = await Promise.all(
+      [
+        selectedExecution
+          ? this.queryArtifactPaneForExecution(
+              selectedExecution.execution.executionId,
+              selectedExecution.execution.executionSessionId,
+            )
+          : Promise.resolve(undefined),
+        this.queryRoleLaneStatus(selectedExecution?.execution.executionId),
+        this.querySessionContinuity(
+          selectedExecution?.execution.executionSessionId,
+          selectedExecution?.execution.executionId,
+        ),
+        this.queryHitlDecisionPacket(
+          selectedExecution?.execution.executionId,
+          selectedExecution?.execution.executionSessionId,
+        ),
+      ],
+    );
 
     return {
       workspaceContext,
@@ -682,6 +845,11 @@ export class VsCodeExtensionServiceRuntime {
             selectedExecution,
           }
         : {}),
+      ...(roleLaneStatus.returnedCount > 0
+        ? {
+            roleLaneStatus,
+          }
+        : {}),
       ...(artifactPane
         ? {
             artifactPane,
@@ -690,6 +858,11 @@ export class VsCodeExtensionServiceRuntime {
       ...(sessionContinuity
         ? {
             sessionContinuity,
+          }
+        : {}),
+      ...(hitlDecisionPacket
+        ? {
+            hitlDecisionPacket,
           }
         : {}),
       ...(selection.reviewSourcePath
@@ -1322,47 +1495,6 @@ export class VsCodeExtensionServiceRuntime {
     }
 
     return this.resolveExecutionBoardEntry();
-  }
-
-  private async resolveSessionContinuitySnapshot(
-    sessionId?: string,
-  ): Promise<VsCodeExtensionSessionContinuitySnapshot | undefined> {
-    if (!sessionId) {
-      return undefined;
-    }
-
-    try {
-      const client = await this.resolveClient();
-      if (!client) {
-        return {
-          sessionId,
-          degradedReason: 'Local orchestration service is unavailable.',
-        };
-      }
-
-      const session = await client.getSession(sessionId);
-      if (!session) {
-        return {
-          sessionId,
-          degradedReason: 'Session continuity is unavailable.',
-        };
-      }
-
-      return {
-        sessionId: session.sessionId,
-        sessionStatus: session.status,
-        currentRouteId: session.currentRouteId,
-        latestTurnId: session.latestTurnId,
-        latestEventSequence: session.latestEventSequence,
-        nextCursor: session.nextCursor,
-        resumeSelector: session.sessionId,
-      };
-    } catch (error) {
-      return {
-        sessionId,
-        degradedReason: standardizeError(error).message,
-      };
-    }
   }
 
   private async resolveOrCreateMainSession() {

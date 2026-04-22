@@ -3,6 +3,7 @@ import {
   OrchestrationClientSurface,
   OrchestrationExecutionKind,
   OrchestrationExecutionStatus,
+  OrchestrationGovernanceActionDisabledReason,
   OrchestrationGovernanceActionKind,
   OrchestrationGovernanceAttentionLevel,
   OrchestrationGovernanceFollowUpSlaState,
@@ -18,6 +19,7 @@ import {
   OrchestrationServiceLifecycleStatus,
   OrchestrationServiceTransportKind,
   OrchestrationSessionStatus,
+  OrchestrationWorkbenchBacklinkKind,
   OrchestrationWorkspaceOperationKind,
 } from '@repo-ai-governor/orchestration-service-client';
 import type {
@@ -25,6 +27,11 @@ import type {
   OrchestrationExecutionSummary,
   OrchestrationHitlInboxEntry,
 } from '@repo-ai-governor/orchestration-service-client';
+import {
+  AdapterProviderKind,
+  AdapterSurface,
+  AdapterVendorBindingKind,
+} from '@repo-ai-governor/shared';
 import { VSCODE_EXTENSION_COMMAND_IDS } from '../src/constants/index.js';
 import { VsCodeExtensionPresentationBuilder } from '../src/runtime/vscode-extension-presentation-builder.js';
 
@@ -52,6 +59,33 @@ describe('VsCodeExtensionPresentationBuilder', () => {
         'Recover execution',
         'Terminate execution',
         'Open review document',
+      ]),
+    );
+  });
+
+  it('renders a disabled HITL action node when no legal decision option is available', () => {
+    const entry = createExecutionBoardEntry({
+      pendingHitl: true,
+    });
+    entry.actions = entry.actions.map((action) =>
+      action.actionKind === OrchestrationGovernanceActionKind.SUBMIT_HITL_DECISION
+        ? {
+            ...action,
+            enabled: false,
+            disabledReason: OrchestrationGovernanceActionDisabledReason.HITL_DECISION_UNAVAILABLE,
+            hitlDecisionOptions: [],
+          }
+        : action,
+    );
+
+    const nodes = builder.buildTaskBoardNodes([entry]);
+
+    expect(nodes[0]?.children).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          label: 'No HITL decision available',
+          description: 'No allowed HITL decision is available.',
+        }),
       ]),
     );
   });
@@ -553,9 +587,9 @@ describe('VsCodeExtensionPresentationBuilder', () => {
   it('projects provider lifecycle CTAs into workbench nodes and workflow studio html', () => {
     const providerLifecycleSnapshots = [
       {
-        tool: 'codex',
-        provider: 'openai',
-        vendorBinding: 'openai_responses',
+        tool: AdapterSurface.CODEX,
+        provider: AdapterProviderKind.OPENAI,
+        vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
         readinessProjectionSource: 'provider_onboarding_snapshot',
         status: 'ready',
         availableActions: ['update_api_key', 'reconnect_provider'],
@@ -658,9 +692,9 @@ describe('VsCodeExtensionPresentationBuilder', () => {
     });
     const providerLifecycleSnapshots = [
       {
-        tool: 'codex',
-        provider: 'openai',
-        vendorBinding: 'openai_responses',
+        tool: AdapterSurface.CODEX,
+        provider: AdapterProviderKind.OPENAI,
+        vendorBinding: AdapterVendorBindingKind.OPENAI_RESPONSES,
         readinessProjectionSource: 'provider_onboarding_snapshot',
         status: 'ready',
         availableActions: ['update_api_key', 'reconnect_provider'],
@@ -1067,6 +1101,75 @@ describe('VsCodeExtensionPresentationBuilder', () => {
         nextCursor: 'cursor-session-1:latest',
         resumeSelector: 'session://execution-1',
       },
+      roleLaneStatus: {
+        generatedAt: '2026-04-17T10:15:00.000Z',
+        lanes: [
+          {
+            roleId: 'reviewer-default',
+            executionId: 'execution-1',
+            sessionId: 'session-1',
+            currentStageId: 'review_verify',
+            status: 'waiting_for_hitl',
+            latestEventType: 'hitl.required',
+            updatedAt: '2026-04-17T10:15:00.000Z',
+            pendingHitl: true,
+            artifactBacklinks: [
+              {
+                backlinkId: 'execution-1:artifact:1',
+                backlinkKind: OrchestrationWorkbenchBacklinkKind.ARTIFACT,
+                label: '/repo/.repo-ai-governor/context/review.md',
+                target: '/repo/.repo-ai-governor/context/review.md',
+              },
+            ],
+            reviewBacklinks: [
+              {
+                backlinkId: 'execution-1:review:1',
+                backlinkKind: OrchestrationWorkbenchBacklinkKind.REVIEW,
+                label: '/repo/.repo-ai-governor/review/resolved.md',
+                target: '/repo/.repo-ai-governor/review/resolved.md',
+              },
+            ],
+          },
+        ],
+        returnedCount: 1,
+        totalMatchedCount: 1,
+      },
+      hitlDecisionPacket: {
+        executionId: 'execution-1',
+        executionSessionId: 'session-1',
+        taskId: 'TK-563',
+        reviewId: 'review-1',
+        riskFacts: [
+          {
+            riskId: 'execution-1:risk-hitl-pending',
+            riskCategory: 'hitl-decision-pending',
+            riskLevel: 'L2',
+            evidence: ['execution_id=execution-1'],
+            changeScope: 'TK-563',
+            confidence: 0.86,
+            triggerRule: 'runtime-hitl-pending',
+          },
+        ],
+        policyAction: 'confirm',
+        slaDeadlineAt: '2026-04-17T14:15:00.000Z',
+        defaultTimeoutAction: 'block',
+        allowedDecisions: [
+          {
+            optionId: 'execution-1:hitl:approve-resume',
+            decision: 'approve',
+            resumeAction: 'resume',
+          },
+        ],
+        impactSummary: 'Execution execution-1 is waiting on one HITL decision for TK-563.',
+        backlinks: [
+          {
+            backlinkId: 'execution-1:review:1',
+            backlinkKind: OrchestrationWorkbenchBacklinkKind.REVIEW,
+            label: '/repo/.repo-ai-governor/review/resolved.md',
+            target: '/repo/.repo-ai-governor/review/resolved.md',
+          },
+        ],
+      },
       reviewSourcePath: '/repo/.repo-ai-governor/review/resolved.md',
     });
 
@@ -1074,11 +1177,16 @@ describe('VsCodeExtensionPresentationBuilder', () => {
     expect(html).toContain('Latest workspace operation');
     expect(html).toContain('Governed run control');
     expect(html).toContain('Continuity and handoff');
+    expect(html).toContain('Runtime lanes');
     expect(html).toContain('Support-truth gate');
     expect(html).toContain('Desktop decision surface');
+    expect(html).toContain('HITL decision packet');
     expect(html).toContain('Foundation-only secondary surface');
     expect(html).toContain('Primary workbench claim active');
     expect(html).toContain('review_verify');
+    expect(html).toContain('waiting_for_hitl');
+    expect(html).toContain('runtime-hitl-pending');
+    expect(html).toContain('Default timeout action');
     expect(html).toContain('Run doctor');
     expect(html).toContain('artifact registry is not initialized yet');
     expect(html).toContain('/repo/.repo-ai-governor/context/diagnostics/doctor/doctor-1.json');

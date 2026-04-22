@@ -134,6 +134,28 @@ export class LocalOrchestrationServiceSidecarHost
     return this.shell.queryHitlInbox(request);
   }
 
+  public queryRoleLaneStatus(
+    request?: Parameters<LocalOrchestrationServiceSidecarDispatchTable['queryRoleLaneStatus']>[0],
+  ) {
+    return this.shell.queryRoleLaneStatus(request);
+  }
+
+  public querySessionContinuity(
+    request?: Parameters<
+      LocalOrchestrationServiceSidecarDispatchTable['querySessionContinuity']
+    >[0],
+  ) {
+    return this.shell.querySessionContinuity(request);
+  }
+
+  public queryHitlDecisionPacket(
+    request?: Parameters<
+      LocalOrchestrationServiceSidecarDispatchTable['queryHitlDecisionPacket']
+    >[0],
+  ) {
+    return this.shell.queryHitlDecisionPacket(request);
+  }
+
   public queryQueueOverview(
     request?: Parameters<LocalOrchestrationServiceSidecarDispatchTable['queryQueueOverview']>[0],
   ) {
@@ -338,6 +360,24 @@ export class LocalOrchestrationServiceSidecarHost
       case LocalOrchestrationServiceSidecarOperation.QUERY_HITL_INBOX:
         return this.queryHitlInbox(
           payload as Parameters<LocalOrchestrationServiceSidecarDispatchTable['queryHitlInbox']>[0],
+        );
+      case LocalOrchestrationServiceSidecarOperation.QUERY_ROLE_LANE_STATUS:
+        return this.queryRoleLaneStatus(
+          payload as Parameters<
+            LocalOrchestrationServiceSidecarDispatchTable['queryRoleLaneStatus']
+          >[0],
+        );
+      case LocalOrchestrationServiceSidecarOperation.QUERY_SESSION_CONTINUITY:
+        return this.querySessionContinuity(
+          payload as Parameters<
+            LocalOrchestrationServiceSidecarDispatchTable['querySessionContinuity']
+          >[0],
+        );
+      case LocalOrchestrationServiceSidecarOperation.QUERY_HITL_DECISION_PACKET:
+        return this.queryHitlDecisionPacket(
+          payload as Parameters<
+            LocalOrchestrationServiceSidecarDispatchTable['queryHitlDecisionPacket']
+          >[0],
         );
       case LocalOrchestrationServiceSidecarOperation.QUERY_QUEUE_OVERVIEW:
         return this.queryQueueOverview(

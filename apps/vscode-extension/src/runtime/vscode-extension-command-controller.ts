@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 
 import {
   ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS,
+  OrchestrationGovernanceActionDisabledReason,
   OrchestrationGovernanceActionKind,
   type OrchestrationHandoffTarget,
   OrchestrationHandoffTargetKind,
@@ -1084,9 +1085,19 @@ export class VsCodeExtensionCommandController {
         );
         return;
       }
+      const hitlAction = hitlEntry.actions.find(
+        (entry) => entry.actionKind === OrchestrationGovernanceActionKind.SUBMIT_HITL_DECISION,
+      );
+      const hitlDecisionOptions = hitlAction?.hitlDecisionOptions ?? [];
+      if (!hitlAction?.enabled || hitlDecisionOptions.length === 0) {
+        void vscode.window.showInformationMessage(
+          this.localizeHitlActionUnavailableReason(hitlAction?.disabledReason),
+        );
+        return;
+      }
 
       const selectedOption =
-        mergedRequest.hitlDecisionOption ?? (await this.promptForHitlDecisionOption(hitlEntry));
+        mergedRequest.hitlDecisionOption ?? (await this.promptForHitlDecisionOption(hitlAction));
       if (!selectedOption) {
         return;
       }
@@ -1108,6 +1119,7 @@ export class VsCodeExtensionCommandController {
         decision: selectedOption.decision,
         resumeAction: selectedOption.resumeAction,
         actor: 'vscode_extension_user',
+        locale: vscode.env.language,
         reason: this.localizer.localizeText(
           'Submitted from the VS Code Governor companion.',
           '由 VS Code Governor 伴侣提交。',
@@ -2667,17 +2679,10 @@ export class VsCodeExtensionCommandController {
     return 'nodeId' in commandRequest ? commandRequest.selectionRequest : commandRequest;
   }
 
-  private async promptForHitlDecisionOption(hitlEntry: {
-    execution: { executionId: string; executionSessionId: string };
-    actions: readonly {
-      actionKind: OrchestrationGovernanceActionKind;
-      hitlDecisionOptions?: readonly { optionId: string; decision: string; resumeAction: string }[];
-    }[];
+  private async promptForHitlDecisionOption(hitlAction?: {
+    hitlDecisionOptions?: readonly { optionId: string; decision: string; resumeAction: string }[];
   }) {
-    const action = hitlEntry.actions.find(
-      (entry) => entry.actionKind === OrchestrationGovernanceActionKind.SUBMIT_HITL_DECISION,
-    );
-    const options = action?.hitlDecisionOptions ?? [];
+    const options = hitlAction?.hitlDecisionOptions ?? [];
     if (options.length === 0) {
       return undefined;
     }
@@ -2699,6 +2704,28 @@ export class VsCodeExtensionCommandController {
       },
     );
     return picked?.option;
+  }
+
+  private localizeHitlActionUnavailableReason(
+    reason?: OrchestrationGovernanceActionDisabledReason,
+  ): string {
+    switch (reason) {
+      case OrchestrationGovernanceActionDisabledReason.HITL_DECISION_UNAVAILABLE:
+        return this.localizer.localizeText(
+          'No allowed HITL decision is available right now.',
+          '当前没有可提交的合法 HITL 决策。',
+        );
+      case OrchestrationGovernanceActionDisabledReason.HITL_NOT_PENDING:
+        return this.localizer.localizeText(
+          'No pending HITL decision is available right now.',
+          '当前没有可处理的 HITL 决策。',
+        );
+      default:
+        return this.localizer.localizeText(
+          'The HITL action is currently unavailable.',
+          '当前 HITL 动作不可用。',
+        );
+    }
   }
 
   private async resolveWorkspaceOperationRequest(

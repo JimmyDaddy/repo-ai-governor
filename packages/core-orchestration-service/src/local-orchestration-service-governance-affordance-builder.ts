@@ -10,10 +10,15 @@ import {
   OrchestrationHandoffTargetKind,
   type OrchestrationHitlDecisionOption,
 } from '@repo-ai-governor/orchestration-service-client';
+import { LocalOrchestrationServiceHitlDecisionStateFactory } from './local-orchestration-service-hitl-decision-state-factory.js';
 import { LocalOrchestrationServiceReviewRoutingRuntime } from './local-orchestration-service-review-routing-runtime.js';
 
 interface LocalOrchestrationServiceGovernanceAffordanceBuilderDependencies {
   workspaceRoot: string;
+}
+
+interface LocalOrchestrationServiceGovernanceHandoffTargetOptions {
+  reviewDocumentPath?: string;
 }
 
 /**
@@ -25,6 +30,7 @@ interface LocalOrchestrationServiceGovernanceAffordanceBuilderDependencies {
  */
 export class LocalOrchestrationServiceGovernanceAffordanceBuilder {
   private readonly reviewRoutingRuntime: LocalOrchestrationServiceReviewRoutingRuntime;
+  private readonly hitlDecisionStateFactory: LocalOrchestrationServiceHitlDecisionStateFactory;
 
   public constructor(
     private readonly dependencies: LocalOrchestrationServiceGovernanceAffordanceBuilderDependencies,
@@ -32,6 +38,7 @@ export class LocalOrchestrationServiceGovernanceAffordanceBuilder {
     this.reviewRoutingRuntime = new LocalOrchestrationServiceReviewRoutingRuntime({
       workspaceRoot: dependencies.workspaceRoot,
     });
+    this.hitlDecisionStateFactory = new LocalOrchestrationServiceHitlDecisionStateFactory();
   }
 
   /**
@@ -41,9 +48,12 @@ export class LocalOrchestrationServiceGovernanceAffordanceBuilder {
    */
   public async buildHandoffTargets(
     execution: OrchestrationExecutionSummary,
+    options: LocalOrchestrationServiceGovernanceHandoffTargetOptions = {},
   ): Promise<OrchestrationHandoffTarget[]> {
     const reviewDocumentPath =
-      await this.reviewRoutingRuntime.resolveExecutionReviewDocumentPath(execution);
+      'reviewDocumentPath' in options
+        ? options.reviewDocumentPath
+        : await this.reviewRoutingRuntime.resolveExecutionReviewDocumentPath(execution);
     const editorTargetPath = this.pickFirstExistingPath([
       execution.latestArtifactPath,
       reviewDocumentPath,
@@ -99,8 +109,13 @@ export class LocalOrchestrationServiceGovernanceAffordanceBuilder {
   public buildActionAffordances(
     execution: OrchestrationExecutionSummary,
     handoffTargets: OrchestrationHandoffTarget[],
+    hitlDecisionOptions?: readonly OrchestrationHitlDecisionOption[],
   ): OrchestrationGovernanceActionAffordance[] {
     const isTerminal = this.isTerminalExecutionStatus(execution.status);
+    const resolvedHitlDecisionOptions =
+      hitlDecisionOptions ??
+      this.hitlDecisionStateFactory.buildAllowedDecisions(execution.executionId);
+    const hasAvailableHitlDecisionOptions = resolvedHitlDecisionOptions.length > 0;
 
     return [
       {
@@ -114,14 +129,18 @@ export class LocalOrchestrationServiceGovernanceAffordanceBuilder {
         actionId: `${execution.executionId}:submit-hitl`,
         actionKind: OrchestrationGovernanceActionKind.SUBMIT_HITL_DECISION,
         executionId: execution.executionId,
-        enabled: execution.pendingHitl,
+        enabled: execution.pendingHitl && hasAvailableHitlDecisionOptions,
         requiresConfirmation: true,
-        ...(execution.pendingHitl
+        ...(execution.pendingHitl && hasAvailableHitlDecisionOptions
           ? {
-              hitlDecisionOptions: this.createHitlDecisionOptions(execution.executionId),
+              hitlDecisionOptions: resolvedHitlDecisionOptions.map((decisionOption) => ({
+                ...decisionOption,
+              })),
             }
           : {
-              disabledReason: OrchestrationGovernanceActionDisabledReason.HITL_NOT_PENDING,
+              disabledReason: execution.pendingHitl
+                ? OrchestrationGovernanceActionDisabledReason.HITL_DECISION_UNAVAILABLE
+                : OrchestrationGovernanceActionDisabledReason.HITL_NOT_PENDING,
             }),
       },
       {
@@ -163,26 +182,6 @@ export class LocalOrchestrationServiceGovernanceAffordanceBuilder {
               disabledReason: OrchestrationGovernanceActionDisabledReason.TARGET_UNAVAILABLE,
             }),
       })),
-    ];
-  }
-
-  private createHitlDecisionOptions(executionId: string): OrchestrationHitlDecisionOption[] {
-    return [
-      {
-        optionId: `${executionId}:hitl:approve-resume`,
-        decision: 'approve',
-        resumeAction: 'resume',
-      },
-      {
-        optionId: `${executionId}:hitl:request-changes-degrade`,
-        decision: 'request_changes',
-        resumeAction: 'degrade',
-      },
-      {
-        optionId: `${executionId}:hitl:reject-terminate`,
-        decision: 'reject',
-        resumeAction: 'terminate',
-      },
     ];
   }
 

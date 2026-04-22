@@ -10,6 +10,8 @@ import type {
 import type {
   OrchestrationExecutionLivenessSnapshot,
   OrchestrationExecutionStatus,
+  OrchestrationHitlDecisionOption,
+  OrchestrationRiskFact,
   OrchestrationServiceEventType,
   OrchestrationServiceHostKind,
   OrchestrationServiceLifecycleStatus,
@@ -47,6 +49,15 @@ export interface LocalOrchestrationServiceStartExecutionRuntimeContext {
   executionSessionId?: string;
 }
 
+export interface LocalOrchestrationServiceHitlDecisionState {
+  riskFacts: OrchestrationRiskFact[];
+  policyAction: string;
+  slaDeadlineAt?: string;
+  defaultTimeoutAction: string;
+  allowedDecisions: OrchestrationHitlDecisionOption[];
+  recordedAt: string;
+}
+
 export interface LocalOrchestrationServicePublishEventRequest {
   executionId: string;
   type: OrchestrationServiceEventType;
@@ -56,6 +67,7 @@ export interface LocalOrchestrationServicePublishEventRequest {
   artifactId?: string;
   artifactPath?: string;
   livenessSnapshot?: OrchestrationExecutionLivenessSnapshot;
+  hitlDecisionState?: LocalOrchestrationServiceHitlDecisionState;
 }
 
 export interface LocalOrchestrationServiceSaveCheckpointRequest

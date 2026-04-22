@@ -68,7 +68,7 @@ export class LocalOrchestrationServiceArtifactPaneQueryRuntime {
       this.resolvePrimaryReviewDirectoryPath(),
     ]);
     const reviewDocumentPath = executionSummary
-      ? await this.reviewRoutingRuntime.resolveExecutionReviewDocumentPath(executionSummary)
+      ? await this.resolveExecutionReviewDocumentPath(executionSummary)
       : undefined;
     const artifactLimit = this.normalizeLimit(request.artifactLimit, 5);
     const reviewLimit = this.normalizeLimit(request.reviewLimit, 5);
@@ -137,6 +137,27 @@ export class LocalOrchestrationServiceArtifactPaneQueryRuntime {
 
     const response = await this.dependencies.listSessions();
     return response.sessions[0];
+  }
+
+  private async resolveExecutionReviewDocumentPath(
+    executionSummary: OrchestrationExecutionSummary,
+  ): Promise<string | undefined> {
+    const siblingExecutions = await this.listExecutionOwnershipPeers(executionSummary);
+    return this.reviewRoutingRuntime.resolveExecutionReviewDocumentPath(executionSummary, {
+      siblingExecutions,
+    });
+  }
+
+  private async listExecutionOwnershipPeers(
+    executionSummary: OrchestrationExecutionSummary,
+  ): Promise<OrchestrationExecutionSummary[]> {
+    const response = await this.dependencies.listExecutions();
+
+    return response.executions.filter(
+      (candidate) =>
+        candidate.sprintId === executionSummary.sprintId &&
+        (!executionSummary.projectId || candidate.projectId === executionSummary.projectId),
+    );
   }
 
   private async readArtifacts(

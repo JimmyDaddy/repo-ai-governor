@@ -1041,6 +1041,12 @@ export class DesktopGovernanceConsoleViewModelBuilder {
           'Action disabled because no HITL decision is currently pending.',
           '该动作已禁用，因为当前没有待处理的 HITL 决策。',
         );
+      case OrchestrationGovernanceActionDisabledReason.HITL_DECISION_UNAVAILABLE:
+        return this.localizeText(
+          locale,
+          'Action disabled because no allowed HITL decision is currently available.',
+          '该动作已禁用，因为当前没有可提交的合法 HITL 决策。',
+        );
       case OrchestrationGovernanceActionDisabledReason.RECOVERY_NOT_AVAILABLE:
         return this.localizeText(
           locale,

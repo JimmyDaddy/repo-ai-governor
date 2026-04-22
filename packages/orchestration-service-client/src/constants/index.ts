@@ -15,6 +15,7 @@ export {
   OrchestrationGovernanceNotificationStatus,
   OrchestrationGovernanceQueueKind,
   OrchestrationHandoffTargetKind,
+  OrchestrationWorkbenchBacklinkKind,
   OrchestrationWorkspaceOperationKind,
   OrchestrationExecutionStatus,
   OrchestrationSessionEventType,

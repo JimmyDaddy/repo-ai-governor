@@ -16,6 +16,8 @@ export type {
   VsCodeExtensionProviderOnboardingSnapshot,
   VsCodeExtensionReviewDetailSnapshot,
   VsCodeExtensionReviewQueueSelectionRequest,
+  VsCodeExtensionHitlDecisionPacketSnapshot,
+  VsCodeExtensionRoleLaneStatusSnapshot,
   VsCodeExtensionSessionContinuitySnapshot,
   VsCodeExtensionSelectionSnapshot,
   VsCodeExtensionSecretBackendStatusSnapshot,

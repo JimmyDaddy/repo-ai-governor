@@ -262,6 +262,18 @@ describe('LocalOrchestrationServiceSidecarClient', () => {
           projectId: 'project-048',
         },
       });
+      const roleLaneStatus = await client.queryRoleLaneStatus({
+        executionId: started561.executionId,
+      });
+      const sessionContinuity = await client.querySessionContinuity({
+        executionId: started561.executionId,
+      });
+      const hitlDecisionPacket = await client.queryHitlDecisionPacket({
+        executionId: started561.executionId,
+      });
+      const repeatedHitlDecisionPacket = await client.queryHitlDecisionPacket({
+        executionId: started561.executionId,
+      });
       const termination = await client.terminateExecution({
         executionId: started560.executionId,
         actor: 'desktop-reviewer',
@@ -313,6 +325,36 @@ describe('LocalOrchestrationServiceSidecarClient', () => {
       expect(queueOverview.reviewQueue).toHaveLength(2);
       expect(queueOverview.parallelLanes[0]?.activeExecutionCount).toBe(2);
       expect(queueOverview.notificationOwnership.pendingItemCount).toBe(4);
+      expect(roleLaneStatus).toMatchObject({
+        returnedCount: 1,
+        totalMatchedCount: 1,
+        lanes: [
+          expect.objectContaining({
+            executionId: started561.executionId,
+            sessionId: started561.executionSessionId,
+            pendingHitl: true,
+            latestEventType: 'hitl.required',
+          }),
+        ],
+      });
+      expect(sessionContinuity?.sessionId).toBe(started561.executionSessionId);
+      expect(hitlDecisionPacket).toMatchObject({
+        executionId: started561.executionId,
+        executionSessionId: started561.executionSessionId,
+        taskId: 'TK-561',
+        policyAction: 'confirm',
+        defaultTimeoutAction: 'block',
+        reviewId: 'code_review_tk-561.md',
+      });
+      expect(hitlDecisionPacket?.riskFacts[0]).toEqual(
+        expect.objectContaining({
+          riskCategory: 'hitl-decision-pending',
+          riskLevel: 'L2',
+          changeScope: 'TK-561',
+          triggerRule: 'runtime-hitl-pending',
+        }),
+      );
+      expect(repeatedHitlDecisionPacket?.slaDeadlineAt).toBe(hitlDecisionPacket?.slaDeadlineAt);
       expect(termination.terminated).toBe(true);
       expect(termination.nextStatus).toBe(OrchestrationExecutionStatus.CANCELLED);
       expect(termination.executionSummary.serviceHostKind).toBe(

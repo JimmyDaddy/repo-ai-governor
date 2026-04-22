@@ -1,6 +1,7 @@
 import { vi } from 'vitest';
 
 import { OrchestrationClientSurface } from '@repo-ai-governor/orchestration-service-client';
+import { OrchestrationGovernanceActionDisabledReason } from '@repo-ai-governor/orchestration-service-client';
 import { OrchestrationGovernanceActionKind } from '@repo-ai-governor/orchestration-service-client';
 import { OrchestrationGovernanceAttentionLevel } from '@repo-ai-governor/orchestration-service-client';
 import { OrchestrationGovernanceFollowUpSlaState } from '@repo-ai-governor/orchestration-service-client';
@@ -32,6 +33,7 @@ const vscodeMock = vi.hoisted(() => {
   return {
     state: {
       trusted: false,
+      language: 'en-US',
     },
     showInformationMessage,
     showWarningMessage,
@@ -73,6 +75,11 @@ vi.mock('vscode', () => ({
   commands: {
     executeCommand: vscodeMock.executeCommand,
   },
+  env: {
+    get language() {
+      return vscodeMock.state.language;
+    },
+  },
   Uri: {
     file: (fsPath: string) => ({
       fsPath,
@@ -90,6 +97,7 @@ import { VsCodeExtensionWorkflowStudioProvider } from '../src/runtime/vscode-ext
 describe('VsCode extension controller/provider integration', () => {
   beforeEach(() => {
     vscodeMock.state.trusted = false;
+    vscodeMock.state.language = 'en-US';
     vscodeMock.showInformationMessage.mockReset();
     vscodeMock.showWarningMessage.mockReset();
     vscodeMock.showErrorMessage.mockReset();
@@ -2218,6 +2226,153 @@ describe('VsCode extension controller/provider integration', () => {
       'workbench.view.extension.repoAiGovernor',
     );
     expect(workflowStudioProvider.show).toHaveBeenCalledWith(false);
+  });
+
+  it('surfaces the localized no-decision message when no legal HITL option is available', async () => {
+    vscodeMock.state.trusted = true;
+
+    const resolveHitlInboxEntry = vi.fn().mockResolvedValue({
+      execution: {
+        executionId: 'execution-1',
+        executionSessionId: 'session-1',
+      },
+      actions: [
+        {
+          actionId: 'execution-1:submit-hitl',
+          actionKind: OrchestrationGovernanceActionKind.SUBMIT_HITL_DECISION,
+          executionId: 'execution-1',
+          enabled: false,
+          requiresConfirmation: true,
+          disabledReason: OrchestrationGovernanceActionDisabledReason.HITL_DECISION_UNAVAILABLE,
+          hitlDecisionOptions: [],
+        },
+      ],
+      handoffTargets: [],
+    });
+    const serviceRuntime = {
+      resolveHitlInboxEntry,
+      submitHitlDecision: vi.fn(),
+    };
+    const controller = new VsCodeExtensionCommandController(
+      serviceRuntime as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    await controller.submitHitlDecision({
+      executionId: 'execution-1',
+    });
+
+    expect(resolveHitlInboxEntry).toHaveBeenCalledWith('execution-1');
+    expect(serviceRuntime.submitHitlDecision).not.toHaveBeenCalled();
+    expect(vscodeMock.showQuickPick).not.toHaveBeenCalled();
+    expect(vscodeMock.showWarningMessage).not.toHaveBeenCalled();
+    expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith(
+      'No allowed HITL decision is available right now.',
+    );
+  });
+
+  it('forwards the VS Code locale when submitting one direct HITL decision', async () => {
+    vscodeMock.state.trusted = true;
+    vscodeMock.state.language = 'zh-CN';
+    vscodeMock.showWarningMessage.mockResolvedValueOnce('Submit Decision');
+
+    const selectionStore = new VsCodeExtensionSelectionStore();
+    selectionStore.rememberExecution('execution-stale', 'session-stale');
+    selectionStore.rememberReviewSourcePath('/repo/review-stale.md');
+
+    const hitlInboxProvider = {
+      refresh: vi.fn(),
+    };
+    const reviewDetailProvider = {
+      refresh: vi.fn().mockResolvedValue(undefined),
+    };
+    const submitHitlDecision = vi.fn().mockResolvedValue({
+      accepted: true,
+      nextStatus: 'running',
+      latestEventSequence: 4,
+      nextCursor: 'cursor-4',
+      executionSummary: {
+        executionId: 'execution-1',
+        executionSessionId: 'session-2',
+      },
+    });
+    const serviceRuntime = {
+      resolveHitlInboxEntry: vi.fn().mockResolvedValue({
+        execution: {
+          executionId: 'execution-1',
+          executionSessionId: 'session-1',
+        },
+        actions: [
+          {
+            actionId: 'execution-1:submit-hitl',
+            actionKind: OrchestrationGovernanceActionKind.SUBMIT_HITL_DECISION,
+            executionId: 'execution-1',
+            enabled: true,
+            requiresConfirmation: true,
+            hitlDecisionOptions: [
+              {
+                optionId: 'approve-resume',
+                decision: 'approve',
+                resumeAction: 'resume',
+              },
+            ],
+          },
+        ],
+        handoffTargets: [],
+      }),
+      submitHitlDecision,
+    };
+    const controller = new VsCodeExtensionCommandController(
+      serviceRuntime as never,
+      selectionStore,
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: hitlInboxProvider as never,
+        reviewDetailProvider: reviewDetailProvider as never,
+      },
+    );
+
+    await controller.submitHitlDecision({
+      executionId: 'execution-1',
+      hitlDecisionOption: {
+        optionId: 'approve-resume',
+        decision: 'approve',
+        resumeAction: 'resume',
+      },
+    });
+
+    expect(submitHitlDecision).toHaveBeenCalledWith({
+      executionId: 'execution-1',
+      executionSessionId: 'session-1',
+      decision: 'approve',
+      resumeAction: 'resume',
+      actor: 'vscode_extension_user',
+      locale: 'zh-CN',
+      reason: 'Submitted from the VS Code Governor companion.',
+    });
+    expect(hitlInboxProvider.refresh).toHaveBeenCalledTimes(1);
+    expect(reviewDetailProvider.refresh).toHaveBeenCalledTimes(1);
+    expect(selectionStore.getSnapshot()).toEqual({
+      executionId: 'execution-1',
+      executionSessionId: 'session-2',
+      reviewSourcePath: undefined,
+      queueEntry: undefined,
+      temporaryBridge: undefined,
+    });
+    expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith('HITL decision submitted.');
   });
 
   it('keeps terminal handoff inside compatibility-only messaging instead of opening a VS Code terminal', async () => {

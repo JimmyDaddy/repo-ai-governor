@@ -2,25 +2,25 @@
 
 ## Primary Stream
 
-- Status: idle
-- Stream: `none`
-- Project: `none`
-- Sprint: `none`
-- Docs: `none`
-- Plan: `none`
-- Tasks: `none`
-- Checklist: `none`
-- CSV: `none`
-- Review: `none`
-- Note: `2026-04-21` project-120 PR remediation 已完成；PR #23 当前 unresolved threads=`0 / 7`，`quality-gate-full` 已在 2026-04-21 通过。GitHub 仍显示 `reviewDecision=REVIEW_REQUIRED` / `mergeState=BLOCKED`，因此后续合并仍需人工 review/approval。
+- Status: active
+- Stream: `stream-project-121-sprint-002`
+- Project: `project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout`
+- Sprint: `sprint-002-workflow-authoring-draft-session-baseline`
+- Docs: `.repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout`
+- Plan: `.repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-002-workflow-authoring-draft-session-baseline/plan.md`
+- Tasks: `.repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-002-workflow-authoring-draft-session-baseline/tasks/`
+- Checklist: `.repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-002-workflow-authoring-draft-session-baseline/tasks/checklist.md`
+- CSV: `.repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-002-workflow-authoring-draft-session-baseline/tasks/tasks.csv`
+- Review: `.repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-002-workflow-authoring-draft-session-baseline/review/`
+- Note: `2026-04-22` `TK-1038 / DA-1038` 已完成 sprint-001 closeout write-back，当前切换到 `project-121 / sprint-002` 作为新的 primary execution surface；在 `TK-1046` 开工前 sprint-002 plan 继续保持 `planned`。
 
 ## Active Streams
 
-- None currently.
+- `stream-project-121-sprint-002`: primary=`true`, project=`project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout`, sprint=`sprint-002-workflow-authoring-draft-session-baseline`, docs=`.repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout`, plan=`.repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-002-workflow-authoring-draft-session-baseline/plan.md`, tasks=`.repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-002-workflow-authoring-draft-session-baseline/tasks/`, checklist=`.repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-002-workflow-authoring-draft-session-baseline/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-002-workflow-authoring-draft-session-baseline/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-002-workflow-authoring-draft-session-baseline/review/`, status=`active`, note=`activated by TK-1038 / DA-1038 after sprint-001 clean closeout; sprint-002 plan remains planned until TK-1046 starts`
 
 ## Planned Follow-Up Streams
 
-- None currently.
+- `stream-project-121-sprint-003`: project=`project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout`, sprint=`sprint-003-richer-graph-editing-and-support-truth-readiness`, docs=`.repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout`, plan=`.repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-003-richer-graph-editing-and-support-truth-readiness/plan.md`, tasks=`.repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-003-richer-graph-editing-and-support-truth-readiness/tasks/`, checklist=`.repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-003-richer-graph-editing-and-support-truth-readiness/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-003-richer-graph-editing-and-support-truth-readiness/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-003-richer-graph-editing-and-support-truth-readiness/review/`, status=`planned`, note=`phase-c richer graph editing and fail-closed readiness boundary`
 
 ## Completed Stream History
 

@@ -19,6 +19,8 @@ import type {
   OrchestrationExecutionSummary,
   OrchestrationForkSessionRequest,
   OrchestrationForkSessionResponse,
+  OrchestrationHitlDecisionPacket,
+  OrchestrationHitlDecisionPacketQueryRequest,
   OrchestrationHitlInboxQueryRequest,
   OrchestrationHitlInboxQueryResponse,
   OrchestrationListExecutionsRequest,
@@ -33,11 +35,15 @@ import type {
   OrchestrationRecoverExecutionResponse,
   OrchestrationResumeSessionRequest,
   OrchestrationResumeSessionResponse,
+  OrchestrationRoleLaneStatusQueryRequest,
+  OrchestrationRoleLaneStatusQueryResponse,
   OrchestrationSecureAuthoringQueryRequest,
   OrchestrationSecureAuthoringSnapshot,
   OrchestrationSendSessionTurnRequest,
   OrchestrationSendSessionTurnResponse,
   OrchestrationServiceHealthResponse,
+  OrchestrationSessionContinuityQueryRequest,
+  OrchestrationSessionContinuitySnapshot,
   OrchestrationSessionSummary,
   OrchestrationSetManagedSecretRequest,
   OrchestrationSetManagedSecretResponse,
@@ -204,6 +210,48 @@ export class LocalOrchestrationServiceSidecarClient {
   ): Promise<OrchestrationHitlInboxQueryResponse> {
     return this.sendRequest<OrchestrationHitlInboxQueryResponse>(
       LocalOrchestrationServiceSidecarOperation.QUERY_HITL_INBOX,
+      request,
+    );
+  }
+
+  /**
+   * Queries service-owned role-lane status projections from the sidecar.
+   * @param request Optional execution selector, filter, and limit for lane status scope.
+   * @returns Role-lane status payload for the requested execution boundary.
+   */
+  public async queryRoleLaneStatus(
+    request?: OrchestrationRoleLaneStatusQueryRequest,
+  ): Promise<OrchestrationRoleLaneStatusQueryResponse> {
+    return this.sendRequest<OrchestrationRoleLaneStatusQueryResponse>(
+      LocalOrchestrationServiceSidecarOperation.QUERY_ROLE_LANE_STATUS,
+      request,
+    );
+  }
+
+  /**
+   * Queries one service-owned session continuity projection from the sidecar.
+   * @param request Optional execution/session selector and locale metadata.
+   * @returns Session continuity snapshot when the selected session is available.
+   */
+  public async querySessionContinuity(
+    request?: OrchestrationSessionContinuityQueryRequest,
+  ): Promise<OrchestrationSessionContinuitySnapshot | undefined> {
+    return this.sendRequest<OrchestrationSessionContinuitySnapshot | undefined>(
+      LocalOrchestrationServiceSidecarOperation.QUERY_SESSION_CONTINUITY,
+      request,
+    );
+  }
+
+  /**
+   * Queries one service-owned HITL decision packet from the sidecar.
+   * @param request Optional execution/session selector and locale metadata.
+   * @returns HITL decision packet when the selected execution exposes pending decision state.
+   */
+  public async queryHitlDecisionPacket(
+    request?: OrchestrationHitlDecisionPacketQueryRequest,
+  ): Promise<OrchestrationHitlDecisionPacket | undefined> {
+    return this.sendRequest<OrchestrationHitlDecisionPacket | undefined>(
+      LocalOrchestrationServiceSidecarOperation.QUERY_HITL_DECISION_PACKET,
       request,
     );
   }

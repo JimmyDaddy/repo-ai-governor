@@ -14,6 +14,8 @@ import {
   type OrchestrationListExecutionsResponse,
   type OrchestrationQueueOverviewQueryRequest,
   type OrchestrationQueueOverviewQueryResponse,
+  type OrchestrationServiceEvent,
+  OrchestrationServiceEventType,
   type OrchestrationWorkspaceOperationSnapshot,
 } from '@repo-ai-governor/orchestration-service-client';
 import {
@@ -25,10 +27,12 @@ import {
 } from './constants/index.js';
 import { LocalOrchestrationServiceGovernanceAffordanceBuilder } from './local-orchestration-service-governance-affordance-builder.js';
 import { LocalOrchestrationServiceGovernanceTemporaryBridgeCatalog } from './local-orchestration-service-governance-temporary-bridge-catalog.js';
+import { LocalOrchestrationServiceHitlDecisionStateFactory } from './local-orchestration-service-hitl-decision-state-factory.js';
 import {
   type LocalOrchestrationServiceReviewDocumentDescriptor,
   LocalOrchestrationServiceReviewRoutingRuntime,
 } from './local-orchestration-service-review-routing-runtime.js';
+import type { LocalOrchestrationServiceHitlDecisionState } from './types/index.js';
 
 interface LocalOrchestrationServiceQueueOverviewQueryRuntimeDependencies {
   workspaceRoot: string;
@@ -36,6 +40,10 @@ interface LocalOrchestrationServiceQueueOverviewQueryRuntimeDependencies {
   listExecutions: (
     request?: OrchestrationListExecutionsRequest,
   ) => Promise<OrchestrationListExecutionsResponse>;
+  readExecutionEvents?: (executionId: string) => Promise<OrchestrationServiceEvent[]>;
+  readHitlDecisionState?: (
+    executionId: string,
+  ) => Promise<LocalOrchestrationServiceHitlDecisionState | undefined>;
   getLatestWorkspaceOperationSnapshot?: () => OrchestrationWorkspaceOperationSnapshot | undefined;
   nowProvider?: () => Date;
 }
@@ -88,6 +96,7 @@ const OPEN_REVIEW_LIFECYCLE_STATUSES = new Set(['review_pending', 'verified']);
  */
 export class LocalOrchestrationServiceQueueOverviewQueryRuntime {
   private readonly affordanceBuilder: LocalOrchestrationServiceGovernanceAffordanceBuilder;
+  private readonly hitlDecisionStateFactory: LocalOrchestrationServiceHitlDecisionStateFactory;
   private readonly temporaryBridgeCatalog: LocalOrchestrationServiceGovernanceTemporaryBridgeCatalog;
   private readonly reviewRoutingRuntime: LocalOrchestrationServiceReviewRoutingRuntime;
   private readonly nowProvider: () => Date;
@@ -98,6 +107,7 @@ export class LocalOrchestrationServiceQueueOverviewQueryRuntime {
     this.affordanceBuilder = new LocalOrchestrationServiceGovernanceAffordanceBuilder({
       workspaceRoot: dependencies.workspaceRoot,
     });
+    this.hitlDecisionStateFactory = new LocalOrchestrationServiceHitlDecisionStateFactory();
     this.temporaryBridgeCatalog = new LocalOrchestrationServiceGovernanceTemporaryBridgeCatalog({
       workspaceRoot: dependencies.workspaceRoot,
       ...(dependencies.repositoryRoot
@@ -153,7 +163,7 @@ export class LocalOrchestrationServiceQueueOverviewQueryRuntime {
     const automationInbox = await Promise.all(
       automationCandidates
         .slice(0, automationLimit)
-        .map((execution) => this.buildAutomationQueueEntry(execution)),
+        .map((execution) => this.buildAutomationQueueEntry(execution, matchedExecutions)),
     );
 
     const reviewQueue = await Promise.all(
@@ -238,8 +248,7 @@ export class LocalOrchestrationServiceQueueOverviewQueryRuntime {
     const resolvedEntries = await Promise.all(
       executions.map(async (execution) => ({
         execution,
-        reviewDocumentPath:
-          await this.reviewRoutingRuntime.resolveExecutionReviewDocumentPath(execution),
+        reviewDocumentPath: await this.resolveExecutionReviewDocumentPath(execution, executions),
       })),
     );
 
@@ -353,8 +362,16 @@ export class LocalOrchestrationServiceQueueOverviewQueryRuntime {
 
   private async buildAutomationQueueEntry(
     execution: OrchestrationExecutionSummary,
+    siblingExecutions: readonly OrchestrationExecutionSummary[],
   ): Promise<OrchestrationGovernanceQueueEntry> {
-    const handoffTargets = await this.affordanceBuilder.buildHandoffTargets(execution);
+    const reviewDocumentPath = await this.resolveExecutionReviewDocumentPath(
+      execution,
+      siblingExecutions,
+    );
+    const handoffTargets = await this.affordanceBuilder.buildHandoffTargets(execution, {
+      reviewDocumentPath,
+    });
+    const hitlDecisionState = await this.resolveHitlDecisionState(execution);
     const followUpTiming = this.resolveFollowUpTiming({
       pendingSince:
         execution.lastTransportActivityAt ??
@@ -409,7 +426,11 @@ export class LocalOrchestrationServiceQueueOverviewQueryRuntime {
             updatedAt: followUpTiming.updatedAt,
           }
         : {}),
-      actions: this.affordanceBuilder.buildActionAffordances(execution, handoffTargets),
+      actions: this.affordanceBuilder.buildActionAffordances(
+        execution,
+        handoffTargets,
+        hitlDecisionState?.allowedDecisions,
+      ),
       handoffTargets,
     };
   }
@@ -442,9 +463,17 @@ export class LocalOrchestrationServiceQueueOverviewQueryRuntime {
     review: LocalOrchestrationServiceReviewDocumentDescriptor,
     matchedExecution?: OrchestrationExecutionSummary,
   ): Promise<OrchestrationGovernanceQueueEntry> {
+    const reviewDocumentPath = matchedExecution
+      ? await this.resolveExecutionReviewDocumentPath(matchedExecution)
+      : undefined;
     const handoffTargets = matchedExecution
-      ? await this.affordanceBuilder.buildHandoffTargets(matchedExecution)
+      ? await this.affordanceBuilder.buildHandoffTargets(matchedExecution, {
+          reviewDocumentPath,
+        })
       : [];
+    const hitlDecisionState = matchedExecution
+      ? await this.resolveHitlDecisionState(matchedExecution)
+      : undefined;
     const followUpTiming = this.resolveFollowUpTiming({
       pendingSince: review.updatedAt,
       updatedAt: review.updatedAt,
@@ -498,10 +527,95 @@ export class LocalOrchestrationServiceQueueOverviewQueryRuntime {
       pendingSince: review.updatedAt,
       updatedAt: review.updatedAt,
       actions: matchedExecution
-        ? this.affordanceBuilder.buildActionAffordances(matchedExecution, handoffTargets)
+        ? this.affordanceBuilder.buildActionAffordances(
+            matchedExecution,
+            handoffTargets,
+            hitlDecisionState?.allowedDecisions,
+          )
         : [],
       handoffTargets,
     };
+  }
+
+  private async listExecutionOwnershipPeers(
+    execution: OrchestrationExecutionSummary,
+  ): Promise<OrchestrationExecutionSummary[]> {
+    return this.listMatchedExecutions({
+      ...(execution.projectId
+        ? {
+            projectId: execution.projectId,
+          }
+        : {}),
+      ...(execution.sprintId
+        ? {
+            sprintId: execution.sprintId,
+          }
+        : {}),
+    });
+  }
+
+  private async resolveExecutionReviewDocumentPath(
+    execution: OrchestrationExecutionSummary,
+    siblingExecutions?: readonly OrchestrationExecutionSummary[],
+  ): Promise<string | undefined> {
+    const resolvedSiblingExecutions =
+      siblingExecutions && this.includesCompetingOwnershipPeer(execution, siblingExecutions)
+        ? siblingExecutions
+        : await this.listExecutionOwnershipPeers(execution);
+
+    return this.reviewRoutingRuntime.resolveExecutionReviewDocumentPath(execution, {
+      siblingExecutions: resolvedSiblingExecutions,
+    });
+  }
+
+  private includesCompetingOwnershipPeer(
+    execution: OrchestrationExecutionSummary,
+    siblingExecutions: readonly OrchestrationExecutionSummary[],
+  ): boolean {
+    return siblingExecutions.some(
+      (candidate) =>
+        candidate.executionId !== execution.executionId &&
+        candidate.sprintId === execution.sprintId &&
+        (!execution.projectId || candidate.projectId === execution.projectId),
+    );
+  }
+
+  private async resolveHitlDecisionState(
+    execution: OrchestrationExecutionSummary,
+  ): Promise<LocalOrchestrationServiceHitlDecisionState | undefined> {
+    const persistedHitlDecisionState = await this.dependencies.readHitlDecisionState?.(
+      execution.executionId,
+    );
+    if (persistedHitlDecisionState) {
+      return persistedHitlDecisionState;
+    }
+    if (!execution.pendingHitl && execution.status !== OrchestrationExecutionStatus.HITL_REQUIRED) {
+      return undefined;
+    }
+
+    const pendingOriginEvent = await this.readLatestHitlRequiredEvent(execution.executionId);
+    if (!pendingOriginEvent) {
+      return undefined;
+    }
+
+    return this.hitlDecisionStateFactory.buildPendingDecisionState({
+      executionId: execution.executionId,
+      taskId: execution.taskId,
+      recordedAt: pendingOriginEvent.timestamp,
+    });
+  }
+
+  private async readLatestHitlRequiredEvent(
+    executionId: string,
+  ): Promise<OrchestrationServiceEvent | undefined> {
+    if (!this.dependencies.readExecutionEvents) {
+      return undefined;
+    }
+
+    const events = await this.dependencies.readExecutionEvents(executionId);
+    return [...events]
+      .reverse()
+      .find((event) => event.type === OrchestrationServiceEventType.HITL_REQUIRED);
   }
 
   private buildReviewQueueAggregateEntry(
