@@ -1,3 +1,6 @@
+import { existsSync } from 'node:fs';
+import { isAbsolute as isNativeAbsolutePath, win32 as win32Path } from 'node:path';
+
 import * as vscode from 'vscode';
 
 import { ProcessNodeType } from '@repo-ai-governor/core-process';
@@ -7,6 +10,7 @@ import {
   OrchestrationGovernanceActionKind,
   type OrchestrationHandoffTarget,
   OrchestrationHandoffTargetKind,
+  OrchestrationWorkbenchBacklinkKind,
   OrchestrationWorkflowDraftEntryMode,
   OrchestrationWorkflowDraftSupportedPatchOp,
   OrchestrationWorkspaceOperationKind,
@@ -863,6 +867,7 @@ export class VsCodeExtensionCommandController {
       const mergedRequest = this.mergeCommandRequest(commandRequest);
       const handoffTarget =
         mergedRequest.handoffTarget ??
+        this.createFocusedBacklinkHandoffTarget(mergedRequest) ??
         (await this.resolvePreferredHandoffTarget(mergedRequest)) ??
         this.createReviewSourceHandoffTarget(mergedRequest.reviewSourcePath);
       if (!handoffTarget?.targetPath || !handoffTarget.exists) {
@@ -2283,6 +2288,7 @@ export class VsCodeExtensionCommandController {
   ): VsCodeExtensionCommandRequest {
     const selection = this.selectionStore.getSnapshot();
     const clearExecutionSelection = commandRequest?.clearExecutionSelection === true;
+    const clearWorkflowFocus = commandRequest?.clearWorkflowFocus === true;
     const requestContainsTemporaryBridge = Boolean(
       commandRequest && 'temporaryBridge' in commandRequest,
     );
@@ -2309,9 +2315,32 @@ export class VsCodeExtensionCommandController {
         commandRequest && 'workflowDraftRevision' in commandRequest
           ? commandRequest.workflowDraftRevision
           : selection.workflowDraftRevision,
+      workflowFocusStageId:
+        clearExecutionSelection || clearWorkflowFocus
+          ? undefined
+          : commandRequest && 'workflowFocusStageId' in commandRequest
+            ? commandRequest.workflowFocusStageId
+            : selection.workflowFocusStageId,
+      workflowFocusBacklinkTarget:
+        clearExecutionSelection || clearWorkflowFocus
+          ? undefined
+          : commandRequest && 'workflowFocusBacklinkTarget' in commandRequest
+            ? commandRequest.workflowFocusBacklinkTarget
+            : selection.workflowFocusBacklinkTarget,
+      workflowFocusBacklinkKind:
+        clearExecutionSelection || clearWorkflowFocus
+          ? undefined
+          : commandRequest && 'workflowFocusBacklinkKind' in commandRequest
+            ? commandRequest.workflowFocusBacklinkKind
+            : selection.workflowFocusBacklinkKind,
       ...(clearExecutionSelection
         ? {
             clearExecutionSelection: true,
+          }
+        : {}),
+      ...(clearWorkflowFocus
+        ? {
+            clearWorkflowFocus: true,
           }
         : {}),
       queueEntry: clearExecutionSelection
@@ -2750,6 +2779,38 @@ export class VsCodeExtensionCommandController {
       targetPath: reviewSourcePath,
       exists: true,
     };
+  }
+
+  private createFocusedBacklinkHandoffTarget(
+    commandRequest: VsCodeExtensionCommandRequest,
+  ): OrchestrationHandoffTarget | undefined {
+    if (
+      !commandRequest.workflowFocusBacklinkTarget ||
+      !commandRequest.workflowFocusBacklinkKind ||
+      !this.isAbsoluteHandoffPath(commandRequest.workflowFocusBacklinkTarget)
+    ) {
+      return undefined;
+    }
+
+    const targetPath = commandRequest.workflowFocusBacklinkTarget;
+    return {
+      targetId: `workflow-studio:${commandRequest.workflowFocusBacklinkKind}:${targetPath}`,
+      executionId:
+        commandRequest.executionId ?? `workflow-studio:${commandRequest.workflowFocusBacklinkKind}`,
+      targetKind:
+        commandRequest.workflowFocusBacklinkKind === OrchestrationWorkbenchBacklinkKind.REVIEW
+          ? OrchestrationHandoffTargetKind.REVIEW_DOCUMENT
+          : commandRequest.workflowFocusBacklinkKind ===
+              OrchestrationWorkbenchBacklinkKind.WORKSPACE
+            ? OrchestrationHandoffTargetKind.WORKTREE
+            : OrchestrationHandoffTargetKind.EDITOR,
+      targetPath,
+      exists: existsSync(targetPath),
+    };
+  }
+
+  private isAbsoluteHandoffPath(targetPath: string): boolean {
+    return isNativeAbsolutePath(targetPath) || win32Path.isAbsolute(targetPath);
   }
 
   /**

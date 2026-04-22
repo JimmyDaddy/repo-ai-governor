@@ -27,6 +27,7 @@ import {
   OrchestrationSessionEventType,
   OrchestrationSessionRouteId,
   OrchestrationSessionStatus,
+  OrchestrationWorkbenchBacklinkKind,
   OrchestrationWorkspaceOperationKind,
 } from '@repo-ai-governor/orchestration-service-client';
 import { GovernorErrorCode, MemoryStoreEngine, RuntimeError } from '@repo-ai-governor/shared';
@@ -1279,6 +1280,9 @@ describe('VsCodeExtensionServiceRuntime', () => {
       runtime.resolveWorkflowStudioSnapshot({
         executionId: 'execution-1',
         reviewSourcePath: '/repo/.repo-ai-governor/review/resolved.md',
+        workflowFocusStageId: 'review_verify',
+        workflowFocusBacklinkTarget: '/repo/.repo-ai-governor/review/resolved.md',
+        workflowFocusBacklinkKind: OrchestrationWorkbenchBacklinkKind.REVIEW,
       }),
     ).resolves.toMatchObject({
       workspaceContext: {
@@ -1301,6 +1305,9 @@ describe('VsCodeExtensionServiceRuntime', () => {
         draftRevision: 'draft-revision-001',
         entryMode: 'edit_seed',
       },
+      workflowFocusStageId: 'review_verify',
+      workflowFocusBacklinkTarget: '/repo/.repo-ai-governor/review/resolved.md',
+      workflowFocusBacklinkKind: OrchestrationWorkbenchBacklinkKind.REVIEW,
       roleLaneStatus: {
         returnedCount: 1,
       },

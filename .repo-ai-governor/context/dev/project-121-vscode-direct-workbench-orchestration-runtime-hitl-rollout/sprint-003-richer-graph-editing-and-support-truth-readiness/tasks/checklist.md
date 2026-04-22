@@ -1,11 +1,28 @@
 # checklist
 
-- [ ] TK-1041 verify direct-workbench evidence boundary and support-truth readiness
+- [x] TK-1041 verify direct-workbench evidence boundary and support-truth readiness
   - 2026-04-22：任务创建，状态初始化为 `planned`。
+  - 2026-04-23：已复核 `TK-1049 / TK-1050` 的 graph projection、runtime lanes evidence 与 packaged distribution smoke，并确认它们继续遵守 `local_orchestration_service` truth-owner boundary。
+  - 2026-04-23：根据 `DA-1050` 与 active contracts 形成 `stay fail-closed` disposition；当前窗口不提升 public/support wording，待 project-final CR clean 后再执行最终 closeout。
 - [ ] TK-1042 finalize project-121 rollout closeout and delivery evidence handoff
   - 2026-04-22：任务创建，状态初始化为 `planned`。
-- [ ] TK-1049 implement richer graph editing and projection-backed workflow studio
+- [x] TK-1049 implement richer graph editing and projection-backed workflow studio
   - 2026-04-22：任务创建，状态初始化为 `planned`。
   - 2026-04-23：随 `TK-1040` 完成 sprint-002 closeout，当前任务切换为 `in_progress`，开始实现 Workflow Studio richer graph editing、runtime stage navigation 与 backlink reveal 的 direct-workbench code path。
-- [ ] TK-1050 land direct-workbench evidence suite and support-truth readiness package
+  - 2026-04-23：已完成 Workflow Studio graph projection、stage navigation、backlink reveal / focus、focused backlink handoff 与 packaged smoke coverage，验证命令通过 `pnpm run typecheck`、`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm run check:ide-entry-smoke`、`pnpm run check:desktop-entry-smoke`、`pnpm run release:verify-vscode-extension-distribution` 与 `pnpm run release:verify-host-distribution`。
+- [x] TK-1050 land direct-workbench evidence suite and support-truth readiness package
   - 2026-04-22：任务创建，状态初始化为 `planned`。
+  - 2026-04-23：已把 packaged Workflow Studio smoke 接入 `release:verify-vscode-extension-distribution`，并用 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm run check:ide-entry-smoke`、`pnpm run check:desktop-entry-smoke`、`pnpm run release:verify-vscode-extension-distribution` 与 `pnpm run release:verify-host-distribution` 固定 sprint-003 evidence package。
+  - 2026-04-23：已产出 `DA-1050`，把 richer graph projection、distribution smoke 与 fail-closed boundary 统一写入 readiness package，供 `TK-1041` 继续做 disposition。
+- [x] CR-001 sprint-003-richer-graph-editing-and-support-truth-readiness delegated review loop round 1
+  - 2026-04-23：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-23：delegated reviewer round 1 返回 2 条 findings，主 agent 复核后全部判定为 `accepted`，当前 round 进入 `verified`。
+  - 2026-04-23：已修复 workspace backlink handoff kind 与 packaged workspace smoke coverage，并用 `pnpm run build`、targeted vitest、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1` 与 `pnpm run release:verify-vscode-extension-distribution` 验证通过；当前 round 收口为 `resolved`。
+- [x] CR-002 sprint-003-richer-graph-editing-and-support-truth-readiness delegated recheck loop round 2
+  - 2026-04-23：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-23：delegated reviewer round 2 返回 2 条 findings，主 agent 复核后分别确认为 focused backlink happy-path 假设与 packaged Workflow Studio smoke 缺少 `CS-008` 标记，当前 round 进入 `verified`。
+  - 2026-04-23：已将 focused backlink handoff 解析收敛到 controller、补齐 Windows-style absolute path 与 missing-path fail-closed 覆盖，并为 packaged smoke dynamic imports 补充 `dynamic-import-allowed` 标记；相关 `build`、targeted vitest、release smoke 与 `test:packages` 已全部通过，当前 round 收口为 `resolved`。
+- [x] CR-003 sprint-003-richer-graph-editing-and-support-truth-readiness delegated recheck loop round 3
+  - 2026-04-23：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-23：fresh reviewer round 3 完成 clean recheck，未发现新的 actionable findings；保留 2 条风险提示作为 residual note，不阻断当前 sprint boundary 收口。
+  - 2026-04-23：已将 clean 结论写回 `resolved_code_review_working-tree-20260423-0246.md`，当前 round 收口为 `resolved`，下一步转入 sprint-003 local commit 与 project-final CR loop。

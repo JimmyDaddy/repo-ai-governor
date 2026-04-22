@@ -13,6 +13,7 @@ import type {
   OrchestrationServiceLifecycleStatus,
   OrchestrationServiceTransportKind,
   OrchestrationSessionContinuitySnapshot,
+  OrchestrationWorkbenchBacklinkKind,
   OrchestrationWorkflowDraftEntryMode,
   OrchestrationWorkflowDraftSession,
   OrchestrationWorkflowDraftSupportedPatchOp,
@@ -214,6 +215,9 @@ export interface VsCodeExtensionSelectionSnapshot {
   reviewSourcePath?: string;
   workflowDraftId?: string;
   workflowDraftRevision?: string;
+  workflowFocusStageId?: string;
+  workflowFocusBacklinkTarget?: string;
+  workflowFocusBacklinkKind?: OrchestrationWorkbenchBacklinkKind;
   queueEntry?: OrchestrationGovernanceQueueEntry;
   temporaryBridge?: OrchestrationGovernanceTemporaryBridgeEntry;
   workspaceOperationKind?: OrchestrationWorkspaceOperationKind;
@@ -229,9 +233,13 @@ export interface VsCodeExtensionCommandRequest {
   reviewSourcePath?: string;
   workflowDraftId?: string;
   workflowDraftRevision?: string;
+  workflowFocusStageId?: string;
+  workflowFocusBacklinkTarget?: string;
+  workflowFocusBacklinkKind?: OrchestrationWorkbenchBacklinkKind;
   workflowDraftEntryMode?: OrchestrationWorkflowDraftEntryMode;
   workflowDraftPatchOp?: OrchestrationWorkflowDraftSupportedPatchOp;
   clearExecutionSelection?: boolean;
+  clearWorkflowFocus?: boolean;
   queueEntry?: OrchestrationGovernanceQueueEntry;
   handoffTarget?: OrchestrationHandoffTarget;
   temporaryBridge?: OrchestrationGovernanceTemporaryBridgeEntry;
@@ -270,6 +278,9 @@ export interface VsCodeExtensionWorkflowStudioSnapshot {
   providerLifecycleSnapshots?: readonly VsCodeExtensionProviderLifecycleSnapshot[];
   selectedExecution?: OrchestrationExecutionBoardEntry;
   workflowDraftSession?: VsCodeExtensionWorkflowDraftSessionSnapshot;
+  workflowFocusStageId?: string;
+  workflowFocusBacklinkTarget?: string;
+  workflowFocusBacklinkKind?: OrchestrationWorkbenchBacklinkKind;
   roleLaneStatus?: VsCodeExtensionRoleLaneStatusSnapshot;
   artifactPane?: OrchestrationArtifactPaneQueryResponse;
   sessionContinuity?: VsCodeExtensionSessionContinuitySnapshot;

@@ -1,6 +1,6 @@
 # TK-1041 verify direct-workbench evidence boundary and support-truth readiness
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-22
 - Owner: AI-Agent
 - Priority: P1
@@ -28,6 +28,7 @@
 2. `.repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-003-richer-graph-editing-and-support-truth-readiness/tasks/TK-1050-land-direct-workbench-evidence-suite-and-support-truth-readiness-package.md`
 3. `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/vscode-governance-workbench-surface-contract.md`
 4. `.repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/contracts/governance-workbench-aggregation-facade-contract.md`
+5. `.repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-003-richer-graph-editing-and-support-truth-readiness/tasks/DA-1050-direct-workbench-evidence-and-readiness-package.md`
 
 ## 5. Traceback References
 
@@ -54,7 +55,9 @@
 ## 9. 执行记录
 
 1. 2026-04-22：任务创建，状态初始化为 `planned`。
+2. 2026-04-23：已复核 `TK-1049 / TK-1050` 的 graph projection、runtime lanes evidence 与 packaged distribution smoke，并确认它们继续遵守 `local_orchestration_service` truth-owner boundary。
+3. 2026-04-23：根据 `DA-1050` 与 active contracts 形成 `stay fail-closed` disposition；当前窗口不提升 public/support wording，待 project-final CR clean 后再执行最终 closeout。
 
 ## 10. 产出
 
-1. 待执行：direct-workbench evidence boundary and support-truth readiness summary
+1. 已完成：`.repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-003-richer-graph-editing-and-support-truth-readiness/tasks/DA-1041-direct-workbench-support-truth-readiness-disposition.md`

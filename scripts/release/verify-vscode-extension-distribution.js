@@ -282,6 +282,286 @@ async function runPackagedSidecarSmoke(packageRoot) {
   }
 }
 
+function readCommandRequestsFromHtml(html, commandId) {
+  const escapedCommandId = commandId.replaceAll('.', '\\.');
+  const matches = [...html.matchAll(new RegExp(`command:${escapedCommandId}\\?([^"]+)`, 'g'))];
+  return matches.map((match) => {
+    const encodedRequest = match[1];
+    if (!encodedRequest) {
+      return {};
+    }
+    const [request] = JSON.parse(decodeURIComponent(String(encodedRequest)));
+    return request ?? {};
+  });
+}
+
+/**
+ * Executes one packaged Workflow Studio projection smoke against the built extension payload.
+ * @param {string} packageRoot Absolute packaged extension root.
+ * @returns {Promise<{
+ *   graphHeadingPresent: boolean;
+ *   stageNavigationPresent: boolean;
+ *   backlinkRevealPresent: boolean;
+ *   focusedBacklinkActionPresent: boolean;
+ *   focusRequests: Record<string, unknown>[];
+ *   handoffRequests: Record<string, unknown>[];
+ * }>}
+ */
+async function runPackagedWorkflowStudioSmoke(packageRoot) {
+  const builderModulePath = resolve(
+    packageRoot,
+    'dist/src/runtime/vscode-extension-presentation-builder.js',
+  );
+  // dynamic-import-allowed: packaged release smoke must load the built Workflow Studio presenter
+  // from the extracted VSIX so the verification covers distribution output instead of source files.
+  const builderModule = await import(
+    `${pathToFileURL(builderModulePath).href}?workflow-studio-smoke=${Date.now()}`
+  );
+  const builder = new builderModule.VsCodeExtensionPresentationBuilder({
+    localizeText(englishText) {
+      return englishText;
+    },
+  });
+  const html = builder.buildWorkflowStudioHtml({
+    workspaceContext: {
+      workspaceLabel: 'packaged-root',
+      workspaceRoot: '/repo',
+      workspaceTrusted: true,
+    },
+    queueOverview: {
+      generatedAt: '2026-04-23T00:00:00.000Z',
+      automationInbox: [],
+      reviewQueue: [],
+      parallelLanes: [],
+      workspaceSummary: [],
+      temporaryBridges: [],
+      notificationOwnership: {
+        ownerSurface: 'desktop',
+        pendingItemCount: 0,
+        dueSoonItemCount: 0,
+        overdueItemCount: 0,
+        activeWorkspaceCount: 1,
+        defaultFollowUpSlaMinutes: 60,
+        notificationStatus: 'idle',
+      },
+    },
+    selectedExecution: {
+      execution: {
+        executionId: 'execution-1',
+        executionSessionId: 'session-1',
+        processId: 'process-1',
+        workspaceId: 'workspace-1',
+        workspaceRoot: '/repo',
+        executionKind: 'run',
+        status: 'running',
+        currentStageId: 'review_verify',
+        pendingHitl: true,
+      },
+      actions: [],
+      handoffTargets: [],
+    },
+    workflowDraftSession: {
+      workflowDraftId: 'workflow-draft-001',
+      draftRevision: 'draft-revision-001',
+      baseDefinitionRevision: 'definition-revision-001',
+      templateId: 'parallel-review',
+      entryMode: 'edit_seed',
+      nodeSpecs: [
+        {
+          nodeId: 'entry-node',
+          stageId: 'review_verify',
+          nodeType: 'task',
+          routeKey: 'review',
+          roleProfileId: 'reviewer-default',
+          inputSchemaRef: 'schemas/review-input.json',
+          outputSchemaRef: 'schemas/review-output.json',
+        },
+        {
+          nodeId: 'decision-node',
+          stageId: 'hitl_gate',
+          nodeType: 'condition',
+          routeKey: 'gate',
+          roleProfileId: 'governor-default',
+        },
+      ],
+      edgeSpecs: [
+        {
+          fromNodeId: 'entry-node',
+          toNodeId: 'decision-node',
+          conditionKey: 'needs_hitl',
+        },
+      ],
+      supportedPatchOps: ['upsert_node', 'upsert_edge', 'validate', 'commit'],
+      validationIssues: [],
+      conflictState: {
+        hasConflict: false,
+        conflictKind: 'none',
+        detectedAt: '2026-04-23T00:00:00.000Z',
+      },
+      compiledIrPreview: {
+        processId: 'process-1',
+        entryNodeId: 'entry-node',
+        compiledAt: '2026-04-23T00:00:00.000Z',
+        nodeCount: 2,
+        edgeCount: 1,
+        compileWarningCount: 0,
+        compileErrorCount: 0,
+        compileWarnings: [],
+        compileErrors: [],
+      },
+      backlinkArtifacts: [
+        {
+          artifactId: 'artifact-1',
+          artifactKind: 'review_document',
+          artifactPath: '/repo/.repo-ai-governor/review/resolved.md',
+        },
+      ],
+    },
+    workflowFocusBacklinkTarget: '/repo',
+    workflowFocusBacklinkKind: 'workspace',
+    artifactPane: {
+      artifacts: [],
+      reviews: [],
+      transcript: [],
+      resolvedExecutionId: 'execution-1',
+      resolvedSessionId: 'session-1',
+      reviewSourcePath: '/repo/.repo-ai-governor/review/resolved.md',
+      reviewLifecycle: {
+        totalReviewCount: 1,
+        pendingReviewCount: 0,
+        verifiedReviewCount: 0,
+        resolvedReviewCount: 1,
+        latestReviewId: 'review-1',
+        latestLifecycleStatus: 'resolved',
+        latestReviewFilePath: '/repo/.repo-ai-governor/review/resolved.md',
+        navigationReviewIds: ['review-1'],
+      },
+      workbench: {
+        artifactCount: 1,
+        reviewCount: 1,
+        transcriptCount: 0,
+        latestArtifactId: 'artifact-1',
+        latestArtifactPath: '/repo/.repo-ai-governor/context/review.md',
+        latestReviewId: 'review-1',
+        latestReviewFilePath: '/repo/.repo-ai-governor/review/resolved.md',
+      },
+      evidenceBacklinks: {
+        governanceWorkspacePath: '/repo/.repo-ai-governor',
+        artifactPaths: ['/repo/.repo-ai-governor/context/review.md'],
+        reviewPaths: ['/repo/.repo-ai-governor/review/resolved.md'],
+        transcriptEntryIds: [],
+      },
+      policyTrace: {
+        executionId: 'execution-1',
+        executionStatus: 'running',
+        pendingHitl: true,
+        recoveryCapable: true,
+        currentStageId: 'review_verify',
+        latestEventType: 'stage.progress',
+        latestArtifactId: 'artifact-1',
+        latestArtifactPath: '/repo/.repo-ai-governor/context/review.md',
+        taskId: 'TK-1049',
+        projectId: 'project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout',
+        sprintId: 'sprint-003-richer-graph-editing-and-support-truth-readiness',
+        reviewDocumentPath: '/repo/.repo-ai-governor/review/resolved.md',
+      },
+    },
+    roleLaneStatus: {
+      generatedAt: '2026-04-23T00:00:00.000Z',
+      returnedCount: 1,
+      totalMatchedCount: 1,
+      lanes: [
+        {
+          roleId: 'reviewer-default',
+          executionId: 'execution-1',
+          sessionId: 'session-1',
+          currentStageId: 'review_verify',
+          status: 'waiting_for_hitl',
+          latestEventType: 'hitl.required',
+          updatedAt: '2026-04-23T00:00:00.000Z',
+          pendingHitl: true,
+          artifactBacklinks: [
+            {
+              backlinkId: 'execution-1:artifact:1',
+              backlinkKind: 'artifact',
+              label: '/repo/.repo-ai-governor/context/review.md',
+              target: '/repo/.repo-ai-governor/context/review.md',
+            },
+          ],
+          reviewBacklinks: [
+            {
+              backlinkId: 'execution-1:review:1',
+              backlinkKind: 'review',
+              label: '/repo/.repo-ai-governor/review/resolved.md',
+              target: '/repo/.repo-ai-governor/review/resolved.md',
+            },
+          ],
+        },
+      ],
+    },
+    sessionContinuity: {
+      sessionId: 'session-1',
+      sessionStatus: 'active',
+      currentRouteId: 'workflow_authoring',
+      latestTurnId: 'turn-1',
+      latestEventSequence: 7,
+      nextCursor: 'cursor-session-1',
+      resumeSelector: 'session://execution-1',
+    },
+    hitlDecisionPacket: {
+      executionId: 'execution-1',
+      executionSessionId: 'session-1',
+      taskId: 'TK-1049',
+      reviewId: 'review-1',
+      riskFacts: [
+        {
+          riskId: 'execution-1:risk-hitl-pending',
+          riskCategory: 'hitl-decision-pending',
+          riskLevel: 'L2',
+          evidence: ['execution_id=execution-1'],
+          changeScope: 'TK-1049',
+          confidence: 0.86,
+          triggerRule: 'runtime-hitl-pending',
+        },
+      ],
+      policyAction: 'confirm',
+      defaultTimeoutAction: 'block',
+      allowedDecisions: [
+        {
+          optionId: 'execution-1:approve-resume',
+          decision: 'approve',
+          resumeAction: 'resume',
+        },
+      ],
+      impactSummary: 'Execution execution-1 is waiting for one HITL decision.',
+      backlinks: [
+        {
+          backlinkId: 'execution-1:workspace',
+          backlinkKind: 'workspace',
+          label: '/repo',
+          target: '/repo',
+        },
+        {
+          backlinkId: 'execution-1:review:1',
+          backlinkKind: 'review',
+          label: '/repo/.repo-ai-governor/review/resolved.md',
+          target: '/repo/.repo-ai-governor/review/resolved.md',
+        },
+      ],
+    },
+    reviewSourcePath: '/repo/.repo-ai-governor/review/resolved.md',
+  });
+
+  return {
+    graphHeadingPresent: html.includes('Workflow graph projection'),
+    stageNavigationPresent: html.includes('Stage navigation'),
+    backlinkRevealPresent: html.includes('Backlink reveal'),
+    focusedBacklinkActionPresent: html.includes('Open focused backlink target'),
+    focusRequests: readCommandRequestsFromHtml(html, 'repoAiGovernor.openWorkflowStudio'),
+    handoffRequests: readCommandRequestsFromHtml(html, 'repoAiGovernor.openHandoffTarget'),
+  };
+}
+
 /**
  * Executes one packaged secure-authoring + doctor smoke so CLI-backed runtime seams stay truthful.
  * Any temporary workspace-operation snapshot written during the smoke is restored afterwards.
@@ -295,6 +575,8 @@ async function runPackagedCliBackedSmoke(packageRoot, workingRoot, smokeId) {
     packageRoot,
     'node_modules/@repo-ai-governor/core-orchestration-service/dist/src/local-orchestration-service-workspace-ops-runtime.js',
   );
+  // dynamic-import-allowed: packaged release smoke must load the built workspace-ops runtime from
+  // the extracted VSIX so CLI-backed verification exercises shipped artifacts only.
   const workspaceOpsModule = await import(
     `${pathToFileURL(workspaceOpsModulePath).href}?smoke=${Date.now()}`
   );
@@ -435,6 +717,94 @@ export function assertSupportedCliBackedSmoke(smokeLabel, cliBackedSmoke) {
 }
 
 /**
+ * Enforces the packaged Workflow Studio projection smoke contract.
+ * @param {string} smokeLabel Human-readable packaged path label.
+ * @param {{
+ *   graphHeadingPresent: boolean;
+ *   stageNavigationPresent: boolean;
+ *   backlinkRevealPresent: boolean;
+ *   focusedBacklinkActionPresent: boolean;
+ *   focusRequests: Record<string, unknown>[];
+ *   handoffRequests: Record<string, unknown>[];
+ * }} workflowStudioSmoke Recorded workbench smoke result.
+ * @returns {{
+ *   graphHeadingPresent: boolean;
+ *   stageNavigationPresent: boolean;
+ *   backlinkRevealPresent: boolean;
+ *   focusedBacklinkActionPresent: boolean;
+ *   focusRequests: Record<string, unknown>[];
+ *   handoffRequests: Record<string, unknown>[];
+ * }}
+ */
+export function assertWorkflowStudioProjectionSmoke(smokeLabel, workflowStudioSmoke) {
+  if (!workflowStudioSmoke.graphHeadingPresent) {
+    throw new Error(
+      `${smokeLabel} workflow-studio smoke must render the graph projection section.`,
+    );
+  }
+  if (!workflowStudioSmoke.stageNavigationPresent) {
+    throw new Error(
+      `${smokeLabel} workflow-studio smoke must render the stage navigation section.`,
+    );
+  }
+  if (!workflowStudioSmoke.backlinkRevealPresent) {
+    throw new Error(`${smokeLabel} workflow-studio smoke must render the backlink reveal section.`);
+  }
+  if (!workflowStudioSmoke.focusedBacklinkActionPresent) {
+    throw new Error(
+      `${smokeLabel} workflow-studio smoke must render the focused backlink action surface.`,
+    );
+  }
+  if (
+    !workflowStudioSmoke.focusRequests.some(
+      (request) =>
+        request.clearWorkflowFocus === true && request.workflowFocusStageId === 'review_verify',
+    )
+  ) {
+    throw new Error(
+      `${smokeLabel} workflow-studio smoke must expose one stage-focus command for review_verify.`,
+    );
+  }
+  if (
+    !workflowStudioSmoke.focusRequests.some(
+      (request) =>
+        request.clearWorkflowFocus === true &&
+        request.workflowFocusBacklinkTarget === '/repo/.repo-ai-governor/review/resolved.md' &&
+        request.workflowFocusBacklinkKind === 'review',
+    )
+  ) {
+    throw new Error(
+      `${smokeLabel} workflow-studio smoke must expose one backlink-focus command for the canonical review path.`,
+    );
+  }
+  if (
+    !workflowStudioSmoke.focusRequests.some(
+      (request) =>
+        request.clearWorkflowFocus === true &&
+        request.workflowFocusBacklinkTarget === '/repo' &&
+        request.workflowFocusBacklinkKind === 'workspace',
+    )
+  ) {
+    throw new Error(
+      `${smokeLabel} workflow-studio smoke must expose one backlink-focus command for the canonical workspace path.`,
+    );
+  }
+  if (
+    !workflowStudioSmoke.handoffRequests.some(
+      (request) =>
+        request.workflowFocusBacklinkTarget === '/repo' &&
+        request.workflowFocusBacklinkKind === 'workspace',
+    )
+  ) {
+    throw new Error(
+      `${smokeLabel} workflow-studio smoke must expose one safe worktree handoff action for the focused workspace backlink.`,
+    );
+  }
+
+  return workflowStudioSmoke;
+}
+
+/**
  * Extracts one VSIX into a temp directory and returns the unpacked extension root.
  * @param {string} vsixPath Absolute VSIX path.
  * @param {string} workingRoot Absolute packaging working root.
@@ -539,6 +909,10 @@ async function main() {
       'packaged root',
       await runPackagedSidecarSmoke(packReport.packageRoot),
     );
+    const packageWorkflowStudioSmoke = assertWorkflowStudioProjectionSmoke(
+      'packaged root',
+      await runPackagedWorkflowStudioSmoke(packReport.packageRoot),
+    );
     const packageCliBackedSmoke = assertSupportedCliBackedSmoke(
       'packaged root',
       await runPackagedCliBackedSmoke(
@@ -554,6 +928,10 @@ async function main() {
     const installedSidecarSmoke = assertReadySidecarSmoke(
       'extracted VSIX',
       await runPackagedSidecarSmoke(extractedExtensionRoot),
+    );
+    const installedWorkflowStudioSmoke = assertWorkflowStudioProjectionSmoke(
+      'extracted VSIX',
+      await runPackagedWorkflowStudioSmoke(extractedExtensionRoot),
     );
     const installedCliBackedSmoke = assertSupportedCliBackedSmoke(
       'extracted VSIX',
@@ -572,11 +950,13 @@ async function main() {
       packageSymlinks,
       moduleSmoke,
       packageSidecarSmoke,
+      packageWorkflowStudioSmoke,
       packageCliBackedSmoke,
       extractedExtensionRoot,
       extractedSymlinks,
       installedModuleSmoke,
       installedSidecarSmoke,
+      installedWorkflowStudioSmoke,
       installedCliBackedSmoke,
     };
 

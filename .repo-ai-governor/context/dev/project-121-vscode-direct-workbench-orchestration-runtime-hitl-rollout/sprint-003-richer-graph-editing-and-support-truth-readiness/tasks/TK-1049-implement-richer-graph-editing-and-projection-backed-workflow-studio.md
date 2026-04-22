@@ -1,6 +1,6 @@
 # TK-1049 implement richer graph editing and projection-backed workflow studio
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-04-22
 - Owner: AI-Agent
 - Priority: P1
@@ -56,9 +56,13 @@
 
 1. 2026-04-22：任务创建，状态初始化为 `planned`。
 2. 2026-04-23：随 `TK-1040` 完成 sprint-002 closeout，当前任务切换为 `in_progress`，开始实现 Workflow Studio richer graph editing、runtime stage navigation 与 backlink reveal 的 direct-workbench code path。
+3. 2026-04-23：已完成 Workflow Studio graph projection、stage navigation、backlink reveal / focus、focused backlink handoff 与 packaged smoke coverage，验证命令通过 `pnpm run typecheck`、`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm run check:ide-entry-smoke`、`pnpm run check:desktop-entry-smoke`、`pnpm run release:verify-vscode-extension-distribution` 与 `pnpm run release:verify-host-distribution`。
 
 ## 10. 产出
 
-1. 待执行：`apps/vscode-extension/src/runtime/vscode-extension-workflow-studio-provider.ts`
-2. 待执行：`apps/vscode-extension/src/runtime/vscode-extension-presentation-builder.ts`
-3. 待执行：`apps/vscode-extension/src/types/interfaces/vscode-extension-surface.interface.ts`
+1. 已完成：`apps/vscode-extension/src/runtime/vscode-extension-presentation-builder.ts`
+2. 已完成：`apps/vscode-extension/src/runtime/vscode-extension-selection-store.ts`
+3. 已完成：`apps/vscode-extension/src/runtime/vscode-extension-command-controller.ts`
+4. 已完成：`apps/vscode-extension/src/runtime/vscode-extension-service-runtime.ts`
+5. 已完成：`apps/vscode-extension/src/types/interfaces/vscode-extension-surface.interface.ts`
+6. 已完成：`apps/vscode-extension/test/vscode-extension-presentation-builder.test.ts`

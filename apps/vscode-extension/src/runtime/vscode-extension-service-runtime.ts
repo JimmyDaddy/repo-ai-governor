@@ -869,6 +869,21 @@ export class VsCodeExtensionServiceRuntime {
             workflowDraftSession,
           }
         : {}),
+      ...(selection.workflowFocusStageId
+        ? {
+            workflowFocusStageId: selection.workflowFocusStageId,
+          }
+        : {}),
+      ...(selection.workflowFocusBacklinkTarget
+        ? {
+            workflowFocusBacklinkTarget: selection.workflowFocusBacklinkTarget,
+          }
+        : {}),
+      ...(selection.workflowFocusBacklinkKind
+        ? {
+            workflowFocusBacklinkKind: selection.workflowFocusBacklinkKind,
+          }
+        : {}),
       ...(roleLaneStatus.returnedCount > 0
         ? {
             roleLaneStatus,

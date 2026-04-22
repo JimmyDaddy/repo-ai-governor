@@ -1024,6 +1024,71 @@ describe('VsCodeExtensionPresentationBuilder', () => {
       selectedExecution: createExecutionBoardEntry({
         currentStageId: 'review_verify',
       }),
+      workflowDraftSession: {
+        workflowDraftId: 'workflow-draft-001',
+        draftRevision: 'draft-revision-001',
+        baseDefinitionRevision: 'definition-revision-001',
+        templateId: 'parallel-review',
+        entryMode: OrchestrationWorkflowDraftEntryMode.EDIT_SEED,
+        nodeSpecs: [
+          {
+            nodeId: 'entry-node',
+            stageId: 'review_verify',
+            nodeType: ProcessNodeType.SEQUENTIAL,
+            routeKey: 'review',
+            roleProfileId: 'reviewer-default',
+            inputSchemaRef: 'schemas/review-input.json',
+            outputSchemaRef: 'schemas/review-output.json',
+          },
+          {
+            nodeId: 'decision-node',
+            stageId: 'hitl_gate',
+            nodeType: ProcessNodeType.CONDITION,
+            routeKey: 'gate',
+            roleProfileId: 'governor-default',
+          },
+        ],
+        edgeSpecs: [
+          {
+            fromNodeId: 'entry-node',
+            toNodeId: 'decision-node',
+            conditionKey: 'needs_hitl',
+          },
+        ],
+        supportedPatchOps: [
+          OrchestrationWorkflowDraftSupportedPatchOp.UPSERT_NODE,
+          OrchestrationWorkflowDraftSupportedPatchOp.UPSERT_EDGE,
+          OrchestrationWorkflowDraftSupportedPatchOp.VALIDATE,
+          OrchestrationWorkflowDraftSupportedPatchOp.COMMIT,
+        ],
+        validationIssues: [],
+        conflictState: {
+          hasConflict: false,
+          conflictKind: OrchestrationWorkflowDraftConflictKind.NONE,
+          detectedAt: '2026-04-17T10:14:00.000Z',
+        },
+        compiledIrPreview: {
+          processId: 'process-1',
+          entryNodeId: 'entry-node',
+          compiledAt: '2026-04-17T10:14:00.000Z',
+          nodeCount: 2,
+          edgeCount: 1,
+          compileWarningCount: 0,
+          compileErrorCount: 0,
+          compileWarnings: [],
+          compileErrors: [],
+        },
+        backlinkArtifacts: [
+          {
+            artifactId: 'artifact-1',
+            artifactKind: 'review_document',
+            artifactPath: '/repo/.repo-ai-governor/review/resolved.md',
+          },
+        ],
+      },
+      workflowFocusStageId: 'review_verify',
+      workflowFocusBacklinkTarget: '/repo/.repo-ai-governor/review/resolved.md',
+      workflowFocusBacklinkKind: OrchestrationWorkbenchBacklinkKind.REVIEW,
       secureAuthoring: {
         userConfig: {
           configPath: '/Users/test/.repo-ai-governor/user-config.yaml',
@@ -1168,6 +1233,12 @@ describe('VsCodeExtensionPresentationBuilder', () => {
         impactSummary: 'Execution execution-1 is waiting on one HITL decision for TK-563.',
         backlinks: [
           {
+            backlinkId: 'execution-1:workspace',
+            backlinkKind: OrchestrationWorkbenchBacklinkKind.WORKSPACE,
+            label: '/repo',
+            target: '/repo',
+          },
+          {
             backlinkId: 'execution-1:review:1',
             backlinkKind: OrchestrationWorkbenchBacklinkKind.REVIEW,
             label: '/repo/.repo-ai-governor/review/resolved.md',
@@ -1179,6 +1250,10 @@ describe('VsCodeExtensionPresentationBuilder', () => {
     });
 
     expect(html).toContain('Governor workflow studio');
+    expect(html).toContain('Workflow graph projection');
+    expect(html).toContain('Stage navigation');
+    expect(html).toContain('Backlink reveal');
+    expect(html).toContain('Focused backlink');
     expect(html).toContain('Latest workspace operation');
     expect(html).toContain('Governed run control');
     expect(html).toContain('Continuity and handoff');
@@ -1200,6 +1275,9 @@ describe('VsCodeExtensionPresentationBuilder', () => {
     expect(html).toContain('Selected backend: os-keychain');
     expect(html).toContain('Theme default: calm');
     expect(html).toContain('Resume selector: session://execution-1');
+    expect(html).toContain('Focus stage');
+    expect(html).toContain('Focused stage: review_verify');
+    expect(html).toContain('Open focused backlink target');
     expect(html).toContain('command:repoAiGovernor.openReviewDetail');
     expect(html).toContain('Compatibility bridges stay evidence-only');
     expect(html).toContain('command:repoAiGovernor.recoverExecution');
@@ -1218,6 +1296,290 @@ describe('VsCodeExtensionPresentationBuilder', () => {
     ).toMatchObject({
       workspaceOperationKind: OrchestrationWorkspaceOperationKind.UPGRADE_PREVIEW,
     });
+    expect(
+      readCommandRequestsFromWorkflowStudioHtml(
+        html,
+        VSCODE_EXTENSION_COMMAND_IDS.OPEN_WORKFLOW_STUDIO,
+      ),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          clearWorkflowFocus: true,
+          workflowFocusStageId: 'review_verify',
+        }),
+        expect.objectContaining({
+          clearWorkflowFocus: true,
+          workflowFocusBacklinkTarget: '/repo/.repo-ai-governor/review/resolved.md',
+          workflowFocusBacklinkKind: OrchestrationWorkbenchBacklinkKind.REVIEW,
+        }),
+      ]),
+    );
+    const workflowStudioRequests = readCommandRequestsFromWorkflowStudioHtml(
+      html,
+      VSCODE_EXTENSION_COMMAND_IDS.OPEN_WORKFLOW_STUDIO,
+    );
+    expect(
+      workflowStudioRequests.find(
+        (request) =>
+          request.clearWorkflowFocus === true && request.workflowFocusStageId === 'hitl_gate',
+      ),
+    ).toMatchObject({
+      clearWorkflowFocus: true,
+      workflowFocusStageId: 'hitl_gate',
+    });
+    expect(
+      workflowStudioRequests.find(
+        (request) =>
+          request.clearWorkflowFocus === true && request.workflowFocusStageId === 'hitl_gate',
+      ),
+    ).not.toHaveProperty('workflowFocusBacklinkTarget');
+    expect(
+      workflowStudioRequests.find(
+        (request) =>
+          request.clearWorkflowFocus === true &&
+          request.workflowFocusBacklinkTarget === '/repo/.repo-ai-governor/context/review.md' &&
+          request.workflowFocusBacklinkKind === OrchestrationWorkbenchBacklinkKind.ARTIFACT,
+      ),
+    ).toMatchObject({
+      clearWorkflowFocus: true,
+      workflowFocusBacklinkTarget: '/repo/.repo-ai-governor/context/review.md',
+      workflowFocusBacklinkKind: OrchestrationWorkbenchBacklinkKind.ARTIFACT,
+    });
+    expect(
+      workflowStudioRequests.find(
+        (request) =>
+          request.clearWorkflowFocus === true &&
+          request.workflowFocusBacklinkTarget === '/repo/.repo-ai-governor/context/review.md' &&
+          request.workflowFocusBacklinkKind === OrchestrationWorkbenchBacklinkKind.ARTIFACT,
+      ),
+    ).not.toHaveProperty('workflowFocusStageId');
+    expect(
+      workflowStudioRequests.find(
+        (request) =>
+          request.clearWorkflowFocus === true &&
+          request.workflowFocusBacklinkTarget === '/repo' &&
+          request.workflowFocusBacklinkKind === OrchestrationWorkbenchBacklinkKind.WORKSPACE,
+      ),
+    ).toMatchObject({
+      clearWorkflowFocus: true,
+      workflowFocusBacklinkTarget: '/repo',
+      workflowFocusBacklinkKind: OrchestrationWorkbenchBacklinkKind.WORKSPACE,
+    });
+    expect(
+      readCommandRequestsFromWorkflowStudioHtml(
+        html,
+        VSCODE_EXTENSION_COMMAND_IDS.OPEN_HANDOFF_TARGET,
+      ),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          workflowFocusBacklinkTarget: '/repo/.repo-ai-governor/review/resolved.md',
+          workflowFocusBacklinkKind: OrchestrationWorkbenchBacklinkKind.REVIEW,
+        }),
+      ]),
+    );
+  });
+
+  it('routes focused workspace backlinks through focus-aware handoff commands', () => {
+    const html = builder.buildWorkflowStudioHtml({
+      workspaceContext: {
+        workspaceLabel: 'repo-root',
+        workspaceRoot: '/repo',
+        workspaceTrusted: true,
+      },
+      queueOverview: {
+        generatedAt: '2026-04-17T10:15:00.000Z',
+        automationInbox: [],
+        reviewQueue: [],
+        parallelLanes: [],
+        workspaceSummary: [],
+        temporaryBridges: [],
+        notificationOwnership: {
+          ownerSurface: OrchestrationClientSurface.DESKTOP,
+          pendingItemCount: 0,
+          dueSoonItemCount: 0,
+          overdueItemCount: 0,
+          activeWorkspaceCount: 1,
+          defaultFollowUpSlaMinutes: 60,
+          notificationStatus: OrchestrationGovernanceNotificationStatus.IDLE,
+        },
+      },
+      selectedExecution: createExecutionBoardEntry({
+        currentStageId: 'review_verify',
+      }),
+      workflowDraftSession: {
+        workflowDraftId: 'workflow-draft-001',
+        draftRevision: 'draft-revision-001',
+        baseDefinitionRevision: 'definition-revision-001',
+        templateId: 'parallel-review',
+        entryMode: OrchestrationWorkflowDraftEntryMode.EDIT_SEED,
+        nodeSpecs: [
+          {
+            nodeId: 'entry-node',
+            stageId: 'review_verify',
+            nodeType: ProcessNodeType.SEQUENTIAL,
+            routeKey: 'review',
+            roleProfileId: 'reviewer-default',
+          },
+        ],
+        edgeSpecs: [],
+        supportedPatchOps: [OrchestrationWorkflowDraftSupportedPatchOp.UPSERT_NODE],
+        validationIssues: [],
+        conflictState: {
+          hasConflict: false,
+          conflictKind: OrchestrationWorkflowDraftConflictKind.NONE,
+          detectedAt: '2026-04-17T10:14:00.000Z',
+        },
+        compiledIrPreview: {
+          processId: 'process-1',
+          entryNodeId: 'entry-node',
+          compiledAt: '2026-04-17T10:14:00.000Z',
+          nodeCount: 1,
+          edgeCount: 0,
+          compileWarningCount: 0,
+          compileErrorCount: 0,
+          compileWarnings: [],
+          compileErrors: [],
+        },
+        backlinkArtifacts: [],
+      },
+      workflowFocusBacklinkTarget: '/repo',
+      workflowFocusBacklinkKind: OrchestrationWorkbenchBacklinkKind.WORKSPACE,
+      hitlDecisionPacket: {
+        executionId: 'execution-1',
+        executionSessionId: 'session-1',
+        taskId: 'TK-1049',
+        reviewId: 'review-1',
+        riskFacts: [
+          {
+            riskId: 'execution-1:risk-hitl-pending',
+            riskCategory: 'hitl-decision-pending',
+            riskLevel: 'L2',
+            evidence: ['execution_id=execution-1'],
+            changeScope: 'TK-1049',
+            confidence: 0.86,
+            triggerRule: 'runtime-hitl-pending',
+          },
+        ],
+        policyAction: 'confirm',
+        defaultTimeoutAction: 'block',
+        allowedDecisions: [
+          {
+            optionId: 'execution-1:approve-resume',
+            decision: 'approve',
+            resumeAction: 'resume',
+          },
+        ],
+        impactSummary: 'Execution execution-1 is waiting for one HITL decision.',
+        backlinks: [
+          {
+            backlinkId: 'execution-1:workspace',
+            backlinkKind: OrchestrationWorkbenchBacklinkKind.WORKSPACE,
+            label: '/repo',
+            target: '/repo',
+          },
+        ],
+      },
+      reviewSourcePath: '/repo/.repo-ai-governor/review/resolved.md',
+    });
+
+    expect(
+      readCommandRequestsFromWorkflowStudioHtml(
+        html,
+        VSCODE_EXTENSION_COMMAND_IDS.OPEN_HANDOFF_TARGET,
+      ),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          workflowFocusBacklinkTarget: '/repo',
+          workflowFocusBacklinkKind: OrchestrationWorkbenchBacklinkKind.WORKSPACE,
+        }),
+      ]),
+    );
+  });
+
+  it('keeps focused backlink actions for Windows-style absolute paths', () => {
+    const html = builder.buildWorkflowStudioHtml({
+      workspaceContext: {
+        workspaceLabel: 'repo-root',
+        workspaceRoot: 'C:\\repo',
+        workspaceTrusted: true,
+      },
+      queueOverview: {
+        generatedAt: '2026-04-17T10:15:00.000Z',
+        automationInbox: [],
+        reviewQueue: [],
+        parallelLanes: [],
+        workspaceSummary: [],
+        temporaryBridges: [],
+        notificationOwnership: {
+          ownerSurface: OrchestrationClientSurface.DESKTOP,
+          pendingItemCount: 0,
+          dueSoonItemCount: 0,
+          overdueItemCount: 0,
+          activeWorkspaceCount: 1,
+          defaultFollowUpSlaMinutes: 60,
+          notificationStatus: OrchestrationGovernanceNotificationStatus.IDLE,
+        },
+      },
+      selectedExecution: createExecutionBoardEntry({
+        currentStageId: 'review_verify',
+      }),
+      workflowDraftSession: {
+        workflowDraftId: 'workflow-draft-001',
+        draftRevision: 'draft-revision-001',
+        baseDefinitionRevision: 'definition-revision-001',
+        templateId: 'parallel-review',
+        entryMode: OrchestrationWorkflowDraftEntryMode.EDIT_SEED,
+        nodeSpecs: [
+          {
+            nodeId: 'entry-node',
+            stageId: 'review_verify',
+            nodeType: ProcessNodeType.SEQUENTIAL,
+            routeKey: 'review',
+            roleProfileId: 'reviewer-default',
+          },
+        ],
+        edgeSpecs: [],
+        supportedPatchOps: [OrchestrationWorkflowDraftSupportedPatchOp.UPSERT_NODE],
+        validationIssues: [],
+        conflictState: {
+          hasConflict: false,
+          conflictKind: OrchestrationWorkflowDraftConflictKind.NONE,
+          detectedAt: '2026-04-17T10:14:00.000Z',
+        },
+        compiledIrPreview: {
+          processId: 'process-1',
+          entryNodeId: 'entry-node',
+          compiledAt: '2026-04-17T10:14:00.000Z',
+          nodeCount: 1,
+          edgeCount: 0,
+          compileWarningCount: 0,
+          compileErrorCount: 0,
+          compileWarnings: [],
+          compileErrors: [],
+        },
+        backlinkArtifacts: [],
+      },
+      workflowFocusBacklinkTarget: 'C:\\repo\\review.md',
+      workflowFocusBacklinkKind: OrchestrationWorkbenchBacklinkKind.REVIEW,
+      reviewSourcePath: 'C:\\repo\\review.md',
+    });
+
+    expect(html).toContain('Open focused backlink target');
+    expect(
+      readCommandRequestsFromWorkflowStudioHtml(
+        html,
+        VSCODE_EXTENSION_COMMAND_IDS.OPEN_HANDOFF_TARGET,
+      ),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          workflowFocusBacklinkTarget: 'C:\\repo\\review.md',
+          workflowFocusBacklinkKind: OrchestrationWorkbenchBacklinkKind.REVIEW,
+        }),
+      ]),
+    );
   });
 
   it('surfaces the ready support-truth branch when the selected execution stage is present and no bridge remains', () => {
@@ -1671,14 +2033,24 @@ function readCommandRequestFromWorkflowStudioHtml(
   html: string,
   commandId: string,
 ): Record<string, unknown> {
-  const escapedCommandId = commandId.replaceAll('.', '\\.');
-  const commandMatch = html.match(new RegExp(`command:${escapedCommandId}\\?([^"]+)`));
-  expect(commandMatch).toBeTruthy();
-  const encodedRequest = commandMatch?.[1];
-  expect(encodedRequest).toBeTruthy();
-
-  const [request] = JSON.parse(decodeURIComponent(String(encodedRequest))) as Array<
-    Record<string, unknown>
-  >;
+  const [request] = readCommandRequestsFromWorkflowStudioHtml(html, commandId);
+  expect(request).toBeTruthy();
   return request;
+}
+
+function readCommandRequestsFromWorkflowStudioHtml(
+  html: string,
+  commandId: string,
+): Record<string, unknown>[] {
+  const escapedCommandId = commandId.replaceAll('.', '\\.');
+  const matches = [...html.matchAll(new RegExp(`command:${escapedCommandId}\\?([^"]+)`, 'g'))];
+  expect(matches.length).toBeGreaterThan(0);
+  return matches.map((match) => {
+    const encodedRequest = match[1];
+    expect(encodedRequest).toBeTruthy();
+    const [request] = JSON.parse(decodeURIComponent(String(encodedRequest))) as Array<
+      Record<string, unknown>
+    >;
+    return request;
+  });
 }

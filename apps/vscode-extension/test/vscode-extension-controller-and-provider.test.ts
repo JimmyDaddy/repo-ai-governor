@@ -1,3 +1,7 @@
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
 import { vi } from 'vitest';
 
 import { ProcessNodeType } from '@repo-ai-governor/core-process';
@@ -13,6 +17,7 @@ import { OrchestrationGovernanceTemporaryBridgeBacklinkSurface } from '@repo-ai-
 import { OrchestrationGovernanceTemporaryBridgeExitCriterion } from '@repo-ai-governor/orchestration-service-client';
 import { OrchestrationGovernanceTemporaryBridgeReceiptKind } from '@repo-ai-governor/orchestration-service-client';
 import { OrchestrationHandoffTargetKind } from '@repo-ai-governor/orchestration-service-client';
+import { OrchestrationWorkbenchBacklinkKind } from '@repo-ai-governor/orchestration-service-client';
 import { OrchestrationWorkflowDraftEntryMode } from '@repo-ai-governor/orchestration-service-client';
 import { OrchestrationWorkflowDraftSupportedPatchOp } from '@repo-ai-governor/orchestration-service-client';
 import { OrchestrationWorkspaceOperationKind } from '@repo-ai-governor/orchestration-service-client';
@@ -167,6 +172,11 @@ describe('VsCode extension controller/provider integration', () => {
     const selectionStore = new VsCodeExtensionSelectionStore();
     selectionStore.rememberExecution('execution-stale', 'session-stale');
     selectionStore.rememberReviewSourcePath('/repo/review-stale.md');
+    selectionStore.applyCommandRequest({
+      workflowFocusStageId: 'stage-stale',
+      workflowFocusBacklinkTarget: '/repo/review-stale.md',
+      workflowFocusBacklinkKind: OrchestrationWorkbenchBacklinkKind.REVIEW,
+    });
 
     const workbenchOverviewProvider = {
       refresh: vi.fn(),
@@ -255,6 +265,99 @@ describe('VsCode extension controller/provider integration', () => {
 
     expect(vscodeMock.showWarningMessage).toHaveBeenCalled();
     expect(vscodeMock.openTextDocument).not.toHaveBeenCalled();
+  });
+
+  it('fails closed when a focused backlink target does not exist', async () => {
+    vscodeMock.state.trusted = true;
+
+    const controller = new VsCodeExtensionCommandController(
+      {} as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        executionBoardProvider: {
+          refresh: vi.fn(),
+        } as never,
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        workspaceContextProvider: {
+          refresh: vi.fn(),
+        } as never,
+        workbenchOverviewProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    await controller.openHandoffTarget({
+      executionId: 'execution-1',
+      workflowFocusBacklinkTarget: '/repo/missing-review.md',
+      workflowFocusBacklinkKind: OrchestrationWorkbenchBacklinkKind.REVIEW,
+    });
+
+    expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith(
+      'No available handoff target could be resolved.',
+    );
+    expect(vscodeMock.openTextDocument).not.toHaveBeenCalled();
+  });
+
+  it('resolves focused backlink review documents through the controller-owned handoff seam', async () => {
+    vscodeMock.state.trusted = true;
+
+    const tempRoot = mkdtempSync(join(tmpdir(), 'repo-ai-governor-focused-backlink-'));
+    const reviewPath = join(tempRoot, 'review.md');
+    writeFileSync(reviewPath, '# review\n', 'utf8');
+    vscodeMock.openTextDocument.mockResolvedValue({
+      uri: {
+        fsPath: reviewPath,
+      },
+    });
+
+    try {
+      const controller = new VsCodeExtensionCommandController(
+        {} as never,
+        new VsCodeExtensionSelectionStore(),
+        {
+          localizeText: (english: string) => english,
+        } as never,
+        {
+          executionBoardProvider: {
+            refresh: vi.fn(),
+          } as never,
+          hitlInboxProvider: {
+            refresh: vi.fn(),
+          } as never,
+          workspaceContextProvider: {
+            refresh: vi.fn(),
+          } as never,
+          workbenchOverviewProvider: {
+            refresh: vi.fn(),
+          } as never,
+          reviewDetailProvider: {
+            refresh: vi.fn(),
+          } as never,
+        },
+      );
+
+      await controller.openHandoffTarget({
+        executionId: 'execution-1',
+        workflowFocusBacklinkTarget: reviewPath,
+        workflowFocusBacklinkKind: OrchestrationWorkbenchBacklinkKind.REVIEW,
+      });
+
+      expect(vscodeMock.openTextDocument).toHaveBeenCalledWith({
+        fsPath: reviewPath,
+      });
+      expect(vscodeMock.showTextDocument).toHaveBeenCalled();
+    } finally {
+      rmSync(tempRoot, { recursive: true, force: true });
+    }
   });
 
   it('runs connect through provider onboarding and no longer asks for credential env vars', async () => {

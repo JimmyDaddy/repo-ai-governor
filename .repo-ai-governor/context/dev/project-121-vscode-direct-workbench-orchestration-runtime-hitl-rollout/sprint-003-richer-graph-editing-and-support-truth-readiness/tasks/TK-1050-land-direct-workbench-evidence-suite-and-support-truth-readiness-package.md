@@ -1,6 +1,6 @@
 # TK-1050 land direct-workbench evidence suite and support-truth readiness package
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-22
 - Owner: AI-Agent
 - Priority: P1
@@ -55,9 +55,11 @@
 ## 9. 执行记录
 
 1. 2026-04-22：任务创建，状态初始化为 `planned`。
+2. 2026-04-23：已把 packaged Workflow Studio smoke 接入 `release:verify-vscode-extension-distribution`，并用 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm run check:ide-entry-smoke`、`pnpm run check:desktop-entry-smoke`、`pnpm run release:verify-vscode-extension-distribution` 与 `pnpm run release:verify-host-distribution` 固定 sprint-003 evidence package。
+3. 2026-04-23：已产出 `DA-1050`，把 richer graph projection、distribution smoke 与 fail-closed boundary 统一写入 readiness package，供 `TK-1041` 继续做 disposition。
 
 ## 10. 产出
 
-1. 待执行：direct-workbench evidence matrix and regression coverage updates
-2. 待执行：vscode extension / host distribution verification records
-3. 待执行：support-truth readiness package for `TK-1041`
+1. 已完成：`.repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-003-richer-graph-editing-and-support-truth-readiness/tasks/DA-1050-direct-workbench-evidence-and-readiness-package.md`
+2. 已完成：`.tmp/release-vscode-extension-distribution-report.json`
+3. 已完成：`.tmp/release-host-distribution-validation-report.json`

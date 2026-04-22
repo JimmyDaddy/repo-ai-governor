@@ -52,9 +52,9 @@
 | TK-1048 | sprint-002-workflow-authoring-draft-session-baseline | wire vscode workflow studio authoring model and command surfaces | vscode authoring runtime | TK-1047 | completed |
 | TK-1039 | sprint-002-workflow-authoring-draft-session-baseline | land workflow draft session and schema-first authoring baseline | workflow authoring baseline | TK-1048 | completed |
 | TK-1040 | sprint-002-workflow-authoring-draft-session-baseline | close sprint-002 and hand off richer graph-editing readiness | governance handoff | TK-1039 | completed |
-| TK-1049 | sprint-003-richer-graph-editing-and-support-truth-readiness | implement richer graph editing and projection-backed workflow studio | vscode graph editing/runtime projection | TK-1040 | in_progress |
-| TK-1050 | sprint-003-richer-graph-editing-and-support-truth-readiness | land direct-workbench evidence suite and support-truth readiness package | evidence/test/distribution package | TK-1049 | planned |
-| TK-1041 | sprint-003-richer-graph-editing-and-support-truth-readiness | verify direct-workbench evidence boundary and support-truth readiness | evidence and rollout readiness | TK-1050 | planned |
+| TK-1049 | sprint-003-richer-graph-editing-and-support-truth-readiness | implement richer graph editing and projection-backed workflow studio | vscode graph editing/runtime projection | TK-1040 | completed |
+| TK-1050 | sprint-003-richer-graph-editing-and-support-truth-readiness | land direct-workbench evidence suite and support-truth readiness package | evidence/test/distribution package | TK-1049 | completed |
+| TK-1041 | sprint-003-richer-graph-editing-and-support-truth-readiness | verify direct-workbench evidence boundary and support-truth readiness | evidence and rollout readiness | TK-1050 | completed |
 | TK-1042 | sprint-003-richer-graph-editing-and-support-truth-readiness | finalize project-121 rollout closeout and delivery evidence handoff | closeout and delivery evidence | TK-1041 | planned |
 
 ## 4. 依赖产物策略
@@ -77,6 +77,8 @@
 4. 2026-04-22：按 `workspace-scoped-cr-loop` 激活 `sprint-001-direct-hitl-and-runtime-lanes-baseline`，执行顺序固定为 sprint-001 -> sprint-002 -> sprint-003 -> project-final CR -> closeout。
 5. 2026-04-22：`CR-018` 已完成 fresh clean recheck，`TK-1038 / DA-1038` 已完成 sprint-001 closeout write-back；`current-context` 已切换到 `sprint-002` 作为新的 primary execution surface，`sprint-003` 保持 planned follow-up。
 6. 2026-04-23：`CR-014` 已 clean `resolved`，`TK-1040` 完成 sprint-002 closeout write-back；`sprint-002` 进入 completed truth，`sprint-003` 已激活为新的 primary execution surface，并继承 `CS-027` temporary exception 的 focused extraction / fail-closed readiness handoff。
+7. 2026-04-23：`TK-1049 / TK-1050 / TK-1041` 已完成 richer Workflow Studio graph projection、distribution evidence package 与 `stay fail-closed` readiness disposition；下一阶段进入 sprint-003 delegated CR loop，`TK-1042` 继续等待 project-final clean CR 之后再执行。
+8. 2026-04-23：`CR-003` 已 clean `resolved`，sprint-003 implementation boundary 达到 clean review state；当前准备创建 sprint-003 local boundary commit，并在该提交之后进入 project-final delegated CR loop。
 
 ## 7. 里程碑记录入口
 

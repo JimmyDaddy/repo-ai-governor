@@ -19,9 +19,9 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-1049 | implement richer graph editing and projection-backed workflow studio | TK-1040 | in_progress |
-| TK-1050 | land direct-workbench evidence suite and support-truth readiness package | TK-1049 | planned |
-| TK-1041 | verify direct-workbench evidence boundary and support-truth readiness | TK-1050 | planned |
+| TK-1049 | implement richer graph editing and projection-backed workflow studio | TK-1040 | completed |
+| TK-1050 | land direct-workbench evidence suite and support-truth readiness package | TK-1049 | completed |
+| TK-1041 | verify direct-workbench evidence boundary and support-truth readiness | TK-1050 | completed |
 | TK-1042 | finalize project-121 rollout closeout and delivery evidence handoff | TK-1041 | planned |
 
 ## 3. Exit Criteria
@@ -36,3 +36,5 @@
 2. 任何更强 claim 都必须建立在 build/distribution/runtime evidence 之上，而不是 contract-only formalization。
 3. 2026-04-23：`TK-1040` 已完成 sprint-002 closeout/handoff；当前 sprint 已切换为 `current-context.md` 的 primary execution surface，并继承 `CS-027` legacy controller temporary exception 的 focused extraction 责任。
 4. 2026-04-23：`TK-1049` 已切换为 `in_progress`，开始进入 Workflow Studio richer graph editing、runtime stage navigation 与 backlink reveal 的 implementation 窗口。
+5. 2026-04-23：`TK-1049 / TK-1050 / TK-1041` 已完成 richer Workflow Studio graph projection、packaged distribution smoke 与 fail-closed readiness disposition；`TK-1042` 继续保持未启动，等待 sprint-003 clean CR 与 project-final clean CR 都收口后再执行最终 closeout。
+6. 2026-04-23：`CR-003` 已 clean `resolved`，sprint-003 implementation boundary 当前没有新的 delegated review blocker；下一步先创建 sprint-003 local boundary commit，再进入 project-final delegated CR loop。
