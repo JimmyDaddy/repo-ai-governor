@@ -28,13 +28,13 @@
 
 ## 2.2 sprint-002-workflow-authoring-draft-session-baseline
 
-- Status: planned
+- Status: completed
 - Sprint Goal: 落 workflow draft session service seam、schema-first authoring 与 conflict-safe patch mutation baseline
 - Task Package: `TK-1046、TK-1047、TK-1048、TK-1039、TK-1040`
 
 ## 2.3 sprint-003-richer-graph-editing-and-support-truth-readiness
 
-- Status: planned
+- Status: active
 - Sprint Goal: 补齐 richer graph editing code path、delivery evidence suite 与更强 direct-workbench support-truth readiness
 - Task Package: `TK-1049、TK-1050、TK-1041、TK-1042`
 
@@ -47,12 +47,12 @@
 | TK-1044 | sprint-001-direct-hitl-and-runtime-lanes-baseline | implement role-lane status and hitl-decision query runtime | service query runtime | TK-1043 | completed |
 | TK-1045 | sprint-001-direct-hitl-and-runtime-lanes-baseline | wire vscode runtime lanes and hitl cockpit surfaces | vscode runtime/presentation | TK-1044 | completed |
 | TK-1038 | sprint-001-direct-hitl-and-runtime-lanes-baseline | close sprint-001 and hand off workflow draft session baseline | governance handoff | TK-1045 | completed |
-| TK-1046 | sprint-002-workflow-authoring-draft-session-baseline | extend workflow draft-session contract and client seams | workflow authoring contract | TK-1038 | planned |
-| TK-1047 | sprint-002-workflow-authoring-draft-session-baseline | implement draft-session mutation runtime and replace cli workflow bridge | service mutation/runtime | TK-1046 | planned |
-| TK-1048 | sprint-002-workflow-authoring-draft-session-baseline | wire vscode workflow studio authoring model and command surfaces | vscode authoring runtime | TK-1047 | planned |
-| TK-1039 | sprint-002-workflow-authoring-draft-session-baseline | land workflow draft session and schema-first authoring baseline | workflow authoring baseline | TK-1048 | planned |
-| TK-1040 | sprint-002-workflow-authoring-draft-session-baseline | close sprint-002 and hand off richer graph-editing readiness | governance handoff | TK-1039 | planned |
-| TK-1049 | sprint-003-richer-graph-editing-and-support-truth-readiness | implement richer graph editing and projection-backed workflow studio | vscode graph editing/runtime projection | TK-1040 | planned |
+| TK-1046 | sprint-002-workflow-authoring-draft-session-baseline | extend workflow draft-session contract and client seams | workflow authoring contract | TK-1038 | completed |
+| TK-1047 | sprint-002-workflow-authoring-draft-session-baseline | implement draft-session mutation runtime and replace cli workflow bridge | service mutation/runtime | TK-1046 | completed |
+| TK-1048 | sprint-002-workflow-authoring-draft-session-baseline | wire vscode workflow studio authoring model and command surfaces | vscode authoring runtime | TK-1047 | completed |
+| TK-1039 | sprint-002-workflow-authoring-draft-session-baseline | land workflow draft session and schema-first authoring baseline | workflow authoring baseline | TK-1048 | completed |
+| TK-1040 | sprint-002-workflow-authoring-draft-session-baseline | close sprint-002 and hand off richer graph-editing readiness | governance handoff | TK-1039 | completed |
+| TK-1049 | sprint-003-richer-graph-editing-and-support-truth-readiness | implement richer graph editing and projection-backed workflow studio | vscode graph editing/runtime projection | TK-1040 | in_progress |
 | TK-1050 | sprint-003-richer-graph-editing-and-support-truth-readiness | land direct-workbench evidence suite and support-truth readiness package | evidence/test/distribution package | TK-1049 | planned |
 | TK-1041 | sprint-003-richer-graph-editing-and-support-truth-readiness | verify direct-workbench evidence boundary and support-truth readiness | evidence and rollout readiness | TK-1050 | planned |
 | TK-1042 | sprint-003-richer-graph-editing-and-support-truth-readiness | finalize project-121 rollout closeout and delivery evidence handoff | closeout and delivery evidence | TK-1041 | planned |
@@ -76,6 +76,7 @@
 3. 2026-04-22：将 `project-121` 从阶段 handoff 骨架继续拆到 code implementation 粒度，补齐 `TK-1043` 到 `TK-1050` 的 service/client/extension/test 任务面。
 4. 2026-04-22：按 `workspace-scoped-cr-loop` 激活 `sprint-001-direct-hitl-and-runtime-lanes-baseline`，执行顺序固定为 sprint-001 -> sprint-002 -> sprint-003 -> project-final CR -> closeout。
 5. 2026-04-22：`CR-018` 已完成 fresh clean recheck，`TK-1038 / DA-1038` 已完成 sprint-001 closeout write-back；`current-context` 已切换到 `sprint-002` 作为新的 primary execution surface，`sprint-003` 保持 planned follow-up。
+6. 2026-04-23：`CR-014` 已 clean `resolved`，`TK-1040` 完成 sprint-002 closeout write-back；`sprint-002` 进入 completed truth，`sprint-003` 已激活为新的 primary execution surface，并继承 `CS-027` temporary exception 的 focused extraction / fail-closed readiness handoff。
 
 ## 7. 里程碑记录入口
 

@@ -1,3 +1,4 @@
+import { ProcessNodeType } from '@repo-ai-governor/core-process';
 import {
   OrchestrationBootstrapReadinessActionId,
   OrchestrationClientSurface,
@@ -20,6 +21,10 @@ import {
   OrchestrationServiceTransportKind,
   OrchestrationSessionStatus,
   OrchestrationWorkbenchBacklinkKind,
+  OrchestrationWorkflowDraftConflictKind,
+  OrchestrationWorkflowDraftEntryMode,
+  OrchestrationWorkflowDraftSupportedPatchOp,
+  OrchestrationWorkflowDraftValidationIssueSource,
   OrchestrationWorkspaceOperationKind,
 } from '@repo-ai-governor/orchestration-service-client';
 import type {
@@ -1308,6 +1313,224 @@ describe('VsCodeExtensionPresentationBuilder', () => {
 
     expect(html).toContain('command:repoAiGovernor.openReviewDetail');
     expect(html).not.toContain('command:repoAiGovernor.openHandoffTarget');
+  });
+
+  it('renders workflow authoring actions from service-owned supportedPatchOps', () => {
+    const queueOverview = {
+      generatedAt: '2026-04-17T10:20:00.000Z',
+      automationInbox: [],
+      reviewQueue: [],
+      parallelLanes: [],
+      workspaceSummary: [],
+      temporaryBridges: [],
+      notificationOwnership: {
+        ownerSurface: OrchestrationClientSurface.DESKTOP,
+        pendingItemCount: 0,
+        dueSoonItemCount: 0,
+        overdueItemCount: 0,
+        activeWorkspaceCount: 1,
+        defaultFollowUpSlaMinutes: 60,
+        notificationStatus: OrchestrationGovernanceNotificationStatus.IDLE,
+      },
+    };
+
+    const readOnlyHtml = builder.buildWorkflowStudioHtml({
+      workspaceContext: {
+        workspaceLabel: 'ai-governor',
+        workspaceRoot: '/repo',
+        workspaceTrusted: true,
+      },
+      queueOverview,
+      workflowDraftSession: {
+        workflowDraftId: 'workflow-draft-preview',
+        draftRevision: 'draft-revision-preview',
+        baseDefinitionRevision: 'base-revision-preview',
+        templateId: 'starter-template',
+        entryMode: OrchestrationWorkflowDraftEntryMode.READ_ONLY,
+        nodeSpecs: [],
+        edgeSpecs: [],
+        supportedPatchOps: [OrchestrationWorkflowDraftSupportedPatchOp.VALIDATE],
+        validationIssues: [],
+        conflictState: {
+          hasConflict: false,
+          conflictKind: OrchestrationWorkflowDraftConflictKind.NONE,
+          detectedAt: '2026-04-22T08:00:00.000Z',
+        },
+        compiledIrPreview: {
+          processId: 'process-preview',
+          entryNodeId: 'entry-node',
+          compiledAt: '2026-04-22T08:00:00.000Z',
+          nodeCount: 0,
+          edgeCount: 0,
+          compileWarningCount: 0,
+          compileErrorCount: 0,
+          compileWarnings: [],
+          compileErrors: [],
+        },
+        backlinkArtifacts: [],
+      },
+    });
+
+    expect(readOnlyHtml).toContain('Validate draft');
+    expect(readOnlyHtml).not.toContain('Add or edit node');
+    expect(readOnlyHtml).not.toContain('Edit node policy bindings');
+    expect(readOnlyHtml).not.toContain('Commit draft');
+
+    const policyHtml = builder.buildWorkflowStudioHtml({
+      workspaceContext: {
+        workspaceLabel: 'ai-governor',
+        workspaceRoot: '/repo',
+        workspaceTrusted: true,
+      },
+      queueOverview,
+      workflowDraftSession: {
+        workflowDraftId: 'workflow-draft-policy',
+        draftRevision: 'draft-revision-policy',
+        baseDefinitionRevision: 'base-revision-policy',
+        templateId: 'starter-template',
+        entryMode: OrchestrationWorkflowDraftEntryMode.EDIT_SEED,
+        nodeSpecs: [
+          {
+            nodeId: 'node-policy',
+            stageId: 'stage-policy',
+            nodeType: ProcessNodeType.SEQUENTIAL,
+            routeKey: 'policy',
+            roleProfileId: 'reviewer-default',
+            inputSchemaRef: 'schemas/input.json',
+            outputSchemaRef: 'schemas/output.json',
+            retryPolicyRef: 'policy/retry-default',
+            timeoutPolicyRef: 'policy/timeout-default',
+            budgetPolicyRef: 'policy/budget-default',
+          },
+        ],
+        edgeSpecs: [],
+        supportedPatchOps: [
+          OrchestrationWorkflowDraftSupportedPatchOp.UPDATE_NODE_POLICY,
+          OrchestrationWorkflowDraftSupportedPatchOp.VALIDATE,
+        ],
+        validationIssues: [],
+        conflictState: {
+          hasConflict: false,
+          conflictKind: OrchestrationWorkflowDraftConflictKind.NONE,
+          detectedAt: '2026-04-22T08:00:00.000Z',
+        },
+        compiledIrPreview: {
+          processId: 'process-policy',
+          entryNodeId: 'node-policy',
+          compiledAt: '2026-04-22T08:00:00.000Z',
+          nodeCount: 1,
+          edgeCount: 0,
+          compileWarningCount: 0,
+          compileErrorCount: 0,
+          compileWarnings: [],
+          compileErrors: [],
+        },
+        backlinkArtifacts: [],
+      },
+    });
+
+    expect(policyHtml).toContain('Edit node policy bindings');
+    expect(policyHtml).toContain('Validate draft');
+    expect(policyHtml).not.toContain('Add or edit node');
+    expect(policyHtml).not.toContain('Edit workflow metadata');
+    expect(policyHtml).not.toContain('Commit draft');
+
+    const conflictedHtml = builder.buildWorkflowStudioHtml({
+      workspaceContext: {
+        workspaceLabel: 'ai-governor',
+        workspaceRoot: '/repo',
+        workspaceTrusted: true,
+      },
+      queueOverview,
+      workflowDraftSession: {
+        workflowDraftId: 'workflow-draft-conflict',
+        draftRevision: 'draft-revision-conflict',
+        baseDefinitionRevision: 'base-revision-conflict',
+        templateId: 'starter-template',
+        entryMode: OrchestrationWorkflowDraftEntryMode.EDIT_SEED,
+        nodeSpecs: [],
+        edgeSpecs: [],
+        supportedPatchOps: [
+          OrchestrationWorkflowDraftSupportedPatchOp.VALIDATE,
+          OrchestrationWorkflowDraftSupportedPatchOp.COMMIT,
+        ],
+        validationIssues: [],
+        conflictState: {
+          hasConflict: true,
+          conflictKind: OrchestrationWorkflowDraftConflictKind.BASE_DEFINITION_CHANGED,
+          detectedAt: '2026-04-22T08:00:00.000Z',
+          message: 'The saved workflow definition changed after this draft session started.',
+        },
+        compiledIrPreview: {
+          processId: 'process-conflict',
+          entryNodeId: 'entry-node',
+          compiledAt: '2026-04-22T08:00:00.000Z',
+          nodeCount: 0,
+          edgeCount: 0,
+          compileWarningCount: 0,
+          compileErrorCount: 0,
+          compileWarnings: [],
+          compileErrors: [],
+        },
+        backlinkArtifacts: [],
+      },
+    });
+
+    expect(conflictedHtml).toContain('Validate draft');
+    expect(conflictedHtml).toContain(
+      'The saved workflow definition changed after this draft session started.',
+    );
+    expect(conflictedHtml).toContain('Saved workflow definition changed');
+    expect(conflictedHtml).not.toContain('base_definition_changed');
+    expect(conflictedHtml).not.toContain('command:repoAiGovernor.validateWorkflowDraft');
+
+    const validationHtml = builder.buildWorkflowStudioHtml({
+      workspaceContext: {
+        workspaceLabel: 'ai-governor',
+        workspaceRoot: '/repo',
+        workspaceTrusted: true,
+      },
+      queueOverview,
+      workflowDraftSession: {
+        workflowDraftId: 'workflow-draft-validation',
+        draftRevision: 'draft-revision-validation',
+        baseDefinitionRevision: 'base-revision-validation',
+        templateId: 'loop-guarded',
+        entryMode: OrchestrationWorkflowDraftEntryMode.EDIT_SEED,
+        nodeSpecs: [],
+        edgeSpecs: [],
+        supportedPatchOps: [OrchestrationWorkflowDraftSupportedPatchOp.VALIDATE],
+        validationIssues: [
+          {
+            issueCode: 'LOOP_MAX_WALL_TIME_REQUIRED',
+            severity: 'error',
+            message: 'Loop nodes must declare max wall time.',
+            location: '/nodes/node-loop/limits/maxWallTimeSeconds',
+            issueSource: OrchestrationWorkflowDraftValidationIssueSource.EDITOR,
+          },
+        ],
+        conflictState: {
+          hasConflict: false,
+          conflictKind: OrchestrationWorkflowDraftConflictKind.NONE,
+          detectedAt: '2026-04-22T08:00:00.000Z',
+        },
+        compiledIrPreview: {
+          processId: 'process-validation',
+          entryNodeId: 'entry-node',
+          compiledAt: '2026-04-22T08:00:00.000Z',
+          nodeCount: 0,
+          edgeCount: 0,
+          compileWarningCount: 0,
+          compileErrorCount: 1,
+          compileWarnings: [],
+          compileErrors: [],
+        },
+        backlinkArtifacts: [],
+      },
+    });
+
+    expect(validationHtml).toContain('Error: Loop nodes must declare max wall time.');
+    expect(validationHtml).not.toContain('LOOP_MAX_WALL_TIME_REQUIRED');
   });
 
   it('renders automation queue nodes with workflow-studio-first actions', () => {

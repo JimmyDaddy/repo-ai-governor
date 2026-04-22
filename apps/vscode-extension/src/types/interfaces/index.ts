@@ -29,6 +29,7 @@ export type {
   VsCodeExtensionTreeNodeDescriptor,
   VsCodeExtensionUserConfigEntrySnapshot,
   VsCodeExtensionUserConfigStatusSnapshot,
+  VsCodeExtensionWorkflowDraftSessionSnapshot,
   VsCodeExtensionWorkbenchOverviewSnapshot,
   VsCodeExtensionWorkflowStudioSnapshot,
   VsCodeExtensionWorkspaceContextSnapshot,

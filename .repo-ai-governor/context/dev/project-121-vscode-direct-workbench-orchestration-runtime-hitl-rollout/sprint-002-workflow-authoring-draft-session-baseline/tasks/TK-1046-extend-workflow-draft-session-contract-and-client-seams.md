@@ -1,6 +1,6 @@
 # TK-1046 extend workflow draft-session contract and client seams
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-22
 - Owner: AI-Agent
 - Priority: P1
@@ -56,9 +56,15 @@
 ## 9. 执行记录
 
 1. 2026-04-22：任务创建，状态初始化为 `planned`。
+2. 2026-04-22：开始实现 `workflow_draft_session` contract 与 sidecar seam，任务切换为 `in_progress`。
+3. 2026-04-22：已补齐 orchestration-service-client DTO / export、sidecar operation / dispatch contract 与 direct workflow draft seam，并通过 `pnpm run typecheck`、`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm run check:fast`、`pnpm run check:ide-entry-smoke`、`pnpm run check:desktop-entry-smoke`。
 
 ## 10. 产出
 
-1. 待执行：`packages/orchestration-service-client/src/types/interfaces/orchestration-service-client.interface.ts`
-2. 待执行：`packages/core-orchestration-service/src/types/interfaces/local-orchestration-service-sidecar.interface.ts`
-3. 待执行：`packages/core-orchestration-service/src/constants/local-orchestration-service-sidecar.constant.ts`
+1. 已完成：`packages/orchestration-service-client/src/constants/orchestration-service.constant.ts`
+2. 已完成：`packages/orchestration-service-client/src/index.ts`
+3. 已完成：`packages/orchestration-service-client/src/types/index.ts`
+4. 已完成：`packages/orchestration-service-client/src/types/interfaces/index.ts`
+5. 已完成：`packages/orchestration-service-client/src/types/interfaces/orchestration-service-client.interface.ts`
+6. 已完成：`packages/core-orchestration-service/src/constants/local-orchestration-service-sidecar.constant.ts`
+7. 已完成：`packages/core-orchestration-service/src/types/interfaces/local-orchestration-service-sidecar.interface.ts`

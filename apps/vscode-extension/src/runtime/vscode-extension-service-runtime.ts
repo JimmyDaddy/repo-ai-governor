@@ -16,6 +16,7 @@ import type {
   OrchestrationApplyProviderOnboardingResponse,
   OrchestrationArtifactPaneQueryResponse,
   OrchestrationBootstrapReadinessSnapshot,
+  OrchestrationCommitWorkflowDraftRequest,
   OrchestrationExecutionBoardEntry,
   OrchestrationExecutionBoardQueryResponse,
   OrchestrationExecutionSummary,
@@ -35,6 +36,13 @@ import type {
   OrchestrationSubmitHitlDecisionResponse,
   OrchestrationTerminateExecutionRequest,
   OrchestrationTerminateExecutionResponse,
+  OrchestrationUpdateWorkflowDraftEdgeRequest,
+  OrchestrationUpdateWorkflowDraftNodeRequest,
+  OrchestrationUpdateWorkflowDraftPolicyRequest,
+  OrchestrationValidateWorkflowDraftRequest,
+  OrchestrationWorkflowDraftMutationResponse,
+  OrchestrationWorkflowDraftSession,
+  OrchestrationWorkflowDraftSessionQueryRequest,
   OrchestrationWorkspaceOperationKind,
   OrchestrationWorkspaceOperationResponse,
 } from '@repo-ai-governor/orchestration-service-client';
@@ -45,6 +53,7 @@ import {
   OrchestrationSessionRouteId,
   OrchestrationSessionStatus,
 } from '@repo-ai-governor/orchestration-service-client';
+import type { OrchestrationStartWorkflowDraftRequest } from '@repo-ai-governor/orchestration-service-client';
 import {
   AdapterProviderKind,
   AdapterSurface,
@@ -794,6 +803,7 @@ export class VsCodeExtensionServiceRuntime {
       secureAuthoring,
       providerLifecycleSnapshots,
       selectedExecution,
+      workflowDraftSession,
     ] = await Promise.all([
       this.resolveWorkspaceContextSnapshot(),
       this.queryBootstrapReadiness(),
@@ -801,6 +811,15 @@ export class VsCodeExtensionServiceRuntime {
       this.resolveSecureAuthoringSnapshot(),
       this.resolveProviderLifecycleSnapshots(),
       this.resolveSelectedExecution(selection),
+      this.queryWorkflowDraftSession(
+        selection.workflowDraftId
+          ? {
+              workflowDraftId: selection.workflowDraftId,
+            }
+          : {
+              preferLatest: true,
+            },
+      ),
     ]);
     const [artifactPane, roleLaneStatus, sessionContinuity, hitlDecisionPacket] = await Promise.all(
       [
@@ -843,6 +862,11 @@ export class VsCodeExtensionServiceRuntime {
       ...(selectedExecution
         ? {
             selectedExecution,
+          }
+        : {}),
+      ...(workflowDraftSession
+        ? {
+            workflowDraftSession,
           }
         : {}),
       ...(roleLaneStatus.returnedCount > 0
@@ -1384,6 +1408,104 @@ export class VsCodeExtensionServiceRuntime {
             arguments: argumentsRecord,
           }
         : {}),
+    });
+  }
+
+  public async queryWorkflowDraftSession(
+    request?: OrchestrationWorkflowDraftSessionQueryRequest,
+  ): Promise<OrchestrationWorkflowDraftSession | undefined> {
+    const client = await this.resolveClient();
+    if (!client) {
+      return undefined;
+    }
+
+    try {
+      return await client.queryWorkflowDraftSession({
+        ...(request ?? {}),
+        locale: this.resolveEmbeddedCliLocale(),
+      });
+    } catch (error) {
+      const standardizedError = standardizeError(error);
+      if (standardizedError.code === GovernorErrorCode.DURABLE_STORAGE_VERIFY_FAILED) {
+        throw error;
+      }
+
+      return undefined;
+    }
+  }
+
+  /**
+   * Queries one workflow draft-session for mutating flows where backend failures must surface.
+   * @param request Optional workflow draft query selector.
+   * @returns The queried draft-session, or `undefined` when no draft exists yet.
+   */
+  public async queryWorkflowDraftSessionStrict(
+    request?: OrchestrationWorkflowDraftSessionQueryRequest,
+  ): Promise<OrchestrationWorkflowDraftSession | undefined> {
+    const client = await this.requireClient();
+    return client.queryWorkflowDraftSession({
+      ...(request ?? {}),
+      locale: this.resolveEmbeddedCliLocale(),
+    });
+  }
+
+  public async startWorkflowDraft(
+    request: OrchestrationStartWorkflowDraftRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse> {
+    const client = await this.requireClient();
+    return client.startWorkflowDraft({
+      ...request,
+      locale: this.resolveEmbeddedCliLocale(),
+    });
+  }
+
+  public async updateWorkflowDraftNode(
+    request: OrchestrationUpdateWorkflowDraftNodeRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse> {
+    const client = await this.requireClient();
+    return client.updateWorkflowDraftNode({
+      ...request,
+      locale: this.resolveEmbeddedCliLocale(),
+    });
+  }
+
+  public async updateWorkflowDraftEdge(
+    request: OrchestrationUpdateWorkflowDraftEdgeRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse> {
+    const client = await this.requireClient();
+    return client.updateWorkflowDraftEdge({
+      ...request,
+      locale: this.resolveEmbeddedCliLocale(),
+    });
+  }
+
+  public async updateWorkflowDraftPolicy(
+    request: OrchestrationUpdateWorkflowDraftPolicyRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse> {
+    const client = await this.requireClient();
+    return client.updateWorkflowDraftPolicy({
+      ...request,
+      locale: this.resolveEmbeddedCliLocale(),
+    });
+  }
+
+  public async validateWorkflowDraft(
+    request: OrchestrationValidateWorkflowDraftRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse> {
+    const client = await this.requireClient();
+    return client.validateWorkflowDraft({
+      ...request,
+      locale: this.resolveEmbeddedCliLocale(),
+    });
+  }
+
+  public async commitWorkflowDraft(
+    request: OrchestrationCommitWorkflowDraftRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse> {
+    const client = await this.requireClient();
+    return client.commitWorkflowDraft({
+      ...request,
+      locale: this.resolveEmbeddedCliLocale(),
     });
   }
 

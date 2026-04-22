@@ -1,12 +1,87 @@
 # checklist
 
-- [ ] TK-1039 land workflow draft session and schema-first authoring baseline
+- [x] TK-1039 land workflow draft session and schema-first authoring baseline
   - 2026-04-22：任务创建，状态初始化为 `planned`。
-- [ ] TK-1040 close sprint-002 and hand off richer graph-editing readiness
+  - 2026-04-22：已完成 `TK-1046 / TK-1047 / TK-1048` 的 implementation 收口，形成 service-owned workflow draft session、schema-first patch mutation、VS Code direct authoring / validate / commit baseline。
+  - 2026-04-22：验收基线已通过 `pnpm run typecheck`、`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm run check:fast`、`pnpm run check:ide-entry-smoke`、`pnpm run check:desktop-entry-smoke`；sprint-002 当前可进入 fresh delegated CR round。
+- [x] TK-1040 close sprint-002 and hand off richer graph-editing readiness
   - 2026-04-22：任务创建，状态初始化为 `planned`。
-- [ ] TK-1046 extend workflow draft-session contract and client seams
+  - 2026-04-23：`CR-014` 已 clean `resolved`，确认 sprint-002 在 workflow draft-session authoring baseline 上无新的 actionable findings，可进入 closeout。
+  - 2026-04-23：已完成 sprint-002 / sprint-003 / project-121 plan 状态回写、`current-context.md` 主执行流切换与 completed-stream history 迁移；`CS-027` legacy controller temporary exception 已作为 richer graph editing focused extraction handoff 显式移交给 sprint-003，并继续维持 support-truth fail-closed gate。
+- [x] TK-1046 extend workflow draft-session contract and client seams
   - 2026-04-22：任务创建，状态初始化为 `planned`。
-- [ ] TK-1047 implement draft-session mutation runtime and replace cli workflow bridge
+  - 2026-04-22：开始实现 `workflow_draft_session` contract 与 sidecar seam，任务切换为 `in_progress`。
+  - 2026-04-22：已补齐 orchestration-service-client DTO / export、sidecar operation / dispatch contract 与 direct workflow draft seam，并通过 `pnpm run typecheck`、`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm run check:fast`、`pnpm run check:ide-entry-smoke`、`pnpm run check:desktop-entry-smoke`。
+- [x] TK-1047 implement draft-session mutation runtime and replace cli workflow bridge
   - 2026-04-22：任务创建，状态初始化为 `planned`。
-- [ ] TK-1048 wire vscode workflow studio authoring model and command surfaces
+  - 2026-04-22：已实现 service-owned workflow draft runtime、workspace-operation compatibility cutover、sidecar host/client wiring 与 integration/runtime coverage；`workflow_create / workflow_edit / workflow_preview` 现默认走 draft-session seam，而非 CLI workflow bridge 优先路径。
+  - 2026-04-22：已通过 `pnpm run typecheck`、`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm run check:fast`。
+- [x] TK-1048 wire vscode workflow studio authoring model and command surfaces
   - 2026-04-22：任务创建，状态初始化为 `planned`。
+  - 2026-04-22：已把 VS Code workflow preview/create/edit 切换到 direct draft-session authoring，并新增 mutate / validate / commit command surface、workflow studio authoring state 渲染与 quick-input based schema-first mutation baseline。
+  - 2026-04-22：已通过 `pnpm run typecheck`、`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm run check:ide-entry-smoke`、`pnpm run check:desktop-entry-smoke`。
+- [x] CR-001 sprint-002-workflow-authoring-draft-session-baseline delegated review loop round 1
+  - 2026-04-22：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-22：fresh delegated reviewer 返回 `1 x P1 + 2 x P2` finding；主 agent 复核后全部判定为 `accepted`，任务推进到 `verified`。
+  - 2026-04-22：已完成服务层 `read_only` fail-closed、VS Code `supportedPatchOps` 消费对齐与冲突/只读回归覆盖补强；同窗验证通过后，任务推进到 `resolved`，等待 fresh reviewer recheck。
+- [x] CR-002 sprint-002-workflow-authoring-draft-session-baseline delegated recheck loop round 2
+  - 2026-04-22：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-22：写入 fresh delegated recheck 的 pending review artifact，记录 2 条 residual `P2` findings，待主 agent 复核。
+  - 2026-04-22：主 agent 完成逐条复核，2 条 residual `P2` findings 均判定为 `accepted`，任务推进到 `verified`。
+  - 2026-04-22：完整 post-fix verification 已通过，`CR-002` accepted findings 全部修复并完成同窗核验，任务推进到 `resolved`。
+- [x] CR-003 sprint-002-workflow-authoring-draft-session-baseline delegated recheck loop round 3
+  - 2026-04-22：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-22：fresh delegated reviewer 返回 2 条 residual `P2` findings，主 agent 已写入 pending review artifact 并进入修复回路。
+  - 2026-04-22：主 agent 完成逐条复核，2 条 residual `P2` findings 均判定为 `accepted`，任务推进到 `verified`。
+  - 2026-04-22：accepted findings 已完成修复并通过同窗 full verification，任务推进到 `resolved`。
+- [x] CR-004 sprint-002-workflow-authoring-draft-session-baseline delegated recheck loop round 4
+  - 2026-04-22：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-22：fresh delegated reviewer 返回 1 条 `P1` 与 2 条 `P2` findings，主 agent 已写入 review artifact 并进入修复回路。
+  - 2026-04-22：主 agent 完成逐条复核，3 条 findings 均判定为 `accepted`，任务推进到 `verified`。
+  - 2026-04-22：accepted findings 已完成修复并通过同窗 build/package/smoke/gov verification，任务推进到 `resolved`。
+- [x] CR-005 sprint-002-workflow-authoring-draft-session-baseline delegated recheck loop round 5
+  - 2026-04-22：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-22：fresh delegated reviewer 返回 2 条 residual `P2` findings，主 agent 已写入 review artifact 并进入修复回路。
+  - 2026-04-22：主 agent 完成逐条复核，2 条 findings 均判定为 `accepted`，任务推进到 `verified`。
+  - 2026-04-22：accepted findings 已完成修复并通过同窗 build/package/smoke/gov verification，任务推进到 `resolved`。
+- [x] CR-006 sprint-002-workflow-authoring-draft-session-baseline delegated recheck loop round 6
+  - 2026-04-22：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-22：fresh delegated reviewer 返回 1 条 residual `P2` finding，主 agent 已写入 review artifact 并进入修复回路。
+  - 2026-04-22：主 agent 完成逐条复核，1 条 finding 判定为 `accepted`，任务推进到 `verified`。
+  - 2026-04-22：accepted finding 已完成修复并通过同窗 build/package/smoke/gov verification，任务推进到 `resolved`。
+- [x] CR-007 sprint-002-workflow-authoring-draft-session-baseline delegated recheck loop round 7
+  - 2026-04-22：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-22：fresh delegated reviewer 返回 1 条 residual `P2` finding，主 agent 已写入 review artifact 并进入修复回路。
+  - 2026-04-22：主 agent 完成逐条复核，1 条 finding 判定为 `accepted`，任务推进到 `verified`。
+  - 2026-04-22：accepted finding 已完成修复并通过同窗 build/package/smoke/gov verification，任务推进到 `resolved`。
+- [x] CR-008 sprint-002-workflow-authoring-draft-session-baseline delegated recheck loop round 8
+  - 2026-04-22：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-22：fresh delegated reviewer 返回 `1 x P1 + 1 x P2` finding；主 agent 已写入 verified review artifact 并完成逐条复核。
+  - 2026-04-22：两条 findings 均判定为 `accepted`，任务推进到 `verified`，进入修复与完整验证回路。
+  - 2026-04-22：accepted findings 已完成修复，并通过同窗 build/package/smoke/targeted/gov verification，任务推进到 `resolved`。
+- [x] CR-009 sprint-002-workflow-authoring-draft-session-baseline delegated recheck loop round 9
+  - 2026-04-22：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-22：fresh delegated reviewer 返回 `2 x P3` finding；主 agent 已写入 pending review artifact 并完成逐条复核。
+  - 2026-04-22：两条 findings 均判定为 `accepted`，任务推进到 `verified`，进入修复与完整验证回路。
+  - 2026-04-22：accepted findings 已完成修复，并通过同窗 build/package/smoke/targeted/gov verification，任务推进到 `resolved`。
+- [x] CR-010 sprint-002-workflow-authoring-draft-session-baseline delegated recheck loop round 10
+  - 2026-04-22：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-22：fresh delegated reviewer 返回 `1 x P2 + 2 x P3` finding；主 agent 已完成逐条复核并写入 resolved review artifact。
+  - 2026-04-22：三条 findings 均判定为 `accepted`，并进入修复与完整验证回路。
+  - 2026-04-22：accepted findings 已完成修复，并通过同窗 build/package/smoke/targeted/gov verification，任务推进到 `resolved`。
+- [x] CR-011 sprint-002-workflow-authoring-draft-session-baseline delegated recheck loop round 11
+  - 2026-04-22：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-23：fresh delegated reviewer 返回 `1 x P1` finding；主 agent 已完成逐条复核并判定为 `accepted`。
+  - 2026-04-23：accepted finding 已完成修复，并通过同窗 build/package/smoke/targeted/gov verification，任务推进到 `resolved`。
+- [x] CR-012 sprint-002-workflow-authoring-draft-session-baseline delegated recheck loop round 12
+  - 2026-04-23：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-23：fresh delegated reviewer 返回 `1 x P1 + 1 x P2` finding；主 agent 已完成逐条复核并判定为 `accepted`。
+  - 2026-04-23：accepted findings 已完成修复，并通过同窗 build/package/smoke/targeted/gov verification，任务推进到 `resolved`。
+- [x] CR-013 sprint-002-workflow-authoring-draft-session-baseline delegated recheck loop round 13
+  - 2026-04-23：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-23：fresh delegated reviewer 返回 `1 x P2` finding；主 agent 已完成复核并判定为 `accepted`。
+  - 2026-04-23：accepted finding 已完成修复，并通过同窗 standardized-error/build/focused-gov verification，任务推进到 `resolved`。
+- [x] CR-014 sprint-002-workflow-authoring-draft-session-baseline delegated recheck loop round 14
+  - 2026-04-23：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-23：fresh delegated reviewer round 14 返回“无 actionable findings”；唯一 residual note 为已在 sprint-002 plan 跟踪的 `CS-027` legacy controller temporary exception，不构成本轮新的阻塞项。
+  - 2026-04-23：主 agent 已复核 reviewer clean 结论，确认 sprint-002 当前边界可直接进入 `TK-1040` closeout；任务推进到 `resolved`。

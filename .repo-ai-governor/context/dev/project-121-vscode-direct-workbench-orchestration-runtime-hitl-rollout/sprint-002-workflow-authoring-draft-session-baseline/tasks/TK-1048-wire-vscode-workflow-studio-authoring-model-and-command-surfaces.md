@@ -1,6 +1,6 @@
 # TK-1048 wire vscode workflow studio authoring model and command surfaces
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-22
 - Owner: AI-Agent
 - Priority: P1
@@ -55,9 +55,19 @@
 ## 9. 执行记录
 
 1. 2026-04-22：任务创建，状态初始化为 `planned`。
+2. 2026-04-22：已把 VS Code workflow preview/create/edit 切换到 direct draft-session authoring，并新增 mutate / validate / commit command surface、workflow studio authoring state 渲染与 quick-input based schema-first mutation baseline。
+3. 2026-04-22：已通过 `pnpm run typecheck`、`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm run check:ide-entry-smoke`、`pnpm run check:desktop-entry-smoke`。
 
 ## 10. 产出
 
-1. 待执行：`apps/vscode-extension/src/runtime/vscode-extension-command-controller.ts`
-2. 待执行：`apps/vscode-extension/src/runtime/vscode-extension-service-runtime.ts`
-3. 待执行：`apps/vscode-extension/src/runtime/vscode-extension-workflow-studio-provider.ts`
+1. 已完成：`apps/vscode-extension/src/constants/vscode-extension.constant.ts`
+2. 已完成：`apps/vscode-extension/src/runtime/vscode-extension-command-controller.ts`
+3. 已完成：`apps/vscode-extension/src/runtime/vscode-extension-host.ts`
+4. 已完成：`apps/vscode-extension/src/runtime/vscode-extension-presentation-builder.ts`
+5. 已完成：`apps/vscode-extension/src/runtime/vscode-extension-selection-store.ts`
+6. 已完成：`apps/vscode-extension/src/runtime/vscode-extension-service-runtime.ts`
+7. 已完成：`apps/vscode-extension/src/types/index.ts`
+8. 已完成：`apps/vscode-extension/src/types/interfaces/index.ts`
+9. 已完成：`apps/vscode-extension/src/types/interfaces/vscode-extension-surface.interface.ts`
+10. 已完成：`apps/vscode-extension/test/vscode-extension-controller-and-provider.test.ts`
+11. 已完成：`apps/vscode-extension/test/vscode-extension-service-runtime.test.ts`

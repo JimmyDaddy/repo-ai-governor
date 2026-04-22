@@ -34,6 +34,7 @@ import type {
 import {
   ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS,
   OrchestrationBootstrapReadinessActionId,
+  OrchestrationWorkflowDraftEntryMode,
   OrchestrationWorkspaceOperationKind,
 } from '@repo-ai-governor/orchestration-service-client';
 import {
@@ -45,6 +46,7 @@ import {
   RuntimeError,
   standardizeError,
 } from '@repo-ai-governor/shared';
+import { LocalOrchestrationServiceWorkflowDraftRuntime } from './local-orchestration-service-workflow-draft-runtime.js';
 
 const EMBEDDED_CLI_PACKAGE_SPECIFIER = '@repo-ai-governor/cli';
 const EMBEDDED_CLI_ARGV_ENVIRONMENT_KEY = 'REPO_AI_GOVERNOR_EMBEDDED_CLI_ARGV';
@@ -145,6 +147,7 @@ interface LocalOrchestrationServiceWorkspaceOpsRuntimeDependencies {
     locale?: string;
   }) => Promise<CliSuccessOutputPayload>;
   nowProvider?: () => Date;
+  workflowDraftRuntime?: Pick<LocalOrchestrationServiceWorkflowDraftRuntime, 'startWorkflowDraft'>;
 }
 
 interface ResolvedProviderOnboardingState {
@@ -187,6 +190,10 @@ export class LocalOrchestrationServiceWorkspaceOpsRuntime {
     locale?: string;
   }) => Promise<CliSuccessOutputPayload>;
   private readonly nowProvider: () => Date;
+  private readonly workflowDraftRuntime: Pick<
+    LocalOrchestrationServiceWorkflowDraftRuntime,
+    'startWorkflowDraft'
+  >;
   private latestWorkspaceOperationSnapshot?: OrchestrationWorkspaceOperationSnapshot;
   private latestWorkspaceOperationSnapshotLoaded = false;
 
@@ -203,6 +210,12 @@ export class LocalOrchestrationServiceWorkspaceOpsRuntime {
     );
     this.cliExecutor = dependencies.cliExecutor ?? this.executeCliJsonCommand.bind(this);
     this.nowProvider = dependencies.nowProvider ?? (() => new Date());
+    this.workflowDraftRuntime =
+      dependencies.workflowDraftRuntime ??
+      new LocalOrchestrationServiceWorkflowDraftRuntime({
+        workspaceRoot: dependencies.workspaceRoot,
+        nowProvider: this.nowProvider,
+      });
   }
 
   public async queryBootstrapReadiness(): Promise<OrchestrationBootstrapReadinessSnapshot> {
@@ -567,14 +580,16 @@ export class LocalOrchestrationServiceWorkspaceOpsRuntime {
     const response =
       request.operationKind === OrchestrationWorkspaceOperationKind.CONNECT
         ? await this.runConnectWorkspaceOperation(request, context)
-        : this.buildWorkspaceOperationResponse(
-            request,
-            await this.cliExecutor({
-              args: this.buildOperationArgs(request, context),
-              currentWorkingDirectory: context.repositoryRoot,
-              locale: request.locale,
-            }),
-          );
+        : this.isWorkflowDraftWorkspaceOperation(request.operationKind)
+          ? await this.runWorkflowDraftWorkspaceOperation(request)
+          : this.buildWorkspaceOperationResponse(
+              request,
+              await this.cliExecutor({
+                args: this.buildOperationArgs(request, context),
+                currentWorkingDirectory: context.repositoryRoot,
+                locale: request.locale,
+              }),
+            );
 
     this.latestWorkspaceOperationSnapshot = {
       operationKind: request.operationKind,
@@ -591,6 +606,28 @@ export class LocalOrchestrationServiceWorkspaceOpsRuntime {
     this.persistLatestWorkspaceOperationSnapshot(context, this.latestWorkspaceOperationSnapshot);
 
     return response;
+  }
+
+  private isWorkflowDraftWorkspaceOperation(
+    operationKind: OrchestrationWorkspaceOperationKind,
+  ): boolean {
+    return (
+      operationKind === OrchestrationWorkspaceOperationKind.WORKFLOW_PREVIEW ||
+      operationKind === OrchestrationWorkspaceOperationKind.WORKFLOW_CREATE ||
+      operationKind === OrchestrationWorkspaceOperationKind.WORKFLOW_EDIT
+    );
+  }
+
+  private async runWorkflowDraftWorkspaceOperation(
+    request: OrchestrationWorkspaceOperationRequest,
+  ): Promise<OrchestrationWorkspaceOperationResponse> {
+    const response = await this.workflowDraftRuntime.startWorkflowDraft({
+      entryMode: this.resolveWorkflowDraftEntryMode(request.operationKind),
+      templateId: this.readWorkspaceOperationStringArgument(request, 'templateId'),
+      locale: request.locale,
+    });
+
+    return this.buildWorkflowDraftWorkspaceOperationResponse(request, response);
   }
 
   private async runConnectWorkspaceOperation(
@@ -653,6 +690,39 @@ export class LocalOrchestrationServiceWorkspaceOpsRuntime {
       }
       throw error;
     }
+  }
+
+  private resolveWorkflowDraftEntryMode(
+    operationKind: OrchestrationWorkspaceOperationKind,
+  ): OrchestrationWorkflowDraftEntryMode {
+    switch (operationKind) {
+      case OrchestrationWorkspaceOperationKind.WORKFLOW_PREVIEW:
+        return OrchestrationWorkflowDraftEntryMode.READ_ONLY;
+      case OrchestrationWorkspaceOperationKind.WORKFLOW_CREATE:
+        return OrchestrationWorkflowDraftEntryMode.CREATE_SEED;
+      case OrchestrationWorkspaceOperationKind.WORKFLOW_EDIT:
+        return OrchestrationWorkflowDraftEntryMode.EDIT_SEED;
+      default:
+        throw new RuntimeError(
+          GovernorErrorCode.AGENT_PROTOCOL_INVALID,
+          this.localizeText(
+            undefined,
+            'Unsupported workflow draft entry mode.',
+            '不支持的工作流草稿入口模式。',
+          ),
+          {
+            operationKind,
+          },
+        );
+    }
+  }
+
+  private readWorkspaceOperationStringArgument(
+    request: OrchestrationWorkspaceOperationRequest,
+    key: string,
+  ): string | undefined {
+    const value = request.arguments?.[key];
+    return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
   }
 
   private resolveConnectProviderOnboardingRequest(
@@ -994,6 +1064,55 @@ export class LocalOrchestrationServiceWorkspaceOpsRuntime {
               details: payload.command_result.details,
             }
           : {}),
+      },
+    };
+  }
+
+  private buildWorkflowDraftWorkspaceOperationResponse(
+    request: OrchestrationWorkspaceOperationRequest,
+    payload: Awaited<
+      ReturnType<
+        Pick<
+          LocalOrchestrationServiceWorkflowDraftRuntime,
+          'startWorkflowDraft'
+        >['startWorkflowDraft']
+      >
+    >,
+  ): OrchestrationWorkspaceOperationResponse {
+    const draftSession = payload.draftSession;
+    const artifacts = draftSession.backlinkArtifacts
+      .filter(
+        (artifact: (typeof draftSession.backlinkArtifacts)[number]) =>
+          artifact.artifactPath.trim().length > 0,
+      )
+      .map((artifact: (typeof draftSession.backlinkArtifacts)[number]) => ({
+        id: artifact.artifactId,
+        path: artifact.artifactPath,
+      }));
+
+    return {
+      message: payload.message,
+      result: {
+        operation: request.operationKind,
+        summary: payload.message,
+        ...(artifacts.length > 0
+          ? {
+              artifacts,
+            }
+          : {}),
+        details: {
+          workflowDraftId: draftSession.workflowDraftId,
+          draftRevision: draftSession.draftRevision,
+          baseDefinitionRevision: draftSession.baseDefinitionRevision,
+          templateId: draftSession.templateId,
+          entryMode: draftSession.entryMode,
+          nodeCount: draftSession.nodeSpecs.length,
+          edgeCount: draftSession.edgeSpecs.length,
+          validationIssueCount: draftSession.validationIssues.length,
+          compileWarningCount: draftSession.compiledIrPreview.compileWarningCount,
+          compileErrorCount: draftSession.compiledIrPreview.compileErrorCount,
+          conflictKind: draftSession.conflictState.conflictKind,
+        },
       },
     };
   }

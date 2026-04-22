@@ -15,6 +15,9 @@ import {
   OrchestrationGovernanceTemporaryBridgeReceiptKind,
   OrchestrationHandoffTargetKind,
   OrchestrationServiceLifecycleStatus,
+  OrchestrationWorkflowDraftConflictKind,
+  OrchestrationWorkflowDraftEntryMode,
+  OrchestrationWorkflowDraftSupportedPatchOp,
   OrchestrationWorkspaceOperationKind,
 } from '@repo-ai-governor/orchestration-service-client';
 import type {
@@ -806,10 +809,14 @@ export class VsCodeExtensionPresentationBuilder {
       artifactPane,
       snapshot.reviewSourcePath,
     );
+    const workflowDraftLines = this.buildWorkflowDraftSessionLines(snapshot.workflowDraftSession);
     const runControlActions = this.buildWorkflowStudioActionDescriptors(
       selectedExecutionEntry,
       queueOverview.temporaryBridges,
       snapshot.reviewSourcePath,
+    );
+    const workflowAuthoringActions = this.buildWorkflowStudioAuthoringActions(
+      snapshot.workflowDraftSession,
     );
     const continuityLines = this.buildWorkflowStudioContinuityLines(
       snapshot.sessionContinuity,
@@ -873,8 +880,8 @@ export class VsCodeExtensionPresentationBuilder {
         <h2>${this.escapeHtml(this.localizer.localizeText('Primary workbench evidence surface', '主工作台证据面'))}</h2>
         <p>${this.escapeHtml(
           this.localizer.localizeText(
-            'Workflow studio stays service-backed: it shows workflow, queue, bridge, and support-truth evidence without turning VS Code into the owner of governance truth.',
-            'Workflow Studio 保持为 service-backed：它只展示 workflow、queue、bridge 与 support-truth 证据，不把 VS Code 变成治理真值拥有者。',
+            'Workflow studio stays service-backed: VS Code can author workflow drafts directly, but canonical workflow, queue, bridge, and support-truth ownership remains inside the local orchestration service.',
+            'Workflow Studio 保持为 service-backed：VS Code 可以直接编辑工作流草稿，但规范工作流、队列、bridge 与 support-truth 的所有权仍然保留在本地编排服务中。',
           ),
         )}</p>
         <ul class="facts">
@@ -891,6 +898,14 @@ export class VsCodeExtensionPresentationBuilder {
       this.renderStringSection(
         this.localizer.localizeText('Workflow focus', 'Workflow 聚焦'),
         workflowLines,
+      ),
+      this.renderStringSection(
+        this.localizer.localizeText('Workflow draft session', '工作流草稿会话'),
+        workflowDraftLines,
+      ),
+      this.renderActionSection(
+        this.localizer.localizeText('Workflow authoring actions', '工作流编辑动作'),
+        workflowAuthoringActions,
       ),
       this.renderStringSection(
         this.localizer.localizeText('Latest workspace operation', '最近一次工作区操作'),
@@ -1592,6 +1607,61 @@ export class VsCodeExtensionPresentationBuilder {
         return this.localizer.localizeText('Edit workflow', '编辑工作流');
       default:
         return operationKind;
+    }
+  }
+
+  private localizeWorkflowDraftEntryMode(entryMode: OrchestrationWorkflowDraftEntryMode): string {
+    switch (entryMode) {
+      case OrchestrationWorkflowDraftEntryMode.READ_ONLY:
+        return this.localizer.localizeText('Preview / read-only', '预览 / 只读');
+      case OrchestrationWorkflowDraftEntryMode.CREATE_SEED:
+        return this.localizer.localizeText('Create seed', '创建种子');
+      case OrchestrationWorkflowDraftEntryMode.EDIT_SEED:
+        return this.localizer.localizeText('Edit saved workflow', '编辑已保存工作流');
+      default:
+        return entryMode;
+    }
+  }
+
+  private localizeWorkflowDraftConflictKind(
+    conflictKind: OrchestrationWorkflowDraftConflictKind,
+  ): string {
+    switch (conflictKind) {
+      case OrchestrationWorkflowDraftConflictKind.STALE_DRAFT_REVISION:
+        return this.localizer.localizeText('Stale draft revision', '草稿 revision 已过期');
+      case OrchestrationWorkflowDraftConflictKind.BASE_DEFINITION_CHANGED:
+        return this.localizer.localizeText(
+          'Saved workflow definition changed',
+          '已保存工作流定义已变更',
+        );
+      case OrchestrationWorkflowDraftConflictKind.NONE:
+        return this.localizer.localizeText('No conflict', '无冲突');
+      default:
+        return conflictKind;
+    }
+  }
+
+  private formatWorkflowDraftValidationIssue(
+    issue: NonNullable<
+      VsCodeExtensionWorkflowStudioSnapshot['workflowDraftSession']
+    >['validationIssues'][number],
+  ): string {
+    const localizedSeverity = this.localizeWorkflowDraftValidationSeverity(issue.severity);
+    const locationSuffix =
+      typeof issue.location === 'string' && issue.location.trim().length > 0
+        ? ` (${issue.location})`
+        : '';
+    return `${localizedSeverity}: ${issue.message}${locationSuffix}`;
+  }
+
+  private localizeWorkflowDraftValidationSeverity(severity: string): string {
+    switch (severity.trim().toLowerCase()) {
+      case 'error':
+        return this.localizer.localizeText('Error', '错误');
+      case 'warning':
+        return this.localizer.localizeText('Warning', '警告');
+      default:
+        return severity;
     }
   }
 
@@ -4151,6 +4221,283 @@ export class VsCodeExtensionPresentationBuilder {
     }
 
     return lines;
+  }
+
+  private buildWorkflowDraftSessionLines(
+    workflowDraftSession: VsCodeExtensionWorkflowStudioSnapshot['workflowDraftSession'],
+  ): string[] {
+    if (!workflowDraftSession) {
+      return [
+        this.localizer.localizeText(
+          'No workflow draft session is active yet. Start preview, create, or edit to open direct authoring inside VS Code.',
+          '当前还没有活跃的工作流草稿会话。请先启动预览、创建或编辑流程，在 VS Code 内直接开始 authoring。',
+        ),
+      ];
+    }
+
+    const validationSummary =
+      workflowDraftSession.validationIssues.length > 0
+        ? workflowDraftSession.validationIssues
+            .slice(0, 5)
+            .map(
+              (
+                issue: NonNullable<
+                  VsCodeExtensionWorkflowStudioSnapshot['workflowDraftSession']
+                >['validationIssues'][number],
+              ) => this.formatWorkflowDraftValidationIssue(issue),
+            )
+            .join('; ')
+        : this.localizer.localizeText('None', '无');
+    const backlinkSummary =
+      workflowDraftSession.backlinkArtifacts.length > 0
+        ? workflowDraftSession.backlinkArtifacts
+            .map(
+              (
+                artifact: NonNullable<
+                  VsCodeExtensionWorkflowStudioSnapshot['workflowDraftSession']
+                >['backlinkArtifacts'][number],
+              ) => artifact.artifactPath,
+            )
+            .join(', ')
+        : this.localizer.localizeText('Unavailable', '不可用');
+
+    return [
+      `${this.localizer.localizeText('Draft session', '草稿会话')}: ${workflowDraftSession.workflowDraftId}`,
+      `${this.localizer.localizeText('Entry mode', '入口模式')}: ${this.localizeWorkflowDraftEntryMode(workflowDraftSession.entryMode)}`,
+      `${this.localizer.localizeText('Template', '模板')}: ${workflowDraftSession.templateId}`,
+      `${this.localizer.localizeText('Draft revision', '草稿 revision')}: ${workflowDraftSession.draftRevision}`,
+      `${this.localizer.localizeText('Base definition revision', '基础定义 revision')}: ${workflowDraftSession.baseDefinitionRevision}`,
+      `${this.localizer.localizeText('Node / edge count', '节点 / 连线数量')}: ${String(workflowDraftSession.nodeSpecs.length)} / ${String(workflowDraftSession.edgeSpecs.length)}`,
+      `${this.localizer.localizeText('Validation issues', '校验问题')}: ${String(workflowDraftSession.validationIssues.length)}`,
+      `${this.localizer.localizeText('Compiler warnings / errors', '编译警告 / 错误')}: ${String(workflowDraftSession.compiledIrPreview.compileWarningCount)} / ${String(workflowDraftSession.compiledIrPreview.compileErrorCount)}`,
+      `${this.localizer.localizeText('Conflict state', '冲突状态')}: ${workflowDraftSession.conflictState.hasConflict ? this.localizeWorkflowDraftConflictKind(workflowDraftSession.conflictState.conflictKind) : this.localizer.localizeText('No conflict', '无冲突')}`,
+      `${this.localizer.localizeText('Validation summary', '校验摘要')}: ${validationSummary}`,
+      `${this.localizer.localizeText('Backlink artifacts', '回链产物')}: ${backlinkSummary}`,
+    ];
+  }
+
+  private buildWorkflowStudioAuthoringActions(
+    workflowDraftSession: VsCodeExtensionWorkflowStudioSnapshot['workflowDraftSession'],
+  ): Array<{
+    label: string;
+    description: string;
+    href?: string;
+    disabledReason?: string;
+  }> {
+    const actions: Array<{
+      label: string;
+      description: string;
+      href?: string;
+      disabledReason?: string;
+    }> = [
+      {
+        label: this.localizer.localizeText('Preview workflow draft', '预览工作流草稿'),
+        description: this.localizer.localizeText(
+          'Open one read-only draft session backed by the local orchestration service.',
+          '打开一个由本地编排服务托管的只读草稿会话。',
+        ),
+        href: this.createCommandUri(VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKFLOW_PREVIEW),
+      },
+      {
+        label: this.localizer.localizeText('Create workflow draft', '创建工作流草稿'),
+        description: this.localizer.localizeText(
+          'Seed one mutable workflow draft session from a template.',
+          '从模板启动一个可编辑的工作流草稿会话。',
+        ),
+        href: this.createCommandUri(VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKFLOW_CREATE),
+      },
+      {
+        label: this.localizer.localizeText('Edit saved workflow', '编辑已保存工作流'),
+        description: this.localizer.localizeText(
+          'Open the saved workflow definition as a mutable draft session.',
+          '把已保存的工作流定义打开为一个可编辑草稿会话。',
+        ),
+        href: this.createCommandUri(VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKFLOW_EDIT),
+      },
+    ];
+
+    if (!workflowDraftSession) {
+      return actions;
+    }
+
+    const draftRequest = {
+      workflowDraftId: workflowDraftSession.workflowDraftId,
+      workflowDraftRevision: workflowDraftSession.draftRevision,
+      workflowDraftEntryMode: workflowDraftSession.entryMode,
+    };
+    const workflowMutationsBlockedReason = workflowDraftSession.conflictState.hasConflict
+      ? (workflowDraftSession.conflictState.message ??
+        this.localizer.localizeText(
+          'Resolve the current draft conflict before mutating it.',
+          '请先解决当前草稿冲突，再继续修改。',
+        ))
+      : undefined;
+    const supportsPatchOp = (patchOp: OrchestrationWorkflowDraftSupportedPatchOp): boolean =>
+      workflowDraftSession.supportedPatchOps.includes(patchOp);
+
+    if (supportsPatchOp(OrchestrationWorkflowDraftSupportedPatchOp.UPSERT_NODE)) {
+      actions.push(
+        this.createWorkflowDraftMutationAction(
+          this.localizer.localizeText('Add or edit node', '新增或编辑节点'),
+          this.localizer.localizeText(
+            'Author one schema-first workflow node without leaving VS Code.',
+            '直接在 VS Code 内编辑一个 schema-first 工作流节点。',
+          ),
+          draftRequest,
+          OrchestrationWorkflowDraftSupportedPatchOp.UPSERT_NODE,
+          workflowMutationsBlockedReason,
+        ),
+      );
+    }
+
+    if (supportsPatchOp(OrchestrationWorkflowDraftSupportedPatchOp.REMOVE_NODE)) {
+      actions.push(
+        this.createWorkflowDraftMutationAction(
+          this.localizer.localizeText('Remove node', '移除节点'),
+          this.localizer.localizeText(
+            'Remove one workflow node and any attached edges.',
+            '移除一个工作流节点以及关联连线。',
+          ),
+          draftRequest,
+          OrchestrationWorkflowDraftSupportedPatchOp.REMOVE_NODE,
+          workflowMutationsBlockedReason,
+        ),
+      );
+    }
+
+    if (supportsPatchOp(OrchestrationWorkflowDraftSupportedPatchOp.UPSERT_EDGE)) {
+      actions.push(
+        this.createWorkflowDraftMutationAction(
+          this.localizer.localizeText('Add or edit edge', '新增或编辑连线'),
+          this.localizer.localizeText(
+            'Author one workflow edge between service-owned draft nodes.',
+            '在 service-owned 草稿节点之间编辑一条工作流连线。',
+          ),
+          draftRequest,
+          OrchestrationWorkflowDraftSupportedPatchOp.UPSERT_EDGE,
+          workflowMutationsBlockedReason,
+        ),
+      );
+    }
+
+    if (supportsPatchOp(OrchestrationWorkflowDraftSupportedPatchOp.REMOVE_EDGE)) {
+      actions.push(
+        this.createWorkflowDraftMutationAction(
+          this.localizer.localizeText('Remove edge', '移除连线'),
+          this.localizer.localizeText(
+            'Remove one workflow edge from the current draft session.',
+            '从当前草稿会话中移除一条工作流连线。',
+          ),
+          draftRequest,
+          OrchestrationWorkflowDraftSupportedPatchOp.REMOVE_EDGE,
+          workflowMutationsBlockedReason,
+        ),
+      );
+    }
+
+    if (supportsPatchOp(OrchestrationWorkflowDraftSupportedPatchOp.UPDATE_NODE_POLICY)) {
+      actions.push(
+        this.createWorkflowDraftMutationAction(
+          this.localizer.localizeText('Edit node policy bindings', '编辑节点策略绑定'),
+          this.localizer.localizeText(
+            'Update one node schema or policy binding through the draft-session seam.',
+            '通过 draft-session seam 更新单个节点的 schema 或策略绑定。',
+          ),
+          draftRequest,
+          OrchestrationWorkflowDraftSupportedPatchOp.UPDATE_NODE_POLICY,
+          workflowMutationsBlockedReason,
+        ),
+      );
+    }
+
+    if (supportsPatchOp(OrchestrationWorkflowDraftSupportedPatchOp.UPDATE_WORKFLOW_METADATA)) {
+      actions.push(
+        this.createWorkflowDraftMutationAction(
+          this.localizer.localizeText('Edit workflow metadata', '编辑工作流元数据'),
+          this.localizer.localizeText(
+            'Update the process id and entry node through the draft-session seam.',
+            '通过 draft-session seam 更新 process id 与入口节点。',
+          ),
+          draftRequest,
+          OrchestrationWorkflowDraftSupportedPatchOp.UPDATE_WORKFLOW_METADATA,
+          workflowMutationsBlockedReason,
+        ),
+      );
+    }
+
+    if (supportsPatchOp(OrchestrationWorkflowDraftSupportedPatchOp.VALIDATE)) {
+      actions.push({
+        label: this.localizer.localizeText('Validate draft', '校验草稿'),
+        description: this.localizer.localizeText(
+          'Refresh compiler and editor diagnostics for the active draft session.',
+          '刷新当前草稿会话的编译器与编辑器诊断结果。',
+        ),
+        ...(workflowMutationsBlockedReason
+          ? {
+              disabledReason: workflowMutationsBlockedReason,
+            }
+          : {
+              href: this.createCommandUri(
+                VSCODE_EXTENSION_COMMAND_IDS.VALIDATE_WORKFLOW_DRAFT,
+                draftRequest,
+              ),
+            }),
+      });
+    }
+
+    if (supportsPatchOp(OrchestrationWorkflowDraftSupportedPatchOp.COMMIT)) {
+      actions.push({
+        label: this.localizer.localizeText('Commit draft', '提交草稿'),
+        description: this.localizer.localizeText(
+          'Commit the active draft into the canonical workflow definition and compiled IR.',
+          '把当前草稿提交到规范工作流定义与 compiled IR。',
+        ),
+        ...(workflowMutationsBlockedReason
+          ? {
+              disabledReason: workflowMutationsBlockedReason,
+            }
+          : {
+              href: this.createCommandUri(
+                VSCODE_EXTENSION_COMMAND_IDS.COMMIT_WORKFLOW_DRAFT,
+                draftRequest,
+              ),
+            }),
+      });
+    }
+
+    return actions;
+  }
+
+  private createWorkflowDraftMutationAction(
+    label: string,
+    description: string,
+    request: {
+      workflowDraftId: string;
+      workflowDraftRevision: string;
+      workflowDraftEntryMode: OrchestrationWorkflowDraftEntryMode;
+    },
+    workflowDraftPatchOp: OrchestrationWorkflowDraftSupportedPatchOp,
+    disabledReason?: string,
+  ): {
+    label: string;
+    description: string;
+    href?: string;
+    disabledReason?: string;
+  } {
+    return {
+      label,
+      description,
+      ...(disabledReason
+        ? {
+            disabledReason,
+          }
+        : {
+            href: this.createCommandUri(VSCODE_EXTENSION_COMMAND_IDS.MUTATE_WORKFLOW_DRAFT, {
+              ...request,
+              workflowDraftPatchOp,
+            }),
+          }),
+    };
   }
 
   private buildWorkflowStudioActionDescriptors(

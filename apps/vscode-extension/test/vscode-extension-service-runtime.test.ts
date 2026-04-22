@@ -45,6 +45,13 @@ const serviceClientMock = vi.hoisted(() => ({
   queryBootstrapReadiness: vi.fn(),
   querySecureAuthoring: vi.fn(),
   queryProviderOnboarding: vi.fn(),
+  queryWorkflowDraftSession: vi.fn(),
+  startWorkflowDraft: vi.fn(),
+  updateWorkflowDraftNode: vi.fn(),
+  updateWorkflowDraftEdge: vi.fn(),
+  updateWorkflowDraftPolicy: vi.fn(),
+  validateWorkflowDraft: vi.fn(),
+  commitWorkflowDraft: vi.fn(),
   startSession: vi.fn(),
   sendSessionTurn: vi.fn(),
   subscribeSession: vi.fn(),
@@ -115,6 +122,13 @@ vi.mock('@repo-ai-governor/core-orchestration-service/sidecar-client', () => ({
     public readonly queryBootstrapReadiness = serviceClientMock.queryBootstrapReadiness;
     public readonly querySecureAuthoring = serviceClientMock.querySecureAuthoring;
     public readonly queryProviderOnboarding = serviceClientMock.queryProviderOnboarding;
+    public readonly queryWorkflowDraftSession = serviceClientMock.queryWorkflowDraftSession;
+    public readonly startWorkflowDraft = serviceClientMock.startWorkflowDraft;
+    public readonly updateWorkflowDraftNode = serviceClientMock.updateWorkflowDraftNode;
+    public readonly updateWorkflowDraftEdge = serviceClientMock.updateWorkflowDraftEdge;
+    public readonly updateWorkflowDraftPolicy = serviceClientMock.updateWorkflowDraftPolicy;
+    public readonly validateWorkflowDraft = serviceClientMock.validateWorkflowDraft;
+    public readonly commitWorkflowDraft = serviceClientMock.commitWorkflowDraft;
     public readonly startSession = serviceClientMock.startSession;
     public readonly sendSessionTurn = serviceClientMock.sendSessionTurn;
     public readonly subscribeSession = serviceClientMock.subscribeSession;
@@ -189,6 +203,13 @@ describe('VsCodeExtensionServiceRuntime', () => {
     serviceClientMock.queryBootstrapReadiness.mockReset();
     serviceClientMock.querySecureAuthoring.mockReset();
     serviceClientMock.queryProviderOnboarding.mockReset();
+    serviceClientMock.queryWorkflowDraftSession.mockReset();
+    serviceClientMock.startWorkflowDraft.mockReset();
+    serviceClientMock.updateWorkflowDraftNode.mockReset();
+    serviceClientMock.updateWorkflowDraftEdge.mockReset();
+    serviceClientMock.updateWorkflowDraftPolicy.mockReset();
+    serviceClientMock.validateWorkflowDraft.mockReset();
+    serviceClientMock.commitWorkflowDraft.mockReset();
     serviceClientMock.startSession.mockReset();
     serviceClientMock.sendSessionTurn.mockReset();
     serviceClientMock.subscribeSession.mockReset();
@@ -258,6 +279,65 @@ describe('VsCodeExtensionServiceRuntime', () => {
       resumeSelector: 'session-fallback',
     });
     expect(serviceClientMock.getSession).toHaveBeenCalledWith('session-fallback');
+  });
+
+  it('keeps draft-session queries soft for backend refresh failures but surfaces durable draft corruption', async () => {
+    serviceClientMock.queryWorkflowDraftSession.mockRejectedValueOnce(
+      new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        'draft query failed',
+        {
+          surface: 'vscode_extension_test',
+        },
+      ),
+    );
+
+    const runtime = new VsCodeExtensionServiceRuntime();
+
+    await expect(
+      runtime.queryWorkflowDraftSession({
+        workflowDraftId: 'workflow-draft-soft',
+      }),
+    ).resolves.toBeUndefined();
+
+    serviceClientMock.queryWorkflowDraftSession.mockRejectedValueOnce(
+      new RuntimeError(
+        GovernorErrorCode.DURABLE_STORAGE_VERIFY_FAILED,
+        'persisted draft session is corrupted',
+        {
+          artifactPath:
+            '/repo/.repo-ai-governor/context/workflow/draft-sessions/direct-workbench.active.json',
+        },
+      ),
+    );
+
+    await expect(
+      runtime.queryWorkflowDraftSession({
+        workflowDraftId: 'workflow-draft-corrupt',
+      }),
+    ).rejects.toMatchObject({
+      code: GovernorErrorCode.DURABLE_STORAGE_VERIFY_FAILED,
+      message: 'persisted draft session is corrupted',
+    });
+
+    serviceClientMock.queryWorkflowDraftSession.mockRejectedValueOnce(
+      new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        'draft query failed',
+        {
+          surface: 'vscode_extension_test',
+        },
+      ),
+    );
+
+    await expect(
+      runtime.queryWorkflowDraftSessionStrict({
+        workflowDraftId: 'workflow-draft-strict',
+      }),
+    ).rejects.toMatchObject({
+      code: GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+      message: 'draft query failed',
+    });
   });
 
   it('falls back through executionId to reconstruct session continuity for older sidecars', async () => {
@@ -1164,6 +1244,34 @@ describe('VsCodeExtensionServiceRuntime', () => {
         },
       ],
     });
+    serviceClientMock.queryWorkflowDraftSession.mockResolvedValueOnce({
+      workflowDraftId: 'workflow-draft-001',
+      draftRevision: 'draft-revision-001',
+      baseDefinitionRevision: 'base-revision-001',
+      templateId: 'starter-template',
+      entryMode: 'edit_seed',
+      nodeSpecs: [],
+      edgeSpecs: [],
+      supportedPatchOps: ['upsert_node', 'remove_node', 'upsert_edge', 'remove_edge'],
+      validationIssues: [],
+      conflictState: {
+        hasConflict: false,
+        conflictKind: 'none',
+        detectedAt: '2026-04-07T03:06:30.000Z',
+      },
+      compiledIrPreview: {
+        processId: 'process-1',
+        entryNodeId: 'entry-node',
+        compiledAt: '2026-04-07T03:06:30.000Z',
+        nodeCount: 0,
+        edgeCount: 0,
+        compileWarningCount: 0,
+        compileErrorCount: 0,
+        compileWarnings: [],
+        compileErrors: [],
+      },
+      backlinkArtifacts: [],
+    });
 
     const runtime = new VsCodeExtensionServiceRuntime();
 
@@ -1187,6 +1295,11 @@ describe('VsCodeExtensionServiceRuntime', () => {
           currentStageId: 'review_verify',
           taskId: 'TK-940',
         },
+      },
+      workflowDraftSession: {
+        workflowDraftId: 'workflow-draft-001',
+        draftRevision: 'draft-revision-001',
+        entryMode: 'edit_seed',
       },
       roleLaneStatus: {
         returnedCount: 1,

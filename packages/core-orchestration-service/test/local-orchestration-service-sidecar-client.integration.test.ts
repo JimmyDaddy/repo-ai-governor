@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -16,8 +16,11 @@ import {
   OrchestrationServiceHostKind,
   OrchestrationServiceLifecycleStatus,
   OrchestrationServiceTransportKind,
+  OrchestrationWorkflowDraftConflictKind,
+  OrchestrationWorkflowDraftEntryMode,
+  OrchestrationWorkflowDraftSupportedPatchOp,
 } from '@repo-ai-governor/orchestration-service-client';
-import { MemoryStoreEngine } from '@repo-ai-governor/shared';
+import { GovernorErrorCode, MemoryStoreEngine } from '@repo-ai-governor/shared';
 import { LocalOrchestrationServiceSidecarClient } from '../src/index.js';
 
 function createGraphPlan() {
@@ -491,6 +494,487 @@ describe('LocalOrchestrationServiceSidecarClient', () => {
 
       expect(reviewTarget?.exists).toBe(false);
       expect(reviewTarget?.targetPath).toBeUndefined();
+    } finally {
+      await client.dispose();
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('exposes workflow draft-session authoring seams over the sidecar IPC contract', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-sidecar-workflow-'));
+    const workspaceRoot = join(temporaryRoot, '.repo-ai-governor');
+    const client = new LocalOrchestrationServiceSidecarClient(workspaceRoot);
+
+    try {
+      await mkdir(workspaceRoot, { recursive: true });
+
+      const startedDraft = await client.startWorkflowDraft({
+        entryMode: OrchestrationWorkflowDraftEntryMode.CREATE_SEED,
+        templateId: 'parallel-review',
+      });
+      const workflowDraftId = startedDraft.draftSession.workflowDraftId;
+      const firstRevision = startedDraft.draftSession.draftRevision;
+
+      const mutatedDraft = await client.updateWorkflowDraftNode({
+        workflowDraftId,
+        draftRevision: firstRevision,
+        nodeId: 'node-review',
+        nodeSpec: {
+          nodeId: 'node-review',
+          stageId: 'stage-review',
+          nodeType: ProcessNodeType.SEQUENTIAL,
+          routeKey: 'review',
+          roleProfileId: 'reviewer-default',
+          inputSchemaRef: 'schemas/input.json',
+          outputSchemaRef: 'schemas/output.json',
+          retryPolicyRef: 'policy/retry-default',
+          timeoutPolicyRef: 'policy/timeout-default',
+          budgetPolicyRef: 'policy/budget-default',
+        },
+      });
+      const queriedDraft = await client.queryWorkflowDraftSession({
+        workflowDraftId,
+      });
+      const committedDraft = await client.commitWorkflowDraft({
+        workflowDraftId,
+        draftRevision: mutatedDraft.draftSession.draftRevision,
+      });
+
+      expect(startedDraft.applied).toBe(true);
+      expect(startedDraft.draftSession.entryMode).toBe(
+        OrchestrationWorkflowDraftEntryMode.CREATE_SEED,
+      );
+      expect(mutatedDraft.applied).toBe(true);
+      expect(
+        mutatedDraft.draftSession.nodeSpecs.some(
+          (node: (typeof mutatedDraft.draftSession.nodeSpecs)[number]) =>
+            node.nodeId === 'node-review',
+        ),
+      ).toBe(true);
+      expect(queriedDraft?.workflowDraftId).toBe(workflowDraftId);
+      expect(committedDraft.applied).toBe(true);
+      expect(committedDraft.definitionPath).toContain('active-workflow.definition.json');
+      expect(committedDraft.compiledIrPath).toContain('compiled-ir');
+    } finally {
+      await client.dispose();
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('guards mutable workflow draft replacement over the sidecar IPC contract until the caller confirms overwrite', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-sidecar-workflow-'));
+    const workspaceRoot = join(temporaryRoot, '.repo-ai-governor');
+    const client = new LocalOrchestrationServiceSidecarClient(workspaceRoot);
+
+    try {
+      await mkdir(workspaceRoot, { recursive: true });
+
+      const startedDraft = await client.startWorkflowDraft({
+        entryMode: OrchestrationWorkflowDraftEntryMode.CREATE_SEED,
+        templateId: 'parallel-review',
+      });
+      const blockedReplacement = await client.startWorkflowDraft({
+        entryMode: OrchestrationWorkflowDraftEntryMode.READ_ONLY,
+        templateId: 'loop-guarded',
+      });
+      const replacedDraft = await client.startWorkflowDraft({
+        entryMode: OrchestrationWorkflowDraftEntryMode.READ_ONLY,
+        templateId: 'loop-guarded',
+        replaceExistingDraftSession: true,
+      });
+
+      expect(blockedReplacement.applied).toBe(false);
+      expect(blockedReplacement.draftSession.workflowDraftId).toBe(
+        startedDraft.draftSession.workflowDraftId,
+      );
+      expect(replacedDraft.applied).toBe(true);
+      expect(replacedDraft.draftSession.workflowDraftId).not.toBe(
+        startedDraft.draftSession.workflowDraftId,
+      );
+    } finally {
+      await client.dispose();
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('supports true workflow edge replacement over the sidecar IPC contract', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-sidecar-workflow-'));
+    const workspaceRoot = join(temporaryRoot, '.repo-ai-governor');
+    const client = new LocalOrchestrationServiceSidecarClient(workspaceRoot);
+
+    try {
+      await mkdir(workspaceRoot, { recursive: true });
+
+      const startedDraft = await client.startWorkflowDraft({
+        entryMode: OrchestrationWorkflowDraftEntryMode.CREATE_SEED,
+        templateId: 'condition-route',
+      });
+      const editedDraft = await client.updateWorkflowDraftEdge({
+        workflowDraftId: startedDraft.draftSession.workflowDraftId,
+        draftRevision: startedDraft.draftSession.draftRevision,
+        previousEdgeSpec: {
+          fromNodeId: 'node-route-policy',
+          toNodeId: 'node-fast-lane',
+          conditionKey: 'allow',
+        },
+        edgeSpec: {
+          fromNodeId: 'node-route-policy',
+          toNodeId: 'node-guarded-lane',
+          conditionKey: 'allow',
+        },
+      });
+
+      expect(editedDraft.applied).toBe(true);
+      expect(editedDraft.draftSession.edgeSpecs).toHaveLength(3);
+      expect(
+        editedDraft.draftSession.edgeSpecs.some(
+          (edge) =>
+            edge.fromNodeId === 'node-route-policy' &&
+            edge.toNodeId === 'node-fast-lane' &&
+            edge.conditionKey === 'allow',
+        ),
+      ).toBe(false);
+      expect(
+        editedDraft.draftSession.edgeSpecs.filter(
+          (edge) =>
+            edge.fromNodeId === 'node-route-policy' &&
+            edge.toNodeId === 'node-guarded-lane' &&
+            edge.conditionKey === 'allow',
+        ),
+      ).toHaveLength(1);
+    } finally {
+      await client.dispose();
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('blocks read-only preview drafts from mutating or committing canonical workflow state', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-sidecar-preview-'));
+    const workspaceRoot = join(temporaryRoot, '.repo-ai-governor');
+    const persistedDraftPath = join(
+      workspaceRoot,
+      'context',
+      'workflow',
+      'draft-sessions',
+      'direct-workbench.active.json',
+    );
+    const client = new LocalOrchestrationServiceSidecarClient(workspaceRoot);
+
+    try {
+      await mkdir(workspaceRoot, { recursive: true });
+
+      const startedDraft = await client.startWorkflowDraft({
+        entryMode: OrchestrationWorkflowDraftEntryMode.READ_ONLY,
+        templateId: 'parallel-review',
+      });
+      const workflowDraftId = startedDraft.draftSession.workflowDraftId;
+      const previewMutation = await client.updateWorkflowDraftNode({
+        workflowDraftId,
+        draftRevision: startedDraft.draftSession.draftRevision,
+        nodeId: 'node-preview',
+        nodeSpec: {
+          nodeId: 'node-preview',
+          stageId: 'stage-preview',
+          nodeType: ProcessNodeType.SEQUENTIAL,
+          routeKey: 'preview',
+          roleProfileId: 'reviewer-default',
+          inputSchemaRef: 'schemas/input.json',
+          outputSchemaRef: 'schemas/output.json',
+          retryPolicyRef: 'policy/retry-default',
+          timeoutPolicyRef: 'policy/timeout-default',
+          budgetPolicyRef: 'policy/budget-default',
+        },
+      });
+      const previewCommit = await client.commitWorkflowDraft({
+        workflowDraftId,
+        draftRevision: startedDraft.draftSession.draftRevision,
+      });
+      const queriedDraft = await client.queryWorkflowDraftSession({
+        workflowDraftId,
+      });
+      const persistedPayload = JSON.parse(await readFile(persistedDraftPath, 'utf8')) as {
+        session: {
+          supportedPatchOps: string[];
+        };
+      };
+      persistedPayload.session.supportedPatchOps = [
+        OrchestrationWorkflowDraftSupportedPatchOp.UPSERT_NODE,
+        OrchestrationWorkflowDraftSupportedPatchOp.COMMIT,
+      ];
+      await writeFile(persistedDraftPath, JSON.stringify(persistedPayload, null, 2), 'utf8');
+      const rehydratedDraft = await client.queryWorkflowDraftSession({
+        workflowDraftId,
+      });
+
+      expect(startedDraft.draftSession.supportedPatchOps).toEqual([
+        OrchestrationWorkflowDraftSupportedPatchOp.VALIDATE,
+      ]);
+      expect(previewMutation.applied).toBe(false);
+      expect(previewMutation.message).toContain('read-only');
+      expect(previewCommit.applied).toBe(false);
+      expect(previewCommit.message).toContain('read-only');
+      expect(queriedDraft?.supportedPatchOps).toEqual([
+        OrchestrationWorkflowDraftSupportedPatchOp.VALIDATE,
+      ]);
+      expect(rehydratedDraft?.supportedPatchOps).toEqual([
+        OrchestrationWorkflowDraftSupportedPatchOp.VALIDATE,
+      ]);
+    } finally {
+      await client.dispose();
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('fails closed when the persisted draft-session artifact is corrupted', async () => {
+    const temporaryRoot = await mkdtemp(
+      join(tmpdir(), 'local-orchestration-sidecar-corrupt-draft-session-'),
+    );
+    const workspaceRoot = join(temporaryRoot, '.repo-ai-governor');
+    const persistedDraftPath = join(
+      workspaceRoot,
+      'context',
+      'workflow',
+      'draft-sessions',
+      'direct-workbench.active.json',
+    );
+    const client = new LocalOrchestrationServiceSidecarClient(workspaceRoot);
+
+    try {
+      await mkdir(join(workspaceRoot, 'context', 'workflow', 'draft-sessions'), {
+        recursive: true,
+      });
+      await writeFile(persistedDraftPath, '{not valid json', 'utf8');
+
+      await expect(
+        client.queryWorkflowDraftSession({
+          workflowDraftId: 'workflow-draft-corrupt',
+        }),
+      ).rejects.toMatchObject({
+        code: GovernorErrorCode.DURABLE_STORAGE_VERIFY_FAILED,
+        message: expect.stringContaining('workflow draft session'),
+      });
+    } finally {
+      await client.dispose();
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('fails closed when workflow edit is requested from a corrupted saved workflow definition', async () => {
+    const temporaryRoot = await mkdtemp(
+      join(tmpdir(), 'local-orchestration-sidecar-corrupt-definition-'),
+    );
+    const workspaceRoot = join(temporaryRoot, '.repo-ai-governor');
+    const persistedDefinitionPath = join(
+      workspaceRoot,
+      'context',
+      'workflow',
+      'active-workflow.definition.json',
+    );
+    const client = new LocalOrchestrationServiceSidecarClient(workspaceRoot);
+
+    try {
+      await mkdir(join(workspaceRoot, 'context', 'workflow'), { recursive: true });
+      await writeFile(
+        persistedDefinitionPath,
+        JSON.stringify({
+          schema_version: 'cli_workflow_definition_v1',
+          generated_at: '2026-04-22T00:00:00.000Z',
+          action: 'edit',
+          template_id: 'parallel-review',
+          definition_source: 'workspace_saved',
+          definition: {
+            processId: 'process-corrupt-definition',
+            executionId: 'execution-corrupt-definition',
+            entryNodeId: 'node-entry',
+            nodes: 'not-an-array',
+            edges: [],
+          },
+        }),
+        'utf8',
+      );
+
+      await expect(
+        client.startWorkflowDraft({
+          entryMode: OrchestrationWorkflowDraftEntryMode.EDIT_SEED,
+        }),
+      ).rejects.toMatchObject({
+        code: GovernorErrorCode.DURABLE_STORAGE_VERIFY_FAILED,
+        message: expect.stringContaining('workflow definition'),
+      });
+    } finally {
+      await client.dispose();
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('fails closed when workflow edit is requested without a saved workflow definition', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-sidecar-edit-'));
+    const workspaceRoot = join(temporaryRoot, '.repo-ai-governor');
+    const client = new LocalOrchestrationServiceSidecarClient(workspaceRoot);
+
+    try {
+      await mkdir(workspaceRoot, { recursive: true });
+
+      await expect(
+        client.startWorkflowDraft({
+          entryMode: OrchestrationWorkflowDraftEntryMode.EDIT_SEED,
+        }),
+      ).rejects.toMatchObject({
+        code: GovernorErrorCode.WORKSPACE_SOURCE_NOT_FOUND,
+        message: expect.stringContaining('No saved workflow definition is available to edit yet.'),
+      });
+    } finally {
+      await client.dispose();
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('fails closed when workflow authoring starts from one unsupported template id', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-sidecar-template-'));
+    const workspaceRoot = join(temporaryRoot, '.repo-ai-governor');
+    const client = new LocalOrchestrationServiceSidecarClient(workspaceRoot);
+
+    try {
+      await mkdir(workspaceRoot, { recursive: true });
+
+      await expect(
+        client.startWorkflowDraft({
+          entryMode: OrchestrationWorkflowDraftEntryMode.CREATE_SEED,
+          templateId: 'unknown-template',
+        }),
+      ).rejects.toMatchObject({
+        code: GovernorErrorCode.AGENT_PROTOCOL_INVALID,
+        message: expect.stringContaining('Unknown workflow template id "unknown-template"'),
+      });
+    } finally {
+      await client.dispose();
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('returns stale-revision and base-definition conflicts for workflow draft authoring seams', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'local-orchestration-sidecar-conflict-'));
+    const workspaceRoot = join(temporaryRoot, '.repo-ai-governor');
+    const workflowDirectoryPath = join(workspaceRoot, 'context', 'workflow');
+    const client = new LocalOrchestrationServiceSidecarClient(workspaceRoot);
+
+    try {
+      await mkdir(workspaceRoot, { recursive: true });
+      await mkdir(workflowDirectoryPath, { recursive: true });
+
+      const startedDraft = await client.startWorkflowDraft({
+        entryMode: OrchestrationWorkflowDraftEntryMode.CREATE_SEED,
+        templateId: 'parallel-review',
+      });
+      const workflowDraftId = startedDraft.draftSession.workflowDraftId;
+      const firstRevision = startedDraft.draftSession.draftRevision;
+
+      const mutatedDraft = await client.updateWorkflowDraftNode({
+        workflowDraftId,
+        draftRevision: firstRevision,
+        nodeId: 'node-conflict',
+        nodeSpec: {
+          nodeId: 'node-conflict',
+          stageId: 'stage-conflict',
+          nodeType: ProcessNodeType.SEQUENTIAL,
+          routeKey: 'conflict',
+          roleProfileId: 'reviewer-default',
+          inputSchemaRef: 'schemas/input.json',
+          outputSchemaRef: 'schemas/output.json',
+          retryPolicyRef: 'policy/retry-default',
+          timeoutPolicyRef: 'policy/timeout-default',
+          budgetPolicyRef: 'policy/budget-default',
+        },
+      });
+      const staleMutation = await client.updateWorkflowDraftEdge({
+        workflowDraftId,
+        draftRevision: firstRevision,
+        edgeSpec: {
+          fromNodeId: 'node-plan',
+          toNodeId: 'node-conflict',
+        },
+      });
+      const refreshedAfterStale = await client.queryWorkflowDraftSession({
+        workflowDraftId,
+      });
+      await writeFile(
+        join(workflowDirectoryPath, 'active-workflow.definition.json'),
+        JSON.stringify(
+          {
+            schema_version: 'cli_workflow_definition_v1',
+            generated_at: '2026-04-22T08:00:00.000Z',
+            action: 'edit',
+            template_id: 'parallel-review',
+            definition_source: 'workspace_saved',
+            definition: {
+              processId: 'process-base-changed',
+              executionId: 'execution-base-changed',
+              entryNodeId: 'node-entry',
+              nodes: [
+                {
+                  nodeId: 'node-entry',
+                  stageId: 'stage-entry',
+                  nodeType: ProcessNodeType.SEQUENTIAL,
+                  routeKey: 'entry',
+                  roleProfileId: 'planner-default',
+                  inputSchemaRef: 'schemas/input.json',
+                  outputSchemaRef: 'schemas/output.json',
+                  retryPolicyRef: 'policy/retry-default',
+                  timeoutPolicyRef: 'policy/timeout-default',
+                  budgetPolicyRef: 'policy/budget-default',
+                },
+              ],
+              edges: [],
+            },
+          },
+          null,
+          2,
+        ),
+        'utf8',
+      );
+      const rehydratedAfterBaseChange = await client.queryWorkflowDraftSession({
+        workflowDraftId,
+      });
+      const baseChangedCommit = await client.commitWorkflowDraft({
+        workflowDraftId,
+        draftRevision: mutatedDraft.draftSession.draftRevision,
+      });
+      const revalidatedDraft = await client.validateWorkflowDraft({
+        workflowDraftId,
+        draftRevision: mutatedDraft.draftSession.draftRevision,
+      });
+
+      expect(mutatedDraft.applied).toBe(true);
+      expect(startedDraft.draftSession.supportedPatchOps).toEqual(
+        expect.arrayContaining([
+          OrchestrationWorkflowDraftSupportedPatchOp.UPDATE_NODE_POLICY,
+          OrchestrationWorkflowDraftSupportedPatchOp.UPDATE_WORKFLOW_METADATA,
+          OrchestrationWorkflowDraftSupportedPatchOp.COMMIT,
+        ]),
+      );
+      expect(staleMutation.applied).toBe(false);
+      expect(staleMutation.message).toContain('stale');
+      expect(staleMutation.draftSession.draftRevision).toBe(
+        mutatedDraft.draftSession.draftRevision,
+      );
+      expect(staleMutation.draftSession.conflictState.conflictKind).toBe(
+        OrchestrationWorkflowDraftConflictKind.NONE,
+      );
+      expect(refreshedAfterStale?.draftRevision).toBe(mutatedDraft.draftSession.draftRevision);
+      expect(refreshedAfterStale?.conflictState.conflictKind).toBe(
+        OrchestrationWorkflowDraftConflictKind.NONE,
+      );
+      expect(rehydratedAfterBaseChange?.conflictState.conflictKind).toBe(
+        OrchestrationWorkflowDraftConflictKind.BASE_DEFINITION_CHANGED,
+      );
+      expect(baseChangedCommit.applied).toBe(false);
+      expect(baseChangedCommit.draftSession.conflictState.conflictKind).toBe(
+        OrchestrationWorkflowDraftConflictKind.BASE_DEFINITION_CHANGED,
+      );
+      expect(revalidatedDraft.applied).toBe(false);
+      expect(revalidatedDraft.draftSession.conflictState.conflictKind).toBe(
+        OrchestrationWorkflowDraftConflictKind.BASE_DEFINITION_CHANGED,
+      );
     } finally {
       await client.dispose();
       await rm(temporaryRoot, { recursive: true, force: true });

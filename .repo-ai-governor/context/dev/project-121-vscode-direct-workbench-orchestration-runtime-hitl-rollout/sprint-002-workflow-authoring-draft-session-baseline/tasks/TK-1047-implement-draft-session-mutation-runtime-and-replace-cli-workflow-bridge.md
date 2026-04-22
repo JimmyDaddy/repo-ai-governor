@@ -1,6 +1,6 @@
 # TK-1047 implement draft-session mutation runtime and replace cli workflow bridge
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-22
 - Owner: AI-Agent
 - Priority: P1
@@ -55,9 +55,18 @@
 ## 9. 执行记录
 
 1. 2026-04-22：任务创建，状态初始化为 `planned`。
+2. 2026-04-22：已实现 service-owned workflow draft runtime、workspace-operation compatibility cutover、sidecar host/client wiring 与 integration/runtime coverage；`workflow_create / workflow_edit / workflow_preview` 现默认走 draft-session seam，而非 CLI workflow bridge 优先路径。
+3. 2026-04-22：已通过 `pnpm run typecheck`、`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm run check:fast`。
 
 ## 10. 产出
 
-1. 待执行：`packages/core-orchestration-service/src/local-orchestration-service-workspace-ops-runtime.ts`
-2. 待执行：`packages/core-orchestration-service/src/local-orchestration-service-shell.ts`
-3. 待执行：`packages/core-orchestration-service/src/local-orchestration-service-sidecar-host.ts`
+1. 已完成：`packages/core-orchestration-service/src/constants/index.ts`
+2. 已完成：`packages/core-orchestration-service/src/constants/local-orchestration-service-workflow-draft.constant.ts`
+3. 已完成：`packages/core-orchestration-service/src/local-orchestration-service-shell.ts`
+4. 已完成：`packages/core-orchestration-service/src/local-orchestration-service-sidecar-client.ts`
+5. 已完成：`packages/core-orchestration-service/src/local-orchestration-service-sidecar-host.ts`
+6. 已完成：`packages/core-orchestration-service/src/local-orchestration-service-workflow-draft-runtime.ts`
+7. 已完成：`packages/core-orchestration-service/src/local-orchestration-service-workflow-template-catalog.ts`
+8. 已完成：`packages/core-orchestration-service/src/local-orchestration-service-workspace-ops-runtime.ts`
+9. 已完成：`packages/core-orchestration-service/test/local-orchestration-service-sidecar-client.integration.test.ts`
+10. 已完成：`packages/core-orchestration-service/test/local-orchestration-service-workspace-ops-runtime.test.ts`

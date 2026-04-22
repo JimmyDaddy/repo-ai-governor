@@ -1,6 +1,6 @@
 # sprint-003-richer-graph-editing-and-support-truth-readiness 计划
 
-- Status: planned
+- Status: active
 - Date: 2026-04-22
 - Sprint Goal: 补齐 richer graph editing code path、delivery evidence suite 与更强 direct-workbench support-truth readiness
 - Project: `project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout`
@@ -19,7 +19,7 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-1049 | implement richer graph editing and projection-backed workflow studio | TK-1040 | planned |
+| TK-1049 | implement richer graph editing and projection-backed workflow studio | TK-1040 | in_progress |
 | TK-1050 | land direct-workbench evidence suite and support-truth readiness package | TK-1049 | planned |
 | TK-1041 | verify direct-workbench evidence boundary and support-truth readiness | TK-1050 | planned |
 | TK-1042 | finalize project-121 rollout closeout and delivery evidence handoff | TK-1041 | planned |
@@ -34,3 +34,5 @@
 
 1. 本 sprint 不预设一定会升级 public support wording；若 evidence 不足，应明确保持既有 active truth 不变。
 2. 任何更强 claim 都必须建立在 build/distribution/runtime evidence 之上，而不是 contract-only formalization。
+3. 2026-04-23：`TK-1040` 已完成 sprint-002 closeout/handoff；当前 sprint 已切换为 `current-context.md` 的 primary execution surface，并继承 `CS-027` legacy controller temporary exception 的 focused extraction 责任。
+4. 2026-04-23：`TK-1049` 已切换为 `in_progress`，开始进入 Workflow Studio richer graph editing、runtime stage navigation 与 backlink reveal 的 implementation 窗口。

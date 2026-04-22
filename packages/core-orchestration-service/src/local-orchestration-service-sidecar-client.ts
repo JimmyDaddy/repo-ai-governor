@@ -14,6 +14,7 @@ import type {
   OrchestrationArtifactPaneQueryRequest,
   OrchestrationArtifactPaneQueryResponse,
   OrchestrationBootstrapReadinessSnapshot,
+  OrchestrationCommitWorkflowDraftRequest,
   OrchestrationExecutionBoardQueryRequest,
   OrchestrationExecutionBoardQueryResponse,
   OrchestrationExecutionSummary,
@@ -53,6 +54,7 @@ import type {
   OrchestrationStartExecutionResponse,
   OrchestrationStartSessionRequest,
   OrchestrationStartSessionResponse,
+  OrchestrationStartWorkflowDraftRequest,
   OrchestrationSubmitHitlDecisionRequest,
   OrchestrationSubmitHitlDecisionResponse,
   OrchestrationSubscribeExecutionRequest,
@@ -63,6 +65,13 @@ import type {
   OrchestrationTerminateExecutionResponse,
   OrchestrationUnarchiveSessionRequest,
   OrchestrationUnarchiveSessionResponse,
+  OrchestrationUpdateWorkflowDraftEdgeRequest,
+  OrchestrationUpdateWorkflowDraftNodeRequest,
+  OrchestrationUpdateWorkflowDraftPolicyRequest,
+  OrchestrationValidateWorkflowDraftRequest,
+  OrchestrationWorkflowDraftMutationResponse,
+  OrchestrationWorkflowDraftSession,
+  OrchestrationWorkflowDraftSessionQueryRequest,
   OrchestrationWorkspaceOperationRequest,
   OrchestrationWorkspaceOperationResponse,
 } from '@repo-ai-governor/orchestration-service-client';
@@ -161,6 +170,69 @@ export class LocalOrchestrationServiceSidecarClient {
   ): Promise<OrchestrationApplyProviderOnboardingResponse> {
     return this.sendRequest<OrchestrationApplyProviderOnboardingResponse>(
       LocalOrchestrationServiceSidecarOperation.APPLY_PROVIDER_ONBOARDING,
+      request,
+    );
+  }
+
+  public async queryWorkflowDraftSession(
+    request?: OrchestrationWorkflowDraftSessionQueryRequest,
+  ): Promise<OrchestrationWorkflowDraftSession | undefined> {
+    return this.sendRequest<OrchestrationWorkflowDraftSession | undefined>(
+      LocalOrchestrationServiceSidecarOperation.QUERY_WORKFLOW_DRAFT_SESSION,
+      request,
+    );
+  }
+
+  public async startWorkflowDraft(
+    request: OrchestrationStartWorkflowDraftRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse> {
+    return this.sendRequest<OrchestrationWorkflowDraftMutationResponse>(
+      LocalOrchestrationServiceSidecarOperation.START_WORKFLOW_DRAFT,
+      request,
+    );
+  }
+
+  public async updateWorkflowDraftNode(
+    request: OrchestrationUpdateWorkflowDraftNodeRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse> {
+    return this.sendRequest<OrchestrationWorkflowDraftMutationResponse>(
+      LocalOrchestrationServiceSidecarOperation.UPDATE_WORKFLOW_DRAFT_NODE,
+      request,
+    );
+  }
+
+  public async updateWorkflowDraftEdge(
+    request: OrchestrationUpdateWorkflowDraftEdgeRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse> {
+    return this.sendRequest<OrchestrationWorkflowDraftMutationResponse>(
+      LocalOrchestrationServiceSidecarOperation.UPDATE_WORKFLOW_DRAFT_EDGE,
+      request,
+    );
+  }
+
+  public async updateWorkflowDraftPolicy(
+    request: OrchestrationUpdateWorkflowDraftPolicyRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse> {
+    return this.sendRequest<OrchestrationWorkflowDraftMutationResponse>(
+      LocalOrchestrationServiceSidecarOperation.UPDATE_WORKFLOW_DRAFT_POLICY,
+      request,
+    );
+  }
+
+  public async validateWorkflowDraft(
+    request: OrchestrationValidateWorkflowDraftRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse> {
+    return this.sendRequest<OrchestrationWorkflowDraftMutationResponse>(
+      LocalOrchestrationServiceSidecarOperation.VALIDATE_WORKFLOW_DRAFT,
+      request,
+    );
+  }
+
+  public async commitWorkflowDraft(
+    request: OrchestrationCommitWorkflowDraftRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse> {
+    return this.sendRequest<OrchestrationWorkflowDraftMutationResponse>(
+      LocalOrchestrationServiceSidecarOperation.COMMIT_WORKFLOW_DRAFT,
       request,
     );
   }

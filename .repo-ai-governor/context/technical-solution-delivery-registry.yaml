@@ -1178,17 +1178,16 @@ deliveries:
     rollout_status: planned
     owner: runtime
     project_ref: project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout
-    sprint_ref: sprint-002-workflow-authoring-draft-session-baseline
+    sprint_ref: sprint-003-richer-graph-editing-and-support-truth-readiness
     task_ids:
-      - TK-1046
-      - TK-1047
-      - TK-1048
-      - TK-1039
-      - TK-1040
+      - TK-1049
+      - TK-1050
+      - TK-1041
+      - TK-1042
     project_plan_path: .repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/plan.md
-    sprint_plan_path: .repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-002-workflow-authoring-draft-session-baseline/plan.md
-    task_csv_path: .repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-002-workflow-authoring-draft-session-baseline/tasks/tasks.csv
-    handoff_artifact_path: .repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-001-direct-hitl-and-runtime-lanes-baseline/tasks/DA-1038-sprint-001-closeout-and-sprint-002-activation-handoff.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-003-richer-graph-editing-and-support-truth-readiness/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-003-richer-graph-editing-and-support-truth-readiness/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-002-workflow-authoring-draft-session-baseline/tasks/TK-1040-close-sprint-002-and-hand-off-richer-graph-editing-readiness.md
     rollout_artifacts:
       - .repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/plan.md
       - .repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-001-direct-hitl-and-runtime-lanes-baseline/plan.md
@@ -1196,5 +1195,7 @@ deliveries:
       - .repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-001-direct-hitl-and-runtime-lanes-baseline/review/resolved_code_review_working-tree-20260422-1703.md
       - .repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-001-direct-hitl-and-runtime-lanes-baseline/tasks/DA-1038-sprint-001-closeout-and-sprint-002-activation-handoff.md
       - .repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-002-workflow-authoring-draft-session-baseline/plan.md
+      - .repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-002-workflow-authoring-draft-session-baseline/review/resolved_code_review_working-tree-20260423-0052.md
+      - .repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-002-workflow-authoring-draft-session-baseline/tasks/TK-1040-close-sprint-002-and-hand-off-richer-graph-editing-readiness.md
       - .repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-003-richer-graph-editing-and-support-truth-readiness/plan.md
-    accepted_at: 2026-04-22
+    accepted_at: 2026-04-23

@@ -34,6 +34,16 @@ export class VsCodeExtensionSelectionStore {
             reviewSourcePath: this.snapshot.reviewSourcePath,
           }
         : {}),
+      ...('workflowDraftId' in this.snapshot
+        ? {
+            workflowDraftId: this.snapshot.workflowDraftId,
+          }
+        : {}),
+      ...('workflowDraftRevision' in this.snapshot
+        ? {
+            workflowDraftRevision: this.snapshot.workflowDraftRevision,
+          }
+        : {}),
       ...('queueEntry' in this.snapshot
         ? {
             queueEntry: this.snapshot.queueEntry,
@@ -85,6 +95,12 @@ export class VsCodeExtensionSelectionStore {
     }
     if ('reviewSourcePath' in request) {
       this.snapshot.reviewSourcePath = request.reviewSourcePath;
+    }
+    if ('workflowDraftId' in request) {
+      this.snapshot.workflowDraftId = request.workflowDraftId;
+    }
+    if ('workflowDraftRevision' in request) {
+      this.snapshot.workflowDraftRevision = request.workflowDraftRevision;
     }
     if (
       'queueEntry' in request ||

@@ -202,6 +202,46 @@ export enum OrchestrationWorkspaceOperationKind {
 }
 
 /**
+ * Defines the authoring entry mode used when one workflow draft session is opened.
+ */
+export enum OrchestrationWorkflowDraftEntryMode {
+  READ_ONLY = 'read_only',
+  CREATE_SEED = 'create_seed',
+  EDIT_SEED = 'edit_seed',
+}
+
+/**
+ * Defines the service-owned draft mutation classes supported by direct workflow authoring.
+ */
+export enum OrchestrationWorkflowDraftSupportedPatchOp {
+  UPSERT_NODE = 'upsert_node',
+  REMOVE_NODE = 'remove_node',
+  UPSERT_EDGE = 'upsert_edge',
+  REMOVE_EDGE = 'remove_edge',
+  UPDATE_NODE_POLICY = 'update_node_policy',
+  UPDATE_WORKFLOW_METADATA = 'update_workflow_metadata',
+  VALIDATE = 'validate',
+  COMMIT = 'commit',
+}
+
+/**
+ * Defines conflict classes returned when draft mutations race or workspace truth changes.
+ */
+export enum OrchestrationWorkflowDraftConflictKind {
+  NONE = 'none',
+  STALE_DRAFT_REVISION = 'stale_draft_revision',
+  BASE_DEFINITION_CHANGED = 'base_definition_changed',
+}
+
+/**
+ * Defines validation issue sources so consumers can distinguish compiler vs editor diagnostics.
+ */
+export enum OrchestrationWorkflowDraftValidationIssueSource {
+  COMPILER = 'compiler',
+  EDITOR = 'editor',
+}
+
+/**
  * Defines the connect-operation argument keys reserved for staged provider onboarding.
  */
 export const ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS = {

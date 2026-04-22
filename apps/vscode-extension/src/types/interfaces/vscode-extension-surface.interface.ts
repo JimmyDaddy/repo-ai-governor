@@ -13,6 +13,9 @@ import type {
   OrchestrationServiceLifecycleStatus,
   OrchestrationServiceTransportKind,
   OrchestrationSessionContinuitySnapshot,
+  OrchestrationWorkflowDraftEntryMode,
+  OrchestrationWorkflowDraftSession,
+  OrchestrationWorkflowDraftSupportedPatchOp,
   OrchestrationWorkspaceOperationKind,
 } from '@repo-ai-governor/orchestration-service-client';
 import type {
@@ -209,6 +212,8 @@ export interface VsCodeExtensionSelectionSnapshot {
   executionId?: string;
   executionSessionId?: string;
   reviewSourcePath?: string;
+  workflowDraftId?: string;
+  workflowDraftRevision?: string;
   queueEntry?: OrchestrationGovernanceQueueEntry;
   temporaryBridge?: OrchestrationGovernanceTemporaryBridgeEntry;
   workspaceOperationKind?: OrchestrationWorkspaceOperationKind;
@@ -222,6 +227,10 @@ export interface VsCodeExtensionCommandRequest {
   executionId?: string;
   executionSessionId?: string;
   reviewSourcePath?: string;
+  workflowDraftId?: string;
+  workflowDraftRevision?: string;
+  workflowDraftEntryMode?: OrchestrationWorkflowDraftEntryMode;
+  workflowDraftPatchOp?: OrchestrationWorkflowDraftSupportedPatchOp;
   clearExecutionSelection?: boolean;
   queueEntry?: OrchestrationGovernanceQueueEntry;
   handoffTarget?: OrchestrationHandoffTarget;
@@ -260,12 +269,15 @@ export interface VsCodeExtensionWorkflowStudioSnapshot {
   secureAuthoring?: VsCodeExtensionSecureAuthoringSnapshot;
   providerLifecycleSnapshots?: readonly VsCodeExtensionProviderLifecycleSnapshot[];
   selectedExecution?: OrchestrationExecutionBoardEntry;
+  workflowDraftSession?: VsCodeExtensionWorkflowDraftSessionSnapshot;
   roleLaneStatus?: VsCodeExtensionRoleLaneStatusSnapshot;
   artifactPane?: OrchestrationArtifactPaneQueryResponse;
   sessionContinuity?: VsCodeExtensionSessionContinuitySnapshot;
   hitlDecisionPacket?: VsCodeExtensionHitlDecisionPacketSnapshot;
   reviewSourcePath?: string;
 }
+
+export type VsCodeExtensionWorkflowDraftSessionSnapshot = OrchestrationWorkflowDraftSession;
 
 export type VsCodeExtensionRoleLaneStatusSnapshot = OrchestrationRoleLaneStatusQueryResponse;
 

@@ -26,4 +26,8 @@ export {
   OrchestrationServiceHostKind,
   OrchestrationServiceEventType,
   OrchestrationServiceTransportKind,
+  OrchestrationWorkflowDraftConflictKind,
+  OrchestrationWorkflowDraftEntryMode,
+  OrchestrationWorkflowDraftSupportedPatchOp,
+  OrchestrationWorkflowDraftValidationIssueSource,
 } from './orchestration-service.constant.js';

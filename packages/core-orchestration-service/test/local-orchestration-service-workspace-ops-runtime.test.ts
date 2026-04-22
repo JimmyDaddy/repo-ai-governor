@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { type GovernorConfig, WorkspaceMode, WorkspaceModeSource } from '@repo-ai-governor/config';
 import {
   OrchestrationBootstrapReadinessActionId,
+  OrchestrationWorkflowDraftEntryMode,
   OrchestrationWorkspaceOperationKind,
 } from '@repo-ai-governor/orchestration-service-client';
 import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
@@ -1849,6 +1850,91 @@ describe('LocalOrchestrationServiceWorkspaceOpsRuntime', () => {
       currentWorkingDirectory: '/repo',
       locale: undefined,
     });
+  });
+
+  it('routes workflow preview/create/edit through the service-owned draft runtime', async () => {
+    const workflowDraftRuntime = {
+      startWorkflowDraft: vi.fn().mockResolvedValue({
+        applied: true,
+        message: 'Workflow draft is ready.',
+        draftSession: {
+          workflowDraftId: 'workflow-draft-001',
+          draftRevision: 'draft-revision-001',
+          baseDefinitionRevision: 'base-revision-001',
+          templateId: 'starter-template',
+          entryMode: OrchestrationWorkflowDraftEntryMode.CREATE_SEED,
+          nodeSpecs: [],
+          edgeSpecs: [],
+          supportedPatchOps: [],
+          validationIssues: [],
+          conflictState: {
+            hasConflict: false,
+            conflictKind: 'none',
+            detectedAt: '2026-04-22T08:00:00.000Z',
+          },
+          compiledIrPreview: {
+            processId: 'process-starter-template',
+            entryNodeId: 'entry-node',
+            compiledAt: '2026-04-22T08:00:00.000Z',
+            nodeCount: 0,
+            edgeCount: 0,
+            compileWarningCount: 0,
+            compileErrorCount: 0,
+            compileWarnings: [],
+            compileErrors: [],
+          },
+          backlinkArtifacts: [
+            {
+              artifactId: 'workflow-draft-session',
+              artifactKind: 'workflow_draft_session',
+              artifactPath:
+                '/repo/.repo-ai-governor/context/workflow/draft-sessions/direct-workbench.active.json',
+            },
+          ],
+        },
+      }),
+    };
+    const cliExecutor = vi.fn<WorkspaceOpsCliExecutor>().mockResolvedValue({
+      message: 'cli should not run',
+      command_result: {
+        operation: 'workflow_create',
+        summary: 'cli should not run',
+      },
+    });
+    const runtime = new LocalOrchestrationServiceWorkspaceOpsRuntime({
+      workspaceRoot: '/repo/.repo-ai-governor',
+      repositoryRoot: '/repo',
+      workspaceResolver: createWorkspaceResolver(),
+      pathExists: () => false,
+      cliExecutor,
+      workflowDraftRuntime,
+    });
+
+    await expect(
+      runtime.runWorkspaceOperation({
+        operationKind: OrchestrationWorkspaceOperationKind.WORKFLOW_CREATE,
+        arguments: {
+          templateId: 'starter-template',
+        },
+      }),
+    ).resolves.toMatchObject({
+      message: 'Workflow draft is ready.',
+      result: {
+        operation: OrchestrationWorkspaceOperationKind.WORKFLOW_CREATE,
+        details: {
+          workflowDraftId: 'workflow-draft-001',
+          entryMode: OrchestrationWorkflowDraftEntryMode.CREATE_SEED,
+          templateId: 'starter-template',
+        },
+      },
+    });
+
+    expect(workflowDraftRuntime.startWorkflowDraft).toHaveBeenCalledWith({
+      entryMode: OrchestrationWorkflowDraftEntryMode.CREATE_SEED,
+      templateId: 'starter-template',
+      locale: undefined,
+    });
+    expect(cliExecutor).not.toHaveBeenCalled();
   });
 
   it('fails closed when the caller sends an unsupported workspace operation kind', async () => {

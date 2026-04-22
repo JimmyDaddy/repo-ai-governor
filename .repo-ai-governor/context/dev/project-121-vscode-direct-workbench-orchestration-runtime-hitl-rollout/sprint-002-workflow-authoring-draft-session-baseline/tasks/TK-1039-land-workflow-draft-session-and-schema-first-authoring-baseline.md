@@ -1,6 +1,6 @@
 # TK-1039 land workflow draft session and schema-first authoring baseline
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-22
 - Owner: AI-Agent
 - Priority: P1
@@ -56,7 +56,9 @@
 ## 9. 执行记录
 
 1. 2026-04-22：任务创建，状态初始化为 `planned`。
+2. 2026-04-22：已完成 `TK-1046 / TK-1047 / TK-1048` 的 implementation 收口，形成 service-owned workflow draft session、schema-first patch mutation、VS Code direct authoring / validate / commit baseline。
+3. 2026-04-22：验收基线已通过 `pnpm run typecheck`、`pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm run check:fast`、`pnpm run check:ide-entry-smoke`、`pnpm run check:desktop-entry-smoke`；sprint-002 当前可进入 fresh delegated CR round。
 
 ## 10. 产出
 
-1. 待执行：workflow draft-session implementation summary
+1. 已完成：workflow draft-session baseline implementation summary 已写回 `plan.md` 与相关 `TK-1046 / TK-1047 / TK-1048` 任务卡。

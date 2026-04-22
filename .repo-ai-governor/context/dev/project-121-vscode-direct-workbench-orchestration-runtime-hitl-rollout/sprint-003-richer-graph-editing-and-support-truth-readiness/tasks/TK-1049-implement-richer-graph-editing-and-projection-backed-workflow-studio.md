@@ -1,6 +1,6 @@
 # TK-1049 implement richer graph editing and projection-backed workflow studio
 
-- Status: planned
+- Status: in_progress
 - Date: 2026-04-22
 - Owner: AI-Agent
 - Priority: P1
@@ -55,6 +55,7 @@
 ## 9. 执行记录
 
 1. 2026-04-22：任务创建，状态初始化为 `planned`。
+2. 2026-04-23：随 `TK-1040` 完成 sprint-002 closeout，当前任务切换为 `in_progress`，开始实现 Workflow Studio richer graph editing、runtime stage navigation 与 backlink reveal 的 direct-workbench code path。
 
 ## 10. 产出
 

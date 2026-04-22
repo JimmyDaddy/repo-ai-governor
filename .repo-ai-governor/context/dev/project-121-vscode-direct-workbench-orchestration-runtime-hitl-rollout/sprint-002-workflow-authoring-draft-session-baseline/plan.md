@@ -1,6 +1,6 @@
 # sprint-002-workflow-authoring-draft-session-baseline 计划
 
-- Status: planned
+- Status: completed
 - Date: 2026-04-22
 - Sprint Goal: 落 workflow draft session service seam、schema-first authoring 与 conflict-safe patch mutation baseline
 - Project: `project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout`
@@ -20,11 +20,11 @@
 
 | task_id | title | depends_on | status |
 | --- | --- | --- | --- |
-| TK-1046 | extend workflow draft-session contract and client seams | TK-1038 | planned |
-| TK-1047 | implement draft-session mutation runtime and replace cli workflow bridge | TK-1046 | planned |
-| TK-1048 | wire vscode workflow studio authoring model and command surfaces | TK-1047 | planned |
-| TK-1039 | land workflow draft session and schema-first authoring baseline | TK-1048 | planned |
-| TK-1040 | close sprint-002 and hand off richer graph-editing readiness | TK-1039 | planned |
+| TK-1046 | extend workflow draft-session contract and client seams | TK-1038 | completed |
+| TK-1047 | implement draft-session mutation runtime and replace cli workflow bridge | TK-1046 | completed |
+| TK-1048 | wire vscode workflow studio authoring model and command surfaces | TK-1047 | completed |
+| TK-1039 | land workflow draft session and schema-first authoring baseline | TK-1048 | completed |
+| TK-1040 | close sprint-002 and hand off richer graph-editing readiness | TK-1039 | completed |
 
 ## 3. Exit Criteria
 
@@ -36,4 +36,8 @@
 
 1. richer graph editing 只能建立在 draft-session owner split 之上，不能抢跑 freeform canvas。
 2. workflow authoring 的更强 claim 仍不等于 public support truth 已切换。
-3. 2026-04-22：`TK-1038 / DA-1038` 已完成 sprint-001 closeout write-back；当前 sprint 已登记为 `current-context` 的 primary execution surface，但在 `TK-1046` 正式开工前，sprint plan 与 task aggregate 继续保持 `planned`。
+3. 2026-04-22：`TK-1038 / DA-1038` 已完成 sprint-001 closeout write-back；当前 sprint 已登记为 `current-context` 的 primary execution surface。
+4. 2026-04-22：`TK-1046` 开工，sprint-002 从 `planned` 切换为 `active`，进入 workflow draft-session contract/runtime/VS Code authoring baseline 实施窗口。
+5. 2026-04-22：`TK-1046 / TK-1047 / TK-1048 / TK-1039` 已完成代码、测试与 smoke 基线；当前 sprint-002 已具备发起 fresh delegated CR round 的实现状态，`TK-1040` 保持为后续 closeout / handoff 任务。
+6. 2026-04-22：由于 workflow authoring baseline 仍暂驻 `apps/vscode-extension/src/runtime/vscode-extension-command-controller.ts` 这一 legacy 4k+ controller，`TK-1040` closeout 必须显式携带 `CS-027` temporary exception 与 sprint-003 focused extraction handoff，避免该例外在 sprint-002 closeout 后失去追踪。
+7. 2026-04-23：`CR-014` 已以 clean round 收口，sprint-002 完成 closeout write-back；workflow draft-session authoring baseline 已冻结为 `completed`，并将 `CS-027` legacy controller temporary exception 与 richer graph editing / support-truth fail-closed gate 一并移交给 sprint-003。

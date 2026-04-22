@@ -19,6 +19,7 @@ import {
   type OrchestrationArchiveSessionResponse,
   type OrchestrationArtifactPaneQueryRequest,
   type OrchestrationArtifactPaneQueryResponse,
+  type OrchestrationCommitWorkflowDraftRequest,
   type OrchestrationExecutionBoardQueryRequest,
   type OrchestrationExecutionBoardQueryResponse,
   type OrchestrationExecutionLivenessSnapshot,
@@ -59,6 +60,7 @@ import {
   type OrchestrationStartExecutionResponse,
   type OrchestrationStartSessionRequest,
   type OrchestrationStartSessionResponse,
+  type OrchestrationStartWorkflowDraftRequest,
   type OrchestrationSubmitHitlDecisionRequest,
   type OrchestrationSubmitHitlDecisionResponse,
   type OrchestrationSubscribeExecutionRequest,
@@ -69,6 +71,13 @@ import {
   type OrchestrationTerminateExecutionResponse,
   type OrchestrationUnarchiveSessionRequest,
   type OrchestrationUnarchiveSessionResponse,
+  type OrchestrationUpdateWorkflowDraftEdgeRequest,
+  type OrchestrationUpdateWorkflowDraftNodeRequest,
+  type OrchestrationUpdateWorkflowDraftPolicyRequest,
+  type OrchestrationValidateWorkflowDraftRequest,
+  type OrchestrationWorkflowDraftMutationResponse,
+  type OrchestrationWorkflowDraftSession,
+  type OrchestrationWorkflowDraftSessionQueryRequest,
 } from '@repo-ai-governor/orchestration-service-client';
 import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import { LocalOrchestrationServiceArtifactPaneQueryRuntime } from './local-orchestration-service-artifact-pane-query-runtime.js';
@@ -76,6 +85,7 @@ import { LocalOrchestrationServiceGovernanceQueryRuntime } from './local-orchest
 import { LocalOrchestrationServiceHitlDecisionStateFactory } from './local-orchestration-service-hitl-decision-state-factory.js';
 import { LocalOrchestrationServiceQueueOverviewQueryRuntime } from './local-orchestration-service-queue-overview-query-runtime.js';
 import { LocalOrchestrationServiceSessionRuntime } from './local-orchestration-service-session-runtime.js';
+import { LocalOrchestrationServiceWorkflowDraftRuntime } from './local-orchestration-service-workflow-draft-runtime.js';
 import { LocalOrchestrationServiceWorkspaceOpsRuntime } from './local-orchestration-service-workspace-ops-runtime.js';
 import type {
   LocalOrchestrationServiceHitlDecisionState,
@@ -121,6 +131,7 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
   private readonly governanceQueryRuntime: LocalOrchestrationServiceGovernanceQueryRuntime;
   private readonly hitlDecisionStateFactory: LocalOrchestrationServiceHitlDecisionStateFactory;
   private readonly queueOverviewQueryRuntime: LocalOrchestrationServiceQueueOverviewQueryRuntime;
+  private readonly workflowDraftRuntime: LocalOrchestrationServiceWorkflowDraftRuntime;
   private readonly workspaceOpsRuntime: LocalOrchestrationServiceWorkspaceOpsRuntime;
   private executionRecordsLoadedPromise: Promise<void> | null = null;
   private memoryProviderStatePromise: Promise<LocalOrchestrationServiceMemoryProviderState | null> | null =
@@ -218,6 +229,10 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
         this.workspaceOpsRuntime.getLatestWorkspaceOperationSnapshot(),
       nowProvider: this.nowProvider,
     });
+    this.workflowDraftRuntime = new LocalOrchestrationServiceWorkflowDraftRuntime({
+      workspaceRoot: dependencies.workspaceRoot,
+      nowProvider: this.nowProvider,
+    });
     this.workspaceOpsRuntime = new LocalOrchestrationServiceWorkspaceOpsRuntime({
       workspaceRoot: dependencies.workspaceRoot,
       ...(dependencies.repositoryRoot
@@ -225,6 +240,7 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
             repositoryRoot: dependencies.repositoryRoot,
           }
         : {}),
+      workflowDraftRuntime: this.workflowDraftRuntime,
     });
   }
 
@@ -282,6 +298,48 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
     request: Parameters<LocalOrchestrationServiceWorkspaceOpsRuntime['applyProviderOnboarding']>[0],
   ) {
     return this.workspaceOpsRuntime.applyProviderOnboarding(request);
+  }
+
+  public async queryWorkflowDraftSession(
+    request?: OrchestrationWorkflowDraftSessionQueryRequest,
+  ): Promise<OrchestrationWorkflowDraftSession | undefined> {
+    return this.workflowDraftRuntime.queryWorkflowDraftSession(request);
+  }
+
+  public async startWorkflowDraft(
+    request: OrchestrationStartWorkflowDraftRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse> {
+    return this.workflowDraftRuntime.startWorkflowDraft(request);
+  }
+
+  public async updateWorkflowDraftNode(
+    request: OrchestrationUpdateWorkflowDraftNodeRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse> {
+    return this.workflowDraftRuntime.updateWorkflowDraftNode(request);
+  }
+
+  public async updateWorkflowDraftEdge(
+    request: OrchestrationUpdateWorkflowDraftEdgeRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse> {
+    return this.workflowDraftRuntime.updateWorkflowDraftEdge(request);
+  }
+
+  public async updateWorkflowDraftPolicy(
+    request: OrchestrationUpdateWorkflowDraftPolicyRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse> {
+    return this.workflowDraftRuntime.updateWorkflowDraftPolicy(request);
+  }
+
+  public async validateWorkflowDraft(
+    request: OrchestrationValidateWorkflowDraftRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse> {
+    return this.workflowDraftRuntime.validateWorkflowDraft(request);
+  }
+
+  public async commitWorkflowDraft(
+    request: OrchestrationCommitWorkflowDraftRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse> {
+    return this.workflowDraftRuntime.commitWorkflowDraft(request);
   }
 
   public async runWorkspaceOperation(

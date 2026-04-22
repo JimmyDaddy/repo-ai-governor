@@ -29,6 +29,7 @@
     "@repo-ai-governor/config": "workspace:*",
     "@repo-ai-governor/artifact-registry": "workspace:*",
     "@repo-ai-governor/core-memory": "workspace:*",
+    "@repo-ai-governor/core-process": "workspace:*",
     "@repo-ai-governor/core-runtime-langgraph": "workspace:*",
     "@repo-ai-governor/core-session": "workspace:*",
     "@repo-ai-governor/memory-provider-registry": "workspace:*",

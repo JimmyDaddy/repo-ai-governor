@@ -108,6 +108,56 @@ export class LocalOrchestrationServiceSidecarHost
     return this.shell.applyProviderOnboarding(request);
   }
 
+  public queryWorkflowDraftSession(
+    request?: Parameters<
+      LocalOrchestrationServiceSidecarDispatchTable['queryWorkflowDraftSession']
+    >[0],
+  ) {
+    return this.shell.queryWorkflowDraftSession(request);
+  }
+
+  public startWorkflowDraft(
+    request: Parameters<LocalOrchestrationServiceSidecarDispatchTable['startWorkflowDraft']>[0],
+  ) {
+    return this.shell.startWorkflowDraft(request);
+  }
+
+  public updateWorkflowDraftNode(
+    request: Parameters<
+      LocalOrchestrationServiceSidecarDispatchTable['updateWorkflowDraftNode']
+    >[0],
+  ) {
+    return this.shell.updateWorkflowDraftNode(request);
+  }
+
+  public updateWorkflowDraftEdge(
+    request: Parameters<
+      LocalOrchestrationServiceSidecarDispatchTable['updateWorkflowDraftEdge']
+    >[0],
+  ) {
+    return this.shell.updateWorkflowDraftEdge(request);
+  }
+
+  public updateWorkflowDraftPolicy(
+    request: Parameters<
+      LocalOrchestrationServiceSidecarDispatchTable['updateWorkflowDraftPolicy']
+    >[0],
+  ) {
+    return this.shell.updateWorkflowDraftPolicy(request);
+  }
+
+  public validateWorkflowDraft(
+    request: Parameters<LocalOrchestrationServiceSidecarDispatchTable['validateWorkflowDraft']>[0],
+  ) {
+    return this.shell.validateWorkflowDraft(request);
+  }
+
+  public commitWorkflowDraft(
+    request: Parameters<LocalOrchestrationServiceSidecarDispatchTable['commitWorkflowDraft']>[0],
+  ) {
+    return this.shell.commitWorkflowDraft(request);
+  }
+
   public runWorkspaceOperation(
     request: Parameters<LocalOrchestrationServiceSidecarDispatchTable['runWorkspaceOperation']>[0],
   ) {
@@ -334,6 +384,50 @@ export class LocalOrchestrationServiceSidecarHost
         return this.applyProviderOnboarding(
           this.assertPayload<
             Parameters<LocalOrchestrationServiceSidecarDispatchTable['applyProviderOnboarding']>[0]
+          >(payload, operation),
+        );
+      case LocalOrchestrationServiceSidecarOperation.QUERY_WORKFLOW_DRAFT_SESSION:
+        return this.queryWorkflowDraftSession(
+          payload as Parameters<
+            LocalOrchestrationServiceSidecarDispatchTable['queryWorkflowDraftSession']
+          >[0],
+        );
+      case LocalOrchestrationServiceSidecarOperation.START_WORKFLOW_DRAFT:
+        return this.startWorkflowDraft(
+          this.assertPayload<
+            Parameters<LocalOrchestrationServiceSidecarDispatchTable['startWorkflowDraft']>[0]
+          >(payload, operation),
+        );
+      case LocalOrchestrationServiceSidecarOperation.UPDATE_WORKFLOW_DRAFT_NODE:
+        return this.updateWorkflowDraftNode(
+          this.assertPayload<
+            Parameters<LocalOrchestrationServiceSidecarDispatchTable['updateWorkflowDraftNode']>[0]
+          >(payload, operation),
+        );
+      case LocalOrchestrationServiceSidecarOperation.UPDATE_WORKFLOW_DRAFT_EDGE:
+        return this.updateWorkflowDraftEdge(
+          this.assertPayload<
+            Parameters<LocalOrchestrationServiceSidecarDispatchTable['updateWorkflowDraftEdge']>[0]
+          >(payload, operation),
+        );
+      case LocalOrchestrationServiceSidecarOperation.UPDATE_WORKFLOW_DRAFT_POLICY:
+        return this.updateWorkflowDraftPolicy(
+          this.assertPayload<
+            Parameters<
+              LocalOrchestrationServiceSidecarDispatchTable['updateWorkflowDraftPolicy']
+            >[0]
+          >(payload, operation),
+        );
+      case LocalOrchestrationServiceSidecarOperation.VALIDATE_WORKFLOW_DRAFT:
+        return this.validateWorkflowDraft(
+          this.assertPayload<
+            Parameters<LocalOrchestrationServiceSidecarDispatchTable['validateWorkflowDraft']>[0]
+          >(payload, operation),
+        );
+      case LocalOrchestrationServiceSidecarOperation.COMMIT_WORKFLOW_DRAFT:
+        return this.commitWorkflowDraft(
+          this.assertPayload<
+            Parameters<LocalOrchestrationServiceSidecarDispatchTable['commitWorkflowDraft']>[0]
           >(payload, operation),
         );
       case LocalOrchestrationServiceSidecarOperation.RUN_WORKSPACE_OPERATION:
