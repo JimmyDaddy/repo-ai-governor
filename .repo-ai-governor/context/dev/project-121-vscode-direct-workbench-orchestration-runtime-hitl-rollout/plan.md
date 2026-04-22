@@ -1,6 +1,6 @@
 # project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-22
 - Stage Mapping: technical solution rollout
 - Phase Mapping: direct HITL and runtime lanes / workflow authoring draft session / richer graph editing and support-truth readiness
@@ -34,7 +34,7 @@
 
 ## 2.3 sprint-003-richer-graph-editing-and-support-truth-readiness
 
-- Status: active
+- Status: completed
 - Sprint Goal: 补齐 richer graph editing code path、delivery evidence suite 与更强 direct-workbench support-truth readiness
 - Task Package: `TK-1049、TK-1050、TK-1041、TK-1042`
 
@@ -55,7 +55,7 @@
 | TK-1049 | sprint-003-richer-graph-editing-and-support-truth-readiness | implement richer graph editing and projection-backed workflow studio | vscode graph editing/runtime projection | TK-1040 | completed |
 | TK-1050 | sprint-003-richer-graph-editing-and-support-truth-readiness | land direct-workbench evidence suite and support-truth readiness package | evidence/test/distribution package | TK-1049 | completed |
 | TK-1041 | sprint-003-richer-graph-editing-and-support-truth-readiness | verify direct-workbench evidence boundary and support-truth readiness | evidence and rollout readiness | TK-1050 | completed |
-| TK-1042 | sprint-003-richer-graph-editing-and-support-truth-readiness | finalize project-121 rollout closeout and delivery evidence handoff | closeout and delivery evidence | TK-1041 | planned |
+| TK-1042 | sprint-003-richer-graph-editing-and-support-truth-readiness | finalize project-121 rollout closeout and delivery evidence handoff | closeout and delivery evidence | TK-1041 | completed |
 
 ## 4. 依赖产物策略
 
@@ -66,7 +66,7 @@
 ## 5. DoD（project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout）
 
 1. `project-121` 的三阶段 planned sprint queue、implementation-level task cards、checklist、tasks.csv 与 review scaffold 已标准化落盘。
-2. delivery registry 与 `current-context.md` 都已经回链到真实 planned rollout surface。
+2. delivery registry 与 `current-context.md` 已在执行期回链到真实 rollout surface，并在 final closeout 后恢复为 `completed / idle` 真值。
 3. 每个 sprint 都已经具备清晰的 service/client/extension/test 实现面、handoff 边界与 evidence gate，不再依赖纯叙述性 follow-up 维持真值。
 
 ## 6. 里程碑记录
@@ -79,7 +79,9 @@
 6. 2026-04-23：`CR-014` 已 clean `resolved`，`TK-1040` 完成 sprint-002 closeout write-back；`sprint-002` 进入 completed truth，`sprint-003` 已激活为新的 primary execution surface，并继承 `CS-027` temporary exception 的 focused extraction / fail-closed readiness handoff。
 7. 2026-04-23：`TK-1049 / TK-1050 / TK-1041` 已完成 richer Workflow Studio graph projection、distribution evidence package 与 `stay fail-closed` readiness disposition；下一阶段进入 sprint-003 delegated CR loop，`TK-1042` 继续等待 project-final clean CR 之后再执行。
 8. 2026-04-23：`CR-003` 已 clean `resolved`，sprint-003 implementation boundary 达到 clean review state；当前准备创建 sprint-003 local boundary commit，并在该提交之后进入 project-final delegated CR loop。
+9. 2026-04-23：project-final `CR-004` 识别到 `vscode-extension-presentation-builder.ts` 的 stale `CS-027` exception 仍指向旧 project-112 任务；已将 exception ownership 与 focused extraction debt handoff 收回 `TK-1042`，要求最终 closeout 显式保留该 follow-up 债务。
+10. 2026-04-23：`CR-005` 已 clean `resolved`，`TK-1042` 已完成 completion audit、delivery registry closeout、completed-stream history 迁移与 idle-context 恢复；`project-121` 进入最终 `completed` 真值，并保持 support/public wording `stay fail-closed`。
 
 ## 7. 里程碑记录入口
 
-1. 待 closeout 后补齐 completion audit summary
+1. [project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout-completion-audit-summary.md](./project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout-completion-audit-summary.md)

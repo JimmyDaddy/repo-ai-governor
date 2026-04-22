@@ -1174,8 +1174,8 @@ deliveries:
       - runtime_service
       - docs_playbook
     user_impact_level: high
-    execution_status: planned
-    rollout_status: planned
+    execution_status: completed
+    rollout_status: completed
     owner: runtime
     project_ref: project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout
     sprint_ref: sprint-003-richer-graph-editing-and-support-truth-readiness
@@ -1187,7 +1187,7 @@ deliveries:
     project_plan_path: .repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/plan.md
     sprint_plan_path: .repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-003-richer-graph-editing-and-support-truth-readiness/plan.md
     task_csv_path: .repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-003-richer-graph-editing-and-support-truth-readiness/tasks/tasks.csv
-    handoff_artifact_path: .repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-002-workflow-authoring-draft-session-baseline/tasks/TK-1040-close-sprint-002-and-hand-off-richer-graph-editing-readiness.md
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-003-richer-graph-editing-and-support-truth-readiness/tasks/DA-1042-project-121-final-closeout-and-idle-primary-stream-handoff.md
     rollout_artifacts:
       - .repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/plan.md
       - .repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-001-direct-hitl-and-runtime-lanes-baseline/plan.md
@@ -1198,4 +1198,11 @@ deliveries:
       - .repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-002-workflow-authoring-draft-session-baseline/review/resolved_code_review_working-tree-20260423-0052.md
       - .repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-002-workflow-authoring-draft-session-baseline/tasks/TK-1040-close-sprint-002-and-hand-off-richer-graph-editing-readiness.md
       - .repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-003-richer-graph-editing-and-support-truth-readiness/plan.md
+      - .repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-003-richer-graph-editing-and-support-truth-readiness/tasks/DA-1050-direct-workbench-evidence-and-readiness-package.md
+      - .repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-003-richer-graph-editing-and-support-truth-readiness/tasks/DA-1041-direct-workbench-support-truth-readiness-disposition.md
+      - .repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-003-richer-graph-editing-and-support-truth-readiness/review/resolved_code_review_working-tree-20260423-0246.md
+      - .repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-003-richer-graph-editing-and-support-truth-readiness/review/resolved_code_review_working-tree-20260423-0304.md
+      - .repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-003-richer-graph-editing-and-support-truth-readiness/review/resolved_code_review_working-tree-20260423-0324.md
+      - .repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout-completion-audit-summary.md
+      - .repo-ai-governor/context/dev/project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout/sprint-003-richer-graph-editing-and-support-truth-readiness/tasks/DA-1042-project-121-final-closeout-and-idle-primary-stream-handoff.md
     accepted_at: 2026-04-23

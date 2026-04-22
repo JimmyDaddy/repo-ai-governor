@@ -1,6 +1,6 @@
 # sprint-003-richer-graph-editing-and-support-truth-readiness 计划
 
-- Status: active
+- Status: completed
 - Date: 2026-04-22
 - Sprint Goal: 补齐 richer graph editing code path、delivery evidence suite 与更强 direct-workbench support-truth readiness
 - Project: `project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout`
@@ -22,7 +22,7 @@
 | TK-1049 | implement richer graph editing and projection-backed workflow studio | TK-1040 | completed |
 | TK-1050 | land direct-workbench evidence suite and support-truth readiness package | TK-1049 | completed |
 | TK-1041 | verify direct-workbench evidence boundary and support-truth readiness | TK-1050 | completed |
-| TK-1042 | finalize project-121 rollout closeout and delivery evidence handoff | TK-1041 | planned |
+| TK-1042 | finalize project-121 rollout closeout and delivery evidence handoff | TK-1041 | completed |
 
 ## 3. Exit Criteria
 
@@ -38,3 +38,5 @@
 4. 2026-04-23：`TK-1049` 已切换为 `in_progress`，开始进入 Workflow Studio richer graph editing、runtime stage navigation 与 backlink reveal 的 implementation 窗口。
 5. 2026-04-23：`TK-1049 / TK-1050 / TK-1041` 已完成 richer Workflow Studio graph projection、packaged distribution smoke 与 fail-closed readiness disposition；`TK-1042` 继续保持未启动，等待 sprint-003 clean CR 与 project-final clean CR 都收口后再执行最终 closeout。
 6. 2026-04-23：`CR-003` 已 clean `resolved`，sprint-003 implementation boundary 当前没有新的 delegated review blocker；下一步先创建 sprint-003 local boundary commit，再进入 project-final delegated CR loop。
+7. 2026-04-23：project-final `CR-004` 要求把 `vscode-extension-presentation-builder.ts` 的 stale `CS-027` exception ownership 收回到当前 project-121；`TK-1042` 因此明确追加 legacy builder/controller focused extraction debt handoff，closeout 不得把这项债务表述为已退休。
+8. 2026-04-23：`CR-005` 已 clean `resolved`，`TK-1042` 已完成 completion audit、delivery registry write-back、completed-stream history 迁移与 idle-context 恢复；sprint-003 现已回到最终 `completed` 真值，同时保持 support/public wording `stay fail-closed`。

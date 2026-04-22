@@ -1011,8 +1011,8 @@ export class VsCodeExtensionCommandController {
     await this.runWorkspaceOperationWithHandledError(OrchestrationWorkspaceOperationKind.CHECK);
   }
 
-  // god-object-exception: TK-1040 sprint-002 keeps workflow-draft command flow in the legacy
-  // controller until sprint-003 extracts a focused workflow authoring controller/runtime seam.
+  // god-object-exception: TK-1042 project-121 closeout keeps workflow-draft command flow in the
+  // legacy controller until the tracked follow-up decomposition extracts a focused authoring seam.
   public async runWorkflowPreview(): Promise<void> {
     if (!(await this.ensureTrusted())) {
       return;

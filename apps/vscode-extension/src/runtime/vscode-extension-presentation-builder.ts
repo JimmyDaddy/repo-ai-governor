@@ -166,8 +166,9 @@ export class VsCodeExtensionPresentationBuilder {
    * @param entries Service-owned review queue entries.
    * @returns Tree-node descriptors for the review queue view.
    */
-  // god-object-exception: TK-938 Phase B temporarily keeps queue/workbench/bridge presentation
-  // shaping in one builder; sprint-003 / TK-940 will extract focused builders after clean rollout.
+  // god-object-exception: TK-1042 project-121 closeout keeps queue/workbench/bridge presentation
+  // shaping in one builder until the next decomposition stream extracts focused builders; the
+  // closeout ledger must preserve this follow-up debt instead of treating it as retired.
   public buildReviewQueueNodes(
     entries: readonly OrchestrationGovernanceQueueEntry[],
   ): readonly VsCodeExtensionTreeNodeDescriptor[] {

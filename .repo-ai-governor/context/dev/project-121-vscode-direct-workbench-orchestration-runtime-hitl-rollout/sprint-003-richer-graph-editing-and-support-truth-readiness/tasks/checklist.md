@@ -4,8 +4,11 @@
   - 2026-04-22：任务创建，状态初始化为 `planned`。
   - 2026-04-23：已复核 `TK-1049 / TK-1050` 的 graph projection、runtime lanes evidence 与 packaged distribution smoke，并确认它们继续遵守 `local_orchestration_service` truth-owner boundary。
   - 2026-04-23：根据 `DA-1050` 与 active contracts 形成 `stay fail-closed` disposition；当前窗口不提升 public/support wording，待 project-final CR clean 后再执行最终 closeout。
-- [ ] TK-1042 finalize project-121 rollout closeout and delivery evidence handoff
+- [x] TK-1042 finalize project-121 rollout closeout and delivery evidence handoff
   - 2026-04-22：任务创建，状态初始化为 `planned`。
+  - 2026-04-23：`CR-005` 已 clean `resolved`，确认 project-final delegated review loop 的最新 round 不再存在阻止 closeout 的 actionable findings。
+  - 2026-04-23：已写入 `project-121` completion audit summary、`DA-1042` final closeout handoff，并将 project/sprint plan、delivery registry、`current-context.md` 与 completed history 同步到最终 `completed / idle` 真值。
+  - 2026-04-23：closeout 明确保留 `apps/vscode-extension/src/runtime/vscode-extension-presentation-builder.ts` 与 `apps/vscode-extension/src/runtime/vscode-extension-command-controller.ts` 的 `CS-027` focused extraction debt 作为 follow-up，不把这项 legacy split 债务表述为已完成。
 - [x] TK-1049 implement richer graph editing and projection-backed workflow studio
   - 2026-04-22：任务创建，状态初始化为 `planned`。
   - 2026-04-23：随 `TK-1040` 完成 sprint-002 closeout，当前任务切换为 `in_progress`，开始实现 Workflow Studio richer graph editing、runtime stage navigation 与 backlink reveal 的 direct-workbench code path。
@@ -26,3 +29,11 @@
   - 2026-04-23：任务创建，状态初始化为 `review_pending`。
   - 2026-04-23：fresh reviewer round 3 完成 clean recheck，未发现新的 actionable findings；保留 2 条风险提示作为 residual note，不阻断当前 sprint boundary 收口。
   - 2026-04-23：已将 clean 结论写回 `resolved_code_review_working-tree-20260423-0246.md`，当前 round 收口为 `resolved`，下一步转入 sprint-003 local commit 与 project-final CR loop。
+- [x] CR-004 project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout final delegated review loop round 4
+  - 2026-04-23：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-23：project-final reviewer round 4 返回 1 条 `CS-027` 有效 finding，指出 `vscode-extension-presentation-builder.ts` 的 stale `god-object-exception` 仍指向旧 project-112 任务。
+  - 2026-04-23：已把 builder/controller 的 exception ownership 与 focused extraction debt handoff 收回 `TK-1042`，并用 `pnpm run build`、`pnpm run test:packages -- --maxWorkers=1 --maxConcurrency=1`、`pnpm run release:verify-vscode-extension-distribution` 与 governance sync checks 验证通过；当前 round 收口为 `resolved`。
+- [x] CR-005 project-121-vscode-direct-workbench-orchestration-runtime-hitl-rollout final delegated review loop round 5
+  - 2026-04-23：任务创建，状态初始化为 `review_pending`。
+  - 2026-04-23：fresh reviewer round 5 完成 clean recheck，未发现新的 actionable findings；当前 project-final delegated review loop 达到最新 round clean state。
+  - 2026-04-23：已将 clean 结论写回 `resolved_code_review_working-tree-20260423-0324.md`，当前 round 收口为 `resolved`，下一步执行 `TK-1042` 最终 closeout、completion audit 与 context/history write-back。
