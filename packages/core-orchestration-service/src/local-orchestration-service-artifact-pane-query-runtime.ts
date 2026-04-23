@@ -10,6 +10,7 @@ import {
   type OrchestrationArtifactPaneReviewEntry,
   type OrchestrationArtifactPaneTranscriptEntry,
   type OrchestrationExecutionSummary,
+  type OrchestrationListExecutionsRequest,
   type OrchestrationListExecutionsResponse,
   type OrchestrationListSessionsResponse,
   OrchestrationSessionEventType,
@@ -21,7 +22,9 @@ import { LocalOrchestrationServiceReviewRoutingRuntime } from './local-orchestra
 interface LocalOrchestrationServiceArtifactPaneQueryRuntimeDependencies {
   workspaceRoot: string;
   getExecution: (executionId: string) => Promise<OrchestrationExecutionSummary | undefined>;
-  listExecutions: () => Promise<OrchestrationListExecutionsResponse>;
+  listExecutions: (
+    request?: OrchestrationListExecutionsRequest,
+  ) => Promise<OrchestrationListExecutionsResponse>;
   getSession: (sessionId: string) => Promise<OrchestrationSessionSummary | undefined>;
   listSessions: () => Promise<OrchestrationListSessionsResponse>;
   subscribeSession: (
@@ -36,6 +39,7 @@ const ARTIFACT_REGISTRY_SQLITE_FILE_SEGMENTS = [
   'sqlite',
   'artifact-registry.sqlite',
 ] as const;
+
 /**
  * Reads service-owned artifact, review, and transcript slices for desktop artifact-pane consumers.
  *
@@ -151,7 +155,16 @@ export class LocalOrchestrationServiceArtifactPaneQueryRuntime {
   private async listExecutionOwnershipPeers(
     executionSummary: OrchestrationExecutionSummary,
   ): Promise<OrchestrationExecutionSummary[]> {
-    const response = await this.dependencies.listExecutions();
+    const response = await this.dependencies.listExecutions({
+      filter: {
+        sprintId: executionSummary.sprintId,
+        ...(executionSummary.projectId
+          ? {
+              projectId: executionSummary.projectId,
+            }
+          : {}),
+      },
+    });
 
     return response.executions.filter(
       (candidate) =>

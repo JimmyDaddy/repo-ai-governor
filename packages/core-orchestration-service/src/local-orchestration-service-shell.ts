@@ -195,7 +195,7 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
     this.artifactPaneQueryRuntime = new LocalOrchestrationServiceArtifactPaneQueryRuntime({
       workspaceRoot: dependencies.workspaceRoot,
       getExecution: async (executionId) => this.getExecution(executionId),
-      listExecutions: async () => this.listExecutions(),
+      listExecutions: async (request) => this.listExecutions(request),
       getSession: async (sessionId) => this.sessionRuntime.getSession(sessionId),
       listSessions: async () => this.sessionRuntime.listSessions(),
       subscribeSession: async (sessionId, afterSequence) =>

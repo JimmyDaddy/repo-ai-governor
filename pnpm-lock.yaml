@@ -306,6 +306,9 @@ importers:
       '@repo-ai-governor/core-memory':
         specifier: workspace:*
         version: link:../core-memory
+      '@repo-ai-governor/core-process':
+        specifier: workspace:*
+        version: link:../core-process
       '@repo-ai-governor/core-runtime-langgraph':
         specifier: workspace:*
         version: link:../core-runtime-langgraph
@@ -456,6 +459,9 @@ importers:
 
   packages/orchestration-service-client:
     dependencies:
+      '@repo-ai-governor/core-process':
+        specifier: workspace:*
+        version: link:../core-process
       '@repo-ai-governor/memory-provider-registry':
         specifier: workspace:*
         version: link:../memory-provider-registry

@@ -2,6 +2,8 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
+import { vi } from 'vitest';
+
 import {
   OrchestrationClientSurface,
   OrchestrationExecutionKind,
@@ -361,6 +363,70 @@ describe('core-orchestration-service artifact-pane review routing', () => {
       expect(artifactPane.reviewLifecycle.totalReviewCount).toBe(0);
       expect(artifactPane.workbench.latestReviewId).toBeUndefined();
       expect(artifactPane.evidenceBacklinks.reviewPaths).toEqual([]);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('scopes ownership-peer lookups to the current sprint/project when resolving review routing', async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'artifact-pane-ownership-filter-'));
+    const workspaceRoot = resolve(temporaryRoot, '.repo-ai-governor');
+    const executionSummary = {
+      executionId: 'execution-777',
+      executionSessionId: 'session-777',
+      processId: 'process-777',
+      workspaceId: 'workspace-777',
+      workspaceRoot,
+      executionKind: OrchestrationExecutionKind.RUN,
+      clientSurface: OrchestrationClientSurface.DESKTOP,
+      eventStreamToken: 'token-777',
+      serviceHostKind: OrchestrationServiceHostKind.SIDECAR,
+      serviceTransportKind: OrchestrationServiceTransportKind.IPC,
+      status: OrchestrationExecutionStatus.RUNNING,
+      checkpointCapable: true,
+      recoveryCapable: true,
+      acceptedAt: '2026-04-05T00:00:00.000Z',
+      updatedAt: '2026-04-05T00:01:00.000Z',
+      pendingHitl: false,
+      taskId: 'TK-777',
+      projectId: 'project-777',
+      sprintId: 'sprint-003',
+    } satisfies OrchestrationExecutionSummary;
+    const listExecutions = vi.fn(async () => ({
+      executions: [executionSummary],
+      returnedCount: 1,
+      totalMatchedCount: 1,
+    }));
+    const artifactPaneQueryRuntime = new LocalOrchestrationServiceArtifactPaneQueryRuntime({
+      workspaceRoot,
+      getExecution: async () => executionSummary,
+      listExecutions,
+      getSession: async () => undefined,
+      listSessions: async () => ({
+        sessions: [],
+        returnedCount: 0,
+        totalMatchedCount: 0,
+      }),
+      subscribeSession: async () => {
+        throw new RuntimeError(
+          GovernorErrorCode.UNKNOWN,
+          'subscribeSession should not be called when no session is resolved',
+        );
+      },
+    });
+
+    try {
+      const artifactPane = await artifactPaneQueryRuntime.query({
+        executionId: executionSummary.executionId,
+      });
+
+      expect(artifactPane.policyTrace?.executionId).toBe(executionSummary.executionId);
+      expect(listExecutions).toHaveBeenCalledWith({
+        filter: {
+          projectId: 'project-777',
+          sprintId: 'sprint-003',
+        },
+      });
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }
