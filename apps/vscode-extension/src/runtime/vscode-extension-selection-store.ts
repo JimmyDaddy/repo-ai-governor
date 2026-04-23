@@ -34,6 +34,31 @@ export class VsCodeExtensionSelectionStore {
             reviewSourcePath: this.snapshot.reviewSourcePath,
           }
         : {}),
+      ...('workflowDraftId' in this.snapshot
+        ? {
+            workflowDraftId: this.snapshot.workflowDraftId,
+          }
+        : {}),
+      ...('workflowDraftRevision' in this.snapshot
+        ? {
+            workflowDraftRevision: this.snapshot.workflowDraftRevision,
+          }
+        : {}),
+      ...(this.snapshot.workflowFocusStageId !== undefined
+        ? {
+            workflowFocusStageId: this.snapshot.workflowFocusStageId,
+          }
+        : {}),
+      ...(this.snapshot.workflowFocusBacklinkTarget !== undefined
+        ? {
+            workflowFocusBacklinkTarget: this.snapshot.workflowFocusBacklinkTarget,
+          }
+        : {}),
+      ...(this.snapshot.workflowFocusBacklinkKind !== undefined
+        ? {
+            workflowFocusBacklinkKind: this.snapshot.workflowFocusBacklinkKind,
+          }
+        : {}),
       ...('queueEntry' in this.snapshot
         ? {
             queueEntry: this.snapshot.queueEntry,
@@ -71,10 +96,19 @@ export class VsCodeExtensionSelectionStore {
     if (request.clearExecutionSelection) {
       this.snapshot.executionId = undefined;
       this.snapshot.executionSessionId = undefined;
+      this.snapshot.workflowFocusStageId = undefined;
+      this.snapshot.workflowFocusBacklinkTarget = undefined;
+      this.snapshot.workflowFocusBacklinkKind = undefined;
       this.snapshot.queueEntry = undefined;
       this.snapshot.temporaryBridge = undefined;
       this.snapshot.workspaceOperationKind = undefined;
       this.snapshot.workspaceOperationArguments = undefined;
+    }
+
+    if (request.clearWorkflowFocus) {
+      this.snapshot.workflowFocusStageId = undefined;
+      this.snapshot.workflowFocusBacklinkTarget = undefined;
+      this.snapshot.workflowFocusBacklinkKind = undefined;
     }
 
     if ('executionId' in request) {
@@ -85,6 +119,55 @@ export class VsCodeExtensionSelectionStore {
     }
     if ('reviewSourcePath' in request) {
       this.snapshot.reviewSourcePath = request.reviewSourcePath;
+    }
+    if ('workflowDraftId' in request) {
+      this.snapshot.workflowDraftId = request.workflowDraftId;
+    }
+    if ('workflowDraftRevision' in request) {
+      this.snapshot.workflowDraftRevision = request.workflowDraftRevision;
+    }
+    if ('workflowFocusStageId' in request) {
+      if (request.workflowFocusStageId === undefined) {
+        this.snapshot.workflowFocusStageId = undefined;
+      } else {
+        this.snapshot.workflowFocusStageId = request.workflowFocusStageId;
+      }
+      if (request.workflowFocusStageId) {
+        this.snapshot.workflowFocusBacklinkTarget = undefined;
+        this.snapshot.workflowFocusBacklinkKind = undefined;
+      }
+    }
+    if ('workflowFocusBacklinkTarget' in request) {
+      if (request.workflowFocusBacklinkTarget === undefined) {
+        this.snapshot.workflowFocusBacklinkTarget = undefined;
+      } else {
+        this.snapshot.workflowFocusBacklinkTarget = request.workflowFocusBacklinkTarget;
+      }
+      if (request.workflowFocusBacklinkTarget) {
+        this.snapshot.workflowFocusStageId = undefined;
+      }
+    }
+    if ('workflowFocusBacklinkKind' in request) {
+      if (request.workflowFocusBacklinkKind === undefined) {
+        this.snapshot.workflowFocusBacklinkKind = undefined;
+      } else {
+        this.snapshot.workflowFocusBacklinkKind = request.workflowFocusBacklinkKind;
+      }
+    }
+    if (
+      ('executionId' in request ||
+        'executionSessionId' in request ||
+        'reviewSourcePath' in request ||
+        'workflowDraftId' in request ||
+        'workflowDraftRevision' in request) &&
+      !('workflowFocusStageId' in request) &&
+      !('workflowFocusBacklinkTarget' in request) &&
+      !('workflowFocusBacklinkKind' in request) &&
+      !request.clearWorkflowFocus
+    ) {
+      this.snapshot.workflowFocusStageId = undefined;
+      this.snapshot.workflowFocusBacklinkTarget = undefined;
+      this.snapshot.workflowFocusBacklinkKind = undefined;
     }
     if (
       'queueEntry' in request ||

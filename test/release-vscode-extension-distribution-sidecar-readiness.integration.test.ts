@@ -17,6 +17,7 @@ import { OrchestrationServiceLifecycleStatus } from '@repo-ai-governor/orchestra
 import {
   assertReadySidecarSmoke,
   assertSupportedCliBackedSmoke,
+  assertWorkflowStudioProjectionSmoke,
   extractVsix,
   resolveCliBackedSmokeWorkspaceRoot,
   verifySymlinkPayload,
@@ -88,6 +89,54 @@ describe('release vscode extension distribution sidecar readiness gate', () => {
     ).toThrow(
       `packaged root sidecar smoke must report lifecycle "${OrchestrationServiceLifecycleStatus.READY}" before distribution verification can pass (received "${serviceLifecycle}")`,
     );
+  });
+});
+
+describe('release vscode extension distribution workflow-studio smoke gate', () => {
+  it('accepts packaged workflow-studio graph/backlink projection evidence', () => {
+    expect(() =>
+      assertWorkflowStudioProjectionSmoke('packaged root', {
+        graphHeadingPresent: true,
+        stageNavigationPresent: true,
+        backlinkRevealPresent: true,
+        focusedBacklinkActionPresent: true,
+        focusRequests: [
+          {
+            clearWorkflowFocus: true,
+            workflowFocusStageId: 'review_verify',
+          },
+          {
+            clearWorkflowFocus: true,
+            workflowFocusBacklinkTarget: '/repo/.repo-ai-governor/review/resolved.md',
+            workflowFocusBacklinkKind: 'review',
+          },
+          {
+            clearWorkflowFocus: true,
+            workflowFocusBacklinkTarget: '/repo',
+            workflowFocusBacklinkKind: 'workspace',
+          },
+        ],
+        handoffRequests: [
+          {
+            workflowFocusBacklinkTarget: '/repo',
+            workflowFocusBacklinkKind: 'workspace',
+          },
+        ],
+      }),
+    ).not.toThrow();
+  });
+
+  it('rejects workflow-studio smokes when the graph projection section is missing', () => {
+    expect(() =>
+      assertWorkflowStudioProjectionSmoke('packaged root', {
+        graphHeadingPresent: false,
+        stageNavigationPresent: true,
+        backlinkRevealPresent: true,
+        focusedBacklinkActionPresent: true,
+        focusRequests: [],
+        handoffRequests: [],
+      }),
+    ).toThrow('packaged root workflow-studio smoke must render the graph projection section.');
   });
 });
 

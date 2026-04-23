@@ -1,10 +1,18 @@
+import { existsSync } from 'node:fs';
+import { isAbsolute as isNativeAbsolutePath, win32 as win32Path } from 'node:path';
+
 import * as vscode from 'vscode';
 
+import { ProcessNodeType } from '@repo-ai-governor/core-process';
 import {
   ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS,
+  OrchestrationGovernanceActionDisabledReason,
   OrchestrationGovernanceActionKind,
   type OrchestrationHandoffTarget,
   OrchestrationHandoffTargetKind,
+  OrchestrationWorkbenchBacklinkKind,
+  OrchestrationWorkflowDraftEntryMode,
+  OrchestrationWorkflowDraftSupportedPatchOp,
   OrchestrationWorkspaceOperationKind,
 } from '@repo-ai-governor/orchestration-service-client';
 import {
@@ -13,6 +21,8 @@ import {
   AdapterTransportKind,
   AdapterVendorBindingKind,
   CLI_REACT_THEME_VALUES,
+  GovernorErrorCode,
+  RuntimeError,
   WorkspaceMode,
   standardizeError,
 } from '@repo-ai-governor/shared';
@@ -34,6 +44,7 @@ import type {
   VsCodeExtensionProviderOnboardingApplyRequest,
   VsCodeExtensionSecureAuthoringSnapshot,
   VsCodeExtensionTreeNodeDescriptor,
+  VsCodeExtensionWorkflowDraftSessionSnapshot,
 } from '../types/index.js';
 import type { VsCodeExtensionLocalizer } from './vscode-extension-localizer.js';
 import type { VsCodeExtensionReviewDetailProvider } from './vscode-extension-review-detail-provider.js';
@@ -510,16 +521,16 @@ export class VsCodeExtensionCommandController {
           return this.createBlockedChatCommandExecutionResult(commandName);
         }
         if (trimmedPrompt) {
-          const succeeded = await this.runWorkspaceOperationWithHandledError(
-            OrchestrationWorkspaceOperationKind.WORKFLOW_PREVIEW,
-            { templateId: trimmedPrompt },
+          const resolvedTemplateId = await this.startWorkflowDraftFlow(
+            OrchestrationWorkflowDraftEntryMode.READ_ONLY,
+            trimmedPrompt,
           );
-          return succeeded
+          return resolvedTemplateId
             ? this.createChatCommandExecutionResult(
                 commandName,
                 'completed',
-                `Workflow preview finished for template ${trimmedPrompt}.`,
-                `工作流预览已完成，模板为 ${trimmedPrompt}。`,
+                `Workflow preview draft is ready for template ${resolvedTemplateId}.`,
+                `工作流预览草稿已就绪，模板为 ${resolvedTemplateId}。`,
               )
             : this.createChatCommandExecutionResult(
                 commandName,
@@ -545,16 +556,16 @@ export class VsCodeExtensionCommandController {
           return this.createBlockedChatCommandExecutionResult(commandName);
         }
         if (trimmedPrompt) {
-          const succeeded = await this.runWorkspaceOperationWithHandledError(
-            OrchestrationWorkspaceOperationKind.WORKFLOW_CREATE,
-            { templateId: trimmedPrompt },
+          const resolvedTemplateId = await this.startWorkflowDraftFlow(
+            OrchestrationWorkflowDraftEntryMode.CREATE_SEED,
+            trimmedPrompt,
           );
-          return succeeded
+          return resolvedTemplateId
             ? this.createChatCommandExecutionResult(
                 commandName,
                 'completed',
-                `Workflow creation finished for template ${trimmedPrompt}.`,
-                `工作流创建已完成，模板为 ${trimmedPrompt}。`,
+                `Workflow creation draft is ready for template ${resolvedTemplateId}.`,
+                `工作流创建草稿已就绪，模板为 ${resolvedTemplateId}。`,
               )
             : this.createChatCommandExecutionResult(
                 commandName,
@@ -580,16 +591,15 @@ export class VsCodeExtensionCommandController {
           return this.createBlockedChatCommandExecutionResult(commandName);
         }
         if (trimmedPrompt) {
-          const succeeded = await this.runWorkspaceOperationWithHandledError(
-            OrchestrationWorkspaceOperationKind.WORKFLOW_EDIT,
-            { templateId: trimmedPrompt },
+          const succeeded = await this.startWorkflowDraftFlow(
+            OrchestrationWorkflowDraftEntryMode.EDIT_SEED,
           );
           return succeeded
             ? this.createChatCommandExecutionResult(
                 commandName,
                 'completed',
-                `Workflow edit finished for template ${trimmedPrompt}.`,
-                `工作流编辑已完成，模板为 ${trimmedPrompt}。`,
+                'Workflow edit draft is ready from the saved workflow definition.',
+                '工作流编辑草稿已从已保存工作流定义载入。',
               )
             : this.createChatCommandExecutionResult(
                 commandName,
@@ -605,8 +615,8 @@ export class VsCodeExtensionCommandController {
           'Workflow edit flow started from chat.',
           '工作流编辑流程已从 chat 发起。',
           this.localizer.localizeText(
-            'If no template id was supplied in chat, VS Code may ask for one before editing begins.',
-            '如果没有在 chat 里直接提供模板 ID，VS Code 可能会先要求你输入一个模板 ID，然后再开始编辑。',
+            'This flow only opens the saved workflow definition; if none exists yet, VS Code will show an error instead of seeding a template.',
+            '这个流程只会打开已保存工作流定义；如果当前还不存在，VS Code 会直接报错，而不会静默改成模板建稿。',
           ),
         );
       }
@@ -857,6 +867,7 @@ export class VsCodeExtensionCommandController {
       const mergedRequest = this.mergeCommandRequest(commandRequest);
       const handoffTarget =
         mergedRequest.handoffTarget ??
+        this.createFocusedBacklinkHandoffTarget(mergedRequest) ??
         (await this.resolvePreferredHandoffTarget(mergedRequest)) ??
         this.createReviewSourceHandoffTarget(mergedRequest.reviewSourcePath);
       if (!handoffTarget?.targetPath || !handoffTarget.exists) {
@@ -1000,6 +1011,8 @@ export class VsCodeExtensionCommandController {
     await this.runWorkspaceOperationWithHandledError(OrchestrationWorkspaceOperationKind.CHECK);
   }
 
+  // god-object-exception: TK-1042 project-121 closeout keeps workflow-draft command flow in the
+  // legacy controller until the tracked follow-up decomposition extracts a focused authoring seam.
   public async runWorkflowPreview(): Promise<void> {
     if (!(await this.ensureTrusted())) {
       return;
@@ -1011,14 +1024,7 @@ export class VsCodeExtensionCommandController {
     if (templateId === null) {
       return;
     }
-    await this.runWorkspaceOperationWithHandledError(
-      OrchestrationWorkspaceOperationKind.WORKFLOW_PREVIEW,
-      templateId
-        ? {
-            templateId,
-          }
-        : undefined,
-    );
+    await this.startWorkflowDraftFlow(OrchestrationWorkflowDraftEntryMode.READ_ONLY, templateId);
   }
 
   public async runWorkflowCreate(): Promise<void> {
@@ -1032,35 +1038,133 @@ export class VsCodeExtensionCommandController {
     if (templateId === null) {
       return;
     }
-    await this.runWorkspaceOperationWithHandledError(
-      OrchestrationWorkspaceOperationKind.WORKFLOW_CREATE,
-      templateId
-        ? {
-            templateId,
-          }
-        : undefined,
-    );
+    await this.startWorkflowDraftFlow(OrchestrationWorkflowDraftEntryMode.CREATE_SEED, templateId);
   }
 
   public async runWorkflowEdit(): Promise<void> {
     if (!(await this.ensureTrusted())) {
       return;
     }
+    await this.startWorkflowDraftFlow(OrchestrationWorkflowDraftEntryMode.EDIT_SEED);
+  }
 
-    const templateId = await this.promptForWorkflowTemplateId(
-      this.localizer.localizeText('Edit workflow entry', '编辑工作流入口'),
-    );
-    if (templateId === null) {
+  public async mutateWorkflowDraft(commandRequest?: VsCodeExtensionCommandRequest): Promise<void> {
+    if (!(await this.ensureTrusted())) {
       return;
     }
-    await this.runWorkspaceOperationWithHandledError(
-      OrchestrationWorkspaceOperationKind.WORKFLOW_EDIT,
-      templateId
-        ? {
-            templateId,
-          }
-        : undefined,
-    );
+
+    try {
+      const mergedRequest = this.mergeCommandRequest(commandRequest);
+      const draftSession = await this.requireWorkflowDraftSession(mergedRequest);
+      const patchOp =
+        mergedRequest.workflowDraftPatchOp ??
+        OrchestrationWorkflowDraftSupportedPatchOp.UPSERT_NODE;
+      this.assertWorkflowDraftPatchOpSupported(draftSession, patchOp);
+      switch (patchOp) {
+        case OrchestrationWorkflowDraftSupportedPatchOp.UPSERT_NODE:
+          await this.applyWorkflowNodeMutation(draftSession);
+          return;
+        case OrchestrationWorkflowDraftSupportedPatchOp.REMOVE_NODE:
+          await this.removeWorkflowNode(draftSession);
+          return;
+        case OrchestrationWorkflowDraftSupportedPatchOp.UPSERT_EDGE:
+          await this.applyWorkflowEdgeMutation(draftSession);
+          return;
+        case OrchestrationWorkflowDraftSupportedPatchOp.REMOVE_EDGE:
+          await this.removeWorkflowEdge(draftSession);
+          return;
+        case OrchestrationWorkflowDraftSupportedPatchOp.UPDATE_WORKFLOW_METADATA:
+          await this.applyWorkflowMetadataMutation(draftSession);
+          return;
+        case OrchestrationWorkflowDraftSupportedPatchOp.UPDATE_NODE_POLICY:
+          await this.applyWorkflowNodePolicyMutation(draftSession);
+          return;
+        default:
+          throw new RuntimeError(
+            GovernorErrorCode.AGENT_PROTOCOL_INVALID,
+            this.localizer.localizeText(
+              'The requested workflow draft mutation is not supported by the VS Code authoring baseline.',
+              '当前 VS Code authoring 基线还不支持这个工作流草稿变更操作。',
+            ),
+            {
+              workflowDraftPatchOp: patchOp,
+            },
+          );
+      }
+    } catch (error) {
+      await this.showCommandError(
+        error,
+        'Failed to mutate the workflow draft session.',
+        '修改工作流草稿会话失败。',
+      );
+    }
+  }
+
+  public async validateWorkflowDraft(
+    commandRequest?: VsCodeExtensionCommandRequest,
+  ): Promise<void> {
+    if (!(await this.ensureTrusted())) {
+      return;
+    }
+
+    try {
+      const draftSession = await this.requireWorkflowDraftSession(
+        this.mergeCommandRequest(commandRequest),
+      );
+      this.assertWorkflowDraftPatchOpSupported(
+        draftSession,
+        OrchestrationWorkflowDraftSupportedPatchOp.VALIDATE,
+      );
+      const response = await this.serviceRuntime.validateWorkflowDraft({
+        workflowDraftId: draftSession.workflowDraftId,
+        draftRevision: draftSession.draftRevision,
+      });
+      await this.handleWorkflowDraftMutationResponse(response);
+    } catch (error) {
+      await this.showCommandError(
+        error,
+        'Failed to validate the workflow draft session.',
+        '校验工作流草稿会话失败。',
+      );
+    }
+  }
+
+  public async commitWorkflowDraft(commandRequest?: VsCodeExtensionCommandRequest): Promise<void> {
+    if (!(await this.ensureTrusted())) {
+      return;
+    }
+
+    try {
+      const draftSession = await this.requireWorkflowDraftSession(
+        this.mergeCommandRequest(commandRequest),
+      );
+      this.assertWorkflowDraftPatchOpSupported(
+        draftSession,
+        OrchestrationWorkflowDraftSupportedPatchOp.COMMIT,
+      );
+      const confirmed = await this.confirmCommand(
+        this.localizer.localizeText(
+          'Commit this workflow draft into the canonical workflow definition?',
+          '要把这个工作流草稿提交到规范工作流定义吗？',
+        ),
+        this.localizer.localizeText('Commit Draft', '提交草稿'),
+      );
+      if (!confirmed) {
+        return;
+      }
+
+      const response = await this.serviceRuntime.commitWorkflowDraft({
+        workflowDraftId: draftSession.workflowDraftId,
+        draftRevision: draftSession.draftRevision,
+      });
+      await this.handleWorkflowDraftMutationResponse(response);
+    } catch (error) {
+      await this.showCommandError(
+        error,
+        'Failed to commit the workflow draft session.',
+        '提交工作流草稿会话失败。',
+      );
+    }
   }
 
   /**
@@ -1084,9 +1188,19 @@ export class VsCodeExtensionCommandController {
         );
         return;
       }
+      const hitlAction = hitlEntry.actions.find(
+        (entry) => entry.actionKind === OrchestrationGovernanceActionKind.SUBMIT_HITL_DECISION,
+      );
+      const hitlDecisionOptions = hitlAction?.hitlDecisionOptions ?? [];
+      if (!hitlAction?.enabled || hitlDecisionOptions.length === 0) {
+        void vscode.window.showInformationMessage(
+          this.localizeHitlActionUnavailableReason(hitlAction?.disabledReason),
+        );
+        return;
+      }
 
       const selectedOption =
-        mergedRequest.hitlDecisionOption ?? (await this.promptForHitlDecisionOption(hitlEntry));
+        mergedRequest.hitlDecisionOption ?? (await this.promptForHitlDecisionOption(hitlAction));
       if (!selectedOption) {
         return;
       }
@@ -1108,6 +1222,7 @@ export class VsCodeExtensionCommandController {
         decision: selectedOption.decision,
         resumeAction: selectedOption.resumeAction,
         actor: 'vscode_extension_user',
+        locale: vscode.env.language,
         reason: this.localizer.localizeText(
           'Submitted from the VS Code Governor companion.',
           '由 VS Code Governor 伴侣提交。',
@@ -2173,6 +2288,7 @@ export class VsCodeExtensionCommandController {
   ): VsCodeExtensionCommandRequest {
     const selection = this.selectionStore.getSnapshot();
     const clearExecutionSelection = commandRequest?.clearExecutionSelection === true;
+    const clearWorkflowFocus = commandRequest?.clearWorkflowFocus === true;
     const requestContainsTemporaryBridge = Boolean(
       commandRequest && 'temporaryBridge' in commandRequest,
     );
@@ -2191,9 +2307,40 @@ export class VsCodeExtensionCommandController {
         commandRequest && 'reviewSourcePath' in commandRequest
           ? commandRequest.reviewSourcePath
           : selection.reviewSourcePath,
+      workflowDraftId:
+        commandRequest && 'workflowDraftId' in commandRequest
+          ? commandRequest.workflowDraftId
+          : selection.workflowDraftId,
+      workflowDraftRevision:
+        commandRequest && 'workflowDraftRevision' in commandRequest
+          ? commandRequest.workflowDraftRevision
+          : selection.workflowDraftRevision,
+      workflowFocusStageId:
+        clearExecutionSelection || clearWorkflowFocus
+          ? undefined
+          : commandRequest && 'workflowFocusStageId' in commandRequest
+            ? commandRequest.workflowFocusStageId
+            : selection.workflowFocusStageId,
+      workflowFocusBacklinkTarget:
+        clearExecutionSelection || clearWorkflowFocus
+          ? undefined
+          : commandRequest && 'workflowFocusBacklinkTarget' in commandRequest
+            ? commandRequest.workflowFocusBacklinkTarget
+            : selection.workflowFocusBacklinkTarget,
+      workflowFocusBacklinkKind:
+        clearExecutionSelection || clearWorkflowFocus
+          ? undefined
+          : commandRequest && 'workflowFocusBacklinkKind' in commandRequest
+            ? commandRequest.workflowFocusBacklinkKind
+            : selection.workflowFocusBacklinkKind,
       ...(clearExecutionSelection
         ? {
             clearExecutionSelection: true,
+          }
+        : {}),
+      ...(clearWorkflowFocus
+        ? {
+            clearWorkflowFocus: true,
           }
         : {}),
       queueEntry: clearExecutionSelection
@@ -2247,6 +2394,16 @@ export class VsCodeExtensionCommandController {
       ...(commandRequest && 'userConfigKeyPath' in commandRequest
         ? {
             userConfigKeyPath: commandRequest.userConfigKeyPath,
+          }
+        : {}),
+      ...(commandRequest && 'workflowDraftEntryMode' in commandRequest
+        ? {
+            workflowDraftEntryMode: commandRequest.workflowDraftEntryMode,
+          }
+        : {}),
+      ...(commandRequest && 'workflowDraftPatchOp' in commandRequest
+        ? {
+            workflowDraftPatchOp: commandRequest.workflowDraftPatchOp,
           }
         : {}),
       ...(commandRequest && 'secretKeyName' in commandRequest
@@ -2624,6 +2781,38 @@ export class VsCodeExtensionCommandController {
     };
   }
 
+  private createFocusedBacklinkHandoffTarget(
+    commandRequest: VsCodeExtensionCommandRequest,
+  ): OrchestrationHandoffTarget | undefined {
+    if (
+      !commandRequest.workflowFocusBacklinkTarget ||
+      !commandRequest.workflowFocusBacklinkKind ||
+      !this.isAbsoluteHandoffPath(commandRequest.workflowFocusBacklinkTarget)
+    ) {
+      return undefined;
+    }
+
+    const targetPath = commandRequest.workflowFocusBacklinkTarget;
+    return {
+      targetId: `workflow-studio:${commandRequest.workflowFocusBacklinkKind}:${targetPath}`,
+      executionId:
+        commandRequest.executionId ?? `workflow-studio:${commandRequest.workflowFocusBacklinkKind}`,
+      targetKind:
+        commandRequest.workflowFocusBacklinkKind === OrchestrationWorkbenchBacklinkKind.REVIEW
+          ? OrchestrationHandoffTargetKind.REVIEW_DOCUMENT
+          : commandRequest.workflowFocusBacklinkKind ===
+              OrchestrationWorkbenchBacklinkKind.WORKSPACE
+            ? OrchestrationHandoffTargetKind.WORKTREE
+            : OrchestrationHandoffTargetKind.EDITOR,
+      targetPath,
+      exists: existsSync(targetPath),
+    };
+  }
+
+  private isAbsoluteHandoffPath(targetPath: string): boolean {
+    return isNativeAbsolutePath(targetPath) || win32Path.isAbsolute(targetPath);
+  }
+
   /**
    * Keeps queue-only selections actionable when the execution-board window cannot rehydrate them.
    * @param handoffTargets Candidate handoff targets from queue or execution-board state.
@@ -2667,17 +2856,10 @@ export class VsCodeExtensionCommandController {
     return 'nodeId' in commandRequest ? commandRequest.selectionRequest : commandRequest;
   }
 
-  private async promptForHitlDecisionOption(hitlEntry: {
-    execution: { executionId: string; executionSessionId: string };
-    actions: readonly {
-      actionKind: OrchestrationGovernanceActionKind;
-      hitlDecisionOptions?: readonly { optionId: string; decision: string; resumeAction: string }[];
-    }[];
+  private async promptForHitlDecisionOption(hitlAction?: {
+    hitlDecisionOptions?: readonly { optionId: string; decision: string; resumeAction: string }[];
   }) {
-    const action = hitlEntry.actions.find(
-      (entry) => entry.actionKind === OrchestrationGovernanceActionKind.SUBMIT_HITL_DECISION,
-    );
-    const options = action?.hitlDecisionOptions ?? [];
+    const options = hitlAction?.hitlDecisionOptions ?? [];
     if (options.length === 0) {
       return undefined;
     }
@@ -2699,6 +2881,28 @@ export class VsCodeExtensionCommandController {
       },
     );
     return picked?.option;
+  }
+
+  private localizeHitlActionUnavailableReason(
+    reason?: OrchestrationGovernanceActionDisabledReason,
+  ): string {
+    switch (reason) {
+      case OrchestrationGovernanceActionDisabledReason.HITL_DECISION_UNAVAILABLE:
+        return this.localizer.localizeText(
+          'No allowed HITL decision is available right now.',
+          '当前没有可提交的合法 HITL 决策。',
+        );
+      case OrchestrationGovernanceActionDisabledReason.HITL_NOT_PENDING:
+        return this.localizer.localizeText(
+          'No pending HITL decision is available right now.',
+          '当前没有可处理的 HITL 决策。',
+        );
+      default:
+        return this.localizer.localizeText(
+          'The HITL action is currently unavailable.',
+          '当前 HITL 动作不可用。',
+        );
+    }
   }
 
   private async resolveWorkspaceOperationRequest(
@@ -3036,6 +3240,698 @@ export class VsCodeExtensionCommandController {
     }
   }
 
+  private async startWorkflowDraftFlow(
+    entryMode: OrchestrationWorkflowDraftEntryMode,
+    templateId?: string,
+  ): Promise<string | undefined> {
+    try {
+      const existingDraftSession = await this.serviceRuntime.queryWorkflowDraftSessionStrict({
+        preferLatest: true,
+      });
+      const replaceExistingDraftSession =
+        existingDraftSession && this.isMutableWorkflowDraftSession(existingDraftSession)
+          ? await this.confirmWorkflowDraftReplacement(existingDraftSession, entryMode)
+          : false;
+      if (existingDraftSession && this.isMutableWorkflowDraftSession(existingDraftSession)) {
+        if (!replaceExistingDraftSession) {
+          return undefined;
+        }
+      }
+
+      const response = await this.serviceRuntime.startWorkflowDraft({
+        entryMode,
+        ...(replaceExistingDraftSession
+          ? {
+              replaceExistingDraftSession: true,
+            }
+          : {}),
+        ...(templateId
+          ? {
+              templateId,
+            }
+          : {}),
+      });
+      await this.handleWorkflowDraftMutationResponse(response, {
+        workflowDraftEntryMode: response.draftSession.entryMode,
+      });
+      return response.applied ? response.draftSession.templateId : undefined;
+    } catch (error) {
+      await this.showCommandError(
+        error,
+        'Failed to start the workflow draft session.',
+        '启动工作流草稿会话失败。',
+      );
+      return undefined;
+    }
+  }
+
+  private async requireWorkflowDraftSession(
+    commandRequest?: VsCodeExtensionCommandRequest,
+  ): Promise<VsCodeExtensionWorkflowDraftSessionSnapshot> {
+    const request = this.mergeCommandRequest(commandRequest);
+    const workflowDraftSession = await this.serviceRuntime.queryWorkflowDraftSessionStrict(
+      request.workflowDraftId
+        ? {
+            workflowDraftId: request.workflowDraftId,
+          }
+        : {
+            preferLatest: true,
+          },
+    );
+    if (workflowDraftSession) {
+      if (
+        request.workflowDraftRevision &&
+        request.workflowDraftRevision !== workflowDraftSession.draftRevision
+      ) {
+        throw new RuntimeError(
+          GovernorErrorCode.AGENT_PROTOCOL_INVALID,
+          this.localizer.localizeText(
+            'The workflow draft revision in the current view is stale. Refresh Workflow Studio before continuing.',
+            '当前视图中的工作流草稿 revision 已过期；请先刷新 Workflow Studio 再继续。',
+          ),
+          {
+            requestedWorkflowDraftRevision: request.workflowDraftRevision,
+            latestWorkflowDraftRevision: workflowDraftSession.draftRevision,
+          },
+        );
+      }
+      return workflowDraftSession;
+    }
+
+    throw new RuntimeError(
+      GovernorErrorCode.WORKSPACE_SOURCE_NOT_FOUND,
+      this.localizer.localizeText(
+        'No workflow draft session is available yet. Start preview, create, or edit first.',
+        '当前还没有可用的工作流草稿会话；请先启动预览、创建或编辑流程。',
+      ),
+    );
+  }
+
+  private async applyWorkflowNodeMutation(
+    draftSession: VsCodeExtensionWorkflowDraftSessionSnapshot,
+  ): Promise<void> {
+    type WorkflowNodeActionItem =
+      | {
+          label: string;
+          description: string;
+          mode: 'create';
+        }
+      | {
+          label: string;
+          description: string;
+          mode: 'edit';
+          node: VsCodeExtensionWorkflowDraftSessionSnapshot['nodeSpecs'][number];
+        };
+
+    const existingChoice: WorkflowNodeActionItem | undefined =
+      draftSession.nodeSpecs.length > 0
+        ? await vscode.window.showQuickPick<WorkflowNodeActionItem>(
+            [
+              {
+                label: this.localizer.localizeText('Create new node', '创建新节点'),
+                description: this.localizer.localizeText(
+                  'Append one schema-first workflow node.',
+                  '追加一个 schema-first 工作流节点。',
+                ),
+                mode: 'create' as const,
+              },
+              ...draftSession.nodeSpecs.map(
+                (node: VsCodeExtensionWorkflowDraftSessionSnapshot['nodeSpecs'][number]) => ({
+                  label: node.nodeId,
+                  description: `${node.stageId} · ${node.routeKey} · ${node.roleProfileId}`,
+                  mode: 'edit' as const,
+                  node,
+                }),
+              ),
+            ],
+            {
+              title: this.localizer.localizeText(
+                'Choose a workflow node authoring action',
+                '选择一个工作流节点编辑动作',
+              ),
+            },
+          )
+        : {
+            label: this.localizer.localizeText('Create new node', '创建新节点'),
+            description: this.localizer.localizeText(
+              'Append one schema-first workflow node.',
+              '追加一个 schema-first 工作流节点。',
+            ),
+            mode: 'create' as const,
+          };
+    if (!existingChoice) {
+      return;
+    }
+
+    const existingNode = 'node' in existingChoice ? existingChoice.node : undefined;
+    const nodeId =
+      existingNode?.nodeId ??
+      (await this.promptForRequiredText(
+        this.localizer.localizeText('Workflow node id', '工作流节点 ID'),
+        this.localizer.localizeText(
+          'Enter one stable node identifier.',
+          '输入一个稳定的节点标识。',
+        ),
+      ));
+    if (!nodeId) {
+      return;
+    }
+    const nodeType = await this.promptForWorkflowNodeType(existingNode?.nodeType);
+    if (!nodeType) {
+      return;
+    }
+    const stageId = await this.promptForRequiredText(
+      this.localizer.localizeText('Stage id', '阶段 ID'),
+      this.localizer.localizeText('Enter the stage id for this node.', '输入该节点的阶段 ID。'),
+      existingNode?.stageId,
+    );
+    if (!stageId) {
+      return;
+    }
+    const routeKey = await this.promptForRequiredText(
+      this.localizer.localizeText('Route key', '路由键'),
+      this.localizer.localizeText('Enter the route key for this node.', '输入该节点的路由键。'),
+      existingNode?.routeKey,
+    );
+    if (!routeKey) {
+      return;
+    }
+    const roleProfileId = await this.promptForRequiredText(
+      this.localizer.localizeText('Role profile id', '角色配置 ID'),
+      this.localizer.localizeText(
+        'Enter the role profile id used by this node.',
+        '输入该节点使用的角色配置 ID。',
+      ),
+      existingNode?.roleProfileId,
+    );
+    if (!roleProfileId) {
+      return;
+    }
+    const inputSchemaRef = await this.promptForOptionalText(
+      this.localizer.localizeText('Input schema ref', '输入 schema ref'),
+      this.localizer.localizeText(
+        'Optional: enter the input schema reference.',
+        '可选：输入输入 schema 引用。',
+      ),
+      existingNode?.inputSchemaRef,
+    );
+    if (inputSchemaRef === null) {
+      return;
+    }
+    const outputSchemaRef = await this.promptForOptionalText(
+      this.localizer.localizeText('Output schema ref', '输出 schema ref'),
+      this.localizer.localizeText(
+        'Optional: enter the output schema reference.',
+        '可选：输入输出 schema 引用。',
+      ),
+      existingNode?.outputSchemaRef,
+    );
+    if (outputSchemaRef === null) {
+      return;
+    }
+    const retryPolicyRef = await this.promptForOptionalText(
+      this.localizer.localizeText('Retry policy ref', '重试策略 ref'),
+      this.localizer.localizeText(
+        'Optional: enter the retry policy reference.',
+        '可选：输入重试策略引用。',
+      ),
+      existingNode?.retryPolicyRef,
+    );
+    if (retryPolicyRef === null) {
+      return;
+    }
+    const timeoutPolicyRef = await this.promptForOptionalText(
+      this.localizer.localizeText('Timeout policy ref', '超时策略 ref'),
+      this.localizer.localizeText(
+        'Optional: enter the timeout policy reference.',
+        '可选：输入超时策略引用。',
+      ),
+      existingNode?.timeoutPolicyRef,
+    );
+    if (timeoutPolicyRef === null) {
+      return;
+    }
+    const budgetPolicyRef = await this.promptForOptionalText(
+      this.localizer.localizeText('Budget policy ref', '预算策略 ref'),
+      this.localizer.localizeText(
+        'Optional: enter the budget policy reference.',
+        '可选：输入预算策略引用。',
+      ),
+      existingNode?.budgetPolicyRef,
+    );
+    if (budgetPolicyRef === null) {
+      return;
+    }
+    const maxCycles =
+      nodeType === ProcessNodeType.LOOP
+        ? await this.promptForOptionalNumber(
+            this.localizer.localizeText('Loop max cycles', '循环最大轮次'),
+            this.localizer.localizeText(
+              'Optional: enter the max cycle count for loop nodes.',
+              '可选：输入循环节点的最大轮次。',
+            ),
+            existingNode?.maxCycles,
+          )
+        : undefined;
+    if (maxCycles === null) {
+      return;
+    }
+    const maxWallTimeSeconds =
+      nodeType === ProcessNodeType.LOOP
+        ? await this.promptForOptionalNumber(
+            this.localizer.localizeText('Loop max wall time (seconds)', '循环最大墙钟时间（秒）'),
+            this.localizer.localizeText(
+              'Optional: enter the max wall time in seconds for loop nodes.',
+              '可选：输入循环节点的最大墙钟时间（秒）。',
+            ),
+            existingNode?.maxWallTimeSeconds,
+          )
+        : undefined;
+    if (maxWallTimeSeconds === null) {
+      return;
+    }
+
+    const response = await this.serviceRuntime.updateWorkflowDraftNode({
+      workflowDraftId: draftSession.workflowDraftId,
+      draftRevision: draftSession.draftRevision,
+      nodeId,
+      nodeSpec: {
+        nodeId,
+        stageId,
+        nodeType,
+        routeKey,
+        roleProfileId,
+        ...(inputSchemaRef !== undefined
+          ? {
+              inputSchemaRef,
+            }
+          : {}),
+        ...(outputSchemaRef !== undefined
+          ? {
+              outputSchemaRef,
+            }
+          : {}),
+        ...(retryPolicyRef !== undefined
+          ? {
+              retryPolicyRef,
+            }
+          : {}),
+        ...(timeoutPolicyRef !== undefined
+          ? {
+              timeoutPolicyRef,
+            }
+          : {}),
+        ...(budgetPolicyRef !== undefined
+          ? {
+              budgetPolicyRef,
+            }
+          : {}),
+        ...(maxCycles !== undefined
+          ? {
+              maxCycles,
+            }
+          : {}),
+        ...(maxWallTimeSeconds !== undefined
+          ? {
+              maxWallTimeSeconds,
+            }
+          : {}),
+      },
+    });
+    await this.handleWorkflowDraftMutationResponse(response);
+  }
+
+  private async removeWorkflowNode(
+    draftSession: VsCodeExtensionWorkflowDraftSessionSnapshot,
+  ): Promise<void> {
+    if (draftSession.nodeSpecs.length === 0) {
+      void vscode.window.showInformationMessage(
+        this.localizer.localizeText(
+          'No workflow node is available to remove.',
+          '当前没有可移除的工作流节点。',
+        ),
+      );
+      return;
+    }
+
+    const pickedNode = await vscode.window.showQuickPick<{
+      label: string;
+      description: string;
+      node: VsCodeExtensionWorkflowDraftSessionSnapshot['nodeSpecs'][number];
+    }>(
+      draftSession.nodeSpecs.map(
+        (node: VsCodeExtensionWorkflowDraftSessionSnapshot['nodeSpecs'][number]) => ({
+          label: node.nodeId,
+          description: `${node.stageId} · ${node.routeKey} · ${node.roleProfileId}`,
+          node,
+        }),
+      ),
+      {
+        title: this.localizer.localizeText(
+          'Choose one workflow node to remove',
+          '选择一个要移除的工作流节点',
+        ),
+      },
+    );
+    if (!pickedNode) {
+      return;
+    }
+
+    const response = await this.serviceRuntime.updateWorkflowDraftNode({
+      workflowDraftId: draftSession.workflowDraftId,
+      draftRevision: draftSession.draftRevision,
+      nodeId: pickedNode.node.nodeId,
+      remove: true,
+    });
+    await this.handleWorkflowDraftMutationResponse(response);
+  }
+
+  private async applyWorkflowEdgeMutation(
+    draftSession: VsCodeExtensionWorkflowDraftSessionSnapshot,
+  ): Promise<void> {
+    if (draftSession.nodeSpecs.length < 2) {
+      void vscode.window.showInformationMessage(
+        this.localizer.localizeText(
+          'At least two workflow nodes are required before you can author an edge.',
+          '至少需要两个工作流节点后才能编辑连线。',
+        ),
+      );
+      return;
+    }
+
+    type WorkflowEdgeActionItem =
+      | {
+          label: string;
+          description: string;
+          mode: 'create';
+        }
+      | {
+          label: string;
+          description: string;
+          mode: 'edit';
+          edge: VsCodeExtensionWorkflowDraftSessionSnapshot['edgeSpecs'][number];
+        };
+
+    const existingChoice: WorkflowEdgeActionItem | undefined =
+      draftSession.edgeSpecs.length > 0
+        ? await vscode.window.showQuickPick<WorkflowEdgeActionItem>(
+            [
+              {
+                label: this.localizer.localizeText('Create new edge', '创建新连线'),
+                description: this.localizer.localizeText(
+                  'Append one workflow edge between two nodes.',
+                  '在两个节点之间追加一条工作流连线。',
+                ),
+                mode: 'create' as const,
+              },
+              ...draftSession.edgeSpecs.map(
+                (edge: VsCodeExtensionWorkflowDraftSessionSnapshot['edgeSpecs'][number]) => ({
+                  label: `${edge.fromNodeId} -> ${edge.toNodeId}`,
+                  description:
+                    edge.conditionKey ?? this.localizer.localizeText('No condition', '无条件'),
+                  mode: 'edit' as const,
+                  edge,
+                }),
+              ),
+            ],
+            {
+              title: this.localizer.localizeText(
+                'Choose a workflow edge authoring action',
+                '选择一个工作流连线编辑动作',
+              ),
+            },
+          )
+        : {
+            label: this.localizer.localizeText('Create new edge', '创建新连线'),
+            description: this.localizer.localizeText(
+              'Append one workflow edge between two nodes.',
+              '在两个节点之间追加一条工作流连线。',
+            ),
+            mode: 'create' as const,
+          };
+    if (!existingChoice) {
+      return;
+    }
+
+    const existingEdge = 'edge' in existingChoice ? existingChoice.edge : undefined;
+    const fromNode = await this.promptForWorkflowNodeChoice(
+      draftSession,
+      this.localizer.localizeText('Choose the source node', '选择源节点'),
+      existingEdge?.fromNodeId,
+      this.localizer.localizeText('Current source node', '当前源节点'),
+    );
+    if (!fromNode) {
+      return;
+    }
+    const toNode = await this.promptForWorkflowNodeChoice(
+      draftSession,
+      this.localizer.localizeText('Choose the target node', '选择目标节点'),
+      existingEdge?.toNodeId,
+      this.localizer.localizeText('Current target node', '当前目标节点'),
+    );
+    if (!toNode) {
+      return;
+    }
+    const conditionKey = await this.promptForOptionalText(
+      this.localizer.localizeText('Condition key', '条件键'),
+      this.localizer.localizeText(
+        'Optional: enter a condition key for conditional routing.',
+        '可选：输入条件路由使用的 condition key。',
+      ),
+      existingEdge?.conditionKey,
+    );
+    if (conditionKey === null) {
+      return;
+    }
+
+    const response = await this.serviceRuntime.updateWorkflowDraftEdge({
+      workflowDraftId: draftSession.workflowDraftId,
+      draftRevision: draftSession.draftRevision,
+      edgeSpec: {
+        fromNodeId: fromNode.nodeId,
+        toNodeId: toNode.nodeId,
+        ...(conditionKey !== undefined
+          ? {
+              conditionKey,
+            }
+          : {}),
+      },
+      ...(existingEdge
+        ? {
+            previousEdgeSpec: {
+              fromNodeId: existingEdge.fromNodeId,
+              toNodeId: existingEdge.toNodeId,
+              ...(existingEdge.conditionKey !== undefined
+                ? {
+                    conditionKey: existingEdge.conditionKey,
+                  }
+                : {}),
+            },
+          }
+        : {}),
+    });
+    await this.handleWorkflowDraftMutationResponse(response);
+  }
+
+  private async removeWorkflowEdge(
+    draftSession: VsCodeExtensionWorkflowDraftSessionSnapshot,
+  ): Promise<void> {
+    if (draftSession.edgeSpecs.length === 0) {
+      void vscode.window.showInformationMessage(
+        this.localizer.localizeText(
+          'No workflow edge is available to remove.',
+          '当前没有可移除的工作流连线。',
+        ),
+      );
+      return;
+    }
+
+    const pickedEdge = await vscode.window.showQuickPick<{
+      label: string;
+      description: string;
+      edge: VsCodeExtensionWorkflowDraftSessionSnapshot['edgeSpecs'][number];
+    }>(
+      draftSession.edgeSpecs.map(
+        (edge: VsCodeExtensionWorkflowDraftSessionSnapshot['edgeSpecs'][number]) => ({
+          label: `${edge.fromNodeId} -> ${edge.toNodeId}`,
+          description: edge.conditionKey ?? this.localizer.localizeText('No condition', '无条件'),
+          edge,
+        }),
+      ),
+      {
+        title: this.localizer.localizeText(
+          'Choose one workflow edge to remove',
+          '选择一个要移除的工作流连线',
+        ),
+      },
+    );
+    if (!pickedEdge) {
+      return;
+    }
+
+    const response = await this.serviceRuntime.updateWorkflowDraftEdge({
+      workflowDraftId: draftSession.workflowDraftId,
+      draftRevision: draftSession.draftRevision,
+      edgeSpec: pickedEdge.edge,
+      remove: true,
+    });
+    await this.handleWorkflowDraftMutationResponse(response);
+  }
+
+  private async applyWorkflowMetadataMutation(
+    draftSession: VsCodeExtensionWorkflowDraftSessionSnapshot,
+  ): Promise<void> {
+    const processId = await this.promptForRequiredText(
+      this.localizer.localizeText('Workflow process id', '工作流 process id'),
+      this.localizer.localizeText(
+        'Enter the canonical workflow process identifier.',
+        '输入规范工作流 process 标识。',
+      ),
+      draftSession.compiledIrPreview.processId,
+    );
+    if (!processId) {
+      return;
+    }
+
+    const entryNode = await this.promptForWorkflowNodeChoice(
+      draftSession,
+      this.localizer.localizeText('Choose the entry node', '选择入口节点'),
+      draftSession.compiledIrPreview.entryNodeId,
+    );
+    if (!entryNode) {
+      return;
+    }
+
+    const response = await this.serviceRuntime.updateWorkflowDraftPolicy({
+      workflowDraftId: draftSession.workflowDraftId,
+      draftRevision: draftSession.draftRevision,
+      processId,
+      entryNodeId: entryNode.nodeId,
+    });
+    await this.handleWorkflowDraftMutationResponse(response);
+  }
+
+  private async applyWorkflowNodePolicyMutation(
+    draftSession: VsCodeExtensionWorkflowDraftSessionSnapshot,
+  ): Promise<void> {
+    const node = await this.promptForWorkflowNodeChoice(
+      draftSession,
+      this.localizer.localizeText('Choose the node to update', '选择要更新的节点'),
+    );
+    if (!node) {
+      return;
+    }
+
+    const inputSchemaRef = await this.promptForOptionalText(
+      this.localizer.localizeText('Input schema ref', '输入 schema 引用'),
+      this.localizer.localizeText(
+        'Leave the field empty to keep the current input schema binding.',
+        '留空则保留当前输入 schema 绑定。',
+      ),
+      node.inputSchemaRef,
+    );
+    if (inputSchemaRef === null) {
+      return;
+    }
+
+    const outputSchemaRef = await this.promptForOptionalText(
+      this.localizer.localizeText('Output schema ref', '输出 schema 引用'),
+      this.localizer.localizeText(
+        'Leave the field empty to keep the current output schema binding.',
+        '留空则保留当前输出 schema 绑定。',
+      ),
+      node.outputSchemaRef,
+    );
+    if (outputSchemaRef === null) {
+      return;
+    }
+
+    const retryPolicyRef = await this.promptForOptionalText(
+      this.localizer.localizeText('Retry policy ref', '重试策略引用'),
+      this.localizer.localizeText(
+        'Leave the field empty to keep the current retry policy binding.',
+        '留空则保留当前重试策略绑定。',
+      ),
+      node.retryPolicyRef,
+    );
+    if (retryPolicyRef === null) {
+      return;
+    }
+
+    const timeoutPolicyRef = await this.promptForOptionalText(
+      this.localizer.localizeText('Timeout policy ref', '超时策略引用'),
+      this.localizer.localizeText(
+        'Leave the field empty to keep the current timeout policy binding.',
+        '留空则保留当前超时策略绑定。',
+      ),
+      node.timeoutPolicyRef,
+    );
+    if (timeoutPolicyRef === null) {
+      return;
+    }
+
+    const budgetPolicyRef = await this.promptForOptionalText(
+      this.localizer.localizeText('Budget policy ref', '预算策略引用'),
+      this.localizer.localizeText(
+        'Leave the field empty to keep the current budget policy binding.',
+        '留空则保留当前预算策略绑定。',
+      ),
+      node.budgetPolicyRef,
+    );
+    if (budgetPolicyRef === null) {
+      return;
+    }
+
+    const response = await this.serviceRuntime.updateWorkflowDraftPolicy({
+      workflowDraftId: draftSession.workflowDraftId,
+      draftRevision: draftSession.draftRevision,
+      nodeId: node.nodeId,
+      ...(inputSchemaRef === undefined ? {} : { inputSchemaRef }),
+      ...(outputSchemaRef === undefined ? {} : { outputSchemaRef }),
+      ...(retryPolicyRef === undefined ? {} : { retryPolicyRef }),
+      ...(timeoutPolicyRef === undefined ? {} : { timeoutPolicyRef }),
+      ...(budgetPolicyRef === undefined ? {} : { budgetPolicyRef }),
+    });
+    await this.handleWorkflowDraftMutationResponse(response);
+  }
+
+  private async handleWorkflowDraftMutationResponse(
+    response: {
+      applied: boolean;
+      message: string;
+      draftSession: VsCodeExtensionWorkflowDraftSessionSnapshot;
+      definitionPath?: string;
+      compiledIrPath?: string;
+    },
+    commandRequest?: VsCodeExtensionCommandRequest,
+  ): Promise<void> {
+    const nextRequest: VsCodeExtensionCommandRequest = {
+      ...commandRequest,
+      workflowDraftId: response.draftSession.workflowDraftId,
+      workflowDraftRevision: response.draftSession.draftRevision,
+    };
+    this.selectionStore.applyCommandRequest(nextRequest);
+    await this.openWorkflowStudio(nextRequest);
+
+    const artifactPath = response.definitionPath ?? response.compiledIrPath;
+    const openArtifactLabel = this.localizer.localizeText('Open Artifact', '打开产物');
+    const picked = response.applied
+      ? await vscode.window.showInformationMessage(
+          response.message,
+          ...(artifactPath ? [openArtifactLabel] : []),
+        )
+      : await vscode.window.showWarningMessage(
+          response.message,
+          ...(artifactPath ? [openArtifactLabel] : []),
+        );
+    if (picked !== openArtifactLabel || !artifactPath) {
+      return;
+    }
+
+    const document = await vscode.workspace.openTextDocument(vscode.Uri.file(artifactPath));
+    await vscode.window.showTextDocument(document, { preview: false });
+  }
+
   private async promptForWorkflowTemplateId(title: string): Promise<string | null | undefined> {
     const value = await vscode.window.showInputBox({
       title,
@@ -3051,6 +3947,188 @@ export class VsCodeExtensionCommandController {
     }
 
     return value?.trim().length ? value.trim() : undefined;
+  }
+
+  private async promptForRequiredText(
+    title: string,
+    prompt: string,
+    value?: string,
+  ): Promise<string | null> {
+    const nextValue = await vscode.window.showInputBox({
+      title,
+      prompt,
+      value,
+      ignoreFocusOut: true,
+      validateInput: (candidate) =>
+        candidate.trim().length > 0
+          ? undefined
+          : this.localizer.localizeText('This field is required.', '该字段为必填项。'),
+    });
+    return nextValue === undefined ? null : nextValue.trim();
+  }
+
+  private async promptForOptionalText(
+    title: string,
+    prompt: string,
+    value?: string,
+  ): Promise<string | undefined | null> {
+    const nextValue = await vscode.window.showInputBox({
+      title,
+      prompt,
+      value,
+      ignoreFocusOut: true,
+    });
+    if (nextValue === undefined) {
+      return null;
+    }
+
+    return nextValue.trim().length > 0 ? nextValue.trim() : undefined;
+  }
+
+  private async promptForOptionalNumber(
+    title: string,
+    prompt: string,
+    value?: number,
+  ): Promise<number | undefined | null> {
+    const nextValue = await vscode.window.showInputBox({
+      title,
+      prompt,
+      value: value === undefined ? undefined : String(value),
+      ignoreFocusOut: true,
+      validateInput: (candidate) =>
+        candidate.trim().length === 0 || Number.isFinite(Number(candidate))
+          ? undefined
+          : this.localizer.localizeText(
+              'Enter one numeric value or leave the field empty.',
+              '请输入数值，或保持为空。',
+            ),
+    });
+    if (nextValue === undefined) {
+      return null;
+    }
+    if (nextValue.trim().length === 0) {
+      return undefined;
+    }
+
+    return Number(nextValue);
+  }
+
+  private async promptForWorkflowNodeType(
+    currentType?: ProcessNodeType,
+  ): Promise<ProcessNodeType | null> {
+    const picked = await vscode.window.showQuickPick(
+      Object.values(ProcessNodeType).map((nodeType) => ({
+        label: this.localizeWorkflowNodeType(nodeType),
+        description:
+          nodeType === currentType
+            ? this.localizer.localizeText('Current value', '当前值')
+            : undefined,
+        nodeType,
+      })),
+      {
+        title: this.localizer.localizeText('Choose the workflow node type', '选择工作流节点类型'),
+      },
+    );
+    return picked?.nodeType ?? null;
+  }
+
+  private localizeWorkflowNodeType(nodeType: ProcessNodeType): string {
+    switch (nodeType) {
+      case ProcessNodeType.SEQUENTIAL:
+        return this.localizer.localizeText('Sequential', '串行');
+      case ProcessNodeType.PARALLEL:
+        return this.localizer.localizeText('Parallel', '并行');
+      case ProcessNodeType.LOOP:
+        return this.localizer.localizeText('Loop', '循环');
+      case ProcessNodeType.CONDITION:
+        return this.localizer.localizeText('Condition', '条件分支');
+      default:
+        return nodeType;
+    }
+  }
+
+  private async promptForWorkflowNodeChoice(
+    draftSession: VsCodeExtensionWorkflowDraftSessionSnapshot,
+    title: string,
+    currentNodeId?: string,
+    currentNodeDetail?: string,
+  ): Promise<VsCodeExtensionWorkflowDraftSessionSnapshot['nodeSpecs'][number] | null> {
+    const picked = await vscode.window.showQuickPick<{
+      label: string;
+      description: string;
+      detail?: string;
+      node: VsCodeExtensionWorkflowDraftSessionSnapshot['nodeSpecs'][number];
+    }>(
+      draftSession.nodeSpecs.map(
+        (node: VsCodeExtensionWorkflowDraftSessionSnapshot['nodeSpecs'][number]) => ({
+          label: node.nodeId,
+          description: `${node.stageId} · ${node.routeKey} · ${node.roleProfileId}`,
+          detail:
+            node.nodeId === currentNodeId
+              ? (currentNodeDetail ??
+                this.localizer.localizeText('Current entry node', '当前入口节点'))
+              : undefined,
+          node,
+        }),
+      ),
+      {
+        title,
+      },
+    );
+    return picked?.node ?? null;
+  }
+
+  private assertWorkflowDraftPatchOpSupported(
+    draftSession: VsCodeExtensionWorkflowDraftSessionSnapshot,
+    patchOp: OrchestrationWorkflowDraftSupportedPatchOp,
+  ): void {
+    if (draftSession.supportedPatchOps.includes(patchOp)) {
+      return;
+    }
+
+    throw new RuntimeError(
+      GovernorErrorCode.AGENT_PROTOCOL_INVALID,
+      this.localizer.localizeText(
+        'The current workflow draft session does not support this authoring action.',
+        '当前工作流草稿会话不支持这个 authoring 操作。',
+      ),
+      {
+        workflowDraftId: draftSession.workflowDraftId,
+        workflowDraftPatchOp: patchOp,
+      },
+    );
+  }
+
+  private isMutableWorkflowDraftSession(
+    draftSession: VsCodeExtensionWorkflowDraftSessionSnapshot,
+  ): boolean {
+    return draftSession.entryMode !== OrchestrationWorkflowDraftEntryMode.READ_ONLY;
+  }
+
+  private async confirmWorkflowDraftReplacement(
+    draftSession: VsCodeExtensionWorkflowDraftSessionSnapshot,
+    nextEntryMode: OrchestrationWorkflowDraftEntryMode,
+  ): Promise<boolean> {
+    return this.confirmCommand(
+      this.localizer.localizeText(
+        `Workflow draft ${draftSession.workflowDraftId} still has uncommitted mutable changes. Replacing it will discard those edits before starting ${this.localizeWorkflowDraftEntryMode(nextEntryMode)}.`,
+        `工作流草稿 ${draftSession.workflowDraftId} 仍有未提交的可编辑变更。替换它会先丢弃这些编辑，然后再启动 ${this.localizeWorkflowDraftEntryMode(nextEntryMode)}。`,
+      ),
+      this.localizer.localizeText('Replace Draft', '替换草稿'),
+    );
+  }
+
+  private localizeWorkflowDraftEntryMode(entryMode: OrchestrationWorkflowDraftEntryMode): string {
+    switch (entryMode) {
+      case OrchestrationWorkflowDraftEntryMode.READ_ONLY:
+        return this.localizer.localizeText('workflow preview', '工作流预览');
+      case OrchestrationWorkflowDraftEntryMode.CREATE_SEED:
+        return this.localizer.localizeText('workflow creation', '工作流创建');
+      case OrchestrationWorkflowDraftEntryMode.EDIT_SEED:
+        return this.localizer.localizeText('workflow editing', '工作流编辑');
+      default:
+        return entryMode;
+    }
   }
 
   private localizeWorkspaceOperationKind(

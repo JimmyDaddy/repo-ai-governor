@@ -1,3 +1,5 @@
+import { isAbsolute as isNativeAbsolutePath, win32 as win32Path } from 'node:path';
+
 import {
   ORCHESTRATION_CONNECT_PROVIDER_ONBOARDING_ARGUMENT_KEYS,
   OrchestrationBootstrapReadinessActionId,
@@ -15,6 +17,10 @@ import {
   OrchestrationGovernanceTemporaryBridgeReceiptKind,
   OrchestrationHandoffTargetKind,
   OrchestrationServiceLifecycleStatus,
+  OrchestrationWorkbenchBacklinkKind,
+  OrchestrationWorkflowDraftConflictKind,
+  OrchestrationWorkflowDraftEntryMode,
+  OrchestrationWorkflowDraftSupportedPatchOp,
   OrchestrationWorkspaceOperationKind,
 } from '@repo-ai-governor/orchestration-service-client';
 import type {
@@ -160,8 +166,9 @@ export class VsCodeExtensionPresentationBuilder {
    * @param entries Service-owned review queue entries.
    * @returns Tree-node descriptors for the review queue view.
    */
-  // god-object-exception: TK-938 Phase B temporarily keeps queue/workbench/bridge presentation
-  // shaping in one builder; sprint-003 / TK-940 will extract focused builders after clean rollout.
+  // god-object-exception: TK-1042 project-121 closeout keeps queue/workbench/bridge presentation
+  // shaping in one builder until the next decomposition stream extracts focused builders; the
+  // closeout ledger must preserve this follow-up debt instead of treating it as retired.
   public buildReviewQueueNodes(
     entries: readonly OrchestrationGovernanceQueueEntry[],
   ): readonly VsCodeExtensionTreeNodeDescriptor[] {
@@ -806,13 +813,26 @@ export class VsCodeExtensionPresentationBuilder {
       artifactPane,
       snapshot.reviewSourcePath,
     );
+    const workflowDraftLines = this.buildWorkflowDraftSessionLines(snapshot.workflowDraftSession);
+    const workflowGraphSection = this.buildWorkflowStudioGraphSection(snapshot);
+    const workflowStageActions = this.buildWorkflowStudioStageNavigationActions(snapshot);
+    const backlinkRevealActions = this.buildWorkflowStudioBacklinkRevealActions(snapshot);
+    const focusedBacklinkLines = this.buildWorkflowStudioFocusedBacklinkLines(snapshot);
+    const focusedBacklinkActions = this.buildWorkflowStudioFocusedBacklinkActions(snapshot);
     const runControlActions = this.buildWorkflowStudioActionDescriptors(
       selectedExecutionEntry,
       queueOverview.temporaryBridges,
       snapshot.reviewSourcePath,
     );
+    const workflowAuthoringActions = this.buildWorkflowStudioAuthoringActions(
+      snapshot.workflowDraftSession,
+    );
     const continuityLines = this.buildWorkflowStudioContinuityLines(
       snapshot.sessionContinuity,
+      selectedExecution,
+    );
+    const runtimeLaneLines = this.buildWorkflowStudioRuntimeLaneLines(
+      snapshot.roleLaneStatus,
       selectedExecution,
     );
     const queueLines = this.buildWorkflowStudioQueueLines(queueOverview);
@@ -829,6 +849,10 @@ export class VsCodeExtensionPresentationBuilder {
     );
     const desktopDecisionLines = this.buildWorkflowStudioDesktopDecisionLines(
       queueOverview,
+      selectedExecution,
+    );
+    const hitlDecisionPacketLines = this.buildWorkflowStudioHitlDecisionPacketLines(
+      snapshot.hitlDecisionPacket,
       selectedExecution,
     );
     const temporaryBridgeLines = this.buildWorkflowStudioTemporaryBridgeLines(
@@ -856,6 +880,17 @@ export class VsCodeExtensionPresentationBuilder {
       '    .action-link:hover { text-decoration: underline; }',
       '    .action-disabled { font-weight: 600; color: var(--vscode-disabledForeground); }',
       '    .action-description { margin: 6px 0 0; color: var(--vscode-descriptionForeground); }',
+      '    .graph-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }',
+      '    .graph-node { border: 1px solid var(--vscode-panel-border); border-radius: 10px; padding: 12px; background: color-mix(in srgb, var(--vscode-editor-background) 86%, var(--vscode-list-hoverBackground) 14%); }',
+      '    .graph-node.current { border-color: var(--vscode-charts-blue); }',
+      '    .graph-node.focused { box-shadow: inset 0 0 0 1px var(--vscode-textLink-foreground); }',
+      '    .graph-node-header { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; margin-bottom: 8px; }',
+      '    .graph-node-title { margin: 0; font-size: 1rem; }',
+      '    .graph-node-meta { margin: 4px 0 0; color: var(--vscode-descriptionForeground); }',
+      '    .graph-badges { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }',
+      '    .graph-badge { border-radius: 999px; padding: 2px 8px; font-size: 0.85rem; background: color-mix(in srgb, var(--vscode-badge-background) 72%, var(--vscode-editor-background) 28%); color: var(--vscode-badge-foreground); }',
+      '    .graph-edge-list { margin: 8px 0 0; padding-left: 16px; }',
+      '    .graph-edge-list li.focused { color: var(--vscode-textLink-foreground); font-weight: 600; }',
       '    p, li { line-height: 1.5; }',
       '  </style>',
       '</head>',
@@ -865,8 +900,8 @@ export class VsCodeExtensionPresentationBuilder {
         <h2>${this.escapeHtml(this.localizer.localizeText('Primary workbench evidence surface', '主工作台证据面'))}</h2>
         <p>${this.escapeHtml(
           this.localizer.localizeText(
-            'Workflow studio stays service-backed: it shows workflow, queue, bridge, and support-truth evidence without turning VS Code into the owner of governance truth.',
-            'Workflow Studio 保持为 service-backed：它只展示 workflow、queue、bridge 与 support-truth 证据，不把 VS Code 变成治理真值拥有者。',
+            'Workflow studio stays service-backed: VS Code can author workflow drafts directly, but canonical workflow, queue, bridge, and support-truth ownership remains inside the local orchestration service.',
+            'Workflow Studio 保持为 service-backed：VS Code 可以直接编辑工作流草稿，但规范工作流、队列、bridge 与 support-truth 的所有权仍然保留在本地编排服务中。',
           ),
         )}</p>
         <ul class="facts">
@@ -885,6 +920,33 @@ export class VsCodeExtensionPresentationBuilder {
         workflowLines,
       ),
       this.renderStringSection(
+        this.localizer.localizeText('Workflow draft session', '工作流草稿会话'),
+        workflowDraftLines,
+      ),
+      workflowGraphSection,
+      this.renderActionSection(
+        this.localizer.localizeText('Stage navigation', '阶段导航'),
+        workflowStageActions,
+      ),
+      this.renderActionSection(
+        this.localizer.localizeText('Backlink reveal', '回链揭示'),
+        backlinkRevealActions,
+      ),
+      this.renderStringSection(
+        this.localizer.localizeText('Focused backlink', '当前聚焦回链'),
+        focusedBacklinkLines,
+      ),
+      focusedBacklinkActions.length > 0
+        ? this.renderActionSection(
+            this.localizer.localizeText('Focused backlink actions', '当前聚焦回链动作'),
+            focusedBacklinkActions,
+          )
+        : '',
+      this.renderActionSection(
+        this.localizer.localizeText('Workflow authoring actions', '工作流编辑动作'),
+        workflowAuthoringActions,
+      ),
+      this.renderStringSection(
         this.localizer.localizeText('Latest workspace operation', '最近一次工作区操作'),
         latestWorkspaceOperationLines,
       ),
@@ -895,6 +957,10 @@ export class VsCodeExtensionPresentationBuilder {
       this.renderStringSection(
         this.localizer.localizeText('Continuity and handoff', '连续性与交接'),
         continuityLines,
+      ),
+      this.renderStringSection(
+        this.localizer.localizeText('Runtime lanes', '运行时泳道'),
+        runtimeLaneLines,
       ),
       this.renderStringSection(
         this.localizer.localizeText('Secure authoring readiness', '安全 Authoring Readiness'),
@@ -919,6 +985,10 @@ export class VsCodeExtensionPresentationBuilder {
       this.renderStringSection(
         this.localizer.localizeText('Desktop decision surface', 'Desktop 决策面'),
         desktopDecisionLines,
+      ),
+      this.renderStringSection(
+        this.localizer.localizeText('HITL decision packet', 'HITL 决策包'),
+        hitlDecisionPacketLines,
       ),
       this.renderStringSection(
         this.localizer.localizeText('Temporary bridge exit evidence', '临时 Bridge 退出证据'),
@@ -1576,6 +1646,61 @@ export class VsCodeExtensionPresentationBuilder {
         return this.localizer.localizeText('Edit workflow', '编辑工作流');
       default:
         return operationKind;
+    }
+  }
+
+  private localizeWorkflowDraftEntryMode(entryMode: OrchestrationWorkflowDraftEntryMode): string {
+    switch (entryMode) {
+      case OrchestrationWorkflowDraftEntryMode.READ_ONLY:
+        return this.localizer.localizeText('Preview / read-only', '预览 / 只读');
+      case OrchestrationWorkflowDraftEntryMode.CREATE_SEED:
+        return this.localizer.localizeText('Create seed', '创建种子');
+      case OrchestrationWorkflowDraftEntryMode.EDIT_SEED:
+        return this.localizer.localizeText('Edit saved workflow', '编辑已保存工作流');
+      default:
+        return entryMode;
+    }
+  }
+
+  private localizeWorkflowDraftConflictKind(
+    conflictKind: OrchestrationWorkflowDraftConflictKind,
+  ): string {
+    switch (conflictKind) {
+      case OrchestrationWorkflowDraftConflictKind.STALE_DRAFT_REVISION:
+        return this.localizer.localizeText('Stale draft revision', '草稿 revision 已过期');
+      case OrchestrationWorkflowDraftConflictKind.BASE_DEFINITION_CHANGED:
+        return this.localizer.localizeText(
+          'Saved workflow definition changed',
+          '已保存工作流定义已变更',
+        );
+      case OrchestrationWorkflowDraftConflictKind.NONE:
+        return this.localizer.localizeText('No conflict', '无冲突');
+      default:
+        return conflictKind;
+    }
+  }
+
+  private formatWorkflowDraftValidationIssue(
+    issue: NonNullable<
+      VsCodeExtensionWorkflowStudioSnapshot['workflowDraftSession']
+    >['validationIssues'][number],
+  ): string {
+    const localizedSeverity = this.localizeWorkflowDraftValidationSeverity(issue.severity);
+    const locationSuffix =
+      typeof issue.location === 'string' && issue.location.trim().length > 0
+        ? ` (${issue.location})`
+        : '';
+    return `${localizedSeverity}: ${issue.message}${locationSuffix}`;
+  }
+
+  private localizeWorkflowDraftValidationSeverity(severity: string): string {
+    switch (severity.trim().toLowerCase()) {
+      case 'error':
+        return this.localizer.localizeText('Error', '错误');
+      case 'warning':
+        return this.localizer.localizeText('Warning', '警告');
+      default:
+        return severity;
     }
   }
 
@@ -2292,7 +2417,7 @@ export class VsCodeExtensionPresentationBuilder {
       }
 
       if (action.actionKind === OrchestrationGovernanceActionKind.SUBMIT_HITL_DECISION) {
-        if (action.enabled && action.hitlDecisionOptions) {
+        if (action.enabled && action.hitlDecisionOptions && action.hitlDecisionOptions.length > 0) {
           for (const option of action.hitlDecisionOptions) {
             const request = {
               ...this.createExecutionRequest(entry),
@@ -4034,6 +4159,11 @@ export class VsCodeExtensionPresentationBuilder {
           'No pending HITL decision exists.',
           '当前没有待处理的 HITL 决策。',
         );
+      case OrchestrationGovernanceActionDisabledReason.HITL_DECISION_UNAVAILABLE:
+        return this.localizer.localizeText(
+          'No allowed HITL decision is available.',
+          '当前没有可提交的合法 HITL 决策。',
+        );
       case OrchestrationGovernanceActionDisabledReason.RECOVERY_NOT_AVAILABLE:
         return this.localizer.localizeText(
           'No recovery checkpoint is available.',
@@ -4132,6 +4262,800 @@ export class VsCodeExtensionPresentationBuilder {
     return lines;
   }
 
+  private buildWorkflowDraftSessionLines(
+    workflowDraftSession: VsCodeExtensionWorkflowStudioSnapshot['workflowDraftSession'],
+  ): string[] {
+    if (!workflowDraftSession) {
+      return [
+        this.localizer.localizeText(
+          'No workflow draft session is active yet. Start preview, create, or edit to open direct authoring inside VS Code.',
+          '当前还没有活跃的工作流草稿会话。请先启动预览、创建或编辑流程，在 VS Code 内直接开始 authoring。',
+        ),
+      ];
+    }
+
+    const validationSummary =
+      workflowDraftSession.validationIssues.length > 0
+        ? workflowDraftSession.validationIssues
+            .slice(0, 5)
+            .map(
+              (
+                issue: NonNullable<
+                  VsCodeExtensionWorkflowStudioSnapshot['workflowDraftSession']
+                >['validationIssues'][number],
+              ) => this.formatWorkflowDraftValidationIssue(issue),
+            )
+            .join('; ')
+        : this.localizer.localizeText('None', '无');
+    const backlinkSummary =
+      workflowDraftSession.backlinkArtifacts.length > 0
+        ? workflowDraftSession.backlinkArtifacts
+            .map(
+              (
+                artifact: NonNullable<
+                  VsCodeExtensionWorkflowStudioSnapshot['workflowDraftSession']
+                >['backlinkArtifacts'][number],
+              ) => artifact.artifactPath,
+            )
+            .join(', ')
+        : this.localizer.localizeText('Unavailable', '不可用');
+
+    return [
+      `${this.localizer.localizeText('Draft session', '草稿会话')}: ${workflowDraftSession.workflowDraftId}`,
+      `${this.localizer.localizeText('Entry mode', '入口模式')}: ${this.localizeWorkflowDraftEntryMode(workflowDraftSession.entryMode)}`,
+      `${this.localizer.localizeText('Template', '模板')}: ${workflowDraftSession.templateId}`,
+      `${this.localizer.localizeText('Draft revision', '草稿 revision')}: ${workflowDraftSession.draftRevision}`,
+      `${this.localizer.localizeText('Base definition revision', '基础定义 revision')}: ${workflowDraftSession.baseDefinitionRevision}`,
+      `${this.localizer.localizeText('Node / edge count', '节点 / 连线数量')}: ${String(workflowDraftSession.nodeSpecs.length)} / ${String(workflowDraftSession.edgeSpecs.length)}`,
+      `${this.localizer.localizeText('Validation issues', '校验问题')}: ${String(workflowDraftSession.validationIssues.length)}`,
+      `${this.localizer.localizeText('Compiler warnings / errors', '编译警告 / 错误')}: ${String(workflowDraftSession.compiledIrPreview.compileWarningCount)} / ${String(workflowDraftSession.compiledIrPreview.compileErrorCount)}`,
+      `${this.localizer.localizeText('Conflict state', '冲突状态')}: ${workflowDraftSession.conflictState.hasConflict ? this.localizeWorkflowDraftConflictKind(workflowDraftSession.conflictState.conflictKind) : this.localizer.localizeText('No conflict', '无冲突')}`,
+      `${this.localizer.localizeText('Validation summary', '校验摘要')}: ${validationSummary}`,
+      `${this.localizer.localizeText('Backlink artifacts', '回链产物')}: ${backlinkSummary}`,
+    ];
+  }
+
+  private buildWorkflowStudioGraphSection(snapshot: VsCodeExtensionWorkflowStudioSnapshot): string {
+    const title = this.localizer.localizeText('Workflow graph projection', '工作流图投影');
+    const workflowDraftSession = snapshot.workflowDraftSession;
+    if (!workflowDraftSession) {
+      return this.renderStringSection(title, [
+        this.localizer.localizeText(
+          'Start preview, create, or edit to project one service-backed workflow graph inside Workflow Studio.',
+          '请先启动预览、创建或编辑流程，把一个 service-backed 工作流图投影到 Workflow Studio 中。',
+        ),
+      ]);
+    }
+
+    const currentStageId = snapshot.selectedExecution?.execution.currentStageId;
+    const focusedStageId = snapshot.workflowFocusStageId ?? currentStageId;
+    const laneRolesByStage = new Map<string, Set<string>>();
+    for (const lane of snapshot.roleLaneStatus?.lanes ?? []) {
+      if (!lane.currentStageId) {
+        continue;
+      }
+      const stageRoles = laneRolesByStage.get(lane.currentStageId) ?? new Set<string>();
+      stageRoles.add(lane.roleId);
+      laneRolesByStage.set(lane.currentStageId, stageRoles);
+    }
+
+    const backlinkCountByStage = new Map<string, number>();
+    for (const backlink of this.buildWorkflowStudioBacklinkProjections(snapshot)) {
+      for (const stageId of backlink.stageIds) {
+        backlinkCountByStage.set(stageId, (backlinkCountByStage.get(stageId) ?? 0) + 1);
+      }
+    }
+
+    const nodeCards = workflowDraftSession.nodeSpecs
+      .map((node) => {
+        const isEntryNode = node.nodeId === workflowDraftSession.compiledIrPreview.entryNodeId;
+        const isCurrentStage = node.stageId === currentStageId;
+        const isFocusedStage = node.stageId === focusedStageId;
+        const stageRoles = [...(laneRolesByStage.get(node.stageId) ?? new Set<string>())];
+        const badgeLabels = [
+          isEntryNode ? this.localizer.localizeText('Entry', '入口') : undefined,
+          isCurrentStage
+            ? this.localizer.localizeText('Runtime current', '运行时当前阶段')
+            : undefined,
+          isFocusedStage ? this.localizer.localizeText('Focused', '已聚焦') : undefined,
+          node.nodeType ?? this.localizer.localizeText('Generic', '通用'),
+        ].filter((value): value is string => Boolean(value));
+        const focusHref = this.createCommandUri(
+          VSCODE_EXTENSION_COMMAND_IDS.OPEN_WORKFLOW_STUDIO,
+          this.createWorkflowStudioContextRequest(snapshot, {
+            clearWorkflowFocus: true,
+            workflowFocusStageId: node.stageId,
+          }),
+        );
+
+        return `
+          <article class="graph-node${isCurrentStage ? ' current' : ''}${isFocusedStage ? ' focused' : ''}">
+            <div class="graph-node-header">
+              <div>
+                <h3 class="graph-node-title">${this.escapeHtml(node.nodeId)}</h3>
+                <p class="graph-node-meta">${this.escapeHtml(
+                  `${node.stageId} · ${node.routeKey} · ${node.roleProfileId}`,
+                )}</p>
+              </div>
+              <a class="action-link" href="${this.escapeHtml(focusHref)}">${this.escapeHtml(
+                this.localizer.localizeText('Focus stage', '聚焦阶段'),
+              )}</a>
+            </div>
+            <div class="graph-badges">
+              ${badgeLabels
+                .map(
+                  (badgeLabel) => `<span class="graph-badge">${this.escapeHtml(badgeLabel)}</span>`,
+                )
+                .join('')}
+            </div>
+            <ul class="section-list">
+              <li>${this.escapeHtml(
+                `${this.localizer.localizeText('Schema refs', 'Schema 引用')}: ${node.inputSchemaRef ?? this.localizer.localizeText('No input schema', '无输入 schema')} / ${node.outputSchemaRef ?? this.localizer.localizeText('No output schema', '无输出 schema')}`,
+              )}</li>
+              <li>${this.escapeHtml(
+                `${this.localizer.localizeText('Lane roles', '泳道角色')}: ${stageRoles.length > 0 ? stageRoles.join(', ') : this.localizer.localizeText('No projected role lane', '暂无泳道投影')}`,
+              )}</li>
+              <li>${this.escapeHtml(
+                `${this.localizer.localizeText('Backlinks in stage', '阶段内回链')}: ${String(backlinkCountByStage.get(node.stageId) ?? 0)}`,
+              )}</li>
+            </ul>
+          </article>
+        `;
+      })
+      .join('');
+
+    const nodeById = new Map(
+      workflowDraftSession.nodeSpecs.map((node) => [node.nodeId, node] as const),
+    );
+    const edgeMarkup =
+      workflowDraftSession.edgeSpecs.length > 0
+        ? workflowDraftSession.edgeSpecs
+            .map((edge) => {
+              const fromNode = nodeById.get(edge.fromNodeId);
+              const toNode = nodeById.get(edge.toNodeId);
+              const edgeFocused =
+                Boolean(focusedStageId) &&
+                (fromNode?.stageId === focusedStageId || toNode?.stageId === focusedStageId);
+              const edgeDetail = edge.conditionKey
+                ? `${edge.fromNodeId} -> ${edge.toNodeId} (${edge.conditionKey})`
+                : `${edge.fromNodeId} -> ${edge.toNodeId}`;
+              return `<li class="${edgeFocused ? 'focused' : ''}">${this.escapeHtml(
+                edgeDetail,
+              )}</li>`;
+            })
+            .join('')
+        : `<li>${this.escapeHtml(
+            this.localizer.localizeText(
+              'No workflow edges are projected yet.',
+              '当前还没有投影出工作流连线。',
+            ),
+          )}</li>`;
+
+    const summaryLines = [
+      `${this.localizer.localizeText('Entry node', '入口节点')}: ${workflowDraftSession.compiledIrPreview.entryNodeId}`,
+      `${this.localizer.localizeText('Focused stage', '当前聚焦阶段')}: ${focusedStageId ?? this.localizer.localizeText('None', '无')}`,
+      `${this.localizer.localizeText('Runtime current stage', '运行时当前阶段')}: ${currentStageId ?? this.localizer.localizeText('Unavailable', '不可用')}`,
+      `${this.localizer.localizeText('Projected nodes / edges', '已投影节点 / 连线')}: ${String(workflowDraftSession.nodeSpecs.length)} / ${String(workflowDraftSession.edgeSpecs.length)}`,
+    ];
+
+    return `
+      <section class="card">
+        <h2>${this.escapeHtml(title)}</h2>
+        <ul class="facts">
+          ${summaryLines.map((line) => `<li>${this.escapeHtml(line)}</li>`).join('')}
+        </ul>
+        <div class="graph-grid">
+          ${nodeCards}
+        </div>
+        <h3>${this.escapeHtml(this.localizer.localizeText('Projected edges', '已投影连线'))}</h3>
+        <ul class="graph-edge-list">
+          ${edgeMarkup}
+        </ul>
+      </section>
+    `;
+  }
+
+  private buildWorkflowStudioStageNavigationActions(
+    snapshot: VsCodeExtensionWorkflowStudioSnapshot,
+  ): Array<{
+    label: string;
+    description: string;
+    href?: string;
+    disabledReason?: string;
+  }> {
+    const workflowDraftSession = snapshot.workflowDraftSession;
+    if (!workflowDraftSession) {
+      return [];
+    }
+
+    const backlinks = this.buildWorkflowStudioBacklinkProjections(snapshot);
+    const backlinksByStage = new Map<string, number>();
+    for (const backlink of backlinks) {
+      for (const stageId of backlink.stageIds) {
+        backlinksByStage.set(stageId, (backlinksByStage.get(stageId) ?? 0) + 1);
+      }
+    }
+
+    const currentStageId = snapshot.selectedExecution?.execution.currentStageId;
+    const actions: Array<{
+      label: string;
+      description: string;
+      href?: string;
+      disabledReason?: string;
+    }> = [];
+    if (snapshot.workflowFocusStageId || snapshot.workflowFocusBacklinkTarget) {
+      actions.push({
+        label: this.localizer.localizeText('Reset workflow focus', '重置工作流聚焦'),
+        description: this.localizer.localizeText(
+          'Return to the default service-backed stage/backlink projection.',
+          '回到默认的 service-backed 阶段 / 回链投影。',
+        ),
+        href: this.createCommandUri(
+          VSCODE_EXTENSION_COMMAND_IDS.OPEN_WORKFLOW_STUDIO,
+          this.createWorkflowStudioContextRequest(snapshot, {
+            clearWorkflowFocus: true,
+          }),
+        ),
+      });
+    }
+
+    const uniqueStageIds = [...new Set(workflowDraftSession.nodeSpecs.map((node) => node.stageId))];
+    for (const stageId of uniqueStageIds) {
+      const stageNodes = workflowDraftSession.nodeSpecs.filter((node) => node.stageId === stageId);
+      const laneRoles = [
+        ...new Set(
+          (snapshot.roleLaneStatus?.lanes ?? [])
+            .filter((lane) => lane.currentStageId === stageId)
+            .map((lane) => lane.roleId),
+        ),
+      ];
+      const statusParts = [
+        `${String(stageNodes.length)} ${this.localizer.localizeText('node(s)', '个节点')}`,
+        `${String(laneRoles.length)} ${this.localizer.localizeText('lane(s)', '条泳道')}`,
+        `${String(backlinksByStage.get(stageId) ?? 0)} ${this.localizer.localizeText('backlink(s)', '条回链')}`,
+        currentStageId === stageId
+          ? this.localizer.localizeText('runtime current stage', '运行时当前阶段')
+          : undefined,
+      ].filter((value): value is string => Boolean(value));
+      actions.push({
+        label:
+          snapshot.workflowFocusStageId === stageId
+            ? this.localizer.localizeText(`Focused stage: ${stageId}`, `已聚焦阶段：${stageId}`)
+            : stageId,
+        description: statusParts.join(' · '),
+        href: this.createCommandUri(
+          VSCODE_EXTENSION_COMMAND_IDS.OPEN_WORKFLOW_STUDIO,
+          this.createWorkflowStudioContextRequest(snapshot, {
+            clearWorkflowFocus: true,
+            workflowFocusStageId: stageId,
+          }),
+        ),
+      });
+    }
+
+    return actions;
+  }
+
+  private buildWorkflowStudioBacklinkRevealActions(
+    snapshot: VsCodeExtensionWorkflowStudioSnapshot,
+  ): Array<{
+    label: string;
+    description: string;
+    href?: string;
+    disabledReason?: string;
+  }> {
+    return this.buildWorkflowStudioBacklinkProjections(snapshot).map((backlink) => ({
+      label: `${this.localizeWorkbenchBacklinkKind(backlink.backlinkKind)} · ${backlink.label}`,
+      description: [
+        backlink.sourceLabels.join(', '),
+        backlink.stageIds.length > 0
+          ? `${this.localizer.localizeText('Stages', '阶段')}: ${backlink.stageIds.join(', ')}`
+          : this.localizer.localizeText('No stage binding', '无阶段绑定'),
+      ].join(' · '),
+      href: this.createCommandUri(
+        VSCODE_EXTENSION_COMMAND_IDS.OPEN_WORKFLOW_STUDIO,
+        this.createWorkflowStudioContextRequest(snapshot, {
+          clearWorkflowFocus: true,
+          workflowFocusBacklinkTarget: backlink.target,
+          workflowFocusBacklinkKind: backlink.backlinkKind,
+        }),
+      ),
+    }));
+  }
+
+  private buildWorkflowStudioFocusedBacklinkLines(
+    snapshot: VsCodeExtensionWorkflowStudioSnapshot,
+  ): string[] {
+    const backlinks = this.buildWorkflowStudioBacklinkProjections(snapshot);
+    if (backlinks.length === 0) {
+      return [
+        this.localizer.localizeText(
+          'No task, review, or artifact backlink is projected yet.',
+          '当前还没有投影出任务、评审或产物回链。',
+        ),
+      ];
+    }
+
+    if (!snapshot.workflowFocusBacklinkTarget) {
+      return [
+        `${this.localizer.localizeText('Projected backlinks', '已投影回链')}: ${String(backlinks.length)}`,
+        this.localizer.localizeText(
+          'Select one backlink from the reveal list to inspect its sources and bound stages.',
+          '请从回链揭示列表中选择一条回链，查看它的来源与绑定阶段。',
+        ),
+      ];
+    }
+
+    const focusedBacklink = backlinks.find(
+      (backlink) =>
+        backlink.target === snapshot.workflowFocusBacklinkTarget &&
+        (!snapshot.workflowFocusBacklinkKind ||
+          backlink.backlinkKind === snapshot.workflowFocusBacklinkKind),
+    );
+    if (!focusedBacklink) {
+      return [
+        this.localizer.localizeText(
+          'The focused backlink is no longer available in the latest projection.',
+          '当前聚焦的回链已经不在最新投影中。',
+        ),
+        `${this.localizer.localizeText('Projected backlinks', '已投影回链')}: ${String(backlinks.length)}`,
+      ];
+    }
+
+    return [
+      `${this.localizer.localizeText('Kind', '类型')}: ${this.localizeWorkbenchBacklinkKind(focusedBacklink.backlinkKind)}`,
+      `${this.localizer.localizeText('Target', '目标')}: ${focusedBacklink.target}`,
+      `${this.localizer.localizeText('Sources', '来源')}: ${focusedBacklink.sourceLabels.join(', ')}`,
+      `${this.localizer.localizeText('Bound stages', '绑定阶段')}: ${focusedBacklink.stageIds.length > 0 ? focusedBacklink.stageIds.join(', ') : this.localizer.localizeText('No stage binding', '无阶段绑定')}`,
+      `${this.localizer.localizeText('Current execution', '当前执行')}: ${snapshot.selectedExecution?.execution.executionId ?? this.localizer.localizeText('Unavailable', '不可用')}`,
+    ];
+  }
+
+  private buildWorkflowStudioFocusedBacklinkActions(
+    snapshot: VsCodeExtensionWorkflowStudioSnapshot,
+  ): Array<{
+    label: string;
+    description: string;
+    href?: string;
+    disabledReason?: string;
+  }> {
+    if (!snapshot.workflowFocusBacklinkTarget || !snapshot.workflowFocusBacklinkKind) {
+      return [];
+    }
+    if (!this.isWorkflowStudioAbsoluteTarget(snapshot.workflowFocusBacklinkTarget)) {
+      return [];
+    }
+
+    return [
+      {
+        label: this.localizer.localizeText('Open focused backlink target', '打开当前聚焦回链目标'),
+        description: this.localizer.localizeText(
+          'Open or reveal the projected review/artifact/worktree target without leaving VS Code.',
+          '无需离开 VS Code，直接打开或揭示当前投影出的评审 / 产物 / 工作区目标。',
+        ),
+        href: this.createCommandUri(
+          VSCODE_EXTENSION_COMMAND_IDS.OPEN_HANDOFF_TARGET,
+          this.createWorkflowStudioContextRequest(snapshot),
+        ),
+      },
+    ];
+  }
+
+  private isWorkflowStudioAbsoluteTarget(targetPath: string): boolean {
+    return isNativeAbsolutePath(targetPath) || win32Path.isAbsolute(targetPath);
+  }
+
+  private buildWorkflowStudioBacklinkProjections(
+    snapshot: VsCodeExtensionWorkflowStudioSnapshot,
+  ): Array<{
+    backlinkKind: OrchestrationWorkbenchBacklinkKind;
+    label: string;
+    target: string;
+    sourceLabels: string[];
+    stageIds: string[];
+  }> {
+    const projections = new Map<
+      string,
+      {
+        backlinkKind: OrchestrationWorkbenchBacklinkKind;
+        label: string;
+        target: string;
+        sourceLabels: Set<string>;
+        stageIds: Set<string>;
+      }
+    >();
+
+    const rememberBacklink = (
+      backlinkKind: OrchestrationWorkbenchBacklinkKind,
+      target: string,
+      label: string,
+      sourceLabel: string,
+      stageId?: string,
+    ) => {
+      const normalizedTarget = target.trim();
+      if (normalizedTarget.length === 0) {
+        return;
+      }
+      const projectionKey = `${backlinkKind}:${normalizedTarget}`;
+      const existing = projections.get(projectionKey);
+      if (existing) {
+        existing.sourceLabels.add(sourceLabel);
+        if (stageId) {
+          existing.stageIds.add(stageId);
+        }
+        return;
+      }
+      projections.set(projectionKey, {
+        backlinkKind,
+        label: label.trim().length > 0 ? label : normalizedTarget,
+        target: normalizedTarget,
+        sourceLabels: new Set([sourceLabel]),
+        stageIds: stageId ? new Set([stageId]) : new Set<string>(),
+      });
+    };
+
+    if (snapshot.reviewSourcePath) {
+      rememberBacklink(
+        OrchestrationWorkbenchBacklinkKind.REVIEW,
+        snapshot.reviewSourcePath,
+        snapshot.reviewSourcePath,
+        this.localizer.localizeText('workflow focus', 'workflow 聚焦'),
+        snapshot.selectedExecution?.execution.currentStageId,
+      );
+    }
+
+    for (const artifactPath of snapshot.artifactPane?.evidenceBacklinks.artifactPaths ?? []) {
+      rememberBacklink(
+        OrchestrationWorkbenchBacklinkKind.ARTIFACT,
+        artifactPath,
+        artifactPath,
+        this.localizer.localizeText('artifact pane', '产物面板'),
+        snapshot.artifactPane?.policyTrace?.currentStageId,
+      );
+    }
+    for (const reviewPath of snapshot.artifactPane?.evidenceBacklinks.reviewPaths ?? []) {
+      rememberBacklink(
+        OrchestrationWorkbenchBacklinkKind.REVIEW,
+        reviewPath,
+        reviewPath,
+        this.localizer.localizeText('artifact pane', '产物面板'),
+        snapshot.artifactPane?.policyTrace?.currentStageId,
+      );
+    }
+
+    for (const artifact of snapshot.workflowDraftSession?.backlinkArtifacts ?? []) {
+      rememberBacklink(
+        OrchestrationWorkbenchBacklinkKind.ARTIFACT,
+        artifact.artifactPath,
+        artifact.artifactPath,
+        this.localizer.localizeText('draft session', '草稿会话'),
+      );
+    }
+
+    for (const lane of snapshot.roleLaneStatus?.lanes ?? []) {
+      for (const backlink of [...lane.artifactBacklinks, ...lane.reviewBacklinks]) {
+        rememberBacklink(
+          backlink.backlinkKind,
+          backlink.target,
+          backlink.label,
+          `${this.localizer.localizeText('lane', '泳道')}:${lane.roleId}`,
+          lane.currentStageId,
+        );
+      }
+    }
+
+    for (const backlink of snapshot.hitlDecisionPacket?.backlinks ?? []) {
+      rememberBacklink(
+        backlink.backlinkKind,
+        backlink.target,
+        backlink.label,
+        this.localizer.localizeText('HITL packet', 'HITL 决策包'),
+        snapshot.selectedExecution?.execution.currentStageId,
+      );
+    }
+
+    return [...projections.values()]
+      .map((projection) => ({
+        backlinkKind: projection.backlinkKind,
+        label: projection.label,
+        target: projection.target,
+        sourceLabels: [...projection.sourceLabels],
+        stageIds: [...projection.stageIds],
+      }))
+      .sort((left, right) => left.target.localeCompare(right.target));
+  }
+
+  private createWorkflowStudioContextRequest(
+    snapshot: VsCodeExtensionWorkflowStudioSnapshot,
+    overrides?: Partial<VsCodeExtensionCommandRequest>,
+  ): VsCodeExtensionCommandRequest {
+    const overridesResetFocus =
+      overrides?.clearWorkflowFocus === true ||
+      'workflowFocusStageId' in (overrides ?? {}) ||
+      'workflowFocusBacklinkTarget' in (overrides ?? {}) ||
+      'workflowFocusBacklinkKind' in (overrides ?? {});
+    const baseRequest: VsCodeExtensionCommandRequest = {
+      ...(snapshot.selectedExecution
+        ? {
+            executionId: snapshot.selectedExecution.execution.executionId,
+            executionSessionId: snapshot.selectedExecution.execution.executionSessionId,
+          }
+        : {}),
+      ...(snapshot.reviewSourcePath
+        ? {
+            reviewSourcePath: snapshot.reviewSourcePath,
+          }
+        : {}),
+      ...(snapshot.workflowDraftSession
+        ? {
+            workflowDraftId: snapshot.workflowDraftSession.workflowDraftId,
+            workflowDraftRevision: snapshot.workflowDraftSession.draftRevision,
+            workflowDraftEntryMode: snapshot.workflowDraftSession.entryMode,
+          }
+        : {}),
+      ...(!overridesResetFocus && snapshot.workflowFocusStageId
+        ? {
+            workflowFocusStageId: snapshot.workflowFocusStageId,
+          }
+        : {}),
+      ...(!overridesResetFocus && snapshot.workflowFocusBacklinkTarget
+        ? {
+            workflowFocusBacklinkTarget: snapshot.workflowFocusBacklinkTarget,
+          }
+        : {}),
+      ...(!overridesResetFocus && snapshot.workflowFocusBacklinkKind
+        ? {
+            workflowFocusBacklinkKind: snapshot.workflowFocusBacklinkKind,
+          }
+        : {}),
+    };
+    return {
+      ...baseRequest,
+      ...overrides,
+    };
+  }
+
+  private localizeWorkbenchBacklinkKind(backlinkKind: OrchestrationWorkbenchBacklinkKind): string {
+    switch (backlinkKind) {
+      case OrchestrationWorkbenchBacklinkKind.ARTIFACT:
+        return this.localizer.localizeText('Artifact', '产物');
+      case OrchestrationWorkbenchBacklinkKind.REVIEW:
+        return this.localizer.localizeText('Review', '评审');
+      case OrchestrationWorkbenchBacklinkKind.SESSION:
+        return this.localizer.localizeText('Session', '会话');
+      case OrchestrationWorkbenchBacklinkKind.TASK:
+        return this.localizer.localizeText('Task', '任务');
+      case OrchestrationWorkbenchBacklinkKind.WORKSPACE:
+        return this.localizer.localizeText('Workspace', '工作区');
+      default:
+        return backlinkKind;
+    }
+  }
+
+  private buildWorkflowStudioAuthoringActions(
+    workflowDraftSession: VsCodeExtensionWorkflowStudioSnapshot['workflowDraftSession'],
+  ): Array<{
+    label: string;
+    description: string;
+    href?: string;
+    disabledReason?: string;
+  }> {
+    const actions: Array<{
+      label: string;
+      description: string;
+      href?: string;
+      disabledReason?: string;
+    }> = [
+      {
+        label: this.localizer.localizeText('Preview workflow draft', '预览工作流草稿'),
+        description: this.localizer.localizeText(
+          'Open one read-only draft session backed by the local orchestration service.',
+          '打开一个由本地编排服务托管的只读草稿会话。',
+        ),
+        href: this.createCommandUri(VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKFLOW_PREVIEW),
+      },
+      {
+        label: this.localizer.localizeText('Create workflow draft', '创建工作流草稿'),
+        description: this.localizer.localizeText(
+          'Seed one mutable workflow draft session from a template.',
+          '从模板启动一个可编辑的工作流草稿会话。',
+        ),
+        href: this.createCommandUri(VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKFLOW_CREATE),
+      },
+      {
+        label: this.localizer.localizeText('Edit saved workflow', '编辑已保存工作流'),
+        description: this.localizer.localizeText(
+          'Open the saved workflow definition as a mutable draft session.',
+          '把已保存的工作流定义打开为一个可编辑草稿会话。',
+        ),
+        href: this.createCommandUri(VSCODE_EXTENSION_COMMAND_IDS.RUN_WORKFLOW_EDIT),
+      },
+    ];
+
+    if (!workflowDraftSession) {
+      return actions;
+    }
+
+    const draftRequest = {
+      workflowDraftId: workflowDraftSession.workflowDraftId,
+      workflowDraftRevision: workflowDraftSession.draftRevision,
+      workflowDraftEntryMode: workflowDraftSession.entryMode,
+    };
+    const workflowMutationsBlockedReason = workflowDraftSession.conflictState.hasConflict
+      ? (workflowDraftSession.conflictState.message ??
+        this.localizer.localizeText(
+          'Resolve the current draft conflict before mutating it.',
+          '请先解决当前草稿冲突，再继续修改。',
+        ))
+      : undefined;
+    const supportsPatchOp = (patchOp: OrchestrationWorkflowDraftSupportedPatchOp): boolean =>
+      workflowDraftSession.supportedPatchOps.includes(patchOp);
+
+    if (supportsPatchOp(OrchestrationWorkflowDraftSupportedPatchOp.UPSERT_NODE)) {
+      actions.push(
+        this.createWorkflowDraftMutationAction(
+          this.localizer.localizeText('Add or edit node', '新增或编辑节点'),
+          this.localizer.localizeText(
+            'Author one schema-first workflow node without leaving VS Code.',
+            '直接在 VS Code 内编辑一个 schema-first 工作流节点。',
+          ),
+          draftRequest,
+          OrchestrationWorkflowDraftSupportedPatchOp.UPSERT_NODE,
+          workflowMutationsBlockedReason,
+        ),
+      );
+    }
+
+    if (supportsPatchOp(OrchestrationWorkflowDraftSupportedPatchOp.REMOVE_NODE)) {
+      actions.push(
+        this.createWorkflowDraftMutationAction(
+          this.localizer.localizeText('Remove node', '移除节点'),
+          this.localizer.localizeText(
+            'Remove one workflow node and any attached edges.',
+            '移除一个工作流节点以及关联连线。',
+          ),
+          draftRequest,
+          OrchestrationWorkflowDraftSupportedPatchOp.REMOVE_NODE,
+          workflowMutationsBlockedReason,
+        ),
+      );
+    }
+
+    if (supportsPatchOp(OrchestrationWorkflowDraftSupportedPatchOp.UPSERT_EDGE)) {
+      actions.push(
+        this.createWorkflowDraftMutationAction(
+          this.localizer.localizeText('Add or edit edge', '新增或编辑连线'),
+          this.localizer.localizeText(
+            'Author one workflow edge between service-owned draft nodes.',
+            '在 service-owned 草稿节点之间编辑一条工作流连线。',
+          ),
+          draftRequest,
+          OrchestrationWorkflowDraftSupportedPatchOp.UPSERT_EDGE,
+          workflowMutationsBlockedReason,
+        ),
+      );
+    }
+
+    if (supportsPatchOp(OrchestrationWorkflowDraftSupportedPatchOp.REMOVE_EDGE)) {
+      actions.push(
+        this.createWorkflowDraftMutationAction(
+          this.localizer.localizeText('Remove edge', '移除连线'),
+          this.localizer.localizeText(
+            'Remove one workflow edge from the current draft session.',
+            '从当前草稿会话中移除一条工作流连线。',
+          ),
+          draftRequest,
+          OrchestrationWorkflowDraftSupportedPatchOp.REMOVE_EDGE,
+          workflowMutationsBlockedReason,
+        ),
+      );
+    }
+
+    if (supportsPatchOp(OrchestrationWorkflowDraftSupportedPatchOp.UPDATE_NODE_POLICY)) {
+      actions.push(
+        this.createWorkflowDraftMutationAction(
+          this.localizer.localizeText('Edit node policy bindings', '编辑节点策略绑定'),
+          this.localizer.localizeText(
+            'Update one node schema or policy binding through the draft-session seam.',
+            '通过 draft-session seam 更新单个节点的 schema 或策略绑定。',
+          ),
+          draftRequest,
+          OrchestrationWorkflowDraftSupportedPatchOp.UPDATE_NODE_POLICY,
+          workflowMutationsBlockedReason,
+        ),
+      );
+    }
+
+    if (supportsPatchOp(OrchestrationWorkflowDraftSupportedPatchOp.UPDATE_WORKFLOW_METADATA)) {
+      actions.push(
+        this.createWorkflowDraftMutationAction(
+          this.localizer.localizeText('Edit workflow metadata', '编辑工作流元数据'),
+          this.localizer.localizeText(
+            'Update the process id and entry node through the draft-session seam.',
+            '通过 draft-session seam 更新 process id 与入口节点。',
+          ),
+          draftRequest,
+          OrchestrationWorkflowDraftSupportedPatchOp.UPDATE_WORKFLOW_METADATA,
+          workflowMutationsBlockedReason,
+        ),
+      );
+    }
+
+    if (supportsPatchOp(OrchestrationWorkflowDraftSupportedPatchOp.VALIDATE)) {
+      actions.push({
+        label: this.localizer.localizeText('Validate draft', '校验草稿'),
+        description: this.localizer.localizeText(
+          'Refresh compiler and editor diagnostics for the active draft session.',
+          '刷新当前草稿会话的编译器与编辑器诊断结果。',
+        ),
+        ...(workflowMutationsBlockedReason
+          ? {
+              disabledReason: workflowMutationsBlockedReason,
+            }
+          : {
+              href: this.createCommandUri(
+                VSCODE_EXTENSION_COMMAND_IDS.VALIDATE_WORKFLOW_DRAFT,
+                draftRequest,
+              ),
+            }),
+      });
+    }
+
+    if (supportsPatchOp(OrchestrationWorkflowDraftSupportedPatchOp.COMMIT)) {
+      actions.push({
+        label: this.localizer.localizeText('Commit draft', '提交草稿'),
+        description: this.localizer.localizeText(
+          'Commit the active draft into the canonical workflow definition and compiled IR.',
+          '把当前草稿提交到规范工作流定义与 compiled IR。',
+        ),
+        ...(workflowMutationsBlockedReason
+          ? {
+              disabledReason: workflowMutationsBlockedReason,
+            }
+          : {
+              href: this.createCommandUri(
+                VSCODE_EXTENSION_COMMAND_IDS.COMMIT_WORKFLOW_DRAFT,
+                draftRequest,
+              ),
+            }),
+      });
+    }
+
+    return actions;
+  }
+
+  private createWorkflowDraftMutationAction(
+    label: string,
+    description: string,
+    request: {
+      workflowDraftId: string;
+      workflowDraftRevision: string;
+      workflowDraftEntryMode: OrchestrationWorkflowDraftEntryMode;
+    },
+    workflowDraftPatchOp: OrchestrationWorkflowDraftSupportedPatchOp,
+    disabledReason?: string,
+  ): {
+    label: string;
+    description: string;
+    href?: string;
+    disabledReason?: string;
+  } {
+    return {
+      label,
+      description,
+      ...(disabledReason
+        ? {
+            disabledReason,
+          }
+        : {
+            href: this.createCommandUri(VSCODE_EXTENSION_COMMAND_IDS.MUTATE_WORKFLOW_DRAFT, {
+              ...request,
+              workflowDraftPatchOp,
+            }),
+          }),
+    };
+  }
+
   private buildWorkflowStudioActionDescriptors(
     selectedExecution: OrchestrationExecutionBoardEntry | undefined,
     temporaryBridges: readonly OrchestrationGovernanceTemporaryBridgeEntry[],
@@ -4169,7 +5093,11 @@ export class VsCodeExtensionPresentationBuilder {
         }
 
         if (action.actionKind === OrchestrationGovernanceActionKind.SUBMIT_HITL_DECISION) {
-          if (action.enabled && action.hitlDecisionOptions) {
+          if (
+            action.enabled &&
+            action.hitlDecisionOptions &&
+            action.hitlDecisionOptions.length > 0
+          ) {
             for (const option of action.hitlDecisionOptions) {
               actions.push({
                 label: this.getHitlDecisionLabel(option.decision, option.resumeAction),
@@ -4187,8 +5115,8 @@ export class VsCodeExtensionPresentationBuilder {
             actions.push({
               label: this.getDisabledActionLabel(action.actionKind),
               description: this.localizer.localizeText(
-                'Human review is not currently waiting on this execution.',
-                '当前执行暂时不需要人工复核。',
+                'A service-owned HITL decision is not currently available for this execution.',
+                '当前执行暂时没有可用的 service-owned HITL 决策。',
               ),
               disabledReason: action.disabledReason
                 ? this.localizeDisabledReason(action.disabledReason)
@@ -4355,6 +5283,63 @@ export class VsCodeExtensionPresentationBuilder {
     return lines;
   }
 
+  private buildWorkflowStudioRuntimeLaneLines(
+    roleLaneStatus: VsCodeExtensionWorkflowStudioSnapshot['roleLaneStatus'],
+    selectedExecution: OrchestrationExecutionSummary | undefined,
+  ): string[] {
+    if (!selectedExecution) {
+      return [
+        this.localizer.localizeText(
+          'Select one execution to inspect runtime-lane status.',
+          '请选择一个执行以查看运行时泳道状态。',
+        ),
+      ];
+    }
+
+    if (!roleLaneStatus || roleLaneStatus.lanes.length === 0) {
+      return [
+        this.localizer.localizeText(
+          'Runtime-lane projection is not available yet.',
+          '当前还没有可用的运行时泳道投影。',
+        ),
+      ];
+    }
+
+    return roleLaneStatus.lanes.flatMap(
+      (
+        lane: NonNullable<VsCodeExtensionWorkflowStudioSnapshot['roleLaneStatus']>['lanes'][number],
+        index: number,
+      ) => {
+        const unavailable = this.localizer.localizeText('Unavailable', '不可用');
+        const artifactSummary =
+          lane.artifactBacklinks.length > 0
+            ? lane.artifactBacklinks
+                .map((backlink: (typeof lane.artifactBacklinks)[number]) => backlink.target)
+                .join(', ')
+            : unavailable;
+        const reviewSummary =
+          lane.reviewBacklinks.length > 0
+            ? lane.reviewBacklinks
+                .map((backlink: (typeof lane.reviewBacklinks)[number]) => backlink.target)
+                .join(', ')
+            : unavailable;
+
+        return [
+          `${this.localizer.localizeText('Lane', '泳道')} ${String(index + 1)}: ${lane.roleId}`,
+          `${this.localizer.localizeText('Execution', '执行')}: ${lane.executionId}`,
+          `${this.localizer.localizeText('Session', '会话')}: ${lane.sessionId ?? unavailable}`,
+          `${this.localizer.localizeText('Stage', '阶段')}: ${lane.currentStageId ?? unavailable}`,
+          `${this.localizer.localizeText('Status', '状态')}: ${lane.status}`,
+          `${this.localizer.localizeText('Latest event', '最新事件')}: ${lane.latestEventType ?? unavailable}`,
+          `${this.localizer.localizeText('Pending HITL', '待处理 HITL')}: ${lane.pendingHitl ? this.localizer.localizeText('Yes', '是') : this.localizer.localizeText('No', '否')}`,
+          `${this.localizer.localizeText('Artifact backlinks', '产物回链')}: ${artifactSummary}`,
+          `${this.localizer.localizeText('Review backlinks', '评审回链')}: ${reviewSummary}`,
+          `${this.localizer.localizeText('Updated at', '更新时间')}: ${lane.updatedAt}`,
+        ];
+      },
+    );
+  }
+
   private buildWorkflowStudioQueueLines(
     queueOverview: OrchestrationQueueOverviewQueryResponse,
   ): string[] {
@@ -4406,6 +5391,81 @@ export class VsCodeExtensionPresentationBuilder {
       `${this.localizer.localizeText('Active workspaces', '活跃工作区')}: ${queueOverview.notificationOwnership.activeWorkspaceCount}`,
       `${this.localizer.localizeText('Selected execution', '当前选中执行')}: ${selectedExecution?.executionId ?? this.localizer.localizeText('None', '无')}`,
       `${this.localizer.localizeText('Decision guidance', '决策建议')}: ${this.getDesktopDecisionGuidance(queueOverview)}`,
+    ];
+  }
+
+  private buildWorkflowStudioHitlDecisionPacketLines(
+    hitlDecisionPacket: VsCodeExtensionWorkflowStudioSnapshot['hitlDecisionPacket'],
+    selectedExecution: OrchestrationExecutionSummary | undefined,
+  ): string[] {
+    if (!selectedExecution) {
+      return [
+        this.localizer.localizeText(
+          'Select one execution to inspect the HITL decision packet.',
+          '请选择一个执行以查看 HITL 决策包。',
+        ),
+      ];
+    }
+
+    if (!hitlDecisionPacket) {
+      return [
+        this.localizer.localizeText(
+          'The selected execution does not currently expose a HITL decision packet.',
+          '当前选中的执行还没有暴露 HITL 决策包。',
+        ),
+      ];
+    }
+
+    const unavailable = this.localizer.localizeText('Unavailable', '不可用');
+    const riskSummary =
+      hitlDecisionPacket.riskFacts.length > 0
+        ? hitlDecisionPacket.riskFacts
+            .map(
+              (
+                fact: NonNullable<
+                  VsCodeExtensionWorkflowStudioSnapshot['hitlDecisionPacket']
+                >['riskFacts'][number],
+              ) => `${fact.riskId} (${fact.riskLevel}, ${fact.riskCategory}, ${fact.triggerRule})`,
+            )
+            .join('; ')
+        : unavailable;
+    const decisionSummary =
+      hitlDecisionPacket.allowedDecisions.length > 0
+        ? hitlDecisionPacket.allowedDecisions
+            .map(
+              (
+                decision: NonNullable<
+                  VsCodeExtensionWorkflowStudioSnapshot['hitlDecisionPacket']
+                >['allowedDecisions'][number],
+              ) => `${decision.decision}/${decision.resumeAction}`,
+            )
+            .join(', ')
+        : unavailable;
+    const backlinkSummary =
+      hitlDecisionPacket.backlinks.length > 0
+        ? hitlDecisionPacket.backlinks
+            .map(
+              (
+                backlink: NonNullable<
+                  VsCodeExtensionWorkflowStudioSnapshot['hitlDecisionPacket']
+                >['backlinks'][number],
+              ) => backlink.target,
+            )
+            .join(', ')
+        : unavailable;
+
+    return [
+      `${this.localizer.localizeText('Execution', '执行')}: ${hitlDecisionPacket.executionId}`,
+      `${this.localizer.localizeText('Session', '会话')}: ${hitlDecisionPacket.executionSessionId ?? unavailable}`,
+      `${this.localizer.localizeText('Task', '任务')}: ${hitlDecisionPacket.taskId ?? unavailable}`,
+      `${this.localizer.localizeText('Review', '评审')}: ${hitlDecisionPacket.reviewId ?? unavailable}`,
+      `${this.localizer.localizeText('Policy action', '策略动作')}: ${hitlDecisionPacket.policyAction}`,
+      `${this.localizer.localizeText('SLA deadline', 'SLA 截止时间')}: ${hitlDecisionPacket.slaDeadlineAt ?? unavailable}`,
+      `${this.localizer.localizeText('Default timeout action', '默认超时动作')}: ${hitlDecisionPacket.defaultTimeoutAction}`,
+      `${this.localizer.localizeText('Allowed decisions', '允许的决策')}: ${decisionSummary}`,
+      `${this.localizer.localizeText('Risk facts', '风险事实')}: ${riskSummary}`,
+      `${this.localizer.localizeText('Impact summary', '影响摘要')}: ${hitlDecisionPacket.impactSummary}`,
+      `${this.localizer.localizeText('Backlinks', '回链')}: ${backlinkSummary}`,
     ];
   }
 

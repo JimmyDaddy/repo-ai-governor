@@ -1,7 +1,7 @@
 # VS Code Governance Workbench Surface Contract
 
 - Status: active
-- Date: 2026-04-16
+- Date: 2026-04-22
 - Contract ID: `contract.runtime.vscode-governance-workbench-surface.v1`
 - Producer Module: `runtime.governance-clients`
 
@@ -24,6 +24,9 @@
 11. `desktop_relationship`
 12. `handoff_targets[]`
 13. `continuity_tokens[]`
+14. `workflow_authoring_capability_classes[]`
+15. `runtime_status_capability_classes[]`
+16. `hitl_decision_capability_classes[]`
 
 ## 3. Allowed Values
 
@@ -44,17 +47,33 @@
    - `foundation_only_secondary_surface`
    - `coexisting_secondary_surface`
    - `optional_shell_candidate`
+7. `workflow_authoring_capability_classes`
+   - `workflow_draft_session`
+   - `workflow_validation_delta`
+   - `workflow_commit_backlinks`
+8. `runtime_status_capability_classes`
+   - `runtime_lane_status`
+   - `execution_stage_progress`
+   - `execution_graph`
+   - `session_continuity`
+9. `hitl_decision_capability_classes`
+   - `hitl_decision_packet`
+   - `hitl_execution_backlinks`
+   - `hitl_recovery_actions`
 
 ## 4. Required Constraints
 
 1. VS Code workbench 的 canonical truth owner 必须始终为 `local_orchestration_service`；task/workflow/review/automation/adoption/host state 只能通过 service-owned DTO、query 与 command seam 消费。
 2. `native_entrypoints[]` 必须优先覆盖 `TreeView / Commands / Chat / Code Actions`；`workbench_panels[]` 只允许承接多对象 board、artifact/review workbench、workflow studio、automation queue 与 adoption / host operations 这类 detail-heavy surface。
 3. `workbench_panel_allowed` 只表示允许 richer workbench panel，不表示允许 extension host 直接读取 `.repo-ai-governor/**` canonical files，也不表示允许本地维护 shadow execution/session/task state。
-4. `query_capability_classes[]` 至少要能覆盖 `task_board`、`review_queue`、`workflow_preview`、`workflow_stage_progress`、`automation_queue`、`adoption_status` 与 `host_distribution_status` 的稳定分类；具体 query payload 仍由 aggregation facade contract 冻结。
-5. `temporary_bridge_capability_classes[]` 只允许用于尚未 service-native 的 `adopt / host / verify / upgrade` 这类高价值 surface；每条 bridge 都必须回链 service-owned receipt/backlink，并具备显式 exit criteria。
+4. `query_capability_classes[]` 至少要能覆盖 `task_board`、`review_queue`、`workflow_preview`、`workflow_stage_progress`、`automation_queue`、`adoption_status` 与 `host_distribution_status` 的稳定分类；direct-workbench follow-up 还必须通过 `workflow_authoring_capability_classes[]`、`runtime_status_capability_classes[]` 与 `hitl_decision_capability_classes[]` 稳定表达 `workflow_draft_session / runtime_lane_status / session_continuity / hitl_decision_packet` vocabulary；具体 payload 仍由 aggregation facade 与 direct-workbench runtime contract 冻结。
+5. `temporary_bridge_capability_classes[]` 只允许用于尚未 service-native 的高价值 surface，包括 `adopt / host / verify / upgrade` 与 direct-workbench follow-up 的过渡性 workflow/runtime/HITL bridge；每条 bridge 都必须回链 service-owned receipt/backlink，并具备显式 exit criteria。
 6. `public_support_level=primary_workbench_claim` 只有在 workflow studio、adoption/host cutover、desktop decision surface 与 support-truth refresh evidence 同窗闭环后才允许出现；在此之前只能保持 `companion_upgraded` 或 `workbench_baseline_in_progress`。
 7. `desktop_relationship` 可以在 `foundation_only_secondary_surface -> coexisting_secondary_surface -> optional_shell_candidate` 之间演进，但不得在没有独立 desktop decision surface 的情况下被文档静默删除。
 8. `handoff_targets[]` 与 `continuity_tokens[]` 必须继续复用 shared identifiers 语义，不得让 VS Code workbench 与 CLI / desktop 各自发明平行 handoff truth。
+9. `Workflow Studio Authoring` 只允许建立在 service-owned `workflow draft session` 上；所有 authoring mutation 必须遵守 `schema-first -> patch -> validate -> commit` 流程，并由 service 返回 revision / conflict signal；extension host 不得持有 workflow definition 的 canonical source，也不得维护 extension-local graph truth。
+10. `Runtime Lanes` 只能消费 `execution_graph / runtime_lane_status / execution_stage_progress / session_continuity / backlink` 的 service-owned projection；本地 selection store 只允许保存 transient UI selection，不得演化为第二套 runtime state machine。
+11. `HITL Decision Cockpit` 只能消费 `hitl_decision_packet`，并必须完整保留 risk facts、SLA、`default_timeout_action` 与 execution/task/review backlinks；`submitHitlDecision / recoverExecution / terminateExecution` 不得绕过既有 trust/policy gate。
 
 ## 5. Consumers
 
@@ -68,4 +87,5 @@
 
 1. `v1` formalize 的是 VS Code primary workbench 的目标边界，不等于 public support truth 已在同一窗口完成切换。
 2. `v1` 允许 companion-era `vscode_editor_companion` 继续作为 rollout 兼容语义存在，但它不再是 planning-side formal direction 的终局定义。
-3. `v1` 允许 `adopt / host / verify / upgrade` 先通过 typed CLI bridge 暂存，只要 service-owned receipt/backlink 与 exit criteria 没有缺位。
+3. `v1` 允许 `adopt / host / verify / upgrade` 与 direct-workbench follow-up 的过渡性 workflow/runtime/HITL surface 先通过 typed bridge 暂存，只要 service-owned receipt/backlink 与 exit criteria 没有缺位。
+4. `v1` 不回退当前已激活的 `primary_workbench_claim` built-source truth；direct graph authoring、runtime lanes 与 richer HITL decision cockpit 的更强 public claim 仍需后续 evidence window 才能单独改口。

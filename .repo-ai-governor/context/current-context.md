@@ -12,7 +12,7 @@
 - Checklist: `none`
 - CSV: `none`
 - Review: `none`
-- Note: `2026-04-21` project-120 PR remediation 已完成；PR #23 当前 unresolved threads=`0 / 7`，`quality-gate-full` 已在 2026-04-21 通过。GitHub 仍显示 `reviewDecision=REVIEW_REQUIRED` / `mergeState=BLOCKED`，因此后续合并仍需人工 review/approval。
+- Note: `2026-04-23` project-121 final closeout 已完成，`CR-005` clean 收口后工作区已恢复到 idle，等待下一条执行流激活。
 
 ## Active Streams
 

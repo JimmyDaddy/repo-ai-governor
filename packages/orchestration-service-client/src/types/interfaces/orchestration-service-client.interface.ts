@@ -1,3 +1,4 @@
+import type { ProcessNodeType } from '@repo-ai-governor/core-process';
 import type { MemoryProviderCompositionSummary } from '@repo-ai-governor/memory-provider-registry';
 import type {
   AdapterProviderKind,
@@ -29,6 +30,11 @@ import type {
   OrchestrationSessionRouteId,
   OrchestrationSessionStatus,
   OrchestrationSessionTranscriptRole,
+  OrchestrationWorkbenchBacklinkKind,
+  OrchestrationWorkflowDraftConflictKind,
+  OrchestrationWorkflowDraftEntryMode,
+  OrchestrationWorkflowDraftSupportedPatchOp,
+  OrchestrationWorkflowDraftValidationIssueSource,
   OrchestrationWorkspaceOperationKind,
 } from '../../constants/index.js';
 
@@ -298,6 +304,7 @@ export interface OrchestrationSubmitHitlDecisionRequest {
   decision: string;
   resumeAction: string;
   actor: string;
+  locale?: string;
   reason?: string;
   constraints?: Record<string, unknown>;
   decisionReceiptArtifactPath?: string;
@@ -370,6 +377,13 @@ export interface OrchestrationHandoffTarget {
   exists: boolean;
 }
 
+export interface OrchestrationWorkbenchBacklink {
+  backlinkId: string;
+  backlinkKind: OrchestrationWorkbenchBacklinkKind;
+  label: string;
+  target: string;
+}
+
 export interface OrchestrationExecutionBoardEntry {
   execution: OrchestrationExecutionSummary;
   actions: OrchestrationGovernanceActionAffordance[];
@@ -398,6 +412,222 @@ export interface OrchestrationHitlInboxQueryResponse {
   pendingDecisions: OrchestrationHitlInboxEntry[];
   returnedCount: number;
   totalMatchedCount: number;
+}
+
+export interface OrchestrationRoleLaneStatusQueryRequest {
+  executionId?: string;
+  filter?: OrchestrationListExecutionsFilter;
+  limit?: number;
+}
+
+export interface OrchestrationRoleLaneStatusEntry {
+  roleId: string;
+  executionId: string;
+  sessionId?: string;
+  currentStageId?: string;
+  status: string;
+  latestEventType?: string;
+  updatedAt: string;
+  pendingHitl: boolean;
+  artifactBacklinks: OrchestrationWorkbenchBacklink[];
+  reviewBacklinks: OrchestrationWorkbenchBacklink[];
+}
+
+export interface OrchestrationRoleLaneStatusQueryResponse {
+  generatedAt: string;
+  lanes: OrchestrationRoleLaneStatusEntry[];
+  returnedCount: number;
+  totalMatchedCount: number;
+}
+
+export interface OrchestrationSessionContinuityQueryRequest {
+  executionId?: string;
+  sessionId?: string;
+  preferLatest?: boolean;
+  locale?: string;
+}
+
+export interface OrchestrationSessionContinuitySnapshot {
+  sessionId: string;
+  sessionStatus?: string;
+  currentRouteId?: string;
+  latestTurnId?: string;
+  latestEventSequence?: number;
+  nextCursor?: string;
+  resumeSelector?: string;
+  degradedReason?: string;
+}
+
+export interface OrchestrationRiskFact {
+  riskId: string;
+  riskCategory: string;
+  riskLevel: string;
+  evidence: string[];
+  changeScope: string;
+  confidence: number;
+  triggerRule: string;
+}
+
+export interface OrchestrationHitlDecisionPacketQueryRequest {
+  executionId?: string;
+  sessionId?: string;
+  preferLatest?: boolean;
+  locale?: string;
+}
+
+export interface OrchestrationHitlDecisionPacket {
+  executionId: string;
+  executionSessionId?: string;
+  taskId?: string;
+  reviewId?: string;
+  riskFacts: OrchestrationRiskFact[];
+  policyAction: string;
+  slaDeadlineAt?: string;
+  defaultTimeoutAction: string;
+  allowedDecisions: OrchestrationHitlDecisionOption[];
+  impactSummary: string;
+  backlinks: OrchestrationWorkbenchBacklink[];
+}
+
+export interface OrchestrationWorkflowDraftNodeSpec {
+  nodeId: string;
+  stageId: string;
+  nodeType?: ProcessNodeType;
+  routeKey: string;
+  roleProfileId: string;
+  inputSchemaRef?: string;
+  outputSchemaRef?: string;
+  retryPolicyRef?: string;
+  timeoutPolicyRef?: string;
+  budgetPolicyRef?: string;
+  maxCycles?: number;
+  maxWallTimeSeconds?: number;
+}
+
+export interface OrchestrationWorkflowDraftEdgeSpec {
+  fromNodeId: string;
+  toNodeId: string;
+  conditionKey?: string;
+}
+
+export interface OrchestrationWorkflowDraftValidationIssue {
+  issueCode: string;
+  severity: string;
+  message: string;
+  location: string;
+  suggestion?: string;
+  issueSource: OrchestrationWorkflowDraftValidationIssueSource;
+}
+
+export interface OrchestrationWorkflowCompiledIrPreview {
+  processId: string;
+  entryNodeId: string;
+  compiledAt: string;
+  nodeCount: number;
+  edgeCount: number;
+  compileWarningCount: number;
+  compileErrorCount: number;
+  compileWarnings: OrchestrationWorkflowDraftValidationIssue[];
+  compileErrors: OrchestrationWorkflowDraftValidationIssue[];
+  snapshotPath?: string;
+}
+
+export interface OrchestrationWorkflowDraftConflictState {
+  hasConflict: boolean;
+  conflictKind: OrchestrationWorkflowDraftConflictKind;
+  detectedAt: string;
+  message?: string;
+  expectedDraftRevision?: string;
+  currentDraftRevision?: string;
+  expectedBaseDefinitionRevision?: string;
+  currentBaseDefinitionRevision?: string;
+}
+
+export interface OrchestrationWorkflowDraftBacklinkArtifact {
+  artifactId: string;
+  artifactKind: string;
+  artifactPath: string;
+}
+
+export interface OrchestrationWorkflowDraftSession {
+  workflowDraftId: string;
+  draftRevision: string;
+  baseDefinitionRevision: string;
+  templateId: string;
+  entryMode: OrchestrationWorkflowDraftEntryMode;
+  nodeSpecs: OrchestrationWorkflowDraftNodeSpec[];
+  edgeSpecs: OrchestrationWorkflowDraftEdgeSpec[];
+  supportedPatchOps: OrchestrationWorkflowDraftSupportedPatchOp[];
+  validationIssues: OrchestrationWorkflowDraftValidationIssue[];
+  conflictState: OrchestrationWorkflowDraftConflictState;
+  compiledIrPreview: OrchestrationWorkflowCompiledIrPreview;
+  backlinkArtifacts: OrchestrationWorkflowDraftBacklinkArtifact[];
+}
+
+export interface OrchestrationWorkflowDraftSessionQueryRequest {
+  workflowDraftId?: string;
+  preferLatest?: boolean;
+  locale?: string;
+}
+
+export interface OrchestrationStartWorkflowDraftRequest {
+  templateId?: string;
+  entryMode?: OrchestrationWorkflowDraftEntryMode;
+  replaceExistingDraftSession?: boolean;
+  locale?: string;
+}
+
+export interface OrchestrationUpdateWorkflowDraftNodeRequest {
+  workflowDraftId: string;
+  draftRevision: string;
+  nodeId?: string;
+  nodeSpec?: OrchestrationWorkflowDraftNodeSpec;
+  remove?: boolean;
+  locale?: string;
+}
+
+export interface OrchestrationUpdateWorkflowDraftEdgeRequest {
+  workflowDraftId: string;
+  draftRevision: string;
+  edgeSpec: OrchestrationWorkflowDraftEdgeSpec;
+  previousEdgeSpec?: OrchestrationWorkflowDraftEdgeSpec;
+  remove?: boolean;
+  locale?: string;
+}
+
+export interface OrchestrationUpdateWorkflowDraftPolicyRequest {
+  workflowDraftId: string;
+  draftRevision: string;
+  nodeId?: string;
+  processId?: string;
+  entryNodeId?: string;
+  inputSchemaRef?: string;
+  outputSchemaRef?: string;
+  retryPolicyRef?: string;
+  timeoutPolicyRef?: string;
+  budgetPolicyRef?: string;
+  locale?: string;
+}
+
+export interface OrchestrationValidateWorkflowDraftRequest {
+  workflowDraftId: string;
+  draftRevision: string;
+  locale?: string;
+}
+
+export interface OrchestrationCommitWorkflowDraftRequest {
+  workflowDraftId: string;
+  draftRevision: string;
+  locale?: string;
+}
+
+export interface OrchestrationWorkflowDraftMutationResponse {
+  applied: boolean;
+  message: string;
+  draftSession: OrchestrationWorkflowDraftSession;
+  definitionPath?: string;
+  compiledIrPath?: string;
+  committedAt?: string;
 }
 
 export interface OrchestrationQueueOverviewQueryRequest {
@@ -866,6 +1096,27 @@ export interface OrchestrationServiceClient {
   applyProviderOnboarding(
     request: OrchestrationApplyProviderOnboardingRequest,
   ): Promise<OrchestrationApplyProviderOnboardingResponse>;
+  queryWorkflowDraftSession(
+    request?: OrchestrationWorkflowDraftSessionQueryRequest,
+  ): Promise<OrchestrationWorkflowDraftSession | undefined>;
+  startWorkflowDraft(
+    request: OrchestrationStartWorkflowDraftRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse>;
+  updateWorkflowDraftNode(
+    request: OrchestrationUpdateWorkflowDraftNodeRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse>;
+  updateWorkflowDraftEdge(
+    request: OrchestrationUpdateWorkflowDraftEdgeRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse>;
+  updateWorkflowDraftPolicy(
+    request: OrchestrationUpdateWorkflowDraftPolicyRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse>;
+  validateWorkflowDraft(
+    request: OrchestrationValidateWorkflowDraftRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse>;
+  commitWorkflowDraft(
+    request: OrchestrationCommitWorkflowDraftRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse>;
   runWorkspaceOperation(
     request: OrchestrationWorkspaceOperationRequest,
   ): Promise<OrchestrationWorkspaceOperationResponse>;
@@ -879,6 +1130,15 @@ export interface OrchestrationServiceClient {
   queryHitlInbox(
     request?: OrchestrationHitlInboxQueryRequest,
   ): Promise<OrchestrationHitlInboxQueryResponse>;
+  queryRoleLaneStatus(
+    request?: OrchestrationRoleLaneStatusQueryRequest,
+  ): Promise<OrchestrationRoleLaneStatusQueryResponse>;
+  querySessionContinuity(
+    request?: OrchestrationSessionContinuityQueryRequest,
+  ): Promise<OrchestrationSessionContinuitySnapshot | undefined>;
+  queryHitlDecisionPacket(
+    request?: OrchestrationHitlDecisionPacketQueryRequest,
+  ): Promise<OrchestrationHitlDecisionPacket | undefined>;
   queryQueueOverview(
     request?: OrchestrationQueueOverviewQueryRequest,
   ): Promise<OrchestrationQueueOverviewQueryResponse>;

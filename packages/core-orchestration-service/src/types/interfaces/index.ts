@@ -24,6 +24,7 @@ export type {
   SessionDeliveryWorkflowVersion,
 } from './session-delivery-workflow.interface.js';
 export type {
+  LocalOrchestrationServiceHitlDecisionState,
   LocalOrchestrationServiceMemoryProviderState,
   LocalOrchestrationServicePublishEventRequest,
   LocalOrchestrationServiceSaveCheckpointRequest,

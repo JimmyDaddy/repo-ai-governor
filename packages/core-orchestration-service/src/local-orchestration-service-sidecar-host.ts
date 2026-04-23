@@ -108,6 +108,56 @@ export class LocalOrchestrationServiceSidecarHost
     return this.shell.applyProviderOnboarding(request);
   }
 
+  public queryWorkflowDraftSession(
+    request?: Parameters<
+      LocalOrchestrationServiceSidecarDispatchTable['queryWorkflowDraftSession']
+    >[0],
+  ) {
+    return this.shell.queryWorkflowDraftSession(request);
+  }
+
+  public startWorkflowDraft(
+    request: Parameters<LocalOrchestrationServiceSidecarDispatchTable['startWorkflowDraft']>[0],
+  ) {
+    return this.shell.startWorkflowDraft(request);
+  }
+
+  public updateWorkflowDraftNode(
+    request: Parameters<
+      LocalOrchestrationServiceSidecarDispatchTable['updateWorkflowDraftNode']
+    >[0],
+  ) {
+    return this.shell.updateWorkflowDraftNode(request);
+  }
+
+  public updateWorkflowDraftEdge(
+    request: Parameters<
+      LocalOrchestrationServiceSidecarDispatchTable['updateWorkflowDraftEdge']
+    >[0],
+  ) {
+    return this.shell.updateWorkflowDraftEdge(request);
+  }
+
+  public updateWorkflowDraftPolicy(
+    request: Parameters<
+      LocalOrchestrationServiceSidecarDispatchTable['updateWorkflowDraftPolicy']
+    >[0],
+  ) {
+    return this.shell.updateWorkflowDraftPolicy(request);
+  }
+
+  public validateWorkflowDraft(
+    request: Parameters<LocalOrchestrationServiceSidecarDispatchTable['validateWorkflowDraft']>[0],
+  ) {
+    return this.shell.validateWorkflowDraft(request);
+  }
+
+  public commitWorkflowDraft(
+    request: Parameters<LocalOrchestrationServiceSidecarDispatchTable['commitWorkflowDraft']>[0],
+  ) {
+    return this.shell.commitWorkflowDraft(request);
+  }
+
   public runWorkspaceOperation(
     request: Parameters<LocalOrchestrationServiceSidecarDispatchTable['runWorkspaceOperation']>[0],
   ) {
@@ -132,6 +182,28 @@ export class LocalOrchestrationServiceSidecarHost
     request?: Parameters<LocalOrchestrationServiceSidecarDispatchTable['queryHitlInbox']>[0],
   ) {
     return this.shell.queryHitlInbox(request);
+  }
+
+  public queryRoleLaneStatus(
+    request?: Parameters<LocalOrchestrationServiceSidecarDispatchTable['queryRoleLaneStatus']>[0],
+  ) {
+    return this.shell.queryRoleLaneStatus(request);
+  }
+
+  public querySessionContinuity(
+    request?: Parameters<
+      LocalOrchestrationServiceSidecarDispatchTable['querySessionContinuity']
+    >[0],
+  ) {
+    return this.shell.querySessionContinuity(request);
+  }
+
+  public queryHitlDecisionPacket(
+    request?: Parameters<
+      LocalOrchestrationServiceSidecarDispatchTable['queryHitlDecisionPacket']
+    >[0],
+  ) {
+    return this.shell.queryHitlDecisionPacket(request);
   }
 
   public queryQueueOverview(
@@ -314,6 +386,50 @@ export class LocalOrchestrationServiceSidecarHost
             Parameters<LocalOrchestrationServiceSidecarDispatchTable['applyProviderOnboarding']>[0]
           >(payload, operation),
         );
+      case LocalOrchestrationServiceSidecarOperation.QUERY_WORKFLOW_DRAFT_SESSION:
+        return this.queryWorkflowDraftSession(
+          payload as Parameters<
+            LocalOrchestrationServiceSidecarDispatchTable['queryWorkflowDraftSession']
+          >[0],
+        );
+      case LocalOrchestrationServiceSidecarOperation.START_WORKFLOW_DRAFT:
+        return this.startWorkflowDraft(
+          this.assertPayload<
+            Parameters<LocalOrchestrationServiceSidecarDispatchTable['startWorkflowDraft']>[0]
+          >(payload, operation),
+        );
+      case LocalOrchestrationServiceSidecarOperation.UPDATE_WORKFLOW_DRAFT_NODE:
+        return this.updateWorkflowDraftNode(
+          this.assertPayload<
+            Parameters<LocalOrchestrationServiceSidecarDispatchTable['updateWorkflowDraftNode']>[0]
+          >(payload, operation),
+        );
+      case LocalOrchestrationServiceSidecarOperation.UPDATE_WORKFLOW_DRAFT_EDGE:
+        return this.updateWorkflowDraftEdge(
+          this.assertPayload<
+            Parameters<LocalOrchestrationServiceSidecarDispatchTable['updateWorkflowDraftEdge']>[0]
+          >(payload, operation),
+        );
+      case LocalOrchestrationServiceSidecarOperation.UPDATE_WORKFLOW_DRAFT_POLICY:
+        return this.updateWorkflowDraftPolicy(
+          this.assertPayload<
+            Parameters<
+              LocalOrchestrationServiceSidecarDispatchTable['updateWorkflowDraftPolicy']
+            >[0]
+          >(payload, operation),
+        );
+      case LocalOrchestrationServiceSidecarOperation.VALIDATE_WORKFLOW_DRAFT:
+        return this.validateWorkflowDraft(
+          this.assertPayload<
+            Parameters<LocalOrchestrationServiceSidecarDispatchTable['validateWorkflowDraft']>[0]
+          >(payload, operation),
+        );
+      case LocalOrchestrationServiceSidecarOperation.COMMIT_WORKFLOW_DRAFT:
+        return this.commitWorkflowDraft(
+          this.assertPayload<
+            Parameters<LocalOrchestrationServiceSidecarDispatchTable['commitWorkflowDraft']>[0]
+          >(payload, operation),
+        );
       case LocalOrchestrationServiceSidecarOperation.RUN_WORKSPACE_OPERATION:
         return this.runWorkspaceOperation(
           this.assertPayload<
@@ -338,6 +454,24 @@ export class LocalOrchestrationServiceSidecarHost
       case LocalOrchestrationServiceSidecarOperation.QUERY_HITL_INBOX:
         return this.queryHitlInbox(
           payload as Parameters<LocalOrchestrationServiceSidecarDispatchTable['queryHitlInbox']>[0],
+        );
+      case LocalOrchestrationServiceSidecarOperation.QUERY_ROLE_LANE_STATUS:
+        return this.queryRoleLaneStatus(
+          payload as Parameters<
+            LocalOrchestrationServiceSidecarDispatchTable['queryRoleLaneStatus']
+          >[0],
+        );
+      case LocalOrchestrationServiceSidecarOperation.QUERY_SESSION_CONTINUITY:
+        return this.querySessionContinuity(
+          payload as Parameters<
+            LocalOrchestrationServiceSidecarDispatchTable['querySessionContinuity']
+          >[0],
+        );
+      case LocalOrchestrationServiceSidecarOperation.QUERY_HITL_DECISION_PACKET:
+        return this.queryHitlDecisionPacket(
+          payload as Parameters<
+            LocalOrchestrationServiceSidecarDispatchTable['queryHitlDecisionPacket']
+          >[0],
         );
       case LocalOrchestrationServiceSidecarOperation.QUERY_QUEUE_OVERVIEW:
         return this.queryQueueOverview(

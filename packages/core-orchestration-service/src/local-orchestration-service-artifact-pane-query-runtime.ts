@@ -10,6 +10,7 @@ import {
   type OrchestrationArtifactPaneReviewEntry,
   type OrchestrationArtifactPaneTranscriptEntry,
   type OrchestrationExecutionSummary,
+  type OrchestrationListExecutionsRequest,
   type OrchestrationListExecutionsResponse,
   type OrchestrationListSessionsResponse,
   OrchestrationSessionEventType,
@@ -21,7 +22,9 @@ import { LocalOrchestrationServiceReviewRoutingRuntime } from './local-orchestra
 interface LocalOrchestrationServiceArtifactPaneQueryRuntimeDependencies {
   workspaceRoot: string;
   getExecution: (executionId: string) => Promise<OrchestrationExecutionSummary | undefined>;
-  listExecutions: () => Promise<OrchestrationListExecutionsResponse>;
+  listExecutions: (
+    request?: OrchestrationListExecutionsRequest,
+  ) => Promise<OrchestrationListExecutionsResponse>;
   getSession: (sessionId: string) => Promise<OrchestrationSessionSummary | undefined>;
   listSessions: () => Promise<OrchestrationListSessionsResponse>;
   subscribeSession: (
@@ -36,6 +39,7 @@ const ARTIFACT_REGISTRY_SQLITE_FILE_SEGMENTS = [
   'sqlite',
   'artifact-registry.sqlite',
 ] as const;
+
 /**
  * Reads service-owned artifact, review, and transcript slices for desktop artifact-pane consumers.
  *
@@ -68,7 +72,7 @@ export class LocalOrchestrationServiceArtifactPaneQueryRuntime {
       this.resolvePrimaryReviewDirectoryPath(),
     ]);
     const reviewDocumentPath = executionSummary
-      ? await this.reviewRoutingRuntime.resolveExecutionReviewDocumentPath(executionSummary)
+      ? await this.resolveExecutionReviewDocumentPath(executionSummary)
       : undefined;
     const artifactLimit = this.normalizeLimit(request.artifactLimit, 5);
     const reviewLimit = this.normalizeLimit(request.reviewLimit, 5);
@@ -137,6 +141,36 @@ export class LocalOrchestrationServiceArtifactPaneQueryRuntime {
 
     const response = await this.dependencies.listSessions();
     return response.sessions[0];
+  }
+
+  private async resolveExecutionReviewDocumentPath(
+    executionSummary: OrchestrationExecutionSummary,
+  ): Promise<string | undefined> {
+    const siblingExecutions = await this.listExecutionOwnershipPeers(executionSummary);
+    return this.reviewRoutingRuntime.resolveExecutionReviewDocumentPath(executionSummary, {
+      siblingExecutions,
+    });
+  }
+
+  private async listExecutionOwnershipPeers(
+    executionSummary: OrchestrationExecutionSummary,
+  ): Promise<OrchestrationExecutionSummary[]> {
+    const response = await this.dependencies.listExecutions({
+      filter: {
+        sprintId: executionSummary.sprintId,
+        ...(executionSummary.projectId
+          ? {
+              projectId: executionSummary.projectId,
+            }
+          : {}),
+      },
+    });
+
+    return response.executions.filter(
+      (candidate) =>
+        candidate.sprintId === executionSummary.sprintId &&
+        (!executionSummary.projectId || candidate.projectId === executionSummary.projectId),
+    );
   }
 
   private async readArtifacts(

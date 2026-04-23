@@ -27,6 +27,7 @@ import {
   OrchestrationSessionEventType,
   OrchestrationSessionRouteId,
   OrchestrationSessionStatus,
+  OrchestrationWorkbenchBacklinkKind,
   OrchestrationWorkspaceOperationKind,
 } from '@repo-ai-governor/orchestration-service-client';
 import { GovernorErrorCode, MemoryStoreEngine, RuntimeError } from '@repo-ai-governor/shared';
@@ -37,11 +38,21 @@ const serviceClientMock = vi.hoisted(() => ({
   getExecution: vi.fn(),
   queryExecutionBoard: vi.fn(),
   queryHitlInbox: vi.fn(),
+  queryRoleLaneStatus: vi.fn(),
+  querySessionContinuity: vi.fn(),
+  queryHitlDecisionPacket: vi.fn(),
   queryQueueOverview: vi.fn(),
   queryArtifactPane: vi.fn(),
   queryBootstrapReadiness: vi.fn(),
   querySecureAuthoring: vi.fn(),
   queryProviderOnboarding: vi.fn(),
+  queryWorkflowDraftSession: vi.fn(),
+  startWorkflowDraft: vi.fn(),
+  updateWorkflowDraftNode: vi.fn(),
+  updateWorkflowDraftEdge: vi.fn(),
+  updateWorkflowDraftPolicy: vi.fn(),
+  validateWorkflowDraft: vi.fn(),
+  commitWorkflowDraft: vi.fn(),
   startSession: vi.fn(),
   sendSessionTurn: vi.fn(),
   subscribeSession: vi.fn(),
@@ -104,11 +115,21 @@ vi.mock('@repo-ai-governor/core-orchestration-service/sidecar-client', () => ({
     public readonly getExecution = serviceClientMock.getExecution;
     public readonly queryExecutionBoard = serviceClientMock.queryExecutionBoard;
     public readonly queryHitlInbox = serviceClientMock.queryHitlInbox;
+    public readonly queryRoleLaneStatus = serviceClientMock.queryRoleLaneStatus;
+    public readonly querySessionContinuity = serviceClientMock.querySessionContinuity;
+    public readonly queryHitlDecisionPacket = serviceClientMock.queryHitlDecisionPacket;
     public readonly queryQueueOverview = serviceClientMock.queryQueueOverview;
     public readonly queryArtifactPane = serviceClientMock.queryArtifactPane;
     public readonly queryBootstrapReadiness = serviceClientMock.queryBootstrapReadiness;
     public readonly querySecureAuthoring = serviceClientMock.querySecureAuthoring;
     public readonly queryProviderOnboarding = serviceClientMock.queryProviderOnboarding;
+    public readonly queryWorkflowDraftSession = serviceClientMock.queryWorkflowDraftSession;
+    public readonly startWorkflowDraft = serviceClientMock.startWorkflowDraft;
+    public readonly updateWorkflowDraftNode = serviceClientMock.updateWorkflowDraftNode;
+    public readonly updateWorkflowDraftEdge = serviceClientMock.updateWorkflowDraftEdge;
+    public readonly updateWorkflowDraftPolicy = serviceClientMock.updateWorkflowDraftPolicy;
+    public readonly validateWorkflowDraft = serviceClientMock.validateWorkflowDraft;
+    public readonly commitWorkflowDraft = serviceClientMock.commitWorkflowDraft;
     public readonly startSession = serviceClientMock.startSession;
     public readonly sendSessionTurn = serviceClientMock.sendSessionTurn;
     public readonly subscribeSession = serviceClientMock.subscribeSession;
@@ -175,11 +196,21 @@ describe('VsCodeExtensionServiceRuntime', () => {
     serviceClientMock.getExecution.mockReset();
     serviceClientMock.queryExecutionBoard.mockReset();
     serviceClientMock.queryHitlInbox.mockReset();
+    serviceClientMock.queryRoleLaneStatus.mockReset();
+    serviceClientMock.querySessionContinuity.mockReset();
+    serviceClientMock.queryHitlDecisionPacket.mockReset();
     serviceClientMock.queryQueueOverview.mockReset();
     serviceClientMock.queryArtifactPane.mockReset();
     serviceClientMock.queryBootstrapReadiness.mockReset();
     serviceClientMock.querySecureAuthoring.mockReset();
     serviceClientMock.queryProviderOnboarding.mockReset();
+    serviceClientMock.queryWorkflowDraftSession.mockReset();
+    serviceClientMock.startWorkflowDraft.mockReset();
+    serviceClientMock.updateWorkflowDraftNode.mockReset();
+    serviceClientMock.updateWorkflowDraftEdge.mockReset();
+    serviceClientMock.updateWorkflowDraftPolicy.mockReset();
+    serviceClientMock.validateWorkflowDraft.mockReset();
+    serviceClientMock.commitWorkflowDraft.mockReset();
     serviceClientMock.startSession.mockReset();
     serviceClientMock.sendSessionTurn.mockReset();
     serviceClientMock.subscribeSession.mockReset();
@@ -217,6 +248,148 @@ describe('VsCodeExtensionServiceRuntime', () => {
       workspaceRoot: '/repo',
       workspaceTrusted: true,
     });
+  });
+
+  it('falls back to getSession when the session-continuity query throws', async () => {
+    serviceClientMock.querySessionContinuity.mockRejectedValueOnce(
+      new RuntimeError(GovernorErrorCode.UNKNOWN, 'session continuity query failed', {
+        surface: 'vscode_extension_test',
+      }),
+    );
+    serviceClientMock.getSession.mockResolvedValueOnce({
+      sessionId: 'session-fallback',
+      status: OrchestrationSessionStatus.ACTIVE,
+      currentRouteId: OrchestrationSessionRouteId.MAIN,
+      latestTurnId: 'turn-fallback',
+      latestEventSequence: 12,
+      nextCursor: 'cursor-fallback',
+      openedAt: '2026-04-22T00:00:00.000Z',
+      eventCount: 12,
+      context: {},
+    });
+
+    const runtime = new VsCodeExtensionServiceRuntime();
+
+    await expect(runtime.querySessionContinuity('session-fallback')).resolves.toEqual({
+      sessionId: 'session-fallback',
+      sessionStatus: OrchestrationSessionStatus.ACTIVE,
+      currentRouteId: OrchestrationSessionRouteId.MAIN,
+      latestTurnId: 'turn-fallback',
+      latestEventSequence: 12,
+      nextCursor: 'cursor-fallback',
+      resumeSelector: 'session-fallback',
+    });
+    expect(serviceClientMock.getSession).toHaveBeenCalledWith('session-fallback');
+  });
+
+  it('keeps draft-session queries soft for backend refresh failures but surfaces durable draft corruption', async () => {
+    serviceClientMock.queryWorkflowDraftSession.mockRejectedValueOnce(
+      new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        'draft query failed',
+        {
+          surface: 'vscode_extension_test',
+        },
+      ),
+    );
+
+    const runtime = new VsCodeExtensionServiceRuntime();
+
+    await expect(
+      runtime.queryWorkflowDraftSession({
+        workflowDraftId: 'workflow-draft-soft',
+      }),
+    ).resolves.toBeUndefined();
+
+    serviceClientMock.queryWorkflowDraftSession.mockRejectedValueOnce(
+      new RuntimeError(
+        GovernorErrorCode.DURABLE_STORAGE_VERIFY_FAILED,
+        'persisted draft session is corrupted',
+        {
+          artifactPath:
+            '/repo/.repo-ai-governor/context/workflow/draft-sessions/direct-workbench.active.json',
+        },
+      ),
+    );
+
+    await expect(
+      runtime.queryWorkflowDraftSession({
+        workflowDraftId: 'workflow-draft-corrupt',
+      }),
+    ).rejects.toMatchObject({
+      code: GovernorErrorCode.DURABLE_STORAGE_VERIFY_FAILED,
+      message: 'persisted draft session is corrupted',
+    });
+
+    serviceClientMock.queryWorkflowDraftSession.mockRejectedValueOnce(
+      new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+        'draft query failed',
+        {
+          surface: 'vscode_extension_test',
+        },
+      ),
+    );
+
+    await expect(
+      runtime.queryWorkflowDraftSessionStrict({
+        workflowDraftId: 'workflow-draft-strict',
+      }),
+    ).rejects.toMatchObject({
+      code: GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+      message: 'draft query failed',
+    });
+  });
+
+  it('falls back through executionId to reconstruct session continuity for older sidecars', async () => {
+    serviceClientMock.querySessionContinuity.mockRejectedValueOnce(
+      new RuntimeError(GovernorErrorCode.UNKNOWN, 'session continuity query failed', {
+        surface: 'vscode_extension_test',
+      }),
+    );
+    serviceClientMock.getExecution.mockResolvedValueOnce({
+      executionId: 'execution-fallback',
+      executionSessionId: 'session-from-execution',
+      processId: 'process-fallback',
+      workspaceId: 'workspace-fallback',
+      workspaceRoot: '/repo',
+      executionKind: OrchestrationExecutionKind.RUN,
+      clientSurface: OrchestrationClientSurface.DESKTOP,
+      eventStreamToken: 'stream-fallback',
+      serviceHostKind: OrchestrationServiceHostKind.SIDECAR,
+      serviceTransportKind: OrchestrationServiceTransportKind.IPC,
+      status: OrchestrationExecutionStatus.RUNNING,
+      checkpointCapable: true,
+      recoveryCapable: true,
+      acceptedAt: '2026-04-22T00:00:00.000Z',
+      updatedAt: '2026-04-22T00:05:00.000Z',
+      pendingHitl: false,
+    });
+    serviceClientMock.getSession.mockResolvedValueOnce({
+      sessionId: 'session-from-execution',
+      status: OrchestrationSessionStatus.ACTIVE,
+      currentRouteId: OrchestrationSessionRouteId.MAIN,
+      latestTurnId: 'turn-fallback-execution',
+      latestEventSequence: 18,
+      nextCursor: 'cursor-fallback-execution',
+      openedAt: '2026-04-22T00:00:00.000Z',
+      eventCount: 18,
+      context: {},
+    });
+
+    const runtime = new VsCodeExtensionServiceRuntime();
+
+    await expect(runtime.querySessionContinuity(undefined, 'execution-fallback')).resolves.toEqual({
+      sessionId: 'session-from-execution',
+      sessionStatus: OrchestrationSessionStatus.ACTIVE,
+      currentRouteId: OrchestrationSessionRouteId.MAIN,
+      latestTurnId: 'turn-fallback-execution',
+      latestEventSequence: 18,
+      nextCursor: 'cursor-fallback-execution',
+      resumeSelector: 'session-from-execution',
+    });
+    expect(serviceClientMock.getExecution).toHaveBeenCalledWith('execution-fallback');
+    expect(serviceClientMock.getSession).toHaveBeenCalledWith('session-from-execution');
   });
 
   it('adds service diagnostics when the health probe succeeds', async () => {
@@ -993,17 +1166,112 @@ describe('VsCodeExtensionServiceRuntime', () => {
         transcriptEntryIds: [],
       },
     });
-    serviceClientMock.getSession.mockResolvedValueOnce({
+    serviceClientMock.queryRoleLaneStatus.mockResolvedValueOnce({
+      generatedAt: '2026-04-07T03:06:00.000Z',
+      lanes: [
+        {
+          roleId: 'reviewer-default',
+          executionId: 'execution-1',
+          sessionId: 'session-1',
+          currentStageId: 'review_verify',
+          status: 'waiting_for_hitl',
+          latestEventType: 'hitl.required',
+          updatedAt: '2026-04-07T03:10:00.000Z',
+          pendingHitl: true,
+          artifactBacklinks: [
+            {
+              backlinkId: 'execution-1:artifact:1',
+              backlinkKind: 'artifact',
+              label: '/repo/.repo-ai-governor/context/review.md',
+              target: '/repo/.repo-ai-governor/context/review.md',
+            },
+          ],
+          reviewBacklinks: [
+            {
+              backlinkId: 'execution-1:review:1',
+              backlinkKind: 'review',
+              label: '/repo/.repo-ai-governor/review/resolved.md',
+              target: '/repo/.repo-ai-governor/review/resolved.md',
+            },
+          ],
+        },
+      ],
+      returnedCount: 1,
+      totalMatchedCount: 1,
+    });
+    serviceClientMock.querySessionContinuity.mockResolvedValueOnce({
       sessionId: 'session-1',
       status: OrchestrationSessionStatus.ACTIVE,
-      openedAt: '2026-04-07T03:00:00.000Z',
+      sessionStatus: OrchestrationSessionStatus.ACTIVE,
+      currentRouteId: 'workflow_authoring',
       latestTurnId: 'turn-1',
       latestEventSequence: 5,
       nextCursor: 'cursor-session-1',
-      eventCount: 5,
-      currentRouteId: 'workflow_authoring',
+      resumeSelector: 'session-1',
+    });
+    serviceClientMock.queryHitlDecisionPacket.mockResolvedValueOnce({
       executionId: 'execution-1',
-      context: {},
+      executionSessionId: 'session-1',
+      taskId: 'TK-940',
+      reviewId: 'review-1',
+      riskFacts: [
+        {
+          riskId: 'execution-1:risk-hitl-pending',
+          riskCategory: 'hitl-decision-pending',
+          riskLevel: 'L2',
+          evidence: ['execution_id=execution-1'],
+          changeScope: 'TK-940',
+          confidence: 0.86,
+          triggerRule: 'runtime-hitl-pending',
+        },
+      ],
+      policyAction: 'confirm',
+      slaDeadlineAt: '2026-04-07T07:06:00.000Z',
+      defaultTimeoutAction: 'block',
+      allowedDecisions: [
+        {
+          optionId: 'execution-1:hitl:approve-resume',
+          decision: 'approve',
+          resumeAction: 'resume',
+        },
+      ],
+      impactSummary: 'Execution execution-1 is waiting on one HITL decision for TK-940.',
+      backlinks: [
+        {
+          backlinkId: 'execution-1:review:1',
+          backlinkKind: 'review',
+          label: '/repo/.repo-ai-governor/review/resolved.md',
+          target: '/repo/.repo-ai-governor/review/resolved.md',
+        },
+      ],
+    });
+    serviceClientMock.queryWorkflowDraftSession.mockResolvedValueOnce({
+      workflowDraftId: 'workflow-draft-001',
+      draftRevision: 'draft-revision-001',
+      baseDefinitionRevision: 'base-revision-001',
+      templateId: 'starter-template',
+      entryMode: 'edit_seed',
+      nodeSpecs: [],
+      edgeSpecs: [],
+      supportedPatchOps: ['upsert_node', 'remove_node', 'upsert_edge', 'remove_edge'],
+      validationIssues: [],
+      conflictState: {
+        hasConflict: false,
+        conflictKind: 'none',
+        detectedAt: '2026-04-07T03:06:30.000Z',
+      },
+      compiledIrPreview: {
+        processId: 'process-1',
+        entryNodeId: 'entry-node',
+        compiledAt: '2026-04-07T03:06:30.000Z',
+        nodeCount: 0,
+        edgeCount: 0,
+        compileWarningCount: 0,
+        compileErrorCount: 0,
+        compileWarnings: [],
+        compileErrors: [],
+      },
+      backlinkArtifacts: [],
     });
 
     const runtime = new VsCodeExtensionServiceRuntime();
@@ -1012,6 +1280,9 @@ describe('VsCodeExtensionServiceRuntime', () => {
       runtime.resolveWorkflowStudioSnapshot({
         executionId: 'execution-1',
         reviewSourcePath: '/repo/.repo-ai-governor/review/resolved.md',
+        workflowFocusStageId: 'review_verify',
+        workflowFocusBacklinkTarget: '/repo/.repo-ai-governor/review/resolved.md',
+        workflowFocusBacklinkKind: OrchestrationWorkbenchBacklinkKind.REVIEW,
       }),
     ).resolves.toMatchObject({
       workspaceContext: {
@@ -1029,6 +1300,17 @@ describe('VsCodeExtensionServiceRuntime', () => {
           taskId: 'TK-940',
         },
       },
+      workflowDraftSession: {
+        workflowDraftId: 'workflow-draft-001',
+        draftRevision: 'draft-revision-001',
+        entryMode: 'edit_seed',
+      },
+      workflowFocusStageId: 'review_verify',
+      workflowFocusBacklinkTarget: '/repo/.repo-ai-governor/review/resolved.md',
+      workflowFocusBacklinkKind: OrchestrationWorkbenchBacklinkKind.REVIEW,
+      roleLaneStatus: {
+        returnedCount: 1,
+      },
       artifactPane: {
         reviewSourcePath: '/repo/.repo-ai-governor/review/resolved.md',
       },
@@ -1040,6 +1322,11 @@ describe('VsCodeExtensionServiceRuntime', () => {
         latestEventSequence: 5,
         nextCursor: 'cursor-session-1',
         resumeSelector: 'session-1',
+      },
+      hitlDecisionPacket: {
+        executionId: 'execution-1',
+        policyAction: 'confirm',
+        defaultTimeoutAction: 'block',
       },
       reviewSourcePath: '/repo/.repo-ai-governor/review/resolved.md',
     });

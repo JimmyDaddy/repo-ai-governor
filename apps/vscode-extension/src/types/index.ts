@@ -26,6 +26,7 @@ export type {
   VsCodeExtensionUserConfigEntrySnapshot,
   VsCodeExtensionUserConfigStatusSnapshot,
   VsCodeExtensionViewContribution,
+  VsCodeExtensionWorkflowDraftSessionSnapshot,
   VsCodeExtensionWorkbenchOverviewSnapshot,
   VsCodeExtensionWorkflowStudioSnapshot,
   VsCodeExtensionWorkspaceContextSnapshot,

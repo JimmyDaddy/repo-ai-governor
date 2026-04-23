@@ -1,5 +1,5 @@
 schema_version: 1
-generated_at: 2026-04-16
+generated_at: 2026-04-22
 status: active
 owner: repo-ai-governor
 
@@ -492,7 +492,7 @@ documents:
       - technical_solution_module_change
       - technical_solution_promotion_change
     owner: architecture
-    last_reviewed_at: 2026-04-16
+    last_reviewed_at: 2026-04-22
 
   - doc_id: technical_solution_runtime_orchestration_contract
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/contracts/runtime-graph-execution-contract.md
@@ -546,7 +546,21 @@ documents:
       - technical_solution_promotion_change
       - ide_surface_change
     owner: architecture
-    last_reviewed_at: 2026-04-16
+    last_reviewed_at: 2026-04-22
+
+  - doc_id: technical_solution_runtime_orchestration_direct_workbench_runtime_hitl_contract
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/contracts/direct-workbench-orchestration-runtime-hitl-contract.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - runtime_contract_change
+      - governance_engine_change
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - ide_surface_change
+    owner: architecture
+    last_reviewed_at: 2026-04-22
 
   - doc_id: technical_solution_runtime_orchestration_adr
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-orchestration/adrs/graph-first-runtime-and-service-backed-execution-cutover.md
@@ -1235,7 +1249,7 @@ documents:
       - ide_surface_change
       - command_surface_change
     owner: runtime
-    last_reviewed_at: 2026-04-16
+    last_reviewed_at: 2026-04-22
 
   - doc_id: runtime_governance_surface_client_contract
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/governance-surface-client-contract.md
@@ -1264,7 +1278,7 @@ documents:
       - ide_surface_change
       - command_surface_change
     owner: runtime
-    last_reviewed_at: 2026-04-16
+    last_reviewed_at: 2026-04-22
 
   - doc_id: runtime_governance_local_user_config_secret_command_contract
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/contracts/local-user-config-and-secret-command-contract.md
@@ -1350,6 +1364,20 @@ documents:
       - desktop_surface_change
     owner: runtime
     last_reviewed_at: 2026-04-16
+
+  - doc_id: runtime_vscode_direct_workbench_runtime_lanes_hitl_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/vscode-direct-workbench-authoring-runtime-lanes-and-hitl-decision-cockpit.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - runtime_contract_change
+      - ide_surface_change
+      - command_surface_change
+    owner: runtime
+    last_reviewed_at: 2026-04-22
 
   - doc_id: runtime_vscode_direct_provider_onboarding_adr
     path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/vscode-plugin-direct-api-key-and-secret-backed-provider-onboarding.md

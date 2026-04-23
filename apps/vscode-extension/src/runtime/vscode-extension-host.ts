@@ -156,6 +156,18 @@ export class VsCodeExtensionHost {
         commandController.runWorkflowEdit(),
       ),
       vscode.commands.registerCommand(
+        VSCODE_EXTENSION_COMMAND_IDS.MUTATE_WORKFLOW_DRAFT,
+        async (request) => commandController.mutateWorkflowDraft(request),
+      ),
+      vscode.commands.registerCommand(
+        VSCODE_EXTENSION_COMMAND_IDS.VALIDATE_WORKFLOW_DRAFT,
+        async (request) => commandController.validateWorkflowDraft(request),
+      ),
+      vscode.commands.registerCommand(
+        VSCODE_EXTENSION_COMMAND_IDS.COMMIT_WORKFLOW_DRAFT,
+        async (request) => commandController.commitWorkflowDraft(request),
+      ),
+      vscode.commands.registerCommand(
         VSCODE_EXTENSION_COMMAND_IDS.OPEN_WORKFLOW_STUDIO,
         async (request) => commandController.openWorkflowStudio(request),
       ),

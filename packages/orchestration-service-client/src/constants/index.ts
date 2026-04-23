@@ -15,6 +15,7 @@ export {
   OrchestrationGovernanceNotificationStatus,
   OrchestrationGovernanceQueueKind,
   OrchestrationHandoffTargetKind,
+  OrchestrationWorkbenchBacklinkKind,
   OrchestrationWorkspaceOperationKind,
   OrchestrationExecutionStatus,
   OrchestrationSessionEventType,
@@ -25,4 +26,8 @@ export {
   OrchestrationServiceHostKind,
   OrchestrationServiceEventType,
   OrchestrationServiceTransportKind,
+  OrchestrationWorkflowDraftConflictKind,
+  OrchestrationWorkflowDraftEntryMode,
+  OrchestrationWorkflowDraftSupportedPatchOp,
+  OrchestrationWorkflowDraftValidationIssueSource,
 } from './orchestration-service.constant.js';

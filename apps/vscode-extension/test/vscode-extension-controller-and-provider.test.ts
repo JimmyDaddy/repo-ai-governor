@@ -1,6 +1,12 @@
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
 import { vi } from 'vitest';
 
+import { ProcessNodeType } from '@repo-ai-governor/core-process';
 import { OrchestrationClientSurface } from '@repo-ai-governor/orchestration-service-client';
+import { OrchestrationGovernanceActionDisabledReason } from '@repo-ai-governor/orchestration-service-client';
 import { OrchestrationGovernanceActionKind } from '@repo-ai-governor/orchestration-service-client';
 import { OrchestrationGovernanceAttentionLevel } from '@repo-ai-governor/orchestration-service-client';
 import { OrchestrationGovernanceFollowUpSlaState } from '@repo-ai-governor/orchestration-service-client';
@@ -11,6 +17,9 @@ import { OrchestrationGovernanceTemporaryBridgeBacklinkSurface } from '@repo-ai-
 import { OrchestrationGovernanceTemporaryBridgeExitCriterion } from '@repo-ai-governor/orchestration-service-client';
 import { OrchestrationGovernanceTemporaryBridgeReceiptKind } from '@repo-ai-governor/orchestration-service-client';
 import { OrchestrationHandoffTargetKind } from '@repo-ai-governor/orchestration-service-client';
+import { OrchestrationWorkbenchBacklinkKind } from '@repo-ai-governor/orchestration-service-client';
+import { OrchestrationWorkflowDraftEntryMode } from '@repo-ai-governor/orchestration-service-client';
+import { OrchestrationWorkflowDraftSupportedPatchOp } from '@repo-ai-governor/orchestration-service-client';
 import { OrchestrationWorkspaceOperationKind } from '@repo-ai-governor/orchestration-service-client';
 import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 
@@ -32,6 +41,7 @@ const vscodeMock = vi.hoisted(() => {
   return {
     state: {
       trusted: false,
+      language: 'en-US',
     },
     showInformationMessage,
     showWarningMessage,
@@ -73,6 +83,11 @@ vi.mock('vscode', () => ({
   commands: {
     executeCommand: vscodeMock.executeCommand,
   },
+  env: {
+    get language() {
+      return vscodeMock.state.language;
+    },
+  },
   Uri: {
     file: (fsPath: string) => ({
       fsPath,
@@ -90,6 +105,7 @@ import { VsCodeExtensionWorkflowStudioProvider } from '../src/runtime/vscode-ext
 describe('VsCode extension controller/provider integration', () => {
   beforeEach(() => {
     vscodeMock.state.trusted = false;
+    vscodeMock.state.language = 'en-US';
     vscodeMock.showInformationMessage.mockReset();
     vscodeMock.showWarningMessage.mockReset();
     vscodeMock.showErrorMessage.mockReset();
@@ -156,6 +172,11 @@ describe('VsCode extension controller/provider integration', () => {
     const selectionStore = new VsCodeExtensionSelectionStore();
     selectionStore.rememberExecution('execution-stale', 'session-stale');
     selectionStore.rememberReviewSourcePath('/repo/review-stale.md');
+    selectionStore.applyCommandRequest({
+      workflowFocusStageId: 'stage-stale',
+      workflowFocusBacklinkTarget: '/repo/review-stale.md',
+      workflowFocusBacklinkKind: OrchestrationWorkbenchBacklinkKind.REVIEW,
+    });
 
     const workbenchOverviewProvider = {
       refresh: vi.fn(),
@@ -244,6 +265,99 @@ describe('VsCode extension controller/provider integration', () => {
 
     expect(vscodeMock.showWarningMessage).toHaveBeenCalled();
     expect(vscodeMock.openTextDocument).not.toHaveBeenCalled();
+  });
+
+  it('fails closed when a focused backlink target does not exist', async () => {
+    vscodeMock.state.trusted = true;
+
+    const controller = new VsCodeExtensionCommandController(
+      {} as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        executionBoardProvider: {
+          refresh: vi.fn(),
+        } as never,
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        workspaceContextProvider: {
+          refresh: vi.fn(),
+        } as never,
+        workbenchOverviewProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    await controller.openHandoffTarget({
+      executionId: 'execution-1',
+      workflowFocusBacklinkTarget: '/repo/missing-review.md',
+      workflowFocusBacklinkKind: OrchestrationWorkbenchBacklinkKind.REVIEW,
+    });
+
+    expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith(
+      'No available handoff target could be resolved.',
+    );
+    expect(vscodeMock.openTextDocument).not.toHaveBeenCalled();
+  });
+
+  it('resolves focused backlink review documents through the controller-owned handoff seam', async () => {
+    vscodeMock.state.trusted = true;
+
+    const tempRoot = mkdtempSync(join(tmpdir(), 'repo-ai-governor-focused-backlink-'));
+    const reviewPath = join(tempRoot, 'review.md');
+    writeFileSync(reviewPath, '# review\n', 'utf8');
+    vscodeMock.openTextDocument.mockResolvedValue({
+      uri: {
+        fsPath: reviewPath,
+      },
+    });
+
+    try {
+      const controller = new VsCodeExtensionCommandController(
+        {} as never,
+        new VsCodeExtensionSelectionStore(),
+        {
+          localizeText: (english: string) => english,
+        } as never,
+        {
+          executionBoardProvider: {
+            refresh: vi.fn(),
+          } as never,
+          hitlInboxProvider: {
+            refresh: vi.fn(),
+          } as never,
+          workspaceContextProvider: {
+            refresh: vi.fn(),
+          } as never,
+          workbenchOverviewProvider: {
+            refresh: vi.fn(),
+          } as never,
+          reviewDetailProvider: {
+            refresh: vi.fn(),
+          } as never,
+        },
+      );
+
+      await controller.openHandoffTarget({
+        executionId: 'execution-1',
+        workflowFocusBacklinkTarget: reviewPath,
+        workflowFocusBacklinkKind: OrchestrationWorkbenchBacklinkKind.REVIEW,
+      });
+
+      expect(vscodeMock.openTextDocument).toHaveBeenCalledWith({
+        fsPath: reviewPath,
+      });
+      expect(vscodeMock.showTextDocument).toHaveBeenCalled();
+    } finally {
+      rmSync(tempRoot, { recursive: true, force: true });
+    }
   });
 
   it('runs connect through provider onboarding and no longer asks for credential env vars', async () => {
@@ -2220,6 +2334,153 @@ describe('VsCode extension controller/provider integration', () => {
     expect(workflowStudioProvider.show).toHaveBeenCalledWith(false);
   });
 
+  it('surfaces the localized no-decision message when no legal HITL option is available', async () => {
+    vscodeMock.state.trusted = true;
+
+    const resolveHitlInboxEntry = vi.fn().mockResolvedValue({
+      execution: {
+        executionId: 'execution-1',
+        executionSessionId: 'session-1',
+      },
+      actions: [
+        {
+          actionId: 'execution-1:submit-hitl',
+          actionKind: OrchestrationGovernanceActionKind.SUBMIT_HITL_DECISION,
+          executionId: 'execution-1',
+          enabled: false,
+          requiresConfirmation: true,
+          disabledReason: OrchestrationGovernanceActionDisabledReason.HITL_DECISION_UNAVAILABLE,
+          hitlDecisionOptions: [],
+        },
+      ],
+      handoffTargets: [],
+    });
+    const serviceRuntime = {
+      resolveHitlInboxEntry,
+      submitHitlDecision: vi.fn(),
+    };
+    const controller = new VsCodeExtensionCommandController(
+      serviceRuntime as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    await controller.submitHitlDecision({
+      executionId: 'execution-1',
+    });
+
+    expect(resolveHitlInboxEntry).toHaveBeenCalledWith('execution-1');
+    expect(serviceRuntime.submitHitlDecision).not.toHaveBeenCalled();
+    expect(vscodeMock.showQuickPick).not.toHaveBeenCalled();
+    expect(vscodeMock.showWarningMessage).not.toHaveBeenCalled();
+    expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith(
+      'No allowed HITL decision is available right now.',
+    );
+  });
+
+  it('forwards the VS Code locale when submitting one direct HITL decision', async () => {
+    vscodeMock.state.trusted = true;
+    vscodeMock.state.language = 'zh-CN';
+    vscodeMock.showWarningMessage.mockResolvedValueOnce('Submit Decision');
+
+    const selectionStore = new VsCodeExtensionSelectionStore();
+    selectionStore.rememberExecution('execution-stale', 'session-stale');
+    selectionStore.rememberReviewSourcePath('/repo/review-stale.md');
+
+    const hitlInboxProvider = {
+      refresh: vi.fn(),
+    };
+    const reviewDetailProvider = {
+      refresh: vi.fn().mockResolvedValue(undefined),
+    };
+    const submitHitlDecision = vi.fn().mockResolvedValue({
+      accepted: true,
+      nextStatus: 'running',
+      latestEventSequence: 4,
+      nextCursor: 'cursor-4',
+      executionSummary: {
+        executionId: 'execution-1',
+        executionSessionId: 'session-2',
+      },
+    });
+    const serviceRuntime = {
+      resolveHitlInboxEntry: vi.fn().mockResolvedValue({
+        execution: {
+          executionId: 'execution-1',
+          executionSessionId: 'session-1',
+        },
+        actions: [
+          {
+            actionId: 'execution-1:submit-hitl',
+            actionKind: OrchestrationGovernanceActionKind.SUBMIT_HITL_DECISION,
+            executionId: 'execution-1',
+            enabled: true,
+            requiresConfirmation: true,
+            hitlDecisionOptions: [
+              {
+                optionId: 'approve-resume',
+                decision: 'approve',
+                resumeAction: 'resume',
+              },
+            ],
+          },
+        ],
+        handoffTargets: [],
+      }),
+      submitHitlDecision,
+    };
+    const controller = new VsCodeExtensionCommandController(
+      serviceRuntime as never,
+      selectionStore,
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: hitlInboxProvider as never,
+        reviewDetailProvider: reviewDetailProvider as never,
+      },
+    );
+
+    await controller.submitHitlDecision({
+      executionId: 'execution-1',
+      hitlDecisionOption: {
+        optionId: 'approve-resume',
+        decision: 'approve',
+        resumeAction: 'resume',
+      },
+    });
+
+    expect(submitHitlDecision).toHaveBeenCalledWith({
+      executionId: 'execution-1',
+      executionSessionId: 'session-1',
+      decision: 'approve',
+      resumeAction: 'resume',
+      actor: 'vscode_extension_user',
+      locale: 'zh-CN',
+      reason: 'Submitted from the VS Code Governor companion.',
+    });
+    expect(hitlInboxProvider.refresh).toHaveBeenCalledTimes(1);
+    expect(reviewDetailProvider.refresh).toHaveBeenCalledTimes(1);
+    expect(selectionStore.getSnapshot()).toEqual({
+      executionId: 'execution-1',
+      executionSessionId: 'session-2',
+      reviewSourcePath: undefined,
+      queueEntry: undefined,
+      temporaryBridge: undefined,
+    });
+    expect(vscodeMock.showInformationMessage).toHaveBeenCalledWith('HITL decision submitted.');
+  });
+
   it('keeps terminal handoff inside compatibility-only messaging instead of opening a VS Code terminal', async () => {
     vscodeMock.state.trusted = true;
 
@@ -2737,7 +2998,7 @@ describe('VsCode extension controller/provider integration', () => {
     vscodeMock.showInputBox.mockResolvedValueOnce(undefined);
 
     const serviceRuntime = {
-      runWorkspaceOperation: vi.fn(),
+      startWorkflowDraft: vi.fn(),
     };
     const controller = new VsCodeExtensionCommandController(
       serviceRuntime as never,
@@ -2757,18 +3018,51 @@ describe('VsCode extension controller/provider integration', () => {
 
     await controller.runWorkflowCreate();
 
-    expect(serviceRuntime.runWorkspaceOperation).not.toHaveBeenCalled();
+    expect(serviceRuntime.startWorkflowDraft).not.toHaveBeenCalled();
   });
 
-  it('still executes workflow create with the runtime default template when the user submits an empty value', async () => {
+  it('starts one mutable workflow draft with the runtime default template when the user submits an empty value', async () => {
     vscodeMock.state.trusted = true;
     vscodeMock.showInputBox.mockResolvedValueOnce('');
 
     const serviceRuntime = {
-      runWorkspaceOperation: vi.fn().mockResolvedValue({
-        message: 'Workflow created.',
-        result: {},
+      queryWorkflowDraftSessionStrict: vi.fn().mockResolvedValue(undefined),
+      startWorkflowDraft: vi.fn().mockResolvedValue({
+        applied: true,
+        message: 'Workflow draft is ready.',
+        draftSession: {
+          workflowDraftId: 'workflow-draft-001',
+          draftRevision: 'draft-revision-001',
+          baseDefinitionRevision: 'base-revision-001',
+          templateId: 'starter-template',
+          entryMode: 'create_seed',
+          nodeSpecs: [],
+          edgeSpecs: [],
+          supportedPatchOps: [],
+          validationIssues: [],
+          conflictState: {
+            hasConflict: false,
+            conflictKind: 'none',
+            detectedAt: '2026-04-22T08:00:00.000Z',
+          },
+          compiledIrPreview: {
+            processId: 'process-starter-template',
+            entryNodeId: 'entry-node',
+            compiledAt: '2026-04-22T08:00:00.000Z',
+            nodeCount: 0,
+            edgeCount: 0,
+            compileWarningCount: 0,
+            compileErrorCount: 0,
+            compileWarnings: [],
+            compileErrors: [],
+          },
+          backlinkArtifacts: [],
+        },
       }),
+    };
+    const workflowStudioProvider = {
+      refresh: vi.fn(),
+      show: vi.fn(),
     };
     const controller = new VsCodeExtensionCommandController(
       serviceRuntime as never,
@@ -2780,6 +3074,7 @@ describe('VsCode extension controller/provider integration', () => {
         hitlInboxProvider: {
           refresh: vi.fn(),
         } as never,
+        workflowStudioProvider: workflowStudioProvider as never,
         reviewDetailProvider: {
           refresh: vi.fn(),
         } as never,
@@ -2788,7 +3083,90 @@ describe('VsCode extension controller/provider integration', () => {
 
     await controller.runWorkflowCreate();
 
-    expect(serviceRuntime.runWorkspaceOperation).toHaveBeenCalledWith('workflow_create', undefined);
+    expect(serviceRuntime.queryWorkflowDraftSessionStrict).toHaveBeenCalledWith({
+      preferLatest: true,
+    });
+    expect(serviceRuntime.startWorkflowDraft).toHaveBeenCalledWith({
+      entryMode: 'create_seed',
+    });
+    expect(workflowStudioProvider.refresh).toHaveBeenCalled();
+    expect(workflowStudioProvider.show).toHaveBeenCalledWith(false);
+  });
+
+  it('does not replace one active mutable workflow draft when the overwrite confirmation is dismissed', async () => {
+    vscodeMock.state.trusted = true;
+    vscodeMock.showInputBox.mockResolvedValueOnce('loop-guarded');
+    vscodeMock.showWarningMessage.mockResolvedValueOnce(undefined);
+
+    const serviceRuntime = {
+      queryWorkflowDraftSessionStrict: vi.fn().mockResolvedValue({
+        workflowDraftId: 'workflow-draft-active',
+        draftRevision: 'draft-revision-active',
+        baseDefinitionRevision: 'base-revision-active',
+        templateId: 'parallel-review',
+        entryMode: OrchestrationWorkflowDraftEntryMode.CREATE_SEED,
+        nodeSpecs: [],
+        edgeSpecs: [],
+        supportedPatchOps: [OrchestrationWorkflowDraftSupportedPatchOp.UPSERT_NODE],
+        validationIssues: [],
+        conflictState: {
+          hasConflict: false,
+          conflictKind: 'none',
+          detectedAt: '2026-04-22T08:00:00.000Z',
+        },
+        compiledIrPreview: {
+          processId: 'process-active',
+          entryNodeId: 'entry-node',
+          compiledAt: '2026-04-22T08:00:00.000Z',
+          nodeCount: 0,
+          edgeCount: 0,
+          compileWarningCount: 0,
+          compileErrorCount: 0,
+          compileWarnings: [],
+          compileErrors: [],
+        },
+        backlinkArtifacts: [],
+      }),
+      startWorkflowDraft: vi.fn(),
+    };
+    const controller = new VsCodeExtensionCommandController(
+      serviceRuntime as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        workflowStudioProvider: {
+          refresh: vi.fn(),
+          show: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    await controller.runWorkflowCreate();
+
+    expect(serviceRuntime.queryWorkflowDraftSessionStrict).toHaveBeenCalledWith({
+      preferLatest: true,
+    });
+    expect(vscodeMock.showWarningMessage).toHaveBeenCalledWith(
+      expect.stringContaining('workflow creation'),
+      {
+        modal: true,
+      },
+      'Replace Draft',
+    );
+    expect(vscodeMock.showWarningMessage).not.toHaveBeenCalledWith(
+      expect.stringContaining('create_seed'),
+      expect.anything(),
+      expect.anything(),
+    );
+    expect(serviceRuntime.startWorkflowDraft).not.toHaveBeenCalled();
   });
 
   it('infers doctor from one imperative prompt and executes the governed doctor operation', async () => {
@@ -2893,9 +3271,192 @@ describe('VsCode extension controller/provider integration', () => {
     vscodeMock.state.trusted = true;
 
     const serviceRuntime = {
-      runWorkspaceOperation: vi.fn().mockResolvedValue({
-        message: 'Workflow preview created.',
-        result: {},
+      queryWorkflowDraftSessionStrict: vi.fn().mockResolvedValue(undefined),
+      startWorkflowDraft: vi.fn().mockResolvedValue({
+        applied: true,
+        message: 'Workflow preview draft is ready.',
+        draftSession: {
+          workflowDraftId: 'workflow-draft-preview',
+          draftRevision: 'draft-revision-preview',
+          baseDefinitionRevision: 'base-revision-preview',
+          templateId: 'starter-template',
+          entryMode: 'read_only',
+          nodeSpecs: [],
+          edgeSpecs: [],
+          supportedPatchOps: [],
+          validationIssues: [],
+          conflictState: {
+            hasConflict: false,
+            conflictKind: 'none',
+            detectedAt: '2026-04-22T08:00:00.000Z',
+          },
+          compiledIrPreview: {
+            processId: 'process-starter-template',
+            entryNodeId: 'entry-node',
+            compiledAt: '2026-04-22T08:00:00.000Z',
+            nodeCount: 0,
+            edgeCount: 0,
+            compileWarningCount: 0,
+            compileErrorCount: 0,
+            compileWarnings: [],
+            compileErrors: [],
+          },
+          backlinkArtifacts: [],
+        },
+      }),
+    };
+    const workflowStudioProvider = {
+      refresh: vi.fn(),
+      show: vi.fn(),
+    };
+    const controller = new VsCodeExtensionCommandController(
+      serviceRuntime as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        workflowStudioProvider: workflowStudioProvider as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    const result = await controller.executeChatRequest(
+      undefined,
+      'please preview workflow starter-template',
+    );
+
+    expect(serviceRuntime.startWorkflowDraft).toHaveBeenCalledWith({
+      entryMode: 'read_only',
+      templateId: 'starter-template',
+    });
+    expect(result).toMatchObject({
+      commandName: 'workflow-preview',
+      status: 'completed',
+    });
+  });
+
+  it('fails workflow preview closed when chat requests one unsupported workflow template id', async () => {
+    vscodeMock.state.trusted = true;
+
+    const serviceRuntime = {
+      queryWorkflowDraftSessionStrict: vi.fn().mockResolvedValue(undefined),
+      startWorkflowDraft: vi
+        .fn()
+        .mockRejectedValue(
+          new RuntimeError(
+            GovernorErrorCode.AGENT_PROTOCOL_INVALID,
+            'Unknown workflow template id "unknown-template". Choose one of: parallel-review, loop-guarded, condition-route.',
+          ),
+        ),
+    };
+    const controller = new VsCodeExtensionCommandController(
+      serviceRuntime as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        workflowStudioProvider: {
+          refresh: vi.fn(),
+          show: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    const result = await controller.executeChatRequest(
+      undefined,
+      'please preview workflow unknown-template',
+    );
+
+    expect(serviceRuntime.startWorkflowDraft).toHaveBeenCalledWith({
+      entryMode: 'read_only',
+      templateId: 'unknown-template',
+    });
+    expect(vscodeMock.showErrorMessage).toHaveBeenCalledWith(
+      'Failed to start the workflow draft session. [AGENT_PROTOCOL_INVALID] Unknown workflow template id "unknown-template". Choose one of: parallel-review, loop-guarded, condition-route.',
+    );
+    expect(result).toMatchObject({
+      commandName: 'workflow-preview',
+      status: 'failed',
+    });
+  });
+
+  it('retries workflow preview with an explicit replace flag after the user confirms draft replacement', async () => {
+    vscodeMock.state.trusted = true;
+    vscodeMock.showWarningMessage.mockResolvedValueOnce('Replace Draft');
+
+    const serviceRuntime = {
+      queryWorkflowDraftSessionStrict: vi.fn().mockResolvedValue({
+        workflowDraftId: 'workflow-draft-active',
+        draftRevision: 'draft-revision-active',
+        baseDefinitionRevision: 'base-revision-active',
+        templateId: 'parallel-review',
+        entryMode: OrchestrationWorkflowDraftEntryMode.EDIT_SEED,
+        nodeSpecs: [],
+        edgeSpecs: [],
+        supportedPatchOps: [OrchestrationWorkflowDraftSupportedPatchOp.UPSERT_NODE],
+        validationIssues: [],
+        conflictState: {
+          hasConflict: false,
+          conflictKind: 'none',
+          detectedAt: '2026-04-22T08:00:00.000Z',
+        },
+        compiledIrPreview: {
+          processId: 'process-active',
+          entryNodeId: 'entry-node',
+          compiledAt: '2026-04-22T08:00:00.000Z',
+          nodeCount: 0,
+          edgeCount: 0,
+          compileWarningCount: 0,
+          compileErrorCount: 0,
+          compileWarnings: [],
+          compileErrors: [],
+        },
+        backlinkArtifacts: [],
+      }),
+      startWorkflowDraft: vi.fn().mockResolvedValue({
+        applied: true,
+        message: 'Workflow preview draft is ready.',
+        draftSession: {
+          workflowDraftId: 'workflow-draft-preview',
+          draftRevision: 'draft-revision-preview',
+          baseDefinitionRevision: 'base-revision-preview',
+          templateId: 'starter-template',
+          entryMode: OrchestrationWorkflowDraftEntryMode.READ_ONLY,
+          nodeSpecs: [],
+          edgeSpecs: [],
+          supportedPatchOps: [],
+          validationIssues: [],
+          conflictState: {
+            hasConflict: false,
+            conflictKind: 'none',
+            detectedAt: '2026-04-22T08:00:00.000Z',
+          },
+          compiledIrPreview: {
+            processId: 'process-starter-template',
+            entryNodeId: 'entry-node',
+            compiledAt: '2026-04-22T08:00:00.000Z',
+            nodeCount: 0,
+            edgeCount: 0,
+            compileWarningCount: 0,
+            compileErrorCount: 0,
+            compileWarnings: [],
+            compileErrors: [],
+          },
+          backlinkArtifacts: [],
+        },
       }),
     };
     const controller = new VsCodeExtensionCommandController(
@@ -2908,6 +3469,10 @@ describe('VsCode extension controller/provider integration', () => {
         hitlInboxProvider: {
           refresh: vi.fn(),
         } as never,
+        workflowStudioProvider: {
+          refresh: vi.fn(),
+          show: vi.fn(),
+        } as never,
         reviewDetailProvider: {
           refresh: vi.fn(),
         } as never,
@@ -2919,12 +3484,604 @@ describe('VsCode extension controller/provider integration', () => {
       'please preview workflow starter-template',
     );
 
-    expect(serviceRuntime.runWorkspaceOperation).toHaveBeenCalledWith('workflow_preview', {
+    expect(serviceRuntime.startWorkflowDraft).toHaveBeenCalledWith({
+      entryMode: 'read_only',
       templateId: 'starter-template',
+      replaceExistingDraftSession: true,
     });
+    expect(vscodeMock.showWarningMessage).toHaveBeenCalledWith(
+      expect.stringContaining('workflow preview'),
+      {
+        modal: true,
+      },
+      'Replace Draft',
+    );
     expect(result).toMatchObject({
       commandName: 'workflow-preview',
       status: 'completed',
+    });
+  });
+
+  it('does not report workflow preview as completed when the service blocks the draft start', async () => {
+    vscodeMock.state.trusted = true;
+
+    const serviceRuntime = {
+      queryWorkflowDraftSessionStrict: vi.fn().mockResolvedValue(undefined),
+      startWorkflowDraft: vi.fn().mockResolvedValue({
+        applied: false,
+        message: 'Workflow draft start was blocked.',
+        draftSession: {
+          workflowDraftId: 'workflow-draft-active',
+          draftRevision: 'draft-revision-active',
+          baseDefinitionRevision: 'base-revision-active',
+          templateId: 'starter-template',
+          entryMode: OrchestrationWorkflowDraftEntryMode.EDIT_SEED,
+          nodeSpecs: [],
+          edgeSpecs: [],
+          supportedPatchOps: [],
+          validationIssues: [],
+          conflictState: {
+            hasConflict: false,
+            conflictKind: 'none',
+            detectedAt: '2026-04-22T08:00:00.000Z',
+          },
+          compiledIrPreview: {
+            processId: 'process-active',
+            entryNodeId: 'entry-node',
+            compiledAt: '2026-04-22T08:00:00.000Z',
+            nodeCount: 0,
+            edgeCount: 0,
+            compileWarningCount: 0,
+            compileErrorCount: 0,
+            compileWarnings: [],
+            compileErrors: [],
+          },
+          backlinkArtifacts: [],
+        },
+      }),
+    };
+    const controller = new VsCodeExtensionCommandController(
+      serviceRuntime as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        workflowStudioProvider: {
+          refresh: vi.fn(),
+          show: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    const result = await controller.executeChatRequest(
+      undefined,
+      'please preview workflow starter-template',
+    );
+
+    expect(serviceRuntime.startWorkflowDraft).toHaveBeenCalledWith({
+      entryMode: 'read_only',
+      templateId: 'starter-template',
+    });
+    expect(vscodeMock.showWarningMessage).toHaveBeenCalledWith('Workflow draft start was blocked.');
+    expect(result).toMatchObject({
+      commandName: 'workflow-preview',
+      status: 'failed',
+    });
+  });
+
+  it('fails workflow edit closed when no saved workflow definition exists', async () => {
+    vscodeMock.state.trusted = true;
+
+    const serviceRuntime = {
+      queryWorkflowDraftSessionStrict: vi.fn().mockResolvedValue(undefined),
+      startWorkflowDraft: vi
+        .fn()
+        .mockRejectedValue(
+          new RuntimeError(
+            GovernorErrorCode.WORKSPACE_SOURCE_NOT_FOUND,
+            'No saved workflow definition is available to edit yet.',
+          ),
+        ),
+    };
+    const workflowStudioProvider = {
+      refresh: vi.fn(),
+      show: vi.fn(),
+    };
+    const controller = new VsCodeExtensionCommandController(
+      serviceRuntime as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        workflowStudioProvider: workflowStudioProvider as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    await expect(controller.runWorkflowEdit()).resolves.toBeUndefined();
+
+    expect(vscodeMock.showInputBox).not.toHaveBeenCalled();
+    expect(serviceRuntime.startWorkflowDraft).toHaveBeenCalledWith({
+      entryMode: OrchestrationWorkflowDraftEntryMode.EDIT_SEED,
+    });
+    expect(vscodeMock.showErrorMessage).toHaveBeenCalledWith(
+      'Failed to start the workflow draft session. [WORKSPACE_SOURCE_NOT_FOUND] No saved workflow definition is available to edit yet.',
+    );
+    expect(workflowStudioProvider.show).not.toHaveBeenCalled();
+  });
+
+  it('fails workflow draft validation closed when the command request carries a stale draft revision', async () => {
+    vscodeMock.state.trusted = true;
+
+    const draftSession = {
+      workflowDraftId: 'workflow-draft-stale',
+      draftRevision: 'draft-revision-latest',
+      baseDefinitionRevision: 'base-revision-stale',
+      templateId: 'starter-template',
+      entryMode: OrchestrationWorkflowDraftEntryMode.EDIT_SEED,
+      nodeSpecs: [],
+      edgeSpecs: [],
+      supportedPatchOps: [OrchestrationWorkflowDraftSupportedPatchOp.VALIDATE],
+      validationIssues: [],
+      conflictState: {
+        hasConflict: false,
+        conflictKind: 'none',
+        detectedAt: '2026-04-22T08:00:00.000Z',
+      },
+      compiledIrPreview: {
+        processId: 'process-stale',
+        entryNodeId: 'entry-node',
+        compiledAt: '2026-04-22T08:00:00.000Z',
+        nodeCount: 0,
+        edgeCount: 0,
+        compileWarningCount: 0,
+        compileErrorCount: 0,
+        compileWarnings: [],
+        compileErrors: [],
+      },
+      backlinkArtifacts: [],
+    };
+    const serviceRuntime = {
+      queryWorkflowDraftSessionStrict: vi.fn().mockResolvedValue(draftSession),
+      validateWorkflowDraft: vi.fn(),
+    };
+    const workflowStudioProvider = {
+      refresh: vi.fn(),
+      show: vi.fn(),
+    };
+    const controller = new VsCodeExtensionCommandController(
+      serviceRuntime as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        workflowStudioProvider: workflowStudioProvider as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    await expect(
+      controller.validateWorkflowDraft({
+        workflowDraftId: draftSession.workflowDraftId,
+        workflowDraftRevision: 'draft-revision-stale',
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(serviceRuntime.queryWorkflowDraftSessionStrict).toHaveBeenCalledWith({
+      workflowDraftId: draftSession.workflowDraftId,
+    });
+    expect(serviceRuntime.validateWorkflowDraft).not.toHaveBeenCalled();
+    expect(vscodeMock.showErrorMessage).toHaveBeenCalledWith(
+      'Failed to validate the workflow draft session. [AGENT_PROTOCOL_INVALID] The workflow draft revision in the current view is stale. Refresh Workflow Studio before continuing.',
+    );
+    expect(workflowStudioProvider.refresh).not.toHaveBeenCalled();
+  });
+
+  it('surfaces workflow draft lookup backend failures during validate instead of masking them as missing drafts', async () => {
+    vscodeMock.state.trusted = true;
+
+    const serviceRuntime = {
+      queryWorkflowDraftSessionStrict: vi
+        .fn()
+        .mockRejectedValue(
+          new RuntimeError(
+            GovernorErrorCode.PROCESS_RUNTIME_BACKEND_UNAVAILABLE,
+            'sidecar offline',
+          ),
+        ),
+      validateWorkflowDraft: vi.fn(),
+    };
+    const controller = new VsCodeExtensionCommandController(
+      serviceRuntime as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        workflowStudioProvider: {
+          refresh: vi.fn(),
+          show: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    await expect(
+      controller.validateWorkflowDraft({
+        workflowDraftId: 'workflow-draft-offline',
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(serviceRuntime.queryWorkflowDraftSessionStrict).toHaveBeenCalledWith({
+      workflowDraftId: 'workflow-draft-offline',
+    });
+    expect(serviceRuntime.validateWorkflowDraft).not.toHaveBeenCalled();
+    expect(vscodeMock.showErrorMessage).toHaveBeenCalledWith(
+      'Failed to validate the workflow draft session. [PROCESS_RUNTIME_BACKEND_UNAVAILABLE] sidecar offline',
+    );
+  });
+
+  it('routes update-node-policy workflow draft mutations through the service-owned patch-op seam', async () => {
+    vscodeMock.state.trusted = true;
+    const draftSession = {
+      workflowDraftId: 'workflow-draft-policy',
+      draftRevision: 'draft-revision-policy',
+      baseDefinitionRevision: 'base-revision-policy',
+      templateId: 'starter-template',
+      entryMode: OrchestrationWorkflowDraftEntryMode.EDIT_SEED,
+      nodeSpecs: [
+        {
+          nodeId: 'node-policy',
+          stageId: 'stage-policy',
+          nodeType: ProcessNodeType.SEQUENTIAL,
+          routeKey: 'policy',
+          roleProfileId: 'reviewer-default',
+          inputSchemaRef: 'schemas/current-input.json',
+          outputSchemaRef: 'schemas/current-output.json',
+          retryPolicyRef: 'policy/retry-default',
+          timeoutPolicyRef: 'policy/timeout-default',
+          budgetPolicyRef: 'policy/budget-default',
+        },
+      ],
+      edgeSpecs: [],
+      supportedPatchOps: [OrchestrationWorkflowDraftSupportedPatchOp.UPDATE_NODE_POLICY],
+      validationIssues: [],
+      conflictState: {
+        hasConflict: false,
+        conflictKind: 'none',
+        detectedAt: '2026-04-22T08:00:00.000Z',
+      },
+      compiledIrPreview: {
+        processId: 'process-policy',
+        entryNodeId: 'node-policy',
+        compiledAt: '2026-04-22T08:00:00.000Z',
+        nodeCount: 1,
+        edgeCount: 0,
+        compileWarningCount: 0,
+        compileErrorCount: 0,
+        compileWarnings: [],
+        compileErrors: [],
+      },
+      backlinkArtifacts: [],
+    };
+    const serviceRuntime = {
+      queryWorkflowDraftSessionStrict: vi.fn().mockResolvedValue(draftSession),
+      updateWorkflowDraftPolicy: vi.fn().mockResolvedValue({
+        applied: true,
+        message: 'Workflow draft updated.',
+        draftSession,
+      }),
+    };
+    const workflowStudioProvider = {
+      refresh: vi.fn(),
+      show: vi.fn(),
+    };
+    const controller = new VsCodeExtensionCommandController(
+      serviceRuntime as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        workflowStudioProvider: workflowStudioProvider as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    vscodeMock.showQuickPick.mockResolvedValueOnce({
+      node: draftSession.nodeSpecs[0],
+    });
+    vscodeMock.showInputBox
+      .mockResolvedValueOnce('schemas/input-updated.json')
+      .mockResolvedValueOnce('')
+      .mockResolvedValueOnce('')
+      .mockResolvedValueOnce('')
+      .mockResolvedValueOnce('');
+
+    await controller.mutateWorkflowDraft({
+      workflowDraftId: draftSession.workflowDraftId,
+      workflowDraftRevision: draftSession.draftRevision,
+      workflowDraftPatchOp: OrchestrationWorkflowDraftSupportedPatchOp.UPDATE_NODE_POLICY,
+    });
+
+    expect(serviceRuntime.queryWorkflowDraftSessionStrict).toHaveBeenCalledWith({
+      workflowDraftId: draftSession.workflowDraftId,
+    });
+    expect(serviceRuntime.updateWorkflowDraftPolicy).toHaveBeenCalledWith({
+      workflowDraftId: draftSession.workflowDraftId,
+      draftRevision: draftSession.draftRevision,
+      nodeId: 'node-policy',
+      inputSchemaRef: 'schemas/input-updated.json',
+    });
+    expect(workflowStudioProvider.refresh).toHaveBeenCalledWith({
+      workflowDraftId: draftSession.workflowDraftId,
+      workflowDraftRevision: draftSession.draftRevision,
+    });
+  });
+
+  it('routes workflow edge edits through previousEdgeSpec so existing edges are replaced instead of duplicated', async () => {
+    vscodeMock.state.trusted = true;
+    const draftSession = {
+      workflowDraftId: 'workflow-draft-edge',
+      draftRevision: 'draft-revision-edge',
+      baseDefinitionRevision: 'base-revision-edge',
+      templateId: 'condition-route',
+      entryMode: OrchestrationWorkflowDraftEntryMode.EDIT_SEED,
+      nodeSpecs: [
+        {
+          nodeId: 'node-route',
+          stageId: 'stage-route',
+          nodeType: ProcessNodeType.CONDITION,
+          routeKey: 'policy-route',
+          roleProfileId: 'architect-default',
+        },
+        {
+          nodeId: 'node-fast',
+          stageId: 'stage-fast',
+          nodeType: ProcessNodeType.SEQUENTIAL,
+          routeKey: 'fast-lane',
+          roleProfileId: 'coder-default',
+        },
+        {
+          nodeId: 'node-guarded',
+          stageId: 'stage-guarded',
+          nodeType: ProcessNodeType.SEQUENTIAL,
+          routeKey: 'guarded-lane',
+          roleProfileId: 'reviewer-default',
+        },
+      ],
+      edgeSpecs: [
+        {
+          fromNodeId: 'node-route',
+          toNodeId: 'node-fast',
+          conditionKey: 'allow',
+        },
+      ],
+      supportedPatchOps: [OrchestrationWorkflowDraftSupportedPatchOp.UPSERT_EDGE],
+      validationIssues: [],
+      conflictState: {
+        hasConflict: false,
+        conflictKind: 'none',
+        detectedAt: '2026-04-22T08:00:00.000Z',
+      },
+      compiledIrPreview: {
+        processId: 'process-edge',
+        entryNodeId: 'node-route',
+        compiledAt: '2026-04-22T08:00:00.000Z',
+        nodeCount: 3,
+        edgeCount: 1,
+        compileWarningCount: 0,
+        compileErrorCount: 0,
+        compileWarnings: [],
+        compileErrors: [],
+      },
+      backlinkArtifacts: [],
+    };
+    const serviceRuntime = {
+      queryWorkflowDraftSessionStrict: vi.fn().mockResolvedValue(draftSession),
+      updateWorkflowDraftEdge: vi.fn().mockResolvedValue({
+        applied: true,
+        message: 'Workflow draft updated.',
+        draftSession: {
+          ...draftSession,
+          edgeSpecs: [
+            {
+              fromNodeId: 'node-route',
+              toNodeId: 'node-guarded',
+              conditionKey: 'confirm',
+            },
+          ],
+        },
+      }),
+    };
+    const workflowStudioProvider = {
+      refresh: vi.fn(),
+      show: vi.fn(),
+    };
+    const controller = new VsCodeExtensionCommandController(
+      serviceRuntime as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        workflowStudioProvider: workflowStudioProvider as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    vscodeMock.showQuickPick
+      .mockResolvedValueOnce({
+        edge: draftSession.edgeSpecs[0],
+      })
+      .mockResolvedValueOnce({
+        node: draftSession.nodeSpecs[0],
+      })
+      .mockResolvedValueOnce({
+        node: draftSession.nodeSpecs[2],
+      });
+    vscodeMock.showInputBox.mockResolvedValueOnce('confirm');
+
+    await controller.mutateWorkflowDraft({
+      workflowDraftId: draftSession.workflowDraftId,
+      workflowDraftRevision: draftSession.draftRevision,
+      workflowDraftPatchOp: OrchestrationWorkflowDraftSupportedPatchOp.UPSERT_EDGE,
+    });
+
+    expect(serviceRuntime.queryWorkflowDraftSessionStrict).toHaveBeenCalledWith({
+      workflowDraftId: draftSession.workflowDraftId,
+    });
+    expect(serviceRuntime.updateWorkflowDraftEdge).toHaveBeenCalledWith({
+      workflowDraftId: draftSession.workflowDraftId,
+      draftRevision: draftSession.draftRevision,
+      previousEdgeSpec: {
+        fromNodeId: 'node-route',
+        toNodeId: 'node-fast',
+        conditionKey: 'allow',
+      },
+      edgeSpec: {
+        fromNodeId: 'node-route',
+        toNodeId: 'node-guarded',
+        conditionKey: 'confirm',
+      },
+    });
+    expect(workflowStudioProvider.refresh).toHaveBeenCalledWith({
+      workflowDraftId: draftSession.workflowDraftId,
+      workflowDraftRevision: draftSession.draftRevision,
+    });
+  });
+
+  it('localizes workflow node-type picker labels before showing them to users', async () => {
+    vscodeMock.state.trusted = true;
+    const draftSession = {
+      workflowDraftId: 'workflow-draft-node-type',
+      draftRevision: 'draft-revision-node-type',
+      baseDefinitionRevision: 'base-revision-node-type',
+      templateId: 'starter-template',
+      entryMode: OrchestrationWorkflowDraftEntryMode.CREATE_SEED,
+      nodeSpecs: [],
+      edgeSpecs: [],
+      supportedPatchOps: [OrchestrationWorkflowDraftSupportedPatchOp.UPSERT_NODE],
+      validationIssues: [],
+      conflictState: {
+        hasConflict: false,
+        conflictKind: 'none',
+        detectedAt: '2026-04-22T08:00:00.000Z',
+      },
+      compiledIrPreview: {
+        processId: 'process-node-type',
+        entryNodeId: 'entry-node',
+        compiledAt: '2026-04-22T08:00:00.000Z',
+        nodeCount: 0,
+        edgeCount: 0,
+        compileWarningCount: 0,
+        compileErrorCount: 0,
+        compileWarnings: [],
+        compileErrors: [],
+      },
+      backlinkArtifacts: [],
+    };
+    const serviceRuntime = {
+      queryWorkflowDraftSessionStrict: vi.fn().mockResolvedValue(draftSession),
+      updateWorkflowDraftNode: vi.fn().mockResolvedValue({
+        applied: true,
+        message: 'Workflow draft updated.',
+        draftSession,
+      }),
+    };
+    const controller = new VsCodeExtensionCommandController(
+      serviceRuntime as never,
+      new VsCodeExtensionSelectionStore(),
+      {
+        localizeText: (english: string) => english,
+      } as never,
+      {
+        hitlInboxProvider: {
+          refresh: vi.fn(),
+        } as never,
+        workflowStudioProvider: {
+          refresh: vi.fn(),
+          show: vi.fn(),
+        } as never,
+        reviewDetailProvider: {
+          refresh: vi.fn(),
+        } as never,
+      },
+    );
+
+    vscodeMock.showQuickPick.mockImplementationOnce(async (items: Array<{ label: string }>) => {
+      expect(items.map((item) => item.label)).toEqual([
+        'Sequential',
+        'Parallel',
+        'Loop',
+        'Condition',
+      ]);
+      return {
+        nodeType: ProcessNodeType.SEQUENTIAL,
+      };
+    });
+    vscodeMock.showInputBox
+      .mockResolvedValueOnce('node-new')
+      .mockResolvedValueOnce('stage-new')
+      .mockResolvedValueOnce('route-new')
+      .mockResolvedValueOnce('reviewer-default')
+      .mockResolvedValueOnce('')
+      .mockResolvedValueOnce('')
+      .mockResolvedValueOnce('')
+      .mockResolvedValueOnce('')
+      .mockResolvedValueOnce('');
+
+    await controller.mutateWorkflowDraft({
+      workflowDraftId: draftSession.workflowDraftId,
+      workflowDraftRevision: draftSession.draftRevision,
+      workflowDraftPatchOp: OrchestrationWorkflowDraftSupportedPatchOp.UPSERT_NODE,
+    });
+
+    expect(serviceRuntime.updateWorkflowDraftNode).toHaveBeenCalledWith({
+      workflowDraftId: draftSession.workflowDraftId,
+      draftRevision: draftSession.draftRevision,
+      nodeId: 'node-new',
+      nodeSpec: {
+        nodeId: 'node-new',
+        stageId: 'stage-new',
+        nodeType: ProcessNodeType.SEQUENTIAL,
+        routeKey: 'route-new',
+        roleProfileId: 'reviewer-default',
+      },
     });
   });
 

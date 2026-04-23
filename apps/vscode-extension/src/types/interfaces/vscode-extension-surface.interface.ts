@@ -6,10 +6,17 @@ import type {
   OrchestrationGovernanceTemporaryBridgeEntry,
   OrchestrationHandoffTarget,
   OrchestrationHitlDecisionOption,
+  OrchestrationHitlDecisionPacket,
   OrchestrationQueueOverviewQueryResponse,
+  OrchestrationRoleLaneStatusQueryResponse,
   OrchestrationServiceHostKind,
   OrchestrationServiceLifecycleStatus,
   OrchestrationServiceTransportKind,
+  OrchestrationSessionContinuitySnapshot,
+  OrchestrationWorkbenchBacklinkKind,
+  OrchestrationWorkflowDraftEntryMode,
+  OrchestrationWorkflowDraftSession,
+  OrchestrationWorkflowDraftSupportedPatchOp,
   OrchestrationWorkspaceOperationKind,
 } from '@repo-ai-governor/orchestration-service-client';
 import type {
@@ -206,6 +213,11 @@ export interface VsCodeExtensionSelectionSnapshot {
   executionId?: string;
   executionSessionId?: string;
   reviewSourcePath?: string;
+  workflowDraftId?: string;
+  workflowDraftRevision?: string;
+  workflowFocusStageId?: string;
+  workflowFocusBacklinkTarget?: string;
+  workflowFocusBacklinkKind?: OrchestrationWorkbenchBacklinkKind;
   queueEntry?: OrchestrationGovernanceQueueEntry;
   temporaryBridge?: OrchestrationGovernanceTemporaryBridgeEntry;
   workspaceOperationKind?: OrchestrationWorkspaceOperationKind;
@@ -219,7 +231,15 @@ export interface VsCodeExtensionCommandRequest {
   executionId?: string;
   executionSessionId?: string;
   reviewSourcePath?: string;
+  workflowDraftId?: string;
+  workflowDraftRevision?: string;
+  workflowFocusStageId?: string;
+  workflowFocusBacklinkTarget?: string;
+  workflowFocusBacklinkKind?: OrchestrationWorkbenchBacklinkKind;
+  workflowDraftEntryMode?: OrchestrationWorkflowDraftEntryMode;
+  workflowDraftPatchOp?: OrchestrationWorkflowDraftSupportedPatchOp;
   clearExecutionSelection?: boolean;
+  clearWorkflowFocus?: boolean;
   queueEntry?: OrchestrationGovernanceQueueEntry;
   handoffTarget?: OrchestrationHandoffTarget;
   temporaryBridge?: OrchestrationGovernanceTemporaryBridgeEntry;
@@ -257,21 +277,24 @@ export interface VsCodeExtensionWorkflowStudioSnapshot {
   secureAuthoring?: VsCodeExtensionSecureAuthoringSnapshot;
   providerLifecycleSnapshots?: readonly VsCodeExtensionProviderLifecycleSnapshot[];
   selectedExecution?: OrchestrationExecutionBoardEntry;
+  workflowDraftSession?: VsCodeExtensionWorkflowDraftSessionSnapshot;
+  workflowFocusStageId?: string;
+  workflowFocusBacklinkTarget?: string;
+  workflowFocusBacklinkKind?: OrchestrationWorkbenchBacklinkKind;
+  roleLaneStatus?: VsCodeExtensionRoleLaneStatusSnapshot;
   artifactPane?: OrchestrationArtifactPaneQueryResponse;
   sessionContinuity?: VsCodeExtensionSessionContinuitySnapshot;
+  hitlDecisionPacket?: VsCodeExtensionHitlDecisionPacketSnapshot;
   reviewSourcePath?: string;
 }
 
-export interface VsCodeExtensionSessionContinuitySnapshot {
-  sessionId: string;
-  sessionStatus?: string;
-  currentRouteId?: string;
-  latestTurnId?: string;
-  latestEventSequence?: number;
-  nextCursor?: string;
-  resumeSelector?: string;
-  degradedReason?: string;
-}
+export type VsCodeExtensionWorkflowDraftSessionSnapshot = OrchestrationWorkflowDraftSession;
+
+export type VsCodeExtensionRoleLaneStatusSnapshot = OrchestrationRoleLaneStatusQueryResponse;
+
+export type VsCodeExtensionSessionContinuitySnapshot = OrchestrationSessionContinuitySnapshot;
+
+export type VsCodeExtensionHitlDecisionPacketSnapshot = OrchestrationHitlDecisionPacket;
 
 export interface VsCodeExtensionReviewQueueSelectionRequest extends VsCodeExtensionCommandRequest {
   reviewQueueEntry?: OrchestrationGovernanceQueueEntry;

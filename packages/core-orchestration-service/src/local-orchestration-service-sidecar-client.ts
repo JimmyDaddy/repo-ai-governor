@@ -14,11 +14,14 @@ import type {
   OrchestrationArtifactPaneQueryRequest,
   OrchestrationArtifactPaneQueryResponse,
   OrchestrationBootstrapReadinessSnapshot,
+  OrchestrationCommitWorkflowDraftRequest,
   OrchestrationExecutionBoardQueryRequest,
   OrchestrationExecutionBoardQueryResponse,
   OrchestrationExecutionSummary,
   OrchestrationForkSessionRequest,
   OrchestrationForkSessionResponse,
+  OrchestrationHitlDecisionPacket,
+  OrchestrationHitlDecisionPacketQueryRequest,
   OrchestrationHitlInboxQueryRequest,
   OrchestrationHitlInboxQueryResponse,
   OrchestrationListExecutionsRequest,
@@ -33,11 +36,15 @@ import type {
   OrchestrationRecoverExecutionResponse,
   OrchestrationResumeSessionRequest,
   OrchestrationResumeSessionResponse,
+  OrchestrationRoleLaneStatusQueryRequest,
+  OrchestrationRoleLaneStatusQueryResponse,
   OrchestrationSecureAuthoringQueryRequest,
   OrchestrationSecureAuthoringSnapshot,
   OrchestrationSendSessionTurnRequest,
   OrchestrationSendSessionTurnResponse,
   OrchestrationServiceHealthResponse,
+  OrchestrationSessionContinuityQueryRequest,
+  OrchestrationSessionContinuitySnapshot,
   OrchestrationSessionSummary,
   OrchestrationSetManagedSecretRequest,
   OrchestrationSetManagedSecretResponse,
@@ -47,6 +54,7 @@ import type {
   OrchestrationStartExecutionResponse,
   OrchestrationStartSessionRequest,
   OrchestrationStartSessionResponse,
+  OrchestrationStartWorkflowDraftRequest,
   OrchestrationSubmitHitlDecisionRequest,
   OrchestrationSubmitHitlDecisionResponse,
   OrchestrationSubscribeExecutionRequest,
@@ -57,6 +65,13 @@ import type {
   OrchestrationTerminateExecutionResponse,
   OrchestrationUnarchiveSessionRequest,
   OrchestrationUnarchiveSessionResponse,
+  OrchestrationUpdateWorkflowDraftEdgeRequest,
+  OrchestrationUpdateWorkflowDraftNodeRequest,
+  OrchestrationUpdateWorkflowDraftPolicyRequest,
+  OrchestrationValidateWorkflowDraftRequest,
+  OrchestrationWorkflowDraftMutationResponse,
+  OrchestrationWorkflowDraftSession,
+  OrchestrationWorkflowDraftSessionQueryRequest,
   OrchestrationWorkspaceOperationRequest,
   OrchestrationWorkspaceOperationResponse,
 } from '@repo-ai-governor/orchestration-service-client';
@@ -159,6 +174,69 @@ export class LocalOrchestrationServiceSidecarClient {
     );
   }
 
+  public async queryWorkflowDraftSession(
+    request?: OrchestrationWorkflowDraftSessionQueryRequest,
+  ): Promise<OrchestrationWorkflowDraftSession | undefined> {
+    return this.sendRequest<OrchestrationWorkflowDraftSession | undefined>(
+      LocalOrchestrationServiceSidecarOperation.QUERY_WORKFLOW_DRAFT_SESSION,
+      request,
+    );
+  }
+
+  public async startWorkflowDraft(
+    request: OrchestrationStartWorkflowDraftRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse> {
+    return this.sendRequest<OrchestrationWorkflowDraftMutationResponse>(
+      LocalOrchestrationServiceSidecarOperation.START_WORKFLOW_DRAFT,
+      request,
+    );
+  }
+
+  public async updateWorkflowDraftNode(
+    request: OrchestrationUpdateWorkflowDraftNodeRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse> {
+    return this.sendRequest<OrchestrationWorkflowDraftMutationResponse>(
+      LocalOrchestrationServiceSidecarOperation.UPDATE_WORKFLOW_DRAFT_NODE,
+      request,
+    );
+  }
+
+  public async updateWorkflowDraftEdge(
+    request: OrchestrationUpdateWorkflowDraftEdgeRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse> {
+    return this.sendRequest<OrchestrationWorkflowDraftMutationResponse>(
+      LocalOrchestrationServiceSidecarOperation.UPDATE_WORKFLOW_DRAFT_EDGE,
+      request,
+    );
+  }
+
+  public async updateWorkflowDraftPolicy(
+    request: OrchestrationUpdateWorkflowDraftPolicyRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse> {
+    return this.sendRequest<OrchestrationWorkflowDraftMutationResponse>(
+      LocalOrchestrationServiceSidecarOperation.UPDATE_WORKFLOW_DRAFT_POLICY,
+      request,
+    );
+  }
+
+  public async validateWorkflowDraft(
+    request: OrchestrationValidateWorkflowDraftRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse> {
+    return this.sendRequest<OrchestrationWorkflowDraftMutationResponse>(
+      LocalOrchestrationServiceSidecarOperation.VALIDATE_WORKFLOW_DRAFT,
+      request,
+    );
+  }
+
+  public async commitWorkflowDraft(
+    request: OrchestrationCommitWorkflowDraftRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse> {
+    return this.sendRequest<OrchestrationWorkflowDraftMutationResponse>(
+      LocalOrchestrationServiceSidecarOperation.COMMIT_WORKFLOW_DRAFT,
+      request,
+    );
+  }
+
   public async runWorkspaceOperation(
     request: OrchestrationWorkspaceOperationRequest,
   ): Promise<OrchestrationWorkspaceOperationResponse> {
@@ -204,6 +282,48 @@ export class LocalOrchestrationServiceSidecarClient {
   ): Promise<OrchestrationHitlInboxQueryResponse> {
     return this.sendRequest<OrchestrationHitlInboxQueryResponse>(
       LocalOrchestrationServiceSidecarOperation.QUERY_HITL_INBOX,
+      request,
+    );
+  }
+
+  /**
+   * Queries service-owned role-lane status projections from the sidecar.
+   * @param request Optional execution selector, filter, and limit for lane status scope.
+   * @returns Role-lane status payload for the requested execution boundary.
+   */
+  public async queryRoleLaneStatus(
+    request?: OrchestrationRoleLaneStatusQueryRequest,
+  ): Promise<OrchestrationRoleLaneStatusQueryResponse> {
+    return this.sendRequest<OrchestrationRoleLaneStatusQueryResponse>(
+      LocalOrchestrationServiceSidecarOperation.QUERY_ROLE_LANE_STATUS,
+      request,
+    );
+  }
+
+  /**
+   * Queries one service-owned session continuity projection from the sidecar.
+   * @param request Optional execution/session selector and locale metadata.
+   * @returns Session continuity snapshot when the selected session is available.
+   */
+  public async querySessionContinuity(
+    request?: OrchestrationSessionContinuityQueryRequest,
+  ): Promise<OrchestrationSessionContinuitySnapshot | undefined> {
+    return this.sendRequest<OrchestrationSessionContinuitySnapshot | undefined>(
+      LocalOrchestrationServiceSidecarOperation.QUERY_SESSION_CONTINUITY,
+      request,
+    );
+  }
+
+  /**
+   * Queries one service-owned HITL decision packet from the sidecar.
+   * @param request Optional execution/session selector and locale metadata.
+   * @returns HITL decision packet when the selected execution exposes pending decision state.
+   */
+  public async queryHitlDecisionPacket(
+    request?: OrchestrationHitlDecisionPacketQueryRequest,
+  ): Promise<OrchestrationHitlDecisionPacket | undefined> {
+    return this.sendRequest<OrchestrationHitlDecisionPacket | undefined>(
+      LocalOrchestrationServiceSidecarOperation.QUERY_HITL_DECISION_PACKET,
       request,
     );
   }

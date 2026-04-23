@@ -19,6 +19,7 @@ import {
   type OrchestrationArchiveSessionResponse,
   type OrchestrationArtifactPaneQueryRequest,
   type OrchestrationArtifactPaneQueryResponse,
+  type OrchestrationCommitWorkflowDraftRequest,
   type OrchestrationExecutionBoardQueryRequest,
   type OrchestrationExecutionBoardQueryResponse,
   type OrchestrationExecutionLivenessSnapshot,
@@ -26,6 +27,8 @@ import {
   type OrchestrationExecutionSummary,
   type OrchestrationForkSessionRequest,
   type OrchestrationForkSessionResponse,
+  type OrchestrationHitlDecisionPacket,
+  type OrchestrationHitlDecisionPacketQueryRequest,
   type OrchestrationHitlInboxQueryRequest,
   type OrchestrationHitlInboxQueryResponse,
   type OrchestrationListExecutionsFilter,
@@ -39,6 +42,8 @@ import {
   type OrchestrationRecoverExecutionResponse,
   type OrchestrationResumeSessionRequest,
   type OrchestrationResumeSessionResponse,
+  type OrchestrationRoleLaneStatusQueryRequest,
+  type OrchestrationRoleLaneStatusQueryResponse,
   type OrchestrationSendSessionTurnRequest,
   type OrchestrationSendSessionTurnResponse,
   type OrchestrationServiceClient,
@@ -48,11 +53,14 @@ import {
   OrchestrationServiceHostKind,
   OrchestrationServiceLifecycleStatus,
   OrchestrationServiceTransportKind,
+  type OrchestrationSessionContinuityQueryRequest,
+  type OrchestrationSessionContinuitySnapshot,
   type OrchestrationSessionSummary,
   type OrchestrationStartExecutionRequest,
   type OrchestrationStartExecutionResponse,
   type OrchestrationStartSessionRequest,
   type OrchestrationStartSessionResponse,
+  type OrchestrationStartWorkflowDraftRequest,
   type OrchestrationSubmitHitlDecisionRequest,
   type OrchestrationSubmitHitlDecisionResponse,
   type OrchestrationSubscribeExecutionRequest,
@@ -63,14 +71,24 @@ import {
   type OrchestrationTerminateExecutionResponse,
   type OrchestrationUnarchiveSessionRequest,
   type OrchestrationUnarchiveSessionResponse,
+  type OrchestrationUpdateWorkflowDraftEdgeRequest,
+  type OrchestrationUpdateWorkflowDraftNodeRequest,
+  type OrchestrationUpdateWorkflowDraftPolicyRequest,
+  type OrchestrationValidateWorkflowDraftRequest,
+  type OrchestrationWorkflowDraftMutationResponse,
+  type OrchestrationWorkflowDraftSession,
+  type OrchestrationWorkflowDraftSessionQueryRequest,
 } from '@repo-ai-governor/orchestration-service-client';
 import { GovernorErrorCode, RuntimeError } from '@repo-ai-governor/shared';
 import { LocalOrchestrationServiceArtifactPaneQueryRuntime } from './local-orchestration-service-artifact-pane-query-runtime.js';
 import { LocalOrchestrationServiceGovernanceQueryRuntime } from './local-orchestration-service-governance-query-runtime.js';
+import { LocalOrchestrationServiceHitlDecisionStateFactory } from './local-orchestration-service-hitl-decision-state-factory.js';
 import { LocalOrchestrationServiceQueueOverviewQueryRuntime } from './local-orchestration-service-queue-overview-query-runtime.js';
 import { LocalOrchestrationServiceSessionRuntime } from './local-orchestration-service-session-runtime.js';
+import { LocalOrchestrationServiceWorkflowDraftRuntime } from './local-orchestration-service-workflow-draft-runtime.js';
 import { LocalOrchestrationServiceWorkspaceOpsRuntime } from './local-orchestration-service-workspace-ops-runtime.js';
 import type {
+  LocalOrchestrationServiceHitlDecisionState,
   LocalOrchestrationServiceMemoryProviderState,
   LocalOrchestrationServicePublishEventRequest,
   LocalOrchestrationServiceSaveCheckpointRequest,
@@ -81,6 +99,7 @@ import type {
 interface LocalOrchestrationExecutionRecord {
   summary: OrchestrationExecutionSummary;
   events: OrchestrationServiceEvent[];
+  hitlDecisionState?: LocalOrchestrationServiceHitlDecisionState;
 }
 
 /**
@@ -110,7 +129,9 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
   private readonly sessionRuntime: LocalOrchestrationServiceSessionRuntime;
   private readonly artifactPaneQueryRuntime: LocalOrchestrationServiceArtifactPaneQueryRuntime;
   private readonly governanceQueryRuntime: LocalOrchestrationServiceGovernanceQueryRuntime;
+  private readonly hitlDecisionStateFactory: LocalOrchestrationServiceHitlDecisionStateFactory;
   private readonly queueOverviewQueryRuntime: LocalOrchestrationServiceQueueOverviewQueryRuntime;
+  private readonly workflowDraftRuntime: LocalOrchestrationServiceWorkflowDraftRuntime;
   private readonly workspaceOpsRuntime: LocalOrchestrationServiceWorkspaceOpsRuntime;
   private executionRecordsLoadedPromise: Promise<void> | null = null;
   private memoryProviderStatePromise: Promise<LocalOrchestrationServiceMemoryProviderState | null> | null =
@@ -174,7 +195,7 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
     this.artifactPaneQueryRuntime = new LocalOrchestrationServiceArtifactPaneQueryRuntime({
       workspaceRoot: dependencies.workspaceRoot,
       getExecution: async (executionId) => this.getExecution(executionId),
-      listExecutions: async () => this.listExecutions(),
+      listExecutions: async (request) => this.listExecutions(request),
       getSession: async (sessionId) => this.sessionRuntime.getSession(sessionId),
       listSessions: async () => this.sessionRuntime.listSessions(),
       subscribeSession: async (sessionId, afterSequence) =>
@@ -183,9 +204,16 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
           afterSequence,
         }),
     });
+    this.hitlDecisionStateFactory = new LocalOrchestrationServiceHitlDecisionStateFactory();
     this.governanceQueryRuntime = new LocalOrchestrationServiceGovernanceQueryRuntime({
       workspaceRoot: dependencies.workspaceRoot,
       listExecutions: async (request) => this.listExecutions(request),
+      listSessions: async (request) => this.sessionRuntime.listSessions(request),
+      getSession: async (sessionId) => this.sessionRuntime.getSession(sessionId),
+      queryArtifactPane: async (request) => this.artifactPaneQueryRuntime.query(request),
+      readExecutionEvents: async (executionId) => this.readExecutionEvents(executionId),
+      readHitlDecisionState: async (executionId) => this.readHitlDecisionState(executionId),
+      nowProvider: this.nowProvider,
     });
     this.queueOverviewQueryRuntime = new LocalOrchestrationServiceQueueOverviewQueryRuntime({
       workspaceRoot: dependencies.workspaceRoot,
@@ -195,8 +223,14 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
           }
         : {}),
       listExecutions: async (request) => this.listExecutions(request),
+      readExecutionEvents: async (executionId) => this.readExecutionEvents(executionId),
+      readHitlDecisionState: async (executionId) => this.readHitlDecisionState(executionId),
       getLatestWorkspaceOperationSnapshot: () =>
         this.workspaceOpsRuntime.getLatestWorkspaceOperationSnapshot(),
+      nowProvider: this.nowProvider,
+    });
+    this.workflowDraftRuntime = new LocalOrchestrationServiceWorkflowDraftRuntime({
+      workspaceRoot: dependencies.workspaceRoot,
       nowProvider: this.nowProvider,
     });
     this.workspaceOpsRuntime = new LocalOrchestrationServiceWorkspaceOpsRuntime({
@@ -206,6 +240,7 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
             repositoryRoot: dependencies.repositoryRoot,
           }
         : {}),
+      workflowDraftRuntime: this.workflowDraftRuntime,
     });
   }
 
@@ -263,6 +298,48 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
     request: Parameters<LocalOrchestrationServiceWorkspaceOpsRuntime['applyProviderOnboarding']>[0],
   ) {
     return this.workspaceOpsRuntime.applyProviderOnboarding(request);
+  }
+
+  public async queryWorkflowDraftSession(
+    request?: OrchestrationWorkflowDraftSessionQueryRequest,
+  ): Promise<OrchestrationWorkflowDraftSession | undefined> {
+    return this.workflowDraftRuntime.queryWorkflowDraftSession(request);
+  }
+
+  public async startWorkflowDraft(
+    request: OrchestrationStartWorkflowDraftRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse> {
+    return this.workflowDraftRuntime.startWorkflowDraft(request);
+  }
+
+  public async updateWorkflowDraftNode(
+    request: OrchestrationUpdateWorkflowDraftNodeRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse> {
+    return this.workflowDraftRuntime.updateWorkflowDraftNode(request);
+  }
+
+  public async updateWorkflowDraftEdge(
+    request: OrchestrationUpdateWorkflowDraftEdgeRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse> {
+    return this.workflowDraftRuntime.updateWorkflowDraftEdge(request);
+  }
+
+  public async updateWorkflowDraftPolicy(
+    request: OrchestrationUpdateWorkflowDraftPolicyRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse> {
+    return this.workflowDraftRuntime.updateWorkflowDraftPolicy(request);
+  }
+
+  public async validateWorkflowDraft(
+    request: OrchestrationValidateWorkflowDraftRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse> {
+    return this.workflowDraftRuntime.validateWorkflowDraft(request);
+  }
+
+  public async commitWorkflowDraft(
+    request: OrchestrationCommitWorkflowDraftRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse> {
+    return this.workflowDraftRuntime.commitWorkflowDraft(request);
   }
 
   public async runWorkspaceOperation(
@@ -408,6 +485,42 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
   }
 
   /**
+   * Returns service-owned role-lane status projections for direct-workbench consumers.
+   * @param request Optional execution selector, filter, and limit.
+   * @returns Runtime-lane status payload.
+   */
+  public async queryRoleLaneStatus(
+    request?: OrchestrationRoleLaneStatusQueryRequest,
+  ): Promise<OrchestrationRoleLaneStatusQueryResponse> {
+    await this.ensureExecutionRecordsLoaded();
+    return this.governanceQueryRuntime.queryRoleLaneStatus(request);
+  }
+
+  /**
+   * Returns service-owned session continuity for one execution/session selection.
+   * @param request Optional execution/session selector.
+   * @returns Session continuity snapshot when available.
+   */
+  public async querySessionContinuity(
+    request?: OrchestrationSessionContinuityQueryRequest,
+  ): Promise<OrchestrationSessionContinuitySnapshot | undefined> {
+    await this.ensureExecutionRecordsLoaded();
+    return this.governanceQueryRuntime.querySessionContinuity(request);
+  }
+
+  /**
+   * Returns the service-owned HITL decision packet for one execution/session selection.
+   * @param request Optional execution/session selector.
+   * @returns HITL decision packet when available.
+   */
+  public async queryHitlDecisionPacket(
+    request?: OrchestrationHitlDecisionPacketQueryRequest,
+  ): Promise<OrchestrationHitlDecisionPacket | undefined> {
+    await this.ensureExecutionRecordsLoaded();
+    return this.governanceQueryRuntime.queryHitlDecisionPacket(request);
+  }
+
+  /**
    * Returns the service-owned queue/overview read model for desktop command-center consumers.
    * @param request Optional execution filter and collection limits.
    * @returns Automation/review queue plus multi-workspace overview DTOs.
@@ -497,7 +610,11 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
     if (record.summary.executionSessionId !== request.executionSessionId) {
       throw new RuntimeError(
         GovernorErrorCode.MEMORY_SESSION_NOT_FOUND,
-        'Local orchestration execution session was not found.',
+        this.localizeText(
+          request.locale,
+          'Local orchestration execution session was not found.',
+          '当前本地编排执行会话不存在。',
+        ),
         {
           executionId: request.executionId,
           executionSessionId: request.executionSessionId,
@@ -507,23 +624,70 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
     if (!record.summary.pendingHitl) {
       throw new RuntimeError(
         GovernorErrorCode.MEMORY_SESSION_INVALID_STATUS,
-        'Local orchestration execution is not currently waiting for a HITL decision.',
+        this.localizeText(
+          request.locale,
+          'Local orchestration execution is not currently waiting for a HITL decision.',
+          '当前本地编排执行并未等待 HITL 决策。',
+        ),
         {
           executionId: request.executionId,
           status: record.summary.status,
         },
       );
     }
+    const effectiveHitlDecisionState = this.resolveEffectiveHitlDecisionState(record);
+    if (!effectiveHitlDecisionState) {
+      throw new RuntimeError(
+        GovernorErrorCode.POLICY_GATE_EVALUATION_FAILED,
+        this.localizeText(
+          request.locale,
+          'Local orchestration execution does not expose a service-owned HITL decision state.',
+          '当前本地编排执行未暴露 service-owned 的 HITL 决策状态。',
+        ),
+        {
+          executionId: request.executionId,
+        },
+      );
+    }
+    const allowedDecision = effectiveHitlDecisionState.allowedDecisions.find(
+      (decisionOption) =>
+        this.isEquivalentHitlDecision(decisionOption.decision, request.decision) &&
+        decisionOption.resumeAction === request.resumeAction,
+    );
+    if (!allowedDecision) {
+      throw new RuntimeError(
+        GovernorErrorCode.POLICY_GATE_HITL_FEEDBACK_INVALID,
+        this.localizeText(
+          request.locale,
+          'Requested HITL decision is not allowed for this execution.',
+          '当前执行不允许请求的 HITL 决策。',
+        ),
+        {
+          executionId: request.executionId,
+          hitlDecision: request.decision,
+          hitlResumeAction: request.resumeAction,
+          allowedDecisions: effectiveHitlDecisionState.allowedDecisions.map((decisionOption) => ({
+            ...decisionOption,
+          })),
+        },
+      );
+    }
+    record.hitlDecisionState ??= this.cloneHitlDecisionState(effectiveHitlDecisionState);
+    const canonicalDecisionRequest: OrchestrationSubmitHitlDecisionRequest = {
+      ...request,
+      decision: allowedDecision.decision,
+      resumeAction: allowedDecision.resumeAction,
+    };
 
     const nextStatus =
-      request.resumeAction === 'terminate'
+      allowedDecision.resumeAction === 'terminate'
         ? OrchestrationExecutionStatus.CANCELLED
-        : request.resumeAction === 'degrade'
+        : allowedDecision.resumeAction === 'degrade'
           ? OrchestrationExecutionStatus.HITL_REQUIRED
           : OrchestrationExecutionStatus.RUNNING;
     const decisionReceiptArtifactPath =
       request.decisionReceiptArtifactPath ??
-      (await this.persistHitlDecisionReceipt(record, request));
+      (await this.persistHitlDecisionReceipt(record, canonicalDecisionRequest));
     await this.publishEvent({
       executionId: request.executionId,
       type: OrchestrationServiceEventType.ARTIFACT_READY,
@@ -538,6 +702,10 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
       pendingHitl: nextStatus === OrchestrationExecutionStatus.HITL_REQUIRED,
       updatedAt: this.toTimestamp(),
     };
+    record.hitlDecisionState =
+      nextStatus === OrchestrationExecutionStatus.HITL_REQUIRED
+        ? record.hitlDecisionState
+        : undefined;
     await this.persistExecutionRecord(record);
 
     return {
@@ -772,6 +940,18 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
       ...this.buildExecutionLivenessSummaryPatch(request.livenessSnapshot),
       updatedAt: timestamp,
     };
+    record.hitlDecisionState =
+      nextStatus === OrchestrationExecutionStatus.HITL_REQUIRED
+        ? request.hitlDecisionState
+          ? this.cloneHitlDecisionState(request.hitlDecisionState)
+          : request.type === OrchestrationServiceEventType.HITL_REQUIRED
+            ? this.hitlDecisionStateFactory.buildPendingDecisionState({
+                executionId: record.summary.executionId,
+                taskId: record.summary.taskId,
+                recordedAt: timestamp,
+              })
+            : record.hitlDecisionState
+        : undefined;
     await this.persistExecutionRecord(record);
   }
 
@@ -846,9 +1026,17 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
           },
         );
       }
+      const persistedHitlDecisionState = (
+        parsed as { hitlDecisionState?: LocalOrchestrationServiceHitlDecisionState }
+      ).hitlDecisionState;
       this.executionRecords.set(summary.executionId, {
         summary: this.cloneExecutionSummary(summary),
         events: parsed.events.map((event) => ({ ...event })),
+        ...(persistedHitlDecisionState
+          ? {
+              hitlDecisionState: this.cloneHitlDecisionState(persistedHitlDecisionState),
+            }
+          : {}),
       });
       this.eventStreamIndex.set(summary.eventStreamToken, summary.executionId);
     }
@@ -862,6 +1050,11 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
         {
           summary: this.cloneExecutionSummary(record.summary),
           events: record.events.map((event) => ({ ...event })),
+          ...(record.hitlDecisionState
+            ? {
+                hitlDecisionState: this.cloneHitlDecisionState(record.hitlDecisionState),
+              }
+            : {}),
         },
         null,
         2,
@@ -907,10 +1100,58 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
     return artifactPath;
   }
 
+  private async readExecutionEvents(executionId: string): Promise<OrchestrationServiceEvent[]> {
+    await this.ensureExecutionRecordsLoaded();
+    const record = this.executionRecords.get(executionId);
+    return record ? record.events.map((event) => ({ ...event })) : [];
+  }
+
+  private async readHitlDecisionState(
+    executionId: string,
+  ): Promise<LocalOrchestrationServiceHitlDecisionState | undefined> {
+    await this.ensureExecutionRecordsLoaded();
+    const record = this.executionRecords.get(executionId);
+    return record?.hitlDecisionState
+      ? this.cloneHitlDecisionState(record.hitlDecisionState)
+      : undefined;
+  }
+
+  private resolveEffectiveHitlDecisionState(
+    record: LocalOrchestrationExecutionRecord,
+  ): LocalOrchestrationServiceHitlDecisionState | undefined {
+    if (record.hitlDecisionState) {
+      return this.cloneHitlDecisionState(record.hitlDecisionState);
+    }
+
+    const pendingOriginEvent = [...record.events]
+      .reverse()
+      .find((event) => event.type === OrchestrationServiceEventType.HITL_REQUIRED);
+    if (!pendingOriginEvent) {
+      return undefined;
+    }
+
+    return this.hitlDecisionStateFactory.buildPendingDecisionState({
+      executionId: record.summary.executionId,
+      taskId: record.summary.taskId,
+      recordedAt: pendingOriginEvent.timestamp,
+    });
+  }
+
+  private isEquivalentHitlDecision(allowedDecision: string, requestedDecision: string): boolean {
+    return (
+      this.normalizeHitlDecision(allowedDecision) === this.normalizeHitlDecision(requestedDecision)
+    );
+  }
+
+  private normalizeHitlDecision(decision: string): string {
+    return decision === 'revise' ? 'request_changes' : decision;
+  }
+
   private applyRecoveredExecution(
     record: LocalOrchestrationExecutionRecord,
     recoveredExecution: LangGraphRecoveredExecution,
   ): void {
+    const pendingHitl = recoveredExecution.pendingInterrupt?.kind === 'hitl';
     record.summary = {
       ...record.summary,
       checkpointSource: recoveredExecution.checkpointSource,
@@ -920,9 +1161,17 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
       status: recoveredExecution.pendingInterrupt
         ? OrchestrationExecutionStatus.INTERRUPTED
         : record.summary.status,
-      pendingHitl: recoveredExecution.pendingInterrupt?.kind === 'hitl',
+      pendingHitl,
       updatedAt: this.toTimestamp(),
     };
+    record.hitlDecisionState = pendingHitl
+      ? (record.hitlDecisionState ??
+        this.hitlDecisionStateFactory.buildPendingDecisionState({
+          executionId: record.summary.executionId,
+          taskId: record.summary.taskId,
+          recordedAt: recoveredExecution.pendingInterrupt?.recordedAt ?? record.summary.updatedAt,
+        }))
+      : undefined;
   }
 
   private getExecutionRecordOrThrow(executionId: string): LocalOrchestrationExecutionRecord {
@@ -982,6 +1231,21 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
       ...(summary.recoveredNextNodeIds
         ? { recoveredNextNodeIds: [...summary.recoveredNextNodeIds] }
         : {}),
+    };
+  }
+
+  private cloneHitlDecisionState(
+    state: LocalOrchestrationServiceHitlDecisionState,
+  ): LocalOrchestrationServiceHitlDecisionState {
+    return {
+      ...state,
+      riskFacts: state.riskFacts.map((riskFact) => ({
+        ...riskFact,
+        evidence: [...riskFact.evidence],
+      })),
+      allowedDecisions: state.allowedDecisions.map((decision) => ({
+        ...decision,
+      })),
     };
   }
 
@@ -1253,5 +1517,13 @@ export class LocalOrchestrationServiceShell implements OrchestrationServiceClien
 
   private toFileSafeTimestamp(value: string): string {
     return value.replace(/[-:]/gu, '').replace(/T/gu, '-').replace(/Z$/u, 'Z');
+  }
+
+  private normalizeLocale(locale?: string): string {
+    return locale?.trim().length ? locale : 'en-US';
+  }
+
+  private localizeText(locale: string | undefined, english: string, chinese: string): string {
+    return this.normalizeLocale(locale).toLowerCase().startsWith('zh') ? chinese : english;
   }
 }

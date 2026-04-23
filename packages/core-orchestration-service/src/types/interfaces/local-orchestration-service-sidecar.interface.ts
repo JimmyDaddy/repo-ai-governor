@@ -11,11 +11,14 @@ import type {
   OrchestrationArtifactPaneQueryRequest,
   OrchestrationArtifactPaneQueryResponse,
   OrchestrationBootstrapReadinessSnapshot,
+  OrchestrationCommitWorkflowDraftRequest,
   OrchestrationExecutionBoardQueryRequest,
   OrchestrationExecutionBoardQueryResponse,
   OrchestrationExecutionSummary,
   OrchestrationForkSessionRequest,
   OrchestrationForkSessionResponse,
+  OrchestrationHitlDecisionPacket,
+  OrchestrationHitlDecisionPacketQueryRequest,
   OrchestrationHitlInboxQueryRequest,
   OrchestrationHitlInboxQueryResponse,
   OrchestrationListExecutionsRequest,
@@ -30,11 +33,15 @@ import type {
   OrchestrationRecoverExecutionResponse,
   OrchestrationResumeSessionRequest,
   OrchestrationResumeSessionResponse,
+  OrchestrationRoleLaneStatusQueryRequest,
+  OrchestrationRoleLaneStatusQueryResponse,
   OrchestrationSecureAuthoringQueryRequest,
   OrchestrationSecureAuthoringSnapshot,
   OrchestrationSendSessionTurnRequest,
   OrchestrationSendSessionTurnResponse,
   OrchestrationServiceHealthResponse,
+  OrchestrationSessionContinuityQueryRequest,
+  OrchestrationSessionContinuitySnapshot,
   OrchestrationSessionSummary,
   OrchestrationSetManagedSecretRequest,
   OrchestrationSetManagedSecretResponse,
@@ -44,6 +51,7 @@ import type {
   OrchestrationStartExecutionResponse,
   OrchestrationStartSessionRequest,
   OrchestrationStartSessionResponse,
+  OrchestrationStartWorkflowDraftRequest,
   OrchestrationSubmitHitlDecisionRequest,
   OrchestrationSubmitHitlDecisionResponse,
   OrchestrationSubscribeExecutionRequest,
@@ -54,6 +62,13 @@ import type {
   OrchestrationTerminateExecutionResponse,
   OrchestrationUnarchiveSessionRequest,
   OrchestrationUnarchiveSessionResponse,
+  OrchestrationUpdateWorkflowDraftEdgeRequest,
+  OrchestrationUpdateWorkflowDraftNodeRequest,
+  OrchestrationUpdateWorkflowDraftPolicyRequest,
+  OrchestrationValidateWorkflowDraftRequest,
+  OrchestrationWorkflowDraftMutationResponse,
+  OrchestrationWorkflowDraftSession,
+  OrchestrationWorkflowDraftSessionQueryRequest,
   OrchestrationWorkspaceOperationRequest,
   OrchestrationWorkspaceOperationResponse,
 } from '@repo-ai-governor/orchestration-service-client';
@@ -112,6 +127,27 @@ export interface LocalOrchestrationServiceSidecarDispatchTable {
   applyProviderOnboarding(
     request: OrchestrationApplyProviderOnboardingRequest,
   ): Promise<OrchestrationApplyProviderOnboardingResponse>;
+  queryWorkflowDraftSession(
+    request?: OrchestrationWorkflowDraftSessionQueryRequest,
+  ): Promise<OrchestrationWorkflowDraftSession | undefined>;
+  startWorkflowDraft(
+    request: OrchestrationStartWorkflowDraftRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse>;
+  updateWorkflowDraftNode(
+    request: OrchestrationUpdateWorkflowDraftNodeRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse>;
+  updateWorkflowDraftEdge(
+    request: OrchestrationUpdateWorkflowDraftEdgeRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse>;
+  updateWorkflowDraftPolicy(
+    request: OrchestrationUpdateWorkflowDraftPolicyRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse>;
+  validateWorkflowDraft(
+    request: OrchestrationValidateWorkflowDraftRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse>;
+  commitWorkflowDraft(
+    request: OrchestrationCommitWorkflowDraftRequest,
+  ): Promise<OrchestrationWorkflowDraftMutationResponse>;
   runWorkspaceOperation(
     request: OrchestrationWorkspaceOperationRequest,
   ): Promise<OrchestrationWorkspaceOperationResponse>;
@@ -125,6 +161,15 @@ export interface LocalOrchestrationServiceSidecarDispatchTable {
   queryHitlInbox(
     request?: OrchestrationHitlInboxQueryRequest,
   ): Promise<OrchestrationHitlInboxQueryResponse>;
+  queryRoleLaneStatus(
+    request?: OrchestrationRoleLaneStatusQueryRequest,
+  ): Promise<OrchestrationRoleLaneStatusQueryResponse>;
+  querySessionContinuity(
+    request?: OrchestrationSessionContinuityQueryRequest,
+  ): Promise<OrchestrationSessionContinuitySnapshot | undefined>;
+  queryHitlDecisionPacket(
+    request?: OrchestrationHitlDecisionPacketQueryRequest,
+  ): Promise<OrchestrationHitlDecisionPacket | undefined>;
   queryQueueOverview(
     request?: OrchestrationQueueOverviewQueryRequest,
   ): Promise<OrchestrationQueueOverviewQueryResponse>;
