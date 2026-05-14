@@ -107,6 +107,8 @@ pnpm exec repo-ai-governor check --output json
 
 如果你是有意要走 repo-local 的 self-host 模板路径（`self-host-complete + repo_local`），请直接看 playbook，不要自己拼命令链：`docs/local-adoption-playbook.zh-CN.md`。
 
+对这条 self-host 路径，要把 `adopt bootstrap -> connect -> connect apply --latest -> adopt verify -> doctor --adapters -> run --dry-run --trace` 当成严格串行步骤。不要让 `connect`、`connect apply --latest`、`adopt verify` 并发执行，因为 `adopt verify` 是 canonical readiness readback，并发时可能会读到 apply 之前的旧 summary，而不是已经生效的 adapter-connected 基线。
+
 ## 第一条受治理工作流
 
 仓库 bootstrap 之后，最短的一条端到端治理路径是：
@@ -132,7 +134,9 @@ pnpm exec repo-ai-governor review-verify --output json
 6. `run --dry-run --trace` 是真实执行前最低风险的证明方式。
 7. `review` 和 `review-verify` 会把正式的评审闭环补齐。
 
-对于 repo-local self-host 模板，不能只停在 `connect`。真实的 operator 路径是 `connect` -> `connect apply --latest` -> `adopt verify`，因为 applied connect receipt 和刷新后的 verify summary 才是 self-host readiness 进入 adapter-connected 基线的 canonical 证据。
+对于 repo-local self-host 模板，不能只停在 `connect`。真实的 operator 路径是 `adopt bootstrap -> connect -> connect apply --latest -> adopt verify -> doctor --adapters -> run --dry-run --trace`，并且必须保持串行。applied connect receipt 和刷新后的 verify summary 才是 self-host readiness 进入 adapter-connected 基线的 canonical 证据。
+
+`run --dry-run --trace` 只证明“诊断型 dry-run 被允许执行”。它即使成功，也不等于 `execution_ready=completed`；如果目标还是一个没有真实 `project/sprint/task` authoring 的 template repo，那么这一步仍然只是在证明 install/connect truth，而不是已经进入真实 delivery path。
 
 如果第一次 `run --dry-run --trace` 仍然停在 `lockfile_delta` 之类的 policy/HITL confirm，不要把它误判为 bootstrap 失败。当前 runtime 在没有提供确认 payload 时，可能会表现为 `POLICY_GATE_HITL_FEEDBACK_INVALID`，这属于执行策略闸口，而不是安装/接线失败。
 

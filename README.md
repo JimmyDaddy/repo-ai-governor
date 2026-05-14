@@ -107,6 +107,8 @@ What each step is doing:
 
 If you intentionally need a repo-local self-host template (`self-host-complete + repo_local`), use the playbook instead of inventing your own path: `docs/local-adoption-playbook.md`.
 
+For that self-host path, keep `adopt bootstrap -> connect -> connect apply --latest -> adopt verify -> doctor --adapters -> run --dry-run --trace` strictly serial. Do not overlap `connect`, `connect apply --latest`, or `adopt verify`, because `adopt verify` is the canonical readiness readback and concurrent runs can report the pre-apply summary instead of the active adapter-connected baseline.
+
 ## First Governed Workflow
 
 Once the repository is bootstrapped, this is the shortest end-to-end governed flow:
@@ -132,7 +134,9 @@ Why this order works:
 6. `run --dry-run --trace` is the lowest-risk proof before a real run.
 7. `review` and `review-verify` close the loop with a formal review lifecycle.
 
-For repo-local self-host templates, do not stop at `connect` alone. The real operator path is `connect` -> `connect apply --latest` -> `adopt verify`, because the applied connect receipt plus the refreshed verify summary are what move the self-host readiness chain to an adapter-connected baseline.
+For repo-local self-host templates, do not stop at `connect` alone. The real operator path is `adopt bootstrap -> connect -> connect apply --latest -> adopt verify -> doctor --adapters -> run --dry-run --trace`, and it must stay serial. The applied connect receipt plus the refreshed verify summary are what move the self-host readiness chain to an adapter-connected baseline.
+
+`run --dry-run --trace` only proves that a diagnostic dry-run was allowed. A successful dry-run does not mean `execution_ready=completed`, and a template repo without real `project/sprint/task` authoring still only proves install/connect truth rather than a real delivery path.
 
 If the first `run --dry-run --trace` still stops at a policy/HITL confirm such as `lockfile_delta`, treat that as an execution-policy checkpoint rather than a bootstrap failure. In the current runtime this can surface as `POLICY_GATE_HITL_FEEDBACK_INVALID` when no confirmation payload is provided.
 
