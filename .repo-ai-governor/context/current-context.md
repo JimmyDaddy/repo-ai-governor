@@ -2,23 +2,25 @@
 
 ## Primary Stream
 
-- Status: active
-- Stream: `stream-project-123-sprint-004`
-- Project: `project-123-empty-repo-self-host-adoption-rollout`
-- Sprint: `sprint-004-clean-room-evidence-and-docs-truthfulness`
-- Docs: `.repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout`
-- Plan: `.repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/sprint-004-clean-room-evidence-and-docs-truthfulness/plan.md`
-- Tasks: `.repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/sprint-004-clean-room-evidence-and-docs-truthfulness/tasks/`
-- Checklist: `.repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/sprint-004-clean-room-evidence-and-docs-truthfulness/tasks/checklist.md`
-- CSV: `.repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/sprint-004-clean-room-evidence-and-docs-truthfulness/tasks/tasks.csv`
-- Review: `.repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/sprint-004-clean-room-evidence-and-docs-truthfulness/review/`
-- Note: `2026-05-14` sprint-003 已完成 fresh reviewer clean closeout；当前切换到 sprint-004 clean-room evidence 与 docs truthfulness boundary，`deepseekian` rehearsal 作为下一条主执行面。
+- Status: idle
+- Stream: `none`
+- Project: `none`
+- Sprint: `none`
+- Docs: `none`
+- Plan: `none`
+- Tasks: `none`
+- Checklist: `none`
+- CSV: `none`
+- Review: `none`
+- Note: `2026-05-14` project-123 final closeout 已完成，`CR-003` clean 收口后工作区已恢复到 idle，等待下一条执行流激活。
 
 ## Active Streams
 
-- `primary`: project=`project-123-empty-repo-self-host-adoption-rollout`, sprint=`sprint-004-clean-room-evidence-and-docs-truthfulness`, docs=`.repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout`, plan=`.repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/sprint-004-clean-room-evidence-and-docs-truthfulness/plan.md`, tasks=`.repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/sprint-004-clean-room-evidence-and-docs-truthfulness/tasks/`, checklist=`.repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/sprint-004-clean-room-evidence-and-docs-truthfulness/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/sprint-004-clean-room-evidence-and-docs-truthfulness/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/sprint-004-clean-room-evidence-and-docs-truthfulness/review/`, status=`active`
+- None currently.
 
 ## Planned Follow-Up Streams
+
+- None currently.
 
 ## Completed Stream History
 

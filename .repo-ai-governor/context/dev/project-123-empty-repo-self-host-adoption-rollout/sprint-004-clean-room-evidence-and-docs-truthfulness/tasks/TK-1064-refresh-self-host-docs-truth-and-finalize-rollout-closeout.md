@@ -1,6 +1,6 @@
 # TK-1064 refresh self-host docs truth and finalize rollout closeout
 
-- Status: active
+- Status: completed
 - Date: 2026-05-13
 - Owner: AI-Agent
 - Priority: P0
@@ -64,6 +64,7 @@
 4. 2026-05-14：下一步将先写入 sprint-004 exit acceptance packet、串行 canonical ledger sync 与 boundary gate，再进入 sprint-004 fresh reviewer loop。
 5. 2026-05-14：project-final fresh reviewer clean 后，本任务将负责 completion audit summary、`DA-1065` final closeout artifact、delivery registry completed truth 与 `current-context` idle 恢复，并最终切换为 `completed`。
 6. 2026-05-14：`DA-1064` 已固定 sprint-004 exit acceptance 与 project-final review handoff，latest fresh reviewer clean `CR-002` 也已确认当前 boundary 无新增 actionable finding；同窗口 `pnpm run build`、`pnpm run check` 与 ledger/status gates 已通过，当前仅保留 project-final delegated CR loop 与 final closeout write-back。
+7. 2026-05-14：`CR-003` project-final round 已 clean `resolved`，当前已完成 completion audit、`DA-1065`、delivery registry completed write-back、`current-context` idle 恢复与 completed-stream history 迁移；`project-123` 现进入最终 completed truth。
 
 ## 10. 产出
 

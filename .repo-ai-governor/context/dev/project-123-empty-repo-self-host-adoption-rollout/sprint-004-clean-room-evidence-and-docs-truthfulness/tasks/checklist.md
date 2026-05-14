@@ -6,13 +6,14 @@
   - 2026-05-14：在 `/Users/jimmydaddy/study/deepseekian` 上完成 fresh clean-room rehearsal，并复现出 self-host starter `tasks.csv` 已播种但 canonical `task-ledger.sqlite` 为空的回归。
   - 2026-05-14：已在 `apps/cli/src/runtime/adoption-pack-runtime.ts` 中修复 task-ledger canonical seed 缺口，并在 `apps/cli/test/adopt-command.integration.test.ts` 中补齐 regression assertion；重演后 `doctor --adapters` 已恢复 `task_ledger_canonical_truth=pass`，`run --dry-run --trace` 也已能够推进到 policy gate。
   - 2026-05-14：已写入 `DA-1063` clean-room evidence artifact，并将真实 self-host operator path 固定为 `adopt bootstrap -> connect -> connect apply --latest -> adopt verify -> doctor --adapters -> run --dry-run --trace`。
-- [ ] TK-1064 refresh self-host docs truth and finalize rollout closeout
+- [x] TK-1064 refresh self-host docs truth and finalize rollout closeout
   - 2026-05-13：任务创建，状态初始化为 `planned`。
   - 2026-05-14：任务启动，开始基于 `DA-1063` clean-room evidence 对齐 README、playbook 与 support matrix 中的 self-host operator path truth。
   - 2026-05-14：已完成第一轮 public docs truth sync，当前文档已明确要求 `connect apply --latest` 与 connect 后续 `adopt verify`，并把 `run --dry-run --trace` 的 `lockfile_delta` / `POLICY_GATE_HITL_FEEDBACK_INVALID` 定位为 execution-policy checkpoint，而非 bootstrap failure。
   - 2026-05-14：下一步将先写入 sprint-004 exit acceptance packet、串行 canonical ledger sync 与 boundary gate，再进入 sprint-004 fresh reviewer loop。
   - 2026-05-14：project-final fresh reviewer clean 后，本任务将负责 completion audit summary、`DA-1065` final closeout artifact、delivery registry completed truth 与 `current-context` idle 恢复，并最终切换为 `completed`。
   - 2026-05-14：`DA-1064` 已固定 sprint-004 exit acceptance 与 project-final review handoff，latest fresh reviewer clean `CR-002` 也已确认当前 boundary 无新增 actionable finding；同窗口 `pnpm run build`、`pnpm run check` 与 ledger/status gates 已通过，当前仅保留 project-final delegated CR loop 与 final closeout write-back。
+  - 2026-05-14：`CR-003` project-final round 已 clean `resolved`，当前已完成 completion audit、`DA-1065`、delivery registry completed write-back、`current-context` idle 恢复与 completed-stream history 迁移；`project-123` 现进入最终 completed truth。
 - [x] CR-001 sprint-004-clean-room-evidence-and-docs-truthfulness delegated review loop round 1
   - 2026-05-14：任务创建，状态初始化为 `review_pending`。
   - 2026-05-14：fresh reviewer round 1 返回 2 条 actionable finding：delivery registry 仍指向 `DA-1062` 旧 handoff，以及 `TK-1063` latest completed CSV row 仍保留 pre-completion placeholder evidence。
@@ -22,3 +23,7 @@
   - 2026-05-14：任务创建，状态初始化为 `review_pending`。
   - 2026-05-14：fresh reviewer round 2 作为 post-fix recheck 返回 clean verdict，未发现新的 actionable finding。
   - 2026-05-14：当前 round-2 review artifact 直接收口为 `resolved`，作为 sprint-004 closeout 前的 latest fresh reviewer clean evidence；下一边界切换到 `project-123` project-final delegated CR loop。
+- [x] CR-003 project-123-empty-repo-self-host-adoption-rollout final delegated review loop round 3
+  - 2026-05-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-05-14：project-final fresh reviewer round 3 返回 clean verdict，未发现新的 actionable finding。
+  - 2026-05-14：当前 round-3 review artifact 已直接收口为 `resolved`；`project-123` 已满足最终 closeout 写回前置门槛。

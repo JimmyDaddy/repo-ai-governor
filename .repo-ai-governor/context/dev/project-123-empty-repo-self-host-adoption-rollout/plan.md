@@ -1,6 +1,6 @@
 # project-123-empty-repo-self-host-adoption-rollout 计划
 
-- Status: in_progress
+- Status: completed
 - Date: 2026-05-13
 - Stage Mapping: technical solution rollout
 - Phase Mapping: bootstrap transaction and self-host baseline / ownership and generated-artifact policy / activation and readiness UX / clean-room evidence and docs truthfulness
@@ -60,7 +60,7 @@
 | TK-1061 | sprint-003-activation-and-readiness-ux | align doctor and check additive readiness diagnostics and next actions | doctor/check-diagnostics | implement canonical self-host activation phase and verification summary | completed |
 | TK-1062 | sprint-003-activation-and-readiness-ux | close sprint-003 and hand off clean-room truthfulness follow-through | governance/handoff | align doctor and check additive readiness diagnostics and next actions | completed |
 | TK-1063 | sprint-004-clean-room-evidence-and-docs-truthfulness | run empty-repo self-host clean-room rehearsal and capture rollout evidence | clean-room/evidence | close sprint-003 and hand off clean-room truthfulness follow-through | completed |
-| TK-1064 | sprint-004-clean-room-evidence-and-docs-truthfulness | refresh self-host docs truth and finalize rollout closeout | docs/closeout | run empty-repo self-host clean-room rehearsal and capture rollout evidence | active |
+| TK-1064 | sprint-004-clean-room-evidence-and-docs-truthfulness | refresh self-host docs truth and finalize rollout closeout | docs/closeout | run empty-repo self-host clean-room rehearsal and capture rollout evidence | completed |
 
 ## 4. 依赖产物策略
 
@@ -71,10 +71,10 @@
 
 ## 5. DoD（project-123-empty-repo-self-host-adoption-rollout）
 
-1. 4 个 sprint 的 plan、task cards、checklist、tasks.csv 与 review scaffold 已标准化落盘。
+1. 4 个 sprint 的 plan、task cards、checklist、tasks.csv 与 review scaffold 已标准化落盘，并全部收口到 completed truth。
 2. 任务编号、目录结构与命名规则符合 AGENTS 与 governance template 约束。
 3. 各 sprint 的 task card `Required Inputs` 已收敛到首跳 handoff + 当前 sprint context + 直接 formal truth，不再把大批历史资料塞入默认执行输入面。
-4. 在正式激活前已有明确的 task-ledger canonicalization 路径，且只需要按顺序激活执行面。
+4. clean-room runtime repair、ownership/drift semantics、activation/readiness owner split 与 public docs truthfulness 已全部完成并具备 completion-audit / delivery-registry / idle-context 证据链。
 
 ## 6. 里程碑记录
 
@@ -84,7 +84,8 @@
 4. 2026-05-14：按 `workspace-scoped-cr-loop` 完成 sprint-002 ownership/drift semantics 的 fresh CR clean closeout，`TK-1059 / DA-1059` 已将 primary execution surface 切换到 `sprint-003`，`sprint-004` 继续保持 planned follow-up。
 5. 2026-05-14：sprint-003 的 `TK-1060 / TK-1061` 已完成并收口首轮 delegated CR 修复；随后 `CR-002 ~ CR-004` 继续完成 self-host readiness 与 `check` locale-aware output clean recheck，`DA-1062` 已将 primary execution surface 切换到 sprint-004 clean-room evidence boundary。
 6. 2026-05-14：sprint-004 的 clean-room evidence、public docs truth sync 与 sprint-level fresh reviewer loop 已达到 clean closeout-ready state，`DA-1064` 已将 project-123 固定到 project-final delegated CR boundary；下一步只允许在 latest fresh project-final reviewer round clean 后执行 `DA-1065`、completion audit 与 final project closeout。
+7. 2026-05-14：`CR-003` project-final round clean `resolved` 后，`TK-1064 / DA-1065` 已完成 completion audit、delivery registry completed truth、completed-stream history 迁移与 idle-context 恢复；`project-123` 现已正式进入 `completed`。
 
 ## 7. 里程碑记录入口
 
-1. 待 closeout 后补齐 completion audit summary。
+1. [project-123-empty-repo-self-host-adoption-rollout-completion-audit-summary.md](./project-123-empty-repo-self-host-adoption-rollout-completion-audit-summary.md)
