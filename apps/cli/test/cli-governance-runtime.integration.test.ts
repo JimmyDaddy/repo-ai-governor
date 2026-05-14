@@ -710,6 +710,119 @@ async function writeTaskCardFixture(workspaceRoot: string, taskId: string): Prom
   return taskCardPath;
 }
 
+async function writeSelfHostBlockedVerificationFixture(
+  workspaceRoot: string,
+  options: {
+    omitExecutionPreflightFields?: boolean;
+  } = {},
+): Promise<string> {
+  const installationRoot = resolve(
+    workspaceRoot,
+    'adoption',
+    'installations',
+    'repo-ai-governor-adoption-pack',
+  );
+  await mkdir(installationRoot, { recursive: true });
+  const verificationSummaryPath = resolve(installationRoot, 'adoption-verification.summary.json');
+  const receiptPath = resolve(installationRoot, 'adoption-install.receipt.json');
+  const verifiedAt = '2026-05-14T12:00:00.000Z';
+  const verificationSummary: Record<string, unknown> = {
+    schemaVersion: 'adoption-pack-verification-summary-v1',
+    status: 'warn',
+    verifiedAt,
+    verificationSummaryPath,
+    receiptPath,
+    checks: [
+      {
+        checkId: 'self-host-execution-preflight',
+        status: 'warn',
+        detail:
+          'Execution preflight is blocked; execution_preflight_signal=blocked enforcement=downstream_fail_closed blocked_groups=authoring_started,execution_ready placeholder_paths=.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md reflected_from=adopt_verify current_phase=authoring_started.',
+      },
+    ],
+    driftDetected: false,
+    activationPhase: 'authoring_started',
+    activationPhaseStatus: 'in_progress',
+    activationPhaseRecords: [
+      {
+        phaseId: 'authoring_started',
+        status: 'in_progress',
+        blockingReasons: ['placeholder_paths_unresolved'],
+        placeholderPaths: [
+          '.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md',
+        ],
+        nextActions: [
+          'Finish authoring the repo-local self-host starter surfaces before unattended execution. Start with `.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md`.',
+        ],
+      },
+      {
+        phaseId: 'adapter_connected',
+        status: 'completed',
+        blockingReasons: [],
+        placeholderPaths: [],
+        nextActions: [],
+      },
+      {
+        phaseId: 'execution_ready',
+        status: 'blocked',
+        blockingReasons: ['placeholder_paths_unresolved'],
+        placeholderPaths: [
+          '.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md',
+        ],
+        nextActions: [
+          'Finish authoring the repo-local self-host starter surfaces before unattended execution. Start with `.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md`.',
+          'Re-run `repo-ai-governor adopt verify --repo .` after authoring or connect changes; that summary is the canonical readiness verdict.',
+          'While self-host execution preflight is blocked, use `repo-ai-governor doctor --adapters` only for additive diagnostics and keep `repo-ai-governor run --dry-run --trace` as the only allowed diagnostic run.',
+        ],
+      },
+    ],
+    operatorNextActions: [
+      'Finish authoring the repo-local self-host starter surfaces before unattended execution. Start with `.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md`.',
+      'Re-run `repo-ai-governor adopt verify --repo .` after authoring or connect changes; that summary is the canonical readiness verdict.',
+      'Use `repo-ai-governor doctor --adapters` only for additive diagnostics. While preflight is blocked, keep `repo-ai-governor run --dry-run --trace` as the only allowed diagnostic run.',
+    ],
+  };
+  if (!options.omitExecutionPreflightFields) {
+    verificationSummary.executionPreflightSignal = 'blocked';
+    verificationSummary.executionPreflightBlockedGroups = ['authoring_started', 'execution_ready'];
+    verificationSummary.executionPreflightPlaceholderPaths = [
+      '.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md',
+    ];
+  }
+  const receipt = {
+    schemaVersion: 'adoption-pack-install-receipt-v1',
+    installationId: 'self-host-installation-1',
+    packId: 'repo-ai-governor-adoption-pack',
+    packVersion: '0.0.0-test',
+    appliedProfileId: 'self-host-complete',
+    workspaceMode: WorkspaceMode.REPO_LOCAL,
+    managedFileRecords: [],
+    sourceResolution: {
+      sourceKind: 'built_in',
+      sourceRef: 'repo-ai-governor-adoption-pack',
+      canonicalSourceRefs: ['repo-ai-governor-adoption-pack'],
+      sourcePackRefs: ['repo-ai-governor-adoption-pack'],
+      resolutionOrder: ['built_in'],
+    },
+    verificationSummary,
+    installedAt: verifiedAt,
+    lastUpdatedAt: verifiedAt,
+    receiptPath,
+    targetRepoRoot: resolve(workspaceRoot, '..'),
+    hostTargets: ['codex.project_local'],
+    hostTarget: 'codex.project_local',
+    hostManifestPaths: [],
+    hostApplyReportPaths: [],
+  };
+  await writeFile(
+    verificationSummaryPath,
+    `${JSON.stringify(verificationSummary, null, 2)}\n`,
+    'utf8',
+  );
+  await writeFile(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`, 'utf8');
+  return verificationSummaryPath;
+}
+
 /**
  * Writes one canonical delivery task card fixture used by controlled delivery rehearsal integration tests.
  * @param workspaceRoot Workspace root under temporary fixture.
@@ -2183,6 +2296,239 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
           dryRun: true,
           trace: true,
           replayPath: null,
+        },
+      },
+    );
+  });
+
+  it('keeps baseline dry-run available as a diagnostic exception when canonical self-host preflight is blocked', async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        await writeSelfHostBlockedVerificationFixture(fixture.workspaceRoot);
+        const runtimeWithOverrides = fixture.runtime as unknown as {
+          collectGitChangedPaths: () => Promise<string[]>;
+        };
+        runtimeWithOverrides.collectGitChangedPaths = async () => [];
+
+        const executionResult = await fixture.runtime.execute(CliCommandName.RUN);
+
+        expect(executionResult.commandResult.operation).toBe('governance_run');
+        expect(executionResult.commandResult.details?.assembly_mode).toBe('baseline');
+        expect(executionResult.commandResult.details?.dry_run).toBe(true);
+        expect(executionResult.commandResult.details?.self_host_preflight_signal).toBe('blocked');
+        expect(executionResult.commandResult.details?.self_host_preflight_allowance).toBe(
+          'diagnostic_dry_run',
+        );
+        expect(
+          executionResult.commandResult.checks?.find(
+            (check) => check.id === 'self_host_run_preflight',
+          ),
+        ).toMatchObject({
+          status: 'warn',
+        });
+        expect(
+          executionResult.commandResult.checks?.find(
+            (check) => check.id === 'self_host_run_preflight',
+          )?.detail,
+        ).toContain('allowance=diagnostic_dry_run');
+        expect(
+          executionResult.commandResult.artifacts?.some(
+            (artifact) => artifact.id === 'self_host_verification_summary',
+          ),
+        ).toBe(true);
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: true,
+          trace: true,
+          replayPath: null,
+        },
+      },
+    );
+  });
+
+  it('keeps the diagnostic dry-run contract for legacy self-host verification summaries without execution preflight fields', async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        await writeSelfHostBlockedVerificationFixture(fixture.workspaceRoot, {
+          omitExecutionPreflightFields: true,
+        });
+        const runtimeWithOverrides = fixture.runtime as unknown as {
+          collectGitChangedPaths: () => Promise<string[]>;
+        };
+        runtimeWithOverrides.collectGitChangedPaths = async () => [];
+
+        const diagnosticResult = await fixture.runtime.execute(CliCommandName.RUN);
+
+        expect(diagnosticResult.commandResult.details?.self_host_preflight_signal).toBe('blocked');
+        expect(diagnosticResult.commandResult.details?.self_host_preflight_allowance).toBe(
+          'diagnostic_dry_run',
+        );
+        expect(
+          diagnosticResult.commandResult.checks?.find(
+            (check) => check.id === 'self_host_run_preflight',
+          )?.detail,
+        ).toContain('blocked_groups=authoring_started|execution_ready');
+        expect(
+          diagnosticResult.commandResult.checks?.find(
+            (check) => check.id === 'self_host_run_preflight',
+          )?.detail,
+        ).toContain(
+          'placeholder_paths=.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md',
+        );
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: true,
+          trace: true,
+          replayPath: null,
+        },
+      },
+    );
+  });
+
+  it('fails closed for legacy self-host verification summaries without execution preflight fields when baseline dry-run omits trace', async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        await writeSelfHostBlockedVerificationFixture(fixture.workspaceRoot, {
+          omitExecutionPreflightFields: true,
+        });
+        const runtimeWithOverrides = fixture.runtime as unknown as {
+          collectGitChangedPaths: () => Promise<string[]>;
+        };
+        runtimeWithOverrides.collectGitChangedPaths = async () => [];
+
+        const runtimeError = await fixture.runtime
+          .execute(CliCommandName.RUN)
+          .then(() => null)
+          .catch((error: RuntimeError) => error);
+
+        expect(runtimeError).toMatchObject({
+          code: GovernorErrorCode.PROCESS_RUNTIME_EXECUTION_PREFLIGHT_BLOCKED,
+          details: {
+            selfHostActivationPhase: 'authoring_started',
+            selfHostBlockedGroups: 'authoring_started|execution_ready',
+            pendingStatus: ExecutionProgressStage.POLICY_WAITING,
+          },
+        });
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: true,
+          trace: false,
+          replayPath: null,
+        },
+      },
+    );
+  });
+
+  it('fails closed for task-driven run when legacy self-host verification summaries omit execution preflight fields', async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        await writeTaskCardFixture(fixture.workspaceRoot, 'TK-099');
+        await writeSelfHostBlockedVerificationFixture(fixture.workspaceRoot, {
+          omitExecutionPreflightFields: true,
+        });
+        const runtimeWithOverrides = fixture.runtime as unknown as {
+          collectGitChangedPaths: () => Promise<string[]>;
+        };
+        runtimeWithOverrides.collectGitChangedPaths = async () => [];
+
+        const runtimeError = await fixture.runtime
+          .execute(CliCommandName.RUN)
+          .then(() => null)
+          .catch((error: RuntimeError) => error);
+
+        expect(runtimeError).toMatchObject({
+          code: GovernorErrorCode.PROCESS_RUNTIME_EXECUTION_PREFLIGHT_BLOCKED,
+          details: {
+            selfHostActivationPhase: 'authoring_started',
+            selfHostBlockedGroups: 'authoring_started|execution_ready',
+            pendingStatus: ExecutionProgressStage.POLICY_WAITING,
+          },
+        });
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          taskId: 'TK-099',
+        },
+      },
+    );
+  });
+
+  it('fails closed for baseline dry-run without trace when canonical self-host preflight is blocked', async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        await writeSelfHostBlockedVerificationFixture(fixture.workspaceRoot);
+        const runtimeWithOverrides = fixture.runtime as unknown as {
+          collectGitChangedPaths: () => Promise<string[]>;
+        };
+        runtimeWithOverrides.collectGitChangedPaths = async () => [];
+
+        const runtimeError = await fixture.runtime
+          .execute(CliCommandName.RUN)
+          .then(() => null)
+          .catch((error: RuntimeError) => error);
+
+        expect(runtimeError).toMatchObject({
+          code: GovernorErrorCode.PROCESS_RUNTIME_EXECUTION_PREFLIGHT_BLOCKED,
+          details: {
+            selfHostActivationPhase: 'authoring_started',
+            selfHostBlockedGroups: 'authoring_started|execution_ready',
+            pendingStatus: ExecutionProgressStage.POLICY_WAITING,
+          },
+        });
+        expect(runtimeError?.details?.verificationSummaryPath).toContain(
+          'adoption-verification.summary.json',
+        );
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: true,
+          trace: false,
+          replayPath: null,
+        },
+      },
+    );
+  });
+
+  it('fails closed for task-driven run when canonical self-host preflight is blocked', async () => {
+    await withRuntimeFixture(
+      async (fixture) => {
+        await writeTaskCardFixture(fixture.workspaceRoot, 'TK-099');
+        await writeSelfHostBlockedVerificationFixture(fixture.workspaceRoot);
+        const runtimeWithOverrides = fixture.runtime as unknown as {
+          collectGitChangedPaths: () => Promise<string[]>;
+        };
+        runtimeWithOverrides.collectGitChangedPaths = async () => [];
+
+        const runtimeError = await fixture.runtime
+          .execute(CliCommandName.RUN)
+          .then(() => null)
+          .catch((error: RuntimeError) => error);
+
+        expect(runtimeError).toMatchObject({
+          code: GovernorErrorCode.PROCESS_RUNTIME_EXECUTION_PREFLIGHT_BLOCKED,
+          details: {
+            selfHostActivationPhase: 'authoring_started',
+            selfHostBlockedGroups: 'authoring_started|execution_ready',
+            pendingStatus: ExecutionProgressStage.POLICY_WAITING,
+          },
+        });
+        expect(runtimeError?.message).toContain('Self-host execution preflight is still blocked');
+        expect(runtimeError?.details?.verificationSummaryPath).toContain(
+          'adoption-verification.summary.json',
+        );
+      },
+      {
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: false,
+          replayPath: null,
+          taskId: 'TK-099',
         },
       },
     );

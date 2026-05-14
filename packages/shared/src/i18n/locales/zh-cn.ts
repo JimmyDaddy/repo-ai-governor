@@ -567,6 +567,8 @@ export const ZH_CN_TRANSLATIONS = {
         commandErrorNextAction: '下一步：{{nextAction}}',
         commandErrorNextActionCheckCommandUsage: '检查命令用法与必填参数。',
         commandErrorNextActionInspectGovernorConfig: '检查当前活动 governor 配置。',
+        commandErrorNextActionInspectSelfHostReadiness:
+          '检查最新 self-host adopt verify 摘要，并按其中记录的 next actions 继续处理。',
         commandErrorNextActionInspectPolicyDiagnostics: '检查 policy diagnostics 与阻塞决策详情。',
         commandErrorNextActionCheckReplaySource: '检查 replay 来源与引用产物路径是否有效。',
         commandErrorNextActionRetryWithVerbose: '开启 verbose 诊断后重试该命令。',

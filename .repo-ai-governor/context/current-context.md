@@ -12,7 +12,7 @@
 - Checklist: `none`
 - CSV: `none`
 - Review: `none`
-- Note: `2026-05-14` project-123 final closeout 已完成，`CR-003` clean 收口后工作区已恢复到 idle，等待下一条执行流激活。
+- Note: `2026-05-14` project-124 final closeout 已完成，`CR-006` clean 收口后工作区已恢复到 idle，等待下一条执行流激活。
 
 ## Active Streams
 

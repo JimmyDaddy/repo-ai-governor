@@ -639,6 +639,8 @@ export const EN_US_TRANSLATIONS = {
         commandErrorNextAction: 'Next step: {{nextAction}}',
         commandErrorNextActionCheckCommandUsage: 'Check the command usage and required flags.',
         commandErrorNextActionInspectGovernorConfig: 'Inspect the active governor config.',
+        commandErrorNextActionInspectSelfHostReadiness:
+          'Inspect the latest self-host adopt verify summary and follow its recorded next actions.',
         commandErrorNextActionInspectPolicyDiagnostics:
           'Inspect the policy diagnostics and blocked decision details.',
         commandErrorNextActionCheckReplaySource:

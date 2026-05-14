@@ -129,6 +129,15 @@ pnpm exec repo-ai-governor run --output json --dry-run --trace
 
 这条路径只会 seed 空白或模板化的治理 surface，不会复制本仓库的 live execution state。
 
+对 self-host，可以先记住这张更短的职责表：
+
+1. `adopt bootstrap` 负责播种 repo-local 模板面。
+2. `connect` 只写一份可审阅的 candidate。
+3. `connect apply --latest` 才会激活已审阅的 adapter 基线。
+4. `adopt verify` 负责刷新 canonical readiness verdict。
+5. `doctor --adapters` 只补充诊断，不替代 readiness verdict。
+6. 当 self-host preflight 仍处于 blocked 时，`run --dry-run --trace` 是唯一建议的首个诊断运行。
+
 对 self-host 来说，`connect` 本身还不够。必须先 apply 这份 reviewed candidate，然后重新执行 `adopt verify`，让 canonical activation/readiness truth 反映新的 adapter-connected 基线。
 
 对 self-host 验证结果要保守解读：
@@ -138,6 +147,40 @@ pnpm exec repo-ai-governor run --output json --dry-run --trace
 3. `adopt verify` 现在会对未触碰的 self-host starter placeholder 暴露 `execution_preflight_signal=blocked` warning；在无人值守的 self-host 执行前，应把它视为硬阻断，因为当前公开契约还没有单独的自动 preflight 命令。
 4. 在执行 `connect apply --latest` 之后，要重新运行 `adopt verify --repo .`；这份刷新后的 summary 才是 adapter 变更后的 canonical activation/readiness truth。
 5. 当仓库开始编写自己的 repo-local surface 之后，应继续把 `check` 当成显式的更广治理审计，而不是用 `adopt verify` 代替完整 workspace readiness。
+
+当 self-host 的 `adopt verify` 返回 `warn` 时，建议按这个顺序读：
+
+1. 先完成 starter authoring。顶层 `operatorNextActions` 负责给短路径，`activationPhaseRecords[].placeholderPaths` 负责给完整文件清单。
+2. 如果已经跑过 `connect`，再确认是否也执行了 `connect apply --latest`。
+3. 在 authoring 或 connect 变更后，重新执行 `adopt verify --repo .`。
+4. 把 `doctor --adapters` 继续视为增量诊断，而不是另一份 readiness verdict。
+5. 如果在 authoring 完成前还需要一次 run-stage 探测，只使用 `run --dry-run --trace`。
+
+## 3.1 Clean-Room 重演时哪些该删、哪些该留、哪些可忽略
+
+如果你想在接近空仓的目标仓库里重演 self-host 路径，只清理 adoption-managed 与 runtime-generated surfaces，不要把用户仓库本身一起抹掉。
+
+建议清理的范围：
+
+1. 删除 `.repo-ai-governor/`
+2. 删除通过 adoption/bootstrap 生成的 `.agents/`、`.claude/`、`.mcp.json` 与 `AGENTS.md`
+3. 删除上一轮演练留下的 diagnostics、reports、replay 产物与 sqlite sidecars
+
+建议保留的范围：
+
+1. 保留 `.git/`
+2. 保留 `package.json` 与 `pnpm-lock.yaml`
+3. 如果想加快本地重演，可以保留 `node_modules/`
+4. 保留 adoption managed paths 之外的所有用户资产
+
+建议作为 self-host 仓库 opt-in ignore 候选的范围：
+
+1. `.repo-ai-governor/context/diagnostics/**`
+2. `.repo-ai-governor/context/reports/**`
+3. `.repo-ai-governor/context/replay/**`
+4. `*.sqlite-wal` 与 `*.sqlite-shm` 这类 sqlite sidecars
+
+这些 ignore 项保持 opt-in 即可。它们是生成产物，但不同 self-host 仓库对 audit retention 的要求可能不一样。
 
 ## 4. 先接工具，再去执行
 

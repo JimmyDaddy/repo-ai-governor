@@ -32,6 +32,7 @@ export enum CliOutputStatus {
 export enum CliNextAction {
   CHECK_COMMAND_USAGE = 'check_command_usage',
   INSPECT_GOVERNOR_CONFIG = 'inspect_governor_config',
+  INSPECT_SELF_HOST_READINESS = 'inspect_self_host_readiness',
   INSPECT_POLICY_DIAGNOSTICS = 'inspect_policy_diagnostics',
   CHECK_REPLAY_SOURCE = 'check_replay_source',
   RETRY_WITH_VERBOSE = 'retry_with_verbose',

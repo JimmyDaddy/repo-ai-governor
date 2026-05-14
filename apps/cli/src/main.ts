@@ -3069,6 +3069,16 @@ function resolveErrorGuidance(
     };
   }
 
+  if (code === GovernorErrorCode.PROCESS_RUNTIME_EXECUTION_PREFLIGHT_BLOCKED) {
+    return {
+      hint: localizeText(
+        'Self-host execution readiness is still blocked by the canonical adopt verify summary.',
+        'canonical adopt verify 摘要显示 self-host execution readiness 仍被阻塞。',
+      ),
+      nextAction: CliNextAction.INSPECT_SELF_HOST_READINESS,
+    };
+  }
+
   if (
     code === GovernorErrorCode.POLICY_GATE_EVALUATION_FAILED ||
     code === GovernorErrorCode.POLICY_GATE_HITL_FEEDBACK_INVALID

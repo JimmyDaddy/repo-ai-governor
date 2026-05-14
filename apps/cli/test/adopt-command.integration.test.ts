@@ -1600,6 +1600,25 @@ describe('adopt command integration', () => {
           action.includes('connect apply --latest'),
         ),
       ).toBe(true);
+      expect(verificationSummary.operatorNextActions?.[0]).toContain(
+        'repo-local self-host starter surfaces',
+      );
+      expect(verificationSummary.operatorNextActions?.[0]).toContain(
+        '.repo-ai-governor/context/dev/project-template/plan.md',
+      );
+      expect(verificationSummary.operatorNextActions?.[0]).toContain(
+        'activationPhaseRecords[].placeholderPaths',
+      );
+      expect(
+        verificationSummary.operatorNextActions?.some((action) =>
+          action.includes('canonical readiness verdict'),
+        ),
+      ).toBe(true);
+      expect(
+        verificationSummary.operatorNextActions?.some((action) =>
+          action.includes('run --dry-run --trace'),
+        ),
+      ).toBe(true);
 
       const doctorIo = createBufferedIo(repositoryRoot);
       const doctorExitCode = await runCli(
@@ -1657,6 +1676,12 @@ describe('adopt command integration', () => {
         status: 'warn',
       });
       expect(doctorExecutionPreflightCheck?.detail).toContain('reflected_from=adopt_verify');
+      expect(doctorExecutionPreflightCheck?.detail).toContain('blocked_groups=');
+      expect(doctorExecutionPreflightCheck?.detail).toContain('authoring_started');
+      expect(doctorExecutionPreflightCheck?.detail).toContain('execution_ready');
+      expect(doctorExecutionPreflightCheck?.detail).toContain(
+        'placeholder_paths=.repo-ai-governor/context/completed-streams-history.md',
+      );
       expect(
         doctorDiagnosticsPayload.checks?.some(
           (check) =>

@@ -110,6 +110,23 @@ interface SelfHostReadinessEvaluation {
   operatorNextActions: string[];
   doctorChecks: AdoptionPackVerificationCheck[];
   verifyChecks: AdoptionPackVerificationCheck[];
+  executionPreflightSignal: 'blocked' | 'ready';
+  executionPreflightBlockedGroups: string[];
+  executionPreflightPlaceholderPaths: string[];
+}
+
+export interface SelfHostExecutionPreflightResolution {
+  repoRoot: string;
+  installationId: string;
+  packId: string;
+  profileId: string;
+  verificationSummaryPath: string;
+  activationPhase?: AdoptionPackReadinessGroup;
+  activationPhaseStatus?: 'blocked' | 'in_progress' | 'completed';
+  executionPreflightSignal: 'blocked' | 'ready';
+  blockedGroups: string[];
+  placeholderPaths: string[];
+  operatorNextActions: string[];
 }
 
 interface SelfHostConnectApplyReceiptSnapshot {
@@ -151,6 +168,18 @@ const SELF_HOST_GENERATED_IGNORE_PATHS = [
   '*.sqlite-wal',
   '*.sqlite-shm',
   'node_modules/',
+] as const;
+const SELF_HOST_OPERATOR_ACTION_ANCHOR_LIMIT = 3;
+const SELF_HOST_OPERATOR_ACTION_PRIORITY_PATHS = [
+  '.repo-ai-governor/context/current-context.md',
+  '.repo-ai-governor/context/dev/project-template/plan.md',
+  '.repo-ai-governor/context/dev/project-template/sprint-template/plan.md',
+  '.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md',
+  '.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md',
+  '.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md',
+  '.repo-ai-governor/context/technical-solution-delivery-registry.yaml',
+  '.repo-ai-governor/context/technical-solution-lifecycle-registry.yaml',
+  '.repo-ai-governor/normative_knowledge_sources/technical-solutions/technical-solution-module-registry.yaml',
 ] as const;
 const SELF_HOST_ACTIVATION_PHASE_ORDER = [
   AdoptionPackReadinessGroup.TEMPLATE_SEEDED,
@@ -482,6 +511,15 @@ export class CliAdoptionPackRuntime {
               'Run `repo-ai-governor adopt verify --repo .` after bootstrap/apply to publish the canonical self-host activation verdict.',
             ]
           : undefined,
+      executionPreflightSignal:
+        resolvedTarget.profile.profileId === BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE
+          ? 'blocked'
+          : undefined,
+      executionPreflightBlockedGroups:
+        resolvedTarget.profile.profileId === BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE
+          ? [AdoptionPackReadinessGroup.TEMPLATE_SEEDED]
+          : undefined,
+      executionPreflightPlaceholderPaths: [],
     });
     const now = new Date().toISOString();
     const hostManifestPaths = writtenArtifacts.filter((artifactPath) =>
@@ -650,6 +688,9 @@ export class CliAdoptionPackRuntime {
       activationPhaseStatus: selfHostReadiness.activationPhaseStatus,
       activationPhaseRecords: selfHostReadiness.activationPhaseRecords,
       operatorNextActions: selfHostReadiness.operatorNextActions,
+      executionPreflightSignal: selfHostReadiness.executionPreflightSignal,
+      executionPreflightBlockedGroups: selfHostReadiness.executionPreflightBlockedGroups,
+      executionPreflightPlaceholderPaths: selfHostReadiness.executionPreflightPlaceholderPaths,
     });
     const updatedReceipt: AdoptionPackInstallReceipt = {
       ...receipt,
@@ -1872,6 +1913,9 @@ export class CliAdoptionPackRuntime {
         operatorNextActions: [],
         doctorChecks: [],
         verifyChecks: [],
+        executionPreflightSignal: 'ready',
+        executionPreflightBlockedGroups: [],
+        executionPreflightPlaceholderPaths: [],
       };
     }
 
@@ -1888,8 +1932,6 @@ export class CliAdoptionPackRuntime {
     const connectApplyReceiptStatus = await this.readSelfHostConnectApplyReceiptStatus(
       receipt.targetRepoRoot,
     );
-    const operatorNextActions = new Set<string>();
-
     for (const phaseId of SELF_HOST_ACTIVATION_PHASE_ORDER) {
       const matrixRecord = definition.readinessMatrixRecords.find(
         (record) =>
@@ -1943,9 +1985,6 @@ export class CliAdoptionPackRuntime {
         unresolvedPlaceholderPaths,
         connectApplyReceiptAvailable: connectApplyReceiptStatus.isCurrent,
       });
-      for (const action of nextActions) {
-        operatorNextActions.add(action);
-      }
       activationPhaseRecords.push({
         phaseId: normalizedGroup,
         status: phaseStatus,
@@ -2021,7 +2060,9 @@ export class CliAdoptionPackRuntime {
         currentPhase: activationPhase,
       }),
     });
-    for (const action of this.buildSelfHostOperatorNextActionsSummary(operatorNextActions)) {
+    const operatorNextActions =
+      this.buildLocalizedSelfHostOperatorNextActionsFromActivationRecords(activationPhaseRecords);
+    for (const action of operatorNextActions) {
       doctorChecks.push({
         checkId: 'self-host-next-action',
         status: HostVerificationStatus.WARN,
@@ -2033,9 +2074,82 @@ export class CliAdoptionPackRuntime {
       activationPhase,
       activationPhaseStatus,
       activationPhaseRecords,
-      operatorNextActions: this.buildSelfHostOperatorNextActionsSummary(operatorNextActions),
+      operatorNextActions,
       doctorChecks,
       verifyChecks,
+      executionPreflightSignal: preflightBlockedGroups.length > 0 ? 'blocked' : 'ready',
+      executionPreflightBlockedGroups: [...new Set(preflightBlockedGroups)],
+      executionPreflightPlaceholderPaths: [...new Set(preflightBlockedPaths)],
+    };
+  }
+
+  /**
+   * Reads canonical self-host execution-preflight truth for downstream runtime gates.
+   * @param options Optional repo or pack selector used to resolve one installed adoption receipt.
+   * @returns Canonical self-host preflight resolution, or null when the target repo is not a self-host install.
+   */
+  public async resolveSelfHostExecutionPreflight(options?: {
+    repoPath?: string | null;
+    packSelector?: string | null;
+  }): Promise<SelfHostExecutionPreflightResolution | null> {
+    const repoRoot = this.resolveRepoRoot(options?.repoPath ?? null);
+    const receipt = await this.readExistingReceipt(repoRoot, options?.packSelector ?? null, false);
+    if (
+      !receipt ||
+      receipt.appliedProfileId !== BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE ||
+      receipt.workspaceMode !== WorkspaceMode.REPO_LOCAL
+    ) {
+      return null;
+    }
+
+    const canonicalSummary = await this.readCanonicalVerificationSummary(receipt);
+    const fallbackReadiness = await this.evaluateSelfHostReadiness(receipt);
+    const activationPhaseRecords =
+      canonicalSummary.activationPhaseRecords ?? fallbackReadiness.activationPhaseRecords;
+    const executionPreflightSignal =
+      canonicalSummary.executionPreflightSignal ??
+      (canonicalSummary.activationPhaseStatus &&
+      canonicalSummary.activationPhaseStatus !== 'completed'
+        ? 'blocked'
+        : fallbackReadiness.executionPreflightSignal);
+    const blockedGroups =
+      canonicalSummary.executionPreflightBlockedGroups &&
+      canonicalSummary.executionPreflightBlockedGroups.length > 0
+        ? [...canonicalSummary.executionPreflightBlockedGroups]
+        : executionPreflightSignal === 'blocked'
+          ? activationPhaseRecords
+              .filter((record) => record.status !== 'completed')
+              .map((record) => record.phaseId)
+          : fallbackReadiness.executionPreflightBlockedGroups;
+    const placeholderPaths =
+      canonicalSummary.executionPreflightPlaceholderPaths &&
+      canonicalSummary.executionPreflightPlaceholderPaths.length > 0
+        ? [...canonicalSummary.executionPreflightPlaceholderPaths]
+        : executionPreflightSignal === 'blocked'
+          ? activationPhaseRecords.flatMap((record) => record.placeholderPaths)
+          : fallbackReadiness.executionPreflightPlaceholderPaths;
+    const operatorNextActions =
+      activationPhaseRecords.length > 0
+        ? this.buildLocalizedSelfHostOperatorNextActionsFromActivationRecords(
+            activationPhaseRecords,
+          )
+        : (canonicalSummary.operatorNextActions ?? fallbackReadiness.operatorNextActions);
+
+    return {
+      repoRoot,
+      installationId: receipt.installationId,
+      packId: receipt.packId,
+      profileId: receipt.appliedProfileId,
+      verificationSummaryPath: canonicalSummary.verificationSummaryPath,
+      activationPhase: canonicalSummary.activationPhase ?? fallbackReadiness.activationPhase,
+      activationPhaseStatus:
+        canonicalSummary.activationPhaseStatus ?? fallbackReadiness.activationPhaseStatus,
+      executionPreflightSignal,
+      blockedGroups: [...new Set(blockedGroups)].sort((left, right) => left.localeCompare(right)),
+      placeholderPaths: [...new Set(placeholderPaths)].sort((left, right) =>
+        left.localeCompare(right),
+      ),
+      operatorNextActions,
     };
   }
 
@@ -2107,43 +2221,41 @@ export class CliAdoptionPackRuntime {
           ),
         ];
       case AdoptionPackReadinessGroup.AUTHORING_STARTED:
-        return [
-          this.localizeText(
-            `Replace self-host starter placeholders in ${options.unresolvedPlaceholderPaths.join(', ')} before treating the repository as an authored governance workspace.`,
-            `请先替换 ${options.unresolvedPlaceholderPaths.join(', ')} 中的 self-host starter 占位内容，再将该仓库视为已完成 authoring 的治理工作区。`,
-          ),
-        ];
+        return [this.buildSelfHostPlaceholderAuthoringAction(options.unresolvedPlaceholderPaths)];
       case AdoptionPackReadinessGroup.ADAPTER_CONNECTED:
         return options.connectApplyReceiptAvailable
           ? []
           : [
               this.localizeText(
-                'Run `repo-ai-governor connect --preset multi-tool-default --tools codex,claude-code` and then `repo-ai-governor connect apply --latest` to record an adapter-connected baseline.',
-                '运行 `repo-ai-governor connect --preset multi-tool-default --tools codex,claude-code`，然后执行 `repo-ai-governor connect apply --latest`，以记录 adapter-connected 基线。',
+                'Run `repo-ai-governor connect --preset multi-tool-default --tools codex,claude-code` to write a reviewable adapter candidate, then run `repo-ai-governor connect apply --latest` to activate it.',
+                '运行 `repo-ai-governor connect --preset multi-tool-default --tools codex,claude-code` 以写入可审阅的 adapter candidate，然后执行 `repo-ai-governor connect apply --latest` 以正式激活它。',
               ),
             ];
       case AdoptionPackReadinessGroup.EXECUTION_READY: {
         const nextActions: string[] = [];
         if (options.unresolvedPlaceholderPaths.length > 0) {
           nextActions.push(
-            this.localizeText(
-              `Finish replacing the remaining self-host placeholders in ${options.unresolvedPlaceholderPaths.join(', ')}.`,
-              `请先完成 ${options.unresolvedPlaceholderPaths.join(', ')} 中剩余 self-host 占位内容的替换。`,
-            ),
+            this.buildSelfHostPlaceholderAuthoringAction(options.unresolvedPlaceholderPaths),
           );
         }
         if (!options.connectApplyReceiptAvailable) {
           nextActions.push(
             this.localizeText(
-              'Apply a connect candidate first so execution-ready can rely on a recorded adapter baseline.',
-              '请先 apply 一份 connect candidate，让 execution-ready 可以依赖已记录的 adapter 基线。',
+              'Apply the latest reviewed connect candidate first so execution-ready can rely on a recorded adapter baseline.',
+              '请先 apply 最新一份已审阅的 connect candidate，让 execution-ready 可以依赖已记录的 adapter 基线。',
             ),
           );
         }
         nextActions.push(
           this.localizeText(
-            'Re-run `repo-ai-governor adopt verify --repo .` after authoring and connect changes to refresh the canonical activation verdict.',
-            '在完成 authoring 与 connect 变更后，请重新执行 `repo-ai-governor adopt verify --repo .`，以刷新 canonical activation verdict。',
+            'Re-run `repo-ai-governor adopt verify --repo .` after authoring or connect changes; that summary is the canonical readiness verdict.',
+            '在完成 authoring 或 connect 变更后，请重新执行 `repo-ai-governor adopt verify --repo .`；这份摘要才是 canonical readiness verdict。',
+          ),
+        );
+        nextActions.push(
+          this.localizeText(
+            'While self-host execution preflight is blocked, use `repo-ai-governor doctor --adapters` only for additive diagnostics and keep `repo-ai-governor run --dry-run --trace` as the only allowed diagnostic run.',
+            '当 self-host execution preflight 仍处于 blocked 时，只把 `repo-ai-governor doctor --adapters` 作为增量诊断，并把 `repo-ai-governor run --dry-run --trace` 作为唯一允许的诊断运行。',
           ),
         );
         return nextActions;
@@ -2154,7 +2266,66 @@ export class CliAdoptionPackRuntime {
   }
 
   private buildSelfHostOperatorNextActionsSummary(operatorNextActions: Set<string>): string[] {
-    return [...operatorNextActions].sort((left, right) => left.localeCompare(right));
+    return [...operatorNextActions];
+  }
+
+  private buildSelfHostPlaceholderAuthoringAction(unresolvedPlaceholderPaths: string[]): string {
+    const placeholderSummary = this.summarizeSelfHostPlaceholderPathsForOperator(
+      unresolvedPlaceholderPaths,
+    );
+    const anchorPathText = this.formatSelfHostOperatorAnchorPaths(placeholderSummary.anchorPaths);
+    const remainingSuffix =
+      placeholderSummary.remainingCount > 0
+        ? this.localizeText(
+            `; ${placeholderSummary.remainingCount} more placeholder files remain in \`activationPhaseRecords[].placeholderPaths\`.`,
+            `；另外还有 ${placeholderSummary.remainingCount} 个占位文件保留在 \`activationPhaseRecords[].placeholderPaths\` 中。`,
+          )
+        : '.';
+    return this.localizeText(
+      `Finish authoring the repo-local self-host starter surfaces before unattended execution. Start with ${anchorPathText}${remainingSuffix}`,
+      `在无人值守执行前，请先完成 repo-local self-host starter surfaces 的编写。建议先处理 ${anchorPathText}${remainingSuffix}`,
+    );
+  }
+
+  private summarizeSelfHostPlaceholderPathsForOperator(placeholderPaths: string[]): {
+    anchorPaths: string[];
+    remainingCount: number;
+  } {
+    const uniquePaths = [...new Set(placeholderPaths)];
+    const anchorPaths: string[] = [];
+
+    for (const prioritizedPath of SELF_HOST_OPERATOR_ACTION_PRIORITY_PATHS) {
+      if (uniquePaths.includes(prioritizedPath)) {
+        anchorPaths.push(prioritizedPath);
+      }
+      if (anchorPaths.length >= SELF_HOST_OPERATOR_ACTION_ANCHOR_LIMIT) {
+        break;
+      }
+    }
+
+    if (anchorPaths.length < SELF_HOST_OPERATOR_ACTION_ANCHOR_LIMIT) {
+      for (const placeholderPath of uniquePaths) {
+        if (!anchorPaths.includes(placeholderPath)) {
+          anchorPaths.push(placeholderPath);
+        }
+        if (anchorPaths.length >= SELF_HOST_OPERATOR_ACTION_ANCHOR_LIMIT) {
+          break;
+        }
+      }
+    }
+
+    return {
+      anchorPaths,
+      remainingCount: Math.max(uniquePaths.length - anchorPaths.length, 0),
+    };
+  }
+
+  private formatSelfHostOperatorAnchorPaths(anchorPaths: string[]): string {
+    if (anchorPaths.length === 0) {
+      return this.localizeText('the recorded placeholder paths', '记录在案的占位路径');
+    }
+
+    return anchorPaths.map((anchorPath) => `\`${anchorPath}\``).join(', ');
   }
 
   private resolveCurrentSelfHostActivationPhase(
@@ -2678,6 +2849,25 @@ export class CliAdoptionPackRuntime {
   ): AdoptionPackVerificationCheck[] {
     const activationPhaseRecords =
       summary.activationPhaseRecords ?? fallbackReadiness.activationPhaseRecords;
+    const preflightBlocked =
+      summary.executionPreflightSignal === 'blocked' ||
+      (summary.executionPreflightSignal === undefined &&
+        Boolean(summary.activationPhaseStatus && summary.activationPhaseStatus !== 'completed'));
+    const preflightBlockedGroups =
+      summary.executionPreflightBlockedGroups && summary.executionPreflightBlockedGroups.length > 0
+        ? [...summary.executionPreflightBlockedGroups]
+        : preflightBlocked
+          ? activationPhaseRecords
+              .filter((record) => record.status !== 'completed')
+              .map((record) => record.phaseId)
+          : [];
+    const preflightPlaceholderPaths =
+      summary.executionPreflightPlaceholderPaths &&
+      summary.executionPreflightPlaceholderPaths.length > 0
+        ? [...summary.executionPreflightPlaceholderPaths]
+        : preflightBlocked
+          ? activationPhaseRecords.flatMap((record) => record.placeholderPaths)
+          : [];
     const operatorNextActions =
       activationPhaseRecords.length > 0
         ? this.buildLocalizedSelfHostOperatorNextActionsFromActivationRecords(
@@ -2698,19 +2888,11 @@ export class CliAdoptionPackRuntime {
     }));
     checks.push({
       checkId: SELF_HOST_EXECUTION_PREFLIGHT_SIGNAL_CHECK_ID,
-      status:
-        summary.activationPhaseStatus && summary.activationPhaseStatus !== 'completed'
-          ? HostVerificationStatus.WARN
-          : HostVerificationStatus.PASS,
+      status: preflightBlocked ? HostVerificationStatus.WARN : HostVerificationStatus.PASS,
       detail: this.buildSelfHostExecutionPreflightDetail({
-        blocked: Boolean(
-          summary.activationPhaseStatus && summary.activationPhaseStatus !== 'completed',
-        ),
-        blockedGroups:
-          summary.activationPhaseStatus && summary.activationPhaseStatus !== 'completed'
-            ? [summary.activationPhase ?? AdoptionPackReadinessGroup.NONE]
-            : [],
-        placeholderPaths: [],
+        blocked: preflightBlocked,
+        blockedGroups: [...new Set(preflightBlockedGroups)],
+        placeholderPaths: [...new Set(preflightPlaceholderPaths)],
         reflectedFromVerify: true,
         currentPhase: summary.activationPhase,
       }),
@@ -2823,26 +3005,64 @@ export class CliAdoptionPackRuntime {
     activationPhaseRecords: AdoptionPackActivationPhaseRecord[],
   ): string[] {
     const localizedActions = new Set<string>();
+    const authoringRecord = activationPhaseRecords.find(
+      (record) =>
+        record.phaseId === AdoptionPackReadinessGroup.AUTHORING_STARTED &&
+        record.status !== 'completed',
+    );
+    const adapterRecord = activationPhaseRecords.find(
+      (record) =>
+        record.phaseId === AdoptionPackReadinessGroup.ADAPTER_CONNECTED &&
+        record.status !== 'completed',
+    );
+    const executionRecord = activationPhaseRecords.find(
+      (record) =>
+        record.phaseId === AdoptionPackReadinessGroup.EXECUTION_READY &&
+        record.status !== 'completed',
+    );
     const adapterConnected = activationPhaseRecords.some(
       (record) =>
         record.phaseId === AdoptionPackReadinessGroup.ADAPTER_CONNECTED &&
         record.status === 'completed',
     );
 
-    for (const record of activationPhaseRecords) {
-      if (record.status === 'completed') {
-        continue;
-      }
+    if (authoringRecord) {
+      localizedActions.add(
+        this.buildSelfHostPlaceholderAuthoringAction(authoringRecord.placeholderPaths),
+      );
+    } else if (executionRecord && executionRecord.placeholderPaths.length > 0) {
+      localizedActions.add(
+        this.buildSelfHostPlaceholderAuthoringAction(executionRecord.placeholderPaths),
+      );
+    }
 
-      const localizedRecordActions = this.buildSelfHostActivationNextActions({
-        phaseId: record.phaseId,
-        phaseStatus: record.status,
-        unresolvedPlaceholderPaths: record.placeholderPaths,
+    if (adapterRecord) {
+      for (const action of this.buildSelfHostActivationNextActions({
+        phaseId: adapterRecord.phaseId,
+        phaseStatus: adapterRecord.status,
+        unresolvedPlaceholderPaths: adapterRecord.placeholderPaths,
         connectApplyReceiptAvailable: adapterConnected,
-      });
-      for (const action of localizedRecordActions) {
+      })) {
         localizedActions.add(action);
       }
+    }
+
+    if (authoringRecord || adapterRecord || executionRecord) {
+      localizedActions.add(
+        this.localizeText(
+          'Re-run `repo-ai-governor adopt verify --repo .` after authoring or connect changes; that summary is the canonical readiness verdict.',
+          '在完成 authoring 或 connect 变更后，请重新执行 `repo-ai-governor adopt verify --repo .`；这份摘要才是 canonical readiness verdict。',
+        ),
+      );
+    }
+
+    if (executionRecord) {
+      localizedActions.add(
+        this.localizeText(
+          'Use `repo-ai-governor doctor --adapters` only for additive diagnostics. While preflight is blocked, keep `repo-ai-governor run --dry-run --trace` as the only allowed diagnostic run.',
+          '只把 `repo-ai-governor doctor --adapters` 用作增量诊断。当 preflight 仍处于 blocked 时，请把 `repo-ai-governor run --dry-run --trace` 作为唯一允许的诊断运行。',
+        ),
+      );
     }
 
     return this.buildSelfHostOperatorNextActionsSummary(localizedActions);
@@ -3283,6 +3503,9 @@ export class CliAdoptionPackRuntime {
     activationPhaseStatus?: 'blocked' | 'in_progress' | 'completed';
     activationPhaseRecords?: AdoptionPackActivationPhaseRecord[];
     operatorNextActions?: string[];
+    executionPreflightSignal?: 'blocked' | 'ready';
+    executionPreflightBlockedGroups?: string[];
+    executionPreflightPlaceholderPaths?: string[];
   }): AdoptionPackVerificationSummary {
     const normalizedChecks = options.checks.length
       ? options.checks
@@ -3310,6 +3533,15 @@ export class CliAdoptionPackRuntime {
         ? { activationPhaseRecords: options.activationPhaseRecords }
         : {}),
       ...(options.operatorNextActions ? { operatorNextActions: options.operatorNextActions } : {}),
+      ...(options.executionPreflightSignal
+        ? { executionPreflightSignal: options.executionPreflightSignal }
+        : {}),
+      ...(options.executionPreflightBlockedGroups
+        ? { executionPreflightBlockedGroups: options.executionPreflightBlockedGroups }
+        : {}),
+      ...(options.executionPreflightPlaceholderPaths
+        ? { executionPreflightPlaceholderPaths: options.executionPreflightPlaceholderPaths }
+        : {}),
     };
   }
 

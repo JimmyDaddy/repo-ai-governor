@@ -216,6 +216,9 @@ export interface AdoptionPackVerificationSummary {
   activationPhaseStatus?: 'blocked' | 'in_progress' | 'completed';
   activationPhaseRecords?: AdoptionPackActivationPhaseRecord[];
   operatorNextActions?: string[];
+  executionPreflightSignal?: 'blocked' | 'ready';
+  executionPreflightBlockedGroups?: string[];
+  executionPreflightPlaceholderPaths?: string[];
   hostVerificationSummaryPath?: string;
 }
 
