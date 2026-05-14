@@ -36,13 +36,13 @@
 
 ## 2.3 sprint-003-activation-and-readiness-ux
 
-- Status: active
+- Status: completed
 - Sprint Goal: 引入 canonical self-host activation/readiness phase，并收敛 verify/doctor/check 的职责分层与提示面
 - Task Package: `TK-1060、TK-1061、TK-1062`
 
 ## 2.4 sprint-004-clean-room-evidence-and-docs-truthfulness
 
-- Status: planned
+- Status: active
 - Sprint Goal: 完成 empty-repo self-host clean-room rehearsal、support truth 对齐与 project closeout
 - Task Package: `TK-1063、TK-1064`
 
@@ -59,8 +59,8 @@
 | TK-1060 | sprint-003-activation-and-readiness-ux | implement canonical self-host activation phase and verification summary | verify/readiness | close sprint-002 and hand off activation readiness work | completed |
 | TK-1061 | sprint-003-activation-and-readiness-ux | align doctor and check additive readiness diagnostics and next actions | doctor/check-diagnostics | implement canonical self-host activation phase and verification summary | completed |
 | TK-1062 | sprint-003-activation-and-readiness-ux | close sprint-003 and hand off clean-room truthfulness follow-through | governance/handoff | align doctor and check additive readiness diagnostics and next actions | completed |
-| TK-1063 | sprint-004-clean-room-evidence-and-docs-truthfulness | run empty-repo self-host clean-room rehearsal and capture rollout evidence | clean-room/evidence | close sprint-003 and hand off clean-room truthfulness follow-through | active |
-| TK-1064 | sprint-004-clean-room-evidence-and-docs-truthfulness | refresh self-host docs truth and finalize rollout closeout | docs/closeout | run empty-repo self-host clean-room rehearsal and capture rollout evidence | planned |
+| TK-1063 | sprint-004-clean-room-evidence-and-docs-truthfulness | run empty-repo self-host clean-room rehearsal and capture rollout evidence | clean-room/evidence | close sprint-003 and hand off clean-room truthfulness follow-through | completed |
+| TK-1064 | sprint-004-clean-room-evidence-and-docs-truthfulness | refresh self-host docs truth and finalize rollout closeout | docs/closeout | run empty-repo self-host clean-room rehearsal and capture rollout evidence | active |
 
 ## 4. 依赖产物策略
 
@@ -83,6 +83,7 @@
 3. 2026-05-14：按 `workspace-scoped-cr-loop` 完成 sprint-001 bootstrap baseline 的 fresh CR clean closeout，`TK-1056 / DA-1056` 已将 primary execution surface 切换到 `sprint-002`，后续 sprint 保持顺序推进。
 4. 2026-05-14：按 `workspace-scoped-cr-loop` 完成 sprint-002 ownership/drift semantics 的 fresh CR clean closeout，`TK-1059 / DA-1059` 已将 primary execution surface 切换到 `sprint-003`，`sprint-004` 继续保持 planned follow-up。
 5. 2026-05-14：sprint-003 的 `TK-1060 / TK-1061` 已完成并收口首轮 delegated CR 修复；随后 `CR-002 ~ CR-004` 继续完成 self-host readiness 与 `check` locale-aware output clean recheck，`DA-1062` 已将 primary execution surface 切换到 sprint-004 clean-room evidence boundary。
+6. 2026-05-14：sprint-004 的 clean-room evidence、public docs truth sync 与 sprint-level fresh reviewer loop 已达到 clean closeout-ready state，`DA-1064` 已将 project-123 固定到 project-final delegated CR boundary；下一步只允许在 latest fresh project-final reviewer round clean 后执行 `DA-1065`、completion audit 与 final project closeout。
 
 ## 7. 里程碑记录入口
 

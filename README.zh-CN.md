@@ -20,7 +20,9 @@
 3. `adopt bootstrap`
 4. `check`
 5. `connect`
-6. `run --dry-run --trace`
+6. `connect apply --latest`
+7. `adopt verify`
+8. `run --dry-run --trace`
 
 如果你只想从这份 README 里记住一件事，就记住这条路径。
 
@@ -111,6 +113,8 @@ pnpm exec repo-ai-governor check --output json
 
 ```bash
 pnpm exec repo-ai-governor connect --tools codex,claude-code --preset multi-tool-default --output json
+pnpm exec repo-ai-governor connect apply --latest --output json
+pnpm exec repo-ai-governor adopt verify --repo . --output json
 pnpm exec repo-ai-governor doctor --adapters --fix --output json
 pnpm exec repo-ai-governor doctor --adapters --output json
 pnpm exec repo-ai-governor run --output json --dry-run --trace
@@ -121,10 +125,16 @@ pnpm exec repo-ai-governor review-verify --output json
 这条顺序为什么合理：
 
 1. `connect` 会先准备一份可审阅的仓库配置，而不是盲改活动配置。
-2. `doctor --adapters --fix` 只允许 safe local repairs。
-3. 第二次 `doctor --adapters` 是只读 readiness 复检。
-4. `run --dry-run --trace` 是真实执行前最低风险的证明方式。
-5. `review` 和 `review-verify` 会把正式的评审闭环补齐。
+2. `connect apply --latest` 会把审阅后的 adapter 基线正式写入活动 `governor.yaml`。
+3. `adopt verify` 会在 connect 变更后刷新 canonical activation verdict。
+4. `doctor --adapters --fix` 只允许 safe local repairs。
+5. 第二次 `doctor --adapters` 是只读 readiness 复检。
+6. `run --dry-run --trace` 是真实执行前最低风险的证明方式。
+7. `review` 和 `review-verify` 会把正式的评审闭环补齐。
+
+对于 repo-local self-host 模板，不能只停在 `connect`。真实的 operator 路径是 `connect` -> `connect apply --latest` -> `adopt verify`，因为 applied connect receipt 和刷新后的 verify summary 才是 self-host readiness 进入 adapter-connected 基线的 canonical 证据。
+
+如果第一次 `run --dry-run --trace` 仍然停在 `lockfile_delta` 之类的 policy/HITL confirm，不要把它误判为 bootstrap 失败。当前 runtime 在没有提供确认 payload 时，可能会表现为 `POLICY_GATE_HITL_FEEDBACK_INVALID`，这属于执行策略闸口，而不是安装/接线失败。
 
 ## 把个人默认值和密钥留在本机
 

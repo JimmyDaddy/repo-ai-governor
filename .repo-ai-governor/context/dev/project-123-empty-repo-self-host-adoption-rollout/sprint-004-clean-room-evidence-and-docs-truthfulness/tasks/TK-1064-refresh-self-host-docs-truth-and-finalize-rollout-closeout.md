@@ -1,6 +1,6 @@
 # TK-1064 refresh self-host docs truth and finalize rollout closeout
 
-- Status: planned
+- Status: active
 - Date: 2026-05-13
 - Owner: AI-Agent
 - Priority: P0
@@ -38,26 +38,41 @@
 ## 6. 实施计划
 
 1. 基于 clean-room evidence 校准 README、local-adoption playbook 与 support matrix 的 public truth，避免继续保留与真实 operator path 不一致的引导。
-2. 汇总 rollout delivery evidence、completion audit 与 project closeout 所需的正式回链产物。
-3. 完成 sprint-004 与 project-123 的终态 ledger sync、验证与收口文档准备。
+2. 先产出 sprint-004 exit acceptance 与 project-final review handoff，确保 sprint boundary 在 fresh reviewer loop 前形成可回放的 closeout packet。
+3. 在 project-final clean round 后，完成 completion audit、delivery registry completed write-back、current-context idle 恢复与 final closeout artifact。
 
 ## 7. Development Verification
 
-1. 待执行：按任务范围补充 fast/targeted verification。
-2. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/sprint-004-clean-room-evidence-and-docs-truthfulness/tasks" --task-id TK-1064
+1. `pnpm exec vitest run apps/cli/test/adopt-command.integration.test.ts --maxWorkers=1 --maxConcurrency=1`
+2. `pnpm run build`
+3. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/sprint-004-clean-room-evidence-and-docs-truthfulness/tasks" --task-id TK-1064
 
 ## 8. Delivery Verification
 
-1. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/sprint-004-clean-room-evidence-and-docs-truthfulness/tasks" --task-id TK-1064
-2. node ./scripts/governance/check-task-required-inputs.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/sprint-004-clean-room-evidence-and-docs-truthfulness/tasks" --task-id TK-1064
-3. node ./scripts/governance/check-task-ledger-sync.js
-4. node ./scripts/governance/check-sprint-plan-status-sync.js
+1. `pnpm exec vitest run apps/cli/test/adopt-command.integration.test.ts --maxWorkers=1 --maxConcurrency=1`
+2. `pnpm run build`
+3. node ./scripts/governance/sync-task-ledger.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/sprint-004-clean-room-evidence-and-docs-truthfulness/tasks" --task-id TK-1064
+4. node ./scripts/governance/check-task-required-inputs.js --tasks-dir "/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/sprint-004-clean-room-evidence-and-docs-truthfulness/tasks" --task-id TK-1064
+5. node ./scripts/governance/check-task-ledger-sync.js
+6. node ./scripts/governance/check-sprint-plan-status-sync.js
 
 ## 9. 执行记录
 
 1. 2026-05-13：任务创建，状态初始化为 `planned`。
+2. 2026-05-14：任务启动，开始基于 `DA-1063` clean-room evidence 对齐 README、playbook 与 support matrix 中的 self-host operator path truth。
+3. 2026-05-14：已完成第一轮 public docs truth sync，当前文档已明确要求 `connect apply --latest` 与 connect 后续 `adopt verify`，并把 `run --dry-run --trace` 的 `lockfile_delta` / `POLICY_GATE_HITL_FEEDBACK_INVALID` 定位为 execution-policy checkpoint，而非 bootstrap failure。
+4. 2026-05-14：下一步将先写入 sprint-004 exit acceptance packet、串行 canonical ledger sync 与 boundary gate，再进入 sprint-004 fresh reviewer loop。
+5. 2026-05-14：project-final fresh reviewer clean 后，本任务将负责 completion audit summary、`DA-1065` final closeout artifact、delivery registry completed truth 与 `current-context` idle 恢复，并最终切换为 `completed`。
+6. 2026-05-14：`DA-1064` 已固定 sprint-004 exit acceptance 与 project-final review handoff，latest fresh reviewer clean `CR-002` 也已确认当前 boundary 无新增 actionable finding；同窗口 `pnpm run build`、`pnpm run check` 与 ledger/status gates 已通过，当前仅保留 project-final delegated CR loop 与 final closeout write-back。
 
 ## 10. 产出
 
-1. 待执行后补齐
-2. 待执行后补齐
+1. `/Users/jimmydaddy/study/ai-governor/README.md`
+2. `/Users/jimmydaddy/study/ai-governor/README.zh-CN.md`
+3. `/Users/jimmydaddy/study/ai-governor/docs/local-adoption-playbook.md`
+4. `/Users/jimmydaddy/study/ai-governor/docs/local-adoption-playbook.zh-CN.md`
+5. `/Users/jimmydaddy/study/ai-governor/docs/support-matrix.md`
+6. `/Users/jimmydaddy/study/ai-governor/docs/support-matrix.zh-CN.md`
+7. `/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/sprint-004-clean-room-evidence-and-docs-truthfulness/tasks/DA-1064-sprint-004-exit-acceptance-and-project-final-review-handoff.md`
+8. `/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/project-123-empty-repo-self-host-adoption-rollout-completion-audit-summary.md`
+9. `/Users/jimmydaddy/study/ai-governor/.repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/sprint-004-clean-room-evidence-and-docs-truthfulness/tasks/DA-1065-project-123-final-closeout-and-idle-primary-stream-handoff.md`

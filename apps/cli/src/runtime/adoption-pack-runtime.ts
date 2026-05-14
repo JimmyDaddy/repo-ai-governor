@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 
@@ -170,6 +170,27 @@ const ARTIFACT_REGISTRY_HEADERS = [
   'last_updated_at',
   'dependent_tasks',
 ];
+const TASK_LEDGER_TEMPLATE_SOURCE_RELATIVE_PATH =
+  '.repo-ai-governor/context/dev/project-template/sprint-template/tasks/tasks.csv';
+const TASK_LEDGER_REQUIRED_HEADERS = [
+  'execution_id',
+  'task_id',
+  'title',
+  'owner',
+  'priority',
+  'due_date',
+  'status',
+  'project',
+  'sprint',
+  'plan',
+  'result',
+  'verify',
+  'review_delta',
+  'recorded_at',
+] as const;
+type TaskLedgerSeedRow = Record<(typeof TASK_LEDGER_REQUIRED_HEADERS)[number], string> & {
+  __rowNumber: number;
+};
 
 /**
  * Orchestrates high-level adoption-pack resolution, materialization, and lifecycle checks.
@@ -1463,6 +1484,10 @@ export class CliAdoptionPackRuntime {
       '.repo-ai-governor/context/dev/sqlite/task-ledger.sqlite',
     );
     await this.initializeTaskLedgerSqlite(taskLedgerPath);
+    await this.seedTaskLedgerCanonicalTemplateSource({
+      repoRoot: options.repoRoot,
+      databaseFilePath: taskLedgerPath,
+    });
     managedFileRecords.push(
       await this.createManagedFileRecordFromFile(
         '.repo-ai-governor/context/dev/sqlite/task-ledger.sqlite',
@@ -1588,6 +1613,202 @@ export class CliAdoptionPackRuntime {
     } finally {
       databaseConnection.close();
     }
+  }
+
+  private async seedTaskLedgerCanonicalTemplateSource(options: {
+    repoRoot: string;
+    databaseFilePath: string;
+  }): Promise<void> {
+    const taskCsvPath = resolve(options.repoRoot, TASK_LEDGER_TEMPLATE_SOURCE_RELATIVE_PATH);
+    if (!existsSync(taskCsvPath)) {
+      return;
+    }
+
+    const csvContent = await readFile(taskCsvPath, 'utf8');
+    const parsedRows = this.parseTaskLedgerCsvRows(csvContent, taskCsvPath);
+    const taskCsvStat = await stat(taskCsvPath);
+    const databaseConnection = new DatabaseSync(options.databaseFilePath);
+
+    try {
+      databaseConnection.exec('PRAGMA busy_timeout = 5000;');
+      databaseConnection.exec('BEGIN IMMEDIATE TRANSACTION');
+      databaseConnection
+        .prepare('DELETE FROM task_ledger_rows WHERE source_path = ?')
+        .run(taskCsvPath);
+      databaseConnection
+        .prepare('DELETE FROM task_ledger_sources WHERE source_path = ?')
+        .run(taskCsvPath);
+      databaseConnection
+        .prepare(
+          `
+            INSERT INTO task_ledger_sources (
+              source_path,
+              source_mtime_ms,
+              source_size,
+              row_count,
+              synced_at
+            ) VALUES (?, ?, ?, ?, ?)
+          `,
+        )
+        .run(
+          taskCsvPath,
+          Math.trunc(taskCsvStat.mtimeMs),
+          taskCsvStat.size,
+          parsedRows.length,
+          new Date().toISOString(),
+        );
+
+      const insertRowStatement = databaseConnection.prepare(
+        `
+          INSERT INTO task_ledger_rows (
+            source_path,
+            source_row_number,
+            execution_id,
+            task_id,
+            title,
+            owner,
+            priority,
+            due_date,
+            status,
+            project,
+            sprint,
+            plan,
+            result,
+            verify,
+            review_delta,
+            recorded_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+      );
+
+      for (const row of parsedRows) {
+        insertRowStatement.run(
+          taskCsvPath,
+          row.__rowNumber,
+          row.execution_id,
+          row.task_id,
+          row.title,
+          row.owner,
+          row.priority,
+          row.due_date,
+          row.status,
+          row.project,
+          row.sprint,
+          row.plan,
+          row.result,
+          row.verify,
+          row.review_delta,
+          row.recorded_at,
+        );
+      }
+
+      databaseConnection.exec('COMMIT');
+    } catch (error) {
+      try {
+        databaseConnection.exec('ROLLBACK');
+      } catch {
+        // Keep original failure visible.
+      }
+      throw standardizeError(error);
+    } finally {
+      databaseConnection.close();
+    }
+  }
+
+  private parseTaskLedgerCsvRows(csvContent: string, csvPath: string): TaskLedgerSeedRow[] {
+    const csvLines = csvContent
+      .split(/\r?\n/u)
+      .map((line) => line.trimEnd())
+      .filter((line) => line.trim().length > 0);
+    if (csvLines.length === 0) {
+      return [];
+    }
+
+    const headers = this.parseTaskLedgerCsvLine(csvLines[0]).map((cell) => cell.trim());
+    for (const requiredHeader of TASK_LEDGER_REQUIRED_HEADERS) {
+      if (!headers.includes(requiredHeader)) {
+        throw new RuntimeError(
+          GovernorErrorCode.STANDARDS_PACK_INVALID,
+          this.localizeText(
+            `Self-host task-ledger template is missing required column "${requiredHeader}".`,
+            `self-host task-ledger 模板缺少必填列 "${requiredHeader}"。`,
+          ),
+          {
+            csvPath,
+            requiredHeader,
+          },
+        );
+      }
+    }
+
+    return csvLines.slice(1).map((line, index) => {
+      const values = this.parseTaskLedgerCsvLine(line);
+      if (values.length !== headers.length) {
+        throw new RuntimeError(
+          GovernorErrorCode.STANDARDS_PACK_INVALID,
+          this.localizeText(
+            `Self-host task-ledger template row has ${values.length} columns, expected ${headers.length}.`,
+            `self-host task-ledger 模板行列数不匹配：当前 ${values.length} 列，预期 ${headers.length} 列。`,
+          ),
+          {
+            csvPath,
+            rowNumber: index + 2,
+          },
+        );
+      }
+
+      const row = {
+        __rowNumber: index + 2,
+      } as TaskLedgerSeedRow;
+      for (let headerIndex = 0; headerIndex < headers.length; headerIndex += 1) {
+        const header = headers[headerIndex];
+        if (this.isTaskLedgerRequiredHeader(header)) {
+          row[header] = String(values[headerIndex] ?? '').trim();
+        }
+      }
+      return row;
+    });
+  }
+
+  private parseTaskLedgerCsvLine(line: string): string[] {
+    const values: string[] = [];
+    let currentValue = '';
+    let inQuotes = false;
+
+    for (let index = 0; index < line.length; index += 1) {
+      const character = line[index];
+
+      if (character === '"') {
+        const nextCharacter = line[index + 1];
+        if (inQuotes && nextCharacter === '"') {
+          currentValue += '"';
+          index += 1;
+          continue;
+        }
+
+        inQuotes = !inQuotes;
+        continue;
+      }
+
+      if (character === ',' && !inQuotes) {
+        values.push(currentValue);
+        currentValue = '';
+        continue;
+      }
+
+      currentValue += character;
+    }
+
+    values.push(currentValue);
+    return values;
+  }
+
+  private isTaskLedgerRequiredHeader(
+    header: string,
+  ): header is (typeof TASK_LEDGER_REQUIRED_HEADERS)[number] {
+    return TASK_LEDGER_REQUIRED_HEADERS.includes(
+      header as (typeof TASK_LEDGER_REQUIRED_HEADERS)[number],
+    );
   }
 
   private async buildDiffRecords(receipt: AdoptionPackInstallReceipt) {

@@ -20,7 +20,9 @@ Most teams should follow this order:
 3. `adopt bootstrap`
 4. `check`
 5. `connect`
-6. `run --dry-run --trace`
+6. `connect apply --latest`
+7. `adopt verify`
+8. `run --dry-run --trace`
 
 If you only remember one thing from this README, remember that sequence.
 
@@ -111,6 +113,8 @@ Once the repository is bootstrapped, this is the shortest end-to-end governed fl
 
 ```bash
 pnpm exec repo-ai-governor connect --tools codex,claude-code --preset multi-tool-default --output json
+pnpm exec repo-ai-governor connect apply --latest --output json
+pnpm exec repo-ai-governor adopt verify --repo . --output json
 pnpm exec repo-ai-governor doctor --adapters --fix --output json
 pnpm exec repo-ai-governor doctor --adapters --output json
 pnpm exec repo-ai-governor run --output json --dry-run --trace
@@ -121,10 +125,16 @@ pnpm exec repo-ai-governor review-verify --output json
 Why this order works:
 
 1. `connect` prepares a reviewable repo config instead of mutating blindly.
-2. `doctor --adapters --fix` is limited to safe local repairs.
-3. A second `doctor --adapters` is the read-only readiness recheck.
-4. `run --dry-run --trace` is the lowest-risk proof before a real run.
-5. `review` and `review-verify` close the loop with a formal review lifecycle.
+2. `connect apply --latest` records the reviewed adapter baseline into the active `governor.yaml`.
+3. `adopt verify` refreshes the canonical activation verdict after connect changes.
+4. `doctor --adapters --fix` is limited to safe local repairs.
+5. A second `doctor --adapters` is the read-only readiness recheck.
+6. `run --dry-run --trace` is the lowest-risk proof before a real run.
+7. `review` and `review-verify` close the loop with a formal review lifecycle.
+
+For repo-local self-host templates, do not stop at `connect` alone. The real operator path is `connect` -> `connect apply --latest` -> `adopt verify`, because the applied connect receipt plus the refreshed verify summary are what move the self-host readiness chain to an adapter-connected baseline.
+
+If the first `run --dry-run --trace` still stops at a policy/HITL confirm such as `lockfile_delta`, treat that as an execution-policy checkpoint rather than a bootstrap failure. In the current runtime this can surface as `POLICY_GATE_HITL_FEEDBACK_INVALID` when no confirmation payload is provided.
 
 ## Keep Personal Defaults And Secrets Local
 

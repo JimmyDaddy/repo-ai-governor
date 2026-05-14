@@ -24,7 +24,10 @@
 3. 跑 `doctor`。
 4. 跑 `adopt bootstrap`。
 5. 跑 `check`。
-6. 再跑 `connect`，然后执行 `run --dry-run --trace`。
+6. 跑 `connect`。
+7. 跑 `connect apply --latest`。
+8. 跑 `adopt verify`。
+9. 再执行 `run --dry-run --trace`。
 
 后面的章节再展开解释：什么时候该换路径，以及如何解读这些命令产出的 diagnostics。
 
@@ -117,17 +120,24 @@ pnpm exec repo-ai-governor adopt remove --repo . --output json
 
 ```bash
 pnpm exec repo-ai-governor adopt bootstrap --adoption-profile self-host-complete --repo . --workspace-mode repo_local --hosts codex --output json
-pnpm exec repo-ai-governor check --output json
+pnpm exec repo-ai-governor connect --tools codex --preset single-tool-all-roles --output json
+pnpm exec repo-ai-governor connect apply --latest --output json
+pnpm exec repo-ai-governor adopt verify --repo . --output json
+pnpm exec repo-ai-governor doctor --adapters --output json
+pnpm exec repo-ai-governor run --output json --dry-run --trace
 ```
 
 这条路径只会 seed 空白或模板化的治理 surface，不会复制本仓库的 live execution state。
+
+对 self-host 来说，`connect` 本身还不够。必须先 apply 这份 reviewed candidate，然后重新执行 `adopt verify`，让 canonical activation/readiness truth 反映新的 adapter-connected 基线。
 
 对 self-host 验证结果要保守解读：
 
 1. 新鲜的 `self-host-complete + repo_local` bootstrap 或后续 `adopt verify`，在 starter governance、product-direction 或 execution placeholder 仍未触碰时，预期会返回 `warn`。
 2. 这些 warning 只属于 self-host readiness signal；默认的 `adopter-complete` 安装路径不会继承它们。
 3. `adopt verify` 现在会对未触碰的 self-host starter placeholder 暴露 `execution_preflight_signal=blocked` warning；在无人值守的 self-host 执行前，应把它视为硬阻断，因为当前公开契约还没有单独的自动 preflight 命令。
-4. 当仓库开始编写自己的 repo-local surface 之后，应继续把 `check` 当成显式的更广治理审计，而不是用 `adopt verify` 代替完整 workspace readiness。
+4. 在执行 `connect apply --latest` 之后，要重新运行 `adopt verify --repo .`；这份刷新后的 summary 才是 adapter 变更后的 canonical activation/readiness truth。
+5. 当仓库开始编写自己的 repo-local surface 之后，应继续把 `check` 当成显式的更广治理审计，而不是用 `adopt verify` 代替完整 workspace readiness。
 
 ## 4. 先接工具，再去执行
 
@@ -135,6 +145,8 @@ pnpm exec repo-ai-governor check --output json
 
 ```bash
 pnpm exec repo-ai-governor connect --tools codex,claude-code --preset multi-tool-default --output json
+pnpm exec repo-ai-governor connect apply --latest --output json
+pnpm exec repo-ai-governor adopt verify --repo . --output json
 pnpm exec repo-ai-governor doctor --adapters --fix --output json
 pnpm exec repo-ai-governor doctor --adapters --output json
 pnpm exec repo-ai-governor run --output json --dry-run --trace
@@ -143,9 +155,13 @@ pnpm exec repo-ai-governor run --output json --dry-run --trace
 每一步的意义：
 
 1. `connect` 先写可审阅 candidate config，不会原地盲改活动配置。
-2. `doctor --adapters --fix` 只做 safe local repairs。
-3. 第二次 `doctor --adapters` 是真实执行前的只读 readiness check。
-4. `run --dry-run --trace` 是证明路由和 projected descriptor 是否合理的最低风险方式。
+2. `connect apply --latest` 会把审阅后的 adapter 基线正式写入活动配置，并留下一份 apply receipt。
+3. `adopt verify --repo .` 会在 authoring 与 adapter 变更后刷新 canonical activation verdict。
+4. `doctor --adapters --fix` 只做 safe local repairs。
+5. 第二次 `doctor --adapters` 是真实执行前的只读 readiness check。
+6. `run --dry-run --trace` 是证明路由和 projected descriptor 是否合理的最低风险方式。
+
+如果 `run --dry-run --trace` 停在 policy/HITL confirm，不要立刻把它当成 onboarding 失败。self-host 仓库完全可能已经 bootstrap 完成、adapter 也已接通，只是执行还在等待诸如 `lockfile_delta` 的风险确认；如果没有提供确认 payload，当前 runtime 可能会表现为 `POLICY_GATE_HITL_FEEDBACK_INVALID`。
 
 如果你一开始就要配置 `remote_api`，用显式 authoring flags，不要先手改配置；这也是最低风险的 remote-api rehearsal 路径：
 
@@ -167,6 +183,8 @@ pnpm exec repo-ai-governor connect --tools claude-code --remote-api-model claude
 
 ```bash
 pnpm exec repo-ai-governor connect --tools codex,claude-code --preset multi-tool-default --output json
+pnpm exec repo-ai-governor connect apply --latest --output json
+pnpm exec repo-ai-governor adopt verify --repo . --output json
 pnpm exec repo-ai-governor doctor --adapters --fix --output json
 pnpm exec repo-ai-governor doctor --adapters --output json
 ```

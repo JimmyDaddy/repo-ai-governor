@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
 
 import {
   CliClaudeCodeExecFixtureEnvironmentKey,
@@ -1444,6 +1445,19 @@ describe('adopt command integration', () => {
         (record) =>
           record.relativePath === '.repo-ai-governor/context/dev/sqlite/task-ledger.sqlite',
       );
+      const taskLedgerDatabase = new DatabaseSync(
+        resolve(
+          repositoryRoot,
+          '.repo-ai-governor',
+          'context',
+          'dev',
+          'sqlite',
+          'task-ledger.sqlite',
+        ),
+        {
+          readonly: true,
+        },
+      );
       expect(configContent).toContain('mode: repo_local');
       expect(codeStandardsContent).toContain('- Status: draft');
       expect(codeStandardsContent).toContain('- Placeholder Status: replace_before_execution');
@@ -1463,6 +1477,46 @@ describe('adopt command integration', () => {
         ownershipClass: 'canonical_runtime_writable',
         gitPolicy: 'opt_in_ignore_recommendation',
       });
+      expect(
+        taskLedgerDatabase.prepare('SELECT COUNT(*) AS total FROM task_ledger_sources').get() as {
+          total?: number;
+        },
+      ).toMatchObject({
+        total: 1,
+      });
+      expect(
+        taskLedgerDatabase
+          .prepare(
+            'SELECT source_path AS sourcePath, row_count AS rowCount FROM task_ledger_sources',
+          )
+          .get() as {
+          sourcePath?: string;
+          rowCount?: number;
+        },
+      ).toMatchObject({
+        sourcePath: expect.stringContaining(
+          '.repo-ai-governor/context/dev/project-template/sprint-template/tasks/tasks.csv',
+        ),
+        rowCount: 1,
+      });
+      expect(
+        taskLedgerDatabase
+          .prepare(
+            'SELECT task_id AS taskId, project AS projectId, sprint AS sprintId, status AS taskStatus FROM task_ledger_rows',
+          )
+          .get() as {
+          taskId?: string;
+          projectId?: string;
+          sprintId?: string;
+          taskStatus?: string;
+        },
+      ).toMatchObject({
+        taskId: 'TK-001',
+        projectId: 'project-template',
+        sprintId: 'sprint-template',
+        taskStatus: 'planned',
+      });
+      taskLedgerDatabase.close();
 
       const verifyIo = createBufferedIo(repositoryRoot);
       const verifyExitCode = await runCli(
