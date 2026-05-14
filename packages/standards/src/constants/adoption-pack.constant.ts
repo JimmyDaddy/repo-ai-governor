@@ -98,13 +98,14 @@ export enum AdoptionPackSurfaceKind {
 }
 
 /**
- * Defines the first-wave readiness groups formalized for self-host bootstrap surfaces.
+ * Defines the canonical self-host activation phases and inventory groupings.
  */
 export enum AdoptionPackReadinessGroup {
   NONE = 'none',
-  GOVERNANCE_RULES_READY = 'governance_rules_ready',
-  PRODUCT_DIRECTION_READY = 'product_direction_ready',
-  EXECUTION_SURFACE_READY = 'execution_surface_ready',
+  TEMPLATE_SEEDED = 'template_seeded',
+  AUTHORING_STARTED = 'authoring_started',
+  ADAPTER_CONNECTED = 'adapter_connected',
+  EXECUTION_READY = 'execution_ready',
 }
 
 /**
@@ -130,6 +131,34 @@ export enum AdoptionPackUpgradePolicy {
 export enum AdoptionPackRemovePolicy {
   MANAGED_ONLY = 'managed_only',
   MANAGED_WITH_CONFIRM = 'managed_with_confirm',
+}
+
+/**
+ * Defines stable writable-surface ownership classes recorded by self-host receipts.
+ */
+export enum AdoptionPackOwnershipClass {
+  MANAGED_LOCKED = 'managed_locked',
+  STARTER_EDITABLE = 'starter_editable',
+  CANONICAL_RUNTIME_WRITABLE = 'canonical_runtime_writable',
+  GENERATED_EPHEMERAL = 'generated_ephemeral',
+}
+
+/**
+ * Defines drift-handling policies retained by receipt records and source-catalog truth.
+ */
+export enum AdoptionPackDriftPolicy {
+  ENFORCE_CHECKSUM = 'enforce_checksum',
+  PLACEHOLDER_AWARE = 'placeholder_aware',
+  PROVENANCE_ONLY = 'provenance_only',
+  IGNORE = 'ignore',
+}
+
+/**
+ * Defines git-handling policies retained by receipt records and source-catalog truth.
+ */
+export enum AdoptionPackGitPolicy {
+  KEEP_TRACKED = 'keep_tracked',
+  OPT_IN_IGNORE_RECOMMENDATION = 'opt_in_ignore_recommendation',
 }
 
 /**
@@ -286,4 +315,25 @@ export const ADOPTION_PACK_UPGRADE_POLICY_VALUES = new Set<string>(
  */
 export const ADOPTION_PACK_REMOVE_POLICY_VALUES = new Set<string>(
   Object.values(AdoptionPackRemovePolicy),
+);
+
+/**
+ * Re-exports ownership-class values as a validation set.
+ */
+export const ADOPTION_PACK_OWNERSHIP_CLASS_VALUES = new Set<string>(
+  Object.values(AdoptionPackOwnershipClass),
+);
+
+/**
+ * Re-exports drift-policy values as a validation set.
+ */
+export const ADOPTION_PACK_DRIFT_POLICY_VALUES = new Set<string>(
+  Object.values(AdoptionPackDriftPolicy),
+);
+
+/**
+ * Re-exports git-policy values as a validation set.
+ */
+export const ADOPTION_PACK_GIT_POLICY_VALUES = new Set<string>(
+  Object.values(AdoptionPackGitPolicy),
 );

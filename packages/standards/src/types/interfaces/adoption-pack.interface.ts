@@ -2,7 +2,10 @@ import type { WorkspaceMode } from '@repo-ai-governor/shared';
 import type {
   AdoptionPackApplicabilityScope,
   AdoptionPackCompositionPolicy,
+  AdoptionPackDriftPolicy,
+  AdoptionPackGitPolicy,
   AdoptionPackManagedAssetGroup,
+  AdoptionPackOwnershipClass,
   AdoptionPackParityClass,
   AdoptionPackPlaceholderPolicy,
   AdoptionPackReadinessGroup,
@@ -103,6 +106,9 @@ export interface AdoptionPackSourceCatalogRecord {
   description: string;
   profileIds: string[];
   assetGroup: AdoptionPackManagedAssetGroup;
+  ownershipClass: AdoptionPackOwnershipClass;
+  driftPolicy: AdoptionPackDriftPolicy;
+  gitPolicy: AdoptionPackGitPolicy;
   parityClass: AdoptionPackParityClass;
   sourceMode: AdoptionPackSourceMode;
   sourceRef: string;
@@ -150,7 +156,14 @@ export interface AdoptionPackManagedFileRecord {
   relativePath: string;
   absolutePath: string;
   assetGroup: AdoptionPackManagedAssetGroup;
-  checksumSha256: string;
+  ownershipClass: AdoptionPackOwnershipClass;
+  driftPolicy: AdoptionPackDriftPolicy;
+  gitPolicy: AdoptionPackGitPolicy;
+  placeholderPolicy: AdoptionPackPlaceholderPolicy;
+  sourceCatalogId?: string;
+  seededAt?: string;
+  seedChecksumSha256?: string | null;
+  checksumSha256?: string | null;
   managed: boolean;
 }
 
@@ -178,6 +191,17 @@ export interface AdoptionPackVerificationCheck {
 }
 
 /**
+ * Defines one structured self-host activation-phase row retained by canonical verify output.
+ */
+export interface AdoptionPackActivationPhaseRecord {
+  phaseId: AdoptionPackReadinessGroup;
+  status: 'blocked' | 'in_progress' | 'completed';
+  blockingReasons: string[];
+  placeholderPaths: string[];
+  nextActions: string[];
+}
+
+/**
  * Defines the verification summary retained by the installer layer.
  */
 export interface AdoptionPackVerificationSummary {
@@ -188,6 +212,10 @@ export interface AdoptionPackVerificationSummary {
   receiptPath: string;
   checks: AdoptionPackVerificationCheck[];
   driftDetected: boolean;
+  activationPhase?: AdoptionPackReadinessGroup;
+  activationPhaseStatus?: 'blocked' | 'in_progress' | 'completed';
+  activationPhaseRecords?: AdoptionPackActivationPhaseRecord[];
+  operatorNextActions?: string[];
   hostVerificationSummaryPath?: string;
 }
 
@@ -226,8 +254,10 @@ export interface AdoptionPackInstallReceipt {
 export interface AdoptionPackDiffRecord {
   relativePath: string;
   assetGroup: AdoptionPackManagedAssetGroup;
+  ownershipClass: AdoptionPackOwnershipClass;
+  driftPolicy: AdoptionPackDriftPolicy;
   diffKind: 'missing' | 'changed' | 'extraneous_managed';
-  receiptChecksumSha256: string;
+  receiptChecksumSha256: string | null;
   currentChecksumSha256: string | null;
 }
 

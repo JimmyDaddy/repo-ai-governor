@@ -153,7 +153,7 @@ describe('AdoptionPackRegistry', () => {
       parityClass: AdoptionPackParityClass.ADOPTER_OWNED_PLACEHOLDER,
       sourceMode: AdoptionPackSourceMode.ADOPTER_PLACEHOLDER,
       applicabilityScope: AdoptionPackApplicabilityScope.SELF_HOST_REPO_LOCAL,
-      readinessGroup: AdoptionPackReadinessGroup.GOVERNANCE_RULES_READY,
+      readinessGroup: AdoptionPackReadinessGroup.AUTHORING_STARTED,
       sourceRef:
         'builtin://repo-ai-governor/adoption-pack/runtime-bootstrap/.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md',
     });
@@ -181,11 +181,11 @@ describe('AdoptionPackRegistry', () => {
     const readinessScopedSurfaces = definition.sourceCatalogRecords.filter(
       (record) => record.readinessGroup !== AdoptionPackReadinessGroup.NONE,
     );
-    const governanceRulesMatrix = definition.readinessMatrixRecords.find(
-      (record) => record.readinessGroup === AdoptionPackReadinessGroup.GOVERNANCE_RULES_READY,
+    const templateSeededMatrix = definition.readinessMatrixRecords.find(
+      (record) => record.readinessGroup === AdoptionPackReadinessGroup.TEMPLATE_SEEDED,
     );
-    const executionSurfaceMatrix = definition.readinessMatrixRecords.find(
-      (record) => record.readinessGroup === AdoptionPackReadinessGroup.EXECUTION_SURFACE_READY,
+    const executionReadyMatrix = definition.readinessMatrixRecords.find(
+      (record) => record.readinessGroup === AdoptionPackReadinessGroup.EXECUTION_READY,
     );
 
     expect(readinessScopedSurfaces.length).toBeGreaterThan(0);
@@ -197,7 +197,7 @@ describe('AdoptionPackRegistry', () => {
           !record.profileIds.includes(BUILT_IN_ADOPTION_PACK_PROFILE_IDS.ADOPTER_COMPLETE),
       ),
     ).toBe(true);
-    expect(governanceRulesMatrix).toMatchObject({
+    expect(templateSeededMatrix).toMatchObject({
       applicabilityScope: AdoptionPackApplicabilityScope.SELF_HOST_REPO_LOCAL,
       sinkIds: expect.arrayContaining([
         AdoptionPackReadinessSink.DOCTOR_DIAGNOSTICS,
@@ -205,16 +205,14 @@ describe('AdoptionPackRegistry', () => {
         AdoptionPackReadinessSink.EXECUTION_PREFLIGHT,
       ]),
     });
-    expect(governanceRulesMatrix?.surfaceIds).toEqual(
+    expect(templateSeededMatrix?.surfaceIds).toEqual(
       expect.arrayContaining([
-        'runtime_bootstrap:.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md',
-        'runtime_bootstrap:.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md',
+        'runtime_bootstrap:.repo-ai-governor/governor.yaml',
+        'template:.repo-ai-governor/context/current-context.md',
       ]),
     );
-    expect(executionSurfaceMatrix?.note).toContain('diagnostics and adopt verify should warn');
-    expect(executionSurfaceMatrix?.note).toContain(
-      'downstream fail-closed execution preflight signal',
-    );
+    expect(executionReadyMatrix?.note).toContain('final self-host activation phase');
+    expect(executionReadyMatrix?.note).toContain('downstream execution');
   });
 
   it('exposes self-host runtime bootstrap records through the built-in definition', async () => {

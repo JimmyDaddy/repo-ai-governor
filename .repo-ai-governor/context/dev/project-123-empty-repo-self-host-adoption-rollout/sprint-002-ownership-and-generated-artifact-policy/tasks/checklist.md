@@ -1,0 +1,41 @@
+# checklist
+
+- [x] TK-1057 implement self-host ownership classes and receipt metadata baseline
+  - 2026-05-13：任务创建，状态初始化为 `planned`。
+  - 2026-05-14：将 ownership/drift/git taxonomy 正式落入 adoption-pack constants、source catalog 与 install receipt schema，新增 `managed_locked / starter_editable / canonical_runtime_writable / generated_ephemeral` 以及对应 drift/git policy。
+  - 2026-05-14：为 self-host receipt 增加兼容 backfill 逻辑，使历史仅有 `managed=true` 的记录在读取时可回填为新的 ownership taxonomy，而不会继续沿用错误 drift 行为。
+- [x] TK-1058 align drift upgrade remove and gitignore recommendation semantics
+  - 2026-05-13：任务创建，状态初始化为 `planned`。
+  - 2026-05-14：将 `adopt diff` 限定为仅对 `managed_locked + enforce_checksum` surface 产生 install drift fail signal，`starter_editable` 与 `canonical_runtime_writable` 改动不再被误报为 managed drift。
+  - 2026-05-14：重构 `adopt upgrade/remove` 语义：strict managed drift 继续 fail-closed，starter-editable 仅在 untouched seed 时可 auto-remove，canonical runtime truth 则显式阻止 remove。
+  - 2026-05-14：为 self-host installation 写出 opt-in `.gitignore` recommendation artifact，并新增集成测试覆盖 ownership metadata、editable/canonical non-drift 与 canonical remove block。
+- [x] TK-1059 close sprint-002 and hand off activation readiness work
+  - 2026-05-13：任务创建，状态初始化为 `planned`。
+  - 2026-05-14：`CR-005` 已以 clean `resolved` 收口，sprint-002 的 ownership/drift/gitignore policy 实现面达到可 closeout 状态。
+  - 2026-05-14：已生成 `DA-1059`，并将 project/sprint plan、`current-context.md` 与 completed history 切换到 `sprint-003` primary execution surface。
+  - 2026-05-14：已完成 sprint-002 closeout write-back，并通过同窗口 `pnpm exec vitest run apps/cli/test/adopt-command.integration.test.ts`、`pnpm exec vitest run test/sync-task-ledger.integration.test.ts`、`pnpm run build`、governance sync checks 与 `pnpm run check`。
+- [x] CR-001 sprint-002-ownership-and-generated-artifact-policy delegated review loop round 1
+  - 2026-05-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-05-14：fresh reviewer round 1 返回 1 个 `P1` 和 1 个 `P2` actionable findings；主 agent 复核后均予以接受。
+  - 2026-05-14：已修复 self-host edited surface 的 `adopt upgrade` fail-closed regression，并补齐 edited self-host `upgrade` integration coverage。
+  - 2026-05-14：已写入 `resolved_code_review_working-tree-20260514-0343.md`，并完成同窗口 `pnpm exec vitest run apps/cli/test/adopt-command.integration.test.ts` 与 `pnpm run build` 验证。
+- [x] CR-002 sprint-002-ownership-and-generated-artifact-policy delegated recheck loop round 2
+  - 2026-05-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-05-14：fresh reviewer round 2 返回 1 个 `P2` 和 1 个 `P3` actionable findings；主 agent 复核后均予以接受。
+  - 2026-05-14：已将 self-host gitignore recommendation 文案接入 `localizeText(...)`，并把 regression test 中的原生 `Error` 改为 assertion-first 失败表达。
+  - 2026-05-14：已写入 `resolved_code_review_working-tree-20260514-0408.md`，并完成同窗口 `pnpm exec vitest run apps/cli/test/adopt-command.integration.test.ts` 与 `pnpm run build` 验证。
+- [x] CR-003 sprint-002-ownership-and-generated-artifact-policy delegated review loop round 3
+  - 2026-05-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-05-14：fresh reviewer round 3 返回 1 个 `P1` 与 1 个 `P2` actionable findings；主 agent 复核后均予以接受。
+  - 2026-05-14：已修复 self-host starter/canonical surface 缺失时的 fail-open drift 与 silent reseed 问题，并补齐删除场景集成测试。
+  - 2026-05-14：已写入 `resolved_code_review_working-tree-20260514-0425.md`，并完成同窗口 `pnpm exec vitest run apps/cli/test/adopt-command.integration.test.ts` 与 `pnpm run build` 验证。
+- [x] CR-004 sprint-002-ownership-and-generated-artifact-policy delegated review loop round 4
+  - 2026-05-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-05-14：fresh reviewer round 4 返回 1 个 `P1` 与 1 个 `P2` actionable findings；主 agent 复核后均予以接受。
+  - 2026-05-14：已修复 `adopt upgrade --force` 仍会覆写 `canonical_runtime_writable` 真值的问题，并补齐 force-upgrade self-host regression coverage。
+  - 2026-05-14：已将 `sync-task-ledger` gap regression 改为真实 sqlite `source_row_number` 缺口场景，避免旧实现的伪阳性通过。
+  - 2026-05-14：已写入 `resolved_code_review_working-tree-20260514-0502.md`，并完成同窗口 `pnpm exec vitest run apps/cli/test/adopt-command.integration.test.ts`、`pnpm exec vitest run test/sync-task-ledger.integration.test.ts` 与 `pnpm run build` 验证。
+- [x] CR-005 sprint-002-ownership-and-generated-artifact-policy delegated review loop round 5
+  - 2026-05-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-05-14：fresh reviewer round 5 已完成 clean recheck，未发现新的 actionable findings。
+  - 2026-05-14：已写入 `resolved_code_review_working-tree-20260514-0519.md`，并复用同窗口 `pnpm exec vitest run apps/cli/test/adopt-command.integration.test.ts`、`pnpm exec vitest run test/sync-task-ledger.integration.test.ts` 与 `pnpm run build` 作为最终 clean 证据。

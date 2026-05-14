@@ -443,6 +443,9 @@ describe('CliTaskDrivenRunRuntime', () => {
       });
 
       expect(assembly.assemblyMode).toBe(CliTaskDrivenRunAssemblyMode.TASK_DRIVEN);
+      expect(assembly.stageInputs['node-task-execute']?.executionRoleProfileId).toBe(
+        DefaultRoleProfileId.CODER,
+      );
       expect(
         assembly.processDefinition.nodes.map((node: { stageId?: string }) => node.stageId),
       ).toContain('stage-delivery-rehearsal');
@@ -450,6 +453,62 @@ describe('CliTaskDrivenRunRuntime', () => {
         'pr_draft',
       );
       expect(assembly.stageInputs['node-delivery-rehearsal']?.managedDeliveryRehearsal).toBe(true);
+    } finally {
+      await rm(workspaceRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps delivery-oriented execute stage on coder even when review keywords appear in the goal', async () => {
+    const workspaceRoot = await mkdtemp(resolve(tmpdir(), 'repo-ai-governor-tk108-'));
+    const taskCardPath = resolve(
+      workspaceRoot,
+      'context/dev/project-010/sprint-003/tasks/TK-108-delivery-rehearsal-with-review-verification-language.md',
+    );
+    await mkdir(resolve(taskCardPath, '..'), { recursive: true });
+    await writeFile(
+      taskCardPath,
+      `# TK-108 Controlled delivery rehearsal PR draft blackbox
+
+- Status: in_progress
+- Date: 2026-03-24
+- Owner: AI-Agent
+- Priority: P0
+- Project: \`project-010-local-model-and-ide-expansion\`
+- Sprint: \`sprint-003-delivery-ide-and-ga-hardening\`
+
+## 1. 任务目标
+
+Execute unattended delivery rehearsal, review verification, and report replay validation.
+
+## 2. Depends On
+
+1. \`TK-107\`
+
+## 4. Input References
+
+1. \`.repo-ai-governor/context/dev/project-010/sprint-002/tasks/DA-106-sprint-002-exit-acceptance-and-sprint-003-input-constraints.md\`
+`,
+      'utf8',
+    );
+
+    try {
+      const runtime = new CliTaskDrivenRunRuntime(workspaceRoot);
+      const assembly = await runtime.buildRunAssembly({
+        executionId: 'cli-run-005',
+        taskId: 'TK-108',
+        adaptersConfig: createAdaptersConfigFixture(),
+      });
+
+      expect(assembly.assemblyMode).toBe(CliTaskDrivenRunAssemblyMode.TASK_DRIVEN);
+      expect(assembly.stageInputs['node-task-execute']?.executionRoleProfileId).toBe(
+        DefaultRoleProfileId.CODER,
+      );
+      expect(assembly.stageInputs['node-task-verify']?.verificationRoleProfileId).toBe(
+        DefaultRoleProfileId.VERIFIER,
+      );
+      expect(assembly.stageInputs['node-delivery-rehearsal']?.deliveryRehearsalAction).toBe(
+        'pr_draft',
+      );
     } finally {
       await rm(workspaceRoot, { recursive: true, force: true });
     }

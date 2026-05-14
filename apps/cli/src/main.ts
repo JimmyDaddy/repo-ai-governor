@@ -3,7 +3,7 @@ import { isAbsolute, resolve } from 'node:path';
 
 import { Command, CommanderError } from 'commander';
 
-import { AgentAvailabilityStatus, AgentCapability } from '@repo-ai-governor/adapter-sdk';
+import { AgentAvailabilityStatus } from '@repo-ai-governor/adapter-sdk';
 import {
   type AdaptersConfig,
   ConfigLoader,
@@ -12,6 +12,8 @@ import {
   ProfileResolver,
   type ResolvedWorkspace,
   WorkspaceResolver,
+  buildDefaultGovernorConfig as buildConfigPackageDefaultGovernorConfig,
+  buildDefaultAdaptersConfig,
 } from '@repo-ai-governor/config';
 import {
   SESSION_MAIN_CAPABILITY_ID,
@@ -23,12 +25,10 @@ import {
   type MemoryProviderRegistryLoadResult,
 } from '@repo-ai-governor/memory-provider-registry';
 import {
-  AdapterAvailability,
   AdapterSurface,
   AdapterTransportKind,
   DEFAULT_I18N_RUNTIME_CONFIG,
   DEFAULT_MEMORY_RUNTIME_CONFIG,
-  DefaultRoleProfileId,
   ErrorOutputEnvironment,
   GovernorErrorCode,
   I18nRuntime,
@@ -36,7 +36,6 @@ import {
   type MemoryRuntimeConfig,
   RuntimeError,
   type StandardizedError,
-  WorkspaceMigrationPolicy,
   standardizeError,
 } from '@repo-ai-governor/shared';
 import { CliGovernanceRuntime } from './cli-governance-runtime.js';
@@ -195,91 +194,7 @@ const CLI_TOP_LEVEL_BOOLEAN_OPTIONS = new Set<string>([
   '--help',
   '-h',
 ]);
-const DEFAULT_ADAPTERS_CONFIG: AdaptersConfig = {
-  roles: [
-    {
-      roleId: 'planner',
-      roleProfileId: DefaultRoleProfileId.PLANNER,
-      requiredCapabilities: [AgentCapability.STRUCTURED_OUTPUT],
-      required: true,
-    },
-    {
-      roleId: 'architect',
-      roleProfileId: DefaultRoleProfileId.ARCHITECT,
-      requiredCapabilities: [AgentCapability.STRUCTURED_OUTPUT],
-      required: true,
-    },
-    {
-      roleId: 'coder',
-      roleProfileId: DefaultRoleProfileId.CODER,
-      requiredCapabilities: [AgentCapability.TOOL_CALLING],
-      required: true,
-    },
-    {
-      roleId: 'tester',
-      roleProfileId: DefaultRoleProfileId.TESTER,
-      requiredCapabilities: [AgentCapability.TOOL_CALLING],
-      required: true,
-    },
-    {
-      roleId: 'reviewer',
-      roleProfileId: DefaultRoleProfileId.REVIEWER,
-      requiredCapabilities: [AgentCapability.STRUCTURED_OUTPUT],
-      required: true,
-    },
-    {
-      roleId: 'verifier',
-      roleProfileId: DefaultRoleProfileId.VERIFIER,
-      requiredCapabilities: [AgentCapability.STRUCTURED_OUTPUT],
-      required: true,
-    },
-  ],
-  routing: {
-    roleBindings: {
-      planner: {
-        primarySurface: AdapterSurface.CODEX,
-        fallbackSurfaces: [AdapterSurface.CLAUDE_CODE, AdapterSurface.GITHUB_COPILOT],
-      },
-      architect: {
-        primarySurface: AdapterSurface.CODEX,
-        fallbackSurfaces: [AdapterSurface.CLAUDE_CODE, AdapterSurface.GITHUB_COPILOT],
-      },
-      coder: {
-        primarySurface: AdapterSurface.CODEX,
-        fallbackSurfaces: [AdapterSurface.GITHUB_COPILOT, AdapterSurface.CLAUDE_CODE],
-      },
-      tester: {
-        primarySurface: AdapterSurface.GITHUB_COPILOT,
-        fallbackSurfaces: [AdapterSurface.CODEX, AdapterSurface.CLAUDE_CODE],
-      },
-      reviewer: {
-        primarySurface: AdapterSurface.CODEX,
-        fallbackSurfaces: [AdapterSurface.CLAUDE_CODE, AdapterSurface.GITHUB_COPILOT],
-      },
-      verifier: {
-        primarySurface: AdapterSurface.CODEX,
-        fallbackSurfaces: [AdapterSurface.CLAUDE_CODE, AdapterSurface.GITHUB_COPILOT],
-      },
-    },
-  },
-  tools: [
-    {
-      toolId: AdapterSurface.CODEX,
-      enabled: true,
-      availability: AdapterAvailability.AVAILABLE,
-    },
-    {
-      toolId: AdapterSurface.GITHUB_COPILOT,
-      enabled: true,
-      availability: AdapterAvailability.AVAILABLE,
-    },
-    {
-      toolId: AdapterSurface.CLAUDE_CODE,
-      enabled: true,
-      availability: AdapterAvailability.AVAILABLE,
-    },
-  ],
-};
+const DEFAULT_ADAPTERS_CONFIG: AdaptersConfig = buildDefaultAdaptersConfig();
 
 const DEFAULT_IO: CliIoAdapters = {
   stdout: (value: string): void => {
@@ -1945,29 +1860,15 @@ function resolveRuntimeWorkspaceRootOverride(args: string[]): string | undefined
 }
 
 function buildDefaultGovernorConfig(workspaceMode: ResolvedWorkspace['mode']): GovernorConfig {
-  return {
-    schemaVersion: '1.1',
-    workspace: {
+  return buildConfigPackageDefaultGovernorConfig(
+    {
       mode: workspaceMode,
-      migrationPolicy: WorkspaceMigrationPolicy.COPY_VERIFY_SWITCH_ROLLBACK,
     },
-    i18n: {
-      runtimeEngine: DEFAULT_I18N_CONFIG.runtimeEngine,
-      defaultLocale: DEFAULT_I18N_CONFIG.defaultLocale,
-      fallbackLocale: DEFAULT_I18N_CONFIG.fallbackLocale,
-      supportedLocales: [...DEFAULT_I18N_CONFIG.supportedLocales],
-    },
-    memory: {
+    {
       storeEngine: DEFAULT_MEMORY_CONFIG.storeEngine,
       storeRoot: DEFAULT_MEMORY_CONFIG.storeRoot,
     },
-    ui: {
-      react: {
-        theme: DEFAULT_CLI_REACT_THEME_PRESET,
-      },
-    },
-    adapters: resolveAdaptersRuntimeConfig(undefined),
-  };
+  );
 }
 
 /**

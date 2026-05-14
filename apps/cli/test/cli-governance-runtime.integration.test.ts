@@ -3242,6 +3242,113 @@ describe('CliGovernanceRuntime policy/review safeguards', () => {
     );
   });
 
+  it('falls back task-driven report stage when reviewer primary surface only provides degraded structured output', async () => {
+    const codexInvokePrompts: string[] = [];
+    const claudeInvokePrompts: string[] = [];
+    const codexExecRunner = vi.fn<CodexExecRunner>().mockImplementation(async (request) => {
+      if (request.operation === AgentCliExecOperation.PROBE) {
+        return {
+          stdout: [
+            '{"type":"thread.started","thread_id":"thread-codex-probe"}',
+            '{"type":"item.completed","item":{"id":"item-codex-probe","type":"agent_message","text":"OK"}}',
+            '{"type":"turn.completed","usage":{"input_tokens":8,"output_tokens":4}}',
+          ].join('\n'),
+          stderr: '',
+          exitCode: 0,
+          signal: null,
+          elapsedMs: 6,
+        };
+      }
+
+      codexInvokePrompts.push(request.prompt);
+      return {
+        stdout: [
+          '{"type":"thread.started","thread_id":"thread-codex-run"}',
+          `{"type":"item.completed","item":{"id":"item-codex-run","type":"agent_message","text":"${request.prompt.includes('Stage ID: stage-task-report') ? 'report ready' : 'codex ready'}"}}`,
+          '{"type":"turn.completed","usage":{"input_tokens":21,"output_tokens":13}}',
+        ].join('\n'),
+        stderr: '',
+        exitCode: 0,
+        signal: null,
+        elapsedMs: 9,
+      };
+    });
+    const claudeCodeExecRunner = vi
+      .fn<ClaudeCodeExecRunner>()
+      .mockImplementation(async (request) => {
+        if (request.operation === AgentCliExecOperation.PROBE) {
+          return {
+            stdout: 'OK\n',
+            stderr: '',
+            exitCode: 0,
+            signal: null,
+            elapsedMs: 6,
+          };
+        }
+
+        claudeInvokePrompts.push(request.prompt);
+        return {
+          stdout: 'claude degraded response\n',
+          stderr: '',
+          exitCode: 0,
+          signal: null,
+          elapsedMs: 9,
+        };
+      });
+
+    await withRuntimeFixture(
+      async (fixture) => {
+        await writeDeliveryTaskCardFixture(fixture.workspaceRoot, 'TK-107');
+        const runtimeWithOverrides = fixture.runtime as unknown as {
+          collectGitChangedPaths: () => Promise<string[]>;
+        };
+        runtimeWithOverrides.collectGitChangedPaths = async () => [];
+
+        const runResult = await fixture.runtime.execute(CliCommandName.RUN);
+
+        expect(runResult.commandResult.details?.runtime_status).toBe('succeeded');
+        expect(runResult.commandResult.details?.delivery_rehearsal_status).toBe('applied');
+        expect(
+          codexInvokePrompts.some((prompt) => prompt.includes('Stage ID: stage-task-report')),
+        ).toBe(true);
+        expect(
+          claudeInvokePrompts.some((prompt) => prompt.includes('Stage ID: stage-task-report')),
+        ).toBe(false);
+
+        const diagnosticsTracePath = String(
+          runResult.commandResult.artifacts?.find((artifact) => artifact.id === 'diagnostics_trace')
+            ?.path,
+        );
+        const diagnosticsTracePayload = JSON.parse(
+          await readFile(diagnosticsTracePath, 'utf8'),
+        ) as {
+          errorContext?: { stageErrors?: Array<{ stageId?: string; errorMessage?: string }> };
+          adapterInvocationSummary?: Array<{
+            stageId?: string;
+            selectedSurface?: string;
+          }>;
+        };
+        expect(diagnosticsTracePayload.errorContext?.stageErrors ?? []).toEqual([]);
+        expect(
+          diagnosticsTracePayload.adapterInvocationSummary?.find(
+            (entry) => entry.stageId === 'stage-task-report',
+          )?.selectedSurface,
+        ).toBe('codex');
+      },
+      {
+        codexExecRunner,
+        claudeCodeExecRunner,
+        runtimeDebugOptions: {
+          dryRun: false,
+          trace: true,
+          replayPath: null,
+          adapters: true,
+          taskId: 'TK-107',
+        },
+      },
+    );
+  });
+
   it('skips delivery rehearsal side effects during task-driven dry-run execution', async () => {
     await withRuntimeFixture(
       async (fixture) => {

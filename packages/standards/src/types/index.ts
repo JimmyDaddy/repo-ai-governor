@@ -1,4 +1,5 @@
 export type {
+  AdoptionPackActivationPhaseRecord,
   AdoptionPackDiffRecord,
   AdoptionPackDiffReport,
   AdoptionPackInstallReceipt,

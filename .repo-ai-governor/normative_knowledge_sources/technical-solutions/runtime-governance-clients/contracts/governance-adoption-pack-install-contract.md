@@ -56,6 +56,10 @@
 8. `verification_summary`
 9. `installed_at`
 10. `last_updated_at`
+11. `ownership_class`
+12. `drift_policy`
+13. `git_policy`
+14. `placeholder_policy`
 
 ## 3. Allowed Values
 
@@ -91,6 +95,11 @@
 6. `remove_policy`
    - `managed_only`
    - `managed_with_confirm`
+7. `ownership_class`
+   - `managed_locked`
+   - `starter_editable`
+   - `canonical_runtime_writable`
+   - `generated_ephemeral`
 
 ## 4. Required Constraints
 
@@ -113,6 +122,18 @@
 14. convenience entry 不得把 broader governance audit `check` 吞并为 install result 的隐式前置或唯一 follow-up；`check` 继续作为显式治理审计 surface。
 15. 当 convenience entry 省略 pack selector 时，只允许回落到官方 built-in pack；显式 selector 解析必须复用现有 `pack-id -> profile-id` fallback 语义，并在目标不唯一时 fail-closed。
 16. 当目标仓库已存在 install receipt 时，convenience rerun 只允许在 `pack_id/applied_profile_id` 匹配且 managed files 干净时复用现有安装；出现 drift、pack mismatch 或 profile mismatch 时，必须显式重定向到 `adopt diff/upgrade/remove`，不得静默变成 upgrade 或 cross-pack migration。
+17. empty-repo `self-host-complete + repo_local` path 下，bootstrap transaction 内的 config seed 与 `adopt apply` 必须保持同一事务语义；installer 不得先写出会被同窗口 managed apply 视为“未受管冲突”的 repo-local `governor.yaml`。
+18. self-host template 必须提供最小可执行 baseline：至少让 `connect` 能进入 candidate-config path，而不是因缺少 `adapters` baseline 直接 fail-closed；默认 storage engine 也不得与后续 diagnostics 的“expected default”长期分叉。
+19. `managed_file_records` 对 self-host path 不得再把所有 seeded surface 一律视作“后续必须保持 checksum 一致”的 managed drift。`starter_editable` 与 `canonical_runtime_writable` 必须只保留 provenance/placeholder 语义，不得把正常 authoring 或 runtime 演进误报为 installer drift。
+20. `managed_locked`、`starter_editable`、`canonical_runtime_writable` 与 `generated_ephemeral` 必须绑定明确 lifecycle：
+   - `managed_locked` 继续沿用严格 `diff/upgrade/remove` managed lifecycle。
+   - `starter_editable` 只保留 seed provenance / placeholder policy；`upgrade` 不得默认覆盖用户编辑内容，`remove` 仅允许对 untouched seed auto-delete。
+   - `canonical_runtime_writable` 只记录 seed provenance，不再要求和 seed checksum 持续一致；`upgrade` 只能做 migration / next-action hint，`remove` 不得静默删除当前 canonical truth。
+   - `generated_ephemeral` 不进入 install drift / remove 主链，清理、轮转与归档属于 runtime housekeeping。
+21. 对已安装 self-host 仓库，receipt 必须提供 migration/backfill 路径，把旧的统一 `managed=true` surface 回填到新的 ownership taxonomy；否则已落地仓库不得因为历史 receipt 结构继续保留错误 drift 行为。
+22. generated diagnostics / reports / replay / compiled-ir / sqlite wal/shm 等 runtime 产物必须与 installer-owned canonical surfaces 分层；installer 最多提供 `.gitignore` recommendation block 或等价 opt-in append，不得静默改写 adopter 根 `.gitignore`。
+23. self-host activation/readiness phase 必须只有一个 canonical producer：`adopt verify` 负责 install/self-host activation verdict 与 verification summary；`doctor` 只能反映最近一次 canonical phase 并叠加本机环境 / adapter readiness；`check` 只能消费 phase truth 做 broader governance audit。
+24. installer-facing blocked signal 也必须与上述 owner split 对齐：install/self-host placeholder 阻断归 `adopt verify`，adapter/local-env/secret backend readiness 归 `doctor`，broader policy / governance audit 归 `check`。
 
 ## 5. Consumers
 
@@ -131,3 +152,4 @@
 3. `v1` 允许 `self-host-complete` 先 formalize 为官方治理模板路径，并把 template bootstrap 与 live-state clone 的边界写成 fail-closed contract。
 4. `v1` 允许以 additive clarification 的方式补充 built-in pack parity 与 self-host placeholder readiness applicability boundary，而不要求新增 schema version。
 5. `v1` 允许以 additive clarification 的方式 formalize installer convenience orchestration、explicit `check` follow-up、default built-in selector 与 clean rerun boundary，而不要求新增 schema version。
+6. `v1` 允许以 additive clarification 的方式 formalize empty-repo self-host bootstrap transaction consistency、ownership taxonomy、generated artifact ignore policy 与 activation/readiness owner split，而不要求新增 schema version。

@@ -6,12 +6,18 @@ import { promisify } from 'node:util';
 import {
   AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY,
   AgentCapability,
+  AgentCapabilityFallbackAction,
   AgentNetworkMode,
   AgentRouteRunner,
   AgentStageExecutionMode,
   AgentStageToolUsePolicy,
 } from '@repo-ai-governor/adapter-sdk';
-import { type AdaptersConfig, SchemaValidator } from '@repo-ai-governor/config';
+import {
+  type AdaptersConfig,
+  SchemaValidator,
+  buildDefaultGovernorConfig,
+  renderGovernorConfigContent,
+} from '@repo-ai-governor/config';
 import { AgentSessionRegistry } from '@repo-ai-governor/core-agent-projection';
 import {
   ChangeRiskEvaluator,
@@ -65,16 +71,12 @@ import {
 } from '@repo-ai-governor/orchestration-service-client';
 import { ReportBuilder } from '@repo-ai-governor/reporting';
 import {
-  AdapterAvailability,
-  AdapterSurface,
-  DEFAULT_I18N_FALLBACK_LOCALE,
-  DEFAULT_I18N_LOCALE,
+  type AdapterSurface,
   ErrorOutputEnvironment,
   ExecutionProgressStage,
   ExecutionProgressStatus,
   GovernorErrorCode,
   RuntimeError,
-  WorkspaceMigrationPolicy,
 } from '@repo-ai-governor/shared';
 import { CliAdoptCommand } from './commands/adopt-command.js';
 import { CliCheckCommand } from './commands/check-command.js';
@@ -1608,100 +1610,17 @@ export class CliGovernanceRuntime {
    * @returns YAML text content.
    */
   private buildDefaultConfigContent(): string {
-    return [
-      'schemaVersion: "1.1"',
-      'workspace:',
-      `  mode: ${this.options.workspace.mode}`,
-      `  migrationPolicy: ${WorkspaceMigrationPolicy.COPY_VERIFY_SWITCH_ROLLBACK}`,
-      'i18n:',
-      '  runtimeEngine: i18next',
-      `  defaultLocale: ${DEFAULT_I18N_LOCALE}`,
-      `  fallbackLocale: ${DEFAULT_I18N_FALLBACK_LOCALE}`,
-      '  supportedLocales:',
-      `    - ${DEFAULT_I18N_LOCALE}`,
-      `    - ${DEFAULT_I18N_FALLBACK_LOCALE}`,
-      'ui:',
-      '  react:',
-      `    theme: ${DEFAULT_CLI_REACT_THEME_PRESET}`,
-      'memory:',
-      `  storeEngine: ${this.options.memoryConfig.storeEngine}`,
-      `  storeRoot: ${this.options.memoryConfig.storeRoot}`,
-      'adapters:',
-      '  roles:',
-      '    - roleId: planner',
-      '      roleProfileId: planner-default',
-      '      requiredCapabilities:',
-      `        - ${AgentCapability.STRUCTURED_OUTPUT}`,
-      '      required: true',
-      '    - roleId: architect',
-      '      roleProfileId: architect-default',
-      '      requiredCapabilities:',
-      `        - ${AgentCapability.STRUCTURED_OUTPUT}`,
-      '      required: true',
-      '    - roleId: coder',
-      '      roleProfileId: coder-default',
-      '      requiredCapabilities:',
-      `        - ${AgentCapability.TOOL_CALLING}`,
-      '      required: true',
-      '    - roleId: tester',
-      '      roleProfileId: tester-default',
-      '      requiredCapabilities:',
-      `        - ${AgentCapability.TOOL_CALLING}`,
-      '      required: true',
-      '    - roleId: reviewer',
-      '      roleProfileId: reviewer-default',
-      '      requiredCapabilities:',
-      `        - ${AgentCapability.STRUCTURED_OUTPUT}`,
-      '      required: true',
-      '    - roleId: verifier',
-      '      roleProfileId: verifier-default',
-      '      requiredCapabilities:',
-      `        - ${AgentCapability.STRUCTURED_OUTPUT}`,
-      '      required: true',
-      '  routing:',
-      '    roleBindings:',
-      '      planner:',
-      `        primarySurface: ${AdapterSurface.CODEX}`,
-      '        fallbackSurfaces:',
-      `          - ${AdapterSurface.CLAUDE_CODE}`,
-      `          - ${AdapterSurface.GITHUB_COPILOT}`,
-      '      architect:',
-      `        primarySurface: ${AdapterSurface.CODEX}`,
-      '        fallbackSurfaces:',
-      `          - ${AdapterSurface.CLAUDE_CODE}`,
-      `          - ${AdapterSurface.GITHUB_COPILOT}`,
-      '      coder:',
-      `        primarySurface: ${AdapterSurface.CODEX}`,
-      '        fallbackSurfaces:',
-      `          - ${AdapterSurface.GITHUB_COPILOT}`,
-      `          - ${AdapterSurface.CLAUDE_CODE}`,
-      '      tester:',
-      `        primarySurface: ${AdapterSurface.GITHUB_COPILOT}`,
-      '        fallbackSurfaces:',
-      `          - ${AdapterSurface.CODEX}`,
-      `          - ${AdapterSurface.CLAUDE_CODE}`,
-      '      reviewer:',
-      `        primarySurface: ${AdapterSurface.CLAUDE_CODE}`,
-      '        fallbackSurfaces:',
-      `          - ${AdapterSurface.CODEX}`,
-      `          - ${AdapterSurface.GITHUB_COPILOT}`,
-      '      verifier:',
-      `        primarySurface: ${AdapterSurface.CODEX}`,
-      '        fallbackSurfaces:',
-      `          - ${AdapterSurface.CLAUDE_CODE}`,
-      `          - ${AdapterSurface.GITHUB_COPILOT}`,
-      '  tools:',
-      `    - toolId: ${AdapterSurface.CODEX}`,
-      '      enabled: true',
-      `      availability: ${AdapterAvailability.AVAILABLE}`,
-      `    - toolId: ${AdapterSurface.GITHUB_COPILOT}`,
-      '      enabled: true',
-      `      availability: ${AdapterAvailability.AVAILABLE}`,
-      `    - toolId: ${AdapterSurface.CLAUDE_CODE}`,
-      '      enabled: true',
-      `      availability: ${AdapterAvailability.AVAILABLE}`,
-      '',
-    ].join('\n');
+    return renderGovernorConfigContent(
+      buildDefaultGovernorConfig(
+        {
+          mode: this.options.workspace.mode,
+        },
+        {
+          storeEngine: this.options.memoryConfig.storeEngine,
+          storeRoot: this.options.memoryConfig.storeRoot,
+        },
+      ),
+    );
   }
 
   /**
@@ -1960,6 +1879,18 @@ export class CliGovernanceRuntime {
           ? {
               capabilityRequirement: {
                 requiredCapabilities: roleConfig.requiredCapabilities as AgentCapability[],
+                ...(node.routeKey === CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS.REPORT.routeKey
+                  ? {
+                      fallbackRules: [
+                        {
+                          capability: AgentCapability.STRUCTURED_OUTPUT,
+                          onUnsupported: AgentCapabilityFallbackAction.USE_FALLBACK_SURFACE,
+                          onDegraded: AgentCapabilityFallbackAction.USE_FALLBACK_SURFACE,
+                          note: 'task-driven report can fall back to the next readable surface',
+                        },
+                      ],
+                    }
+                  : {}),
               },
             }
           : {}),

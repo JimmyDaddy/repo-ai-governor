@@ -1,0 +1,27 @@
+# checklist
+
+- [x] TK-1054 fix empty-repo self-host bootstrap transaction and managed apply boundary
+  - 2026-05-13：任务创建，状态初始化为 `planned`。
+  - 2026-05-14：定位 `adopt bootstrap --adoption-profile self-host-complete --workspace-mode repo_local` 的 first-run 事务边界，把 bootstrap init 与 self-host managed apply 的 `.repo-ai-governor/governor.yaml` seed 收敛到同一份 canonical config builder。
+  - 2026-05-14：新增 explicit self-host bootstrap 回归测试，确认 receipt 记录的 `governor.yaml` checksum 与磁盘实写内容一致，不再出现同事务 seed/apply truth 分叉。
+- [x] TK-1055 seed minimal self-host adapters and storage baseline
+  - 2026-05-13：任务创建，状态初始化为 `planned`。
+  - 2026-05-14：将 self-host repo-local `governor.yaml` baseline 扩展为完整 adapters/routing/tools seed，并与当前 runtime 默认 memory config 对齐到 `sqlite_fs + context/memory`。
+  - 2026-05-14：新增 bootstrap 后直连 `connect --preset multi-tool-default` 的 first-run 回归测试，确认最小 adapters baseline 已足以支持 onboarding candidate path，不再因 baseline 缺失 fail-closed。
+- [x] TK-1056 close sprint-001 and hand off ownership policy implementation
+  - 2026-05-13：任务创建，状态初始化为 `planned`。
+  - 2026-05-14：`CR-003` 已以 clean `resolved` 收口，sprint-001 的 bootstrap transaction 与 minimum baseline 实现面达到可 closeout 状态。
+  - 2026-05-14：已生成 `DA-1056`，并将 project/sprint plan、`current-context.md` 与 completed history 切换到 `sprint-002` primary execution surface。
+  - 2026-05-14：已完成 sprint-001 closeout write-back，并通过同窗口 `pnpm run build`、governance sync checks 与 `pnpm run check`。
+- [x] CR-001 sprint-001-bootstrap-transaction-and-self-host-baseline delegated review loop round 1
+  - 2026-05-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-05-14：fresh reviewer round 1 返回 2 个 `P2` actionable findings，主 agent 复核后均予以接受。
+  - 2026-05-14：完成 default governor/adapters baseline 收敛与 `connect -> adopt diff` clean regression，round 1 review artifact 已写入 `resolved_code_review_working-tree-20260514-0105.md` 并完成同窗口验证。
+- [x] CR-002 sprint-001-bootstrap-transaction-and-self-host-baseline delegated recheck loop round 2
+  - 2026-05-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-05-14：fresh reviewer recheck round 2 发现 `packages/standards` 新增 direct dependency 但 manifest 未声明，主 agent 复核后予以接受。
+  - 2026-05-14：已补齐 `packages/standards/package.json` dependency declaration，并完成同窗口 build / targeted test / ledger gates 验证，round 2 artifact 写入 `resolved_code_review_working-tree-20260514-0158.md`。
+- [x] CR-003 sprint-001-bootstrap-transaction-and-self-host-baseline delegated recheck loop round 3
+  - 2026-05-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-05-14：fresh reviewer recheck round 3 未发现新的 actionable findings；主 agent 直接记录 clean resolved review artifact，并保留 `run --dry-run --trace` 回归缺口与 optional workspace-root serialization 的 residual note。
+  - 2026-05-14：已完成 review artifact write-back、task-ledger sync 与 closeout 前治理复验，当前推进到 `resolved`。

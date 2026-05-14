@@ -2,29 +2,28 @@ import { constants as FsConstants, existsSync } from 'node:fs';
 import { access, mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 
-import { AgentCapability } from '@repo-ai-governor/adapter-sdk';
-import { WorkspaceResolver } from '@repo-ai-governor/config';
 import {
-  AdapterAvailability,
-  AdapterSurface,
-  DEFAULT_I18N_FALLBACK_LOCALE,
-  DEFAULT_I18N_LOCALE,
+  WorkspaceResolver,
+  buildDefaultGovernorConfig,
+  renderGovernorConfigContent,
+} from '@repo-ai-governor/config';
+import {
   DEFAULT_MEMORY_RUNTIME_CONFIG,
   GovernorErrorCode,
   RuntimeError,
-  WorkspaceMigrationPolicy,
   WorkspaceMode,
   standardizeError,
 } from '@repo-ai-governor/shared';
 import {
   type AdoptionPackInstallReceipt,
   type AdoptionPackVerificationCheck,
+  BUILT_IN_ADOPTION_PACK_PROFILE_IDS,
   type HostDistributionTarget,
   HostVerificationStatus,
+  buildSelfHostGovernorConfigContent,
 } from '@repo-ai-governor/standards';
 import { CliAdoptAction } from '../constants/cli-adopt.constant.js';
 import { CLI_INIT_REQUIRED_DIRECTORY_SEGMENTS } from '../constants/cli-governance-runtime.constant.js';
-import { DEFAULT_CLI_REACT_THEME_PRESET } from '../constants/cli-react-theme.constant.js';
 import type { CliAdoptCommandOptions } from '../types/interfaces/cli-adopt-command.interface.js';
 import { type AdoptionOperationResult, CliAdoptionPackRuntime } from './adoption-pack-runtime.js';
 
@@ -168,7 +167,12 @@ export class CliAdoptionPackBootstrapRuntime {
     }
 
     const workspace = this.resolveBootstrapWorkspaceContext(repoRoot, workspaceMode);
-    const initStage = await this.runInitStage(workspace);
+    const initStage = await this.runInitStage(
+      workspace,
+      selection.profile.profileId === BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE
+        ? buildSelfHostGovernorConfigContent()
+        : this.buildDefaultGovernorConfigContent(workspace),
+    );
     const doctorStage = await this.runDoctorStage(workspace, initStage);
     const stageResults: BootstrapStageResult[] = [initStage.stage, doctorStage.stage];
     const writtenArtifacts = [
@@ -395,6 +399,7 @@ export class CliAdoptionPackBootstrapRuntime {
 
   private async runInitStage(
     workspace: BootstrapWorkspaceContext,
+    configContent: string,
   ): Promise<BootstrapInitStageResult> {
     const createdDirectoryPaths: string[] = [];
     for (const segments of CLI_INIT_REQUIRED_DIRECTORY_SEGMENTS) {
@@ -408,10 +413,7 @@ export class CliAdoptionPackBootstrapRuntime {
 
     const configCreated = !existsSync(workspace.configPath);
     if (configCreated) {
-      await this.writeTextFile(
-        workspace.configPath,
-        this.buildDefaultGovernorConfigContent(workspace),
-      );
+      await this.writeTextFile(workspace.configPath, configContent);
     }
 
     const initManifestPath = resolve(
@@ -732,100 +734,17 @@ export class CliAdoptionPackBootstrapRuntime {
   }
 
   private buildDefaultGovernorConfigContent(workspace: BootstrapWorkspaceContext): string {
-    return [
-      'schemaVersion: "1.1"',
-      'workspace:',
-      `  mode: ${workspace.workspaceMode}`,
-      `  migrationPolicy: ${WorkspaceMigrationPolicy.COPY_VERIFY_SWITCH_ROLLBACK}`,
-      'i18n:',
-      '  runtimeEngine: i18next',
-      `  defaultLocale: ${DEFAULT_I18N_LOCALE}`,
-      `  fallbackLocale: ${DEFAULT_I18N_FALLBACK_LOCALE}`,
-      '  supportedLocales:',
-      `    - ${DEFAULT_I18N_LOCALE}`,
-      `    - ${DEFAULT_I18N_FALLBACK_LOCALE}`,
-      'ui:',
-      '  react:',
-      `    theme: ${DEFAULT_CLI_REACT_THEME_PRESET}`,
-      'memory:',
-      `  storeEngine: ${DEFAULT_MEMORY_RUNTIME_CONFIG.storeEngine}`,
-      `  storeRoot: ${workspace.memoryStoreRoot}`,
-      'adapters:',
-      '  roles:',
-      '    - roleId: planner',
-      '      roleProfileId: planner-default',
-      '      requiredCapabilities:',
-      `        - ${AgentCapability.STRUCTURED_OUTPUT}`,
-      '      required: true',
-      '    - roleId: architect',
-      '      roleProfileId: architect-default',
-      '      requiredCapabilities:',
-      `        - ${AgentCapability.STRUCTURED_OUTPUT}`,
-      '      required: true',
-      '    - roleId: coder',
-      '      roleProfileId: coder-default',
-      '      requiredCapabilities:',
-      `        - ${AgentCapability.TOOL_CALLING}`,
-      '      required: true',
-      '    - roleId: tester',
-      '      roleProfileId: tester-default',
-      '      requiredCapabilities:',
-      `        - ${AgentCapability.TOOL_CALLING}`,
-      '      required: true',
-      '    - roleId: reviewer',
-      '      roleProfileId: reviewer-default',
-      '      requiredCapabilities:',
-      `        - ${AgentCapability.STRUCTURED_OUTPUT}`,
-      '      required: true',
-      '    - roleId: verifier',
-      '      roleProfileId: verifier-default',
-      '      requiredCapabilities:',
-      `        - ${AgentCapability.STRUCTURED_OUTPUT}`,
-      '      required: true',
-      '  routing:',
-      '    roleBindings:',
-      '      planner:',
-      `        primarySurface: ${AdapterSurface.CODEX}`,
-      '        fallbackSurfaces:',
-      `          - ${AdapterSurface.CLAUDE_CODE}`,
-      `          - ${AdapterSurface.GITHUB_COPILOT}`,
-      '      architect:',
-      `        primarySurface: ${AdapterSurface.CODEX}`,
-      '        fallbackSurfaces:',
-      `          - ${AdapterSurface.CLAUDE_CODE}`,
-      `          - ${AdapterSurface.GITHUB_COPILOT}`,
-      '      coder:',
-      `        primarySurface: ${AdapterSurface.CODEX}`,
-      '        fallbackSurfaces:',
-      `          - ${AdapterSurface.GITHUB_COPILOT}`,
-      `          - ${AdapterSurface.CLAUDE_CODE}`,
-      '      tester:',
-      `        primarySurface: ${AdapterSurface.GITHUB_COPILOT}`,
-      '        fallbackSurfaces:',
-      `          - ${AdapterSurface.CODEX}`,
-      `          - ${AdapterSurface.CLAUDE_CODE}`,
-      '      reviewer:',
-      `        primarySurface: ${AdapterSurface.CLAUDE_CODE}`,
-      '        fallbackSurfaces:',
-      `          - ${AdapterSurface.CODEX}`,
-      `          - ${AdapterSurface.GITHUB_COPILOT}`,
-      '      verifier:',
-      `        primarySurface: ${AdapterSurface.CODEX}`,
-      '        fallbackSurfaces:',
-      `          - ${AdapterSurface.CLAUDE_CODE}`,
-      `          - ${AdapterSurface.GITHUB_COPILOT}`,
-      '  tools:',
-      `    - toolId: ${AdapterSurface.CODEX}`,
-      '      enabled: true',
-      `      availability: ${AdapterAvailability.AVAILABLE}`,
-      `    - toolId: ${AdapterSurface.GITHUB_COPILOT}`,
-      '      enabled: true',
-      `      availability: ${AdapterAvailability.AVAILABLE}`,
-      `    - toolId: ${AdapterSurface.CLAUDE_CODE}`,
-      '      enabled: true',
-      `      availability: ${AdapterAvailability.AVAILABLE}`,
-      '',
-    ].join('\n');
+    return renderGovernorConfigContent(
+      buildDefaultGovernorConfig(
+        {
+          mode: workspace.workspaceMode,
+        },
+        {
+          storeEngine: DEFAULT_MEMORY_RUNTIME_CONFIG.storeEngine,
+          storeRoot: workspace.memoryStoreRoot,
+        },
+      ),
+    );
   }
 
   private async writeTextFile(filePath: string, content: string): Promise<void> {
