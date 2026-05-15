@@ -2,21 +2,21 @@
 
 ## Primary Stream
 
-- Status: idle
-- Stream: `none`
-- Project: `none`
-- Sprint: `none`
-- Docs: `none`
-- Plan: `none`
-- Tasks: `none`
-- Checklist: `none`
-- CSV: `none`
-- Review: `none`
-- Note: `2026-05-14` project-124 final closeout 已完成，`CR-006` clean 收口后工作区已恢复到 idle，等待下一条执行流激活。
+- Status: active
+- Stream: `stream-project-125-sprint-001`
+- Project: `project-125-adopt-backfill-receipt-command-rollout`
+- Sprint: `sprint-001-backfill-receipt-command-and-receipt-reconstruction`
+- Docs: `.repo-ai-governor/context/dev/project-125-adopt-backfill-receipt-command-rollout`
+- Plan: `.repo-ai-governor/context/dev/project-125-adopt-backfill-receipt-command-rollout/sprint-001-backfill-receipt-command-and-receipt-reconstruction/plan.md`
+- Tasks: `.repo-ai-governor/context/dev/project-125-adopt-backfill-receipt-command-rollout/sprint-001-backfill-receipt-command-and-receipt-reconstruction/tasks/`
+- Checklist: `.repo-ai-governor/context/dev/project-125-adopt-backfill-receipt-command-rollout/sprint-001-backfill-receipt-command-and-receipt-reconstruction/tasks/checklist.md`
+- CSV: `.repo-ai-governor/context/dev/project-125-adopt-backfill-receipt-command-rollout/sprint-001-backfill-receipt-command-and-receipt-reconstruction/tasks/tasks.csv`
+- Review: `.repo-ai-governor/context/dev/project-125-adopt-backfill-receipt-command-rollout/sprint-001-backfill-receipt-command-and-receipt-reconstruction/review/`
+- Note: `2026-05-15` 已激活 project-125 / sprint-001，当前实现目标为 `adopt backfill-receipt` 命令与 receipt 重建运行时。
 
 ## Active Streams
 
-- None currently.
+- `primary`: project=`project-125-adopt-backfill-receipt-command-rollout`, sprint=`sprint-001-backfill-receipt-command-and-receipt-reconstruction`, docs=`.repo-ai-governor/context/dev/project-125-adopt-backfill-receipt-command-rollout`, plan=`.repo-ai-governor/context/dev/project-125-adopt-backfill-receipt-command-rollout/sprint-001-backfill-receipt-command-and-receipt-reconstruction/plan.md`, tasks=`.repo-ai-governor/context/dev/project-125-adopt-backfill-receipt-command-rollout/sprint-001-backfill-receipt-command-and-receipt-reconstruction/tasks/`, checklist=`.repo-ai-governor/context/dev/project-125-adopt-backfill-receipt-command-rollout/sprint-001-backfill-receipt-command-and-receipt-reconstruction/tasks/checklist.md`, csv=`.repo-ai-governor/context/dev/project-125-adopt-backfill-receipt-command-rollout/sprint-001-backfill-receipt-command-and-receipt-reconstruction/tasks/tasks.csv`, review=`.repo-ai-governor/context/dev/project-125-adopt-backfill-receipt-command-rollout/sprint-001-backfill-receipt-command-and-receipt-reconstruction/review/`, status=`active`
 
 ## Planned Follow-Up Streams
 

@@ -1455,7 +1455,7 @@ describe('adopt command integration', () => {
           'task-ledger.sqlite',
         ),
         {
-          readonly: true,
+          readOnly: true,
         },
       );
       expect(configContent).toContain('mode: repo_local');
@@ -2149,6 +2149,131 @@ describe('adopt command integration', () => {
 
       expect(codeStandardsRecord?.ownershipClass).toBe('starter_editable');
       expect(governorConfigRecord?.ownershipClass).toBe('canonical_runtime_writable');
+    } finally {
+      await rm(repositoryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('backfills a self-host receipt from an initialized repository without an existing installation receipt', async () => {
+    const repositoryRoot = await createAdoptionFixtureRepository();
+
+    try {
+      const applyIo = createBufferedIo(repositoryRoot, createDeterministicCliEnvironment());
+      const applyExitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          'adopt',
+          'apply',
+          'adopter-complete',
+          '--adoption-profile',
+          'self-host-complete',
+          '--repo',
+          '.',
+          '--workspace-mode',
+          'repo_local',
+          '--hosts',
+          'codex',
+        ],
+        applyIo.io,
+      );
+
+      expect(applyExitCode).toBe(0);
+
+      const installationRoot = resolve(
+        repositoryRoot,
+        '.repo-ai-governor',
+        'adoption',
+        'installations',
+        'repo-ai-governor-adoption-pack',
+      );
+      const receiptPath = resolve(installationRoot, 'adoption-install.receipt.json');
+      const verificationSummaryPath = resolve(installationRoot, 'adoption-verification.summary.json');
+      await rm(receiptPath, { force: true });
+      await rm(verificationSummaryPath, { force: true });
+
+      const backfillIo = createBufferedIo(repositoryRoot, createDeterministicCliEnvironment());
+      const backfillExitCode = await runCli(
+        [
+          'node',
+          'repo-ai-governor',
+          '--output',
+          'json',
+          'adopt',
+          'backfill-receipt',
+          '--repo',
+          '.',
+        ],
+        backfillIo.io,
+      );
+
+      expect(backfillExitCode).toBe(0);
+      expect(backfillIo.stderrBuffer.join('')).toBe('');
+      const backfillPayload = parseJsonOutput(backfillIo.stdoutBuffer);
+      expect(backfillPayload.command_result?.operation).toBe('adoption_backfill_receipt');
+      expect(backfillPayload.command_result?.details?.workspace_mode).toBe('repo_local');
+      expect(backfillPayload.command_result?.details?.pack_id).toBe(
+        'repo-ai-governor-adoption-pack',
+      );
+      expect(backfillPayload.command_result?.details?.profile_id).toBe('self-host-complete');
+      expect(typeof backfillPayload.command_result?.details?.init_manifest_path).toBe('string');
+      expect(existsSync(String(backfillPayload.command_result?.details?.init_manifest_path))).toBe(
+        true,
+      );
+
+      const backfilledReceipt = JSON.parse(await readFile(receiptPath, 'utf8')) as
+        AdoptionInstallReceiptPayload & {
+          packId?: string;
+          workspaceMode?: string;
+          verificationSummary?: {
+            checks?: Array<{ checkId?: string; detail?: string }>;
+          };
+        };
+      expect(backfilledReceipt.packId).toBe('repo-ai-governor-adoption-pack');
+      expect(backfilledReceipt.appliedProfileId).toBe('self-host-complete');
+      expect(backfilledReceipt.workspaceMode).toBe('repo_local');
+      expect(backfilledReceipt.managedFileRecords?.length).toBeGreaterThan(10);
+      expect(
+        backfilledReceipt.managedFileRecords?.some(
+          (record) =>
+            record.relativePath === '.repo-ai-governor/context/bootstrap/init-manifest.json' &&
+            record.ownershipClass === 'managed_locked',
+        ),
+      ).toBe(true);
+      expect(
+        backfilledReceipt.managedFileRecords?.some(
+          (record) =>
+            record.relativePath === '.repo-ai-governor/governor.yaml' &&
+            record.ownershipClass === 'canonical_runtime_writable',
+        ),
+      ).toBe(true);
+      expect(
+        backfilledReceipt.managedFileRecords?.some(
+          (record) =>
+            record.relativePath ===
+              '.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md' &&
+            record.ownershipClass === 'starter_editable',
+        ),
+      ).toBe(true);
+      expect(
+        backfilledReceipt.verificationSummary?.checks?.some(
+          (check) =>
+            check.checkId === 'asset-group-summary' &&
+            check.detail?.includes('management_metadata='),
+        ),
+      ).toBe(true);
+
+      const verifyIo = createBufferedIo(repositoryRoot, createDeterministicCliEnvironment());
+      const verifyExitCode = await runCli(
+        ['node', 'repo-ai-governor', 'adopt', 'verify', '--repo', '.'],
+        verifyIo.io,
+      );
+
+      expect(verifyExitCode).toBe(0);
+      expect(verifyIo.stderrBuffer.join('')).toBe('');
+      expect(await readFile(verificationSummaryPath, 'utf8')).toContain(
+        'adoption-pack-verification-summary-v1',
+      );
     } finally {
       await rm(repositoryRoot, { recursive: true, force: true });
     }

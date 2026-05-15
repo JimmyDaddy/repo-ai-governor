@@ -117,6 +117,8 @@ export const ZH_CN_TRANSLATIONS = {
         listDescription: '列出解析后的 adoption packs 及其支持的 profiles。',
         bootstrapDescription:
           '按固定顺序执行 installer quickstart：init、bootstrap doctor 预检、adopt apply 与 adopt verify。',
+        backfillReceiptDescription:
+          '基于已初始化的目标仓库重建一份 adoption install receipt。',
         applyDescription: '把一个 adoption pack 应用到目标仓库，并写入受管 ownership receipt。',
         diffDescription: '对比当前仓库状态与 active adoption install receipt 的差异。',
         verifyDescription:
@@ -129,6 +131,8 @@ export const ZH_CN_TRANSLATIONS = {
         actionGuideList: '查看 built-in/global/repo-local 的 pack 解析结果，以及可用 profiles。',
         actionGuideBootstrap:
           '按固定顺序运行 installer quickstart，并把 `check` 保留为显式的更广治理 follow-up。',
+        actionGuideBackfillReceipt:
+          '基于已有的 `.repo-ai-governor` 树回填缺失的 install receipt。',
         actionGuideApply:
           '把 project-local host assets、self-host templates 与 managed metadata 物化进一个仓库。',
         actionGuideDiff: '显示当前仓库与已保存 install receipt 之间的受管文件漂移。',
@@ -138,7 +142,7 @@ export const ZH_CN_TRANSLATIONS = {
           '只删除 install receipt 跟踪的受管文件；移除始终需要显式确认并保持 fail-closed。',
         examplesTitle: '示例：',
         subcommandRequired:
-          'adopt 需要显式子命令；请使用 `adopt list`、`adopt bootstrap`、`adopt apply`、`adopt diff`、`adopt verify`、`adopt upgrade` 或 `adopt remove`。',
+          'adopt 需要显式子命令；请使用 `adopt list`、`adopt bootstrap`、`adopt backfill-receipt`、`adopt apply`、`adopt diff`、`adopt verify`、`adopt upgrade` 或 `adopt remove`。',
         listCompleted: 'adoption pack catalog 已成功列出。',
         bootstrapBlockedGeneric:
           'adopt bootstrap 因存在可执行阻塞项而停止；请按需改用 adopt diff/upgrade/remove，并把 `check` 保留为更广的 follow-up。',
@@ -146,6 +150,8 @@ export const ZH_CN_TRANSLATIONS = {
           'adoption pack {{packId}} bootstrap 因存在可执行阻塞项而停止；请按需改用 adopt diff/upgrade/remove，并把 `check` 保留为更广的 follow-up。',
         bootstrapCompleted:
           'adoption pack {{packId}} bootstrap 已完成；如需更广的治理审计，请显式运行 `check`。',
+        backfillReceiptCompleted:
+          'adoption pack {{packId}} 的 receipt 回填已成功完成。',
         applyCompleted: 'adoption pack {{packId}} 已成功应用。',
         diffCompleted: 'adoption pack {{packId}} diff 已完成。',
         verifyCompleted: 'adoption pack {{packId}} 校验已完成。',

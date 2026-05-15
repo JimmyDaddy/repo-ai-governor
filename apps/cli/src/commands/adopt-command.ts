@@ -56,6 +56,8 @@ export class CliAdoptCommand implements CliCommandExecutor {
         ? await runtime.list(options)
         : options.action === CliAdoptAction.BOOTSTRAP
           ? await bootstrapRuntime.bootstrap(options)
+          : options.action === CliAdoptAction.BACKFILL_RECEIPT
+            ? await runtime.backfillReceipt(options)
           : options.action === CliAdoptAction.APPLY
             ? await runtime.apply(options)
             : options.action === CliAdoptAction.DIFF
@@ -231,6 +233,8 @@ export class CliAdoptCommand implements CliCommandExecutor {
         return CLI_RUNTIME_OPERATION.ADOPTION_LIST;
       case CliAdoptAction.BOOTSTRAP:
         return CLI_RUNTIME_OPERATION.ADOPTION_BOOTSTRAP;
+      case CliAdoptAction.BACKFILL_RECEIPT:
+        return CLI_RUNTIME_OPERATION.ADOPTION_BACKFILL_RECEIPT;
       case CliAdoptAction.APPLY:
         return CLI_RUNTIME_OPERATION.ADOPTION_APPLY;
       case CliAdoptAction.DIFF:
@@ -277,6 +281,8 @@ export class CliAdoptCommand implements CliCommandExecutor {
         return context.translate('cli.commands.adopt.listCompleted');
       case CliAdoptAction.BOOTSTRAP:
         return context.translate('cli.commands.adopt.bootstrapCompleted', packInterpolation);
+      case CliAdoptAction.BACKFILL_RECEIPT:
+        return context.translate('cli.commands.adopt.backfillReceiptCompleted', packInterpolation);
       case CliAdoptAction.APPLY:
         return context.translate('cli.commands.adopt.applyCompleted', packInterpolation);
       case CliAdoptAction.DIFF:

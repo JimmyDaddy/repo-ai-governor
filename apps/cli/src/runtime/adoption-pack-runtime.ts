@@ -16,8 +16,11 @@ import {
   standardizeError,
 } from '@repo-ai-governor/shared';
 import {
+  ADOPTION_PACK_INSTALL_RECEIPT_SCHEMA_VERSION,
+  ADOPTION_PACK_VERIFICATION_SUMMARY_SCHEMA_VERSION,
   type AdoptionPackActivationPhaseRecord,
   AdoptionPackApplicabilityScope,
+  AdoptionPackCompositionPolicy,
   type AdoptionPackDiffRecord,
   AdoptionPackDriftPolicy,
   AdoptionPackGitPolicy,
@@ -25,11 +28,14 @@ import {
   AdoptionPackManagedAssetGroup,
   type AdoptionPackManagedFileRecord,
   AdoptionPackOwnershipClass,
+  AdoptionPackParityClass,
   AdoptionPackPlaceholderPolicy,
   type AdoptionPackProfile,
   AdoptionPackReadinessGroup,
   AdoptionPackReadinessSink,
   AdoptionPackRegistry,
+  AdoptionPackSourceMode,
+  AdoptionPackSurfaceKind,
   type AdoptionPackRuntimeBootstrapRecord,
   type AdoptionPackSourceCatalogRecord,
   type AdoptionPackVerificationCheck,
@@ -136,6 +142,22 @@ interface SelfHostConnectApplyReceiptSnapshot {
   candidateFingerprintCurrent?: boolean;
   applyReady?: boolean;
   applyBlockers?: string[];
+}
+
+interface AdoptionBootstrapInitManifest {
+  schemaVersion?: string;
+  initializedAt?: string;
+  workspaceId?: string;
+  workspaceRoot?: string;
+  workspaceMode?: WorkspaceMode;
+  configPath?: string;
+  configSource?: string;
+  profileId?: string | null;
+  locale?: string;
+  memoryStoreEngine?: string;
+  memoryStoreRoot?: string;
+  packId?: string;
+  appliedProfileId?: string;
 }
 
 const ADOPTION_INSTALL_RECEIPT_FILE_NAME = 'adoption-install.receipt.json';
@@ -349,6 +371,171 @@ export class CliAdoptionPackRuntime {
   public async apply(options: CliAdoptCommandOptions): Promise<AdoptionOperationResult> {
     const resolvedTarget = await this.resolveInstallTarget(options);
     return this.applyResolvedTarget(options, resolvedTarget);
+  }
+
+  /**
+   * Reconstructs one missing install receipt from an already initialized target repository.
+   */
+  public async backfillReceipt(options: CliAdoptCommandOptions): Promise<AdoptionOperationResult> {
+    const repoRoot = this.resolveRepoRoot(options.repoPath);
+    const existingReceipt = await this.readExistingReceipt(repoRoot, options.packSelector, false);
+    if (existingReceipt) {
+      throw new RuntimeError(
+        GovernorErrorCode.STANDARDS_PACK_INVALID,
+        this.localizeText(
+          'adopt backfill-receipt refused because the target repository already has an install receipt.',
+          'adopt backfill-receipt 已拒绝，因为目标仓库已经存在 install receipt。',
+        ),
+        {
+          repoRoot,
+          receiptPath: existingReceipt.receiptPath,
+        },
+      );
+    }
+
+    const initManifest = await this.readBackfillInitManifest(repoRoot);
+    const resolvedTarget = await this.resolveBackfillInstallTarget(options, initManifest);
+    const installationRoot = this.resolveInstallationRoot(repoRoot, resolvedTarget.definition);
+    const receiptPath = resolve(installationRoot, ADOPTION_INSTALL_RECEIPT_FILE_NAME);
+    const verificationSummaryPath = resolve(
+      installationRoot,
+      ADOPTION_VERIFICATION_SUMMARY_FILE_NAME,
+    );
+    const sourceCatalogRecordByRelativePath = this.buildSourceCatalogRecordByRelativePath(
+      resolvedTarget.definition,
+    );
+    const managedFileRecords = await this.collectBackfillManagedFileRecords({
+      repoRoot,
+      definition: resolvedTarget.definition,
+      profile: resolvedTarget.profile,
+      sourceCatalogRecordByRelativePath,
+    });
+    const deduplicatedManagedFileRecords = this.deduplicateManagedFileRecords(managedFileRecords);
+    const verificationSummary = this.buildVerificationSummary({
+      receiptPath,
+      verificationSummaryPath,
+      checks: [
+        {
+          checkId: 'backfill-source',
+          status: HostVerificationStatus.PASS,
+          detail: `init_manifest=${resolve(repoRoot, '.repo-ai-governor', 'context', 'bootstrap', 'init-manifest.json')}`,
+        },
+        {
+          checkId: 'selected-profile',
+          status: HostVerificationStatus.PASS,
+          detail: `profile_id=${resolvedTarget.profile.profileId}`,
+        },
+        {
+          checkId: 'managed-file-count',
+          status:
+            deduplicatedManagedFileRecords.length > 0
+              ? HostVerificationStatus.PASS
+              : HostVerificationStatus.FAIL,
+          detail: `managed_files=${deduplicatedManagedFileRecords.length}`,
+        },
+        {
+          checkId: 'asset-group-summary',
+          status: HostVerificationStatus.PASS,
+          detail: this.buildAssetGroupSummaryDetail(deduplicatedManagedFileRecords),
+        },
+      ],
+      activationPhase:
+        resolvedTarget.profile.profileId === BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE
+          ? AdoptionPackReadinessGroup.TEMPLATE_SEEDED
+          : undefined,
+      activationPhaseStatus:
+        resolvedTarget.profile.profileId === BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE
+          ? 'in_progress'
+          : undefined,
+      activationPhaseRecords:
+        resolvedTarget.profile.profileId === BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE
+          ? [
+              {
+                phaseId: AdoptionPackReadinessGroup.TEMPLATE_SEEDED,
+                status: 'in_progress',
+                blockingReasons: [],
+                placeholderPaths: [],
+                nextActions: [
+                  'Run `repo-ai-governor adopt verify --repo .` after receipt backfill to publish the canonical self-host activation verdict.',
+                ],
+              },
+            ]
+          : undefined,
+      operatorNextActions:
+        resolvedTarget.profile.profileId === BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE
+          ? [
+              'Run `repo-ai-governor adopt verify --repo .` after receipt backfill to publish the canonical self-host activation verdict.',
+            ]
+          : undefined,
+      executionPreflightSignal:
+        resolvedTarget.profile.profileId === BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE
+          ? 'blocked'
+          : undefined,
+      executionPreflightBlockedGroups:
+        resolvedTarget.profile.profileId === BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE
+          ? [AdoptionPackReadinessGroup.TEMPLATE_SEEDED]
+          : undefined,
+      executionPreflightPlaceholderPaths: [],
+    });
+    const now = new Date().toISOString();
+    const hostTargets = this.resolveSelectedHostTargets(resolvedTarget.profile, options.hosts);
+    const receipt: AdoptionPackInstallReceipt = {
+      schemaVersion: ADOPTION_PACK_INSTALL_RECEIPT_SCHEMA_VERSION,
+      installationId: randomUUID(),
+      packId: resolvedTarget.definition.manifest.packId,
+      packVersion: resolvedTarget.definition.manifest.packVersion,
+      appliedProfileId: resolvedTarget.profile.profileId,
+      workspaceMode: this.resolveWorkspaceMode(
+        resolvedTarget.profile,
+        initManifest.workspaceMode ?? null,
+        true,
+      ),
+      managedFileRecords: deduplicatedManagedFileRecords,
+      sourceResolution: {
+        sourceKind: resolvedTarget.definition.manifest.resolvedSourceKind,
+        sourceRef: resolvedTarget.definition.manifest.resolvedSourceRef,
+        canonicalSourceRefs: [...resolvedTarget.definition.manifest.canonicalSourceRefs],
+        sourcePackRefs: [...resolvedTarget.definition.manifest.sourcePackRefs],
+        resolutionOrder: [...resolvedTarget.definition.manifest.resolutionOrder],
+      },
+      verificationSummary,
+      installedAt: initManifest.initializedAt ?? now,
+      lastUpdatedAt: now,
+      receiptPath,
+      targetRepoRoot: repoRoot,
+      hostTargets,
+      hostTarget: hostTargets[0] ?? HostDistributionTarget.CODEX_PROJECT_LOCAL,
+      hostManifestPaths: [],
+      hostApplyReportPaths: [],
+    };
+
+    await this.writeJsonFile(receiptPath, receipt);
+    await this.writeJsonFile(verificationSummaryPath, verificationSummary);
+
+    return {
+      action: CliAdoptAction.BACKFILL_RECEIPT,
+      repoRoot,
+      packId: receipt.packId,
+      profileId: receipt.appliedProfileId,
+      workspaceMode: receipt.workspaceMode,
+      sourceKind: receipt.sourceResolution.sourceKind,
+      sourceRef: receipt.sourceResolution.sourceRef,
+      hostTargets,
+      verificationStatus: verificationSummary.status,
+      managedFileCount: receipt.managedFileRecords.length,
+      receiptPath,
+      verificationSummaryPath,
+      diffReportPath: null,
+      writtenArtifacts: [receiptPath, verificationSummaryPath],
+      initManifestPath: resolve(
+        repoRoot,
+        '.repo-ai-governor',
+        'context',
+        'bootstrap',
+        'init-manifest.json',
+      ),
+      checks: verificationSummary.checks,
+    };
   }
 
   /**
@@ -989,6 +1176,41 @@ export class CliAdoptionPackRuntime {
     }
   }
 
+  private async resolveBackfillInstallTarget(
+    options: CliAdoptCommandOptions,
+    initManifest: AdoptionBootstrapInitManifest,
+  ): Promise<ResolvedInstallTarget> {
+    if (options.packSelector || options.adoptionProfileId) {
+      const resolvedSelection = await this.resolveExplicitInstallSelection({
+        ...options,
+        packSelector: options.packSelector ?? initManifest.packId ?? BUILT_IN_ADOPTION_PACK_ID,
+        adoptionProfileId:
+          options.adoptionProfileId ??
+          initManifest.appliedProfileId ??
+          initManifest.profileId ??
+          BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE,
+      });
+      return {
+        definition: resolvedSelection.definition,
+        profile: resolvedSelection.profile,
+      };
+    }
+
+    const inferredPackId = initManifest.packId ?? BUILT_IN_ADOPTION_PACK_ID;
+    const inferredProfileId =
+      initManifest.appliedProfileId ??
+      initManifest.profileId ??
+      (this.isSelfHostRepoLocalManifest(initManifest)
+        ? BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE
+        : BUILT_IN_ADOPTION_PACK_PROFILE_IDS.ADOPTER_COMPLETE);
+    const definition = await this.adoptionPackRegistry.resolveDefinition(inferredPackId);
+    const profile = this.resolveProfile(definition, inferredProfileId, null);
+    return {
+      definition,
+      profile,
+    };
+  }
+
   private resolveProfile(
     definition: ResolvedAdoptionPackDefinition,
     requestedProfileId: string | null,
@@ -1070,6 +1292,16 @@ export class CliAdoptionPackRuntime {
     }
 
     return requestedWorkspaceMode ?? WorkspaceMode.TOOL_MANAGED;
+  }
+
+  private isSelfHostRepoLocalManifest(initManifest: AdoptionBootstrapInitManifest): boolean {
+    return (
+      initManifest.workspaceMode === WorkspaceMode.REPO_LOCAL &&
+      typeof initManifest.workspaceRoot === 'string' &&
+      typeof initManifest.configPath === 'string' &&
+      initManifest.workspaceRoot.includes('.repo-ai-governor') &&
+      initManifest.configPath.endsWith('.repo-ai-governor/governor.yaml')
+    );
   }
 
   private resolveSelectedHostTargets(
@@ -2717,6 +2949,33 @@ export class CliAdoptionPackRuntime {
     return receipt;
   }
 
+  private async readBackfillInitManifest(
+    repoRoot: string,
+  ): Promise<AdoptionBootstrapInitManifest> {
+    const initManifestPath = resolve(
+      repoRoot,
+      '.repo-ai-governor',
+      'context',
+      'bootstrap',
+      'init-manifest.json',
+    );
+    if (!existsSync(initManifestPath)) {
+      throw new RuntimeError(
+        GovernorErrorCode.STANDARDS_PACK_INVALID,
+        this.localizeText(
+          'adopt backfill-receipt requires .repo-ai-governor/context/bootstrap/init-manifest.json in the target repository.',
+          'adopt backfill-receipt 要求目标仓库存在 .repo-ai-governor/context/bootstrap/init-manifest.json。',
+        ),
+        {
+          repoRoot,
+          initManifestPath,
+        },
+      );
+    }
+
+    return this.readJsonFile<AdoptionBootstrapInitManifest>(initManifestPath);
+  }
+
   private async readExistingReceipt(
     repoRoot: string,
     packSelector: string | null,
@@ -2797,6 +3056,79 @@ export class CliAdoptionPackRuntime {
     }
 
     return receiptPaths.sort((left, right) => left.localeCompare(right));
+  }
+
+  private async collectBackfillManagedFileRecords(options: {
+    repoRoot: string;
+    definition: ResolvedAdoptionPackDefinition;
+    profile: AdoptionPackProfile;
+    sourceCatalogRecordByRelativePath: Map<string, AdoptionPackSourceCatalogRecord>;
+  }): Promise<AdoptionPackManagedFileRecord[]> {
+    const managedFileRecords: AdoptionPackManagedFileRecord[] = [];
+    const relativePaths = new Set<string>();
+    for (const templateRecord of this.resolveTemplateRecords(options.definition, options.profile)) {
+      relativePaths.add(templateRecord.relativePath);
+    }
+    for (const runtimeBootstrapRecord of this.resolveRuntimeBootstrapRecords(
+      options.definition,
+      options.profile,
+    )) {
+      relativePaths.add(runtimeBootstrapRecord.relativePath);
+    }
+
+    for (const relativePath of [...relativePaths].sort((left, right) => left.localeCompare(right))) {
+      const absolutePath = resolve(options.repoRoot, relativePath);
+      if (!existsSync(absolutePath)) {
+        continue;
+      }
+      managedFileRecords.push(
+        await this.createManagedFileRecordFromFile(
+          relativePath,
+          absolutePath,
+          options.sourceCatalogRecordByRelativePath.get(relativePath)?.assetGroup ??
+            this.inferManagedAssetGroupFromPath(relativePath),
+          options.sourceCatalogRecordByRelativePath.get(relativePath),
+        ),
+      );
+    }
+
+    const initManifestPath = resolve(
+      options.repoRoot,
+      '.repo-ai-governor',
+      'context',
+      'bootstrap',
+      'init-manifest.json',
+    );
+    if (existsSync(initManifestPath)) {
+      managedFileRecords.push(
+        await this.createManagedFileRecordFromFile(
+          '.repo-ai-governor/context/bootstrap/init-manifest.json',
+          initManifestPath,
+          AdoptionPackManagedAssetGroup.MANAGEMENT_METADATA,
+          {
+            surfaceId: 'runtime_handoff:init_manifest',
+            surfaceKind: AdoptionPackSurfaceKind.RUNTIME_BOOTSTRAP,
+            description: 'Backfilled bootstrap init manifest retained as installer provenance.',
+            profileIds: [options.profile.profileId],
+            assetGroup: AdoptionPackManagedAssetGroup.MANAGEMENT_METADATA,
+            ownershipClass: AdoptionPackOwnershipClass.MANAGED_LOCKED,
+            driftPolicy: AdoptionPackDriftPolicy.ENFORCE_CHECKSUM,
+            gitPolicy: AdoptionPackGitPolicy.KEEP_TRACKED,
+            parityClass: AdoptionPackParityClass.GENERATED_PROJECTION,
+            sourceMode: AdoptionPackSourceMode.GENERATED_PROJECTION,
+            sourceRef: '.repo-ai-governor/context/bootstrap/init-manifest.json',
+            compositionPolicy: AdoptionPackCompositionPolicy.RUNTIME_BOOTSTRAP,
+            placeholderPolicy: AdoptionPackPlaceholderPolicy.NONE,
+            applicabilityScope: AdoptionPackApplicabilityScope.SELF_HOST_DETECTED_SURFACE,
+            readinessGroup: AdoptionPackReadinessGroup.NONE,
+            readinessSinkIds: [],
+            relativePath: '.repo-ai-governor/context/bootstrap/init-manifest.json',
+          },
+        ),
+      );
+    }
+
+    return managedFileRecords;
   }
 
   private resolveRenderer(host: HostDistributionHost, registry: StructuredWorkflowAssetRegistry) {
@@ -3655,6 +3987,54 @@ export class CliAdoptionPackRuntime {
     return createHash('sha256').update(content).digest('hex');
   }
 
+  private inferManagedAssetGroupFromPath(relativePath: string): AdoptionPackManagedAssetGroup {
+    if (
+      relativePath.includes('/context/dev/') ||
+      relativePath.endsWith('/tasks.csv') ||
+      relativePath.endsWith('/checklist.md') ||
+      relativePath.includes('/review/')
+    ) {
+      return AdoptionPackManagedAssetGroup.EXECUTION_TEMPLATES;
+    }
+    if (
+      relativePath.includes('technical-solution-lifecycle-registry.yaml') ||
+      relativePath.includes('technical-solution-delivery-registry.yaml') ||
+      relativePath.includes('technical-solution-module-registry.yaml') ||
+      relativePath.includes('/context/bootstrap/')
+    ) {
+      return AdoptionPackManagedAssetGroup.MANAGEMENT_METADATA;
+    }
+    if (
+      relativePath.endsWith('code_standards.md') ||
+      relativePath.endsWith('long-term-maintenance-guide.md') ||
+      relativePath.endsWith('product-requirements-brief.md') ||
+      relativePath.endsWith('normative-loading-manifest.yaml')
+    ) {
+      return AdoptionPackManagedAssetGroup.NORMATIVE_TEMPLATES;
+    }
+    if (relativePath.endsWith('governor.yaml') || relativePath.endsWith('current-context.md')) {
+      return AdoptionPackManagedAssetGroup.BOOTSTRAP_TEMPLATES;
+    }
+    return AdoptionPackManagedAssetGroup.GOVERNANCE_AUTHORING_TEMPLATES;
+  }
+
+  private buildAssetGroupSummaryDetail(
+    managedFileRecords: AdoptionPackManagedFileRecord[],
+  ): string {
+    const counts = new Map<AdoptionPackManagedAssetGroup, number>();
+    for (const managedFileRecord of managedFileRecords) {
+      counts.set(
+        managedFileRecord.assetGroup,
+        (counts.get(managedFileRecord.assetGroup) ?? 0) + 1,
+      );
+    }
+
+    return [...counts.entries()]
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([assetGroup, count]) => `${assetGroup}=${count}`)
+      .join(' ');
+  }
+
   private buildVerificationSummary(options: {
     receiptPath: string;
     verificationSummaryPath: string;
@@ -3678,7 +4058,7 @@ export class CliAdoptionPackRuntime {
         ];
 
     return {
-      schemaVersion: 'adoption-pack-verification-summary-v1',
+      schemaVersion: ADOPTION_PACK_VERIFICATION_SUMMARY_SCHEMA_VERSION,
       status: this.reduceVerificationStatus(normalizedChecks),
       verifiedAt: new Date().toISOString(),
       verificationSummaryPath: options.verificationSummaryPath,

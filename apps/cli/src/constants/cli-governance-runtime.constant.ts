@@ -58,6 +58,7 @@ export enum CliRuntimeOperation {
   GOVERNANCE_CHECK = 'governance_check',
   ADOPTION_LIST = 'adoption_list',
   ADOPTION_BOOTSTRAP = 'adoption_bootstrap',
+  ADOPTION_BACKFILL_RECEIPT = 'adoption_backfill_receipt',
   ADOPTION_APPLY = 'adoption_apply',
   ADOPTION_DIFF = 'adoption_diff',
   ADOPTION_VERIFY = 'adoption_verify',
