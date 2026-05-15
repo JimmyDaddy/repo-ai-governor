@@ -85,6 +85,7 @@ export interface AdoptionOperationResult {
   reentryMode?: string | null;
   userFacingMessage?: string | null;
   availablePacks?: AdoptionListItem[];
+  operatorNextActions?: string[];
 }
 
 interface ResolvedInstallTarget {
@@ -672,7 +673,10 @@ export class CliAdoptionPackRuntime {
     checks.push(
       ...diffRecords.map((record) => ({
         checkId: `managed:${record.relativePath}`,
-        status: HostVerificationStatus.FAIL,
+        status:
+          record.diffKind === 'placeholder_resolved'
+            ? HostVerificationStatus.PASS
+            : HostVerificationStatus.FAIL,
         detail: `${record.diffKind}:${record.assetGroup}`,
         inspectedPath: record.relativePath,
         ...(record.receiptChecksumSha256 ? { expectedValue: record.receiptChecksumSha256 } : {}),
@@ -718,8 +722,9 @@ export class CliAdoptionPackRuntime {
       verificationSummaryPath: receipt.verificationSummary.verificationSummaryPath,
       diffReportPath: null,
       writtenArtifacts: [receipt.verificationSummary.verificationSummaryPath],
-      checks:
-        diffRecords.length === 0
+      operatorNextActions: selfHostReadiness.operatorNextActions,
+      checks: [
+        ...(diffRecords.length === 0
           ? [
               ...checks,
               {
@@ -728,7 +733,13 @@ export class CliAdoptionPackRuntime {
                 detail: 'managed_drift=clean',
               },
             ]
-          : verificationSummary.checks,
+          : verificationSummary.checks),
+        ...selfHostReadiness.operatorNextActions.map((action, index) => ({
+          checkId: `self-host-next-action:${index}`,
+          status: HostVerificationStatus.WARN,
+          detail: action,
+        })),
+      ],
     };
   }
 
@@ -1874,6 +1885,37 @@ export class CliAdoptionPackRuntime {
       }
 
       if (managedFileRecord.driftPolicy !== AdoptionPackDriftPolicy.ENFORCE_CHECKSUM) {
+        if (
+          managedFileRecord.driftPolicy === AdoptionPackDriftPolicy.PLACEHOLDER_AWARE &&
+          managedFileRecord.ownershipClass === AdoptionPackOwnershipClass.STARTER_EDITABLE
+        ) {
+          const currentContent = await readFile(managedFileRecord.absolutePath);
+          const currentChecksumSha256 = this.calculateSha256(currentContent);
+          if (!baselineChecksum) {
+            continue;
+          }
+          if (currentChecksumSha256 !== baselineChecksum) {
+            let diffKind: AdoptionPackDiffRecord['diffKind'] = 'changed';
+            try {
+              const fileStat = await stat(managedFileRecord.absolutePath);
+              const epochThreshold = new Date('1970-01-02T00:00:00Z');
+              if (fileStat.mtime > epochThreshold) {
+                diffKind = 'placeholder_resolved';
+              }
+            } catch {
+              // stat failed, treat as regular diff
+            }
+            diffRecords.push({
+              relativePath: managedFileRecord.relativePath,
+              assetGroup: managedFileRecord.assetGroup,
+              ownershipClass: managedFileRecord.ownershipClass,
+              driftPolicy: managedFileRecord.driftPolicy,
+              diffKind,
+              receiptChecksumSha256: baselineChecksum,
+              currentChecksumSha256,
+            });
+          }
+        }
         continue;
       }
 
@@ -1927,6 +1969,13 @@ export class CliAdoptionPackRuntime {
     const verifyChecks: AdoptionPackVerificationCheck[] = [];
     const doctorChecks: AdoptionPackVerificationCheck[] = [];
     const activationPhaseRecords: AdoptionPackActivationPhaseRecord[] = [];
+    const placeholderPathAssetGroupLabelMap: Record<string, string> = {};
+    for (const mfr of receipt.managedFileRecords) {
+      if (mfr.ownershipClass === AdoptionPackOwnershipClass.STARTER_EDITABLE) {
+        placeholderPathAssetGroupLabelMap[mfr.relativePath] =
+          this.resolveAssetGroupCategoryLabel(mfr.assetGroup);
+      }
+    }
     const preflightBlockedGroups: string[] = [];
     const preflightBlockedPaths: string[] = [];
     const connectApplyReceiptStatus = await this.readSelfHostConnectApplyReceiptStatus(
@@ -1984,6 +2033,7 @@ export class CliAdoptionPackRuntime {
         phaseStatus,
         unresolvedPlaceholderPaths,
         connectApplyReceiptAvailable: connectApplyReceiptStatus.isCurrent,
+        pathAssetGroupLabels: placeholderPathAssetGroupLabelMap,
       });
       activationPhaseRecords.push({
         phaseId: normalizedGroup,
@@ -1991,6 +2041,7 @@ export class CliAdoptionPackRuntime {
         blockingReasons,
         placeholderPaths: unresolvedPlaceholderPaths,
         nextActions,
+        placeholderPathAssetGroupLabels: placeholderPathAssetGroupLabelMap,
       });
 
       if (matrixRecord.sinkIds.includes(AdoptionPackReadinessSink.ADOPT_VERIFY)) {
@@ -2207,6 +2258,7 @@ export class CliAdoptionPackRuntime {
     phaseStatus: 'blocked' | 'in_progress' | 'completed';
     unresolvedPlaceholderPaths: string[];
     connectApplyReceiptAvailable: boolean;
+    pathAssetGroupLabels?: Record<string, string>;
   }): string[] {
     if (options.phaseStatus === 'completed') {
       return [];
@@ -2221,7 +2273,12 @@ export class CliAdoptionPackRuntime {
           ),
         ];
       case AdoptionPackReadinessGroup.AUTHORING_STARTED:
-        return [this.buildSelfHostPlaceholderAuthoringAction(options.unresolvedPlaceholderPaths)];
+        return [
+          this.buildSelfHostPlaceholderAuthoringAction(
+            options.unresolvedPlaceholderPaths,
+            options.pathAssetGroupLabels,
+          ),
+        ];
       case AdoptionPackReadinessGroup.ADAPTER_CONNECTED:
         return options.connectApplyReceiptAvailable
           ? []
@@ -2235,7 +2292,10 @@ export class CliAdoptionPackRuntime {
         const nextActions: string[] = [];
         if (options.unresolvedPlaceholderPaths.length > 0) {
           nextActions.push(
-            this.buildSelfHostPlaceholderAuthoringAction(options.unresolvedPlaceholderPaths),
+            this.buildSelfHostPlaceholderAuthoringAction(
+              options.unresolvedPlaceholderPaths,
+              options.pathAssetGroupLabels,
+            ),
           );
         }
         if (!options.connectApplyReceiptAvailable) {
@@ -2269,7 +2329,16 @@ export class CliAdoptionPackRuntime {
     return [...operatorNextActions];
   }
 
-  private buildSelfHostPlaceholderAuthoringAction(unresolvedPlaceholderPaths: string[]): string {
+  private buildSelfHostPlaceholderAuthoringAction(
+    unresolvedPlaceholderPaths: string[],
+    pathAssetGroupLabels?: Record<string, string>,
+  ): string {
+    if (pathAssetGroupLabels && Object.keys(pathAssetGroupLabels).length > 0) {
+      return this.buildGroupedPlaceholderAuthoringAction(
+        unresolvedPlaceholderPaths,
+        pathAssetGroupLabels,
+      );
+    }
     const placeholderSummary = this.summarizeSelfHostPlaceholderPathsForOperator(
       unresolvedPlaceholderPaths,
     );
@@ -2285,6 +2354,90 @@ export class CliAdoptionPackRuntime {
       `Finish authoring the repo-local self-host starter surfaces before unattended execution. Start with ${anchorPathText}${remainingSuffix}`,
       `在无人值守执行前，请先完成 repo-local self-host starter surfaces 的编写。建议先处理 ${anchorPathText}${remainingSuffix}`,
     );
+  }
+
+  /**
+   * Builds grouped placeholder authoring guidance by asset category.
+   */
+  private buildGroupedPlaceholderAuthoringAction(
+    unresolvedPlaceholderPaths: string[],
+    pathAssetGroupLabels: Record<string, string>,
+  ): string {
+    const uniquePaths = [...new Set(unresolvedPlaceholderPaths)];
+    const groups = new Map<string, string[]>();
+    for (const path of uniquePaths) {
+      const label = pathAssetGroupLabels[path] ?? this.resolveAssetGroupCategoryLabel(null);
+      if (!groups.has(label)) {
+        groups.set(label, []);
+      }
+      groups.get(label)!.push(path);
+    }
+    const groupLines: string[] = [];
+    for (const [label, paths] of groups) {
+      const pathList = paths
+        .slice(0, 3)
+        .map((p) => `\`${p}\``)
+        .join(', ');
+      const suffix =
+        paths.length > 3
+          ? this.localizeText(
+              ` (and ${paths.length - 3} more in this group)`,
+              `（及该组另外 ${paths.length - 3} 个）`,
+            )
+          : '';
+      groupLines.push(
+        this.localizeText(
+          `  [${label}] ${pathList}${suffix}`,
+          `  【${label}】${pathList}${suffix}`,
+        ),
+      );
+    }
+    const guidance =
+      groupLines.length > 0
+        ? groupLines.join('\n')
+        : this.localizeText('  the recorded placeholder paths', '  记录在案的占位路径');
+    return this.localizeText(
+      `Finish authoring the repo-local self-host starter surfaces before unattended execution. Placeholder files grouped by category:\n${guidance}\nAfter completing authoring, re-run \`repo-ai-governor adopt verify --repo .\` to refresh the readiness verdict.`,
+      `在无人值守执行前，请先完成 repo-local self-host starter surfaces 的编写。占位文件按类别分组如下：\n${guidance}\n完成编写后，请重新执行 \`repo-ai-governor adopt verify --repo .\` 以刷新就绪评估。`,
+    );
+  }
+
+  /**
+   * Maps an AdoptionPackManagedAssetGroup to a Chinese operator-facing category label.
+   */
+  private resolveAssetGroupCategoryLabel(
+    assetGroup: AdoptionPackManagedAssetGroup | null,
+  ): string {
+    switch (assetGroup) {
+      case AdoptionPackManagedAssetGroup.COMMAND_GUIDES:
+      case AdoptionPackManagedAssetGroup.INSTRUCTIONS:
+      case AdoptionPackManagedAssetGroup.BOOTSTRAP_TEMPLATES:
+      case AdoptionPackManagedAssetGroup.NORMATIVE_TEMPLATES:
+      case AdoptionPackManagedAssetGroup.GOVERNANCE_AUTHORING_TEMPLATES:
+        return this.localizeText(
+          'Governance & Instruction Templates',
+          '规范文档',
+        );
+      case AdoptionPackManagedAssetGroup.SKILLS:
+      case AdoptionPackManagedAssetGroup.AGENTS:
+      case AdoptionPackManagedAssetGroup.HOOKS:
+      case AdoptionPackManagedAssetGroup.WRAPPERS:
+      case AdoptionPackManagedAssetGroup.MCP_BRIDGE:
+      case AdoptionPackManagedAssetGroup.EXECUTION_TEMPLATES:
+        return this.localizeText(
+          'Execution Surface Templates',
+          '执行面模板',
+        );
+      case AdoptionPackManagedAssetGroup.RUNTIME_HANDOFF_METADATA:
+      case AdoptionPackManagedAssetGroup.MANAGEMENT_METADATA:
+      case AdoptionPackManagedAssetGroup.SQLITE_REGISTRIES:
+        return this.localizeText(
+          'Registries & Metadata',
+          '注册表',
+        );
+      default:
+        return this.localizeText('Other Managed Assets', '其他托管资产');
+    }
   }
 
   private summarizeSelfHostPlaceholderPathsForOperator(placeholderPaths: string[]): {
@@ -3028,11 +3181,17 @@ export class CliAdoptionPackRuntime {
 
     if (authoringRecord) {
       localizedActions.add(
-        this.buildSelfHostPlaceholderAuthoringAction(authoringRecord.placeholderPaths),
+        this.buildSelfHostPlaceholderAuthoringAction(
+          authoringRecord.placeholderPaths,
+          authoringRecord.placeholderPathAssetGroupLabels,
+        ),
       );
     } else if (executionRecord && executionRecord.placeholderPaths.length > 0) {
       localizedActions.add(
-        this.buildSelfHostPlaceholderAuthoringAction(executionRecord.placeholderPaths),
+        this.buildSelfHostPlaceholderAuthoringAction(
+          executionRecord.placeholderPaths,
+          executionRecord.placeholderPathAssetGroupLabels,
+        ),
       );
     }
 
@@ -3042,6 +3201,7 @@ export class CliAdoptionPackRuntime {
         phaseStatus: adapterRecord.status,
         unresolvedPlaceholderPaths: adapterRecord.placeholderPaths,
         connectApplyReceiptAvailable: adapterConnected,
+        pathAssetGroupLabels: adapterRecord.placeholderPathAssetGroupLabels,
       })) {
         localizedActions.add(action);
       }

@@ -824,9 +824,24 @@ export class CliOutputPresenter {
         return this.humanizeWorkflowPreviewModeDetail(check.detail, locale);
       case CliCommandResultCheckId.WORKFLOW_COMPILE_STATUS:
         return this.humanizeWorkflowCompileStatusDetail(check.detail, locale);
-      default:
+      default: {
+        if (check.id.startsWith('managed:') && check.detail.startsWith('placeholder_resolved:')) {
+          return this.humanizePlaceholderResolvedDetail(check.detail, locale);
+        }
         return check.detail;
+      }
     }
+  }
+
+  /**
+   * Converts placeholder_resolved diff detail into a friendly status line.
+   */
+  private humanizePlaceholderResolvedDetail(detail: string, locale: string): string {
+    const assetGroup = detail.slice('placeholder_resolved:'.length);
+    if (this.isZhCnLocale(locale)) {
+      return `占位文件已填写完成 (${assetGroup})`;
+    }
+    return `placeholder resolved (${assetGroup})`;
   }
 
   /**

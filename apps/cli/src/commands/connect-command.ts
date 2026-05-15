@@ -160,6 +160,11 @@ export class CliConnectCommand implements CliCommandExecutor {
       singleToolAllRoles: runtimeDebugOptions.singleToolAllRoles,
       roleBindingOverrides: runtimeDebugOptions.roleBindingOverrides,
     });
+    const selfHostLocalhostRemoteEndpointWarnings = this.detectSelfHostLocalhostRemoteEndpoints({
+      candidateAdaptersConfig: candidateConfigResolution.candidateAdaptersConfig,
+      workspaceMode: context.options.workspace.mode,
+      localizeText: (english, chinese) => context.localizeText(english, chinese),
+    });
     let validatedCandidateConfig: typeof candidateConfigResolution.candidateConfig | null = null;
     let candidateConfigValidationError: string | null = null;
     try {
@@ -382,6 +387,7 @@ export class CliConnectCommand implements CliCommandExecutor {
             : CliGovernanceCheckStatus.WARN,
         detail: candidateConfigArtifactPath,
       },
+      ...selfHostLocalhostRemoteEndpointWarnings,
       {
         id: 'candidate_diff',
         status: CliGovernanceCheckStatus.PASS,
@@ -1046,6 +1052,47 @@ export class CliConnectCommand implements CliCommandExecutor {
    * @param interpolation Optional translation variables.
    * @returns Localized string or the key when translation runtime is unavailable.
    */
+  /**
+   * Detects localhost remote API endpoints in connect candidate for self-host (repo_local) repos.
+   */
+  private detectSelfHostLocalhostRemoteEndpoints(options: {
+    candidateAdaptersConfig: { tools?: Array<{ transport?: string | null; remoteApi?: { endpoint?: string | null } | null }> | null };
+    workspaceMode: string;
+    localizeText: (english: string, chinese: string) => string;
+  }): CliCommandResultCheck[] {
+    if (options.workspaceMode !== 'repo_local') {
+      return [];
+    }
+    const tools = options.candidateAdaptersConfig.tools ?? [];
+    const localhostTools: string[] = [];
+    for (const tool of tools) {
+      if (
+        tool.transport === 'remote_api' &&
+        typeof tool.remoteApi?.endpoint === 'string' &&
+        (tool.remoteApi.endpoint.includes('localhost') ||
+          tool.remoteApi.endpoint.includes('127.0.0.1'))
+      ) {
+        localhostTools.push(
+          `${tool.remoteApi.endpoint}`,
+        );
+      }
+    }
+    if (localhostTools.length === 0) {
+      return [];
+    }
+    const uniqueEndpoints = [...new Set(localhostTools)];
+    return [
+      {
+        id: 'self_host_localhost_remote_endpoint',
+        status: CliGovernanceCheckStatus.WARN,
+        detail: options.localizeText(
+          `Self-host (repo_local) connect candidate contains localhost remoteApi endpoint(s): ${uniqueEndpoints.join(', ')}. This endpoint will be written into repo-local governor.yaml and distributed with the repository. Consider removing the endpoint override before applying.`,
+          `Self-host (repo_local) connect candidate 包含 localhost remoteApi 端点：${uniqueEndpoints.join('、')}。该端点将被写入仓库内的 governor.yaml 并随仓库分发，请考虑在应用前移除该端点覆盖。`,
+        ),
+      },
+    ];
+  }
+
   private translate(
     context: Pick<CliCommandExecutorContext, 'translate'>,
     key: string,

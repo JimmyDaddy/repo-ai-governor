@@ -624,6 +624,26 @@ export class CliAdoptionPackBootstrapRuntime {
       bootstrapSummaryPath,
       selectorResolution: options.selectorResolution ?? options.selection.selectorResolution,
       reentryMode: options.reentryMode,
+      ...(options.selection.profile.profileId ===
+        BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE &&
+      finalStatus === HostVerificationStatus.PASS
+        ? {
+            userFacingMessage: this.localizeText(
+              `Self-host bootstrap complete. Next steps:
+1. Edit placeholder files: review and author .repo-ai-governor/context/current-context.md, .repo-ai-governor/context/dev/project-template/plan.md, and other starter surfaces
+2. Create your real project directories under .repo-ai-governor/context/dev/
+3. Run \`repo-ai-governor connect --preset multi-tool-default --tools codex,claude-code\` to register your adapters
+4. Run \`repo-ai-governor connect apply --latest\` to activate the adapter configuration
+5. Run \`repo-ai-governor adopt verify --repo .\` to check your readiness progress`,
+              `Self-host bootstrap 完成。后续步骤：
+1. 编辑占位文件：检查并编写 .repo-ai-governor/context/current-context.md、.repo-ai-governor/context/dev/project-template/plan.md 等 starter surfaces
+2. 在 .repo-ai-governor/context/dev/ 下创建真实项目目录
+3. 运行 \`repo-ai-governor connect --preset multi-tool-default --tools codex,claude-code\` 注册 adapter
+4. 运行 \`repo-ai-governor connect apply --latest\` 激活 adapter 配置
+5. 运行 \`repo-ai-governor adopt verify --repo .\` 检查就绪进度`,
+            ),
+          }
+        : {}),
     };
   }
 

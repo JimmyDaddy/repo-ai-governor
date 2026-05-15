@@ -199,6 +199,8 @@ export interface AdoptionPackActivationPhaseRecord {
   blockingReasons: string[];
   placeholderPaths: string[];
   nextActions: string[];
+  /** Maps placeholder path → human-readable asset group category label for grouped pretty output. */
+  placeholderPathAssetGroupLabels?: Record<string, string>;
 }
 
 /**
@@ -259,7 +261,7 @@ export interface AdoptionPackDiffRecord {
   assetGroup: AdoptionPackManagedAssetGroup;
   ownershipClass: AdoptionPackOwnershipClass;
   driftPolicy: AdoptionPackDriftPolicy;
-  diffKind: 'missing' | 'changed' | 'extraneous_managed';
+  diffKind: 'missing' | 'changed' | 'extraneous_managed' | 'placeholder_resolved';
   receiptChecksumSha256: string | null;
   currentChecksumSha256: string | null;
 }
