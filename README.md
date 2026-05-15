@@ -20,7 +20,9 @@ Most teams should follow this order:
 3. `adopt bootstrap`
 4. `check`
 5. `connect`
-6. `run --dry-run --trace`
+6. `connect apply --latest`
+7. `adopt verify`
+8. `run --dry-run --trace`
 
 If you only remember one thing from this README, remember that sequence.
 
@@ -105,12 +107,16 @@ What each step is doing:
 
 If you intentionally need a repo-local self-host template (`self-host-complete + repo_local`), use the playbook instead of inventing your own path: `docs/local-adoption-playbook.md`.
 
+For that self-host path, keep `adopt bootstrap -> connect -> connect apply --latest -> adopt verify -> doctor --adapters -> run --dry-run --trace` strictly serial. Do not overlap `connect`, `connect apply --latest`, or `adopt verify`, because `adopt verify` is the canonical readiness readback and concurrent runs can report the pre-apply summary instead of the active adapter-connected baseline.
+
 ## First Governed Workflow
 
 Once the repository is bootstrapped, this is the shortest end-to-end governed flow:
 
 ```bash
 pnpm exec repo-ai-governor connect --tools codex,claude-code --preset multi-tool-default --output json
+pnpm exec repo-ai-governor connect apply --latest --output json
+pnpm exec repo-ai-governor adopt verify --repo . --output json
 pnpm exec repo-ai-governor doctor --adapters --fix --output json
 pnpm exec repo-ai-governor doctor --adapters --output json
 pnpm exec repo-ai-governor run --output json --dry-run --trace
@@ -121,10 +127,18 @@ pnpm exec repo-ai-governor review-verify --output json
 Why this order works:
 
 1. `connect` prepares a reviewable repo config instead of mutating blindly.
-2. `doctor --adapters --fix` is limited to safe local repairs.
-3. A second `doctor --adapters` is the read-only readiness recheck.
-4. `run --dry-run --trace` is the lowest-risk proof before a real run.
-5. `review` and `review-verify` close the loop with a formal review lifecycle.
+2. `connect apply --latest` records the reviewed adapter baseline into the active `governor.yaml`.
+3. `adopt verify` refreshes the canonical activation verdict after connect changes.
+4. `doctor --adapters --fix` is limited to safe local repairs.
+5. A second `doctor --adapters` is the read-only readiness recheck.
+6. `run --dry-run --trace` is the lowest-risk proof before a real run.
+7. `review` and `review-verify` close the loop with a formal review lifecycle.
+
+For repo-local self-host templates, do not stop at `connect` alone. The real operator path is `adopt bootstrap -> connect -> connect apply --latest -> adopt verify -> doctor --adapters -> run --dry-run --trace`, and it must stay serial. The applied connect receipt plus the refreshed verify summary are what move the self-host readiness chain to an adapter-connected baseline.
+
+`run --dry-run --trace` only proves that a diagnostic dry-run was allowed. A successful dry-run does not mean `execution_ready=completed`, and a template repo without real `project/sprint/task` authoring still only proves install/connect truth rather than a real delivery path.
+
+If the first `run --dry-run --trace` still stops at a policy/HITL confirm such as `lockfile_delta`, treat that as an execution-policy checkpoint rather than a bootstrap failure. In the current runtime this can surface as `POLICY_GATE_HITL_FEEDBACK_INVALID` when no confirmation payload is provided.
 
 ## Keep Personal Defaults And Secrets Local
 

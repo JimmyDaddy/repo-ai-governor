@@ -1478,3 +1478,17 @@ documents:
       - ide_surface_change
     owner: runtime
     last_reviewed_at: 2026-04-15
+
+  - doc_id: runtime_governance_empty_repo_self_host_followup_adr
+    path: .repo-ai-governor/normative_knowledge_sources/technical-solutions/runtime-governance-clients/adrs/empty-repo-self-host-adoption-follow-up.md
+    tier: L2
+    status: active
+    default_load: false
+    load_trigger:
+      - technical_solution_module_change
+      - technical_solution_promotion_change
+      - runtime_contract_change
+      - command_surface_change
+      - ide_surface_change
+    owner: runtime
+    last_reviewed_at: 2026-05-13

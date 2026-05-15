@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 
@@ -8,6 +8,7 @@ import { ClaudeCodeHostRenderer } from '@repo-ai-governor/adapter-claude-code';
 import { CodexHostRenderer } from '@repo-ai-governor/adapter-codex';
 import { GithubCopilotHostRenderer } from '@repo-ai-governor/adapter-github-copilot';
 import { SqliteArtifactIndexStore } from '@repo-ai-governor/artifact-registry';
+import { ConfigLoader } from '@repo-ai-governor/config';
 import {
   GovernorErrorCode,
   RuntimeError,
@@ -15,14 +16,22 @@ import {
   standardizeError,
 } from '@repo-ai-governor/shared';
 import {
+  type AdoptionPackActivationPhaseRecord,
   AdoptionPackApplicabilityScope,
+  type AdoptionPackDiffRecord,
+  AdoptionPackDriftPolicy,
+  AdoptionPackGitPolicy,
   type AdoptionPackInstallReceipt,
   AdoptionPackManagedAssetGroup,
   type AdoptionPackManagedFileRecord,
+  AdoptionPackOwnershipClass,
+  AdoptionPackPlaceholderPolicy,
   type AdoptionPackProfile,
+  AdoptionPackReadinessGroup,
   AdoptionPackReadinessSink,
   AdoptionPackRegistry,
   type AdoptionPackRuntimeBootstrapRecord,
+  type AdoptionPackSourceCatalogRecord,
   type AdoptionPackVerificationCheck,
   type AdoptionPackVerificationSummary,
   AdoptionPackWorkspaceModePolicy,
@@ -95,8 +104,37 @@ interface MaterializedHostResult {
 }
 
 interface SelfHostReadinessEvaluation {
+  activationPhase: AdoptionPackReadinessGroup;
+  activationPhaseStatus: 'blocked' | 'in_progress' | 'completed';
+  activationPhaseRecords: AdoptionPackActivationPhaseRecord[];
+  operatorNextActions: string[];
   doctorChecks: AdoptionPackVerificationCheck[];
   verifyChecks: AdoptionPackVerificationCheck[];
+  executionPreflightSignal: 'blocked' | 'ready';
+  executionPreflightBlockedGroups: string[];
+  executionPreflightPlaceholderPaths: string[];
+}
+
+export interface SelfHostExecutionPreflightResolution {
+  repoRoot: string;
+  installationId: string;
+  packId: string;
+  profileId: string;
+  verificationSummaryPath: string;
+  activationPhase?: AdoptionPackReadinessGroup;
+  activationPhaseStatus?: 'blocked' | 'in_progress' | 'completed';
+  executionPreflightSignal: 'blocked' | 'ready';
+  blockedGroups: string[];
+  placeholderPaths: string[];
+  operatorNextActions: string[];
+}
+
+interface SelfHostConnectApplyReceiptSnapshot {
+  applyId?: string;
+  appliedConfigHash?: string;
+  candidateFingerprintCurrent?: boolean;
+  applyReady?: boolean;
+  applyBlockers?: string[];
 }
 
 const ADOPTION_INSTALL_RECEIPT_FILE_NAME = 'adoption-install.receipt.json';
@@ -105,14 +143,49 @@ const ADOPTION_DIFF_REPORT_FILE_NAME = 'adoption-diff.report.json';
 const ADOPTION_RECEIPT_DIAGNOSTICS_CHECK_ID = 'adoption-receipt-diagnostics';
 const SELF_HOST_READINESS_CHECK_ID_PREFIX = 'self-host-readiness';
 const SELF_HOST_EXECUTION_PREFLIGHT_SIGNAL_CHECK_ID = 'self-host-execution-preflight';
+const SELF_HOST_CONNECT_APPLY_RECEIPTS_DIRECTORY_SEGMENTS = [
+  '.repo-ai-governor',
+  'context',
+  'diagnostics',
+  'connect',
+  'apply',
+] as const;
 const SELF_HOST_REQUIRED_PLACEHOLDER_MARKER = 'replace_before_execution';
 const SELF_HOST_REQUIRED_PLACEHOLDER_STATUS_LINE = `- Placeholder Status: ${SELF_HOST_REQUIRED_PLACEHOLDER_MARKER}`;
+const SELF_HOST_GITIGNORE_RECOMMENDATION_FILE_NAME = 'self-host.gitignore-recommendation.txt';
 const SELF_HOST_STARTER_PLACEHOLDER_MARKERS = [
   SELF_HOST_REQUIRED_PLACEHOLDER_STATUS_LINE,
   'project-template',
   'sprint-template',
   'self-host-template',
   '- Stream: `none`',
+] as const;
+const SELF_HOST_GENERATED_IGNORE_PATHS = [
+  '.repo-ai-governor/context/diagnostics/',
+  '.repo-ai-governor/context/reports/',
+  '.repo-ai-governor/context/replay/',
+  '.repo-ai-governor/context/compiled-ir/',
+  '*.sqlite-wal',
+  '*.sqlite-shm',
+  'node_modules/',
+] as const;
+const SELF_HOST_OPERATOR_ACTION_ANCHOR_LIMIT = 3;
+const SELF_HOST_OPERATOR_ACTION_PRIORITY_PATHS = [
+  '.repo-ai-governor/context/current-context.md',
+  '.repo-ai-governor/context/dev/project-template/plan.md',
+  '.repo-ai-governor/context/dev/project-template/sprint-template/plan.md',
+  '.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md',
+  '.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md',
+  '.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md',
+  '.repo-ai-governor/context/technical-solution-delivery-registry.yaml',
+  '.repo-ai-governor/context/technical-solution-lifecycle-registry.yaml',
+  '.repo-ai-governor/normative_knowledge_sources/technical-solutions/technical-solution-module-registry.yaml',
+] as const;
+const SELF_HOST_ACTIVATION_PHASE_ORDER = [
+  AdoptionPackReadinessGroup.TEMPLATE_SEEDED,
+  AdoptionPackReadinessGroup.AUTHORING_STARTED,
+  AdoptionPackReadinessGroup.ADAPTER_CONNECTED,
+  AdoptionPackReadinessGroup.EXECUTION_READY,
 ] as const;
 const ARTIFACT_REGISTRY_HEADERS = [
   'artifact_id',
@@ -126,12 +199,34 @@ const ARTIFACT_REGISTRY_HEADERS = [
   'last_updated_at',
   'dependent_tasks',
 ];
+const TASK_LEDGER_TEMPLATE_SOURCE_RELATIVE_PATH =
+  '.repo-ai-governor/context/dev/project-template/sprint-template/tasks/tasks.csv';
+const TASK_LEDGER_REQUIRED_HEADERS = [
+  'execution_id',
+  'task_id',
+  'title',
+  'owner',
+  'priority',
+  'due_date',
+  'status',
+  'project',
+  'sprint',
+  'plan',
+  'result',
+  'verify',
+  'review_delta',
+  'recorded_at',
+] as const;
+type TaskLedgerSeedRow = Record<(typeof TASK_LEDGER_REQUIRED_HEADERS)[number], string> & {
+  __rowNumber: number;
+};
 
 /**
  * Orchestrates high-level adoption-pack resolution, materialization, and lifecycle checks.
  */
 export class CliAdoptionPackRuntime {
   private readonly adoptionPackRegistry: AdoptionPackRegistry;
+  private readonly configLoader: ConfigLoader;
 
   public constructor(
     private readonly currentWorkingDirectory: string,
@@ -143,6 +238,7 @@ export class CliAdoptionPackRuntime {
       new AdoptionPackRegistry({
         currentWorkingDirectory,
       });
+    this.configLoader = new ConfigLoader();
   }
 
   /**
@@ -289,6 +385,9 @@ export class CliAdoptionPackRuntime {
       installationRoot,
       ADOPTION_VERIFICATION_SUMMARY_FILE_NAME,
     );
+    const sourceCatalogRecordByRelativePath = this.buildSourceCatalogRecordByRelativePath(
+      resolvedTarget.definition,
+    );
     const writtenArtifacts: string[] = [];
     const managedFileRecords: AdoptionPackManagedFileRecord[] = [];
     const checks: AdoptionPackVerificationCheck[] = [];
@@ -304,6 +403,7 @@ export class CliAdoptionPackRuntime {
         existingReceipt,
         force: options.force,
         sessionManagedFileContentByPath,
+        sourceCatalogRecordByRelativePath,
       });
       managedFileRecords.push(...hostResult.managedFileRecords);
       writtenArtifacts.push(...hostResult.writtenArtifacts);
@@ -330,6 +430,7 @@ export class CliAdoptionPackRuntime {
           absolutePath,
           templateRecord.assetGroup,
           templateRecord.content,
+          sourceCatalogRecordByRelativePath.get(templateRecord.relativePath),
         ),
       );
     }
@@ -341,10 +442,20 @@ export class CliAdoptionPackRuntime {
         profile: resolvedTarget.profile,
         existingReceipt,
         force: options.force,
+        sourceCatalogRecordByRelativePath,
       });
       managedFileRecords.push(...bootstrapResult.managedFileRecords);
       checks.push(...bootstrapResult.checks);
       writtenArtifacts.push(...bootstrapResult.writtenArtifacts);
+      const gitignoreRecommendationPath =
+        await this.writeSelfHostGitignoreRecommendation(installationRoot);
+      writtenArtifacts.push(gitignoreRecommendationPath);
+      checks.push({
+        checkId: 'self-host-generated-artifact-git-policy',
+        status: HostVerificationStatus.PASS,
+        detail: `gitignore_recommendation=${gitignoreRecommendationPath}`,
+        inspectedPath: gitignoreRecommendationPath,
+      });
     }
 
     const deduplicatedManagedFileRecords = this.deduplicateManagedFileRecords(managedFileRecords);
@@ -372,6 +483,43 @@ export class CliAdoptionPackRuntime {
         },
         ...checks,
       ],
+      activationPhase:
+        resolvedTarget.profile.profileId === BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE
+          ? AdoptionPackReadinessGroup.TEMPLATE_SEEDED
+          : undefined,
+      activationPhaseStatus:
+        resolvedTarget.profile.profileId === BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE
+          ? 'in_progress'
+          : undefined,
+      activationPhaseRecords:
+        resolvedTarget.profile.profileId === BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE
+          ? [
+              {
+                phaseId: AdoptionPackReadinessGroup.TEMPLATE_SEEDED,
+                status: 'in_progress',
+                blockingReasons: [],
+                placeholderPaths: [],
+                nextActions: [
+                  'Run `repo-ai-governor adopt verify --repo .` after bootstrap/apply to publish the canonical self-host activation verdict.',
+                ],
+              },
+            ]
+          : undefined,
+      operatorNextActions:
+        resolvedTarget.profile.profileId === BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE
+          ? [
+              'Run `repo-ai-governor adopt verify --repo .` after bootstrap/apply to publish the canonical self-host activation verdict.',
+            ]
+          : undefined,
+      executionPreflightSignal:
+        resolvedTarget.profile.profileId === BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE
+          ? 'blocked'
+          : undefined,
+      executionPreflightBlockedGroups:
+        resolvedTarget.profile.profileId === BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE
+          ? [AdoptionPackReadinessGroup.TEMPLATE_SEEDED]
+          : undefined,
+      executionPreflightPlaceholderPaths: [],
     });
     const now = new Date().toISOString();
     const hostManifestPaths = writtenArtifacts.filter((artifactPath) =>
@@ -446,7 +594,7 @@ export class CliAdoptionPackRuntime {
         status: HostVerificationStatus.FAIL,
         detail: `${record.diffKind}:${record.assetGroup}`,
         inspectedPath: record.relativePath,
-        expectedValue: record.receiptChecksumSha256,
+        ...(record.receiptChecksumSha256 ? { expectedValue: record.receiptChecksumSha256 } : {}),
         actualValue: record.currentChecksumSha256 ?? 'missing',
       })),
     });
@@ -527,7 +675,7 @@ export class CliAdoptionPackRuntime {
         status: HostVerificationStatus.FAIL,
         detail: `${record.diffKind}:${record.assetGroup}`,
         inspectedPath: record.relativePath,
-        expectedValue: record.receiptChecksumSha256,
+        ...(record.receiptChecksumSha256 ? { expectedValue: record.receiptChecksumSha256 } : {}),
         actualValue: record.currentChecksumSha256 ?? 'missing',
       })),
     );
@@ -536,7 +684,20 @@ export class CliAdoptionPackRuntime {
       receiptPath: receipt.receiptPath,
       verificationSummaryPath: receipt.verificationSummary.verificationSummaryPath,
       checks,
+      activationPhase: selfHostReadiness.activationPhase,
+      activationPhaseStatus: selfHostReadiness.activationPhaseStatus,
+      activationPhaseRecords: selfHostReadiness.activationPhaseRecords,
+      operatorNextActions: selfHostReadiness.operatorNextActions,
+      executionPreflightSignal: selfHostReadiness.executionPreflightSignal,
+      executionPreflightBlockedGroups: selfHostReadiness.executionPreflightBlockedGroups,
+      executionPreflightPlaceholderPaths: selfHostReadiness.executionPreflightPlaceholderPaths,
     });
+    const updatedReceipt: AdoptionPackInstallReceipt = {
+      ...receipt,
+      verificationSummary,
+      lastUpdatedAt: new Date().toISOString(),
+    };
+    await this.writeJsonFile(receipt.receiptPath, updatedReceipt);
     await this.writeJsonFile(
       receipt.verificationSummary.verificationSummaryPath,
       verificationSummary,
@@ -590,9 +751,37 @@ export class CliAdoptionPackRuntime {
       if (!receipt) {
         return [];
       }
-
       const selfHostReadiness = await this.evaluateSelfHostReadiness(receipt);
-      return selfHostReadiness.doctorChecks;
+      const canonicalSummary = await this.readCanonicalVerificationSummary(receipt);
+      return this.buildDoctorReadinessChecksFromCanonicalSummary(
+        canonicalSummary,
+        selfHostReadiness,
+      );
+    } catch (error) {
+      return [this.createDoctorReceiptFailureCheck(error, repoRoot)];
+    }
+  }
+
+  /**
+   * Collects broader-audit readiness checks for `check` while preserving verify as the only
+   * canonical activation-phase producer.
+   */
+  public async collectCheckReadinessChecks(options?: {
+    repoPath?: string | null;
+    packSelector?: string | null;
+  }): Promise<AdoptionPackVerificationCheck[]> {
+    const repoRoot = this.resolveRepoRoot(options?.repoPath ?? null);
+    try {
+      const receipt = await this.readExistingReceipt(
+        repoRoot,
+        options?.packSelector ?? null,
+        false,
+      );
+      if (!receipt) {
+        return [];
+      }
+      const canonicalSummary = await this.readCanonicalVerificationSummary(receipt);
+      return this.buildCheckReadinessChecksFromCanonicalSummary(canonicalSummary);
     } catch (error) {
       return [this.createDoctorReceiptFailureCheck(error, repoRoot)];
     }
@@ -604,7 +793,26 @@ export class CliAdoptionPackRuntime {
   public async upgrade(options: CliAdoptCommandOptions): Promise<AdoptionOperationResult> {
     const receipt = await this.loadReceiptForOperation(options);
     const diffRecords = await this.buildDiffRecords(receipt);
-    if (diffRecords.length > 0 && !options.force) {
+    const recoveryRequiredDiffRecords = diffRecords.filter((record) =>
+      this.requiresExplicitUpgradeRecovery(record),
+    );
+    if (recoveryRequiredDiffRecords.length > 0) {
+      throw new RuntimeError(
+        GovernorErrorCode.STANDARDS_PACK_INVALID,
+        this.localizeText(
+          `adopt upgrade refused because canonical runtime files are missing and require explicit recovery: ${recoveryRequiredDiffRecords.map((record) => record.relativePath).join(', ')}.`,
+          `adopt upgrade 已拒绝，因为缺失的 canonical runtime 文件需要显式恢复：${recoveryRequiredDiffRecords.map((record) => record.relativePath).join(', ')}。`,
+        ),
+        {
+          receiptPath: receipt.receiptPath,
+          diffCount: recoveryRequiredDiffRecords.length,
+        },
+      );
+    }
+    const blockingDiffRecords = diffRecords.filter((record) =>
+      this.blocksUpgradeWithoutForce(record),
+    );
+    if (blockingDiffRecords.length > 0 && !options.force) {
       throw new RuntimeError(
         GovernorErrorCode.STANDARDS_PACK_INVALID,
         this.localizeText(
@@ -613,7 +821,7 @@ export class CliAdoptionPackRuntime {
         ),
         {
           receiptPath: receipt.receiptPath,
-          diffCount: diffRecords.length,
+          diffCount: blockingDiffRecords.length,
         },
       );
     }
@@ -639,7 +847,13 @@ export class CliAdoptionPackRuntime {
   public async remove(options: CliAdoptCommandOptions): Promise<AdoptionOperationResult> {
     const receipt = await this.loadReceiptForOperation(options);
     const diffRecords = await this.buildDiffRecords(receipt);
-    if (diffRecords.length > 0 || !options.force) {
+    const removableRecords = await this.resolveRemovableManagedFileRecords(receipt);
+    const blockingDiffRecords = diffRecords.filter((record) =>
+      removableRecords.some(
+        (managedFileRecord) => managedFileRecord.relativePath === record.relativePath,
+      ),
+    );
+    if (blockingDiffRecords.length > 0 || !options.force) {
       throw new RuntimeError(
         GovernorErrorCode.STANDARDS_PACK_INVALID,
         this.localizeText(
@@ -648,12 +862,12 @@ export class CliAdoptionPackRuntime {
         ),
         {
           receiptPath: receipt.receiptPath,
-          diffCount: diffRecords.length,
+          diffCount: blockingDiffRecords.length,
         },
       );
     }
 
-    for (const managedFileRecord of receipt.managedFileRecords) {
+    for (const managedFileRecord of removableRecords) {
       if (existsSync(managedFileRecord.absolutePath)) {
         await rm(managedFileRecord.absolutePath, { force: true });
       }
@@ -683,7 +897,7 @@ export class CliAdoptionPackRuntime {
         {
           checkId: 'managed-remove',
           status: HostVerificationStatus.PASS,
-          detail: `removed_files=${receipt.managedFileRecords.length}`,
+          detail: `removed_files=${removableRecords.length}`,
         },
       ],
     };
@@ -908,6 +1122,36 @@ export class CliAdoptionPackRuntime {
     );
   }
 
+  private buildSourceCatalogRecordByRelativePath(
+    definition: ResolvedAdoptionPackDefinition,
+  ): Map<string, AdoptionPackSourceCatalogRecord> {
+    const records = definition.sourceCatalogRecords
+      .filter((record) => typeof record.relativePath === 'string' && record.relativePath.length > 0)
+      .sort((left, right) => left.surfaceId.localeCompare(right.surfaceId));
+    return new Map(records.map((record) => [record.relativePath as string, record] as const));
+  }
+
+  private async writeSelfHostGitignoreRecommendation(installationRoot: string): Promise<string> {
+    const recommendationPath = resolve(
+      installationRoot,
+      SELF_HOST_GITIGNORE_RECOMMENDATION_FILE_NAME,
+    );
+    const content = [
+      this.localizeText(
+        '# Self-host generated artifact ignore recommendation',
+        '# 自托管生成产物忽略建议',
+      ),
+      this.localizeText(
+        '# Opt in by copying the paths below into your repository root .gitignore if desired.',
+        '# 如有需要，可将以下路径复制到仓库根目录 .gitignore 中按需启用。',
+      ),
+      ...SELF_HOST_GENERATED_IGNORE_PATHS,
+      '',
+    ].join('\n');
+    await this.writeTextFile(recommendationPath, content);
+    return recommendationPath;
+  }
+
   private buildSourceCatalogSurfaceOrder(
     definition: ResolvedAdoptionPackDefinition,
   ): Map<string, number> {
@@ -977,6 +1221,7 @@ export class CliAdoptionPackRuntime {
     existingReceipt: AdoptionPackInstallReceipt | null;
     force: boolean;
     sessionManagedFileContentByPath: Map<string, string>;
+    sourceCatalogRecordByRelativePath: Map<string, AdoptionPackSourceCatalogRecord>;
   }): Promise<MaterializedHostResult> {
     const host = this.resolveHostForTarget(options.target);
     const targetSlug = options.target.replace(/\./g, '-').replace(/_/g, '-');
@@ -1013,6 +1258,8 @@ export class CliAdoptionPackRuntime {
       options.repoRoot,
       rendered,
       appliedProjectedFiles,
+      options.sourceCatalogRecordByRelativePath,
+      options.profile.profileId === BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE,
     );
 
     return {
@@ -1057,7 +1304,7 @@ export class CliAdoptionPackRuntime {
               projectedFile.content,
             );
       if (existingSessionContent === undefined) {
-        await this.writeManagedTextFile({
+        const persistedContent = await this.writeManagedTextFile({
           absolutePath,
           relativePath: projectedFile.relativePath,
           content: resolvedContent,
@@ -1065,10 +1312,13 @@ export class CliAdoptionPackRuntime {
           existingReceipt,
           force,
         });
+        sessionManagedFileContentByPath.set(absolutePath, persistedContent);
       } else if (resolvedContent !== existingSessionContent) {
         await this.writeTextFile(absolutePath, resolvedContent);
+        sessionManagedFileContentByPath.set(absolutePath, resolvedContent);
+      } else {
+        sessionManagedFileContentByPath.set(absolutePath, existingSessionContent);
       }
-      sessionManagedFileContentByPath.set(absolutePath, resolvedContent);
       appliedProjectedFiles.push({
         ...projectedFile,
         content: resolvedContent,
@@ -1101,6 +1351,8 @@ export class CliAdoptionPackRuntime {
     repoRoot: string,
     rendered: HostRendererRenderResult,
     appliedProjectedFiles: HostExportProjectedFile[],
+    sourceCatalogRecordByRelativePath: Map<string, AdoptionPackSourceCatalogRecord>,
+    treatAgentsAsStarterEditable = false,
   ): AdoptionPackManagedFileRecord[] {
     return [
       ...appliedProjectedFiles.map((projectedFile) =>
@@ -1109,6 +1361,11 @@ export class CliAdoptionPackRuntime {
           resolve(repoRoot, projectedFile.relativePath),
           this.inferHostAssetGroup(projectedFile.relativePath),
           projectedFile.content,
+          this.resolveProjectedFileSourceCatalogRecord(
+            projectedFile.relativePath,
+            sourceCatalogRecordByRelativePath,
+            treatAgentsAsStarterEditable,
+          ),
         ),
       ),
       this.createManagedFileRecord(
@@ -1116,12 +1373,14 @@ export class CliAdoptionPackRuntime {
         rendered.exportManifest.exportManifestPath,
         AdoptionPackManagedAssetGroup.RUNTIME_HANDOFF_METADATA,
         `${JSON.stringify(rendered.exportManifest, null, 2)}\n`,
+        undefined,
       ),
       this.createManagedFileRecord(
         this.relativeFromRoot(rendered.verificationSummary.verificationSummaryPath, repoRoot),
         rendered.verificationSummary.verificationSummaryPath,
         AdoptionPackManagedAssetGroup.RUNTIME_HANDOFF_METADATA,
         `${JSON.stringify(rendered.verificationSummary, null, 2)}\n`,
+        undefined,
       ),
       ...(rendered.applyReport
         ? [
@@ -1130,6 +1389,7 @@ export class CliAdoptionPackRuntime {
               rendered.applyReport.applyReportPath,
               AdoptionPackManagedAssetGroup.RUNTIME_HANDOFF_METADATA,
               `${JSON.stringify(rendered.applyReport, null, 2)}\n`,
+              undefined,
             ),
           ]
         : []),
@@ -1225,6 +1485,7 @@ export class CliAdoptionPackRuntime {
     profile: AdoptionPackProfile;
     existingReceipt: AdoptionPackInstallReceipt | null;
     force: boolean;
+    sourceCatalogRecordByRelativePath: Map<string, AdoptionPackSourceCatalogRecord>;
   }): Promise<{
     managedFileRecords: AdoptionPackManagedFileRecord[];
     writtenArtifacts: string[];
@@ -1253,6 +1514,7 @@ export class CliAdoptionPackRuntime {
           absolutePath,
           runtimeBootstrapRecord.assetGroup,
           runtimeBootstrapRecord.content,
+          options.sourceCatalogRecordByRelativePath.get(runtimeBootstrapRecord.relativePath),
         ),
       );
       writtenArtifacts.push(absolutePath);
@@ -1263,11 +1525,18 @@ export class CliAdoptionPackRuntime {
       '.repo-ai-governor/context/dev/sqlite/task-ledger.sqlite',
     );
     await this.initializeTaskLedgerSqlite(taskLedgerPath);
+    await this.seedTaskLedgerCanonicalTemplateSource({
+      repoRoot: options.repoRoot,
+      databaseFilePath: taskLedgerPath,
+    });
     managedFileRecords.push(
       await this.createManagedFileRecordFromFile(
         '.repo-ai-governor/context/dev/sqlite/task-ledger.sqlite',
         taskLedgerPath,
         AdoptionPackManagedAssetGroup.SQLITE_REGISTRIES,
+        options.sourceCatalogRecordByRelativePath.get(
+          '.repo-ai-governor/context/dev/sqlite/task-ledger.sqlite',
+        ),
       ),
     );
     writtenArtifacts.push(taskLedgerPath);
@@ -1294,18 +1563,27 @@ export class CliAdoptionPackRuntime {
         '.repo-ai-governor/context/artifact-registry/sqlite/artifact-registry.sqlite',
         artifactSqlitePath,
         AdoptionPackManagedAssetGroup.SQLITE_REGISTRIES,
+        options.sourceCatalogRecordByRelativePath.get(
+          '.repo-ai-governor/context/artifact-registry/sqlite/artifact-registry.sqlite',
+        ),
       ),
       this.createManagedFileRecord(
         '.repo-ai-governor/context/artifact-registry/artifacts.csv',
         artifactMainViewPath,
         AdoptionPackManagedAssetGroup.SQLITE_REGISTRIES,
         `${ARTIFACT_REGISTRY_HEADERS.join(',')}\n`,
+        options.sourceCatalogRecordByRelativePath.get(
+          '.repo-ai-governor/context/artifact-registry/artifacts.csv',
+        ),
       ),
       this.createManagedFileRecord(
         '.repo-ai-governor/context/artifact-registry/archive/artifacts.archive.csv',
         artifactArchiveViewPath,
         AdoptionPackManagedAssetGroup.SQLITE_REGISTRIES,
         `${ARTIFACT_REGISTRY_HEADERS.join(',')}\n`,
+        options.sourceCatalogRecordByRelativePath.get(
+          '.repo-ai-governor/context/artifact-registry/archive/artifacts.archive.csv',
+        ),
       ),
     );
     writtenArtifacts.push(artifactSqlitePath, artifactMainViewPath, artifactArchiveViewPath);
@@ -1378,28 +1656,241 @@ export class CliAdoptionPackRuntime {
     }
   }
 
+  private async seedTaskLedgerCanonicalTemplateSource(options: {
+    repoRoot: string;
+    databaseFilePath: string;
+  }): Promise<void> {
+    const taskCsvPath = resolve(options.repoRoot, TASK_LEDGER_TEMPLATE_SOURCE_RELATIVE_PATH);
+    if (!existsSync(taskCsvPath)) {
+      return;
+    }
+
+    const csvContent = await readFile(taskCsvPath, 'utf8');
+    const parsedRows = this.parseTaskLedgerCsvRows(csvContent, taskCsvPath);
+    const taskCsvStat = await stat(taskCsvPath);
+    const databaseConnection = new DatabaseSync(options.databaseFilePath);
+
+    try {
+      databaseConnection.exec('PRAGMA busy_timeout = 5000;');
+      databaseConnection.exec('BEGIN IMMEDIATE TRANSACTION');
+      databaseConnection
+        .prepare('DELETE FROM task_ledger_rows WHERE source_path = ?')
+        .run(taskCsvPath);
+      databaseConnection
+        .prepare('DELETE FROM task_ledger_sources WHERE source_path = ?')
+        .run(taskCsvPath);
+      databaseConnection
+        .prepare(
+          `
+            INSERT INTO task_ledger_sources (
+              source_path,
+              source_mtime_ms,
+              source_size,
+              row_count,
+              synced_at
+            ) VALUES (?, ?, ?, ?, ?)
+          `,
+        )
+        .run(
+          taskCsvPath,
+          Math.trunc(taskCsvStat.mtimeMs),
+          taskCsvStat.size,
+          parsedRows.length,
+          new Date().toISOString(),
+        );
+
+      const insertRowStatement = databaseConnection.prepare(
+        `
+          INSERT INTO task_ledger_rows (
+            source_path,
+            source_row_number,
+            execution_id,
+            task_id,
+            title,
+            owner,
+            priority,
+            due_date,
+            status,
+            project,
+            sprint,
+            plan,
+            result,
+            verify,
+            review_delta,
+            recorded_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+      );
+
+      for (const row of parsedRows) {
+        insertRowStatement.run(
+          taskCsvPath,
+          row.__rowNumber,
+          row.execution_id,
+          row.task_id,
+          row.title,
+          row.owner,
+          row.priority,
+          row.due_date,
+          row.status,
+          row.project,
+          row.sprint,
+          row.plan,
+          row.result,
+          row.verify,
+          row.review_delta,
+          row.recorded_at,
+        );
+      }
+
+      databaseConnection.exec('COMMIT');
+    } catch (error) {
+      try {
+        databaseConnection.exec('ROLLBACK');
+      } catch {
+        // Keep original failure visible.
+      }
+      throw standardizeError(error);
+    } finally {
+      databaseConnection.close();
+    }
+  }
+
+  private parseTaskLedgerCsvRows(csvContent: string, csvPath: string): TaskLedgerSeedRow[] {
+    const csvLines = csvContent
+      .split(/\r?\n/u)
+      .map((line) => line.trimEnd())
+      .filter((line) => line.trim().length > 0);
+    if (csvLines.length === 0) {
+      return [];
+    }
+
+    const headers = this.parseTaskLedgerCsvLine(csvLines[0]).map((cell) => cell.trim());
+    for (const requiredHeader of TASK_LEDGER_REQUIRED_HEADERS) {
+      if (!headers.includes(requiredHeader)) {
+        throw new RuntimeError(
+          GovernorErrorCode.STANDARDS_PACK_INVALID,
+          this.localizeText(
+            `Self-host task-ledger template is missing required column "${requiredHeader}".`,
+            `self-host task-ledger 模板缺少必填列 "${requiredHeader}"。`,
+          ),
+          {
+            csvPath,
+            requiredHeader,
+          },
+        );
+      }
+    }
+
+    return csvLines.slice(1).map((line, index) => {
+      const values = this.parseTaskLedgerCsvLine(line);
+      if (values.length !== headers.length) {
+        throw new RuntimeError(
+          GovernorErrorCode.STANDARDS_PACK_INVALID,
+          this.localizeText(
+            `Self-host task-ledger template row has ${values.length} columns, expected ${headers.length}.`,
+            `self-host task-ledger 模板行列数不匹配：当前 ${values.length} 列，预期 ${headers.length} 列。`,
+          ),
+          {
+            csvPath,
+            rowNumber: index + 2,
+          },
+        );
+      }
+
+      const row = {
+        __rowNumber: index + 2,
+      } as TaskLedgerSeedRow;
+      for (let headerIndex = 0; headerIndex < headers.length; headerIndex += 1) {
+        const header = headers[headerIndex];
+        if (this.isTaskLedgerRequiredHeader(header)) {
+          row[header] = String(values[headerIndex] ?? '').trim();
+        }
+      }
+      return row;
+    });
+  }
+
+  private parseTaskLedgerCsvLine(line: string): string[] {
+    const values: string[] = [];
+    let currentValue = '';
+    let inQuotes = false;
+
+    for (let index = 0; index < line.length; index += 1) {
+      const character = line[index];
+
+      if (character === '"') {
+        const nextCharacter = line[index + 1];
+        if (inQuotes && nextCharacter === '"') {
+          currentValue += '"';
+          index += 1;
+          continue;
+        }
+
+        inQuotes = !inQuotes;
+        continue;
+      }
+
+      if (character === ',' && !inQuotes) {
+        values.push(currentValue);
+        currentValue = '';
+        continue;
+      }
+
+      currentValue += character;
+    }
+
+    values.push(currentValue);
+    return values;
+  }
+
+  private isTaskLedgerRequiredHeader(
+    header: string,
+  ): header is (typeof TASK_LEDGER_REQUIRED_HEADERS)[number] {
+    return TASK_LEDGER_REQUIRED_HEADERS.includes(
+      header as (typeof TASK_LEDGER_REQUIRED_HEADERS)[number],
+    );
+  }
+
   private async buildDiffRecords(receipt: AdoptionPackInstallReceipt) {
-    const diffRecords = [];
+    const diffRecords: AdoptionPackDiffRecord[] = [];
     for (const managedFileRecord of receipt.managedFileRecords) {
+      const baselineChecksum = this.resolveManagedRecordBaselineChecksum(managedFileRecord);
+
       if (!existsSync(managedFileRecord.absolutePath)) {
+        if (!this.shouldReportMissingManagedFile(managedFileRecord)) {
+          continue;
+        }
         diffRecords.push({
           relativePath: managedFileRecord.relativePath,
           assetGroup: managedFileRecord.assetGroup,
+          ownershipClass: managedFileRecord.ownershipClass,
+          driftPolicy: managedFileRecord.driftPolicy,
           diffKind: 'missing' as const,
-          receiptChecksumSha256: managedFileRecord.checksumSha256,
+          receiptChecksumSha256: baselineChecksum,
           currentChecksumSha256: null,
         });
         continue;
       }
 
+      if (managedFileRecord.driftPolicy !== AdoptionPackDriftPolicy.ENFORCE_CHECKSUM) {
+        continue;
+      }
+
       const currentContent = await readFile(managedFileRecord.absolutePath);
       const currentChecksumSha256 = this.calculateSha256(currentContent);
-      if (currentChecksumSha256 !== managedFileRecord.checksumSha256) {
+      if (!baselineChecksum) {
+        continue;
+      }
+
+      if (currentChecksumSha256 !== baselineChecksum) {
         diffRecords.push({
           relativePath: managedFileRecord.relativePath,
           assetGroup: managedFileRecord.assetGroup,
+          ownershipClass: managedFileRecord.ownershipClass,
+          driftPolicy: managedFileRecord.driftPolicy,
           diffKind: 'changed' as const,
-          receiptChecksumSha256: managedFileRecord.checksumSha256,
+          receiptChecksumSha256: baselineChecksum,
           currentChecksumSha256,
         });
       }
@@ -1416,8 +1907,15 @@ export class CliAdoptionPackRuntime {
       receipt.workspaceMode !== WorkspaceMode.REPO_LOCAL
     ) {
       return {
+        activationPhase: AdoptionPackReadinessGroup.NONE,
+        activationPhaseStatus: 'completed',
+        activationPhaseRecords: [],
+        operatorNextActions: [],
         doctorChecks: [],
         verifyChecks: [],
+        executionPreflightSignal: 'ready',
+        executionPreflightBlockedGroups: [],
+        executionPreflightPlaceholderPaths: [],
       };
     }
 
@@ -1428,38 +1926,84 @@ export class CliAdoptionPackRuntime {
     );
     const verifyChecks: AdoptionPackVerificationCheck[] = [];
     const doctorChecks: AdoptionPackVerificationCheck[] = [];
+    const activationPhaseRecords: AdoptionPackActivationPhaseRecord[] = [];
     const preflightBlockedGroups: string[] = [];
     const preflightBlockedPaths: string[] = [];
-
-    for (const matrixRecord of definition.readinessMatrixRecords) {
-      if (
-        matrixRecord.applicabilityScope !== AdoptionPackApplicabilityScope.SELF_HOST_REPO_LOCAL ||
-        (!matrixRecord.sinkIds.includes(AdoptionPackReadinessSink.ADOPT_VERIFY) &&
-          !matrixRecord.sinkIds.includes(AdoptionPackReadinessSink.EXECUTION_PREFLIGHT))
-      ) {
+    const connectApplyReceiptStatus = await this.readSelfHostConnectApplyReceiptStatus(
+      receipt.targetRepoRoot,
+    );
+    for (const phaseId of SELF_HOST_ACTIVATION_PHASE_ORDER) {
+      const matrixRecord = definition.readinessMatrixRecords.find(
+        (record) =>
+          record.readinessGroup === phaseId &&
+          record.applicabilityScope === AdoptionPackApplicabilityScope.SELF_HOST_REPO_LOCAL,
+      );
+      if (!matrixRecord) {
         continue;
       }
 
-      const unresolvedPlaceholderPaths = await this.resolveUnresolvedSelfHostReadinessPaths({
-        receipt,
-        starterContentByRelativePath,
-        sourceCatalogRecordBySurfaceId,
-        surfaceIds: matrixRecord.surfaceIds,
-      });
       const normalizedGroup = matrixRecord.readinessGroup;
-      const unresolvedPlaceholderPathList = unresolvedPlaceholderPaths.join(',');
+      const unresolvedPlaceholderPaths =
+        normalizedGroup === AdoptionPackReadinessGroup.TEMPLATE_SEEDED
+          ? await this.resolveMissingSelfHostReadinessPaths({
+              receipt,
+              sourceCatalogRecordBySurfaceId,
+              surfaceIds: matrixRecord.surfaceIds,
+            })
+          : await this.resolveUnresolvedSelfHostReadinessPaths({
+              receipt,
+              starterContentByRelativePath,
+              sourceCatalogRecordBySurfaceId,
+              surfaceIds:
+                normalizedGroup === AdoptionPackReadinessGroup.EXECUTION_READY
+                  ? matrixRecord.surfaceIds.filter(
+                      (surfaceId) =>
+                        sourceCatalogRecordBySurfaceId.get(surfaceId)?.relativePath !==
+                        '.repo-ai-governor/governor.yaml',
+                    )
+                  : matrixRecord.surfaceIds,
+            });
+      const blockingReasons: string[] = [];
+      if (unresolvedPlaceholderPaths.length > 0) {
+        blockingReasons.push('placeholder_paths_unresolved');
+      }
+      if (
+        normalizedGroup === AdoptionPackReadinessGroup.ADAPTER_CONNECTED &&
+        !connectApplyReceiptStatus.isCurrent
+      ) {
+        blockingReasons.push('connect_apply_not_recorded');
+      }
+      const phaseStatus = this.resolveSelfHostActivationPhaseStatus({
+        phaseId: normalizedGroup,
+        unresolvedPlaceholderPaths,
+        connectApplyReceiptAvailable: connectApplyReceiptStatus.isCurrent,
+        activationPhaseRecords,
+      });
+      const nextActions = this.buildSelfHostActivationNextActions({
+        phaseId: normalizedGroup,
+        phaseStatus,
+        unresolvedPlaceholderPaths,
+        connectApplyReceiptAvailable: connectApplyReceiptStatus.isCurrent,
+      });
+      activationPhaseRecords.push({
+        phaseId: normalizedGroup,
+        status: phaseStatus,
+        blockingReasons,
+        placeholderPaths: unresolvedPlaceholderPaths,
+        nextActions,
+      });
 
       if (matrixRecord.sinkIds.includes(AdoptionPackReadinessSink.ADOPT_VERIFY)) {
         verifyChecks.push({
           checkId: `${SELF_HOST_READINESS_CHECK_ID_PREFIX}:${normalizedGroup}`,
-          status:
-            unresolvedPlaceholderPaths.length > 0
-              ? HostVerificationStatus.WARN
-              : HostVerificationStatus.PASS,
-          detail:
-            unresolvedPlaceholderPaths.length > 0
-              ? `readiness_group=${normalizedGroup} placeholder_paths=${unresolvedPlaceholderPathList}`
-              : `readiness_group=${normalizedGroup} ready`,
+          status: this.toReadinessCheckStatus(phaseStatus),
+          detail: this.buildSelfHostPhaseCheckDetail({
+            phaseId: normalizedGroup,
+            phaseStatus,
+            blockingReasons,
+            placeholderPaths: unresolvedPlaceholderPaths,
+            audience: 'verify',
+          }),
           inspectedPath: unresolvedPlaceholderPaths[0] ?? undefined,
         });
       }
@@ -1467,45 +2011,145 @@ export class CliAdoptionPackRuntime {
       if (matrixRecord.sinkIds.includes(AdoptionPackReadinessSink.DOCTOR_DIAGNOSTICS)) {
         doctorChecks.push({
           checkId: `${SELF_HOST_READINESS_CHECK_ID_PREFIX}:${normalizedGroup}`,
-          status:
-            unresolvedPlaceholderPaths.length > 0
-              ? HostVerificationStatus.WARN
-              : HostVerificationStatus.PASS,
-          detail:
-            unresolvedPlaceholderPaths.length > 0
-              ? `readiness_group=${normalizedGroup} placeholder_paths=${unresolvedPlaceholderPathList}`
-              : `readiness_group=${normalizedGroup} ready`,
+          status: this.toReadinessCheckStatus(phaseStatus),
+          detail: this.buildSelfHostPhaseCheckDetail({
+            phaseId: normalizedGroup,
+            phaseStatus,
+            blockingReasons,
+            placeholderPaths: unresolvedPlaceholderPaths,
+            audience: 'doctor',
+          }),
           inspectedPath: unresolvedPlaceholderPaths[0] ?? undefined,
         });
       }
 
       if (
         matrixRecord.sinkIds.includes(AdoptionPackReadinessSink.EXECUTION_PREFLIGHT) &&
-        unresolvedPlaceholderPaths.length > 0
+        phaseStatus !== 'completed'
       ) {
         preflightBlockedGroups.push(normalizedGroup);
         preflightBlockedPaths.push(...unresolvedPlaceholderPaths);
       }
     }
 
+    const activationPhase = this.resolveCurrentSelfHostActivationPhase(activationPhaseRecords);
+    const activationPhaseStatus =
+      activationPhaseRecords.find((record) => record.phaseId === activationPhase)?.status ??
+      'completed';
     const preflightSignalCheck = {
       checkId: SELF_HOST_EXECUTION_PREFLIGHT_SIGNAL_CHECK_ID,
       status:
         preflightBlockedGroups.length > 0
           ? HostVerificationStatus.WARN
           : HostVerificationStatus.PASS,
-      detail:
-        preflightBlockedGroups.length > 0
-          ? `execution_preflight_signal=blocked enforcement=downstream_fail_closed blocked_groups=${[...new Set(preflightBlockedGroups)].join(',')} placeholder_paths=${[...new Set(preflightBlockedPaths)].join(',')}`
-          : 'execution_preflight_signal=ready',
+      detail: this.buildSelfHostExecutionPreflightDetail({
+        blocked: preflightBlockedGroups.length > 0,
+        blockedGroups: [...new Set(preflightBlockedGroups)],
+        placeholderPaths: [...new Set(preflightBlockedPaths)],
+      }),
       inspectedPath: preflightBlockedPaths[0] ?? undefined,
     } satisfies AdoptionPackVerificationCheck;
     verifyChecks.push(preflightSignalCheck);
-    doctorChecks.push({ ...preflightSignalCheck });
+    doctorChecks.push({
+      ...preflightSignalCheck,
+      detail: this.buildSelfHostExecutionPreflightDetail({
+        blocked: preflightBlockedGroups.length > 0,
+        blockedGroups: [...new Set(preflightBlockedGroups)],
+        placeholderPaths: [...new Set(preflightBlockedPaths)],
+        reflectedFromVerify: true,
+        currentPhase: activationPhase,
+      }),
+    });
+    const operatorNextActions =
+      this.buildLocalizedSelfHostOperatorNextActionsFromActivationRecords(activationPhaseRecords);
+    for (const action of operatorNextActions) {
+      doctorChecks.push({
+        checkId: 'self-host-next-action',
+        status: HostVerificationStatus.WARN,
+        detail: action,
+      });
+    }
 
     return {
+      activationPhase,
+      activationPhaseStatus,
+      activationPhaseRecords,
+      operatorNextActions,
       doctorChecks,
       verifyChecks,
+      executionPreflightSignal: preflightBlockedGroups.length > 0 ? 'blocked' : 'ready',
+      executionPreflightBlockedGroups: [...new Set(preflightBlockedGroups)],
+      executionPreflightPlaceholderPaths: [...new Set(preflightBlockedPaths)],
+    };
+  }
+
+  /**
+   * Reads canonical self-host execution-preflight truth for downstream runtime gates.
+   * @param options Optional repo or pack selector used to resolve one installed adoption receipt.
+   * @returns Canonical self-host preflight resolution, or null when the target repo is not a self-host install.
+   */
+  public async resolveSelfHostExecutionPreflight(options?: {
+    repoPath?: string | null;
+    packSelector?: string | null;
+  }): Promise<SelfHostExecutionPreflightResolution | null> {
+    const repoRoot = this.resolveRepoRoot(options?.repoPath ?? null);
+    const receipt = await this.readExistingReceipt(repoRoot, options?.packSelector ?? null, false);
+    if (
+      !receipt ||
+      receipt.appliedProfileId !== BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE ||
+      receipt.workspaceMode !== WorkspaceMode.REPO_LOCAL
+    ) {
+      return null;
+    }
+
+    const canonicalSummary = await this.readCanonicalVerificationSummary(receipt);
+    const fallbackReadiness = await this.evaluateSelfHostReadiness(receipt);
+    const activationPhaseRecords =
+      canonicalSummary.activationPhaseRecords ?? fallbackReadiness.activationPhaseRecords;
+    const executionPreflightSignal =
+      canonicalSummary.executionPreflightSignal ??
+      (canonicalSummary.activationPhaseStatus &&
+      canonicalSummary.activationPhaseStatus !== 'completed'
+        ? 'blocked'
+        : fallbackReadiness.executionPreflightSignal);
+    const blockedGroups =
+      canonicalSummary.executionPreflightBlockedGroups &&
+      canonicalSummary.executionPreflightBlockedGroups.length > 0
+        ? [...canonicalSummary.executionPreflightBlockedGroups]
+        : executionPreflightSignal === 'blocked'
+          ? activationPhaseRecords
+              .filter((record) => record.status !== 'completed')
+              .map((record) => record.phaseId)
+          : fallbackReadiness.executionPreflightBlockedGroups;
+    const placeholderPaths =
+      canonicalSummary.executionPreflightPlaceholderPaths &&
+      canonicalSummary.executionPreflightPlaceholderPaths.length > 0
+        ? [...canonicalSummary.executionPreflightPlaceholderPaths]
+        : executionPreflightSignal === 'blocked'
+          ? activationPhaseRecords.flatMap((record) => record.placeholderPaths)
+          : fallbackReadiness.executionPreflightPlaceholderPaths;
+    const operatorNextActions =
+      activationPhaseRecords.length > 0
+        ? this.buildLocalizedSelfHostOperatorNextActionsFromActivationRecords(
+            activationPhaseRecords,
+          )
+        : (canonicalSummary.operatorNextActions ?? fallbackReadiness.operatorNextActions);
+
+    return {
+      repoRoot,
+      installationId: receipt.installationId,
+      packId: receipt.packId,
+      profileId: receipt.appliedProfileId,
+      verificationSummaryPath: canonicalSummary.verificationSummaryPath,
+      activationPhase: canonicalSummary.activationPhase ?? fallbackReadiness.activationPhase,
+      activationPhaseStatus:
+        canonicalSummary.activationPhaseStatus ?? fallbackReadiness.activationPhaseStatus,
+      executionPreflightSignal,
+      blockedGroups: [...new Set(blockedGroups)].sort((left, right) => left.localeCompare(right)),
+      placeholderPaths: [...new Set(placeholderPaths)].sort((left, right) =>
+        left.localeCompare(right),
+      ),
+      operatorNextActions,
     };
   }
 
@@ -1526,6 +2170,245 @@ export class CliAdoptionPackRuntime {
     }
 
     return starterContentByRelativePath;
+  }
+
+  private resolveSelfHostActivationPhaseStatus(options: {
+    phaseId: AdoptionPackReadinessGroup;
+    unresolvedPlaceholderPaths: string[];
+    connectApplyReceiptAvailable: boolean;
+    activationPhaseRecords: AdoptionPackActivationPhaseRecord[];
+  }): 'blocked' | 'in_progress' | 'completed' {
+    if (options.phaseId === AdoptionPackReadinessGroup.ADAPTER_CONNECTED) {
+      return options.connectApplyReceiptAvailable ? 'completed' : 'in_progress';
+    }
+
+    if (options.phaseId === AdoptionPackReadinessGroup.EXECUTION_READY) {
+      const authoringCompleted = options.activationPhaseRecords.some(
+        (record) =>
+          record.phaseId === AdoptionPackReadinessGroup.AUTHORING_STARTED &&
+          record.status === 'completed',
+      );
+      const adapterConnected = options.activationPhaseRecords.some(
+        (record) =>
+          record.phaseId === AdoptionPackReadinessGroup.ADAPTER_CONNECTED &&
+          record.status === 'completed',
+      );
+      if (!authoringCompleted || !adapterConnected) {
+        return 'blocked';
+      }
+      return options.unresolvedPlaceholderPaths.length === 0 ? 'completed' : 'in_progress';
+    }
+
+    return options.unresolvedPlaceholderPaths.length === 0 ? 'completed' : 'in_progress';
+  }
+
+  private buildSelfHostActivationNextActions(options: {
+    phaseId: AdoptionPackReadinessGroup;
+    phaseStatus: 'blocked' | 'in_progress' | 'completed';
+    unresolvedPlaceholderPaths: string[];
+    connectApplyReceiptAvailable: boolean;
+  }): string[] {
+    if (options.phaseStatus === 'completed') {
+      return [];
+    }
+
+    switch (options.phaseId) {
+      case AdoptionPackReadinessGroup.TEMPLATE_SEEDED:
+        return [
+          this.localizeText(
+            'Run `repo-ai-governor adopt bootstrap --adoption-profile self-host-complete --workspace-mode repo_local --repo .` to seed the canonical self-host template surfaces.',
+            '运行 `repo-ai-governor adopt bootstrap --adoption-profile self-host-complete --workspace-mode repo_local --repo .`，以播种 canonical self-host 模板面。',
+          ),
+        ];
+      case AdoptionPackReadinessGroup.AUTHORING_STARTED:
+        return [this.buildSelfHostPlaceholderAuthoringAction(options.unresolvedPlaceholderPaths)];
+      case AdoptionPackReadinessGroup.ADAPTER_CONNECTED:
+        return options.connectApplyReceiptAvailable
+          ? []
+          : [
+              this.localizeText(
+                'Run `repo-ai-governor connect --preset multi-tool-default --tools codex,claude-code` to write a reviewable adapter candidate, then run `repo-ai-governor connect apply --latest` to activate it.',
+                '运行 `repo-ai-governor connect --preset multi-tool-default --tools codex,claude-code` 以写入可审阅的 adapter candidate，然后执行 `repo-ai-governor connect apply --latest` 以正式激活它。',
+              ),
+            ];
+      case AdoptionPackReadinessGroup.EXECUTION_READY: {
+        const nextActions: string[] = [];
+        if (options.unresolvedPlaceholderPaths.length > 0) {
+          nextActions.push(
+            this.buildSelfHostPlaceholderAuthoringAction(options.unresolvedPlaceholderPaths),
+          );
+        }
+        if (!options.connectApplyReceiptAvailable) {
+          nextActions.push(
+            this.localizeText(
+              'Apply the latest reviewed connect candidate first so execution-ready can rely on a recorded adapter baseline.',
+              '请先 apply 最新一份已审阅的 connect candidate，让 execution-ready 可以依赖已记录的 adapter 基线。',
+            ),
+          );
+        }
+        nextActions.push(
+          this.localizeText(
+            'Re-run `repo-ai-governor adopt verify --repo .` after authoring or connect changes; that summary is the canonical readiness verdict.',
+            '在完成 authoring 或 connect 变更后，请重新执行 `repo-ai-governor adopt verify --repo .`；这份摘要才是 canonical readiness verdict。',
+          ),
+        );
+        nextActions.push(
+          this.localizeText(
+            'While self-host execution preflight is blocked, use `repo-ai-governor doctor --adapters` only for additive diagnostics and keep `repo-ai-governor run --dry-run --trace` as the only allowed diagnostic run.',
+            '当 self-host execution preflight 仍处于 blocked 时，只把 `repo-ai-governor doctor --adapters` 作为增量诊断，并把 `repo-ai-governor run --dry-run --trace` 作为唯一允许的诊断运行。',
+          ),
+        );
+        return nextActions;
+      }
+      default:
+        return [];
+    }
+  }
+
+  private buildSelfHostOperatorNextActionsSummary(operatorNextActions: Set<string>): string[] {
+    return [...operatorNextActions];
+  }
+
+  private buildSelfHostPlaceholderAuthoringAction(unresolvedPlaceholderPaths: string[]): string {
+    const placeholderSummary = this.summarizeSelfHostPlaceholderPathsForOperator(
+      unresolvedPlaceholderPaths,
+    );
+    const anchorPathText = this.formatSelfHostOperatorAnchorPaths(placeholderSummary.anchorPaths);
+    const remainingSuffix =
+      placeholderSummary.remainingCount > 0
+        ? this.localizeText(
+            `; ${placeholderSummary.remainingCount} more placeholder files remain in \`activationPhaseRecords[].placeholderPaths\`.`,
+            `；另外还有 ${placeholderSummary.remainingCount} 个占位文件保留在 \`activationPhaseRecords[].placeholderPaths\` 中。`,
+          )
+        : '.';
+    return this.localizeText(
+      `Finish authoring the repo-local self-host starter surfaces before unattended execution. Start with ${anchorPathText}${remainingSuffix}`,
+      `在无人值守执行前，请先完成 repo-local self-host starter surfaces 的编写。建议先处理 ${anchorPathText}${remainingSuffix}`,
+    );
+  }
+
+  private summarizeSelfHostPlaceholderPathsForOperator(placeholderPaths: string[]): {
+    anchorPaths: string[];
+    remainingCount: number;
+  } {
+    const uniquePaths = [...new Set(placeholderPaths)];
+    const anchorPaths: string[] = [];
+
+    for (const prioritizedPath of SELF_HOST_OPERATOR_ACTION_PRIORITY_PATHS) {
+      if (uniquePaths.includes(prioritizedPath)) {
+        anchorPaths.push(prioritizedPath);
+      }
+      if (anchorPaths.length >= SELF_HOST_OPERATOR_ACTION_ANCHOR_LIMIT) {
+        break;
+      }
+    }
+
+    if (anchorPaths.length < SELF_HOST_OPERATOR_ACTION_ANCHOR_LIMIT) {
+      for (const placeholderPath of uniquePaths) {
+        if (!anchorPaths.includes(placeholderPath)) {
+          anchorPaths.push(placeholderPath);
+        }
+        if (anchorPaths.length >= SELF_HOST_OPERATOR_ACTION_ANCHOR_LIMIT) {
+          break;
+        }
+      }
+    }
+
+    return {
+      anchorPaths,
+      remainingCount: Math.max(uniquePaths.length - anchorPaths.length, 0),
+    };
+  }
+
+  private formatSelfHostOperatorAnchorPaths(anchorPaths: string[]): string {
+    if (anchorPaths.length === 0) {
+      return this.localizeText('the recorded placeholder paths', '记录在案的占位路径');
+    }
+
+    return anchorPaths.map((anchorPath) => `\`${anchorPath}\``).join(', ');
+  }
+
+  private resolveCurrentSelfHostActivationPhase(
+    activationPhaseRecords: AdoptionPackActivationPhaseRecord[],
+  ): AdoptionPackReadinessGroup {
+    for (const phaseId of SELF_HOST_ACTIVATION_PHASE_ORDER) {
+      const record = activationPhaseRecords.find((candidate) => candidate.phaseId === phaseId);
+      if (record && record.status !== 'completed') {
+        return phaseId;
+      }
+    }
+
+    return activationPhaseRecords.length > 0
+      ? AdoptionPackReadinessGroup.EXECUTION_READY
+      : AdoptionPackReadinessGroup.NONE;
+  }
+
+  private toReadinessCheckStatus(
+    phaseStatus: 'blocked' | 'in_progress' | 'completed',
+  ): HostVerificationStatus {
+    return phaseStatus === 'completed' ? HostVerificationStatus.PASS : HostVerificationStatus.WARN;
+  }
+
+  private async hasSelfHostConnectApplyReceipt(repoRoot: string): Promise<boolean> {
+    const status = await this.readSelfHostConnectApplyReceiptStatus(repoRoot);
+    return status.isCurrent;
+  }
+
+  private async readSelfHostConnectApplyReceiptStatus(repoRoot: string): Promise<{
+    isCurrent: boolean;
+    latestReceiptPath?: string;
+  }> {
+    const connectApplyRoot = resolve(
+      repoRoot,
+      ...SELF_HOST_CONNECT_APPLY_RECEIPTS_DIRECTORY_SEGMENTS,
+    );
+    if (!existsSync(connectApplyRoot)) {
+      return { isCurrent: false };
+    }
+
+    const entries = await readdir(connectApplyRoot, { withFileTypes: true }).catch(() => []);
+    const receiptNames = entries
+      .filter((entry) => entry.isFile() && /^connect-apply-\d+\.json$/u.test(entry.name))
+      .map((entry) => entry.name)
+      .sort((left, right) => right.localeCompare(left));
+    const latestReceiptName = receiptNames[0];
+    if (!latestReceiptName) {
+      return { isCurrent: false };
+    }
+
+    const latestReceiptPath = resolve(connectApplyRoot, latestReceiptName);
+    const latestReceipt = await this.readTextIfExists(latestReceiptPath);
+    if (latestReceipt === null) {
+      return {
+        isCurrent: false,
+        latestReceiptPath,
+      };
+    }
+
+    try {
+      const receiptSnapshot = JSON.parse(latestReceipt) as SelfHostConnectApplyReceiptSnapshot;
+      const currentConfig = this.configLoader.loadFromFile(
+        resolve(repoRoot, '.repo-ai-governor', 'governor.yaml'),
+      );
+      const currentConfigHash = this.hashStructuredConfig(currentConfig);
+      const applyBlockers = Array.isArray(receiptSnapshot.applyBlockers)
+        ? receiptSnapshot.applyBlockers
+        : [];
+      return {
+        isCurrent:
+          receiptSnapshot.applyReady === true &&
+          receiptSnapshot.candidateFingerprintCurrent === true &&
+          applyBlockers.length === 0 &&
+          typeof receiptSnapshot.appliedConfigHash === 'string' &&
+          receiptSnapshot.appliedConfigHash === currentConfigHash,
+        latestReceiptPath,
+      };
+    } catch {
+      return {
+        isCurrent: false,
+        latestReceiptPath,
+      };
+    }
   }
 
   private async resolveUnresolvedSelfHostReadinessPaths(options: {
@@ -1564,6 +2447,32 @@ export class CliAdoptionPackRuntime {
     }
 
     return [...unresolvedPaths].sort((left, right) => left.localeCompare(right));
+  }
+
+  private async resolveMissingSelfHostReadinessPaths(options: {
+    receipt: AdoptionPackInstallReceipt;
+    sourceCatalogRecordBySurfaceId: Map<
+      string,
+      ResolvedAdoptionPackDefinition['sourceCatalogRecords'][number]
+    >;
+    surfaceIds: string[];
+  }): Promise<string[]> {
+    const missingPaths = new Set<string>();
+
+    for (const surfaceId of options.surfaceIds) {
+      const sourceCatalogRecord = options.sourceCatalogRecordBySurfaceId.get(surfaceId);
+      const relativePath = sourceCatalogRecord?.relativePath;
+      if (!relativePath) {
+        continue;
+      }
+
+      const absolutePath = resolve(options.receipt.targetRepoRoot, relativePath);
+      if (!existsSync(absolutePath)) {
+        missingPaths.add(relativePath);
+      }
+    }
+
+    return [...missingPaths].sort((left, right) => left.localeCompare(right));
   }
 
   private isSelfHostStarterPlaceholderContent(
@@ -1790,17 +2699,32 @@ export class CliAdoptionPackRuntime {
     assetGroup: AdoptionPackManagedAssetGroup;
     existingReceipt: AdoptionPackInstallReceipt | null;
     force: boolean;
-  }): Promise<void> {
+  }): Promise<string> {
+    const existingManagedRecord = options.existingReceipt?.managedFileRecords.find(
+      (record) => record.absolutePath === options.absolutePath,
+    );
     const currentContent = await this.readTextIfExists(options.absolutePath);
-    if (currentContent !== null && currentContent !== options.content) {
-      const existingManagedRecord = options.existingReceipt?.managedFileRecords.find(
-        (record) => record.absolutePath === options.absolutePath,
+    if (currentContent === null && existingManagedRecord) {
+      this.assertMissingManagedFileCanBeRewritten(
+        existingManagedRecord,
+        options.relativePath,
+        options.assetGroup,
+        options.force,
       );
+    }
+
+    if (currentContent !== null && currentContent !== options.content) {
       const currentChecksumSha256 = this.calculateSha256(currentContent);
+      if (
+        existingManagedRecord &&
+        this.shouldPreserveExistingManagedContent(existingManagedRecord, currentChecksumSha256)
+      ) {
+        return currentContent;
+      }
       if (!options.force) {
         if (
           existingManagedRecord &&
-          currentChecksumSha256 === existingManagedRecord.checksumSha256
+          this.matchesManagedSeedChecksum(existingManagedRecord, currentChecksumSha256)
         ) {
           // Safe managed overwrite during upgrade/apply.
         } else if (existingManagedRecord) {
@@ -1832,6 +2756,7 @@ export class CliAdoptionPackRuntime {
     }
 
     await this.writeTextFile(options.absolutePath, options.content);
+    return options.content;
   }
 
   private async writeTextFile(filePath: string, content: string): Promise<void> {
@@ -1903,6 +2828,273 @@ export class CliAdoptionPackRuntime {
     };
   }
 
+  private async readCanonicalVerificationSummary(
+    receipt: AdoptionPackInstallReceipt,
+  ): Promise<AdoptionPackVerificationSummary> {
+    const summaryPath = receipt.verificationSummary.verificationSummaryPath;
+    if (!existsSync(summaryPath)) {
+      return receipt.verificationSummary;
+    }
+
+    try {
+      return this.readJsonFile<AdoptionPackVerificationSummary>(summaryPath);
+    } catch {
+      return receipt.verificationSummary;
+    }
+  }
+
+  private buildDoctorReadinessChecksFromCanonicalSummary(
+    summary: AdoptionPackVerificationSummary,
+    fallbackReadiness: SelfHostReadinessEvaluation,
+  ): AdoptionPackVerificationCheck[] {
+    const activationPhaseRecords =
+      summary.activationPhaseRecords ?? fallbackReadiness.activationPhaseRecords;
+    const preflightBlocked =
+      summary.executionPreflightSignal === 'blocked' ||
+      (summary.executionPreflightSignal === undefined &&
+        Boolean(summary.activationPhaseStatus && summary.activationPhaseStatus !== 'completed'));
+    const preflightBlockedGroups =
+      summary.executionPreflightBlockedGroups && summary.executionPreflightBlockedGroups.length > 0
+        ? [...summary.executionPreflightBlockedGroups]
+        : preflightBlocked
+          ? activationPhaseRecords
+              .filter((record) => record.status !== 'completed')
+              .map((record) => record.phaseId)
+          : [];
+    const preflightPlaceholderPaths =
+      summary.executionPreflightPlaceholderPaths &&
+      summary.executionPreflightPlaceholderPaths.length > 0
+        ? [...summary.executionPreflightPlaceholderPaths]
+        : preflightBlocked
+          ? activationPhaseRecords.flatMap((record) => record.placeholderPaths)
+          : [];
+    const operatorNextActions =
+      activationPhaseRecords.length > 0
+        ? this.buildLocalizedSelfHostOperatorNextActionsFromActivationRecords(
+            activationPhaseRecords,
+          )
+        : (summary.operatorNextActions ?? fallbackReadiness.operatorNextActions);
+    const checks: AdoptionPackVerificationCheck[] = activationPhaseRecords.map((record) => ({
+      checkId: `${SELF_HOST_READINESS_CHECK_ID_PREFIX}:${record.phaseId}`,
+      status: this.toReadinessCheckStatus(record.status),
+      detail: this.buildSelfHostPhaseCheckDetail({
+        phaseId: record.phaseId,
+        phaseStatus: record.status,
+        blockingReasons: record.blockingReasons,
+        placeholderPaths: record.placeholderPaths,
+        audience: 'doctor',
+      }),
+      inspectedPath: record.placeholderPaths[0] ?? undefined,
+    }));
+    checks.push({
+      checkId: SELF_HOST_EXECUTION_PREFLIGHT_SIGNAL_CHECK_ID,
+      status: preflightBlocked ? HostVerificationStatus.WARN : HostVerificationStatus.PASS,
+      detail: this.buildSelfHostExecutionPreflightDetail({
+        blocked: preflightBlocked,
+        blockedGroups: [...new Set(preflightBlockedGroups)],
+        placeholderPaths: [...new Set(preflightPlaceholderPaths)],
+        reflectedFromVerify: true,
+        currentPhase: summary.activationPhase,
+      }),
+    });
+    for (const action of operatorNextActions) {
+      checks.push({
+        checkId: 'self-host-next-action',
+        status: HostVerificationStatus.WARN,
+        detail: action,
+      });
+    }
+    return checks;
+  }
+
+  private buildCheckReadinessChecksFromCanonicalSummary(
+    summary: AdoptionPackVerificationSummary,
+  ): AdoptionPackVerificationCheck[] {
+    const activationPhaseRecords = summary.activationPhaseRecords ?? [];
+    const localizedNextActions =
+      activationPhaseRecords.length > 0
+        ? this.buildLocalizedSelfHostOperatorNextActionsFromActivationRecords(
+            activationPhaseRecords,
+          )
+        : (summary.operatorNextActions ?? []);
+    const canonicalFailureChecks = summary.checks.filter(
+      (check) => check.status === HostVerificationStatus.FAIL,
+    );
+    const checks: AdoptionPackVerificationCheck[] = [...canonicalFailureChecks];
+    checks.push(
+      ...activationPhaseRecords.map((record) => ({
+        checkId: `self-host-check:${record.phaseId}`,
+        status: this.toReadinessCheckStatus(record.status),
+        detail: this.buildSelfHostCheckPhaseDetail(record),
+        inspectedPath: record.placeholderPaths[0] ?? undefined,
+      })),
+    );
+    if (summary.activationPhase) {
+      checks.push({
+        checkId: 'self-host-activation-summary',
+        status:
+          summary.status === HostVerificationStatus.FAIL
+            ? HostVerificationStatus.FAIL
+            : summary.activationPhaseStatus === 'completed'
+              ? HostVerificationStatus.PASS
+              : HostVerificationStatus.WARN,
+        detail: this.localizeText(
+          `Current self-host activation summary: current_phase=${summary.activationPhase} phase_status=${summary.activationPhaseStatus ?? 'completed'} consumed_from=adopt_verify verification_status=${summary.status}.`,
+          `当前 self-host activation 摘要：current_phase=${summary.activationPhase} phase_status=${summary.activationPhaseStatus ?? 'completed'} consumed_from=adopt_verify verification_status=${summary.status}。`,
+        ),
+      });
+    }
+    for (const action of localizedNextActions) {
+      checks.push({
+        checkId: 'self-host-check-next-action',
+        status: HostVerificationStatus.WARN,
+        detail: action,
+      });
+    }
+    return checks;
+  }
+
+  private buildSelfHostPhaseCheckDetail(options: {
+    phaseId: AdoptionPackReadinessGroup;
+    phaseStatus: 'blocked' | 'in_progress' | 'completed';
+    blockingReasons: string[];
+    placeholderPaths: string[];
+    audience: 'verify' | 'doctor';
+  }): string {
+    const blockingReasonText = this.formatSelfHostDiagnosticList(options.blockingReasons);
+    const placeholderPathText = this.formatSelfHostDiagnosticList(options.placeholderPaths);
+    const sourceText = options.audience === 'doctor' ? ' reflected_from=adopt_verify' : '';
+    return this.localizeText(
+      `Self-host readiness phase ${options.phaseId} is ${options.phaseStatus}; activation_phase=${options.phaseId} phase_status=${options.phaseStatus}${sourceText} blocking_reasons=${blockingReasonText} placeholder_paths=${placeholderPathText}.`,
+      `Self-host readiness 阶段 ${options.phaseId} 当前为 ${options.phaseStatus}；activation_phase=${options.phaseId} phase_status=${options.phaseStatus}${sourceText} blocking_reasons=${blockingReasonText} placeholder_paths=${placeholderPathText}。`,
+    );
+  }
+
+  private buildSelfHostCheckPhaseDetail(record: AdoptionPackActivationPhaseRecord): string {
+    const broaderAuditStatus =
+      record.status === 'completed' ? 'ready_to_continue' : 'phase_blocked';
+    return this.localizeText(
+      `Self-host readiness phase ${record.phaseId} is ${record.status}; activation_phase=${record.phaseId} phase_status=${record.status} consumed_from=adopt_verify broader_governance_audit=${broaderAuditStatus}.`,
+      `Self-host readiness 阶段 ${record.phaseId} 当前为 ${record.status}；activation_phase=${record.phaseId} phase_status=${record.status} consumed_from=adopt_verify broader_governance_audit=${broaderAuditStatus}。`,
+    );
+  }
+
+  private buildSelfHostExecutionPreflightDetail(options: {
+    blocked: boolean;
+    blockedGroups: string[];
+    placeholderPaths: string[];
+    reflectedFromVerify?: boolean;
+    currentPhase?: AdoptionPackReadinessGroup;
+  }): string {
+    const blockedGroupText = this.formatSelfHostDiagnosticList(options.blockedGroups);
+    const placeholderPathText = this.formatSelfHostDiagnosticList(options.placeholderPaths);
+    if (options.blocked) {
+      return this.localizeText(
+        `Execution preflight is blocked; execution_preflight_signal=blocked enforcement=downstream_fail_closed blocked_groups=${blockedGroupText} placeholder_paths=${placeholderPathText}${options.reflectedFromVerify ? ` reflected_from=adopt_verify current_phase=${options.currentPhase ?? AdoptionPackReadinessGroup.NONE}` : ''}.`,
+        `执行预检当前被阻塞；execution_preflight_signal=blocked enforcement=downstream_fail_closed blocked_groups=${blockedGroupText} placeholder_paths=${placeholderPathText}${options.reflectedFromVerify ? ` reflected_from=adopt_verify current_phase=${options.currentPhase ?? AdoptionPackReadinessGroup.NONE}` : ''}。`,
+      );
+    }
+
+    return this.localizeText(
+      `Execution preflight is ready; execution_preflight_signal=ready${options.reflectedFromVerify ? ' reflected_from=adopt_verify' : ''}.`,
+      `执行预检已就绪；execution_preflight_signal=ready${options.reflectedFromVerify ? ' reflected_from=adopt_verify' : ''}。`,
+    );
+  }
+
+  private buildLocalizedSelfHostOperatorNextActionsFromActivationRecords(
+    activationPhaseRecords: AdoptionPackActivationPhaseRecord[],
+  ): string[] {
+    const localizedActions = new Set<string>();
+    const authoringRecord = activationPhaseRecords.find(
+      (record) =>
+        record.phaseId === AdoptionPackReadinessGroup.AUTHORING_STARTED &&
+        record.status !== 'completed',
+    );
+    const adapterRecord = activationPhaseRecords.find(
+      (record) =>
+        record.phaseId === AdoptionPackReadinessGroup.ADAPTER_CONNECTED &&
+        record.status !== 'completed',
+    );
+    const executionRecord = activationPhaseRecords.find(
+      (record) =>
+        record.phaseId === AdoptionPackReadinessGroup.EXECUTION_READY &&
+        record.status !== 'completed',
+    );
+    const adapterConnected = activationPhaseRecords.some(
+      (record) =>
+        record.phaseId === AdoptionPackReadinessGroup.ADAPTER_CONNECTED &&
+        record.status === 'completed',
+    );
+
+    if (authoringRecord) {
+      localizedActions.add(
+        this.buildSelfHostPlaceholderAuthoringAction(authoringRecord.placeholderPaths),
+      );
+    } else if (executionRecord && executionRecord.placeholderPaths.length > 0) {
+      localizedActions.add(
+        this.buildSelfHostPlaceholderAuthoringAction(executionRecord.placeholderPaths),
+      );
+    }
+
+    if (adapterRecord) {
+      for (const action of this.buildSelfHostActivationNextActions({
+        phaseId: adapterRecord.phaseId,
+        phaseStatus: adapterRecord.status,
+        unresolvedPlaceholderPaths: adapterRecord.placeholderPaths,
+        connectApplyReceiptAvailable: adapterConnected,
+      })) {
+        localizedActions.add(action);
+      }
+    }
+
+    if (authoringRecord || adapterRecord || executionRecord) {
+      localizedActions.add(
+        this.localizeText(
+          'Re-run `repo-ai-governor adopt verify --repo .` after authoring or connect changes; that summary is the canonical readiness verdict.',
+          '在完成 authoring 或 connect 变更后，请重新执行 `repo-ai-governor adopt verify --repo .`；这份摘要才是 canonical readiness verdict。',
+        ),
+      );
+    }
+
+    if (executionRecord) {
+      localizedActions.add(
+        this.localizeText(
+          'Use `repo-ai-governor doctor --adapters` only for additive diagnostics. While preflight is blocked, keep `repo-ai-governor run --dry-run --trace` as the only allowed diagnostic run.',
+          '只把 `repo-ai-governor doctor --adapters` 用作增量诊断。当 preflight 仍处于 blocked 时，请把 `repo-ai-governor run --dry-run --trace` 作为唯一允许的诊断运行。',
+        ),
+      );
+    }
+
+    return this.buildSelfHostOperatorNextActionsSummary(localizedActions);
+  }
+
+  private formatSelfHostDiagnosticList(values: string[]): string {
+    return values.length > 0 ? values.join(',') : this.localizeText('none', '无');
+  }
+
+  private hashStructuredConfig(config: unknown): string {
+    const normalized = JSON.stringify(this.sortHashValue(config));
+    let hash = 0;
+    for (let index = 0; index < normalized.length; index += 1) {
+      hash = (hash * 31 + normalized.charCodeAt(index)) >>> 0;
+    }
+    return `cfg-${hash.toString(16).padStart(8, '0')}`;
+  }
+
+  private sortHashValue(value: unknown): unknown {
+    if (Array.isArray(value)) {
+      return value.map((item) => this.sortHashValue(item));
+    }
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(
+        Object.entries(value)
+          .sort(([left], [right]) => left.localeCompare(right))
+          .map(([entryKey, entryValue]) => [entryKey, this.sortHashValue(entryValue)]),
+      );
+    }
+    return value;
+  }
+
   private normalizeInstallReceipt(receipt: AdoptionPackInstallReceipt): AdoptionPackInstallReceipt {
     const hostTargets = this.resolveReceiptHostTargets(receipt);
     const hostManifestPaths =
@@ -1920,6 +3112,9 @@ export class CliAdoptionPackRuntime {
 
     return {
       ...receipt,
+      managedFileRecords: receipt.managedFileRecords.map((record) =>
+        this.normalizeManagedFileRecord(record),
+      ),
       hostTargets,
       hostTarget:
         receipt.hostTarget ?? hostTargets[0] ?? HostDistributionTarget.CODEX_PROJECT_LOCAL,
@@ -1935,12 +3130,23 @@ export class CliAdoptionPackRuntime {
     absolutePath: string,
     assetGroup: AdoptionPackManagedAssetGroup,
     content: string | Uint8Array,
+    sourceCatalogRecord?: AdoptionPackSourceCatalogRecord,
   ): AdoptionPackManagedFileRecord {
+    const checksumSha256 = this.calculateSha256(content);
     return {
       relativePath: relativePath.replace(/\\/g, '/'),
       absolutePath,
       assetGroup,
-      checksumSha256: this.calculateSha256(content),
+      ownershipClass:
+        sourceCatalogRecord?.ownershipClass ?? AdoptionPackOwnershipClass.MANAGED_LOCKED,
+      driftPolicy: sourceCatalogRecord?.driftPolicy ?? AdoptionPackDriftPolicy.ENFORCE_CHECKSUM,
+      gitPolicy: sourceCatalogRecord?.gitPolicy ?? AdoptionPackGitPolicy.KEEP_TRACKED,
+      placeholderPolicy:
+        sourceCatalogRecord?.placeholderPolicy ?? AdoptionPackPlaceholderPolicy.NONE,
+      sourceCatalogId: sourceCatalogRecord?.surfaceId,
+      seededAt: new Date().toISOString(),
+      seedChecksumSha256: checksumSha256,
+      checksumSha256,
       managed: true,
     };
   }
@@ -1949,13 +3155,340 @@ export class CliAdoptionPackRuntime {
     relativePath: string,
     absolutePath: string,
     assetGroup: AdoptionPackManagedAssetGroup,
+    sourceCatalogRecord?: AdoptionPackSourceCatalogRecord,
   ): Promise<AdoptionPackManagedFileRecord> {
     return this.createManagedFileRecord(
       relativePath,
       absolutePath,
       assetGroup,
       await readFile(absolutePath),
+      sourceCatalogRecord,
     );
+  }
+
+  private normalizeManagedFileRecord(
+    record: AdoptionPackManagedFileRecord,
+  ): AdoptionPackManagedFileRecord {
+    const normalizedChecksum = record.seedChecksumSha256 ?? record.checksumSha256 ?? null;
+    const normalizedOwnershipClass =
+      record.ownershipClass ??
+      this.inferLegacyManagedFileOwnershipClass(record.relativePath, record.assetGroup);
+    return {
+      ...record,
+      ownershipClass: normalizedOwnershipClass,
+      driftPolicy:
+        record.driftPolicy ?? this.defaultDriftPolicyForOwnershipClass(normalizedOwnershipClass),
+      gitPolicy: record.gitPolicy ?? this.defaultGitPolicyForManagedRecord(record),
+      placeholderPolicy:
+        record.placeholderPolicy ?? this.defaultPlaceholderPolicyForManagedRecord(record),
+      seededAt: record.seededAt ?? undefined,
+      seedChecksumSha256: normalizedChecksum,
+      checksumSha256:
+        record.checksumSha256 ??
+        (this.defaultDriftPolicyForOwnershipClass(normalizedOwnershipClass) ===
+        AdoptionPackDriftPolicy.ENFORCE_CHECKSUM
+          ? normalizedChecksum
+          : null),
+    };
+  }
+
+  private inferLegacyManagedFileOwnershipClass(
+    relativePath: string,
+    assetGroup: AdoptionPackManagedAssetGroup,
+  ): AdoptionPackOwnershipClass {
+    if (
+      relativePath === 'AGENTS.md' ||
+      relativePath.endsWith('code_standards.md') ||
+      relativePath.endsWith('long-term-maintenance-guide.md') ||
+      relativePath.endsWith('product-requirements-brief.md') ||
+      relativePath.startsWith('.repo-ai-governor/context/dev/project-template/') ||
+      relativePath === '.repo-ai-governor/context/dev/project-template/plan.md' ||
+      relativePath === '.repo-ai-governor/context/completed-streams-history.md' ||
+      relativePath ===
+        '.repo-ai-governor/normative_knowledge_sources/normative-loading-manifest.yaml'
+    ) {
+      return AdoptionPackOwnershipClass.STARTER_EDITABLE;
+    }
+
+    if (
+      relativePath === '.repo-ai-governor/governor.yaml' ||
+      relativePath === '.repo-ai-governor/context/current-context.md' ||
+      relativePath.includes('technical-solution-lifecycle-registry.yaml') ||
+      relativePath.includes('technical-solution-delivery-registry.yaml') ||
+      relativePath.includes('technical-solution-module-registry.yaml') ||
+      relativePath.endsWith('task-ledger.sqlite') ||
+      relativePath.endsWith('artifact-registry.sqlite') ||
+      relativePath.endsWith('/artifacts.csv') ||
+      relativePath.endsWith('/artifacts.archive.csv')
+    ) {
+      return AdoptionPackOwnershipClass.CANONICAL_RUNTIME_WRITABLE;
+    }
+
+    if (
+      relativePath.includes('/context/diagnostics/') ||
+      relativePath.includes('/context/reports/') ||
+      relativePath.includes('/context/replay/') ||
+      relativePath.includes('/context/compiled-ir/') ||
+      relativePath.endsWith('.sqlite-wal') ||
+      relativePath.endsWith('.sqlite-shm')
+    ) {
+      return AdoptionPackOwnershipClass.GENERATED_EPHEMERAL;
+    }
+
+    if (assetGroup === AdoptionPackManagedAssetGroup.RUNTIME_HANDOFF_METADATA) {
+      return AdoptionPackOwnershipClass.MANAGED_LOCKED;
+    }
+
+    return AdoptionPackOwnershipClass.MANAGED_LOCKED;
+  }
+
+  private defaultDriftPolicyForOwnershipClass(
+    ownershipClass: AdoptionPackOwnershipClass,
+  ): AdoptionPackDriftPolicy {
+    switch (ownershipClass) {
+      case AdoptionPackOwnershipClass.STARTER_EDITABLE:
+        return AdoptionPackDriftPolicy.PLACEHOLDER_AWARE;
+      case AdoptionPackOwnershipClass.CANONICAL_RUNTIME_WRITABLE:
+        return AdoptionPackDriftPolicy.PROVENANCE_ONLY;
+      case AdoptionPackOwnershipClass.GENERATED_EPHEMERAL:
+        return AdoptionPackDriftPolicy.IGNORE;
+      default:
+        return AdoptionPackDriftPolicy.ENFORCE_CHECKSUM;
+    }
+  }
+
+  private defaultGitPolicyForManagedRecord(
+    record: Pick<AdoptionPackManagedFileRecord, 'relativePath' | 'ownershipClass'>,
+  ): AdoptionPackGitPolicy {
+    if (
+      record.ownershipClass === AdoptionPackOwnershipClass.GENERATED_EPHEMERAL ||
+      record.relativePath.endsWith('.sqlite') ||
+      record.relativePath.endsWith('.csv')
+    ) {
+      return AdoptionPackGitPolicy.OPT_IN_IGNORE_RECOMMENDATION;
+    }
+    return AdoptionPackGitPolicy.KEEP_TRACKED;
+  }
+
+  private defaultPlaceholderPolicyForManagedRecord(
+    record: Pick<AdoptionPackManagedFileRecord, 'ownershipClass' | 'relativePath'>,
+  ): AdoptionPackPlaceholderPolicy {
+    if (record.ownershipClass === AdoptionPackOwnershipClass.STARTER_EDITABLE) {
+      return record.relativePath.endsWith('.md')
+        ? AdoptionPackPlaceholderPolicy.ADOPTER_OWNED
+        : AdoptionPackPlaceholderPolicy.TEMPLATE_SEED;
+    }
+    if (record.ownershipClass === AdoptionPackOwnershipClass.CANONICAL_RUNTIME_WRITABLE) {
+      return AdoptionPackPlaceholderPolicy.TEMPLATE_SEED;
+    }
+    return AdoptionPackPlaceholderPolicy.NONE;
+  }
+
+  private resolveManagedRecordBaselineChecksum(
+    record: Pick<AdoptionPackManagedFileRecord, 'seedChecksumSha256' | 'checksumSha256'>,
+  ): string | null {
+    return record.seedChecksumSha256 ?? record.checksumSha256 ?? null;
+  }
+
+  private shouldReportMissingManagedFile(
+    record: Pick<AdoptionPackManagedFileRecord, 'ownershipClass' | 'driftPolicy'>,
+  ): boolean {
+    return (
+      record.ownershipClass !== AdoptionPackOwnershipClass.GENERATED_EPHEMERAL &&
+      record.driftPolicy !== AdoptionPackDriftPolicy.IGNORE
+    );
+  }
+
+  private blocksUpgradeWithoutForce(
+    record: Pick<AdoptionPackDiffRecord, 'diffKind' | 'ownershipClass' | 'driftPolicy'>,
+  ): boolean {
+    if (
+      record.ownershipClass === AdoptionPackOwnershipClass.MANAGED_LOCKED &&
+      record.driftPolicy === AdoptionPackDriftPolicy.ENFORCE_CHECKSUM
+    ) {
+      return true;
+    }
+
+    return (
+      record.diffKind === 'missing' &&
+      record.ownershipClass === AdoptionPackOwnershipClass.STARTER_EDITABLE
+    );
+  }
+
+  private requiresExplicitUpgradeRecovery(
+    record: Pick<AdoptionPackDiffRecord, 'diffKind' | 'ownershipClass'>,
+  ): boolean {
+    return (
+      record.diffKind === 'missing' &&
+      record.ownershipClass === AdoptionPackOwnershipClass.CANONICAL_RUNTIME_WRITABLE
+    );
+  }
+
+  private matchesManagedSeedChecksum(
+    record: Pick<AdoptionPackManagedFileRecord, 'seedChecksumSha256' | 'checksumSha256'>,
+    currentChecksumSha256: string,
+  ): boolean {
+    const seededChecksum = this.resolveManagedRecordBaselineChecksum(record);
+    return seededChecksum !== null && currentChecksumSha256 === seededChecksum;
+  }
+
+  private shouldPreserveExistingManagedContent(
+    record: Pick<
+      AdoptionPackManagedFileRecord,
+      'ownershipClass' | 'seedChecksumSha256' | 'checksumSha256'
+    >,
+    currentChecksumSha256: string,
+  ): boolean {
+    switch (record.ownershipClass) {
+      case AdoptionPackOwnershipClass.STARTER_EDITABLE:
+        return !this.matchesManagedSeedChecksum(record, currentChecksumSha256);
+      case AdoptionPackOwnershipClass.CANONICAL_RUNTIME_WRITABLE:
+      case AdoptionPackOwnershipClass.GENERATED_EPHEMERAL:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  private assertMissingManagedFileCanBeRewritten(
+    record: Pick<AdoptionPackManagedFileRecord, 'ownershipClass'>,
+    relativePath: string,
+    assetGroup: AdoptionPackManagedAssetGroup,
+    force: boolean,
+  ): void {
+    if (record.ownershipClass === AdoptionPackOwnershipClass.CANONICAL_RUNTIME_WRITABLE) {
+      throw new RuntimeError(
+        GovernorErrorCode.STANDARDS_PACK_INVALID,
+        this.localizeText(
+          `Refusing to recreate missing canonical runtime file ${relativePath}; restore or migrate it explicitly before rerunning apply or upgrade.`,
+          `拒绝重建缺失的 canonical runtime 文件 ${relativePath}；请先显式恢复或迁移后再重新执行 apply 或 upgrade。`,
+        ),
+        {
+          relativePath,
+          assetGroup,
+        },
+      );
+    }
+
+    if (record.ownershipClass === AdoptionPackOwnershipClass.STARTER_EDITABLE && !force) {
+      throw new RuntimeError(
+        GovernorErrorCode.STANDARDS_PACK_INVALID,
+        this.localizeText(
+          `Starter-editable file ${relativePath} is missing; rerun with --force only if you intentionally want to reseed the starter file.`,
+          `starter_editable 文件 ${relativePath} 已缺失；仅当你确实要重新播种该 starter 文件时才使用 --force 重试。`,
+        ),
+        {
+          relativePath,
+          assetGroup,
+        },
+      );
+    }
+
+    if (record.ownershipClass === AdoptionPackOwnershipClass.MANAGED_LOCKED && !force) {
+      throw new RuntimeError(
+        GovernorErrorCode.STANDARDS_PACK_INVALID,
+        this.localizeText(
+          `Managed file ${relativePath} is missing; review the drift and rerun with --force only after confirmation.`,
+          `受管文件 ${relativePath} 已缺失；请先检查漂移，再在确认后使用 --force 重试。`,
+        ),
+        {
+          relativePath,
+          assetGroup,
+        },
+      );
+    }
+  }
+
+  private async resolveRemovableManagedFileRecords(
+    receipt: AdoptionPackInstallReceipt,
+  ): Promise<AdoptionPackManagedFileRecord[]> {
+    const removableRecords: AdoptionPackManagedFileRecord[] = [];
+
+    for (const managedFileRecord of receipt.managedFileRecords) {
+      switch (managedFileRecord.ownershipClass) {
+        case AdoptionPackOwnershipClass.MANAGED_LOCKED:
+          removableRecords.push(managedFileRecord);
+          break;
+        case AdoptionPackOwnershipClass.STARTER_EDITABLE: {
+          const currentContent = await this.readTextIfExists(managedFileRecord.absolutePath);
+          const currentChecksum =
+            currentContent === null ? null : this.calculateSha256(currentContent);
+          const seededChecksum =
+            managedFileRecord.seedChecksumSha256 ?? managedFileRecord.checksumSha256 ?? null;
+          if (currentChecksum === null || (seededChecksum && currentChecksum === seededChecksum)) {
+            removableRecords.push(managedFileRecord);
+            break;
+          }
+          throw new RuntimeError(
+            GovernorErrorCode.STANDARDS_PACK_INVALID,
+            this.localizeText(
+              `adopt remove refused because starter-editable file ${managedFileRecord.relativePath} has adopter edits.`,
+              `adopt remove 已拒绝，因为 starter_editable 文件 ${managedFileRecord.relativePath} 已被 adopter 修改。`,
+            ),
+            {
+              receiptPath: receipt.receiptPath,
+              relativePath: managedFileRecord.relativePath,
+            },
+          );
+        }
+        case AdoptionPackOwnershipClass.CANONICAL_RUNTIME_WRITABLE:
+          throw new RuntimeError(
+            GovernorErrorCode.STANDARDS_PACK_INVALID,
+            this.localizeText(
+              `adopt remove refused because canonical runtime truth ${managedFileRecord.relativePath} requires explicit migration or archival.`,
+              `adopt remove 已拒绝，因为 canonical_runtime_writable 真值 ${managedFileRecord.relativePath} 需要显式 migration 或 archival。`,
+            ),
+            {
+              receiptPath: receipt.receiptPath,
+              relativePath: managedFileRecord.relativePath,
+            },
+          );
+        case AdoptionPackOwnershipClass.GENERATED_EPHEMERAL:
+          break;
+      }
+    }
+
+    return removableRecords;
+  }
+
+  private resolveProjectedFileSourceCatalogRecord(
+    relativePath: string,
+    sourceCatalogRecordByRelativePath: Map<string, AdoptionPackSourceCatalogRecord>,
+    treatAgentsAsStarterEditable: boolean,
+  ): AdoptionPackSourceCatalogRecord | undefined {
+    if (treatAgentsAsStarterEditable && relativePath === 'AGENTS.md') {
+      return {
+        surfaceId: 'host_projection:AGENTS.md:self_host_editable',
+        surfaceKind:
+          sourceCatalogRecordByRelativePath.values().next().value?.surfaceKind ?? 'template_file',
+        description: 'Self-host AGENTS.md starter content remains adopter-editable after seed.',
+        profileIds: [BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE],
+        assetGroup: AdoptionPackManagedAssetGroup.INSTRUCTIONS,
+        ownershipClass: AdoptionPackOwnershipClass.STARTER_EDITABLE,
+        driftPolicy: AdoptionPackDriftPolicy.PLACEHOLDER_AWARE,
+        gitPolicy: AdoptionPackGitPolicy.KEEP_TRACKED,
+        parityClass:
+          sourceCatalogRecordByRelativePath.get(relativePath)?.parityClass ??
+          'generated_projection',
+        sourceMode:
+          sourceCatalogRecordByRelativePath.get(relativePath)?.sourceMode ?? 'generated_projection',
+        sourceRef:
+          sourceCatalogRecordByRelativePath.get(relativePath)?.sourceRef ??
+          'builtin://repo-ai-governor/agents/AGENTS.md',
+        compositionPolicy:
+          sourceCatalogRecordByRelativePath.get(relativePath)?.compositionPolicy ??
+          'catalog_assembled',
+        placeholderPolicy: AdoptionPackPlaceholderPolicy.ADOPTER_OWNED,
+        applicabilityScope: AdoptionPackApplicabilityScope.SELF_HOST_REPO_LOCAL,
+        readinessGroup:
+          sourceCatalogRecordByRelativePath.get(relativePath)?.readinessGroup ?? 'none',
+        readinessSinkIds:
+          sourceCatalogRecordByRelativePath.get(relativePath)?.readinessSinkIds ?? [],
+        relativePath,
+      } as AdoptionPackSourceCatalogRecord;
+    }
+
+    return sourceCatalogRecordByRelativePath.get(relativePath);
   }
 
   private calculateSha256(content: string | Uint8Array): string {
@@ -1966,6 +3499,13 @@ export class CliAdoptionPackRuntime {
     receiptPath: string;
     verificationSummaryPath: string;
     checks: AdoptionPackVerificationCheck[];
+    activationPhase?: AdoptionPackReadinessGroup;
+    activationPhaseStatus?: 'blocked' | 'in_progress' | 'completed';
+    activationPhaseRecords?: AdoptionPackActivationPhaseRecord[];
+    operatorNextActions?: string[];
+    executionPreflightSignal?: 'blocked' | 'ready';
+    executionPreflightBlockedGroups?: string[];
+    executionPreflightPlaceholderPaths?: string[];
   }): AdoptionPackVerificationSummary {
     const normalizedChecks = options.checks.length
       ? options.checks
@@ -1985,6 +3525,23 @@ export class CliAdoptionPackRuntime {
       receiptPath: options.receiptPath,
       checks: normalizedChecks,
       driftDetected: normalizedChecks.some((check) => check.status === HostVerificationStatus.FAIL),
+      ...(options.activationPhase ? { activationPhase: options.activationPhase } : {}),
+      ...(options.activationPhaseStatus
+        ? { activationPhaseStatus: options.activationPhaseStatus }
+        : {}),
+      ...(options.activationPhaseRecords
+        ? { activationPhaseRecords: options.activationPhaseRecords }
+        : {}),
+      ...(options.operatorNextActions ? { operatorNextActions: options.operatorNextActions } : {}),
+      ...(options.executionPreflightSignal
+        ? { executionPreflightSignal: options.executionPreflightSignal }
+        : {}),
+      ...(options.executionPreflightBlockedGroups
+        ? { executionPreflightBlockedGroups: options.executionPreflightBlockedGroups }
+        : {}),
+      ...(options.executionPreflightPlaceholderPaths
+        ? { executionPreflightPlaceholderPaths: options.executionPreflightPlaceholderPaths }
+        : {}),
     };
   }
 

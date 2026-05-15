@@ -1202,6 +1202,10 @@ export class CliSessionShellEntrypointRuntime {
         return translate('cli.sessionShell.responses.commandErrorNextActionCheckCommandUsage');
       case CliNextAction.INSPECT_GOVERNOR_CONFIG:
         return translate('cli.sessionShell.responses.commandErrorNextActionInspectGovernorConfig');
+      case CliNextAction.INSPECT_SELF_HOST_READINESS:
+        return translate(
+          'cli.sessionShell.responses.commandErrorNextActionInspectSelfHostReadiness',
+        );
       case CliNextAction.INSPECT_POLICY_DIAGNOSTICS:
         return translate(
           'cli.sessionShell.responses.commandErrorNextActionInspectPolicyDiagnostics',

@@ -24,7 +24,10 @@ If you want the shortest safe default path, do this:
 3. Run `doctor`.
 4. Run `adopt bootstrap`.
 5. Run `check`.
-6. Run `connect`, then `run --dry-run --trace`.
+6. Run `connect`.
+7. Run `connect apply --latest`.
+8. Run `adopt verify`.
+9. Run `run --dry-run --trace`.
 
 The rest of this document explains when to choose a different path and how to interpret the resulting diagnostics.
 
@@ -117,17 +120,100 @@ Use the self-host profile only if the target repository should own a repo-local 
 
 ```bash
 pnpm exec repo-ai-governor adopt bootstrap --adoption-profile self-host-complete --repo . --workspace-mode repo_local --hosts codex --output json
-pnpm exec repo-ai-governor check --output json
+pnpm exec repo-ai-governor connect --tools codex --preset single-tool-all-roles --output json
+pnpm exec repo-ai-governor connect apply --latest --output json
+pnpm exec repo-ai-governor adopt verify --repo . --output json
+pnpm exec repo-ai-governor doctor --adapters --output json
+pnpm exec repo-ai-governor run --output json --dry-run --trace
 ```
 
 That path seeds empty or template-backed governance surfaces. It does not copy live execution state from this repository.
+Treat it as a strict serial chain. Do not overlap `connect`, `connect apply --latest`, or `adopt verify`; the follow-up verify summary is the canonical readback, and concurrent runs can preserve a stale pre-apply snapshot.
+
+For self-host, keep this shorter mental model in mind:
+
+1. `adopt bootstrap` seeds the repo-local template surfaces.
+2. `connect` writes a reviewable candidate only.
+3. `connect apply --latest` activates the reviewed adapter baseline.
+4. `adopt verify` refreshes the canonical readiness verdict.
+5. `doctor --adapters` adds diagnostics only; it does not replace the readiness verdict.
+6. `run --dry-run --trace` is the only intended first diagnostic run while self-host preflight is still blocked.
+
+For self-host specifically, `connect` alone is not enough. The reviewed candidate must be applied, and then `adopt verify` must be rerun so the canonical activation/readiness truth reflects the new adapter-connected baseline.
+
+Use these evidence anchors while you run the chain:
+
+1. After `adopt bootstrap`, keep the install receipt plus verification summary under `.repo-ai-governor/adoption/installations/**`.
+2. After `connect`, inspect the emitted candidate artifact only; do not treat it as active truth.
+3. After `connect apply --latest`, keep the apply receipt as the adapter-baseline write record.
+4. After `adopt verify`, treat the refreshed verification summary as the canonical self-host readiness verdict.
+5. After `doctor --adapters`, keep diagnostics as additive detail only.
+6. After `run --dry-run --trace`, keep the emitted trace/report artifacts as execution-path diagnostics, not as readiness proof.
 
 Read the self-host verification result conservatively:
 
 1. A fresh `self-host-complete + repo_local` bootstrap or follow-up `adopt verify` is expected to return `warn` while starter governance, product-direction, or execution placeholders are still untouched.
 2. Those warnings are self-host-only readiness signals; the default `adopter-complete` install path does not inherit them.
 3. `adopt verify` now surfaces an `execution_preflight_signal=blocked` warning for untouched self-host starter placeholders; treat that signal as a hard blocker before unattended self-host execution, because the current public contract does not expose a separate automatic preflight command yet.
-4. After the repository authors its own repo-local surfaces, use `check` as the explicit broader governance audit instead of treating `adopt verify` as a substitute for full workspace readiness.
+4. After `connect apply --latest`, rerun `adopt verify --repo .`; that refreshed summary is the canonical activation/readiness truth after adapter changes.
+5. After the repository authors its own repo-local surfaces, use `check` as the explicit broader governance audit instead of treating `adopt verify` as a substitute for full workspace readiness.
+
+Read the phase labels conservatively:
+
+1. `authoring_started=in_progress` means the template was seeded, but the repo still contains unresolved starter placeholders.
+2. `execution_ready=blocked` is expected on a template repo that has not authored a real `project/sprint/task` delivery surface yet.
+3. On that template path, a blocked execution preflight is not an install failure; it is the intended signal that the repo is only adapter-connected, not delivery-ready.
+
+When `adopt verify` returns `warn` for self-host, read it in this order:
+
+1. Finish the starter authoring work first. Use `operatorNextActions` as the short path, then use `activationPhaseRecords[].placeholderPaths` for the full file inventory.
+2. If `connect` was already run, make sure `connect apply --latest` was also run.
+3. Re-run `adopt verify --repo .` after authoring or connect changes.
+4. Keep `doctor --adapters` as additive detail only.
+5. If you still need a run-stage probe before full authoring is complete, use `run --dry-run --trace` only.
+
+Interpret `run --dry-run --trace` narrowly:
+
+1. A successful dry-run means the runtime allowed a diagnostic run for the current path.
+2. It does not upgrade the repo to `execution_ready=completed`.
+3. On a template repo, `diagnostic_dry_run` proves install/connect and execution-path diagnostics only; it does not prove a real delivery path is ready.
+
+## 3.1 Clean-Room Reset, Preserve, And Ignore Guidance
+
+If you want to replay the self-host path from a near-empty target repository, reset only the adoption-managed and runtime-generated surfaces.
+
+Before calling the replay a clean-room run, check these preconditions first:
+
+1. If `.repo-ai-governor/` already exists, decide whether it is prior adoption output and remove it before replay.
+2. If `.mcp.json`, `AGENTS.md`, `.agents/`, or `.claude/` already exist, confirm whether they were generated by a previous adoption/bootstrap run or are user-owned assets.
+3. If you cannot separate prior generated artifacts from user-owned files confidently, do not treat the directory as a strict clean-room baseline.
+
+Recommended reset scope:
+
+1. Remove `.repo-ai-governor/`.
+2. Remove `.agents/`, `.claude/`, `.mcp.json`, and `AGENTS.md` when they were generated by the adoption/bootstrap flow.
+3. Remove runtime-generated diagnostics, reports, replay artifacts, and sqlite sidecars from earlier rehearsals.
+
+Strict clean-room fallback:
+
+1. If `.agents/` cleanup fails with `EPERM` or another local filesystem lock, stop treating the current directory as a strict clean-room target.
+2. Move to a fresh directory and rerun the rehearsal there instead of keeping mixed old/new artifacts as evidence.
+
+Recommended preserve scope:
+
+1. Keep `.git/`.
+2. Keep `package.json` and `pnpm-lock.yaml`.
+3. Keep `node_modules/` if you want a faster local rehearsal.
+4. Keep any user-owned files outside the adoption-managed paths.
+
+Recommended ignore candidates for self-host repositories:
+
+1. `.repo-ai-governor/context/diagnostics/**`
+2. `.repo-ai-governor/context/reports/**`
+3. `.repo-ai-governor/context/replay/**`
+4. sqlite sidecars such as `*.sqlite-wal` and `*.sqlite-shm`
+
+Treat those ignore entries as opt-in. They are generated artifacts, but different self-host repositories may choose different audit-retention policies.
 
 ## 4. Connect Tools Before You Run
 
@@ -135,6 +221,8 @@ Use `connect` when you want one repository baseline to route multiple tools thro
 
 ```bash
 pnpm exec repo-ai-governor connect --tools codex,claude-code --preset multi-tool-default --output json
+pnpm exec repo-ai-governor connect apply --latest --output json
+pnpm exec repo-ai-governor adopt verify --repo . --output json
 pnpm exec repo-ai-governor doctor --adapters --fix --output json
 pnpm exec repo-ai-governor doctor --adapters --output json
 pnpm exec repo-ai-governor run --output json --dry-run --trace
@@ -143,9 +231,13 @@ pnpm exec repo-ai-governor run --output json --dry-run --trace
 What each step proves:
 
 1. `connect` writes a reviewable candidate config instead of mutating the active config in place.
-2. `doctor --adapters --fix` performs safe local repairs only.
-3. A second `doctor --adapters` is the read-only readiness check before real execution.
-4. `run --dry-run --trace` is the lowest-risk proof that routing and projected descriptors make sense.
+2. `connect apply --latest` records the reviewed adapter baseline into the active config and writes an apply receipt.
+3. `adopt verify --repo .` refreshes the canonical activation verdict after authoring and adapter changes.
+4. `doctor --adapters --fix` performs safe local repairs only.
+5. A second `doctor --adapters` is the read-only readiness check before real execution.
+6. `run --dry-run --trace` is the lowest-risk proof that routing and projected descriptors make sense.
+
+If `run --dry-run --trace` stops at a policy/HITL confirm instead of completing, do not immediately treat that as onboarding failure. A self-host repo can be fully bootstrapped and adapter-connected while execution is still paused for risk review such as `lockfile_delta`; without a confirmation payload the current runtime may surface `POLICY_GATE_HITL_FEEDBACK_INVALID`.
 
 If you want `remote_api` from the start, use explicit authoring flags instead of hand-editing config first. This is the lowest-risk remote-api rehearsal path:
 
@@ -167,6 +259,8 @@ Use the same commands you already run for onboarding:
 
 ```bash
 pnpm exec repo-ai-governor connect --tools codex,claude-code --preset multi-tool-default --output json
+pnpm exec repo-ai-governor connect apply --latest --output json
+pnpm exec repo-ai-governor adopt verify --repo . --output json
 pnpm exec repo-ai-governor doctor --adapters --fix --output json
 pnpm exec repo-ai-governor doctor --adapters --output json
 ```

@@ -6,12 +6,18 @@ import { promisify } from 'node:util';
 import {
   AGENT_STAGE_EXECUTION_POLICY_INPUT_KEY,
   AgentCapability,
+  AgentCapabilityFallbackAction,
   AgentNetworkMode,
   AgentRouteRunner,
   AgentStageExecutionMode,
   AgentStageToolUsePolicy,
 } from '@repo-ai-governor/adapter-sdk';
-import { type AdaptersConfig, SchemaValidator } from '@repo-ai-governor/config';
+import {
+  type AdaptersConfig,
+  SchemaValidator,
+  buildDefaultGovernorConfig,
+  renderGovernorConfigContent,
+} from '@repo-ai-governor/config';
 import { AgentSessionRegistry } from '@repo-ai-governor/core-agent-projection';
 import {
   ChangeRiskEvaluator,
@@ -65,16 +71,12 @@ import {
 } from '@repo-ai-governor/orchestration-service-client';
 import { ReportBuilder } from '@repo-ai-governor/reporting';
 import {
-  AdapterAvailability,
-  AdapterSurface,
-  DEFAULT_I18N_FALLBACK_LOCALE,
-  DEFAULT_I18N_LOCALE,
+  type AdapterSurface,
   ErrorOutputEnvironment,
   ExecutionProgressStage,
   ExecutionProgressStatus,
   GovernorErrorCode,
   RuntimeError,
-  WorkspaceMigrationPolicy,
 } from '@repo-ai-governor/shared';
 import { CliAdoptCommand } from './commands/adopt-command.js';
 import { CliCheckCommand } from './commands/check-command.js';
@@ -93,6 +95,7 @@ import { CliUpgradeCommand } from './commands/upgrade-command.js';
 import { CliWorkflowCommand } from './commands/workflow-command.js';
 import { CliWorkspaceCommand } from './commands/workspace-command.js';
 import { CliAgentOnboardingPreset } from './constants/cli-agent-onboarding.constant.js';
+import { CliCommandResultCheckId } from './constants/cli-command-result-check.constant.js';
 import { CliCommandName } from './constants/cli-command.constant.js';
 import { CliConnectAction, CliConnectWriteMode } from './constants/cli-connect.constant.js';
 import {
@@ -113,11 +116,16 @@ import {
   CliHitlResumeAction,
   CliInlineReviewChainSkipReason,
   CliInlineReviewChainStatus,
+  CliTaskDrivenRunAssemblyMode,
 } from './constants/cli-task-driven-run.constant.js';
 import { CliWorkspaceAction, CliWorkspaceThemeScope } from './constants/cli-workspace.constant.js';
 import { CliAdapterDiagnosticsRuntime } from './runtime/adapter-diagnostics-runtime.js';
 import { CliAdapterRoutingRuntime } from './runtime/adapter-routing-runtime.js';
 import { CliAdapterVerificationRuntime } from './runtime/adapter-verification-runtime.js';
+import {
+  CliAdoptionPackRuntime,
+  type SelfHostExecutionPreflightResolution,
+} from './runtime/adoption-pack-runtime.js';
 import { CliAgentOnboardingRuntime } from './runtime/agent-onboarding-runtime.js';
 import { CliAgentProjectionRuntime } from './runtime/agent-projection-runtime.js';
 import { CliReviewQueueRuntime } from './runtime/artifacts/review-queue-runtime.js';
@@ -160,6 +168,12 @@ interface CliLangGraphCheckpointState {
   recoveryState: 'not_requested' | 'recovered';
   recoveredNextNodeIds: string[];
   pendingInterruptKind: string | null;
+}
+
+interface CliSelfHostRunPreflightDecision {
+  resolution: SelfHostExecutionPreflightResolution;
+  blocked: boolean;
+  allowance: 'diagnostic_dry_run' | 'fail_closed';
 }
 
 /**
@@ -481,6 +495,48 @@ export class CliGovernanceRuntime {
       },
       logLine: assemblyDetail,
     });
+    const selfHostRunPreflight = await this.resolveSelfHostRunPreflightDecision(
+      runtimeDebugOptions,
+      runAssembly,
+    );
+    if (selfHostRunPreflight?.blocked) {
+      const preflightDetail = this.createSelfHostRunPreflightCheck(
+        selfHostRunPreflight,
+        runAssembly,
+        runtimeDebugOptions.taskId,
+      ).detail;
+      publishRunProgress({
+        runState: 'failure',
+        completedSteps: 1,
+        statusLine: translateProgress('cli.reactShell.progress.run.failed'),
+        currentStepTitle: translateProgress('cli.reactShell.progress.run.compiling'),
+        row: {
+          id: RUN_PROGRESS_ROW_ID.COMPILE,
+          title: translateProgress('cli.reactShell.progress.run.compiling'),
+          status: ExecutionProgressStatus.FAILED,
+          detail: 'self_host_preflight=blocked',
+        },
+        logLine: preflightDetail,
+      });
+      throw new RuntimeError(
+        GovernorErrorCode.PROCESS_RUNTIME_EXECUTION_PREFLIGHT_BLOCKED,
+        this.localizeText(
+          'Self-host execution preflight is still blocked by the canonical adopt verify summary. Finish the recorded authoring or connect steps, rerun `repo-ai-governor adopt verify --repo .`, and only use baseline `run --dry-run --trace` for exploratory diagnostics until execution-ready is completed.',
+          'canonical adopt verify 摘要显示 self-host execution preflight 仍被阻塞。请先完成记录的 authoring 或 connect 步骤，重新执行 `repo-ai-governor adopt verify --repo .`，在 execution-ready 完成前仅把 baseline `run --dry-run --trace` 作为探索性诊断入口。',
+        ),
+        {
+          executionId,
+          verificationSummaryPath: selfHostRunPreflight.resolution.verificationSummaryPath,
+          selfHostActivationPhase: selfHostRunPreflight.resolution.activationPhase,
+          selfHostActivationPhaseStatus: selfHostRunPreflight.resolution.activationPhaseStatus,
+          selfHostBlockedGroups: selfHostRunPreflight.resolution.blockedGroups.join('|'),
+          selfHostPlaceholderPaths: selfHostRunPreflight.resolution.placeholderPaths.join('|'),
+          selfHostOperatorNextActions:
+            selfHostRunPreflight.resolution.operatorNextActions.join(' | '),
+          pendingStatus: ExecutionProgressStage.POLICY_WAITING,
+        },
+      );
+    }
     publishRunProgress({
       completedSteps: 1,
       currentStepTitle: translateProgress('cli.reactShell.progress.run.compiling'),
@@ -928,6 +984,14 @@ export class CliGovernanceRuntime {
         id: 'replay_explain',
         path: replayPath,
       },
+      ...(selfHostRunPreflight
+        ? [
+            {
+              id: 'self_host_verification_summary',
+              path: selfHostRunPreflight.resolution.verificationSummaryPath,
+            } satisfies CliCommandResultArtifact,
+          ]
+        : []),
     ];
     if (inlineReviewChainSummary.reviewRequestPath) {
       artifacts.push({
@@ -995,6 +1059,15 @@ export class CliGovernanceRuntime {
     }
     const checks: CliCommandResultCheck[] = [
       this.createRunAssemblyCheck(runAssembly, runtimeDebugOptions.taskId),
+      ...(selfHostRunPreflight
+        ? [
+            this.createSelfHostRunPreflightCheck(
+              selfHostRunPreflight,
+              runAssembly,
+              runtimeDebugOptions.taskId,
+            ),
+          ]
+        : []),
       this.createMemoryPolicyCheck(runAssembly),
       {
         id: 'runtime_backend',
@@ -1328,6 +1401,17 @@ export class CliGovernanceRuntime {
           dry_run: runtimeDebugOptions.dryRun,
           trace_enabled: runtimeDebugOptions.trace,
           diagnostics_trace_path: diagnosticsTracePath,
+          self_host_preflight_signal:
+            selfHostRunPreflight?.resolution.executionPreflightSignal ?? null,
+          self_host_preflight_allowance: selfHostRunPreflight?.allowance ?? null,
+          self_host_preflight_activation_phase:
+            selfHostRunPreflight?.resolution.activationPhase ?? null,
+          self_host_preflight_blocked_groups:
+            selfHostRunPreflight?.resolution.blockedGroups.join('|') || null,
+          self_host_preflight_placeholder_paths:
+            selfHostRunPreflight?.resolution.placeholderPaths.join('|') || null,
+          self_host_preflight_verification_summary_path:
+            selfHostRunPreflight?.resolution.verificationSummaryPath ?? null,
         },
       },
     };
@@ -1608,100 +1692,17 @@ export class CliGovernanceRuntime {
    * @returns YAML text content.
    */
   private buildDefaultConfigContent(): string {
-    return [
-      'schemaVersion: "1.1"',
-      'workspace:',
-      `  mode: ${this.options.workspace.mode}`,
-      `  migrationPolicy: ${WorkspaceMigrationPolicy.COPY_VERIFY_SWITCH_ROLLBACK}`,
-      'i18n:',
-      '  runtimeEngine: i18next',
-      `  defaultLocale: ${DEFAULT_I18N_LOCALE}`,
-      `  fallbackLocale: ${DEFAULT_I18N_FALLBACK_LOCALE}`,
-      '  supportedLocales:',
-      `    - ${DEFAULT_I18N_LOCALE}`,
-      `    - ${DEFAULT_I18N_FALLBACK_LOCALE}`,
-      'ui:',
-      '  react:',
-      `    theme: ${DEFAULT_CLI_REACT_THEME_PRESET}`,
-      'memory:',
-      `  storeEngine: ${this.options.memoryConfig.storeEngine}`,
-      `  storeRoot: ${this.options.memoryConfig.storeRoot}`,
-      'adapters:',
-      '  roles:',
-      '    - roleId: planner',
-      '      roleProfileId: planner-default',
-      '      requiredCapabilities:',
-      `        - ${AgentCapability.STRUCTURED_OUTPUT}`,
-      '      required: true',
-      '    - roleId: architect',
-      '      roleProfileId: architect-default',
-      '      requiredCapabilities:',
-      `        - ${AgentCapability.STRUCTURED_OUTPUT}`,
-      '      required: true',
-      '    - roleId: coder',
-      '      roleProfileId: coder-default',
-      '      requiredCapabilities:',
-      `        - ${AgentCapability.TOOL_CALLING}`,
-      '      required: true',
-      '    - roleId: tester',
-      '      roleProfileId: tester-default',
-      '      requiredCapabilities:',
-      `        - ${AgentCapability.TOOL_CALLING}`,
-      '      required: true',
-      '    - roleId: reviewer',
-      '      roleProfileId: reviewer-default',
-      '      requiredCapabilities:',
-      `        - ${AgentCapability.STRUCTURED_OUTPUT}`,
-      '      required: true',
-      '    - roleId: verifier',
-      '      roleProfileId: verifier-default',
-      '      requiredCapabilities:',
-      `        - ${AgentCapability.STRUCTURED_OUTPUT}`,
-      '      required: true',
-      '  routing:',
-      '    roleBindings:',
-      '      planner:',
-      `        primarySurface: ${AdapterSurface.CODEX}`,
-      '        fallbackSurfaces:',
-      `          - ${AdapterSurface.CLAUDE_CODE}`,
-      `          - ${AdapterSurface.GITHUB_COPILOT}`,
-      '      architect:',
-      `        primarySurface: ${AdapterSurface.CODEX}`,
-      '        fallbackSurfaces:',
-      `          - ${AdapterSurface.CLAUDE_CODE}`,
-      `          - ${AdapterSurface.GITHUB_COPILOT}`,
-      '      coder:',
-      `        primarySurface: ${AdapterSurface.CODEX}`,
-      '        fallbackSurfaces:',
-      `          - ${AdapterSurface.GITHUB_COPILOT}`,
-      `          - ${AdapterSurface.CLAUDE_CODE}`,
-      '      tester:',
-      `        primarySurface: ${AdapterSurface.GITHUB_COPILOT}`,
-      '        fallbackSurfaces:',
-      `          - ${AdapterSurface.CODEX}`,
-      `          - ${AdapterSurface.CLAUDE_CODE}`,
-      '      reviewer:',
-      `        primarySurface: ${AdapterSurface.CLAUDE_CODE}`,
-      '        fallbackSurfaces:',
-      `          - ${AdapterSurface.CODEX}`,
-      `          - ${AdapterSurface.GITHUB_COPILOT}`,
-      '      verifier:',
-      `        primarySurface: ${AdapterSurface.CODEX}`,
-      '        fallbackSurfaces:',
-      `          - ${AdapterSurface.CLAUDE_CODE}`,
-      `          - ${AdapterSurface.GITHUB_COPILOT}`,
-      '  tools:',
-      `    - toolId: ${AdapterSurface.CODEX}`,
-      '      enabled: true',
-      `      availability: ${AdapterAvailability.AVAILABLE}`,
-      `    - toolId: ${AdapterSurface.GITHUB_COPILOT}`,
-      '      enabled: true',
-      `      availability: ${AdapterAvailability.AVAILABLE}`,
-      `    - toolId: ${AdapterSurface.CLAUDE_CODE}`,
-      '      enabled: true',
-      `      availability: ${AdapterAvailability.AVAILABLE}`,
-      '',
-    ].join('\n');
+    return renderGovernorConfigContent(
+      buildDefaultGovernorConfig(
+        {
+          mode: this.options.workspace.mode,
+        },
+        {
+          storeEngine: this.options.memoryConfig.storeEngine,
+          storeRoot: this.options.memoryConfig.storeRoot,
+        },
+      ),
+    );
   }
 
   /**
@@ -1960,6 +1961,18 @@ export class CliGovernanceRuntime {
           ? {
               capabilityRequirement: {
                 requiredCapabilities: roleConfig.requiredCapabilities as AgentCapability[],
+                ...(node.routeKey === CLI_TASK_DRIVEN_RUN_NODE_DEFINITIONS.REPORT.routeKey
+                  ? {
+                      fallbackRules: [
+                        {
+                          capability: AgentCapability.STRUCTURED_OUTPUT,
+                          onUnsupported: AgentCapabilityFallbackAction.USE_FALLBACK_SURFACE,
+                          onDegraded: AgentCapabilityFallbackAction.USE_FALLBACK_SURFACE,
+                          note: 'task-driven report can fall back to the next readable surface',
+                        },
+                      ],
+                    }
+                  : {}),
               },
             }
           : {}),
@@ -2682,6 +2695,64 @@ export class CliGovernanceRuntime {
     }
 
     return CliGovernanceCheckStatus.WARN;
+  }
+
+  /**
+   * Resolves self-host execution-preflight truth consumed by `run`.
+   * @param runtimeDebugOptions Normalized debug options for current run invocation.
+   * @param runAssembly Resolved task-driven or baseline assembly payload.
+   * @returns Preflight decision when the current repo is a self-host installation.
+   */
+  private async resolveSelfHostRunPreflightDecision(
+    runtimeDebugOptions: CliNormalizedRuntimeDebugOptions,
+    runAssembly: CliTaskDrivenRunAssembly,
+  ): Promise<CliSelfHostRunPreflightDecision | null> {
+    const adoptionPackRuntime = new CliAdoptionPackRuntime(
+      this.options.currentWorkingDirectory,
+      (english: string, chinese: string) => this.localizeText(english, chinese),
+    );
+    const resolution = await adoptionPackRuntime.resolveSelfHostExecutionPreflight();
+    if (!resolution) {
+      return null;
+    }
+
+    if (resolution.executionPreflightSignal !== 'blocked') {
+      return {
+        resolution,
+        blocked: false,
+        allowance: 'fail_closed',
+      };
+    }
+
+    const diagnosticDryRunAllowed =
+      runtimeDebugOptions.dryRun &&
+      runtimeDebugOptions.trace &&
+      runtimeDebugOptions.taskId === null &&
+      runAssembly.assemblyMode === CliTaskDrivenRunAssemblyMode.BASELINE;
+
+    return {
+      resolution,
+      blocked: !diagnosticDryRunAllowed,
+      allowance: diagnosticDryRunAllowed ? 'diagnostic_dry_run' : 'fail_closed',
+    };
+  }
+
+  private createSelfHostRunPreflightCheck(
+    decision: CliSelfHostRunPreflightDecision,
+    runAssembly: CliTaskDrivenRunAssembly,
+    requestedTaskId: string | null,
+  ): CliCommandResultCheck {
+    const taskIdLabel = runAssembly.taskContext?.taskId ?? requestedTaskId ?? 'none';
+    return {
+      id: CliCommandResultCheckId.SELF_HOST_RUN_PREFLIGHT,
+      status:
+        decision.resolution.executionPreflightSignal === 'ready'
+          ? CliGovernanceCheckStatus.PASS
+          : decision.allowance === 'diagnostic_dry_run'
+            ? CliGovernanceCheckStatus.WARN
+            : CliGovernanceCheckStatus.FAIL,
+      detail: `signal=${decision.resolution.executionPreflightSignal} allowance=${decision.allowance} current_phase=${decision.resolution.activationPhase ?? 'none'} phase_status=${decision.resolution.activationPhaseStatus ?? 'completed'} mode=${runAssembly.assemblyMode} task_id=${taskIdLabel} blocked_groups=${decision.resolution.blockedGroups.join('|') || 'none'} placeholder_paths=${decision.resolution.placeholderPaths.join('|') || 'none'} verification_summary=${decision.resolution.verificationSummaryPath}`,
+    };
   }
 
   /**

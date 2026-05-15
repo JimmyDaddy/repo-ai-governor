@@ -1,0 +1,34 @@
+# checklist
+
+- [x] TK-1060 implement canonical self-host activation phase and verification summary
+  - 2026-05-13：任务创建，状态初始化为 `planned`。
+  - 2026-05-14：任务启动，状态切换为 `active`，开始收敛 self-host activation phase、verification summary 与 canonical readiness truth path。
+  - 2026-05-14：完成 canonical self-host activation phase model，`adopt verify` 开始产出 `template_seeded / authoring_started / adapter_connected / execution_ready` phase truth、operator next-actions，并把最新 verification summary 回写到 receipt canonical state。
+- [x] TK-1061 align doctor and check additive readiness diagnostics and next actions
+  - 2026-05-13：任务创建，状态初始化为 `planned`。
+  - 2026-05-14：完成 `doctor` / `check` 对 canonical verify phase truth 的 additive reflection，补齐 `reflected_from=adopt_verify`、`consumed_from=adopt_verify` 与 operator next-actions 覆盖，避免 competing readiness verdict。
+- [x] TK-1062 close sprint-003 and hand off clean-room truthfulness follow-through
+  - 2026-05-13：任务创建，状态初始化为 `planned`。
+  - 2026-05-14：任务启动，开始收口 sprint-003 closeout/handoff，并等待 post-fix fresh reviewer round 2 recheck 作为 sprint closeout 前置门。
+  - 2026-05-14：`CR-001 ~ CR-004` 已全部 resolved，latest fresh reviewer round `CR-004` 返回 clean verdict；sprint-003 满足 closeout 评审门槛。
+  - 2026-05-14：完成 `DA-1062-sprint-003-closeout-and-sprint-004-activation-handoff.md`，将 `/Users/jimmydaddy/study/deepseekian` clean-room rehearsal、docs truthfulness uplift 与 project-final closeout 固定为 sprint-004 的首跳输入。
+- [x] CR-001 sprint-003-activation-and-readiness-ux delegated review loop round 1
+  - 2026-05-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-05-14：fresh reviewer round 1 产出 2 条 actionable finding，主 agent 复核后全部认可。
+  - 2026-05-14：完成 `check` canonical verify fail 透传与 `adapter_connected` latest apply receipt validity 修复，补齐 integration coverage、targeted runtime coverage 与同窗口 `pnpm run build`。
+  - 2026-05-14：对应 review artifact 已收口为 `resolved_code_review_working-tree-20260514-0626.md`，`CR-001` 状态同步推进到 `resolved`。
+- [x] CR-002 sprint-003-activation-and-readiness-ux delegated recheck loop round 2
+  - 2026-05-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-05-14：作为 post-fix recheck round 2 启动，review surface 聚焦 `adoption-pack-runtime / check-command / adopt-command integration` 的最新修复面。
+  - 2026-05-14：fresh reviewer round 2 新发现 `CS-033` i18n 合规问题，主 agent 复核后认可。
+  - 2026-05-14：完成 self-host readiness 用户可见文案本地化与 `zh-CN` integration coverage，review artifact 已收口为 `resolved_code_review_working-tree-20260514-0700.md`，`CR-002` 状态同步推进到 `resolved`。
+- [x] CR-003 sprint-003-activation-and-readiness-ux delegated recheck loop round 3
+  - 2026-05-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-05-14：作为 post-fix recheck round 3 启动，review surface 聚焦 `check-command` 剩余的 locale-aware 输出缺口。
+  - 2026-05-14：fresh reviewer round 3 新发现 `CS-033` i18n 合规问题，主 agent 复核后认可。
+  - 2026-05-14：完成 `check` command locale-aware detail/summary 修复，并补齐 repo-local config、default config 与 failure-path 的 `zh-CN` integration coverage；review artifact 已收口为 `resolved_code_review_working-tree-20260514-0719.md`，`CR-003` 状态同步推进到 `resolved`。
+- [x] CR-004 sprint-003-activation-and-readiness-ux delegated review loop round 4
+  - 2026-05-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-05-14：作为 latest fresh clean recheck 启动，review surface 收敛到 `check-command.ts` 与对应 integration coverage。
+  - 2026-05-14：fresh reviewer round 4 返回 clean verdict，未发现新的 actionable finding。
+  - 2026-05-14：review artifact 已收口为 `resolved_code_review_working-tree-20260514-0740.md`，`CR-004` 状态同步推进到 `resolved`，作为 sprint-003 closeout 前的 latest fresh reviewer clean evidence。

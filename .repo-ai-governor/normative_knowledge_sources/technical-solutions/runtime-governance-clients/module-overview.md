@@ -23,16 +23,19 @@
 9. 约束 installer 只可物化 host-consumable projection、installer metadata 与显式 repo-local bootstrap template；默认 `tool_managed` 工作区事实、`repo_local` 运行态 state 与 self-host authoring surface 不能被静态 install payload 冒充。
 10. 正式拥有 built-in adoption pack parity 与 self-host readiness sync boundary：需要同步的 installer/template surface、template-seed surface 与 adopter-owned placeholder surface 必须显式分层；`current-context` / `normative-loading-manifest` 这类同一路径结构与实例值分离的 surface 不得回退成整文件镜像。
 11. 正式要求 repo-specific governance / product / execution starter docs 的 placeholder readiness interlock 只属于 self-host authoring / execution path；默认 `adopter-complete` 安装路径不得因缺少 repo-local authoring docs 而被误阻断。
-12. 正式拥有 VS Code hybrid workbench model 的 surface 选择规则：`TreeView / Commands / Chat / Code Actions` 优先承接 quick action 与 editor-local handoff；只有 task board、review workbench、automation queue、workflow studio、adoption / host operations 这类多对象 surface 才允许进入 `workbench panel`。
-13. 正式要求 `VS Code primary workbench` 的 public support truth 延后于真实 phase evidence：formal direction 可以先进入 module docs，但 `support-matrix / README / adoption playbook / desktop README` 只有在对应 phase evidence 落地后才允许改口。
-14. 为 multi-workspace overview、parallel execution lane、background queue、notification ownership 与 host-native rollout phase map 提供正式方向，但不宣称这些方向已在代码面全部交付。
-15. 为 adopter truthfulness、real adapter invocation、secondary surface sequencing、GA evidence consolidation、standards runtime productization 与 adoption-pack installer rollout 提供 planning-side formal direction，但不把路线图判断误报为已完成交付。
-16. 为 current surface baseline classification、host-native lifecycle carry slot 与 follow-up decomposition 提供 planning-side formal direction，但不把路线图判断误报为已完成交付。
-17. 正式拥有 `config` / `secret` command family、session shell `/config` / `/secret` discoverability 与 `~/.repo-ai-governor/user-config.yaml` authoring UX 的 host-facing boundary；这些 surface 只能写入 user-private defaults、`credentialRef` selector 与 secret backend mutation request，不得把 raw secret value 或 user-config path 冒充为 runtime canonical truth。
-18. 对显式 `/secret set <keyName>` 的 session-shell authoring path，正式要求 host-facing surface 在 slash secure route 命中后切换到本地隐藏输入与 redacted mutation handoff；raw secret 不得经由 slash text、argv、preview recap、error copy 或 transcript surface 暴露，而 skill-triggered secure-input request 与 desktop / VS Code prompt parity 继续留待后续独立 solution。
-19. 正式拥有 adopter installer quickstart convenience boundary：`adopt bootstrap` 只可 orchestrate `init -> doctor --fix -> adopt apply -> adopt verify`；`check` 继续作为显式 broader governance audit follow-up；缺省 selector 只允许落官方 built-in pack，而 existing receipt drift / mismatch rerun 必须回到 `adopt diff/upgrade/remove` lifecycle。
-20. 正式拥有 host-native provider onboarding boundary：VS Code 与后续 host surface 可以通过显式 provider-onboarding mutation seam 采集 `provider / model / endpoint / API key`，但 raw key 只能进入 Governor managed secret backend，配置层只允许持久化 `credentialRef` 与非敏感 provider defaults；`connect / doctor / verify` 继续保持 analyze-first / read-only onboarding truth。
-21. 正式拥有 VS Code direct-workbench follow-up boundary：`Workflow Studio Authoring`、`Runtime Lanes` 与 `HITL Decision Cockpit` 必须建立在 service-owned `workflow draft session / runtime lane status / session continuity / hitl decision packet` seam 之上；schema-first authoring、decision packet risk/SLA reuse 与 projection-only runtime state 不得回退为 extension-local shadow state。
+12. 正式拥有 empty-repo `self-host-complete + repo_local` first-run gap-closure boundary：bootstrap transaction 中的 config seed/apply 一致性、self-host 最小 adapters/storage baseline、ownership/drift taxonomy、generated artifact ignore policy 与 activation/readiness phase 必须作为同一条 adopter path 收口，而不能继续分散成 runtime hotfix、docs note 与 operator 猜测。
+13. 正式要求 self-host activation/readiness 只有一个 canonical producer：`adopt verify` 负责 install/self-host activation verdict 与 verification summary，`doctor` 只补充本机环境 / adapter readiness 的 additive fact，`check` 继续承担 broader governance audit，不得重算并覆盖 install/self-host activation phase。
+14. 正式要求 self-host writable surface 与 generated artifact 分层：`managed_locked`、`starter_editable`、`canonical_runtime_writable` 与 `generated_ephemeral` 必须绑定 `diff/upgrade/remove` lifecycle、receipt provenance 与 `.gitignore` opt-in boundary，避免把 adopter-owned authoring 与 runtime canonical writes 继续误判成 install drift。
+15. 正式拥有 VS Code hybrid workbench model 的 surface 选择规则：`TreeView / Commands / Chat / Code Actions` 优先承接 quick action 与 editor-local handoff；只有 task board、review workbench、automation queue、workflow studio、adoption / host operations 这类多对象 surface 才允许进入 `workbench panel`。
+16. 正式要求 `VS Code primary workbench` 的 public support truth 延后于真实 phase evidence：formal direction 可以先进入 module docs，但 `support-matrix / README / adoption playbook / desktop README` 只有在对应 phase evidence 落地后才允许改口。
+17. 为 multi-workspace overview、parallel execution lane、background queue、notification ownership 与 host-native rollout phase map 提供正式方向，但不宣称这些方向已在代码面全部交付。
+18. 为 adopter truthfulness、real adapter invocation、secondary surface sequencing、GA evidence consolidation、standards runtime productization 与 adoption-pack installer rollout 提供 planning-side formal direction，但不把路线图判断误报为已完成交付。
+19. 为 current surface baseline classification、host-native lifecycle carry slot 与 follow-up decomposition 提供 planning-side formal direction，但不把路线图判断误报为已完成交付。
+20. 正式拥有 `config` / `secret` command family、session shell `/config` / `/secret` discoverability 与 `~/.repo-ai-governor/user-config.yaml` authoring UX 的 host-facing boundary；这些 surface 只能写入 user-private defaults、`credentialRef` selector 与 secret backend mutation request，不得把 raw secret value 或 user-config path 冒充为 runtime canonical truth。
+21. 对显式 `/secret set <keyName>` 的 session-shell authoring path，正式要求 host-facing surface 在 slash secure route 命中后切换到本地隐藏输入与 redacted mutation handoff；raw secret 不得经由 slash text、argv、preview recap、error copy 或 transcript surface 暴露，而 skill-triggered secure-input request 与 desktop / VS Code prompt parity 继续留待后续独立 solution。
+22. 正式拥有 adopter installer quickstart convenience boundary：`adopt bootstrap` 只可 orchestrate `init -> doctor --fix -> adopt apply -> adopt verify`；`check` 继续作为显式 broader governance audit follow-up；缺省 selector 只允许落官方 built-in pack，而 existing receipt drift / mismatch rerun 必须回到 `adopt diff/upgrade/remove` lifecycle。
+23. 正式拥有 host-native provider onboarding boundary：VS Code 与后续 host surface 可以通过显式 provider-onboarding mutation seam 采集 `provider / model / endpoint / API key`，但 raw key 只能进入 Governor managed secret backend，配置层只允许持久化 `credentialRef` 与非敏感 provider defaults；`connect / doctor / verify` 继续保持 analyze-first / read-only onboarding truth。
+24. 正式拥有 VS Code direct-workbench follow-up boundary：`Workflow Studio Authoring`、`Runtime Lanes` 与 `HITL Decision Cockpit` 必须建立在 service-owned `workflow draft session / runtime lane status / session continuity / hitl decision packet` seam 之上；schema-first authoring、decision packet risk/SLA reuse 与 projection-only runtime state 不得回退为 extension-local shadow state。
 
 ## 3. 非目标
 
@@ -108,25 +111,32 @@
    - repo-specific governance / product / execution starter docs 在 `self-host-complete` 下继续属于 adopter-owned placeholder，而不是源仓库 mirror。
    - self-host placeholder readiness interlock 只属于 `self-host-complete + repo_local` 或等价 detected surface；默认 `adopter-complete` 路径继续排除在外。
    - 真实 parity/readiness rollout follow-up 由 `project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout` 承接。
-12. 截至 `2026-04-15`，本模块进一步接受 adopter quickstart bootstrap command direction：
+12. 截至 `2026-05-13`，本模块进一步接受 empty-repo self-host adoption follow-up direction：
+   - `adopt bootstrap` 在 empty-repo `self-host-complete + repo_local` path 下必须保证 bootstrap transaction 内的 config seed/apply 一致性，不能继续把 `governor.yaml` 事务冲突暴露给 adopter 自己绕过。
+   - self-host template 必须提供最小 `adapters` baseline 与对齐后的 storage default；`connect`、`doctor` 与 `run --dry-run --trace` 不得继续把 first-run 必经路径表现成“受支持但像异常”的噪声 surface。
+   - self-host receipt / drift semantics 需要显式区分 `managed_locked`、`starter_editable`、`canonical_runtime_writable` 与 `generated_ephemeral`，并绑定 `diff/upgrade/remove` lifecycle、receipt migration/backfill 与 `.gitignore` opt-in 边界。
+   - `adopt verify` 负责 self-host activation phase 的 canonical verdict；`doctor` 与 `check` 只承担 additive / broader audit 职责，不再并列生成 readiness truth。
+   - 独立 formal ADR 固定为 `adrs/empty-repo-self-host-adoption-follow-up.md`；installer/self-host ADR 与 parity ADR 继续保留为上游 active truth，不被这次 follow-up 覆写。
+   - 真实 implementation / clean-room / docs truthfulness rollout 由 `project-123-empty-repo-self-host-adoption-rollout` 承接。
+13. 截至 `2026-04-15`，本模块进一步接受 adopter quickstart bootstrap command direction：
    - public installer convenience surface 固定为 `adopt bootstrap`，而不是新增顶层 installer family。
    - `adopt bootstrap` 只编排 install-affecting stages；`check` 继续保留为显式 broader governance audit follow-up。
    - omitted selector 只允许落官方 built-in pack；显式 selector 复用当前 `adopt apply` resolver，歧义时继续 fail-closed。
    - clean existing installation 可以通过 convenience rerun 复用；managed drift、pack mismatch 或 profile mismatch 必须回到 `adopt diff/upgrade/remove`，而不是隐式升级成新的 lifecycle owner。
    - 真实 command/runtime/docs rollout follow-up 由 `project-108-adopter-quickstart-bootstrap-rollout` 承接。
-13. 截至 `2026-04-16`，本模块进一步接受“VS Code primary full governance workbench”补充方向：
+14. 截至 `2026-04-16`，本模块进一步接受“VS Code primary full governance workbench”补充方向：
    - planning-side formal direction 现以 `VS Code primary workbench / CLI automation-headless substrate / desktop foundation-only secondary surface` 为默认分工，而不再把 `inner-loop editor companion` 当作 VS Code 的终局边界。
    - `TreeView / Commands / Chat / Code Actions` 仍是默认入口；task board、review workbench、workflow studio、automation queue 与 adoption / host operations 允许进入 workbench panel，但只能消费 service-owned DTO / query / command seam。
    - `support-matrix / README / adoption playbook / desktop README` 仍然必须 evidence-gated；在 `Phase A / Phase B` 期间，public support truth 只允许保持 `companion-upgraded / workbench baseline in progress`，不得提前宣称 full workbench cutover 已完成。
    - companion-era split ADR 保留为历史基线；新的 primary workbench 方向与 temporary bridge exit criteria 由新增 ADR/contract 承接，不顺手废弃 host distribution / installer active truth。
-14. 截至 `2026-04-20`，本模块进一步接受“VS Code plugin direct API key and secret-backed provider onboarding”补充方向：
+15. 截至 `2026-04-20`，本模块进一步接受“VS Code plugin direct API key and secret-backed provider onboarding”补充方向：
    - 插件 primary human path 改为 direct API key entry，而不是继续把 `credentialEnvVar` 作为默认 onboarding authoring surface。
    - host-facing direct entry 必须落到显式 provider-onboarding mutation seam；`connect / doctor / verify` 继续保持 analyze-first / read-only truth。
    - canonical owner split 固定为 `runtime.governance-clients` 负责 host-facing UX / CTA mapping，`runtime.agent-projection` 继续负责 `transport / provider / vendorBinding / next_action(s)` truth。
    - direct onboarding 允许持久化的 canonical config target 以 `tools.<tool>.transport`、`tools.<tool>.remoteApi.provider`、`tools.<tool>.remoteApi.vendorBinding`、`tools.<tool>.remoteApi.model`、`tools.<tool>.remoteApi.endpoint`、`tools.<tool>.remoteApi.credentialRef` 为准，不再使用 `tools.<tool>.remoteApi.transport`。
    - 当 selected secret backend 不可写，或 `tool/provider` 组合无法唯一收敛到 canonical provider/vendorBinding pairing 时，provider-onboarding seam 必须 fail-closed，而不是回退到 host-side heuristics。
    - 真实 runtime/docs/support truth rollout 由 `project-116-vscode-direct-provider-onboarding-rollout` 承接。
-15. 截至 `2026-04-22`，本模块进一步接受“VS Code direct workbench authoring / runtime lanes / HITL decision cockpit”补充方向：
+16. 截至 `2026-04-22`，本模块进一步接受“VS Code direct workbench authoring / runtime lanes / HITL decision cockpit”补充方向：
    - `Workflow Studio` 可以演进为 direct authoring surface，但只能以 `schema-first + service-owned workflow draft session` 形态推进；graph 继续是 projection，不是 canonical source。
    - `Runtime Lanes` 固定消费 `execution graph / role lane status / execution stage progress / session continuity / backlink` 的 service-owned projection，不允许插件本地拼装第二套状态机。
    - `HITL Decision Cockpit` 固定消费 `hitl decision packet`，并完整复用 `risk facts + SLA + default_timeout_action` 语义；`submit / recover / terminate` 继续经过既有 trust/policy gate。
@@ -152,4 +162,5 @@
    - `adrs/adoption-pack-installer-and-self-host-template-bootstrap.md`
    - `adrs/current-surface-baseline-classification-and-followup-decomposition.md`
    - `adrs/built-in-adoption-pack-parity-and-self-host-readiness-sync.md`
+   - `adrs/empty-repo-self-host-adoption-follow-up.md`
    - `adrs/adopter-quickstart-bootstrap-command-and-install-convenience-surface.md`

@@ -30,19 +30,26 @@
    - `self-host-complete + repo_local`
    - 或等价的 detected self-host surface
    - 默认 `adopter-complete` 不得因为缺少 repo-local governance / product / execution docs 而被 `warn` 或 `fail_closed`
-6. follow-up implementation 由新的 `project-107-built-in-adoption-pack-parity-and-self-host-readiness-rollout` 承接。
+6. empty-repo self-host path 还必须显式区分四类 writable / generated surface：
+   - `managed_locked`
+   - `starter_editable`
+   - `canonical_runtime_writable`
+   - `generated_ephemeral`
+7. activation/readiness phase 只允许由 `adopt verify` 产出 canonical verdict；`doctor` 与 `check` 只能消费并扩展该 truth，不得各自重算 readiness phase。
+8. follow-up implementation 由新的 `project-123-empty-repo-self-host-adoption-rollout` 承接。
 
 ## 3. Rationale
 
 1. 这让“需要跟随当前仓库治理模型同步的内容”和“必须由 adopter 自己补齐的内容”获得了稳定、可检的分层。
 2. 将 `current-context` / manifest 收敛为“结构同步 + starter instance”可避免把源仓库当前 live state 误写进 self-host bootstrap。
 3. 将 readiness applicability 限定在 self-host path，能继续保持当前 installer contract 对默认 adopter path 的 fail-closed 边界。
-4. source catalog + parity tests 比继续依赖手工字符串更符合 built-in pack 的长期维护需求。
+4. 如果不把 writable / generated surface taxonomy 与 activation truth owner 一起 formalize，后续实现很容易重新回到“placeholder 分类有了，但 drift 和 readiness 还是各算一份”的半收口状态。
+5. source catalog + parity tests 比继续依赖手工字符串更符合 built-in pack 的长期维护需求。
 
 ## 4. Consequences
 
 1. `runtime.governance-clients` 的 module overview 需补充 built-in pack parity 与 self-host readiness applicability 边界。
-2. `contract.runtime.adoption-pack-install.v1` 需要做 additive clarifications，明确 adopter-owned placeholder、self-host-only readiness applicability 与 structure-vs-instance projection boundary。
+2. `contract.runtime.adoption-pack-install.v1` 需要做 additive clarifications，明确 adopter-owned placeholder、self-host-only readiness applicability、ownership taxonomy、generated artifact ignore policy 与 structure-vs-instance projection boundary。
 3. `packages/standards` 与 `apps/cli` 后续需要承接：
    - built-in pack source catalog
    - parity / applicability tests
@@ -51,5 +58,7 @@
 
 ## 5. Follow-Up
 
-1. `project-107` sprint-001：freeze parity inventory、source catalog shape、self-host readiness applicability 与 first-wave tests
-2. 后续 sprint：按实现窗口补齐 generated/source-ref 驱动、readiness integration 与 docs truthfulness refresh
+1. `project-123` sprint-001：freeze empty-repo bootstrap transaction fix 与 minimum self-host baseline
+2. `project-123` sprint-002：落 ownership taxonomy、receipt/drift semantics 与 generated artifact policy
+3. `project-123` sprint-003：落 activation/readiness phase、verify canonical verdict 与 doctor/check additive diagnostics
+4. `project-123` sprint-004：补齐 clean-room evidence 与 docs truthfulness refresh

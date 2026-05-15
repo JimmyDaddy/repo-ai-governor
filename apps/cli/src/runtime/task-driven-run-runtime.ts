@@ -733,6 +733,7 @@ export class CliTaskDrivenRunRuntime {
     adaptersConfig: AdaptersConfig,
   ): string {
     const normalizedText = `${taskContext.title} ${taskContext.goal}`.toLowerCase();
+    const requiresDeliveryRehearsal = this.resolveDeliveryRehearsalAction(taskContext) !== null;
     if (
       this.matchesAnyKeyword(normalizedText, CLI_TASK_DRIVEN_RUN_KEYWORDS.TESTER) &&
       this.hasRoleBinding(adaptersConfig, DefaultRoleProfileId.TESTER)
@@ -741,6 +742,7 @@ export class CliTaskDrivenRunRuntime {
     }
 
     if (
+      !requiresDeliveryRehearsal &&
       this.matchesAnyKeyword(normalizedText, CLI_TASK_DRIVEN_RUN_KEYWORDS.REVIEWER) &&
       this.hasRoleBinding(adaptersConfig, DefaultRoleProfileId.REVIEWER)
     ) {

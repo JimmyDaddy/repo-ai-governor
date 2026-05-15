@@ -140,7 +140,7 @@ function listTaskCardFiles(rootPath) {
         continue;
       }
 
-      if (entry.isFile() && /^T[KC]-\d+.*\.md$/u.test(entry.name)) {
+      if (entry.isFile() && /^(?:TK|CR)-\d+.*\.md$/u.test(entry.name)) {
         filePaths.push(absolutePath);
       }
     }
@@ -156,7 +156,7 @@ function listTaskCardFiles(rootPath) {
  * @returns {string | null}
  */
 function readTaskIdFromCardPath(taskCardPath) {
-  const matched = basename(taskCardPath).match(/^(T[KC]-\d+)/u);
+  const matched = basename(taskCardPath).match(/^((?:TK|CR)-\d+)/u);
   return matched ? matched[1] : null;
 }
 

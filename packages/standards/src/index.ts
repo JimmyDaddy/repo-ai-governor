@@ -2,9 +2,12 @@ export {
   ADOPTION_PACK_APPLICABILITY_SCOPE_VALUES,
   ADOPTION_PACK_COMPOSITION_POLICY_VALUES,
   ADOPTION_PACK_DIFF_REPORT_SCHEMA_VERSION,
+  ADOPTION_PACK_DRIFT_POLICY_VALUES,
+  ADOPTION_PACK_GIT_POLICY_VALUES,
   ADOPTION_PACK_INSTALL_RECEIPT_SCHEMA_VERSION,
   ADOPTION_PACK_MANAGED_ASSET_GROUP_VALUES,
   ADOPTION_PACK_MANIFEST_SCHEMA_VERSION,
+  ADOPTION_PACK_OWNERSHIP_CLASS_VALUES,
   ADOPTION_PACK_PARITY_CLASS_VALUES,
   ADOPTION_PACK_PLACEHOLDER_POLICY_VALUES,
   ADOPTION_PACK_READINESS_GROUP_VALUES,
@@ -29,7 +32,10 @@ export {
   AgentsProjectionMetadataKey,
   AdoptionPackApplicabilityScope,
   AdoptionPackCompositionPolicy,
+  AdoptionPackDriftPolicy,
+  AdoptionPackGitPolicy,
   AdoptionPackManagedAssetGroup,
+  AdoptionPackOwnershipClass,
   AdoptionPackParityClass,
   AdoptionPackPlaceholderPolicy,
   AdoptionPackReadinessGroup,
@@ -93,6 +99,7 @@ export {
   listBuiltInAdoptionPackDefinitions,
   resolveBuiltInAdoptionPackDefinition,
 } from './built-in-adoption-pack-catalog.js';
+export { buildSelfHostGovernorConfigContent } from './self-host-governor-config.js';
 export {
   AgentsProjectionNowProvider,
   DefaultAgentsProjectionNowProvider,
@@ -114,6 +121,7 @@ export { StandardsUpgradePlanner } from './standards-upgrade-planner.js';
 export { StandardsPackRegistry } from './standards-pack-registry.js';
 export { StandardsRuntimeLoader } from './standards-runtime-loader.js';
 export type {
+  AdoptionPackActivationPhaseRecord,
   AdoptionPackDiffRecord,
   AdoptionPackDiffReport,
   AdoptionPackInstallReceipt,

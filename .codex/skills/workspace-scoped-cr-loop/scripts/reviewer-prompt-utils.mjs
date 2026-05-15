@@ -20,12 +20,6 @@ const DEFAULT_REQUIRED_INPUTS = [
   '.repo-ai-governor/normative_knowledge_sources/normative-loading-manifest.yaml',
   '.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md',
   '.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md',
-  '.repo-ai-governor/normative_knowledge_sources/governance/cr-lifecycle-threshold-spec.md',
-  '.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md',
-  '.repo-ai-governor/normative_knowledge_sources/governance/task-ledger-single-write-source-contract.md',
-  '.repo-ai-governor/normative_knowledge_sources/governance/execution-gate-layering-spec.md',
-  '.codex/skills/workspace-code-review-workflow/SKILL.md',
-  '.codex/skills/workspace-delivery-finisher/SKILL.md',
 ];
 
 export function fail(message) {
@@ -862,6 +856,18 @@ function buildDefaultTracebackReferences({ sprintDir, projectDir, scopeKind }) {
     references.unshift(join(projectDir, 'plan.md'));
   }
 
+  references.push(
+    '.repo-ai-governor/normative_knowledge_sources/governance/cr-lifecycle-threshold-spec.md',
+  );
+  references.push(
+    '.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md',
+  );
+  references.push(
+    '.repo-ai-governor/normative_knowledge_sources/governance/task-ledger-single-write-source-contract.md',
+  );
+  references.push(
+    '.repo-ai-governor/normative_knowledge_sources/governance/execution-gate-layering-spec.md',
+  );
   references.push('.codex/skills/workspace-code-review-workflow/SKILL.md');
   references.push('.codex/skills/workspace-delivery-finisher/SKILL.md');
 

@@ -1167,6 +1167,42 @@ deliveries:
       - .repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/project-112-vscode-governance-workbench-rollout-completion-audit-summary.md
       - .repo-ai-governor/context/dev/project-112-vscode-governance-workbench-rollout/sprint-003-phase-c-workflow-studio-and-full-workbench-cutover/tasks/DA-942-project-112-final-closeout-and-idle-primary-stream-handoff.md
     accepted_at: 2026-04-16
+
+  - solution_id: technical-solution.empty-repo-self-host-adoption-follow-up
+    delivery_mode: followup_required
+    consumer_surfaces:
+      - adopter_cli
+      - runtime_service
+      - docs_playbook
+    user_impact_level: high
+    execution_status: completed
+    rollout_status: completed
+    owner: runtime
+    project_ref: project-123-empty-repo-self-host-adoption-rollout
+    sprint_ref: sprint-004-clean-room-evidence-and-docs-truthfulness
+    task_ids:
+      - TK-1063
+      - TK-1064
+    project_plan_path: .repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/plan.md
+    sprint_plan_path: .repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/sprint-004-clean-room-evidence-and-docs-truthfulness/plan.md
+    task_csv_path: .repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/sprint-004-clean-room-evidence-and-docs-truthfulness/tasks/tasks.csv
+    handoff_artifact_path: .repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/sprint-004-clean-room-evidence-and-docs-truthfulness/tasks/DA-1065-project-123-final-closeout-and-idle-primary-stream-handoff.md
+    rollout_artifacts:
+      - .repo-ai-governor/context/dev/project-122-empty-repo-self-host-adoption-promotion-and-decomposition/plan.md
+      - .repo-ai-governor/context/dev/project-122-empty-repo-self-host-adoption-promotion-and-decomposition/sprint-001-promotion-and-followup-decomposition/plan.md
+      - .repo-ai-governor/context/dev/project-122-empty-repo-self-host-adoption-promotion-and-decomposition/sprint-001-promotion-and-followup-decomposition/tasks/DA-1052-empty-repo-self-host-adoption-promotion-and-rollout-decomposition-handoff.md
+      - .repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/plan.md
+      - .repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/sprint-001-bootstrap-transaction-and-self-host-baseline/plan.md
+      - .repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/sprint-002-ownership-and-generated-artifact-policy/plan.md
+      - .repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/sprint-003-activation-and-readiness-ux/plan.md
+      - .repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/sprint-003-activation-and-readiness-ux/tasks/DA-1062-sprint-003-closeout-and-sprint-004-activation-handoff.md
+      - .repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/sprint-004-clean-room-evidence-and-docs-truthfulness/plan.md
+      - .repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/sprint-004-clean-room-evidence-and-docs-truthfulness/tasks/DA-1063-empty-repo-self-host-clean-room-evidence-and-operator-path-truth.md
+      - .repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/sprint-004-clean-room-evidence-and-docs-truthfulness/tasks/DA-1064-sprint-004-exit-acceptance-and-project-final-review-handoff.md
+      - .repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/sprint-004-clean-room-evidence-and-docs-truthfulness/review/resolved_code_review_working-tree-20260514-1129.md
+      - .repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/project-123-empty-repo-self-host-adoption-rollout-completion-audit-summary.md
+      - .repo-ai-governor/context/dev/project-123-empty-repo-self-host-adoption-rollout/sprint-004-clean-room-evidence-and-docs-truthfulness/tasks/DA-1065-project-123-final-closeout-and-idle-primary-stream-handoff.md
+    accepted_at: 2026-05-13
   - solution_id: technical-solution.vscode-direct-workbench-orchestration-runtime-hitl
     delivery_mode: followup_required
     consumer_surfaces:

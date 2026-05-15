@@ -2,7 +2,10 @@ import {
   ADOPTION_PACK_MANIFEST_SCHEMA_VERSION,
   AdoptionPackApplicabilityScope,
   AdoptionPackCompositionPolicy,
+  AdoptionPackDriftPolicy,
+  AdoptionPackGitPolicy,
   AdoptionPackManagedAssetGroup,
+  AdoptionPackOwnershipClass,
   AdoptionPackParityClass,
   AdoptionPackPlaceholderPolicy,
   AdoptionPackReadinessGroup,
@@ -18,6 +21,7 @@ import {
   BUILT_IN_ADOPTION_PACK_VERSION,
 } from './constants/adoption-pack.constant.js';
 import { HostDistributionHandoffBridge, HostDistributionTarget } from './constants/index.js';
+import { buildSelfHostGovernorConfigContent } from './self-host-governor-config.js';
 import type {
   AdoptionPackManifest,
   AdoptionPackReadinessMatrixRecord,
@@ -273,18 +277,7 @@ pnpm exec repo-ai-governor workspace execute --workspace-mode repo_local --outpu
   ),
   createTemplateRecord(
     '.repo-ai-governor/adoption/bootstrap/governor.repo-local.template.yaml',
-    `schemaVersion: "1.1"
-workspace:
-  mode: repo_local
-  migrationPolicy: copy_verify_switch_rollback
-i18n:
-  runtimeEngine: i18next
-  defaultLocale: zh-CN
-  fallbackLocale: en-US
-  supportedLocales:
-    - zh-CN
-    - en-US
-`,
+    buildSelfHostGovernorConfigContent(),
     AdoptionPackManagedAssetGroup.BOOTSTRAP_TEMPLATES,
     [BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE],
     'Repo-local governor config template for self-host bootstrap.',
@@ -751,6 +744,10 @@ const SELF_HOST_CODE_STANDARDS_DESCRIPTION =
 const SELF_HOST_LONG_TERM_MAINTENANCE_DESCRIPTION =
   'Self-host long-term maintenance guidance stays adopter-owned even though the bootstrap writes an initial placeholder file today.';
 
+const SELF_HOST_MANAGED_LOCKED = AdoptionPackOwnershipClass.MANAGED_LOCKED;
+const SELF_HOST_STARTER_EDITABLE = AdoptionPackOwnershipClass.STARTER_EDITABLE;
+const SELF_HOST_CANONICAL_RUNTIME_WRITABLE = AdoptionPackOwnershipClass.CANONICAL_RUNTIME_WRITABLE;
+
 const BUILT_IN_SOURCE_CATALOG_RECORDS: AdoptionPackSourceCatalogRecord[] = [
   ...BUILT_IN_WORKFLOW_RECORDS.map((record) => createWorkflowSourceCatalogRecord(record)),
   ...BUILT_IN_TEMPLATE_RECORDS.map((record) => createTemplateSourceCatalogRecord(record)),
@@ -761,7 +758,7 @@ const BUILT_IN_SOURCE_CATALOG_RECORDS: AdoptionPackSourceCatalogRecord[] = [
     AdoptionPackParityClass.TEMPLATE_SEED,
     AdoptionPackSourceMode.TEMPLATE_SEED,
     AdoptionPackPlaceholderPolicy.TEMPLATE_SEED,
-    AdoptionPackReadinessGroup.NONE,
+    AdoptionPackReadinessGroup.TEMPLATE_SEEDED,
   ),
   createRuntimeBootstrapSourceCatalogRecord(
     '.repo-ai-governor/normative_knowledge_sources/technical-solutions/technical-solution-module-registry.yaml',
@@ -770,7 +767,7 @@ const BUILT_IN_SOURCE_CATALOG_RECORDS: AdoptionPackSourceCatalogRecord[] = [
     AdoptionPackParityClass.TEMPLATE_SEED,
     AdoptionPackSourceMode.TEMPLATE_SEED,
     AdoptionPackPlaceholderPolicy.TEMPLATE_SEED,
-    AdoptionPackReadinessGroup.PRODUCT_DIRECTION_READY,
+    AdoptionPackReadinessGroup.AUTHORING_STARTED,
   ),
   createRuntimeBootstrapSourceCatalogRecord(
     '.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md',
@@ -779,7 +776,7 @@ const BUILT_IN_SOURCE_CATALOG_RECORDS: AdoptionPackSourceCatalogRecord[] = [
     AdoptionPackParityClass.ADOPTER_OWNED_PLACEHOLDER,
     AdoptionPackSourceMode.ADOPTER_PLACEHOLDER,
     AdoptionPackPlaceholderPolicy.ADOPTER_OWNED,
-    AdoptionPackReadinessGroup.GOVERNANCE_RULES_READY,
+    AdoptionPackReadinessGroup.AUTHORING_STARTED,
   ),
   createRuntimeBootstrapSourceCatalogRecord(
     '.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md',
@@ -788,7 +785,7 @@ const BUILT_IN_SOURCE_CATALOG_RECORDS: AdoptionPackSourceCatalogRecord[] = [
     AdoptionPackParityClass.ADOPTER_OWNED_PLACEHOLDER,
     AdoptionPackSourceMode.ADOPTER_PLACEHOLDER,
     AdoptionPackPlaceholderPolicy.ADOPTER_OWNED,
-    AdoptionPackReadinessGroup.GOVERNANCE_RULES_READY,
+    AdoptionPackReadinessGroup.AUTHORING_STARTED,
   ),
   createRuntimeBootstrapSourceCatalogRecord(
     '.repo-ai-governor/context/dev/sqlite/task-ledger.sqlite',
@@ -831,23 +828,7 @@ const BUILT_IN_SOURCE_CATALOG_RECORDS: AdoptionPackSourceCatalogRecord[] = [
 const BUILT_IN_RUNTIME_BOOTSTRAP_RECORDS: AdoptionPackRuntimeBootstrapRecord[] = [
   createRuntimeBootstrapTemplateRecord(
     '.repo-ai-governor/governor.yaml',
-    [
-      'schemaVersion: "1.1"',
-      'workspace:',
-      '  mode: repo_local',
-      '  migrationPolicy: copy_verify_switch_rollback',
-      'i18n:',
-      '  runtimeEngine: i18next',
-      '  defaultLocale: zh-CN',
-      '  fallbackLocale: en-US',
-      '  supportedLocales:',
-      '    - zh-CN',
-      '    - en-US',
-      'memory:',
-      '  storeEngine: fs_csv',
-      '  storeRoot: context/memory',
-      '',
-    ].join('\n'),
+    buildSelfHostGovernorConfigContent(),
     AdoptionPackManagedAssetGroup.BOOTSTRAP_TEMPLATES,
     SELF_HOST_GOVERNOR_CONFIG_DESCRIPTION,
   ),
@@ -919,7 +900,18 @@ Capture maintenance expectations for self-hosted governance repositories.
 
 const BUILT_IN_READINESS_MATRIX_RECORDS: AdoptionPackReadinessMatrixRecord[] = [
   createReadinessMatrixRecord(
-    AdoptionPackReadinessGroup.GOVERNANCE_RULES_READY,
+    AdoptionPackReadinessGroup.TEMPLATE_SEEDED,
+    [
+      buildRuntimeBootstrapSurfaceId('.repo-ai-governor/governor.yaml'),
+      buildTemplateSurfaceId('.repo-ai-governor/context/current-context.md'),
+      buildTemplateSurfaceId(
+        '.repo-ai-governor/normative_knowledge_sources/normative-loading-manifest.yaml',
+      ),
+    ],
+    'Template seeding confirms the repo-local self-host baseline exists and still carries starter placeholder truth where expected.',
+  ),
+  createReadinessMatrixRecord(
+    AdoptionPackReadinessGroup.AUTHORING_STARTED,
     [
       buildRuntimeBootstrapSurfaceId(
         '.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md',
@@ -927,12 +919,9 @@ const BUILT_IN_READINESS_MATRIX_RECORDS: AdoptionPackReadinessMatrixRecord[] = [
       buildRuntimeBootstrapSurfaceId(
         '.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md',
       ),
-    ],
-    'Only self-host repositories that opt into repo-local authoring should receive governance-rules readiness warnings; unattended execution remains fail-closed until placeholders are replaced.',
-  ),
-  createReadinessMatrixRecord(
-    AdoptionPackReadinessGroup.PRODUCT_DIRECTION_READY,
-    [
+      buildTemplateSurfaceId(
+        '.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md',
+      ),
       buildTemplateSurfaceId(
         '.repo-ai-governor/context/technical-solution-lifecycle-registry.yaml',
       ),
@@ -940,15 +929,50 @@ const BUILT_IN_READINESS_MATRIX_RECORDS: AdoptionPackReadinessMatrixRecord[] = [
       buildRuntimeBootstrapSurfaceId(
         '.repo-ai-governor/normative_knowledge_sources/technical-solutions/technical-solution-module-registry.yaml',
       ),
+      buildTemplateSurfaceId('.repo-ai-governor/context/dev/project-template/plan.md'),
+      buildTemplateSurfaceId(
+        '.repo-ai-governor/context/dev/project-template/sprint-template/plan.md',
+      ),
+      buildTemplateSurfaceId(
+        '.repo-ai-governor/context/dev/project-template/sprint-template/tasks/checklist.md',
+      ),
+      buildTemplateSurfaceId(
+        '.repo-ai-governor/context/dev/project-template/sprint-template/tasks/tasks.csv',
+      ),
+      buildTemplateSurfaceId(
+        '.repo-ai-governor/context/dev/project-template/sprint-template/tasks/TK-001-template-task.md',
+      ),
+      buildTemplateSurfaceId(
+        '.repo-ai-governor/context/dev/project-template/sprint-template/review/README.md',
+      ),
+      buildTemplateSurfaceId('.repo-ai-governor/context/completed-streams-history.md'),
+    ],
+    'Authoring-started requires adopter-owned governance, product, registry, and execution starter surfaces to move beyond untouched placeholders before self-host execution can be treated as real authoring truth.',
+  ),
+  createReadinessMatrixRecord(
+    AdoptionPackReadinessGroup.ADAPTER_CONNECTED,
+    [buildRuntimeBootstrapSurfaceId('.repo-ai-governor/governor.yaml')],
+    'Adapter-connected requires a real connect-apply footprint on top of the repo-local self-host baseline; seeded default adapters alone do not count as connected.',
+  ),
+  createReadinessMatrixRecord(
+    AdoptionPackReadinessGroup.EXECUTION_READY,
+    [
+      buildRuntimeBootstrapSurfaceId(
+        '.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md',
+      ),
+      buildRuntimeBootstrapSurfaceId(
+        '.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md',
+      ),
       buildTemplateSurfaceId(
         '.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md',
       ),
-    ],
-    'Product-direction readiness stays scoped to self-host repo-local authoring surfaces and should first surface via diagnostics/verify before later promotion or execution gates rely on it.',
-  ),
-  createReadinessMatrixRecord(
-    AdoptionPackReadinessGroup.EXECUTION_SURFACE_READY,
-    [
+      buildTemplateSurfaceId(
+        '.repo-ai-governor/context/technical-solution-lifecycle-registry.yaml',
+      ),
+      buildTemplateSurfaceId('.repo-ai-governor/context/technical-solution-delivery-registry.yaml'),
+      buildRuntimeBootstrapSurfaceId(
+        '.repo-ai-governor/normative_knowledge_sources/technical-solutions/technical-solution-module-registry.yaml',
+      ),
       buildTemplateSurfaceId('.repo-ai-governor/context/current-context.md'),
       buildTemplateSurfaceId(
         '.repo-ai-governor/normative_knowledge_sources/normative-loading-manifest.yaml',
@@ -970,8 +994,9 @@ const BUILT_IN_READINESS_MATRIX_RECORDS: AdoptionPackReadinessMatrixRecord[] = [
         '.repo-ai-governor/context/dev/project-template/sprint-template/review/README.md',
       ),
       buildTemplateSurfaceId('.repo-ai-governor/context/completed-streams-history.md'),
+      buildRuntimeBootstrapSurfaceId('.repo-ai-governor/governor.yaml'),
     ],
-    'Execution-surface readiness only applies to self-host repo-local execution paths: diagnostics and adopt verify should warn, and adopt verify should publish a downstream fail-closed execution preflight signal while starter placeholders are still present.',
+    'Execution-ready is the final self-host activation phase: authoring placeholders must be replaced and adapter connectivity must already be established before downstream execution can be treated as ready.',
   ),
 ];
 
@@ -1043,6 +1068,9 @@ function toResolvedDefinition(): ResolvedAdoptionPackDefinition {
       ...record,
       profileIds: [...record.profileIds],
       readinessSinkIds: [...record.readinessSinkIds],
+      ownershipClass: record.ownershipClass,
+      driftPolicy: record.driftPolicy,
+      gitPolicy: record.gitPolicy,
       ...(record.relativePath ? { relativePath: record.relativePath } : {}),
       ...(record.workflowId ? { workflowId: record.workflowId } : {}),
       ...(record.structureSourceRef ? { structureSourceRef: record.structureSourceRef } : {}),
@@ -1070,6 +1098,9 @@ function createWorkflowSourceCatalogRecord(
     description: workflowRecord.description,
     profileIds: [...BUILT_IN_ALL_PROFILE_IDS],
     assetGroup: AdoptionPackManagedAssetGroup.SKILLS,
+    ownershipClass: AdoptionPackOwnershipClass.MANAGED_LOCKED,
+    driftPolicy: AdoptionPackDriftPolicy.ENFORCE_CHECKSUM,
+    gitPolicy: AdoptionPackGitPolicy.KEEP_TRACKED,
     parityClass: AdoptionPackParityClass.GENERATED_PROJECTION,
     sourceMode: AdoptionPackSourceMode.GENERATED_PROJECTION,
     sourceRef:
@@ -1094,6 +1125,9 @@ function createTemplateSourceCatalogRecord(
     description: templateRecord.description,
     profileIds: [...templateRecord.profileIds],
     assetGroup: templateRecord.assetGroup,
+    ownershipClass: AdoptionPackOwnershipClass.MANAGED_LOCKED,
+    driftPolicy: AdoptionPackDriftPolicy.ENFORCE_CHECKSUM,
+    gitPolicy: AdoptionPackGitPolicy.KEEP_TRACKED,
     parityClass: AdoptionPackParityClass.TEMPLATE_SEED,
     sourceMode: AdoptionPackSourceMode.TEMPLATE_SEED,
     sourceRef: buildBuiltinTemplateSourceRef(templateRecord.relativePath),
@@ -1115,6 +1149,8 @@ function createTemplateSourceCatalogRecord(
   ) {
     return {
       ...defaultRecord,
+      ownershipClass: AdoptionPackOwnershipClass.MANAGED_LOCKED,
+      driftPolicy: AdoptionPackDriftPolicy.ENFORCE_CHECKSUM,
       parityClass: AdoptionPackParityClass.GENERATED_PROJECTION,
       sourceMode: AdoptionPackSourceMode.GENERATED_PROJECTION,
       compositionPolicy: AdoptionPackCompositionPolicy.CATALOG_ASSEMBLED,
@@ -1127,17 +1163,21 @@ function createTemplateSourceCatalogRecord(
     case '.repo-ai-governor/adoption/bootstrap/governor.repo-local.template.yaml':
       return {
         ...defaultRecord,
+        ownershipClass: SELF_HOST_STARTER_EDITABLE,
+        driftPolicy: AdoptionPackDriftPolicy.PROVENANCE_ONLY,
         applicabilityScope: AdoptionPackApplicabilityScope.SELF_HOST_COMPLETE,
       };
     case '.repo-ai-governor/context/current-context.md':
       return {
         ...defaultRecord,
+        ownershipClass: SELF_HOST_CANONICAL_RUNTIME_WRITABLE,
+        driftPolicy: AdoptionPackDriftPolicy.PROVENANCE_ONLY,
         parityClass: AdoptionPackParityClass.EXACT_SYNC,
         sourceMode: AdoptionPackSourceMode.STRUCTURED_TEMPLATE_PROJECTION,
         sourceRef: '.repo-ai-governor/context/current-context.md',
         compositionPolicy: AdoptionPackCompositionPolicy.STRUCTURE_INSTANCE_SPLIT,
         applicabilityScope: AdoptionPackApplicabilityScope.SELF_HOST_REPO_LOCAL,
-        readinessGroup: AdoptionPackReadinessGroup.EXECUTION_SURFACE_READY,
+        readinessGroup: AdoptionPackReadinessGroup.TEMPLATE_SEEDED,
         readinessSinkIds: [...SELF_HOST_READINESS_SINK_IDS],
         structureSourceRef: '.repo-ai-governor/context/current-context.md',
         instanceSourceMode: AdoptionPackSourceMode.TEMPLATE_SEED,
@@ -1147,12 +1187,14 @@ function createTemplateSourceCatalogRecord(
     case '.repo-ai-governor/normative_knowledge_sources/normative-loading-manifest.yaml':
       return {
         ...defaultRecord,
+        ownershipClass: SELF_HOST_STARTER_EDITABLE,
+        driftPolicy: AdoptionPackDriftPolicy.PLACEHOLDER_AWARE,
         parityClass: AdoptionPackParityClass.EXACT_SYNC,
         sourceMode: AdoptionPackSourceMode.STRUCTURED_TEMPLATE_PROJECTION,
         sourceRef: '.repo-ai-governor/normative_knowledge_sources/normative-loading-manifest.yaml',
         compositionPolicy: AdoptionPackCompositionPolicy.STRUCTURE_INSTANCE_SPLIT,
         applicabilityScope: AdoptionPackApplicabilityScope.SELF_HOST_REPO_LOCAL,
-        readinessGroup: AdoptionPackReadinessGroup.EXECUTION_SURFACE_READY,
+        readinessGroup: AdoptionPackReadinessGroup.TEMPLATE_SEEDED,
         readinessSinkIds: [...SELF_HOST_READINESS_SINK_IDS],
         structureSourceRef:
           '.repo-ai-governor/normative_knowledge_sources/normative-loading-manifest.yaml',
@@ -1163,19 +1205,23 @@ function createTemplateSourceCatalogRecord(
     case '.repo-ai-governor/normative_knowledge_sources/product-requirements-brief.md':
       return {
         ...defaultRecord,
+        ownershipClass: SELF_HOST_STARTER_EDITABLE,
+        driftPolicy: AdoptionPackDriftPolicy.PLACEHOLDER_AWARE,
         parityClass: AdoptionPackParityClass.ADOPTER_OWNED_PLACEHOLDER,
         sourceMode: AdoptionPackSourceMode.ADOPTER_PLACEHOLDER,
         placeholderPolicy: AdoptionPackPlaceholderPolicy.ADOPTER_OWNED,
         applicabilityScope: AdoptionPackApplicabilityScope.SELF_HOST_REPO_LOCAL,
-        readinessGroup: AdoptionPackReadinessGroup.PRODUCT_DIRECTION_READY,
+        readinessGroup: AdoptionPackReadinessGroup.AUTHORING_STARTED,
         readinessSinkIds: [...SELF_HOST_READINESS_SINK_IDS],
       };
     case '.repo-ai-governor/context/technical-solution-lifecycle-registry.yaml':
     case '.repo-ai-governor/context/technical-solution-delivery-registry.yaml':
       return {
         ...defaultRecord,
+        ownershipClass: SELF_HOST_CANONICAL_RUNTIME_WRITABLE,
+        driftPolicy: AdoptionPackDriftPolicy.PROVENANCE_ONLY,
         applicabilityScope: AdoptionPackApplicabilityScope.SELF_HOST_REPO_LOCAL,
-        readinessGroup: AdoptionPackReadinessGroup.PRODUCT_DIRECTION_READY,
+        readinessGroup: AdoptionPackReadinessGroup.AUTHORING_STARTED,
         readinessSinkIds: [...SELF_HOST_READINESS_SINK_IDS],
       };
     case '.repo-ai-governor/context/completed-streams-history.md':
@@ -1187,11 +1233,13 @@ function createTemplateSourceCatalogRecord(
     case '.repo-ai-governor/context/dev/project-template/sprint-template/review/README.md':
       return {
         ...defaultRecord,
+        ownershipClass: SELF_HOST_STARTER_EDITABLE,
+        driftPolicy: AdoptionPackDriftPolicy.PLACEHOLDER_AWARE,
         parityClass: AdoptionPackParityClass.ADOPTER_OWNED_PLACEHOLDER,
         sourceMode: AdoptionPackSourceMode.ADOPTER_PLACEHOLDER,
         placeholderPolicy: AdoptionPackPlaceholderPolicy.ADOPTER_OWNED,
         applicabilityScope: AdoptionPackApplicabilityScope.SELF_HOST_REPO_LOCAL,
-        readinessGroup: AdoptionPackReadinessGroup.EXECUTION_SURFACE_READY,
+        readinessGroup: AdoptionPackReadinessGroup.AUTHORING_STARTED,
         readinessSinkIds: [...SELF_HOST_READINESS_SINK_IDS],
       };
     default:
@@ -1214,6 +1262,9 @@ function createRuntimeBootstrapSourceCatalogRecord(
     description,
     profileIds: [BUILT_IN_ADOPTION_PACK_PROFILE_IDS.SELF_HOST_COMPLETE],
     assetGroup,
+    ownershipClass: resolveSelfHostRuntimeBootstrapOwnershipClass(relativePath),
+    driftPolicy: resolveSelfHostRuntimeBootstrapDriftPolicy(relativePath),
+    gitPolicy: resolveSelfHostRuntimeBootstrapGitPolicy(relativePath),
     parityClass,
     sourceMode,
     sourceRef: buildBuiltinRuntimeBootstrapSourceRef(relativePath),
@@ -1239,6 +1290,42 @@ function createReadinessMatrixRecord(
     surfaceIds,
     note,
   };
+}
+
+function resolveSelfHostRuntimeBootstrapOwnershipClass(
+  relativePath: string,
+): AdoptionPackOwnershipClass {
+  switch (relativePath) {
+    case '.repo-ai-governor/governor.yaml':
+    case '.repo-ai-governor/normative_knowledge_sources/technical-solutions/technical-solution-module-registry.yaml':
+    case '.repo-ai-governor/context/dev/sqlite/task-ledger.sqlite':
+    case '.repo-ai-governor/context/artifact-registry/sqlite/artifact-registry.sqlite':
+    case '.repo-ai-governor/context/artifact-registry/artifacts.csv':
+    case '.repo-ai-governor/context/artifact-registry/archive/artifacts.archive.csv':
+      return SELF_HOST_CANONICAL_RUNTIME_WRITABLE;
+    case '.repo-ai-governor/normative_knowledge_sources/governance/code_standards.md':
+    case '.repo-ai-governor/normative_knowledge_sources/governance/long-term-maintenance-guide.md':
+      return SELF_HOST_STARTER_EDITABLE;
+    default:
+      return SELF_HOST_MANAGED_LOCKED;
+  }
+}
+
+function resolveSelfHostRuntimeBootstrapDriftPolicy(relativePath: string): AdoptionPackDriftPolicy {
+  switch (resolveSelfHostRuntimeBootstrapOwnershipClass(relativePath)) {
+    case AdoptionPackOwnershipClass.STARTER_EDITABLE:
+      return AdoptionPackDriftPolicy.PLACEHOLDER_AWARE;
+    case AdoptionPackOwnershipClass.CANONICAL_RUNTIME_WRITABLE:
+      return AdoptionPackDriftPolicy.PROVENANCE_ONLY;
+    default:
+      return AdoptionPackDriftPolicy.ENFORCE_CHECKSUM;
+  }
+}
+
+function resolveSelfHostRuntimeBootstrapGitPolicy(relativePath: string): AdoptionPackGitPolicy {
+  return relativePath.endsWith('.sqlite') || relativePath.endsWith('.csv')
+    ? AdoptionPackGitPolicy.OPT_IN_IGNORE_RECOMMENDATION
+    : AdoptionPackGitPolicy.KEEP_TRACKED;
 }
 
 function buildWorkflowSurfaceId(workflowId: string): string {

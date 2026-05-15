@@ -1,0 +1,40 @@
+# checklist
+
+- [x] TK-1065 fix self-host readiness preflight and run gating contract
+  - 2026-05-14：任务创建，状态初始化为 `planned`。
+  - 2026-05-14：状态切换为 `in_progress`，开始修复 self-host `execution_preflight_signal=blocked` 与 `run --dry-run --trace` baseline allow 的运行时冲突。
+  - 2026-05-14：已将 `run` 接入 canonical self-host `adopt verify` summary，新增显式 self-host run preflight gate；当前 contract 为“task-driven / 非 diagnostic dry-run fail-closed，baseline `run --dry-run --trace` 保留为 exploratory diagnostics exception”。
+  - 2026-05-14：已补充 targeted integration coverage，验证 canonical self-host preflight blocked 时的 `baseline dry-run warn+allow` 与 `task-driven fail-closed` 对照行为，并为 self-host preflight blocked 新增专用 structured error guidance。
+  - 2026-05-14：已补充 legacy self-host verify summary fallback path 的兼容回归覆盖，并完成第 3 轮 fresh reviewer clean recheck；`TK-1065` 当前边界进入 `completed`。
+- [x] TK-1066 improve self-host operator guidance and clean-room diagnostics wording
+  - 2026-05-14：任务创建，状态初始化为 `planned`。
+  - 2026-05-14：状态切换为 `in_progress`，开始收口 self-host connect/apply/verify/run next-actions、baseline warning explainability 与 clean-room operator guidance truth。
+  - 2026-05-14：已把 self-host runtime guidance 改成“短版 `operatorNextActions` + 完整 `activationPhaseRecords[].placeholderPaths`”的分层输出，避免把全部 placeholder path 平铺进同一条 operator next action。
+  - 2026-05-14：已同步 `adopt verify` / canonical summary fallback 测试，并刷新中英文 playbook/support truth，补充 self-host happy path、blocked semantics 与 clean-room reset/preserve/ignore guidance。
+  - 2026-05-14：已在 `/Users/jimmydaddy/study/deepseekian` 上重跑真实 self-host `adopt verify` 与 `doctor --adapters`，确认当前 summary 只保留 3 条短版 next actions，完整 placeholder inventory 回落到 phase records。
+  - 2026-05-14：已修复 `doctor --adapters` canonical self-host preflight 回放仍退化为旧式 blocked 摘要的问题，并完成第 5 轮 fresh reviewer clean recheck；`TK-1066` 当前边界进入 `completed`。
+- [x] TK-1067 close sprint-001 and capture follow-up validation summary
+  - 2026-05-14：任务创建，状态初始化为 `planned`。
+  - 2026-05-14：`TK-1065`、`TK-1066` 与 `CR-001 ~ CR-005` 已全部收口；当前任务切换为 `in_progress`，开始汇总 real-target evidence、project-final reviewer boundary 与最终 closeout write-back。
+  - 2026-05-14：`CR-006` project-final fresh reviewer round 已 clean `resolved`；当前已完成 `DA-1067`、completion audit summary、project/sprint completed truth、`current-context` idle 恢复与 completed-stream history 迁移，任务收口为 `completed`。
+- [x] CR-001 TK-1065 delegated review loop round 1
+  - 2026-05-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-05-14：fresh reviewer round 1 返回 1 条 actionable finding：baseline diagnostic 例外被实现成 `--dry-run` 即可绕过 self-host preflight，但当前任务卡与错误文案要求收窄为 `run --dry-run --trace`。
+  - 2026-05-14：主 agent 复核后接受该 finding，已收紧 runtime allowance，并补一条“baseline dry-run without trace 仍 fail-closed”的反向测试。
+- [x] CR-002 TK-1065 delegated recheck loop round 2
+  - 2026-05-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-05-14：fresh reviewer round 2 返回 1 条 actionable finding：legacy self-host verify summary fallback path 已实现，但缺少不带 `executionPreflight*` 字段的 run 集成覆盖。
+  - 2026-05-14：主 agent 复核后接受该 finding，已补充 legacy summary shape 下的 diagnostic dry-run、non-trace dry-run 与 task-driven run 三条兼容回归测试，并完成同窗口验证。
+- [x] CR-003 TK-1065 delegated recheck loop round 3
+  - 2026-05-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-05-14：fresh reviewer round 3 未发现新的 actionable finding；当前边界 clean。
+- [x] CR-004 TK-1066 delegated review loop round 4
+  - 2026-05-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-05-14：fresh reviewer round 4 返回 1 条 actionable finding：`doctor --adapters` 在回放 canonical self-host `adopt verify` summary 时没有消费 `executionPreflightBlockedGroups / executionPreflightPlaceholderPaths`，导致 preflight 明细退化成旧式摘要。
+  - 2026-05-14：主 agent 复核后接受该 finding，已改为优先消费 canonical `executionPreflight*` 字段，并补充 doctor regression coverage 与 real-target doctor recheck 证据。
+- [x] CR-005 TK-1066 delegated recheck loop round 5
+  - 2026-05-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-05-14：fresh reviewer round 5 未发现新的 actionable finding；`TK-1066` 当前边界 clean。
+- [x] CR-006 project-124-empty-repo-self-host-readiness-follow-up final delegated review loop round 6
+  - 2026-05-14：任务创建，状态初始化为 `review_pending`。
+  - 2026-05-14：project-final fresh reviewer round 6 返回 clean verdict，未发现新的 actionable finding；当前 round-6 review artifact 已直接收口为 `resolved`，并为 `project-124` 最终 closeout write-back 提供前置 clean evidence。

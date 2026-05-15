@@ -1,4 +1,9 @@
 export { ConfigLoader } from './config-loader.js';
+export {
+  buildDefaultAdaptersConfig,
+  buildDefaultGovernorConfig,
+  renderGovernorConfigContent,
+} from './default-governor-config.js';
 export { ProfileResolver } from './profile-resolver.js';
 export { SchemaValidator } from './schema-validator.js';
 export { WorkspaceConfigDiscoveryService } from './workspace-config-discovery-service.js';

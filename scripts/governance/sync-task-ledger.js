@@ -352,6 +352,18 @@ function buildLatestCsvRowMap(rows) {
   return new Map(Array.from(latestRows.entries()).map(([taskId, value]) => [taskId, value.row]));
 }
 
+function getNextProjectedRowNumber(rows) {
+  let highestProjectedRowNumber = 1;
+
+  for (const row of rows) {
+    if (typeof row.__rowNumber === 'number' && Number.isFinite(row.__rowNumber)) {
+      highestProjectedRowNumber = Math.max(highestProjectedRowNumber, row.__rowNumber);
+    }
+  }
+
+  return highestProjectedRowNumber + 1;
+}
+
 function resolveTasksDirectory(options) {
   if (typeof options.tasksDir === 'string' && options.tasksDir.trim().length > 0) {
     return resolve(process.cwd(), options.tasksDir);
@@ -557,7 +569,7 @@ function syncTaskLedger(options) {
     const nextRow = buildCsvRow(taskCard, latestRow, options);
     tasksCsvState.rows.push({
       ...nextRow,
-      __rowNumber: tasksCsvState.rows.length + 2,
+      __rowNumber: getNextProjectedRowNumber(tasksCsvState.rows),
     });
     appendedRows.push(nextRow);
   }
